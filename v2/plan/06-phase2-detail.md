@@ -1,6 +1,6 @@
 # 06 — Phase 2 detail: Agent enhancement
 
-> Backfill of the v1 Phase-2 placeholder in [`../05-implementation-phases.md`](../05-implementation-phases.md).
+> Backfill of the v1 Phase-2 placeholder in [`../../v1/plan/05-implementation-phases.md`](../../v1/plan/05-implementation-phases.md).
 
 ## Goal
 Every agent in `knowledge/agents/` carries a **Protocol Awareness** section that anchors it in the v2 protocols (Plan-Approve-Execute, task-management, blocker-escalation, validation-gates, artifact-versioning, token-governance).

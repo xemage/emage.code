@@ -4,7 +4,7 @@
 
 emage.code is a structured multi-agent development system that brings disciplined software engineering practices to AI-assisted coding: Plan-Approve-Execute workflows, DAG-based task management, validation gates, checkpoint compression. v2 introduces a **single source of truth** for all agents, skills, commands, and instructions; the same knowledge is projected into platform-specific folders by an automated sync engine.
 
-> Migrating from v1? See [`../plan/v2/05-migration-from-v1.md`](../plan/v2/05-migration-from-v1.md). v1 remains untouched at [`../implementation/`](../implementation/).
+> Migrating from v1? See [`../plan/05-migration-from-v1.md`](../plan/05-migration-from-v1.md). v1 remains untouched at [`../../v1/`](../../v1/).
 
 ---
 
@@ -22,7 +22,7 @@ emage.code is a structured multi-agent development system that brings discipline
 ## Repository layout
 
 ```
-implementation-v2/
+implementation/
 ├── knowledge/              ← single source of truth
 │   ├── agents/*.md
 │   ├── commands/*.md
@@ -131,6 +131,6 @@ See [`AGENTS.md`](AGENTS.md) for the workspace contract and [`SECURITY.md`](SECU
 - **`docs/` templates** populated (was empty `.gitkeep` placeholders in v1).
 - **Security docs** — `SECURITY.md` documents auto-approve trade-offs and removes the leaked Toolradar API key.
 - **`.gitignore`** added to keep `node_modules/` and runtime junk out of VCS.
-- **Platform-detail plan docs** for Phase 2–7 backfilled under [`../plan/v2/`](../plan/v2/).
+- **Platform-detail plan docs** for Phase 2–7 backfilled under [`../plan/`](../plan/).
 
-See [`../plan/v2/05-migration-from-v1.md`](../plan/v2/05-migration-from-v1.md).
+See [`../plan/05-migration-from-v1.md`](../plan/05-migration-from-v1.md).

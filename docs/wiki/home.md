@@ -1,0 +1,32 @@
+# emage.code Wiki
+
+Welcome to the **emage.code** wiki — the central knowledge hub for the multi-platform AI dev-team orchestration framework.
+
+## What is emage.code?
+
+emage.code projects a single canonical knowledge base into the major AI coding assistants (GitHub Copilot, Gemini CLI, Opencode, Cursor) so that every assistant runs the *same* dev team with the *same* protocols.
+
+## Wiki contents
+
+| Page | Topic |
+|------|-------|
+| [Quick Start](quick-start) | Drop emage.code into a new project in 5 minutes |
+| [Architecture](architecture) | The 6-layer architecture, knowledge → platform projection |
+| [Agents Overview](agents-overview) | The 27 specialist agents and their permissions |
+| [MCP Servers](mcp-servers) | Tool integrations: GitLab, Playwright, Memory, Brave, … |
+| [Contributing Workflow](contributing-workflow) | GitFlow + Conventional Commits + sync engine |
+| [Migration v1 → v2](migration-v1-to-v2) | What changed and how to upgrade |
+
+## Project links
+
+- **Repository:** [`em-age/emage.code`](https://gitlab.com/em-age/emage.code)
+- **Issues:** [GitLab issues](https://gitlab.com/em-age/emage.code/-/issues)
+- **Pipelines:** [CI/CD](https://gitlab.com/em-age/emage.code/-/pipelines)
+- **License:** [MIT](https://gitlab.com/em-age/emage.code/-/blob/main/LICENSE)
+
+## Status
+
+- **v1** — frozen, kept under [`v1/`](https://gitlab.com/em-age/emage.code/-/tree/main/v1) for reference
+- **v2** — active, new contributions go to [`v2/implementation/knowledge/`](https://gitlab.com/em-age/emage.code/-/tree/main/v2/implementation/knowledge)
+
+> The wiki is **hand-curated** and version-controlled separately from the main repo. To propose changes, open an MR against the main repo's wiki sources at [`docs/wiki/`](https://gitlab.com/em-age/emage.code/-/tree/main/docs/wiki).
