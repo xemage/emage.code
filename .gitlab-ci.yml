@@ -1,20 +1,26 @@
 # ────────────────────────────────────────────────────────────────────────────
 # emage.code — GitLab CI pipeline
 #
-# Verifies that the generated platform folders (.github, .gemini, .opencode,
-# .cursor) are in sync with the canonical knowledge base under
-# v2/implementation/knowledge/. Also runs a markdown link check.
+# Stages:
+#   lint        — markdown link check (informational)
+#   verify      — scripts/verify.mjs drift check (BLOCKING)
+#   sync        — re-run scripts/sync.mjs and assert no diff (BLOCKING)
+#   wiki-sync   — push docs/wiki/*.md to the project Wiki (develop only)
+#   release     — generate CHANGELOG and create GitLab Release (on tag vX.Y.Z)
 #
-# Pipeline stages:
-#   lint    — markdown link check (non-blocking informational)
-#   verify  — run scripts/verify.mjs (BLOCKING — fails on knowledge drift)
-#   sync    — re-run scripts/sync.mjs and assert no diff (BLOCKING)
+# Required CI/CD variables (Settings → CI/CD → Variables):
+#   WIKI_TOKEN     — Project access token, scope `api`, role `Developer`+
+#                    Used by `wiki-sync` and `release` jobs.
+#                    Mark as Masked. Do NOT mark as Protected unless you also
+#                    protect the `develop` branch (it already is).
 # ────────────────────────────────────────────────────────────────────────────
 
 stages:
   - lint
   - verify
   - sync
+  - wiki-sync
+  - release
 
 default:
   image: node:20-alpine
@@ -36,9 +42,11 @@ markdown-links:
     - |
       python3 - <<'PY'
       import os, re, sys
-      # Skip: .git, deps, v1 (frozen), and docs/wiki (uses GitLab wiki slug links, not fs paths)
+      # Skip: .git, deps, v1 (frozen), docs/wiki (uses GitLab wiki slug links)
       SKIP = ("/.git", "node_modules", ".vscode-server", "/v1/", "/docs/wiki")
       link_re = re.compile(r'\[([^\]]+)\]\(([^)]+)\)')
+      fence_re = re.compile(r'```.*?```', re.DOTALL)
+      inline_re = re.compile(r'`[^`\n]*`')
       broken = []
       for root, dirs, files in os.walk("."):
           if any(s in root for s in SKIP): continue
@@ -47,6 +55,9 @@ markdown-links:
               p = os.path.join(root, f)
               with open(p, encoding="utf-8", errors="ignore") as fh:
                   text = fh.read()
+              # Strip fenced and inline code so link-like syntax inside code isn't checked
+              text = fence_re.sub("", text)
+              text = inline_re.sub("", text)
               base = os.path.dirname(p)
               for m in link_re.finditer(text):
                   t = m.group(2).strip()
@@ -57,7 +68,7 @@ markdown-links:
                   if not os.path.exists(full):
                       broken.append(f"{p}  ->  {t}")
       if broken:
-          print("Broken markdown links (excluding v1):")
+          print("Broken markdown links (excluding v1 and docs/wiki):")
           for b in broken: print("  ", b)
           sys.exit(1)
       print("All markdown links resolve.")
@@ -97,3 +108,70 @@ sync-no-diff:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH
+
+# ── Wiki sync (develop only) ─────────────────────────────────────────────
+# Pushes every Markdown file in docs/wiki/ to the project Wiki via REST API.
+# Title is derived from the filename: 'quick-start.md' → 'Quick Start'.
+# Requires CI/CD variable WIKI_TOKEN (Project Access Token, scope: api).
+wiki-sync:
+  stage: wiki-sync
+  needs: ["sync-no-diff"]
+  image: alpine:3.20
+  before_script:
+    - apk add --no-cache curl python3 jq
+  script:
+    - |
+      if [ -z "$WIKI_TOKEN" ]; then
+        echo "WIKI_TOKEN is not set — skipping wiki sync."
+        echo "Define a Project Access Token (scope: api) as masked CI variable WIKI_TOKEN to enable."
+        exit 0
+      fi
+    - python3 scripts/sync-wiki.py
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+      changes:
+        - docs/wiki/**/*
+        - scripts/sync-wiki.py
+        - .gitlab-ci.yml
+  allow_failure: true     # do not block develop pipeline if wiki API hiccups
+
+# ── Release (tag vX.Y.Z) ─────────────────────────────────────────────────
+# Triggered by pushing a SemVer tag (vMAJOR.MINOR.PATCH).
+# 1. Generates CHANGELOG.md from Conventional Commits via git-cliff
+# 2. Generates release notes for the new version only
+# 3. Creates a GitLab Release with those notes and links to artifacts
+release:
+  stage: release
+  image: alpine:3.20
+  before_script:
+    - apk add --no-cache git curl jq
+    # Install git-cliff (statically-linked Linux binary)
+    - GIT_CLIFF_VERSION=2.6.1
+    - curl -fsSL "https://github.com/orhun/git-cliff/releases/download/v${GIT_CLIFF_VERSION}/git-cliff-${GIT_CLIFF_VERSION}-x86_64-unknown-linux-musl.tar.gz" | tar -xz -C /tmp
+    - install -m 0755 "/tmp/git-cliff-${GIT_CLIFF_VERSION}/git-cliff" /usr/local/bin/git-cliff
+    - git-cliff --version
+  script:
+    - git fetch --tags --unshallow || git fetch --tags
+    - export VERSION="${CI_COMMIT_TAG#v}"
+    - echo "Releasing v${VERSION}"
+    # Full CHANGELOG (regenerated each release)
+    - git-cliff --tag "${CI_COMMIT_TAG}" --output CHANGELOG.md
+    # Notes for this release only
+    - git-cliff --tag "${CI_COMMIT_TAG}" --unreleased --strip header --strip footer --output release-notes.md
+    - cat release-notes.md
+    # Create the GitLab Release via API
+    - |
+      DESCRIPTION=$(jq -Rs . < release-notes.md)
+      curl -fsSL --request POST \
+        --header "PRIVATE-TOKEN: ${WIKI_TOKEN}" \
+        --header "Content-Type: application/json" \
+        --data "{\"name\":\"v${VERSION}\",\"tag_name\":\"${CI_COMMIT_TAG}\",\"description\":${DESCRIPTION},\"ref\":\"${CI_COMMIT_TAG}\"}" \
+        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases" \
+        | jq '{name, tag_name, created_at, _links}'
+  artifacts:
+    paths:
+      - CHANGELOG.md
+      - release-notes.md
+    expire_in: never
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$/'

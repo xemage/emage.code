@@ -1,3 +1,6 @@
+---
+title: MCP Servers
+---
 # MCP Servers
 
 emage.code uses [Model Context Protocol](https://modelcontextprotocol.io) servers as the integration layer between agents and external tools.
