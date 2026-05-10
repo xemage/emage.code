@@ -105,6 +105,53 @@ on merge.
 
 No script changes are needed — the sync engine is fully manifest-driven.
 
+## Releasing
+
+The project uses **Semantic Versioning** (`vMAJOR.MINOR.PATCH`) and
+**Conventional Commits** to drive automated changelog generation.
+
+### Cutting a release
+
+1. Branch from `develop`: `release/vX.Y.Z`
+2. Bump versions / finalise documentation as needed
+3. Open MR `release/vX.Y.Z → main` using the **Release** MR template
+4. After merge to `main`:
+   ```bash
+   git checkout main && git pull
+   git tag -a vX.Y.Z -m "Release vX.Y.Z"
+   git push origin vX.Y.Z
+   git checkout develop && git merge --no-ff main && git push   # back-merge
+   ```
+5. The tag push triggers the `release` CI job which:
+   - Regenerates [`CHANGELOG.md`](CHANGELOG.md) from Conventional Commits via [git-cliff](https://git-cliff.org)
+   - Creates a [GitLab Release](https://gitlab.com/em-age/emage.code/-/releases) with notes scoped to the new version
+
+### Hotfixes
+
+1. Branch from `main`: `hotfix/vX.Y.Z+1`
+2. Fix, test, MR to `main`
+3. After merge: tag `vX.Y.Z+1`, then back-merge `main → develop`
+
+### What goes in the changelog
+
+Determined by your commit type (see Commit messages above):
+
+| Commit type | Changelog group |
+|---|---|
+| `feat` | Features |
+| `fix` | Bug Fixes |
+| `perf` | Performance |
+| `refactor` | Refactor |
+| `docs` | Documentation |
+| `test` | Tests |
+| `ci` | CI |
+| `chore(deps)` | Dependencies |
+| `chore` (other) | Chores |
+| `revert` | Reverts |
+| Any commit body containing `BREAKING CHANGE:` | Breaking Changes |
+
+Configure groups in [`cliff.toml`](cliff.toml).
+
 ## Questions?
 
 Open a discussion issue or check the [project Wiki](https://gitlab.com/em-age/emage.code/-/wikis/home).
