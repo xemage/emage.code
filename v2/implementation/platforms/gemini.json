@@ -1,0 +1,32 @@
+{
+  "$schema": "./_manifest.schema.json",
+  "platform": "gemini",
+  "displayName": "Gemini CLI",
+  "outputDir": ".gemini",
+  "fileMap": {
+    "agents":       { "dir": "agents",       "ext": ".md" },
+    "commands":     { "dir": "commands",     "ext": ".md" },
+    "instructions": { "dir": "instructions", "ext": ".md" },
+    "skills":       { "dir": "skills",       "preserveTree": true }
+  },
+  "frontmatter": {
+    "agents": {
+      "tools": "drop",
+      "keepKeys": ["name", "description", "agents"]
+    },
+    "commands": {
+      "keepKeys": ["description", "agent", "argument-hint"]
+    },
+    "instructions": {
+      "keepKeys": ["description", "applyTo"]
+    },
+    "skills": {
+      "keepKeys": ["name", "description"]
+    }
+  },
+  "mcp": {
+    "tags": ["core", "extended"],
+    "outputFile": "settings.json",
+    "format": "gemini"
+  }
+}

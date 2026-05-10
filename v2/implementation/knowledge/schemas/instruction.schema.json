@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "emage.code instruction",
+  "type": "object",
+  "required": ["description"],
+  "properties": {
+    "description": { "type": "string", "minLength": 10 },
+    "applyTo": { "type": "string" }
+  },
+  "additionalProperties": false
+}
