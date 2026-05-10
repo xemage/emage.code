@@ -36,7 +36,8 @@ markdown-links:
     - |
       python3 - <<'PY'
       import os, re, sys
-      SKIP = ("/.git", "node_modules", ".vscode-server", "/v1/")
+      # Skip: .git, deps, v1 (frozen), and docs/wiki (uses GitLab wiki slug links, not fs paths)
+      SKIP = ("/.git", "node_modules", ".vscode-server", "/v1/", "/docs/wiki")
       link_re = re.compile(r'\[([^\]]+)\]\(([^)]+)\)')
       broken = []
       for root, dirs, files in os.walk("."):
