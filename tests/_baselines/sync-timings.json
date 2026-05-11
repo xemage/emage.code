@@ -1,0 +1,11 @@
+{
+  "_comment": "Performance baselines for the agent-team test suite. Adjust with justification when intentional growth makes a budget too tight.",
+  "sync_max_seconds": 10.0,
+  "verify_max_seconds": 5.0,
+  "agent_max_chars": 32000,
+  "agent_max_estimated_tokens": 8000,
+  "skill_max_chars": 24000,
+  "skill_max_estimated_tokens": 6000,
+  "min_conventional_commit_ratio": 0.6,
+  "recent_commits_window": 20
+}

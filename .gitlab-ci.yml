@@ -17,6 +17,7 @@
 
 stages:
   - lint
+  - test
   - verify
   - sync
   - wiki-sync
@@ -73,6 +74,19 @@ markdown-links:
           sys.exit(1)
       print("All markdown links resolve.")
       PY
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
+
+# ── Test (functional + agent-team-health) ────────────────────────────────
+unit-tests:
+  stage: test
+  image: python:3.12-alpine
+  before_script:
+    - apk add --no-cache nodejs git
+    - pip install --no-cache-dir --quiet pyyaml jsonschema
+  script:
+    - python3 tests/run.py
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH
