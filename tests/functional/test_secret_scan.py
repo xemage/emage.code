@@ -33,12 +33,10 @@ PATTERNS = [
 
 # Files whose content is allowed to mention these patterns (e.g. test files
 # that intentionally search for them). Use forward-slash relative paths.
+# NOTE: Prefer the entropy/placeholder heuristic in `_looks_like_placeholder`
+# over allowlisting. Only add a path here if the heuristic genuinely misses.
 ALLOWLIST = {
     "tests/functional/test_secret_scan.py",
-    # v1 docs contain example placeholder tokens (`glpat-xxxxxxxxxxxxxxxxxxxx`
-    # etc.). v1 is frozen — we don't edit it, but the placeholders are clearly
-    # not real secrets.
-    "v1/implementation/.opencode/QUICKSTART.md",
 }
 
 
@@ -52,6 +50,28 @@ def _tracked_files() -> list[Path]:
         for name in proc.stdout.split(b"\x00")
         if name
     ]
+
+
+def _looks_like_placeholder(match: str) -> bool:
+    """Heuristic to reject obvious placeholder/example tokens.
+
+    Real GitLab/GitHub/AWS/etc. tokens have high entropy — mixed case + digits.
+    Documentation placeholders typically use runs of `x`, `X`, `0`, or repeat
+    a single character (e.g. ``glpat-xxxxxxxxxxxxxxxxxxxx``). Reject any match
+    whose body (after the well-known prefix) lacks both a letter and a digit,
+    or that consists of fewer than 3 distinct characters.
+    """
+    # Strip the prefix part up to and including the first '-' or '_'
+    sep_idx = max(match.rfind("-"), match.rfind("_"))
+    body = match[sep_idx + 1:] if sep_idx >= 0 else match
+    distinct = set(body)
+    if len(distinct) < 3:
+        return True
+    has_letter = any(c.isalpha() for c in body)
+    has_digit = any(c.isdigit() for c in body)
+    if not (has_letter and has_digit):
+        return True
+    return False
 
 
 def _is_text(path: Path) -> bool:
@@ -81,8 +101,12 @@ class TestSecretScan(unittest.TestCase):
                 continue
             for regex, label in PATTERNS:
                 m = regex.search(text)
-                if m:
-                    findings.append(f"{rel}: {label} matched ({m.group(0)[:12]}…)")
+                if not m:
+                    continue
+                # The Private-key marker has no high-entropy body to inspect.
+                if label != "Private key" and _looks_like_placeholder(m.group(0)):
+                    continue
+                findings.append(f"{rel}: {label} matched ({m.group(0)[:12]}…)")
         self.assertFalse(
             findings,
             msg=(
