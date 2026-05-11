@@ -1,0 +1,145 @@
+{
+  "version": "v1",
+  "weights": {
+    "tool_selection_accuracy": 0.5,
+    "argument_key_accuracy": 0.3,
+    "step_efficiency": 0.2
+  },
+  "cases": [
+    {
+      "id": "single-read-file",
+      "type": "single",
+      "optimal_steps": 1,
+      "expected_tools": ["read_file"],
+      "expected_argument_keys": {
+        "read_file": ["filePath", "startLine", "endLine"]
+      },
+      "candidate_steps": [
+        {
+          "tool_calls": [
+            {
+              "tool": "read_file",
+              "arguments": {
+                "filePath": "docs/tasks/active-tasks.md",
+                "startLine": 1,
+                "endLine": 120
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "parallel-list-and-read",
+      "type": "parallel",
+      "optimal_steps": 1,
+      "expected_tools": ["list_dir", "read_file"],
+      "expected_argument_keys": {
+        "list_dir": ["path"],
+        "read_file": ["filePath", "startLine", "endLine"]
+      },
+      "candidate_steps": [
+        {
+          "tool_calls": [
+            {
+              "tool": "list_dir",
+              "arguments": {
+                "path": "tests"
+              }
+            },
+            {
+              "tool": "read_file",
+              "arguments": {
+                "filePath": "tests/README.md",
+                "startLine": 1,
+                "endLine": 80
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "nested-search-then-open",
+      "type": "nested",
+      "optimal_steps": 2,
+      "expected_tools": ["grep_search", "read_file"],
+      "expected_argument_keys": {
+        "grep_search": ["query", "isRegexp", "includePattern"],
+        "read_file": ["filePath", "startLine", "endLine"]
+      },
+      "candidate_steps": [
+        {
+          "tool_calls": [
+            {
+              "tool": "grep_search",
+              "arguments": {
+                "query": "T00",
+                "isRegexp": false,
+                "includePattern": "docs/tasks/**"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "tool": "read_file",
+              "arguments": {
+                "filePath": "docs/tasks/active-tasks.md",
+                "startLine": 1,
+                "endLine": 160
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "multi-turn-analyze-and-edit",
+      "type": "multi_turn",
+      "optimal_steps": 3,
+      "expected_tools": ["read_file", "get_errors", "apply_patch"],
+      "expected_argument_keys": {
+        "read_file": ["filePath", "startLine", "endLine"],
+        "get_errors": ["filePaths"],
+        "apply_patch": ["input", "explanation"]
+      },
+      "candidate_steps": [
+        {
+          "tool_calls": [
+            {
+              "tool": "read_file",
+              "arguments": {
+                "filePath": "tests/performance/test_sync_perf.py",
+                "startLine": 1,
+                "endLine": 200
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "tool": "get_errors",
+              "arguments": {
+                "filePaths": ["tests/performance/test_sync_perf.py"]
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "tool": "apply_patch",
+              "arguments": {
+                "input": "*** Begin Patch\n*** Update File: tests/performance/test_sync_perf.py\n@@\n-# old\n+# new\n*** End Patch",
+                "explanation": "Demonstration patch payload for benchmark fixture."
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

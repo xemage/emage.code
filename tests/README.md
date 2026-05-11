@@ -24,7 +24,13 @@ tests/
 ├── README.md                       (this file)
 ├── run.py                          ← single entry point used by CI and Make
 ├── _baselines/                     ← performance baselines (committed)
-│   └── sync-timings.json
+│   ├── sync-timings.json
+│   └── benchmark-thresholds-v1.json
+├── fixtures/
+│   └── benchmarks/
+│       ├── tool_use_cases.json
+│       ├── trajectory_cases.json
+│       └── scaling_cases.json
 ├── _helpers/                       ← shared test utilities
 │   ├── __init__.py
 │   ├── frontmatter.py              parse/validate YAML frontmatter
@@ -40,7 +46,10 @@ tests/
 └── performance/
     ├── test_sync_perf.py           sync.mjs and verify.mjs runtime budgets
     ├── test_agent_token_budget.py  per-agent body fits in context budget
-    └── test_team_health.py         plan-drift, lifecycle, checkpoint cadence
+   ├── test_team_health.py         plan-drift, lifecycle, checkpoint cadence
+   ├── test_tool_use_complexity.py multi-shape tool-use benchmark scoring
+   ├── test_orchestration_trajectory_quality.py orchestration rubric scoring
+   └── test_scaling_and_throughput.py p50/p95/cv throughput envelope checks
 ```
 
 ## Running
@@ -84,6 +93,42 @@ in parallel with `verify-knowledge-drift`. A failure blocks the pipeline.
 
 Adjust these (with justification in the MR description) when intentional growth
 makes the previous budget too tight.
+
+`tests/_baselines/benchmark-thresholds-v1.json` stores deterministic score and
+scalability minima for the benchmark-expansion suite.
+
+## Benchmark expansion (v1)
+
+The benchmark-expansion adds three offline and deterministic performance tests.
+
+1. `test_tool_use_complexity.py`
+- Loads `tests/fixtures/benchmarks/tool_use_cases.json`.
+- Scores tool selection accuracy, argument key coverage, and step efficiency.
+- Enforces aggregate and per-metric minimums from
+   `tests/_baselines/benchmark-thresholds-v1.json`.
+
+2. `test_orchestration_trajectory_quality.py`
+- Loads `tests/fixtures/benchmarks/trajectory_cases.json`.
+- Scores plan coverage, dependency validity, blocker routing, and lifecycle
+   transition validity.
+- Enforces aggregate and per-metric minimums from baseline thresholds.
+
+3. `test_scaling_and_throughput.py`
+- Loads `tests/fixtures/benchmarks/scaling_cases.json`.
+- Repeats `scripts/verify.mjs` and `scripts/sync.mjs` workloads and reports
+   p50, p95, and coefficient of variation.
+- Enforces p95/cv maxima using the stricter of per-case and baseline limits.
+
+### Optional stress mode
+
+Use `BENCH_STRESS=1` to increase scaling-loop iterations:
+
+```bash
+BENCH_STRESS=1 python3 tests/run.py --suite performance -v
+```
+
+Default mode remains lightweight for CI; stress mode is for deeper local
+validation.
 
 ## What "agent-team health" means here
 
