@@ -1,0 +1,101 @@
+{
+  "version": "v1",
+  "weights": {
+    "plan_coverage_score": 0.3,
+    "dependency_validity_score": 0.25,
+    "blocker_routing_score": 0.25,
+    "lifecycle_transition_score": 0.2
+  },
+  "routing_policy": {
+    "technical": "tech-lead",
+    "dependency": "orchestrator",
+    "unclear_requirements": "product-owner",
+    "external": "orchestrator",
+    "minor": "orchestrator"
+  },
+  "valid_transitions": {
+    "pending": ["in_progress", "cancelled"],
+    "in_progress": ["blocked", "in_review", "cancelled"],
+    "blocked": ["in_progress", "cancelled"],
+    "in_review": ["done", "in_progress", "blocked", "cancelled"],
+    "done": [],
+    "cancelled": []
+  },
+  "cases": [
+    {
+      "id": "release-flow-clean",
+      "required_plan_items": ["T001", "T002", "T003"],
+      "candidate_plan_items": ["T001", "T002", "T003"],
+      "allowed_dependencies": [
+        ["T002", "T001"],
+        ["T003", "T002"]
+      ],
+      "candidate_dependencies": [
+        ["T002", "T001"],
+        ["T003", "T002"]
+      ],
+      "blocker_events": [
+        {"type": "technical", "routed_to": "tech-lead"},
+        {"type": "unclear_requirements", "routed_to": "product-owner"}
+      ],
+      "state_transitions": [
+        ["pending", "in_progress"],
+        ["in_progress", "blocked"],
+        ["blocked", "in_progress"],
+        ["in_progress", "in_review"],
+        ["in_review", "done"]
+      ]
+    },
+    {
+      "id": "dependency-routing-partial",
+      "required_plan_items": ["T010", "T011", "T012", "T013"],
+      "candidate_plan_items": ["T010", "T011", "T012"],
+      "allowed_dependencies": [
+        ["T011", "T010"],
+        ["T012", "T011"],
+        ["T013", "T012"]
+      ],
+      "candidate_dependencies": [
+        ["T011", "T010"],
+        ["T012", "T011"],
+        ["T013", "T010"]
+      ],
+      "blocker_events": [
+        {"type": "dependency", "routed_to": "orchestrator"},
+        {"type": "external", "routed_to": "orchestrator"},
+        {"type": "technical", "routed_to": "tech-lead"}
+      ],
+      "state_transitions": [
+        ["pending", "in_progress"],
+        ["in_progress", "in_review"],
+        ["in_review", "in_progress"],
+        ["in_progress", "in_review"],
+        ["in_review", "done"]
+      ]
+    },
+    {
+      "id": "blocked-recovery",
+      "required_plan_items": ["T020", "T021", "T022"],
+      "candidate_plan_items": ["T020", "T021", "T022"],
+      "allowed_dependencies": [
+        ["T021", "T020"],
+        ["T022", "T021"]
+      ],
+      "candidate_dependencies": [
+        ["T021", "T020"],
+        ["T022", "T021"]
+      ],
+      "blocker_events": [
+        {"type": "technical", "routed_to": "tech-lead"},
+        {"type": "minor", "routed_to": "orchestrator"}
+      ],
+      "state_transitions": [
+        ["pending", "in_progress"],
+        ["in_progress", "blocked"],
+        ["blocked", "in_progress"],
+        ["in_progress", "in_review"],
+        ["in_review", "done"]
+      ]
+    }
+  ]
+}

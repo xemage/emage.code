@@ -1,0 +1,27 @@
+{
+  "version": "v1",
+  "cases": [
+    {
+      "id": "verify-throughput",
+      "script": "scripts/verify.mjs",
+      "workdir": "implementation_root",
+      "default_iterations": 4,
+      "stress_iterations": 10,
+      "warmup_runs": 1,
+      "max_p95_seconds": 6.0,
+      "max_coefficient_of_variation": 0.4,
+      "threshold_key": "verify"
+    },
+    {
+      "id": "sync-throughput",
+      "script": "scripts/sync.mjs",
+      "workdir": "temp_copy",
+      "default_iterations": 2,
+      "stress_iterations": 5,
+      "warmup_runs": 1,
+      "max_p95_seconds": 12.0,
+      "max_coefficient_of_variation": 0.55,
+      "threshold_key": "sync"
+    }
+  ]
+}
