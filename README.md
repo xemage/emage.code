@@ -128,6 +128,51 @@ Deep dive:
 
 ---
 
+## Benchmark and performance
+
+v2 includes a deterministic benchmark suite for agent-team quality and runtime
+health under `tests/performance/`.
+
+### Benchmark coverage map
+
+```mermaid
+flowchart LR
+   A[Benchmark suite] --> B[Tool-use complexity]
+   A --> C[Orchestration trajectory quality]
+   A --> D[Scaling and throughput]
+   B --> B1[test_tool_use_complexity.py]
+   C --> C1[test_orchestration_trajectory_quality.py]
+   D --> D1[test_scaling_and_throughput.py]
+   B1 --> E[Thresholds: benchmark-thresholds-v1.json]
+   C1 --> E
+   D1 --> E
+```
+
+### Runtime envelope (latest local baseline run)
+
+```mermaid
+flowchart TD
+   V[verify.mjs p95: 0.320s] --> VB[budget: 5.0s]
+   S[sync.mjs p95: 0.352s] --> SB[budget: 10.0s]
+   V --> C1[coefficient of variation: 0.041]
+   S --> C2[coefficient of variation: 0.006]
+```
+
+Key files:
+- `tests/_baselines/benchmark-thresholds-v1.json`
+- `tests/fixtures/benchmarks/tool_use_cases.json`
+- `tests/fixtures/benchmarks/trajectory_cases.json`
+- `tests/fixtures/benchmarks/scaling_cases.json`
+
+Run locally:
+
+```bash
+python3 tests/run.py --suite performance -v
+BENCH_STRESS=1 python3 tests/run.py --suite performance -v
+```
+
+---
+
 ## Contributing
 
 1. Edit canonical knowledge under [`v2/implementation/knowledge/`](v2/implementation/knowledge/) — **never** the generated `.github/`, `.gemini/`, `.opencode/`, `.cursor/` folders.

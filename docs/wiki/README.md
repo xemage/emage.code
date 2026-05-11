@@ -48,6 +48,7 @@ CI_PROJECT_ID=82070979 WIKI_TOKEN=glpat-... python3 scripts/sync-wiki.py
 | `architecture.md` | `architecture` |
 | `agents-overview.md` | `agents-overview` |
 | `mcp-servers.md` | `mcp-servers` |
+| `performance-benchmarks.md` | `performance-benchmarks` |
 | `contributing-workflow.md` | `contributing-workflow` |
 | `migration-v1-to-v2.md` | `migration-v1-to-v2` |
 
