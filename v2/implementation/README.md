@@ -59,32 +59,58 @@ implementation/
 Pick the platform you use, copy that folder to your project root, plus `AGENTS.md` and `docs/`:
 
 ### GitHub Copilot
+```bash
+cp -r v2/implementation/.github         <your-project>/
+mkdir -p <your-project>/.vscode
+cp    v2/implementation/.vscode/mcp.json <your-project>/.vscode/
+cp    v2/implementation/AGENTS.md       <your-project>/
+cp -r v2/implementation/docs            <your-project>/
+```
+
 ```powershell
-Copy-Item -Recurse implementation-v2/.github         <your-project>/
-Copy-Item          implementation-v2/.vscode/mcp.json <your-project>/.vscode/
-Copy-Item          implementation-v2/AGENTS.md       <your-project>/
-Copy-Item -Recurse implementation-v2/docs            <your-project>/
+Copy-Item -Recurse v2/implementation/.github         <your-project>/
+Copy-Item          v2/implementation/.vscode/mcp.json <your-project>/.vscode/
+Copy-Item          v2/implementation/AGENTS.md       <your-project>/
+Copy-Item -Recurse v2/implementation/docs            <your-project>/
 ```
 
 ### Gemini CLI
+```bash
+cp -r v2/implementation/.gemini  <your-project>/
+cp    v2/implementation/AGENTS.md <your-project>/
+cp -r v2/implementation/docs     <your-project>/
+```
+
 ```powershell
-Copy-Item -Recurse implementation-v2/.gemini  <your-project>/
-Copy-Item          implementation-v2/AGENTS.md <your-project>/
-Copy-Item -Recurse implementation-v2/docs     <your-project>/
+Copy-Item -Recurse v2/implementation/.gemini  <your-project>/
+Copy-Item          v2/implementation/AGENTS.md <your-project>/
+Copy-Item -Recurse v2/implementation/docs     <your-project>/
 ```
 
 ### Opencode
+```bash
+cp -r v2/implementation/.opencode <your-project>/
+cp    v2/implementation/AGENTS.md  <your-project>/
+cp -r v2/implementation/docs       <your-project>/
+```
+
 ```powershell
-Copy-Item -Recurse implementation-v2/.opencode <your-project>/
-Copy-Item          implementation-v2/AGENTS.md  <your-project>/
-Copy-Item -Recurse implementation-v2/docs      <your-project>/
+Copy-Item -Recurse v2/implementation/.opencode <your-project>/
+Copy-Item          v2/implementation/AGENTS.md  <your-project>/
+Copy-Item -Recurse v2/implementation/docs      <your-project>/
 ```
 
 ### Cursor
+```bash
+cp -r v2/implementation/.cursor   <your-project>/
+cp    v2/implementation/AGENTS.md  <your-project>/
+cp -r v2/implementation/docs       <your-project>/
+```
+
 ```powershell
-Copy-Item -Recurse implementation-v2/.cursor   <your-project>/
-Copy-Item          implementation-v2/AGENTS.md  <your-project>/
-Copy-Item -Recurse implementation-v2/docs      <your-project>/
+Copy-Item -Recurse v2/implementation/.cursor   <your-project>/
+Copy-Item          v2/implementation/AGENTS.md  <your-project>/
+Copy-Item -Recurse v2/implementation/docs      <your-project>/
 ```
 
 Then set MCP env vars (`GITLAB_PERSONAL_ACCESS_TOKEN`, `BRAVE_API_KEY`, etc.) — see `mcp.json` for the full list.

@@ -46,11 +46,23 @@ Cursor has no native "skill" concept. emage.code skills are markdown files that 
 
 ## Verification recipe
 
+```bash
+# In a fresh empty project root
+cp -r <repo>/emage.code/v2/implementation/.cursor   .
+cp    <repo>/emage.code/v2/implementation/AGENTS.md .
+cp -r <repo>/emage.code/v2/implementation/docs      .
+export GITLAB_PERSONAL_ACCESS_TOKEN="..."
+cursor .
+# In Cursor's AI panel:
+#   /new-feature "add login form"
+# Expect: orchestrator proposes a plan and waits for approval.
+```
+
 ```powershell
 # In a fresh empty project root
-Copy-Item -Recurse <repo>/emage.code/implementation-v2/.cursor   .
-Copy-Item          <repo>/emage.code/implementation-v2/AGENTS.md .
-Copy-Item -Recurse <repo>/emage.code/implementation-v2/docs      .
+Copy-Item -Recurse <repo>/emage.code/v2/implementation/.cursor   .
+Copy-Item          <repo>/emage.code/v2/implementation/AGENTS.md .
+Copy-Item -Recurse <repo>/emage.code/v2/implementation/docs      .
 $env:GITLAB_PERSONAL_ACCESS_TOKEN = "..."
 cursor .
 # In Cursor's AI panel:

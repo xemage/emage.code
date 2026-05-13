@@ -4,7 +4,7 @@
 
 ## Side-by-side
 
-| Concern | v1 (`emage.code/implementation/`) | v2 (`emage.code/implementation-v2/`) |
+| Concern | v1 (`emage.code/implementation/`) | v2 (`emage.code/v2/implementation/`) |
 |--------|-----------------------------------|---------------------------------------|
 | Source of truth | distributed across `.github/`, `.gemini/`, `.opencode/` | `knowledge/` |
 | Platforms | GitHub, Gemini, Opencode | GitHub, Gemini, Opencode, **Cursor** |
@@ -36,7 +36,7 @@
 - accept critical fixes there (security-only) and cherry-pick into `knowledge/`, or
 - declare v1 frozen and direct all new work to v2.
 
-The recommended posture: declare v1 frozen on the day v2 ships. CI is wired only to `implementation-v2/`.
+The recommended posture: declare v1 frozen on the day v2 ships. CI is wired only to `v2/implementation/`.
 
 ## How to switch a project from v1 to v2 (manual)
 
