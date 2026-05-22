@@ -360,6 +360,32 @@ def _check_handoff_security(root: Path, result: GateResult) -> None:
         result.err("handoff-security: payload containing secret-like key must be rejected")
 
 
+def _check_hook_policy_spec(root: Path, result: GateResult) -> None:
+    spec_path = root.parents[1] / "docs" / "artifacts" / "v3-hook-policy-spec-v1.md"
+    result.checked += 1
+    if not spec_path.is_file():
+        result.err(f"hook-policy: missing artifact {spec_path}")
+        return
+
+    text = spec_path.read_text(encoding="utf-8")
+
+    required_markers = {
+        "inspect": "hook-policy: missing inspect hook taxonomy",
+        "decide": "hook-policy: missing decide hook taxonomy",
+        "transform": "hook-policy: missing transform hook taxonomy",
+        "Lifecycle Timing": "hook-policy: missing lifecycle timing section",
+        "Policy Precedence": "hook-policy: missing policy precedence section",
+        "Fail-Closed": "hook-policy: missing fail-closed semantics section",
+        "Copilot": "hook-policy: missing Copilot compatibility note",
+        "Gemini": "hook-policy: missing Gemini compatibility note",
+        "Opencode": "hook-policy: missing Opencode compatibility note",
+    }
+    for marker, error_message in required_markers.items():
+        result.checked += 1
+        if marker not in text:
+            result.err(error_message)
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", default=str(Path(__file__).resolve().parents[1]))
@@ -371,6 +397,11 @@ def parse_args() -> argparse.Namespace:
         "--handoff-security",
         action="store_true",
         help="check handoff schema, route allowlists, and fail-closed behavior",
+    )
+    parser.add_argument(
+        "--hook-policy",
+        action="store_true",
+        help="check hook and policy taxonomy artifact coverage",
     )
     parser.add_argument(
         "--compat-knowledge-root",
@@ -395,6 +426,7 @@ def main() -> int:
         "cookbooks": args.cookbooks,
         "projection": args.projection,
         "handoff-security": args.handoff_security,
+        "hook-policy": args.hook_policy,
     }
     run_all = not any(selected.values())
 
@@ -417,6 +449,9 @@ def main() -> int:
 
     if run_all or selected["handoff-security"]:
         _check_handoff_security(root, result)
+
+    if run_all or selected["hook-policy"]:
+        _check_hook_policy_spec(root, result)
 
     if result.warnings:
         print(f"WARN - {len(result.warnings)} warning(s):")

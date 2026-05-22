@@ -98,6 +98,19 @@ class TestV3ValidationGate(unittest.TestCase):
             self.assertNotEqual(rc, 0, "missing scripts should fail required gate")
             self.assertIn("missing directory", out)
 
+    def test_hook_policy_gate_passes_for_repo_artifact(self):
+        rc, out = _run_check(["--hook-policy", "--root", "v3/implementation"])
+        self.assertEqual(rc, 0, f"hook-policy gate should pass\n{out}")
+
+    def test_hook_policy_gate_fails_when_artifact_missing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "impl"
+            root.mkdir(parents=True)
+
+            rc, out = _run_check(["--hook-policy", "--root", str(root)])
+            self.assertNotEqual(rc, 0, "missing hook-policy artifact must fail gate")
+            self.assertIn("hook-policy: missing artifact", out)
+
 
 if __name__ == "__main__":
     unittest.main()
