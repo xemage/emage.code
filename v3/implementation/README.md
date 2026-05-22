@@ -8,7 +8,7 @@ managed cookbooks, and validation super-gates.
 Run from repository root:
 
 ```bash
-python3 v3/implementation/scripts/check-v3.py --root v3/implementation --required --schemas --cookbooks
+python3 v3/implementation/scripts/check-v3.py --root v3/implementation --required --schemas --cookbooks --handoff-security
 ```
 
 Projection drift checks:
@@ -28,8 +28,9 @@ Notes:
 Recommended CI stage order:
 
 1. `python3 v3/implementation/scripts/check-v3.py --root v3/implementation --required --schemas --cookbooks`
-2. `node v3/implementation/scripts/verify-v3.mjs --root ../../v2/implementation`
-3. v3 functional tests:
+2. `python3 v3/implementation/scripts/check-v3.py --root v3/implementation --handoff-security`
+3. `node v3/implementation/scripts/verify-v3.mjs --root ../../v2/implementation`
+4. v3 functional tests:
    `python3 -m unittest tests.functional.test_v3_validation_gate -v`
 
 The gate must fail on unresolved references, missing required files, malformed

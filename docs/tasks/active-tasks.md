@@ -2,8 +2,7 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T013 | Security handoff hardening | security-engineer | in_progress | P0 | T012 | 2026-05-22 |
-| T014 | Hook and policy taxonomy spec | solution-architect | pending | P1 | T013 | 2026-05-22 |
+| T014 | Hook and policy taxonomy spec | solution-architect | in_progress | P1 | T013 | 2026-05-22 |
 | T015 | Trajectory telemetry and replay | backend-developer | pending | P1 | T014 | 2026-05-22 |
 | T016 | Benchmark pack expansion | qa-engineer | pending | P1 | T015 | 2026-05-22 |
 | T017 | Knowledge registry generation | backend-developer | pending | P1 | T012 | 2026-05-22 |

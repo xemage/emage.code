@@ -14,6 +14,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import re
 import subprocess
@@ -291,6 +292,74 @@ def _check_projection(target_root: Path, gate_root: Path, result: GateResult) ->
         result.err(f"projection: drift or sync failure\n{output}")
 
 
+def _load_validator_module(path: Path):
+    import sys
+
+    spec = importlib.util.spec_from_file_location("v3_handoff_validator", path)
+    if not spec or not spec.loader:
+        raise RuntimeError(f"unable to load validator module from {path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def _check_handoff_security(root: Path, result: GateResult) -> None:
+    runtime_dir = root / "runtime" / "handoff"
+    schema_path = runtime_dir / "schema-v1.json"
+    validator_path = runtime_dir / "validator.py"
+    example_path = runtime_dir / "examples" / "valid-handoff.json"
+    cookbook_path = root / "cookbooks" / "core-delivery" / "agent.yaml"
+    artifact_path = root.parents[1] / "docs" / "artifacts" / "v3-handoff-security-model-v1.md"
+
+    for path in (schema_path, validator_path, example_path, cookbook_path, artifact_path):
+        result.checked += 1
+        if not path.is_file():
+            result.err(f"handoff-security: missing required file {path}")
+
+    if result.errors:
+        return
+
+    try:
+        json.loads(schema_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        result.err(f"handoff-security: invalid json schema {schema_path}: {exc}")
+        return
+
+    try:
+        payload = json.loads(example_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        result.err(f"handoff-security: invalid example payload json {example_path}: {exc}")
+        return
+
+    try:
+        validator = _load_validator_module(validator_path)
+    except Exception as exc:  # broad by design for gate output
+        result.err(f"handoff-security: unable to import validator: {exc}")
+        return
+
+    verdict = validator.validate_handoff_payload(payload)
+    result.checked += 1
+    if not getattr(verdict, "ok", False):
+        result.err(f"handoff-security: valid payload rejected: {getattr(verdict, 'errors', [])}")
+
+    routes = validator.load_allow_routes_from_cookbook(cookbook_path)
+    result.checked += 1
+    if not validator.route_allowed("orchestrator", "backend-engineer", routes):
+        result.err("handoff-security: expected allow route orchestrator->backend-engineer not found")
+
+    result.checked += 1
+    if validator.route_allowed("backend-engineer", "orchestrator", routes):
+        result.err("handoff-security: reverse route backend-engineer->orchestrator must be denied")
+
+    bad_payload = json.loads(json.dumps(payload))
+    bad_payload["payload"]["token"] = "should-not-pass"
+    bad_verdict = validator.validate_handoff_payload(bad_payload)
+    result.checked += 1
+    if getattr(bad_verdict, "ok", True):
+        result.err("handoff-security: payload containing secret-like key must be rejected")
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", default=str(Path(__file__).resolve().parents[1]))
@@ -298,6 +367,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--schemas", action="store_true", help="check schema-level metadata")
     parser.add_argument("--cookbooks", action="store_true", help="check cookbook manifests")
     parser.add_argument("--projection", action="store_true", help="check projection drift")
+    parser.add_argument(
+        "--handoff-security",
+        action="store_true",
+        help="check handoff schema, route allowlists, and fail-closed behavior",
+    )
     parser.add_argument(
         "--compat-knowledge-root",
         default="",
@@ -320,6 +394,7 @@ def main() -> int:
         "schemas": args.schemas,
         "cookbooks": args.cookbooks,
         "projection": args.projection,
+        "handoff-security": args.handoff_security,
     }
     run_all = not any(selected.values())
 
@@ -339,6 +414,9 @@ def main() -> int:
 
     if run_all or selected["projection"]:
         _check_projection(root, Path(__file__).resolve().parents[1], result)
+
+    if run_all or selected["handoff-security"]:
+        _check_handoff_security(root, result)
 
     if result.warnings:
         print(f"WARN - {len(result.warnings)} warning(s):")
