@@ -12,3 +12,7 @@ Append-only log. Entries move here after the orchestrator marks a task `done`.
 | T006 | Runner and CI Integration | devops-engineer | 2026-05-11 | tests/README.md (benchmark section), runner auto-discovery confirmed |
 | T007 | Validation and Threshold Tuning | qa-engineer | 2026-05-11 | docs/artifacts/benchmark-validation-report-v1.md |
 | T008 | Docs and Checkpoint | technical-writer | 2026-05-11 | docs/checkpoints/checkpoint-004-benchmark-expansion.md |
+| T009 | Define v3 schema contracts | solution-architect | 2026-05-22 | docs/artifacts/v3-schema-contract-v1.md |
+| T010 | Build sync and drift tooling | backend-developer | 2026-05-22 | v3/implementation/scripts/sync-v3.mjs; v3/implementation/scripts/verify-v3.mjs |
+| T011 | Build managed-agent cookbooks | backend-developer | 2026-05-22 | v3/implementation/cookbooks/README.md; v3/implementation/cookbooks/core-delivery/agent.yaml; v3/implementation/cookbooks/core-delivery/README.md; v3/implementation/cookbooks/core-delivery/steering-examples.json |
+| T012 | Add validation super-gate | qa-engineer | 2026-05-22 | v3/implementation/scripts/check-v3.py; v3/implementation/README.md; tests/functional/test_v3_validation_gate.py |
