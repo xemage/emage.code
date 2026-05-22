@@ -1,0 +1,42 @@
+{
+  "schema": "v3/runtime/telemetry/schema-v1.json",
+  "schemaVersion": "3.0.0",
+  "events": [
+    {
+      "eventId": "33333333-3333-4333-8333-333333333331",
+      "runId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "step": 1,
+      "timestamp": "2026-05-22T20:00:00Z",
+      "agent": "orchestrator",
+      "eventType": "step",
+      "payload": {"lifecycle": "start", "phase": "planning", "objective": "execute wave 2"}
+    },
+    {
+      "eventId": "33333333-3333-4333-8333-333333333332",
+      "runId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "step": 2,
+      "timestamp": "2026-05-22T20:00:04Z",
+      "agent": "backend-engineer",
+      "eventType": "tool",
+      "payload": {"toolName": "run_in_terminal", "action": "invoke", "durationMs": 320, "success": true}
+    },
+    {
+      "eventId": "33333333-3333-4333-8333-333333333333",
+      "runId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "step": 3,
+      "timestamp": "2026-05-22T20:00:06Z",
+      "agent": "orchestrator",
+      "eventType": "handoff",
+      "payload": {"fromAgent": "orchestrator", "toAgent": "backend-engineer", "taskId": "T015", "routeAllowed": true}
+    },
+    {
+      "eventId": "33333333-3333-4333-8333-333333333334",
+      "runId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "step": 4,
+      "timestamp": "2026-05-22T20:00:10Z",
+      "agent": "qa-engineer",
+      "eventType": "verdict",
+      "payload": {"gate": "integration", "verdict": "PASS", "notes": "all checks green"}
+    }
+  ]
+}

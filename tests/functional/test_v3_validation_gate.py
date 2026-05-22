@@ -111,6 +111,19 @@ class TestV3ValidationGate(unittest.TestCase):
             self.assertNotEqual(rc, 0, "missing hook-policy artifact must fail gate")
             self.assertIn("hook-policy: missing artifact", out)
 
+    def test_telemetry_gate_passes_for_repo_artifact(self):
+        rc, out = _run_check(["--telemetry", "--root", "v3/implementation"])
+        self.assertEqual(rc, 0, f"telemetry gate should pass\n{out}")
+
+    def test_telemetry_gate_fails_when_files_missing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "impl"
+            root.mkdir(parents=True)
+
+            rc, out = _run_check(["--telemetry", "--root", str(root)])
+            self.assertNotEqual(rc, 0, "missing telemetry files must fail gate")
+            self.assertIn("telemetry: missing required file", out)
+
 
 if __name__ == "__main__":
     unittest.main()

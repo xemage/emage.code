@@ -1,0 +1,42 @@
+{
+  "schema": "v3/runtime/telemetry/schema-v1.json",
+  "schemaVersion": "3.0.0",
+  "events": [
+    {
+      "eventId": "44444444-4444-4444-8444-444444444441",
+      "runId": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      "step": 1,
+      "timestamp": "2026-05-22T20:10:00Z",
+      "agent": "orchestrator",
+      "eventType": "step",
+      "payload": {"lifecycle": "start", "phase": "planning", "objective": "execute wave 2"}
+    },
+    {
+      "eventId": "44444444-4444-4444-8444-444444444442",
+      "runId": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      "step": 2,
+      "timestamp": "2026-05-22T20:10:03Z",
+      "agent": "backend-engineer",
+      "eventType": "tool",
+      "payload": {"toolName": "run_in_terminal", "action": "error", "durationMs": 410, "success": false}
+    },
+    {
+      "eventId": "44444444-4444-4444-8444-444444444443",
+      "runId": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      "step": 3,
+      "timestamp": "2026-05-22T20:10:05Z",
+      "agent": "orchestrator",
+      "eventType": "handoff",
+      "payload": {"fromAgent": "orchestrator", "toAgent": "backend-engineer", "taskId": "T015", "routeAllowed": false}
+    },
+    {
+      "eventId": "44444444-4444-4444-8444-444444444444",
+      "runId": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      "step": 4,
+      "timestamp": "2026-05-22T20:10:12Z",
+      "agent": "qa-engineer",
+      "eventType": "verdict",
+      "payload": {"gate": "integration", "verdict": "FAIL", "notes": "tool failure and denied route"}
+    }
+  ]
+}

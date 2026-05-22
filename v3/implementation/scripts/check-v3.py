@@ -386,6 +386,72 @@ def _check_hook_policy_spec(root: Path, result: GateResult) -> None:
             result.err(error_message)
 
 
+def _check_telemetry(root: Path, result: GateResult) -> None:
+    telemetry_dir = root / "runtime" / "telemetry"
+    schema_path = telemetry_dir / "schema-v1.json"
+    replay_path = telemetry_dir / "replay.py"
+    baseline_path = telemetry_dir / "examples" / "baseline-run.json"
+    candidate_path = telemetry_dir / "examples" / "candidate-run.json"
+    artifact_path = root.parents[1] / "docs" / "artifacts" / "v3-telemetry-schema-v1.md"
+
+    required = (schema_path, replay_path, baseline_path, candidate_path, artifact_path)
+    for path in required:
+        result.checked += 1
+        if not path.is_file():
+            result.err(f"telemetry: missing required file {path}")
+
+    if result.errors:
+        return
+
+    try:
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
+        candidate = json.loads(candidate_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        result.err(f"telemetry: invalid json fixture or schema: {exc}")
+        return
+
+    result.checked += 1
+    if "events" not in baseline or not isinstance(baseline["events"], list):
+        result.err("telemetry: baseline fixture missing events array")
+    result.checked += 1
+    if "events" not in candidate or not isinstance(candidate["events"], list):
+        result.err("telemetry: candidate fixture missing events array")
+
+    result.checked += 1
+    if schema.get("title") != "emage.code v3 telemetry trajectory":
+        result.err("telemetry: schema title does not match expected contract")
+
+    report_path = telemetry_dir / "examples" / "telemetry-replay-report.json"
+    proc = subprocess.run(
+        [
+            "python3",
+            str(replay_path),
+            "--baseline",
+            str(baseline_path),
+            "--candidate",
+            str(candidate_path),
+            "--out",
+            str(report_path),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    result.checked += 1
+    if proc.returncode == 0:
+        result.err("telemetry: replay expected regression for fixture pair but returned success")
+
+    result.checked += 1
+    if not report_path.is_file():
+        result.err("telemetry: replay did not emit report artifact")
+        return
+
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    result.checked += 1
+    if not report.get("summary", {}).get("hasRegression", False):
+        result.err("telemetry: replay report must mark hasRegression=true for fixture pair")
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", default=str(Path(__file__).resolve().parents[1]))
@@ -402,6 +468,11 @@ def parse_args() -> argparse.Namespace:
         "--hook-policy",
         action="store_true",
         help="check hook and policy taxonomy artifact coverage",
+    )
+    parser.add_argument(
+        "--telemetry",
+        action="store_true",
+        help="check telemetry schema, fixtures, and replay report generation",
     )
     parser.add_argument(
         "--compat-knowledge-root",
@@ -427,6 +498,7 @@ def main() -> int:
         "projection": args.projection,
         "handoff-security": args.handoff_security,
         "hook-policy": args.hook_policy,
+        "telemetry": args.telemetry,
     }
     run_all = not any(selected.values())
 
@@ -452,6 +524,9 @@ def main() -> int:
 
     if run_all or selected["hook-policy"]:
         _check_hook_policy_spec(root, result)
+
+    if run_all or selected["telemetry"]:
+        _check_telemetry(root, result)
 
     if result.warnings:
         print(f"WARN - {len(result.warnings)} warning(s):")
