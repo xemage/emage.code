@@ -119,6 +119,12 @@ The benchmark-expansion adds three offline and deterministic performance tests.
    p50, p95, and coefficient of variation.
 - Enforces p95/cv maxima using the stricter of per-case and baseline limits.
 
+4. `test_v3_benchmark_pack.py`
+- Loads `tests/fixtures/benchmarks/v3_benchmark_pack_cases.json`.
+- Scores planning quality, safety compliance, orchestration routing, and tool efficiency.
+- Enforces thresholds from `tests/_baselines/benchmark-thresholds-v1.json`.
+- Emits `tests/_reports/v3-benchmark-report-v1.json` for CI artifact publishing.
+
 ### Optional stress mode
 
 Use `BENCH_STRESS=1` to increase scaling-loop iterations:

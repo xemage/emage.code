@@ -88,6 +88,11 @@ unit-tests:
     - pip install --no-cache-dir --quiet pyyaml jsonschema
   script:
     - python3 tests/run.py
+  artifacts:
+    when: always
+    paths:
+      - tests/_reports/*.json
+    expire_in: 7 days
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH

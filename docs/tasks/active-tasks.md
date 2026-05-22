@@ -2,8 +2,7 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T016 | Benchmark pack expansion | qa-engineer | in_progress | P1 | T015 | 2026-05-22 |
-| T017 | Knowledge registry generation | backend-developer | pending | P1 | T012 | 2026-05-22 |
+| T017 | Knowledge registry generation | backend-developer | in_progress | P1 | T012 | 2026-05-22 |
 | T018 | Package and install workflow | devops-engineer | pending | P1 | T017 | 2026-05-22 |
 | T019 | Trigger framework | backend-developer | pending | P2 | T014 | 2026-05-22 |
 | T020 | SDK adapter experiments | integration-agent | pending | P2 | T019 | 2026-05-22 |

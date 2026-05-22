@@ -19,6 +19,7 @@ import json
 import re
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import yaml
@@ -422,34 +423,62 @@ def _check_telemetry(root: Path, result: GateResult) -> None:
     if schema.get("title") != "emage.code v3 telemetry trajectory":
         result.err("telemetry: schema title does not match expected contract")
 
-    report_path = telemetry_dir / "examples" / "telemetry-replay-report.json"
-    proc = subprocess.run(
-        [
-            "python3",
-            str(replay_path),
-            "--baseline",
-            str(baseline_path),
-            "--candidate",
-            str(candidate_path),
-            "--out",
-            str(report_path),
-        ],
-        capture_output=True,
-        text=True,
-    )
-    result.checked += 1
-    if proc.returncode == 0:
-        result.err("telemetry: replay expected regression for fixture pair but returned success")
+    with tempfile.TemporaryDirectory() as tmp:
+        report_path = Path(tmp) / "telemetry-replay-report.json"
+        proc = subprocess.run(
+            [
+                "python3",
+                str(replay_path),
+                "--baseline",
+                str(baseline_path),
+                "--candidate",
+                str(candidate_path),
+                "--out",
+                str(report_path),
+            ],
+            capture_output=True,
+            text=True,
+        )
+        result.checked += 1
+        if proc.returncode == 0:
+            result.err("telemetry: replay expected regression for fixture pair but returned success")
 
-    result.checked += 1
-    if not report_path.is_file():
-        result.err("telemetry: replay did not emit report artifact")
+        result.checked += 1
+        if not report_path.is_file():
+            result.err("telemetry: replay did not emit report artifact")
+            return
+
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+        result.checked += 1
+        if not report.get("summary", {}).get("hasRegression", False):
+            result.err("telemetry: replay report must mark hasRegression=true for fixture pair")
+
+
+def _check_benchmark_pack(root: Path, result: GateResult) -> None:
+    repo = root.parents[1]
+    fixture_path = repo / "tests" / "fixtures" / "benchmarks" / "v3_benchmark_pack_cases.json"
+    test_path = repo / "tests" / "performance" / "test_v3_benchmark_pack.py"
+    baseline_path = repo / "tests" / "_baselines" / "benchmark-thresholds-v1.json"
+    artifact_path = repo / "docs" / "artifacts" / "v3-benchmark-report-v1.md"
+
+    for path in (fixture_path, test_path, baseline_path, artifact_path):
+        result.checked += 1
+        if not path.is_file():
+            result.err(f"benchmarks: missing required file {path}")
+
+    if result.errors:
         return
 
-    report = json.loads(report_path.read_text(encoding="utf-8"))
+    fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+    baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
+
     result.checked += 1
-    if not report.get("summary", {}).get("hasRegression", False):
-        result.err("telemetry: replay report must mark hasRegression=true for fixture pair")
+    if not isinstance(fixture.get("cases"), list) or not fixture["cases"]:
+        result.err("benchmarks: fixture cases must be non-empty list")
+
+    result.checked += 1
+    if "v3_benchmark_pack" not in baseline:
+        result.err("benchmarks: missing v3_benchmark_pack threshold section")
 
 
 def parse_args() -> argparse.Namespace:
@@ -473,6 +502,11 @@ def parse_args() -> argparse.Namespace:
         "--telemetry",
         action="store_true",
         help="check telemetry schema, fixtures, and replay report generation",
+    )
+    parser.add_argument(
+        "--benchmarks",
+        action="store_true",
+        help="check v3 benchmark pack assets and thresholds",
     )
     parser.add_argument(
         "--compat-knowledge-root",
@@ -499,6 +533,7 @@ def main() -> int:
         "handoff-security": args.handoff_security,
         "hook-policy": args.hook_policy,
         "telemetry": args.telemetry,
+        "benchmarks": args.benchmarks,
     }
     run_all = not any(selected.values())
 
@@ -527,6 +562,9 @@ def main() -> int:
 
     if run_all or selected["telemetry"]:
         _check_telemetry(root, result)
+
+    if run_all or selected["benchmarks"]:
+        _check_benchmark_pack(root, result)
 
     if result.warnings:
         print(f"WARN - {len(result.warnings)} warning(s):")

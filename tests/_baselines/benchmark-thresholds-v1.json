@@ -22,5 +22,12 @@
       "max_p95_seconds": 10.0,
       "max_coefficient_of_variation": 0.45
     }
+  },
+  "v3_benchmark_pack": {
+    "min_planning_quality": 0.90,
+    "min_safety_compliance": 0.95,
+    "min_orchestration_routing": 0.95,
+    "min_tool_efficiency": 0.85,
+    "min_aggregate_weighted_score": 0.91
   }
 }
