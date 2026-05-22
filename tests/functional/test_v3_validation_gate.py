@@ -137,6 +137,19 @@ class TestV3ValidationGate(unittest.TestCase):
             self.assertNotEqual(rc, 0, "missing benchmark files must fail gate")
             self.assertIn("benchmarks: missing required file", out)
 
+    def test_registry_gate_passes_for_repo_artifact(self):
+        rc, out = _run_check(["--registry", "--root", "v3/implementation"])
+        self.assertEqual(rc, 0, f"registry gate should pass\n{out}")
+
+    def test_registry_gate_fails_when_files_missing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "impl"
+            root.mkdir(parents=True)
+
+            rc, out = _run_check(["--registry", "--root", str(root)])
+            self.assertNotEqual(rc, 0, "missing registry files must fail gate")
+            self.assertIn("registry: missing required file", out)
+
 
 if __name__ == "__main__":
     unittest.main()

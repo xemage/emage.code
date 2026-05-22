@@ -28,7 +28,7 @@ SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,63}$")
 
 REQUIRED_COOKBOOK_FILES = ("agent.yaml", "README.md", "steering-examples.json")
-REQUIRED_SCRIPTS = ("sync-v3.mjs", "verify-v3.mjs", "check-v3.py")
+REQUIRED_SCRIPTS = ("sync-v3.mjs", "verify-v3.mjs", "check-v3.py", "generate-registry-v3.py")
 
 
 class GateResult:
@@ -481,6 +481,68 @@ def _check_benchmark_pack(root: Path, result: GateResult) -> None:
         result.err("benchmarks: missing v3_benchmark_pack threshold section")
 
 
+def _check_registry(root: Path, result: GateResult) -> None:
+    registry_dir = root / "registry"
+    schema_path = registry_dir / "schema.json"
+    index_path = registry_dir / "index.json"
+    summary_path = registry_dir / "summary.md"
+    generator_path = root / "scripts" / "generate-registry-v3.py"
+
+    for path in (schema_path, index_path, summary_path, generator_path):
+        result.checked += 1
+        if not path.is_file():
+            result.err(f"registry: missing required file {path}")
+
+    if result.errors:
+        return
+
+    schema = json.loads(schema_path.read_text(encoding="utf-8"))
+    index = json.loads(index_path.read_text(encoding="utf-8"))
+    entries = index.get("entries", [])
+
+    result.checked += 1
+    if not isinstance(entries, list) or not entries:
+        result.err("registry: index entries must be a non-empty list")
+
+    result.checked += 1
+    if "properties" not in schema:
+        result.err("registry: schema must include properties")
+
+    scoped_ids = [
+        f"{item.get('category', '')}:{item.get('id', '')}"
+        for item in entries
+        if isinstance(item, dict)
+    ]
+    result.checked += 1
+    if len(set(scoped_ids)) != len(scoped_ids):
+        result.err("registry: duplicate category-scoped entry ids detected")
+
+    for item in entries:
+        if not isinstance(item, dict):
+            continue
+        result.checked += 1
+        if "compatibility" not in item:
+            result.err(f"registry: entry missing compatibility: {item.get('id', '<unknown>')}")
+            continue
+        compatibility = item.get("compatibility", {})
+        if not isinstance(compatibility, dict):
+            result.err(f"registry: invalid compatibility object on {item.get('id', '<unknown>')}")
+            continue
+        result.checked += 1
+        if not compatibility.get("supportedPlatforms"):
+            result.err(f"registry: supportedPlatforms missing on {item.get('id', '<unknown>')}")
+
+    proc = subprocess.run(
+        ["python3", str(generator_path), "--root", str(root), "--check"],
+        capture_output=True,
+        text=True,
+    )
+    result.checked += 1
+    if proc.returncode != 0:
+        output = (proc.stdout + proc.stderr).strip()
+        result.err(f"registry: generation drift detected\n{output}")
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", default=str(Path(__file__).resolve().parents[1]))
@@ -509,6 +571,11 @@ def parse_args() -> argparse.Namespace:
         help="check v3 benchmark pack assets and thresholds",
     )
     parser.add_argument(
+        "--registry",
+        action="store_true",
+        help="check registry artifacts and generator drift",
+    )
+    parser.add_argument(
         "--compat-knowledge-root",
         default="",
         help="optional fallback knowledge root used to resolve cookbook references during migration",
@@ -534,6 +601,7 @@ def main() -> int:
         "hook-policy": args.hook_policy,
         "telemetry": args.telemetry,
         "benchmarks": args.benchmarks,
+        "registry": args.registry,
     }
     run_all = not any(selected.values())
 
@@ -565,6 +633,9 @@ def main() -> int:
 
     if run_all or selected["benchmarks"]:
         _check_benchmark_pack(root, result)
+
+    if run_all or selected["registry"]:
+        _check_registry(root, result)
 
     if result.warnings:
         print(f"WARN - {len(result.warnings)} warning(s):")
