@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import re
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -137,9 +138,23 @@ def _registry_payload(entries: list[dict], source_root: Path, platforms: list[st
     except ValueError:
         source_root_value = source_root.as_posix()
 
+    generated_at = datetime.now(timezone.utc).isoformat()
+    try:
+        commit_time = subprocess.run(
+            ["git", "log", "-1", "--format=%cI"],
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        if commit_time:
+            generated_at = commit_time
+    except Exception:
+        pass
+
     return {
         "schemaVersion": SEMVER,
-        "generatedAt": datetime.now(timezone.utc).isoformat(),
+        "generatedAt": generated_at,
         "sourceRoot": source_root_value,
         "platforms": platforms,
         "entries": sorted(entries, key=lambda item: (item["category"], item["id"])),
