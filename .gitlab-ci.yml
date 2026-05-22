@@ -27,7 +27,8 @@ default:
   image: node:20-alpine
   interruptible: true
   tags:
-    - saas-linux-small-amd64
+    - docker
+    - dind
 
 variables:
   GIT_DEPTH: "20"
