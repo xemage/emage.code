@@ -126,11 +126,16 @@ def _summary_markdown(entries: list[dict], source_root: Path) -> str:
     return "\n".join(lines)
 
 
-def _registry_payload(entries: list[dict], source_root: Path, platforms: list[str]) -> dict:
+def _registry_payload(entries: list[dict], source_root: Path, platforms: list[str], repo_root: Path) -> dict:
+    try:
+        source_root_value = source_root.relative_to(repo_root).as_posix()
+    except ValueError:
+        source_root_value = source_root.as_posix()
+
     return {
         "schemaVersion": SEMVER,
         "generatedAt": datetime.now(timezone.utc).isoformat(),
-        "sourceRoot": source_root.as_posix(),
+        "sourceRoot": source_root_value,
         "platforms": platforms,
         "entries": sorted(entries, key=lambda item: (item["category"], item["id"])),
     }
@@ -156,7 +161,7 @@ def main() -> int:
 
     platforms = _detect_platforms(repo_root)
     entries = _collect_entries(source_root, platforms)
-    payload = _registry_payload(entries, source_root, platforms)
+    payload = _registry_payload(entries, source_root, platforms, repo_root)
     summary = _summary_markdown(payload["entries"], source_root)
 
     out_text = json.dumps(payload, indent=2) + "\n"

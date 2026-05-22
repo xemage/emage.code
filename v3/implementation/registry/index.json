@@ -1,7 +1,7 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-05-22T21:28:51.240823+00:00",
-  "sourceRoot": "/home/emage/Code/emage/emage.code/v2/implementation/knowledge",
+  "generatedAt": "2026-05-22T21:31:25.296896+00:00",
+  "sourceRoot": "v2/implementation/knowledge",
   "platforms": [
     "cursor",
     "gemini",
