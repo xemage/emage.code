@@ -96,7 +96,12 @@ def _detect_platforms(repo_root: Path) -> list[str]:
     return sorted([item.stem for item in platform_dir.glob("*.json")])
 
 
-def _summary_markdown(entries: list[dict], source_root: Path) -> str:
+def _summary_markdown(entries: list[dict], source_root: Path, repo_root: Path) -> str:
+    try:
+        source_display = source_root.relative_to(repo_root).as_posix()
+    except ValueError:
+        source_display = source_root.as_posix()
+
     counts = {category: 0 for category in CATEGORY_DIRS}
     for entry in entries:
         counts[entry["category"]] += 1
@@ -104,7 +109,7 @@ def _summary_markdown(entries: list[dict], source_root: Path) -> str:
     lines = [
         "# v3 Registry Summary",
         "",
-        f"Generated from: {source_root}",
+        f"Generated from: {source_display}",
         "",
         "## Counts",
         "",
@@ -162,7 +167,7 @@ def main() -> int:
     platforms = _detect_platforms(repo_root)
     entries = _collect_entries(source_root, platforms)
     payload = _registry_payload(entries, source_root, platforms, repo_root)
-    summary = _summary_markdown(payload["entries"], source_root)
+    summary = _summary_markdown(payload["entries"], source_root, repo_root)
 
     out_text = json.dumps(payload, indent=2) + "\n"
     if args.check:

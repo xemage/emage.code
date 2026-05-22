@@ -1,6 +1,6 @@
 # v3 Registry Summary
 
-Generated from: /home/emage/Code/emage/emage.code/v2/implementation/knowledge
+Generated from: v2/implementation/knowledge
 
 ## Counts
 
