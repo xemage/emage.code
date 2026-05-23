@@ -165,8 +165,8 @@ release-docs-gate:
   stage: release
   image: alpine:3.20
   script:
-    - export DOC_MARKER="Latest release: ${CI_COMMIT_TAG}"
     - |
+      DOC_MARKER="Latest release: ${CI_COMMIT_TAG}"
       for file in README.md docs/wiki/README.md docs/wiki/home.md; do
         if [ ! -f "$file" ]; then
           echo "release-docs-gate: missing required doc file: $file"
@@ -177,7 +177,7 @@ release-docs-gate:
           exit 1
         fi
       done
-    - echo "release-docs-gate: all required docs include '$DOC_MARKER'"
+      echo "release-docs-gate: all required docs include '$DOC_MARKER'"
   rules:
     - if: '$CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$/'
 
