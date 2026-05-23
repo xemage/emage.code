@@ -1,0 +1,18 @@
+{
+  "triggerId": "schedule-daily-health-check",
+  "type": "schedule",
+  "source": "scheduler.core",
+  "schedule": {
+    "expression": "0 3 * * *",
+    "timezone": "UTC"
+  },
+  "steeringInput": {
+    "taskId": "T019",
+    "intent": "run-daily-health-check",
+    "priority": "normal"
+  },
+  "retryPolicy": {
+    "maxAttempts": 3,
+    "backoffSeconds": 5
+  }
+}

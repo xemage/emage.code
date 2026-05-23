@@ -1,0 +1,37 @@
+schema: ../../knowledge/schemas/cookbook.schema.json
+schemaVersion: 3.0.0
+cookbookId: core-delivery
+name: Core Delivery Cookbook
+version: 1.0.0
+description: Baseline orchestrated delivery workflow with architecture and implementation workers.
+orchestrator:
+  ref: orchestrator
+  instructions:
+    - ../../knowledge/instructions/coding-standards.md
+    - ../../knowledge/instructions/security-guidelines.md
+  skills:
+    - ../../knowledge/skills/task-management/SKILL.md
+workers:
+  - ref: solution-architect
+    skills:
+      - ../../knowledge/skills/dependency-graphing/SKILL.md
+    maxConcurrency: 1
+  - ref: backend-engineer
+    skills:
+      - ../../knowledge/skills/rapid-prototyping/SKILL.md
+    maxConcurrency: 2
+handoffPolicy:
+  allowRoutes:
+    - from: orchestrator
+      to: solution-architect
+    - from: orchestrator
+      to: backend-engineer
+  defaultAction: deny
+security:
+  redactFields:
+    - apiKey
+    - token
+    - password
+    - authorization
+  allowSecretsInPayload: false
+  requireSchemaValidation: true

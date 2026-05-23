@@ -1,3 +1,6 @@
+---
+title: Migration v1 to v2
+---
 # Migration v1 → v2
 
 The full migration guide lives at [`v2/plan/05-migration-from-v1.md`](https://gitlab.com/em-age/emage.code/-/blob/main/v2/plan/05-migration-from-v1.md). This page is the executive summary.

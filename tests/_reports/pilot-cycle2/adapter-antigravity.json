@@ -1,0 +1,26 @@
+{
+  "adapter": "antigravity",
+  "accepted": true,
+  "warnings": [],
+  "output": {
+    "session": {
+      "runId": "run-2026-05-23-01",
+      "source": "v3-trigger-framework"
+    },
+    "task": {
+      "id": "event-issue-opened",
+      "intent": "triage-new-issue",
+      "priority": "high",
+      "inputs": {
+        "taskId": "T020",
+        "priority": "high",
+        "project": "emage.code"
+      }
+    },
+    "hooks": [
+      "inspect.session.start",
+      "inspect.handoff.preflight",
+      "decide.handoff.route"
+    ]
+  }
+}

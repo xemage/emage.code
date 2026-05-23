@@ -1,0 +1,1531 @@
+{
+  "schemaVersion": "3.0.0",
+  "generatedAt": "2026-05-22T23:33:20+02:00",
+  "sourceRoot": "v2/implementation/knowledge",
+  "platforms": [
+    "cursor",
+    "gemini",
+    "github",
+    "opencode"
+  ],
+  "entries": [
+    {
+      "id": "backend-developer",
+      "category": "agent",
+      "name": "backend-developer",
+      "path": "agents/backend-developer.md",
+      "checksum": "4e67075507fddbdae64a316c6b29ca2eb31db1357c879c8cd33f836b30086535",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "data-mockup-agent",
+      "category": "agent",
+      "name": "data-mockup-agent",
+      "path": "agents/data-mockup-agent.md",
+      "checksum": "91ddd7462228dcac61db6a8f0d8bcfa1d367bf61f739cf1cf6fdb49c97780e11",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "database-engineer",
+      "category": "agent",
+      "name": "database-engineer",
+      "path": "agents/database-engineer.md",
+      "checksum": "840189d996b55f9625f4678869a957e5086577dc3e0d43633f03551c26907e26",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "demo-agent",
+      "category": "agent",
+      "name": "demo-agent",
+      "path": "agents/demo-agent.md",
+      "checksum": "6e231363517f6c2b001472c324bbcb77ff917bbf106759e2fa9d9b193fcf8e91",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "devops-engineer",
+      "category": "agent",
+      "name": "devops-engineer",
+      "path": "agents/devops-engineer.md",
+      "checksum": "9d8e85641686277dd261064381c6d8263d5bd60a4b9664cb636cc1404325210c",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "evaluation-agent",
+      "category": "agent",
+      "name": "evaluation-agent",
+      "path": "agents/evaluation-agent.md",
+      "checksum": "6cb3557519c829d4702ef863f351c6317cec3fe8dc40403d658afef0c6cb29a3",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "feasibility-agent",
+      "category": "agent",
+      "name": "feasibility-agent",
+      "path": "agents/feasibility-agent.md",
+      "checksum": "64376d1ab2da65f79677719eb5dc6af30e76ea5598728536e4e9f08f6c4ffe4c",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "frontend-developer",
+      "category": "agent",
+      "name": "frontend-developer",
+      "path": "agents/frontend-developer.md",
+      "checksum": "4ca290fdf93f1247f410740bdc9279c731ada2f9c02b7e0843aa161e6fe599e9",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "integration-agent",
+      "category": "agent",
+      "name": "integration-agent",
+      "path": "agents/integration-agent.md",
+      "checksum": "c2c9a02c25025e5f036466d227f8a2381f86cff0c13eaa4cdeec20979df0dfaa",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "orchestrator",
+      "category": "agent",
+      "name": "orchestrator",
+      "path": "agents/orchestrator.md",
+      "checksum": "df05c065689bf34ca8679b23238f71c193862bcc3c481bfc283f6b01c836e7e0",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "poc-devops-engineer",
+      "category": "agent",
+      "name": "poc-devops-engineer",
+      "path": "agents/poc-devops-engineer.md",
+      "checksum": "4a06349701891ec65bb5752e17e6f3f33114210f04ae405cd6f6095ea1348d6a",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "poc-orchestrator",
+      "category": "agent",
+      "name": "poc-orchestrator",
+      "path": "agents/poc-orchestrator.md",
+      "checksum": "9743007fc3a9ec3a0f36d5a6148150818e2078f45641675f2d056256bed4a8fe",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "poc-qa-engineer",
+      "category": "agent",
+      "name": "poc-qa-engineer",
+      "path": "agents/poc-qa-engineer.md",
+      "checksum": "a20b4e4c1ea6446e5c17b6595e68c6cf751132c81f65b31288db5a6ddccbc0d6",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "poc-security-engineer",
+      "category": "agent",
+      "name": "poc-security-engineer",
+      "path": "agents/poc-security-engineer.md",
+      "checksum": "7e45b24777470f8d76160938929e9464265f7f775de721392e990eab00d91158",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "poc-technical-writer",
+      "category": "agent",
+      "name": "poc-technical-writer",
+      "path": "agents/poc-technical-writer.md",
+      "checksum": "8d6041c2d69145f261c1b6a28f697122ae2e6ab88d441681d1291ee0e3bc57a9",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "product-owner",
+      "category": "agent",
+      "name": "product-owner",
+      "path": "agents/product-owner.md",
+      "checksum": "179bc6e1e3b9d1dd8e17ab3a79f37ad3a76df9e52e26577a807f476feebe954f",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "qa-engineer",
+      "category": "agent",
+      "name": "qa-engineer",
+      "path": "agents/qa-engineer.md",
+      "checksum": "f0a2a269de5d61d7042a187f79f6fbe5de74d915fc1259da4ef27c2ff4fcdbe5",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "release-manager",
+      "category": "agent",
+      "name": "release-manager",
+      "path": "agents/release-manager.md",
+      "checksum": "6f31fcf760bdc6033223f927db0b52a9869ee11e3f0a36462dd5b8a402dc3572",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "scaffolding-agent",
+      "category": "agent",
+      "name": "scaffolding-agent",
+      "path": "agents/scaffolding-agent.md",
+      "checksum": "85ce4749b57a73e38525a1eb7037b711059b53125f8eb296e11d8e0c14759ff4",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "scrum-master",
+      "category": "agent",
+      "name": "scrum-master",
+      "path": "agents/scrum-master.md",
+      "checksum": "5c5db544438bcc85f3cb873317cb4225131ed3dcb886bcc81e219f18e8173f5f",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "security-engineer",
+      "category": "agent",
+      "name": "security-engineer",
+      "path": "agents/security-engineer.md",
+      "checksum": "c09a4d351c0449dd0089b7e8621605c236071d1288405b8b70537c14c1e60eab",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "solution-architect",
+      "category": "agent",
+      "name": "solution-architect",
+      "path": "agents/solution-architect.md",
+      "checksum": "c7ced0e34f56b3b0c4ea3bd02feb9abdb26dc7bfcc62aa71afd748cbff484664",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "tech-lead",
+      "category": "agent",
+      "name": "tech-lead",
+      "path": "agents/tech-lead.md",
+      "checksum": "8c30fcc0cf2fb73623aaf005077471c033d0ee81288fb84057f8cf4ffedb2a9a",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "technical-debt-narrator",
+      "category": "agent",
+      "name": "technical-debt-narrator",
+      "path": "agents/technical-debt-narrator.md",
+      "checksum": "9c62524f9155acaff3854f4ab10521aefdea528fef478a357de8a51a3554fc48",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "technical-writer",
+      "category": "agent",
+      "name": "technical-writer",
+      "path": "agents/technical-writer.md",
+      "checksum": "faf437287cc22a6220ef4c98a8f566ad03bca3899c4eff5007ab40adb2b09507",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "technology-scout",
+      "category": "agent",
+      "name": "technology-scout",
+      "path": "agents/technology-scout.md",
+      "checksum": "0e1c0f3809a7db615ef2d5679dceabdc6a273ca732a6d950903780a74558a340",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "ux-designer",
+      "category": "agent",
+      "name": "ux-designer",
+      "path": "agents/ux-designer.md",
+      "checksum": "87cf09cbca0344c27292a27597a5805838986c906909d262b2b1513b876d65f1",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "batch",
+      "category": "command",
+      "name": "batch",
+      "path": "commands/batch.md",
+      "checksum": "e096b88e4ac79356140b8436b885a1acb242ec5cf8effd323cf1a3bc652758bc",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "bug-report",
+      "category": "command",
+      "name": "bug-report",
+      "path": "commands/bug-report.md",
+      "checksum": "62faa74d8f00eb4b8f40277b05282a828ae36b65ee47a7d49d3af923811044f7",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "code-review",
+      "category": "command",
+      "name": "code-review",
+      "path": "commands/code-review.md",
+      "checksum": "50757a400e4f3abc72d4e70eb3b9547a79b3186713f67a8658ac11f3f45c9a67",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "consolidate-memory",
+      "category": "command",
+      "name": "consolidate-memory",
+      "path": "commands/consolidate-memory.md",
+      "checksum": "ef63b2b6dcac9f627a5148ffdff637386faf0d9d91e71ca914154e8868dfc454",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "evaluate-poc",
+      "category": "command",
+      "name": "evaluate-poc",
+      "path": "commands/evaluate-poc.md",
+      "checksum": "18a37a98f34065829a23407812d8a13c9bcc0f491fa2d60926d444ead06dea42",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "new-feature",
+      "category": "command",
+      "name": "new-feature",
+      "path": "commands/new-feature.md",
+      "checksum": "9a1874bd80722dfebe0b6c98740cd0107bcd1b85de31ae981c227f5447e89f07",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "new-poc",
+      "category": "command",
+      "name": "new-poc",
+      "path": "commands/new-poc.md",
+      "checksum": "d92852ee7e92f04d2b5da9cdd71f3b0a7b0137799bd1b0c25ad8d181db2241b5",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "new-project",
+      "category": "command",
+      "name": "new-project",
+      "path": "commands/new-project.md",
+      "checksum": "0dae6ed5dff80744f8c165dc12da13c6835843dc35f64da6c5fe232b533cd946",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "plan",
+      "category": "command",
+      "name": "plan",
+      "path": "commands/plan.md",
+      "checksum": "b0ba59ecefb7a122c6e721e4410025afea75d17c39f98d8c08ff866e54cc37e1",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "poc-demo",
+      "category": "command",
+      "name": "poc-demo",
+      "path": "commands/poc-demo.md",
+      "checksum": "5591d2f98e32895224ab8a9d8b18a21049e38852abfbc48fe8804034b6c2e60e",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "prepare-release",
+      "category": "command",
+      "name": "prepare-release",
+      "path": "commands/prepare-release.md",
+      "checksum": "ceea2a446942db2d6c60f27b50ea1d5db1dea29d8b681a70ae86a275a1e15df8",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "security-audit",
+      "category": "command",
+      "name": "security-audit",
+      "path": "commands/security-audit.md",
+      "checksum": "59fd385c3f6282663772db4dbc4ca184febbb7bad3d64a32900dfaaf83a43e4f",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "skillify",
+      "category": "command",
+      "name": "skillify",
+      "path": "commands/skillify.md",
+      "checksum": "2578237b4642ff3af236146c54b631a4b890b6974d48883436ec672951c08997",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "sprint-status",
+      "category": "command",
+      "name": "sprint-status",
+      "path": "commands/sprint-status.md",
+      "checksum": "8c28ee5386a138520130f4b50114a0b0616f9d460af583fe0343c2400e17387d",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "team-status",
+      "category": "command",
+      "name": "team-status",
+      "path": "commands/team-status.md",
+      "checksum": "7f37f88b73662638da21950b72b62f00f55f4583b801642b17cf254e19fba744",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "validate-workflow",
+      "category": "command",
+      "name": "validate-workflow",
+      "path": "commands/validate-workflow.md",
+      "checksum": "82f9afba80981b762a7019526b33dcc95c5b03aa808abe0f17b7f0549feb6892",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "coding-standards",
+      "category": "instruction",
+      "name": "coding-standards",
+      "path": "instructions/coding-standards.md",
+      "checksum": "68a2e3f0564c2170ccda8f9e10b8cc72512b742612419f151ccd027f288519d3",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "git-workflow",
+      "category": "instruction",
+      "name": "git-workflow",
+      "path": "instructions/git-workflow.md",
+      "checksum": "26bbf08253c8b81ca093a171a7482e7e2726a6ca739f9b031284dd369e91ef71",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "poc-guidelines",
+      "category": "instruction",
+      "name": "poc-guidelines",
+      "path": "instructions/poc-guidelines.md",
+      "checksum": "40410099752d276a28ef4d94c390c5453aef5b20df247bc60104722640c23a6e",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "security-guidelines",
+      "category": "instruction",
+      "name": "security-guidelines",
+      "path": "instructions/security-guidelines.md",
+      "checksum": "ad1c929e687aa437fc3de3365e9547141b7eabd86ff711e6b974b6b0f3670f8d",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "api-design",
+      "category": "skill",
+      "name": "api-design",
+      "path": "skills/api-design/SKILL.md",
+      "checksum": "2e995b09e91d053dea840fce283dfabdfcb87ca539a74503c893550c2cceb2fa",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "blocker-escalation",
+      "category": "skill",
+      "name": "blocker-escalation",
+      "path": "skills/blocker-escalation/SKILL.md",
+      "checksum": "f2976f3d99c4b0fab6183e662bc951667b5253106b69e3e6a24295481111eb19",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "checkpoint-protocol",
+      "category": "skill",
+      "name": "checkpoint-protocol",
+      "path": "skills/checkpoint-protocol/SKILL.md",
+      "checksum": "e544fd4ed4365e177e11a1d6b0d305bdb19df39c75cef79869a4c08c0e75e4ef",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "ci-cd-pipeline",
+      "category": "skill",
+      "name": "ci-cd-pipeline",
+      "path": "skills/ci-cd-pipeline/SKILL.md",
+      "checksum": "326e080b2624ce4b113a1f42da60e6992eaa414d0b35691717776032211c5ebd",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "code-review",
+      "category": "skill",
+      "name": "code-review",
+      "path": "skills/code-review/SKILL.md",
+      "checksum": "2603843ee804b1855dcc1aad1ff61eec4228b65f998879eb88e108f807267435",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "context-window-management",
+      "category": "skill",
+      "name": "context-window-management",
+      "path": "skills/context-window-management/SKILL.md",
+      "checksum": "480970c0f92fefa6d8edb4b25e7af3249c03b7a557b6196bb99254080ed90a04",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "cost-token-governance",
+      "category": "skill",
+      "name": "cost-token-governance",
+      "path": "skills/cost-token-governance/SKILL.md",
+      "checksum": "38f98583341aed1783183842a4db24de6460f5b71c048e03149635313c844427",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "dependency-graphing",
+      "category": "skill",
+      "name": "dependency-graphing",
+      "path": "skills/dependency-graphing/SKILL.md",
+      "checksum": "61550e405827af7f7e72090b9118f1ff86f2d5690c878a23d03a85759b1f1627",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "gitlab-management",
+      "category": "skill",
+      "name": "gitlab-management",
+      "path": "skills/gitlab-management/SKILL.md",
+      "checksum": "e320f2b7ad3cd898b6fb6881278edb24deb79da06eeb8096246220b286f13240",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "memory-management",
+      "category": "skill",
+      "name": "memory-management",
+      "path": "skills/memory-management/SKILL.md",
+      "checksum": "51213a3710e6242ee5dc9524dc4acc3d2a6323f23c2b4f579810fecb00dd9f52",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "plan-approve-execute",
+      "category": "skill",
+      "name": "plan-approve-execute",
+      "path": "skills/plan-approve-execute/SKILL.md",
+      "checksum": "2e4e7b606e52393766499b1deb9e04400cc64b7f9c1ccdf12003c09b5695cbf7",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "poc-evaluation",
+      "category": "skill",
+      "name": "poc-evaluation",
+      "path": "skills/poc-evaluation/SKILL.md",
+      "checksum": "75cd38ec7583a407f79fe55c56a44f86f2cf4709b1968408b84702909af21943",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "project-planning",
+      "category": "skill",
+      "name": "project-planning",
+      "path": "skills/project-planning/SKILL.md",
+      "checksum": "7b3ff5ef961010e6089093d70191fe0fe3190783c446cc581724d9553831a2e2",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "rapid-prototyping",
+      "category": "skill",
+      "name": "rapid-prototyping",
+      "path": "skills/rapid-prototyping/SKILL.md",
+      "checksum": "62908f26c43ee282361fd45cfe95a48ef32542a24da0d75f636684521f2b2525",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "release-workflow",
+      "category": "skill",
+      "name": "release-workflow",
+      "path": "skills/release-workflow/SKILL.md",
+      "checksum": "74d6d0bc563b7dfc81c8dcdb1257662f4a36d97e3e6effafc4c5c1196a6dccb6",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "skillify",
+      "category": "skill",
+      "name": "skillify",
+      "path": "skills/skillify/SKILL.md",
+      "checksum": "16c16c6393bf44b35b91b90258ac89f9c44c15071faf7e6143afd0336a3b0b01",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "task-management",
+      "category": "skill",
+      "name": "task-management",
+      "path": "skills/task-management/SKILL.md",
+      "checksum": "060f619af509cf237ef7f2fcb02033d975782ad55ca32409a8a70fa437159b63",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "technical-debt-tracking",
+      "category": "skill",
+      "name": "technical-debt-tracking",
+      "path": "skills/technical-debt-tracking/SKILL.md",
+      "checksum": "22c60aa3a77b80265158fd207defee5ba892c4323a204491b6c0e36317846099",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "technology-scouting",
+      "category": "skill",
+      "name": "technology-scouting",
+      "path": "skills/technology-scouting/SKILL.md",
+      "checksum": "af7ab9bbacbca4f379343951791021a0ce0677b675533f11df4d4d340cd98a14",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "testing-strategy",
+      "category": "skill",
+      "name": "testing-strategy",
+      "path": "skills/testing-strategy/SKILL.md",
+      "checksum": "6bdfaa03cf16365f2a40eb40c0527bf08697f0c03418cf5f84dc92ab79412bdf",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "validation-gates",
+      "category": "skill",
+      "name": "validation-gates",
+      "path": "skills/validation-gates/SKILL.md",
+      "checksum": "a4a7afe0e6652d6de9bbf80685228e5412610f973d42c2755cd6dc70dc7ff68a",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "worktree-isolation",
+      "category": "skill",
+      "name": "worktree-isolation",
+      "path": "skills/worktree-isolation/SKILL.md",
+      "checksum": "c9e11f3af40eeb81c7de618e1e07f8fce7ec097b5175fd8a9a6a56534feee3f3",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    }
+  ]
+}

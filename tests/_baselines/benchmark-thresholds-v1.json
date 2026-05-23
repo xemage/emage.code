@@ -1,0 +1,33 @@
+{
+  "_comment": "Benchmark thresholds for deterministic, offline agent benchmark suite.",
+  "tool_use_complexity": {
+    "min_tool_selection_accuracy": 0.85,
+    "min_argument_key_accuracy": 0.88,
+    "min_step_efficiency": 0.80,
+    "min_aggregate_weighted_score": 0.86
+  },
+  "orchestration_trajectory_quality": {
+    "min_plan_coverage_score": 0.90,
+    "min_dependency_validity_score": 0.85,
+    "min_blocker_routing_score": 0.90,
+    "min_lifecycle_transition_score": 0.90,
+    "min_aggregate_weighted_score": 0.89
+  },
+  "scaling_and_throughput": {
+    "verify": {
+      "max_p95_seconds": 5.0,
+      "max_coefficient_of_variation": 0.35
+    },
+    "sync": {
+      "max_p95_seconds": 10.0,
+      "max_coefficient_of_variation": 0.45
+    }
+  },
+  "v3_benchmark_pack": {
+    "min_planning_quality": 0.90,
+    "min_safety_compliance": 0.95,
+    "min_orchestration_routing": 0.95,
+    "min_tool_efficiency": 0.85,
+    "min_aggregate_weighted_score": 0.91
+  }
+}
