@@ -20,6 +20,9 @@ emage.code projects a single canonical knowledge base into the major AI coding a
 | [Contributing Workflow](contributing-workflow) | GitFlow + Conventional Commits + sync engine |
 | [Migration v1 → v2](migration-v1-to-v2) | What changed and how to upgrade |
 
+Release note: documentation updates are a required release gate. Before tagging,
+update release markers and run `python3 scripts/verify-release-docs.py --tag vX.Y.Z`.
+
 ## Performance snapshot
 
 ```mermaid

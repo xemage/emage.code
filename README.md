@@ -114,6 +114,42 @@ and [project Wiki](https://gitlab.com/em-age/emage.code/-/wikis/home).
 
 ---
 
+## Use emage.code in practice
+
+Use this sequence in a real project:
+
+1. Bootstrap: copy one platform folder plus `AGENTS.md` and `docs/`.
+2. Start with intent: run `/new-project "<your project>"`.
+3. Work through task ledger: review `docs/tasks/active-tasks.md` and approve
+   plans before implementation.
+4. Validate quality gates: ensure CI checks pass (`verify-knowledge-drift`,
+   `sync-no-diff`, tests).
+5. Release safely: update documentation and pass the release docs gate before
+   tag publication.
+
+For contributor detail, see [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+---
+
+## Documentation release contract
+
+Release publication is blocked unless documentation is updated for the tag.
+
+- Required marker in release docs: `Latest release: vX.Y.Z`
+- Required files:
+  - `README.md`
+  - `docs/wiki/README.md`
+  - `docs/wiki/home.md`
+- Content verification script:
+  ```bash
+  python3 scripts/verify-release-docs.py --tag vX.Y.Z
+  ```
+
+This script checks required files, marker alignment, required usage sections,
+and local/internal markdown link validity for core release docs.
+
+---
+
 ## Architecture (6 layers)
 
 1. **Commands** — 16 slash commands, the user entry point
