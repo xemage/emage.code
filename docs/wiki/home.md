@@ -2,6 +2,8 @@
 
 Welcome to the **emage.code** wiki — the central knowledge hub for the multi-platform AI dev-team orchestration framework.
 
+Latest release: v1.0.1
+
 ## What is emage.code?
 
 emage.code projects a single canonical knowledge base into the major AI coding assistants (GitHub Copilot, Gemini CLI, Opencode, Cursor) so that every assistant runs the *same* dev team with the *same* protocols.
