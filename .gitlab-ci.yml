@@ -177,7 +177,7 @@ release:
     # Full CHANGELOG (regenerated each release)
     - git-cliff --tag "${CI_COMMIT_TAG}" --output CHANGELOG.md
     # Notes for this release only
-    - git-cliff --tag "${CI_COMMIT_TAG}" --unreleased --strip header --strip footer --output release-notes.md
+    - git-cliff --tag "${CI_COMMIT_TAG}" --unreleased --strip all --output release-notes.md
     - cat release-notes.md
     # Create the GitLab Release via API
     - |
