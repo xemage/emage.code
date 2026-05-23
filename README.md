@@ -11,7 +11,7 @@
 emage.code brings a **structured multi-agent development team** to your
 favourite AI assistant. Every project follows the same protocol:
 
-Latest release: v1.0.1
+Latest release: v2.0.0
 
 - **Plan → Approve → Execute** lifecycle, never silent execution
 - **DAG-based task management** with explicit dependencies
@@ -19,6 +19,10 @@ Latest release: v1.0.1
 - **Checkpoint compression** for long-running multi-agent workflows
 - **GitFlow** branching with conventional commits
 - **OWASP Top-10** security baseline enforced via the security-engineer agent
+
+v3 is the next-generation schema-first implementation stream. Use it when you
+need managed cookbooks, trigger workflows, packaging, and tighter validation
+gates alongside the current v2 toolchain.
 
 ---
 
@@ -49,13 +53,13 @@ preserved unchanged so existing deployments keep working.
 
 ## Versions at a glance
 
-| | **v1** (legacy) | **v2** (current) |
-|---|---|---|
-| Source of truth | per-platform folders, **triple-duplicated** | single `knowledge/` tree |
-| Supported platforms | GitHub Copilot, Gemini CLI, Opencode | + **Cursor** |
-| MCP config | three divergent JSON files | one `mcp/servers.yaml` registry |
-| Drift detection | none | `verify.mjs` + CI gate |
-| Status | **frozen** — no new development | **active** — accept contributions here |
+| | **v1** (legacy) | **v2** (current) | **v3** (next-gen) |
+|---|---|---|---|
+| Source of truth | per-platform folders, **triple-duplicated** | single `knowledge/` tree | schema-first `knowledge/` + runtime workflows |
+| Supported platforms | GitHub Copilot, Gemini CLI, Opencode | + **Cursor** | packaging, triggers, adapters |
+| MCP config | three divergent JSON files | one `mcp/servers.yaml` registry | same registry model, stricter validation |
+| Drift detection | none | `verify.mjs` + CI gate | `check-v3.py` + `verify-v3.mjs` |
+| Status | **frozen** — no new development | **active** — accept contributions here | **workable** — use for schema-first workflows |
 
 Migration guide: [`v2/plan/05-migration-from-v1.md`](v2/plan/05-migration-from-v1.md)
 
@@ -111,6 +115,97 @@ Then in your AI assistant:
 
 Detailed guide: [`v2/implementation/README.md`](v2/implementation/README.md)
 and [project Wiki](https://gitlab.com/em-age/emage.code/-/wikis/home).
+
+### v3 implementation
+
+The v3 stream is ready for controlled use when you need the schema-first
+runtime model rather than the original release stream.
+
+Start here:
+
+- [`v3/implementation/README.md`](v3/implementation/README.md)
+- [`docs/wiki/v3-implementation.md`](docs/wiki/v3-implementation.md)
+
+Validate from the repository root:
+
+```bash
+python3 v3/implementation/scripts/check-v3.py --root v3/implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --packaging --triggers --adapters
+node v3/implementation/scripts/verify-v3.mjs --root v2/implementation
+```
+
+---
+
+## Use emage.code in practice
+
+Use this sequence in a real project:
+
+1. Bootstrap: copy one platform folder plus `AGENTS.md` and `docs/`.
+2. Start with intent: run `/new-project "<your project>"`.
+3. Work through task ledger: review `docs/tasks/active-tasks.md` and approve
+   plans before implementation.
+4. Validate quality gates: ensure CI checks pass (`verify-knowledge-drift`,
+   `sync-no-diff`, tests).
+5. Release safely: update documentation and pass the release docs gate before
+   tag publication.
+
+For contributor detail, see [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+---
+
+## Documentation release contract
+
+Release publication is blocked unless documentation is updated for the tag.
+
+- Required marker in release docs: `Latest release: vX.Y.Z`
+- Required files:
+  - `README.md`
+  - `docs/wiki/README.md`
+  - `docs/wiki/home.md`
+   - `docs/wiki/v3-implementation.md`
+   - `v3/implementation/README.md`
+- Content verification script:
+  ```bash
+  python3 scripts/verify-release-docs.py --tag vX.Y.Z
+  ```
+
+This script checks required files, marker alignment, required usage sections,
+and local/internal markdown link validity for core release docs.
+
+---
+
+## Use emage.code in practice
+
+Use this sequence in a real project:
+
+1. Bootstrap: copy one platform folder plus `AGENTS.md` and `docs/`.
+2. Start with intent: run `/new-project "<your project>"`.
+3. Work through task ledger: review `docs/tasks/active-tasks.md` and approve
+   plans before implementation.
+4. Validate quality gates: ensure CI checks pass (`verify-knowledge-drift`,
+   `sync-no-diff`, tests).
+5. Release safely: update documentation and pass the release docs gate before
+   tag publication.
+
+For contributor detail, see [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+---
+
+## Documentation release contract
+
+Release publication is blocked unless documentation is updated for the tag.
+
+- Required marker in release docs: `Latest release: vX.Y.Z`
+- Required files:
+  - `README.md`
+  - `docs/wiki/README.md`
+  - `docs/wiki/home.md`
+- Content verification script:
+  ```bash
+  python3 scripts/verify-release-docs.py --tag vX.Y.Z
+  ```
+
+This script checks required files, marker alignment, required usage sections,
+and local/internal markdown link validity for core release docs.
 
 ---
 
