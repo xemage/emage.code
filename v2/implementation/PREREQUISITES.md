@@ -27,6 +27,13 @@ Set whichever you need before launching the AI tool. See [`SECURITY.md`](SECURIT
 
 ## Verifying
 
+```bash
+node --version           # ≥ 18
+git --version            # ≥ 2.30
+node v2/implementation/scripts/sync.mjs    # emits 4 platform folders
+node v2/implementation/scripts/verify.mjs  # exits 0
+```
+
 ```powershell
 node --version           # ≥ 18
 git --version            # ≥ 2.30

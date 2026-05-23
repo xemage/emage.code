@@ -15,6 +15,10 @@
       "type": "array",
       "items": { "type": "string" },
       "uniqueItems": true
+    },
+    "user-invocable": {
+      "type": "boolean",
+      "description": "If true, the agent can be invoked directly by the user. If false, the agent is a subagent only callable by an orchestrator."
     }
   },
   "additionalProperties": false

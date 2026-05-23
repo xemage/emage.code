@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "3.0.0",
+  "packId": "sample-core-pack",
+  "name": "Sample Core Pack",
+  "version": "1.0.0",
+  "description": "Sample reusable pack for validating install and update flows.",
+  "contentPath": "content",
+  "compatibility": {
+    "supportedPlatforms": ["github", "gemini", "opencode", "cursor"]
+  }
+}

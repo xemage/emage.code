@@ -1,0 +1,20 @@
+{
+  "triggerId": "event-issue-opened",
+  "type": "event",
+  "source": "webhook.gitlab",
+  "event": {
+    "name": "issue.opened",
+    "filter": {
+      "project": "emage.code"
+    }
+  },
+  "steeringInput": {
+    "taskId": "T019",
+    "intent": "triage-new-issue",
+    "priority": "high"
+  },
+  "retryPolicy": {
+    "maxAttempts": 2,
+    "backoffSeconds": 3
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "schema": "../../knowledge/schemas/cookbook-steering.schema.json",
+  "schemaVersion": "3.0.0",
+  "cookbookId": "core-delivery",
+  "examples": [
+    {
+      "id": "core-delivery-plan-feature",
+      "description": "Route feature planning to the architecture worker.",
+      "target": "solution-architect",
+      "event": "Plan architecture for feature: multi-tenant onboarding with RBAC.",
+      "contextRef": "docs/checkpoints/checkpoint-005-v3-planning-approved.md"
+    },
+    {
+      "id": "core-delivery-implement-api",
+      "description": "Route implementation handoff to backend worker.",
+      "target": "backend-engineer",
+      "event": "Implement sync-v3 schema validation endpoint and tests.",
+      "contextRef": "docs/artifacts/v3-schema-contract-v1.md"
+    }
+  ]
+}

@@ -8,7 +8,7 @@ Each `platforms/<name>.json` declares one platform:
 {
   "platform": "<id>",                 // unique slug, used by --platform=
   "displayName": "<Pretty name>",
-  "outputDir": ".<id>",                // relative to implementation-v2/
+  "outputDir": ".<id>",                // relative to v2/implementation/
 
   "fileMap": {
     "agents":       { "dir": "<sub>", "ext": "<.ext>" },

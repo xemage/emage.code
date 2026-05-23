@@ -14,8 +14,24 @@ emage.code projects a single canonical knowledge base into the major AI coding a
 | [Architecture](architecture) | The 6-layer architecture, knowledge → platform projection |
 | [Agents Overview](agents-overview) | The 27 specialist agents and their permissions |
 | [MCP Servers](mcp-servers) | Tool integrations: GitLab, Playwright, Memory, Brave, … |
+| [Performance Benchmarks](performance-benchmarks) | Benchmark dimensions, thresholds, and runtime diagrams |
 | [Contributing Workflow](contributing-workflow) | GitFlow + Conventional Commits + sync engine |
 | [Migration v1 → v2](migration-v1-to-v2) | What changed and how to upgrade |
+
+## Performance snapshot
+
+```mermaid
+flowchart LR
+	A[Performance suite] --> B[Tool-use complexity]
+	A --> C[Trajectory quality]
+	A --> D[Scaling throughput]
+```
+
+```mermaid
+flowchart TD
+	V[verify p95: 0.320s / 5.0s budget]
+	S[sync p95: 0.352s / 10.0s budget]
+```
 
 ## Project links
 

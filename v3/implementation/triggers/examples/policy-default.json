@@ -1,0 +1,6 @@
+{
+  "allowedTypes": ["schedule", "event"],
+  "allowedSources": ["scheduler.core", "webhook.gitlab"],
+  "maxAttemptsCap": 3,
+  "requireSteeringTaskId": true
+}
