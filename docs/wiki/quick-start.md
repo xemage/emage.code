@@ -66,6 +66,17 @@ python3 scripts/verify-release-docs.py --tag vX.Y.Z
 
 The release pipeline blocks publication when this check fails.
 
+## 7. Use v3 for schema-first workflows
+
+When you want the next-generation workflow, follow the v3 implementation page:
+
+1. Read [v3 Implementation](v3-implementation).
+2. Validate the repository from the root:
+	```bash
+	python3 v3/implementation/scripts/check-v3.py --root v3/implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --packaging --triggers --adapters
+	node v3/implementation/scripts/verify-v3.mjs --root v2/implementation
+	```
+3. Use the cookbook, package, trigger, and adapter workflows documented there.
 ## Troubleshooting
 
 - **Agents not loading?** Confirm your assistant supports the `.agent.md` (Copilot), `.md` (Gemini/Opencode), or `.mdc` (Cursor) format.

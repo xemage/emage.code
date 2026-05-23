@@ -10,8 +10,32 @@ import path from 'node:path';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const syncScript = path.join(here, 'sync-v3.mjs');
 
-const passthroughArgs = process.argv.slice(2).filter((arg) => arg !== '--check');
-const result = spawnSync(process.execPath, [syncScript, '--check', ...passthroughArgs], {
+const cliArgs = process.argv.slice(2);
+let rootValue = path.resolve(here, '../../v2/implementation');
+const normalizedArgs = [];
+
+for (let index = 0; index < cliArgs.length; index += 1) {
+  const arg = cliArgs[index];
+  if (arg === '--check') {
+    continue;
+  }
+  if (arg === '--root') {
+    index += 1;
+    if (index < cliArgs.length) {
+      rootValue = cliArgs[index];
+    }
+    continue;
+  }
+  if (arg.startsWith('--root=')) {
+    rootValue = arg.slice('--root='.length);
+    continue;
+  }
+  normalizedArgs.push(arg);
+}
+
+const resolvedRoot = path.isAbsolute(rootValue) ? rootValue : path.resolve(process.cwd(), rootValue);
+
+const result = spawnSync(process.execPath, [syncScript, '--check', `--root=${resolvedRoot}`, ...normalizedArgs], {
   stdio: 'inherit',
 });
 

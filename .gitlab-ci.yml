@@ -84,8 +84,8 @@ unit-tests:
   stage: test
   image: python:3.12-alpine
   before_script:
-    - apk add --no-cache nodejs git
-    - pip install --no-cache-dir --quiet pyyaml jsonschema
+    - python3 -c "import shutil, subprocess; apk=shutil.which('apk'); subprocess.check_call([apk, 'add', '--no-cache', 'nodejs', 'git']) if apk else None"
+    - python3 -m pip install --no-cache-dir --quiet pyyaml jsonschema
   script:
     - python3 tests/run.py
   artifacts:

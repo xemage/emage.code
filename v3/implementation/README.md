@@ -14,12 +14,12 @@ python3 v3/implementation/scripts/check-v3.py --root v3/implementation --require
 Projection drift checks:
 
 ```bash
-node v3/implementation/scripts/verify-v3.mjs --root ../../v2/implementation
+node v3/implementation/scripts/verify-v3.mjs --root v2/implementation
 ```
 
 Notes:
 - During migration, `verify-v3.mjs` can target `v2/implementation` with `--root`
-  for compatibility validation.
+  for compatibility validation from the repository root.
 - Once v3 canonical knowledge and platform manifests are fully populated, run
   drift checks directly against `v3/implementation`.
 
