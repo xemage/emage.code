@@ -56,6 +56,16 @@ The orchestrator will:
 - `docs/checkpoints/` — phase-boundary snapshots
 - `docs/decisions/` — ADRs
 
+## 6. Release with documentation gate (maintainers)
+
+Before creating a release tag, update release docs markers and validate:
+
+```bash
+python3 scripts/verify-release-docs.py --tag vX.Y.Z
+```
+
+The release pipeline blocks publication when this check fails.
+
 ## Troubleshooting
 
 - **Agents not loading?** Confirm your assistant supports the `.agent.md` (Copilot), `.md` (Gemini/Opencode), or `.mdc` (Cursor) format.

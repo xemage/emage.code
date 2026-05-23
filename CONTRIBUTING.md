@@ -114,6 +114,11 @@ The project uses **Semantic Versioning** (`vMAJOR.MINOR.PATCH`) and
 
 1. Branch from `develop`: `release/vX.Y.Z`
 2. Bump versions / finalise documentation as needed
+3. Run the local docs verification gate for the target tag:
+   ```bash
+   python3 scripts/verify-release-docs.py --tag vX.Y.Z
+   ```
+   This must pass before opening the release MR.
 3. Open MR `release/vX.Y.Z → main` using the **Release** MR template
 4. After merge to `main`:
    ```bash
@@ -123,7 +128,7 @@ The project uses **Semantic Versioning** (`vMAJOR.MINOR.PATCH`) and
    git checkout develop && git merge --no-ff main && git push   # back-merge
    ```
 5. The tag push triggers the `release` CI job which:
-   - Runs `release-docs-gate` and requires release docs markers to match the tag (`Latest release: vX.Y.Z`) in `README.md`, `docs/wiki/README.md`, and `docs/wiki/home.md`
+   - Runs `release-docs-gate` and `scripts/verify-release-docs.py` to verify required docs, marker alignment (`Latest release: vX.Y.Z`), required content sections, and local/internal links
    - Regenerates [`CHANGELOG.md`](CHANGELOG.md) from Conventional Commits via [git-cliff](https://git-cliff.org)
    - Creates a [GitLab Release](https://gitlab.com/em-age/emage.code/-/releases) with notes scoped to the new version
 
