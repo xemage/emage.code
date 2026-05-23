@@ -79,6 +79,7 @@ The release pipeline blocks publication if this verification fails.
 | `performance-benchmarks.md` | `performance-benchmarks` |
 | `contributing-workflow.md` | `contributing-workflow` |
 | `migration-v1-to-v2.md` | `migration-v1-to-v2` |
+| `v3-implementation.md` | `v3-implementation` |
 
 > Wiki pages use the same Markdown flavour as the main repo. Internal wiki
 > links use the slug (no `.md` extension), e.g. `[Quick Start](quick-start)`.

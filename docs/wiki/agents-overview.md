@@ -2,6 +2,10 @@
 
 emage.code ships with **27 specialist agents** organised by role. Only orchestrators are user-invocable.
 
+v3 does not add new agent roles. It keeps the same roster while introducing a
+schema-first runtime model with managed cookbooks, triggers, packaging, and
+adapter validation.
+
 ## Orchestration
 
 | Agent | Role |
@@ -61,3 +65,9 @@ emage.code ships with **27 specialist agents** organised by role. Only orchestra
 - **Conditional** permissions (QA, Architect) restrict write access to specific file types.
 
 Permission violations are logged and tasks rejected. See [Security Guidelines](https://gitlab.com/em-age/emage.code/-/blob/main/.github/instructions/security-guidelines.instructions.md).
+
+## v3 note
+
+The permission model stays the same in v3. What changes is the surrounding
+workflow contract: use the stricter v3 validation gates for cookbook manifests,
+trigger policies, package install/update/uninstall, and adapter smoke tests.

@@ -26,6 +26,9 @@ REQUIRED_FILES = [
     Path("docs/wiki/README.md"),
     Path("docs/wiki/home.md"),
     Path("docs/wiki/quick-start.md"),
+    Path("docs/wiki/agents-overview.md"),
+    Path("docs/wiki/v3-implementation.md"),
+    Path("v3/implementation/README.md"),
 ]
 
 SECTION_REQUIREMENTS: dict[Path, list[str]] = {
@@ -33,25 +36,45 @@ SECTION_REQUIREMENTS: dict[Path, list[str]] = {
         "## Quick start",
         "## Use emage.code in practice",
         "## Documentation release contract",
+        "### v3 implementation",
     ],
     Path("CONTRIBUTING.md"): [
         "## Releasing",
         "### Cutting a release",
+        "## Working with v3",
         "release-docs-gate",
         "verify-release-docs.py",
     ],
     Path("docs/wiki/home.md"): [
         "## Wiki contents",
         "## Project links",
+        "v3-implementation",
     ],
     Path("docs/wiki/quick-start.md"): [
         "## 1. Pick your platform",
         "## 4. Invoke the orchestrator",
         "/new-project",
+        "## 7. Use v3 for schema-first workflows",
     ],
     Path("docs/wiki/README.md"): [
         "## Sync to live Wiki",
         "## Release documentation contract",
+        "v3-implementation",
+    ],
+    Path("docs/wiki/agents-overview.md"): [
+        "## v3 note",
+        "schema-first runtime model",
+    ],
+    Path("docs/wiki/v3-implementation.md"): [
+        "## What to use v3 for",
+        "python3 v3/implementation/scripts/check-v3.py",
+        "node v3/implementation/scripts/verify-v3.mjs",
+    ],
+    Path("v3/implementation/README.md"): [
+        "## Validation commands",
+        "## Package workflow",
+        "## Trigger workflow",
+        "## Adapter smoke workflow",
     ],
 }
 

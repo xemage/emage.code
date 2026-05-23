@@ -74,6 +74,21 @@ node scripts/verify.mjs      # confirm no drift
 
 Wrappers: `scripts/sync.sh` (POSIX), `scripts/sync.ps1` (Windows).
 
+## Working with v3
+
+v3 is the schema-first implementation stream. Use it when you need the
+managed cookbook, trigger, packaging, and adapter workflows.
+
+Validate v3 from the repository root:
+
+```bash
+python3 v3/implementation/scripts/check-v3.py --root v3/implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --packaging --triggers --adapters
+node v3/implementation/scripts/verify-v3.mjs --root v2/implementation
+```
+
+If you change v3 docs, update the wiki sources in `docs/wiki/` as well and
+ensure the release docs gate still passes.
+
 ## Merge request checklist
 
 - [ ] Branch is up to date with `develop`
@@ -129,6 +144,7 @@ The project uses **Semantic Versioning** (`vMAJOR.MINOR.PATCH`) and
    ```
 5. The tag push triggers the `release` CI job which:
    - Runs `release-docs-gate` and `scripts/verify-release-docs.py` to verify required docs, marker alignment (`Latest release: vX.Y.Z`), required content sections, and local/internal links
+   - Verifies the v3 documentation surface (`docs/wiki/v3-implementation.md` and `v3/implementation/README.md`) alongside the root and wiki release docs
    - Regenerates [`CHANGELOG.md`](CHANGELOG.md) from Conventional Commits via [git-cliff](https://git-cliff.org)
    - Creates a [GitLab Release](https://gitlab.com/em-age/emage.code/-/releases) with notes scoped to the new version
 

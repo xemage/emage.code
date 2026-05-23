@@ -34,3 +34,9 @@ Append-only log. Entries move here after the orchestrator marks a task `done`.
 | T028 | Harden release documentation verification gate | devops-engineer | 2026-05-23 | .gitlab-ci.yml; scripts/verify-release-docs.py; docs/tasks/task-T028.md |
 | T029 | Run documentation validation checks | qa-engineer | 2026-05-23 | docs/artifacts/artifact-v1-doc-validation-report.md; docs/tasks/task-T029.md |
 | T030 | Push changes and verify CI to green | release-manager | 2026-05-23 | https://gitlab.com/em-age/emage.code/-/merge_requests/9; https://gitlab.com/em-age/emage.code/-/pipelines/2548093416; docs/tasks/task-T030.md |
+| T031 | Audit v3 documentation gaps | technical-writer | 2026-05-23 | docs/artifacts/artifact-v2-v3-doc-gap-audit-v1.md; docs/tasks/task-T031.md |
+| T032 | Update root docs for v3 usage | technical-writer | 2026-05-23 | README.md; CONTRIBUTING.md; docs/tasks/task-T032.md |
+| T033 | Create and refresh v3 wiki pages | technical-writer | 2026-05-23 | docs/wiki/README.md; docs/wiki/home.md; docs/wiki/quick-start.md; docs/wiki/agents-overview.md; docs/wiki/v3-implementation.md; docs/tasks/task-T033.md |
+| T034 | Fix v3 command accuracy | backend-developer | 2026-05-23 | v3/implementation/README.md; v3/implementation/scripts/verify-v3.mjs; docs/tasks/task-T034.md |
+| T035 | Extend release docs verification | devops-engineer | 2026-05-23 | scripts/verify-release-docs.py; docs/tasks/task-T035.md |
+| T036 | Run docs and v3 validation | qa-engineer | 2026-05-23 | docs/artifacts/artifact-v2-v3-doc-validation-report-v1.md; docs/tasks/task-T036.md |
