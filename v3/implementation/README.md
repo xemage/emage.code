@@ -8,7 +8,7 @@ managed cookbooks, and validation super-gates.
 Run from repository root:
 
 ```bash
-python3 v3/implementation/scripts/check-v3.py --root v3/implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --packaging --triggers
+python3 v3/implementation/scripts/check-v3.py --root v3/implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --packaging --triggers --adapters
 ```
 
 Projection drift checks:
@@ -35,8 +35,9 @@ Recommended CI stage order:
 6. `python3 v3/implementation/scripts/check-v3.py --root v3/implementation --registry`
 7. `python3 v3/implementation/scripts/check-v3.py --root v3/implementation --packaging`
 8. `python3 v3/implementation/scripts/check-v3.py --root v3/implementation --triggers`
-9. `node v3/implementation/scripts/verify-v3.mjs --root ../../v2/implementation`
-10. v3 functional tests:
+9. `python3 v3/implementation/scripts/check-v3.py --root v3/implementation --adapters`
+10. `node v3/implementation/scripts/verify-v3.mjs --root ../../v2/implementation`
+11. v3 functional tests:
    `python3 -m unittest tests.functional.test_v3_validation_gate -v`
 
 ## Package workflow
@@ -86,6 +87,26 @@ python3 v3/implementation/runtime/triggers/runner.py \
   --queue /tmp/v3-trigger-queue.json \
   --audit-log /tmp/v3-trigger-audit.log \
   --simulate-failures 1
+```
+
+## Adapter smoke workflow
+
+Antigravity prototype:
+
+```bash
+V3_EXPERIMENTAL_ADAPTERS=1 V3_ADAPTER_ANTIGRAVITY=1 \
+python3 v3/implementation/adapters/smoke.py \
+  --adapter antigravity \
+  --input tests/fixtures/adapters/sample-input.json
+```
+
+Opencode prototype:
+
+```bash
+V3_EXPERIMENTAL_ADAPTERS=1 V3_ADAPTER_OPENCODE=1 \
+python3 v3/implementation/adapters/smoke.py \
+  --adapter opencode \
+  --input tests/fixtures/adapters/sample-input.json
 ```
 
 The gate must fail on unresolved references, missing required files, malformed

@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -726,6 +727,78 @@ def _check_triggers(root: Path, result: GateResult) -> None:
             result.err("triggers: expected retry audit entry for simulated failure")
 
 
+def _check_adapters(root: Path, result: GateResult) -> None:
+    repo = root.parents[1]
+    adapters_dir = root / "adapters"
+    smoke_path = adapters_dir / "smoke.py"
+    antigravity_path = adapters_dir / "antigravity_adapter.py"
+    opencode_path = adapters_dir / "opencode_adapter.py"
+    base_path = adapters_dir / "base.py"
+    fixture_path = repo / "tests" / "fixtures" / "adapters" / "sample-input.json"
+    artifact_path = repo / "docs" / "artifacts" / "v3-adapter-evaluation-v1.md"
+
+    required = (
+        smoke_path,
+        antigravity_path,
+        opencode_path,
+        base_path,
+        fixture_path,
+        artifact_path,
+    )
+    for path in required:
+        result.checked += 1
+        if not path.is_file():
+            result.err(f"adapters: missing required file {path}")
+
+    if result.errors:
+        return
+
+    env = dict(os.environ)
+    env["V3_EXPERIMENTAL_ADAPTERS"] = "1"
+    env["V3_ADAPTER_ANTIGRAVITY"] = "1"
+    env["V3_ADAPTER_OPENCODE"] = "1"
+
+    anti_proc = subprocess.run(
+        [
+            "python3",
+            str(smoke_path),
+            "--adapter",
+            "antigravity",
+            "--input",
+            str(fixture_path),
+        ],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    result.checked += 1
+    if anti_proc.returncode != 0:
+        result.err(f"adapters: antigravity smoke failed\n{anti_proc.stdout}\n{anti_proc.stderr}")
+
+    open_proc = subprocess.run(
+        [
+            "python3",
+            str(smoke_path),
+            "--adapter",
+            "opencode",
+            "--input",
+            str(fixture_path),
+        ],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    result.checked += 1
+    if open_proc.returncode != 0:
+        result.err(f"adapters: opencode smoke failed\n{open_proc.stdout}\n{open_proc.stderr}")
+
+    artifact_text = artifact_path.read_text(encoding="utf-8")
+    for marker in ("Security constraints", "Portability constraints", "Recommendation"):
+        result.checked += 1
+        if marker not in artifact_text:
+            result.err(f"adapters: artifact missing marker {marker!r}")
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", default=str(Path(__file__).resolve().parents[1]))
@@ -769,6 +842,11 @@ def parse_args() -> argparse.Namespace:
         help="check trigger framework assets and guarded execution prototype",
     )
     parser.add_argument(
+        "--adapters",
+        action="store_true",
+        help="check experimental adapter prototypes and smoke execution",
+    )
+    parser.add_argument(
         "--compat-knowledge-root",
         default="",
         help="optional fallback knowledge root used to resolve cookbook references during migration",
@@ -797,6 +875,7 @@ def main() -> int:
         "registry": args.registry,
         "packaging": args.packaging,
         "triggers": args.triggers,
+        "adapters": args.adapters,
     }
     run_all = not any(selected.values())
 
@@ -837,6 +916,9 @@ def main() -> int:
 
     if run_all or selected["triggers"]:
         _check_triggers(root, result)
+
+    if run_all or selected["adapters"]:
+        _check_adapters(root, result)
 
     if result.warnings:
         print(f"WARN - {len(result.warnings)} warning(s):")

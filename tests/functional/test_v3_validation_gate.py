@@ -176,6 +176,19 @@ class TestV3ValidationGate(unittest.TestCase):
             self.assertNotEqual(rc, 0, "missing trigger files must fail gate")
             self.assertIn("triggers: missing required file", out)
 
+    def test_adapters_gate_passes_for_repo_artifact(self):
+        rc, out = _run_check(["--adapters", "--root", "v3/implementation"])
+        self.assertEqual(rc, 0, f"adapters gate should pass\n{out}")
+
+    def test_adapters_gate_fails_when_files_missing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "impl"
+            root.mkdir(parents=True)
+
+            rc, out = _run_check(["--adapters", "--root", str(root)])
+            self.assertNotEqual(rc, 0, "missing adapter files must fail gate")
+            self.assertIn("adapters: missing required file", out)
+
 
 if __name__ == "__main__":
     unittest.main()
