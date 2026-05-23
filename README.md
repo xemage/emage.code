@@ -11,6 +11,8 @@
 emage.code brings a **structured multi-agent development team** to your
 favourite AI assistant. Every project follows the same protocol:
 
+Latest release: v1.0.1
+
 - **Plan → Approve → Execute** lifecycle, never silent execution
 - **DAG-based task management** with explicit dependencies
 - **Validation gates** with `PASS` / `CONDITIONAL_PASS` / `FAIL` verdicts

@@ -3,6 +3,8 @@
 These are the **canonical sources** for the project Wiki at
 <https://gitlab.com/em-age/emage.code/-/wikis/home>.
 
+Latest release: v1.0.1
+
 The wiki is hand-curated and the source of truth lives here, in version
 control. To update a wiki page:
 
