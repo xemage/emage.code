@@ -3,12 +3,15 @@
 These are the **canonical sources** for the project Wiki at
 <https://gitlab.com/em-age/emage.code/-/wikis/home>.
 
-Latest release: v1.0.1
+Latest release: v2.0.0
 
 The wiki is hand-curated and the source of truth lives here, in version
 control. To update a wiki page:
 
 1. Edit the corresponding `.md` file in this directory
+2. Validate links and content locally if preparing a release
+3. Push to `develop` to trigger CI wiki sync
+
 ## Sync to live Wiki
 
 The CI job [`wiki-sync`](../../.gitlab-ci.yml) runs on every `develop` push
@@ -23,6 +26,29 @@ To sync manually (or to test before pushing):
 ```bash
 CI_PROJECT_ID=82070979 WIKI_TOKEN=glpat-... python3 scripts/sync-wiki.py
 ```
+
+## Release documentation contract
+
+Before a release tag is published, release documentation must be updated and
+verified. Required marker:
+
+```text
+Latest release: vX.Y.Z
+```
+
+Required release docs:
+
+- `README.md`
+- `docs/wiki/README.md`
+- `docs/wiki/home.md`
+
+Local verification command:
+
+```bash
+python3 scripts/verify-release-docs.py --tag vX.Y.Z
+```
+
+The release pipeline blocks publication if this verification fails.
 
 ## Page conventions
 
@@ -53,6 +79,7 @@ CI_PROJECT_ID=82070979 WIKI_TOKEN=glpat-... python3 scripts/sync-wiki.py
 | `performance-benchmarks.md` | `performance-benchmarks` |
 | `contributing-workflow.md` | `contributing-workflow` |
 | `migration-v1-to-v2.md` | `migration-v1-to-v2` |
+| `v3-implementation.md` | `v3-implementation` |
 
 > Wiki pages use the same Markdown flavour as the main repo. Internal wiki
 > links use the slug (no `.md` extension), e.g. `[Quick Start](quick-start)`.

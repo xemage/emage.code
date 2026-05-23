@@ -74,6 +74,21 @@ node scripts/verify.mjs      # confirm no drift
 
 Wrappers: `scripts/sync.sh` (POSIX), `scripts/sync.ps1` (Windows).
 
+## Working with v3
+
+v3 is the schema-first implementation stream. Use it when you need the
+managed cookbook, trigger, packaging, and adapter workflows.
+
+Validate v3 from the repository root:
+
+```bash
+python3 v3/implementation/scripts/check-v3.py --root v3/implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --packaging --triggers --adapters
+node v3/implementation/scripts/verify-v3.mjs --root v2/implementation
+```
+
+If you change v3 docs, update the wiki sources in `docs/wiki/` as well and
+ensure the release docs gate still passes.
+
 ## Merge request checklist
 
 - [ ] Branch is up to date with `develop`
@@ -114,6 +129,11 @@ The project uses **Semantic Versioning** (`vMAJOR.MINOR.PATCH`) and
 
 1. Branch from `develop`: `release/vX.Y.Z`
 2. Bump versions / finalise documentation as needed
+3. Run the local docs verification gate for the target tag:
+   ```bash
+   python3 scripts/verify-release-docs.py --tag vX.Y.Z
+   ```
+   This must pass before opening the release MR.
 3. Open MR `release/vX.Y.Z → main` using the **Release** MR template
 4. After merge to `main`:
    ```bash
@@ -123,7 +143,8 @@ The project uses **Semantic Versioning** (`vMAJOR.MINOR.PATCH`) and
    git checkout develop && git merge --no-ff main && git push   # back-merge
    ```
 5. The tag push triggers the `release` CI job which:
-   - Runs `release-docs-gate` and requires release docs markers to match the tag (`Latest release: vX.Y.Z`) in `README.md`, `docs/wiki/README.md`, and `docs/wiki/home.md`
+   - Runs `release-docs-gate` and `scripts/verify-release-docs.py` to verify required docs, marker alignment (`Latest release: vX.Y.Z`), required content sections, and local/internal links
+   - Verifies the v3 documentation surface (`docs/wiki/v3-implementation.md` and `v3/implementation/README.md`) alongside the root and wiki release docs
    - Regenerates [`CHANGELOG.md`](CHANGELOG.md) from Conventional Commits via [git-cliff](https://git-cliff.org)
    - Creates a [GitLab Release](https://gitlab.com/em-age/emage.code/-/releases) with notes scoped to the new version
 
