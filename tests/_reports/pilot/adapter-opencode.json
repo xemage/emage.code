@@ -1,0 +1,20 @@
+{
+  "adapter": "opencode",
+  "accepted": true,
+  "warnings": [],
+  "output": {
+    "automation": {
+      "runId": "run-2026-05-23-01",
+      "taskRef": "event-issue-opened",
+      "command": "opencode run --workflow issue-triage",
+      "args": {
+        "intent": "triage-new-issue",
+        "taskId": "T020"
+      }
+    },
+    "guardrails": {
+      "allowArbitraryShell": false,
+      "requirePolicyHooks": true
+    }
+  }
+}
