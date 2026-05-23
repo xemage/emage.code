@@ -17,6 +17,7 @@ import argparse
 import importlib.util
 import json
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -28,7 +29,13 @@ SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,63}$")
 
 REQUIRED_COOKBOOK_FILES = ("agent.yaml", "README.md", "steering-examples.json")
-REQUIRED_SCRIPTS = ("sync-v3.mjs", "verify-v3.mjs", "check-v3.py", "generate-registry-v3.py")
+REQUIRED_SCRIPTS = (
+    "sync-v3.mjs",
+    "verify-v3.mjs",
+    "check-v3.py",
+    "generate-registry-v3.py",
+    "package-v3.py",
+)
 
 
 class GateResult:
@@ -543,6 +550,99 @@ def _check_registry(root: Path, result: GateResult) -> None:
         result.err(f"registry: generation drift detected\n{output}")
 
 
+def _check_packaging(root: Path, result: GateResult) -> None:
+    repo = root.parents[1]
+    commands_dir = root / "commands"
+    script_path = root / "scripts" / "package-v3.py"
+    schema_path = root / "registry" / "package.schema.json"
+    fixture_source = repo / "tests" / "fixtures" / "packs" / "sample-pack"
+
+    required = (
+        commands_dir / "package-install.md",
+        commands_dir / "package-update.md",
+        commands_dir / "package-uninstall.md",
+        script_path,
+        schema_path,
+        fixture_source / "pack.json",
+    )
+    for path in required:
+        result.checked += 1
+        if not path.is_file():
+            result.err(f"packaging: missing required file {path}")
+
+    if result.errors:
+        return
+
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_root = Path(tmp) / "impl"
+        (tmp_root / "registry").mkdir(parents=True, exist_ok=True)
+        (tmp_root / "packs" / "installed").mkdir(parents=True, exist_ok=True)
+        shutil.copy2(schema_path, tmp_root / "registry" / "package.schema.json")
+
+        install_proc = subprocess.run(
+            [
+                "python3",
+                str(script_path),
+                "install",
+                "--root",
+                str(tmp_root),
+                "--source",
+                str(fixture_source),
+            ],
+            capture_output=True,
+            text=True,
+        )
+        result.checked += 1
+        if install_proc.returncode != 0:
+            result.err(f"packaging: install failed\n{install_proc.stdout}\n{install_proc.stderr}")
+            return
+
+        list_proc = subprocess.run(
+            ["python3", str(script_path), "list", "--root", str(tmp_root)],
+            capture_output=True,
+            text=True,
+        )
+        result.checked += 1
+        if list_proc.returncode != 0 or "sample-core-pack" not in list_proc.stdout:
+            result.err("packaging: list did not report installed sample-core-pack")
+
+        update_proc = subprocess.run(
+            [
+                "python3",
+                str(script_path),
+                "update",
+                "--root",
+                str(tmp_root),
+                "--pack-id",
+                "sample-core-pack",
+            ],
+            capture_output=True,
+            text=True,
+        )
+        result.checked += 1
+        if update_proc.returncode != 0:
+            result.err(f"packaging: update failed\n{update_proc.stdout}\n{update_proc.stderr}")
+
+        uninstall_proc = subprocess.run(
+            [
+                "python3",
+                str(script_path),
+                "uninstall",
+                "--root",
+                str(tmp_root),
+                "--pack-id",
+                "sample-core-pack",
+            ],
+            capture_output=True,
+            text=True,
+        )
+        result.checked += 1
+        if uninstall_proc.returncode != 0:
+            result.err(
+                f"packaging: uninstall failed\n{uninstall_proc.stdout}\n{uninstall_proc.stderr}"
+            )
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", default=str(Path(__file__).resolve().parents[1]))
@@ -576,6 +676,11 @@ def parse_args() -> argparse.Namespace:
         help="check registry artifacts and generator drift",
     )
     parser.add_argument(
+        "--packaging",
+        action="store_true",
+        help="check package install/update/uninstall workflow assets",
+    )
+    parser.add_argument(
         "--compat-knowledge-root",
         default="",
         help="optional fallback knowledge root used to resolve cookbook references during migration",
@@ -602,6 +707,7 @@ def main() -> int:
         "telemetry": args.telemetry,
         "benchmarks": args.benchmarks,
         "registry": args.registry,
+        "packaging": args.packaging,
     }
     run_all = not any(selected.values())
 
@@ -636,6 +742,9 @@ def main() -> int:
 
     if run_all or selected["registry"]:
         _check_registry(root, result)
+
+    if run_all or selected["packaging"]:
+        _check_packaging(root, result)
 
     if result.warnings:
         print(f"WARN - {len(result.warnings)} warning(s):")

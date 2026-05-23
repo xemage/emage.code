@@ -2,8 +2,7 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T018 | Package and install workflow | devops-engineer | in_progress | P1 | T017 | 2026-05-22 |
-| T019 | Trigger framework | backend-developer | pending | P2 | T014 | 2026-05-22 |
+| T019 | Trigger framework | backend-developer | in_progress | P2 | T014 | 2026-05-23 |
 | T020 | SDK adapter experiments | integration-agent | pending | P2 | T019 | 2026-05-22 |
 | T021 | Migration guide and rollout | technical-writer | pending | P0 | T016,T018,T020 | 2026-05-22 |
 
