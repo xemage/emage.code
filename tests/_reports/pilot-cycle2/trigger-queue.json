@@ -1,0 +1,28 @@
+{
+  "events": [
+    {
+      "triggerId": "schedule-daily-health-check",
+      "type": "schedule",
+      "source": "scheduler.core",
+      "steeringInput": {
+        "taskId": "T019",
+        "intent": "run-daily-health-check",
+        "priority": "normal"
+      },
+      "correlationId": "schedule-daily-health-check-1779519117",
+      "queuedAt": "2026-05-23T06:51:57.633167+00:00"
+    },
+    {
+      "triggerId": "event-issue-opened",
+      "type": "event",
+      "source": "webhook.gitlab",
+      "steeringInput": {
+        "taskId": "T019",
+        "intent": "triage-new-issue",
+        "priority": "high"
+      },
+      "correlationId": "event-issue-opened-1779519118",
+      "queuedAt": "2026-05-23T06:51:58.889691+00:00"
+    }
+  ]
+}
