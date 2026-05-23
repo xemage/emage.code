@@ -643,6 +643,89 @@ def _check_packaging(root: Path, result: GateResult) -> None:
             )
 
 
+def _check_triggers(root: Path, result: GateResult) -> None:
+    triggers_dir = root / "triggers"
+    examples_dir = triggers_dir / "examples"
+    spec_path = triggers_dir / "spec-v1.md"
+    runner_path = root / "runtime" / "triggers" / "runner.py"
+    schedule_trigger = examples_dir / "schedule-daily.json"
+    event_trigger = examples_dir / "event-webhook.json"
+    policy_path = examples_dir / "policy-default.json"
+
+    required = (spec_path, runner_path, schedule_trigger, event_trigger, policy_path)
+    for path in required:
+        result.checked += 1
+        if not path.is_file():
+            result.err(f"triggers: missing required file {path}")
+
+    if result.errors:
+        return
+
+    spec_text = spec_path.read_text(encoding="utf-8")
+    for marker in ("schedule", "event", "Policy Guardrails", "Failure And Retry Semantics", "Audit Logging"):
+        result.checked += 1
+        if marker not in spec_text:
+            result.err(f"triggers: spec missing section marker {marker!r}")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        queue = Path(tmp) / "queue.json"
+        audit = Path(tmp) / "audit.log"
+
+        schedule_proc = subprocess.run(
+            [
+                "python3",
+                str(runner_path),
+                "--trigger",
+                str(schedule_trigger),
+                "--policy",
+                str(policy_path),
+                "--queue",
+                str(queue),
+                "--audit-log",
+                str(audit),
+            ],
+            capture_output=True,
+            text=True,
+        )
+        result.checked += 1
+        if schedule_proc.returncode != 0:
+            result.err(f"triggers: schedule execution failed\n{schedule_proc.stdout}\n{schedule_proc.stderr}")
+            return
+
+        event_proc = subprocess.run(
+            [
+                "python3",
+                str(runner_path),
+                "--trigger",
+                str(event_trigger),
+                "--policy",
+                str(policy_path),
+                "--queue",
+                str(queue),
+                "--audit-log",
+                str(audit),
+                "--simulate-failures",
+                "1",
+            ],
+            capture_output=True,
+            text=True,
+        )
+        result.checked += 1
+        if event_proc.returncode != 0:
+            result.err(f"triggers: event execution failed\n{event_proc.stdout}\n{event_proc.stderr}")
+            return
+
+        queue_payload = json.loads(queue.read_text(encoding="utf-8"))
+        result.checked += 1
+        if len(queue_payload.get("events", [])) < 2:
+            result.err("triggers: expected at least two queued events from schedule+event runs")
+
+        audit_lines = [line for line in audit.read_text(encoding="utf-8").splitlines() if line.strip()]
+        result.checked += 1
+        if not any('"status": "retry"' in line for line in audit_lines):
+            result.err("triggers: expected retry audit entry for simulated failure")
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", default=str(Path(__file__).resolve().parents[1]))
@@ -681,6 +764,11 @@ def parse_args() -> argparse.Namespace:
         help="check package install/update/uninstall workflow assets",
     )
     parser.add_argument(
+        "--triggers",
+        action="store_true",
+        help="check trigger framework assets and guarded execution prototype",
+    )
+    parser.add_argument(
         "--compat-knowledge-root",
         default="",
         help="optional fallback knowledge root used to resolve cookbook references during migration",
@@ -708,6 +796,7 @@ def main() -> int:
         "benchmarks": args.benchmarks,
         "registry": args.registry,
         "packaging": args.packaging,
+        "triggers": args.triggers,
     }
     run_all = not any(selected.values())
 
@@ -745,6 +834,9 @@ def main() -> int:
 
     if run_all or selected["packaging"]:
         _check_packaging(root, result)
+
+    if run_all or selected["triggers"]:
+        _check_triggers(root, result)
 
     if result.warnings:
         print(f"WARN - {len(result.warnings)} warning(s):")
