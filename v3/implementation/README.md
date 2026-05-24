@@ -14,14 +14,32 @@ python3 v3/implementation/scripts/check-v3.py --root v3/implementation --require
 Projection drift checks:
 
 ```bash
+node v3/implementation/scripts/verify-v3.mjs --root v3/implementation
+```
+
+Migration compatibility check (optional):
+
+```bash
 node v3/implementation/scripts/verify-v3.mjs --root v2/implementation
 ```
 
-Notes:
-- During migration, `verify-v3.mjs` can target `v2/implementation` with `--root`
-  for compatibility validation from the repository root.
-- Once v3 canonical knowledge and platform manifests are fully populated, run
-  drift checks directly against `v3/implementation`.
+## Instant use (v2-style)
+
+v3 now ships the same drop-in surface as v2:
+
+- canonical source: `knowledge/`, `platforms/`, `_extras/`
+- generated outputs: `.github/`, `.gemini/`, `.opencode/`, `.cursor/`, `.vscode/mcp.json`
+- workspace conventions: `AGENTS.md`, `PREREQUISITES.md`, `SECURITY.md`, `docs/`
+
+Copy for immediate use (GitHub Copilot example):
+
+```bash
+cp -r v3/implementation/.github         <your-project>/
+mkdir -p <your-project>/.vscode
+cp    v3/implementation/.vscode/mcp.json <your-project>/.vscode/
+cp    v3/implementation/AGENTS.md       <your-project>/
+cp -r v3/implementation/docs            <your-project>/
+```
 
 ## CI integration
 
@@ -36,7 +54,7 @@ Recommended CI stage order:
 7. `python3 v3/implementation/scripts/check-v3.py --root v3/implementation --packaging`
 8. `python3 v3/implementation/scripts/check-v3.py --root v3/implementation --triggers`
 9. `python3 v3/implementation/scripts/check-v3.py --root v3/implementation --adapters`
-10. `node v3/implementation/scripts/verify-v3.mjs --root ../../v2/implementation`
+10. `node v3/implementation/scripts/verify-v3.mjs --root v3/implementation`
 11. v3 functional tests:
    `python3 -m unittest tests.functional.test_v3_validation_gate -v`
 

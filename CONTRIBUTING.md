@@ -83,7 +83,7 @@ Validate v3 from the repository root:
 
 ```bash
 python3 v3/implementation/scripts/check-v3.py --root v3/implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --packaging --triggers --adapters
-node v3/implementation/scripts/verify-v3.mjs --root v2/implementation
+node v3/implementation/scripts/verify-v3.mjs --root v3/implementation
 ```
 
 If you change v3 docs, update the wiki sources in `docs/wiki/` as well and
@@ -94,11 +94,14 @@ ensure the release docs gate still passes.
 - [ ] Branch is up to date with `develop`
 - [ ] Commits follow Conventional Commits
 - [ ] `node scripts/sync.mjs` was run and generated changes are committed
+- [ ] `node v3/implementation/scripts/sync-v3.mjs --root v3/implementation` was run when v3 canonical/projection files changed
 - [ ] CI is green
 - [ ] At least one approval
 - [ ] No secrets / tokens / PII anywhere in the diff
 - [ ] If you added or changed an agent / skill / instruction, the change is
       reflected in `v2/implementation/knowledge/` (the canonical source)
+- [ ] If you added or changed v3 agent / skill / instruction content, the change is
+   reflected in `v3/implementation/knowledge/` and v3 projections are regenerated
 
 We use **squash-and-merge** for feature branches and delete the source branch
 on merge.
