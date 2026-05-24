@@ -29,6 +29,8 @@ RELEASE_TITLE_MAP = {
     "revert": "Reverts",
 }
 SUBJECT_RE = re.compile(r"^(?P<type>[a-z]+)(?:\([^)]+\))?(?:!)?:\s+(?P<desc>.+)$")
+MERGE_BRANCH_RE = re.compile(r"^Merge branch '([^']+)' into '([^']+)'$")
+SIMPLE_RELEASE_BRANCH_RE = re.compile(r"^release/v\d+\.\d+\.\d+$")
 
 
 class ReleasePublishError(RuntimeError):
@@ -78,6 +80,30 @@ def classify_subjects(subjects: Iterable[str]) -> dict[str, list[str]]:
     for subject in subjects:
         match = SUBJECT_RE.match(subject)
         if not match:
+            merge_match = MERGE_BRANCH_RE.match(subject)
+            if merge_match:
+                source_branch = merge_match.group(1)
+                target_branch = merge_match.group(2)
+                if source_branch.startswith("bugfix/"):
+                    grouped["Bug Fixes"].append(
+                        f"merge {source_branch} into {target_branch}"
+                    )
+                    continue
+                if source_branch.startswith("feature/"):
+                    grouped["Features"].append(
+                        f"merge {source_branch} into {target_branch}"
+                    )
+                    continue
+                if source_branch.startswith("release/"):
+                    grouped["Chores"].append(
+                        f"merge {source_branch} into {target_branch}"
+                    )
+                    continue
+
+            if SIMPLE_RELEASE_BRANCH_RE.match(subject):
+                grouped["Chores"].append(f"release branch {subject}")
+                continue
+
             grouped["Other"].append(subject)
             continue
         commit_type = match.group("type")

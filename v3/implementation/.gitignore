@@ -1,0 +1,24 @@
+# node / npm
+node_modules/
+package-lock.json
+npm-debug.log*
+yarn-error.log*
+
+# build / temp
+dist/
+build/
+*.log
+.tmp/
+
+# env / secrets
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+*.swp

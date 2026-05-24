@@ -11,7 +11,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const syncScript = path.join(here, 'sync-v3.mjs');
 
 const cliArgs = process.argv.slice(2);
-let rootValue = path.resolve(here, '../../v2/implementation');
+let rootValue = path.resolve(here, '..');
 const normalizedArgs = [];
 
 for (let index = 0; index < cliArgs.length; index += 1) {

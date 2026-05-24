@@ -1,0 +1,136 @@
+# MCP server registry — canonical source
+#
+# Each entry maps to one server. The sync engine projects this file into:
+#   - .vscode/mcp.json           (VS Code / GitHub Copilot format)
+#   - .gemini/settings.json      (Gemini mcpServers + hooks)
+#   - .opencode/opencode.json    (Opencode mcp + instructions)
+#   - .cursor/mcp.json           (Cursor mcpServers format)
+#
+# Tags select which platforms / profiles include a server:
+#   core     — always emitted to every platform
+#   extended — only emitted when the platform manifest opts into "extended"
+#
+# `secret` env vars are emitted as platform-native env-var references; never
+# inline secrets in this file.
+
+servers:
+  gitlab:
+    tags: [core]
+    transport: stdio
+    command: npx
+    args: ["-y", "@zereight/mcp-gitlab"]
+    env:
+      GITLAB_PERSONAL_ACCESS_TOKEN: { fromEnv: GITLAB_PERSONAL_ACCESS_TOKEN, secret: true }
+      GITLAB_API_URL: { fromEnv: GITLAB_API_URL }
+
+  playwright:
+    tags: [core]
+    transport: stdio
+    command: npx
+    args: ["-y", "@playwright/mcp@latest"]
+
+  fetch:
+    tags: [core]
+    transport: stdio
+    command: npx
+    args: ["-y", "mcp-fetch-server"]
+
+  memory:
+    tags: [core]
+    transport: stdio
+    command: npx
+    args: ["-y", "@modelcontextprotocol/server-memory"]
+
+  sequential-thinking:
+    tags: [core]
+    transport: stdio
+    command: npx
+    args: ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+
+  brave:
+    tags: [core]
+    transport: stdio
+    command: npx
+    args: ["-y", "@brave/brave-search-mcp-server"]
+    env:
+      BRAVE_API_KEY: { fromEnv: BRAVE_API_KEY, secret: true }
+
+  context7:
+    tags: [core]
+    transport: remote
+    url: "https://mcp.context7.com/mcp"
+
+  hf-mcp-server:
+    tags: [extended]
+    transport: remote
+    url: "https://huggingface.co/mcp?login"
+
+  filesystem:
+    tags: [extended]
+    transport: stdio
+    command: npx
+    args: ["-y", "@anthropic/mcp-filesystem"]
+
+  github:
+    tags: [extended]
+    transport: stdio
+    command: npx
+    args: ["-y", "@github/mcp-github"]
+
+  git:
+    tags: [extended]
+    transport: stdio
+    command: npx
+    args: ["-y", "@modelcontextprotocol/mcp-git"]
+
+  supabase:
+    tags: [extended]
+    transport: stdio
+    command: npx
+    args: ["-y", "@supabase/mcp"]
+
+  e2b:
+    tags: [extended]
+    transport: stdio
+    command: npx
+    args: ["-y", "e2b-mcp"]
+
+  docker:
+    tags: [extended]
+    transport: stdio
+    command: npx
+    args: ["-y", "docker-mcp"]
+
+  redis:
+    tags: [extended]
+    transport: stdio
+    command: npx
+    args: ["-y", "redis-mcp"]
+
+  postgresql:
+    tags: [extended]
+    transport: stdio
+    command: npx
+    args: ["-y", "postgres-mcp"]
+
+  figma:
+    tags: [extended]
+    transport: stdio
+    command: npx
+    args: ["-y", "@figma/mcp"]
+
+  notion:
+    tags: [extended]
+    transport: stdio
+    command: npx
+    args: ["-y", "@notion/mcp"]
+
+  toolradar:
+    tags: [extended]
+    transport: stdio
+    command: npx
+    args: ["-y", "toolradar-mcp"]
+    env:
+      # SECURITY: never inline a real key here. Set TOOLRADAR_API_KEY in your shell
+      # or your platform's secret store. v1 leaked a live key — do not repeat.
+      TOOLRADAR_API_KEY: { fromEnv: TOOLRADAR_API_KEY, secret: true }

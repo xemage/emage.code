@@ -17,20 +17,50 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const args = Object.fromEntries(
-  process.argv.slice(2).map((a) => {
-    const [k, v] = a.replace(/^--/, '').split('=');
-    return [k, v ?? true];
-  })
-);
+function parseArgs(argv) {
+  const parsed = {};
+  for (let index = 0; index < argv.length; index += 1) {
+    const token = argv[index];
+    if (!token.startsWith('--')) continue;
+    const body = token.replace(/^--/, '');
+    if (body.includes('=')) {
+      const [key, value] = body.split('=');
+      parsed[key] = value;
+      continue;
+    }
 
-const ROOT = path.resolve(__dirname, args.root ? String(args.root) : '..');
+    const next = argv[index + 1];
+    if (next && !next.startsWith('--')) {
+      parsed[body] = next;
+      index += 1;
+      continue;
+    }
+
+    parsed[body] = true;
+  }
+  return parsed;
+}
+
+const args = parseArgs(process.argv.slice(2));
+
+const rootArg = args.root ? String(args.root) : null;
+const ROOT = rootArg
+  ? (path.isAbsolute(rootArg) ? rootArg : path.resolve(process.cwd(), rootArg))
+  : path.resolve(__dirname, '..');
 const KNOWLEDGE = path.resolve(ROOT, String(args.knowledge || 'knowledge'));
 const PLATFORMS = path.resolve(ROOT, String(args.platforms || 'platforms'));
 const EXTRAS = path.resolve(ROOT, String(args.extras || '_extras'));
 
 const CHECK_ONLY = !!args.check;
 const ONLY_PLATFORM = args.platform ? String(args.platform) : null;
+
+function toPosixPath(p) {
+  return p.split(path.sep).join('/');
+}
+
+function normalizeTextBuffer(buf) {
+  return buf.toString('utf8').replace(/\r\n/g, '\n');
+}
 
 function parseFrontmatter(src) {
   if (!src.startsWith('---')) return { data: {}, body: src };
@@ -344,7 +374,10 @@ async function emitFile(absPath, content) {
     } catch {
       // missing file means drift
     }
-    if (!existing || !existing.equals(expected)) driftReports.push(absPath);
+    const matchesExactly = !!existing && existing.equals(expected);
+    const matchesNormalizedText =
+      !!existing && normalizeTextBuffer(existing) === normalizeTextBuffer(expected);
+    if (!existing || (!matchesExactly && !matchesNormalizedText)) driftReports.push(absPath);
     return;
   }
   await writeFile(absPath, content);
@@ -441,7 +474,7 @@ async function syncPlatform(manifest, servers) {
       generatedFrom: path.relative(ROOT, KNOWLEDGE) + '/',
       platform: manifest.platform,
       generatedAt: '<deterministic>',
-      files: filesWritten.map((f) => path.relative(outRoot, f)).sort(),
+      files: filesWritten.map((f) => toPosixPath(path.relative(outRoot, f))).sort(),
     },
     null,
     2
