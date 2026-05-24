@@ -30,6 +30,14 @@ const args = Object.fromEntries(
 const CHECK_ONLY = !!args.check;
 const ONLY_PLATFORM = args.platform || null;
 
+function toPosixPath(p) {
+  return p.split(path.sep).join('/');
+}
+
+function normalizeTextBuffer(buf) {
+  return buf.toString('utf8').replace(/\r\n/g, '\n');
+}
+
 // ---------- minimal YAML frontmatter parser (subset) ----------
 function parseFrontmatter(src) {
   if (!src.startsWith('---')) return { data: {}, body: src };
@@ -313,7 +321,10 @@ async function emitFile(absPath, content) {
     const expected = Buffer.isBuffer(content) ? content : Buffer.from(content);
     let existing = null;
     try { existing = await fs.readFile(absPath); } catch { /* missing */ }
-    if (!existing || !existing.equals(expected)) driftReports.push(absPath);
+    const matchesExactly = !!existing && existing.equals(expected);
+    const matchesNormalizedText =
+      !!existing && normalizeTextBuffer(existing) === normalizeTextBuffer(expected);
+    if (!existing || (!matchesExactly && !matchesNormalizedText)) driftReports.push(absPath);
     return;
   }
   await writeFile(absPath, content);
@@ -421,7 +432,7 @@ async function syncPlatform(manifest, servers) {
     generatedFrom: 'knowledge/',
     platform: manifest.platform,
     generatedAt: '<deterministic>',
-    files: filesWritten.map(f => path.relative(outRoot, f)).sort()
+    files: filesWritten.map(f => toPosixPath(path.relative(outRoot, f))).sort()
   }, null, 2) + '\n';
   await emitFile(manifestPath, manifestContent);
 
