@@ -40,3 +40,10 @@ Append-only log. Entries move here after the orchestrator marks a task `done`.
 | T034 | Fix v3 command accuracy | backend-developer | 2026-05-23 | v3/implementation/README.md; v3/implementation/scripts/verify-v3.mjs; docs/tasks/task-T034.md |
 | T035 | Extend release docs verification | devops-engineer | 2026-05-23 | scripts/verify-release-docs.py; docs/tasks/task-T035.md |
 | T036 | Run docs and v3 validation | qa-engineer | 2026-05-23 | docs/artifacts/artifact-v2-v3-doc-validation-report-v1.md; docs/tasks/task-T036.md |
+| T038 | Define v3 drop-in contract | solution-architect | 2026-05-24 | docs/artifacts/v3-drop-in-contract-v1.md; docs/tasks/task-T038.md |
+| T039 | Bootstrap v3 canonical tree | backend-developer | 2026-05-24 | v3/implementation/knowledge/; v3/implementation/platforms/; v3/implementation/_extras/; v3/implementation/docs/; docs/tasks/task-T039.md |
+| T040 | Implement v3 projection parity | backend-developer | 2026-05-24 | v3/implementation/scripts/sync-v3.mjs; v3/implementation/scripts/verify-v3.mjs; tests/functional/test_sync_v3_manifest_paths.py; docs/tasks/task-T040.md |
+| T041 | Generate and verify v3 outputs | qa-engineer | 2026-05-24 | v3/implementation/.github/; v3/implementation/.gemini/; v3/implementation/.opencode/; v3/implementation/.cursor/; v3/implementation/.vscode/mcp.json; docs/artifacts/v3-parity-validation-report-v1.md; docs/tasks/task-T041.md |
+| T042 | Add v3 CI gates and release wiring | devops-engineer | 2026-05-24 | .gitlab-ci.yml; docs/tasks/task-T042.md |
+| T043 | Update v3 docs and runbooks | technical-writer | 2026-05-24 | v3/implementation/README.md; README.md; CONTRIBUTING.md; docs/wiki/v3-implementation.md; docs/tasks/task-T043.md |
+| T044 | Execute v3 QA and security gate | qa-engineer | 2026-05-24 | docs/artifacts/v3-release-readiness-gate-v1.md; docs/checkpoints/checkpoint-v3-006-release-ready-execution.md; docs/tasks/task-T044.md |

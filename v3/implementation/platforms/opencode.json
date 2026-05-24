@@ -1,0 +1,43 @@
+{
+  "$schema": "./_manifest.schema.json",
+  "platform": "opencode",
+  "displayName": "Opencode",
+  "outputDir": ".opencode",
+  "fileMap": {
+    "agents":       { "dir": "agents",       "ext": ".md" },
+    "commands":     { "dir": "commands",     "ext": ".md" },
+    "instructions": { "dir": "instructions", "ext": ".md" },
+    "skills":       { "dir": "skills",       "preserveTree": true }
+  },
+  "frontmatter": {
+    "agents": {
+      "tools": "object",
+      "keepKeys": ["name", "description", "tools", "agents"],
+      "addToOrchestrators": { "user-invocable": true },
+      "orchestratorNames": ["orchestrator", "poc-orchestrator"]
+    },
+    "commands": {
+      "keepKeys": ["description", "agent", "argument-hint"]
+    },
+    "instructions": {
+      "keepKeys": ["description", "applyTo"]
+    },
+    "skills": {
+      "keepKeys": ["name", "description"]
+    }
+  },
+  "mcp": {
+    "tags": ["core", "extended"],
+    "outputFile": "opencode.json",
+    "format": "opencode",
+    "extraFields": {
+      "$schema": "https://opencode.ai/config.json",
+      "instructions": [
+        "instructions/coding-standards.md",
+        "instructions/git-workflow.md",
+        "instructions/security-guidelines.md",
+        "instructions/poc-guidelines.md"
+      ]
+    }
+  }
+}

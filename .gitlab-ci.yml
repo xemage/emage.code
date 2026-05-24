@@ -107,6 +107,25 @@ verify-knowledge-drift:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH
 
+verify-v3-knowledge-drift:
+  stage: verify
+  script:
+    - node v3/implementation/scripts/verify-v3.mjs --root v3/implementation
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
+
+v3-super-gate:
+  stage: verify
+  image: python:3.12-alpine
+  before_script:
+    - python3 -m pip install --no-cache-dir --quiet pyyaml jsonschema
+  script:
+    - python3 v3/implementation/scripts/check-v3.py --root v3/implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --packaging --triggers --adapters
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
+
 # ── Sync sanity (re-run sync, assert no diff) ─────────────────────────────
 sync-no-diff:
   stage: sync
@@ -125,6 +144,25 @@ sync-no-diff:
         exit 1
       fi
     - echo "Sync output matches committed platform folders."
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
+
+sync-v3-no-diff:
+  stage: sync
+  needs: ["verify-v3-knowledge-drift", "v3-super-gate"]
+  before_script:
+    - apk add --no-cache git
+  script:
+    - node v3/implementation/scripts/sync-v3.mjs --root v3/implementation
+    - |
+      if ! git diff --quiet; then
+        echo "ERROR: 'sync-v3.mjs' produced changes that were not committed."
+        echo "Run 'node v3/implementation/scripts/sync-v3.mjs --root v3/implementation' locally and commit the result."
+        git --no-pager diff --stat
+        exit 1
+      fi
+    - echo "v3 sync output matches committed platform folders."
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH
