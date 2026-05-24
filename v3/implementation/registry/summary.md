@@ -1,6 +1,6 @@
 # v3 Registry Summary
 
-Generated from: v2/implementation/knowledge
+Generated from: v3/implementation/knowledge
 
 ## Counts
 

@@ -2,7 +2,7 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T037 | Commit push and merge updates | release-manager | in_progress | P1 | T036 | 2026-05-23 |
+| T045 | Prepare v3 release candidate merge | release-manager | in_progress | P0 | T044 | 2026-05-24 |
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)

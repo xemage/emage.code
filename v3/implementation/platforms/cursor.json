@@ -1,0 +1,33 @@
+{
+  "$schema": "./_manifest.schema.json",
+  "platform": "cursor",
+  "displayName": "Cursor",
+  "outputDir": ".cursor",
+  "fileMap": {
+    "agents":       { "dir": "agents",   "ext": ".mdc" },
+    "commands":     { "dir": "commands", "ext": ".mdc" },
+    "instructions": { "dir": "rules",    "ext": ".mdc" },
+    "skills":       { "dir": "skills",   "preserveTree": true }
+  },
+  "frontmatter": {
+    "agents": {
+      "tools": "array",
+      "keepKeys": ["name", "description", "tools", "agents"]
+    },
+    "commands": {
+      "keepKeys": ["description", "agent", "argument-hint"]
+    },
+    "instructions": {
+      "renameKeys": { "applyTo": "globs" },
+      "keepKeys": ["description", "globs"]
+    },
+    "skills": {
+      "keepKeys": ["name", "description"]
+    }
+  },
+  "mcp": {
+    "tags": ["core", "extended"],
+    "outputFile": "mcp.json",
+    "format": "cursor"
+  }
+}

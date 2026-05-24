@@ -1,7 +1,7 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-05-22T23:33:20+02:00",
-  "sourceRoot": "v2/implementation/knowledge",
+  "generatedAt": "2026-05-24T11:45:39+02:00",
+  "sourceRoot": "v3/implementation/knowledge",
   "platforms": [
     "cursor",
     "gemini",

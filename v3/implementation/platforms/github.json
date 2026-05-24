@@ -1,0 +1,35 @@
+{
+  "$schema": "./_manifest.schema.json",
+  "platform": "github",
+  "displayName": "GitHub Copilot (VS Code)",
+  "outputDir": ".github",
+  "fileMap": {
+    "agents":       { "dir": "agents",       "ext": ".agent.md" },
+    "commands":     { "dir": "prompts",      "ext": ".prompt.md" },
+    "instructions": { "dir": "instructions", "ext": ".instructions.md" },
+    "skills":       { "dir": "skills",       "preserveTree": true }
+  },
+  "frontmatter": {
+    "agents": {
+      "tools": "array",
+      "keepKeys": ["name", "description", "tools", "agents"]
+    },
+    "commands": {
+      "keepKeys": ["description", "agent", "argument-hint"]
+    },
+    "instructions": {
+      "keepKeys": ["description", "applyTo"]
+    },
+    "skills": {
+      "keepKeys": ["name", "description"]
+    }
+  },
+  "mcp": {
+    "tags": ["core"],
+    "outputFile": "../.vscode/mcp.json",
+    "format": "vscode"
+  },
+  "extras": [
+    { "from": "_extras/github/hooks/post-edit-reminder.json", "to": "hooks/post-edit-reminder.json" }
+  ]
+}
