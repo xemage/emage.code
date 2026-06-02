@@ -1,20 +1,12 @@
-# Task T001 — Benchmark Mapping and Spec
+# Task T001: Initialize the Pi project verification
 
-## Objective
-Map relevant categories from the AI Agent Benchmark Compendium to executable, repository-native benchmarks for emage.code v2.
+**Objective**: Verify the Pi framework generates expected scaffolding correctly for an emage.code workspace by utilizing `.pi` artifacts.
 
-## Inputs
-- docs/plans/plan-001-agent-benchmark-expansion-v2.md
-- tests/README.md
-- Existing tests under tests/functional/ and tests/performance/
+**Context**: Project initialization phase. We are validating `pi` functionality in `v3`. 
 
-## Expected outputs
-- docs/artifacts/agent-benchmark-mapping-v1.md
+**Inputs**: None
+**Outputs**: `pi-verification-v1.md`
 
-## Acceptance criteria
-- Includes at least 5 benchmark dimensions and source category mapping.
-- Distinguishes hard-fail metrics vs warning metrics.
-- Proposes only deterministic, offline-capable benchmarks.
-
-## Blocker protocol
-If blocked, report blocker type and severity with one proposed mitigation.
+**Acceptance Criteria**:
+1. The Orchestrator produces the status.
+2. The verification report is written.

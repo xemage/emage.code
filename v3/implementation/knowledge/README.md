@@ -1,6 +1,6 @@
 # Canonical knowledge base
 
-This folder is the **single source of truth** for every emage.code platform integration. Files here are platform-neutral; the sync script (`scripts/sync.mjs`) projects them into per-platform folders (`.github/`, `.gemini/`, `.opencode/`, `.cursor/`).
+This folder is the **single source of truth** for every emage.code platform integration. Files here are platform-neutral; the sync script (`scripts/sync-v3.mjs`) projects them into per-platform folders (`.github/`, `.gemini/`, `.opencode/`, `.cursor/`, `.pi/`).
 
 > **Never edit files inside the generated platform folders.** Edit here, then re-run sync.
 
@@ -64,4 +64,4 @@ description: "What capability this skill provides."
 3. **References by name, not path.** Refer to other knowledge artifacts by name (`see skill: plan-approve-execute`); the sync engine handles platform paths.
 4. **Tools list is canonical.** Add or remove tools here only; platform transforms convert representation.
 5. **MCP servers are registered in `mcp/servers.yaml`.** Reference them in agent `tools:` as `mcp__<server-name>`.
-6. **Run `node scripts/sync.mjs` after every change.** CI rejects PRs where committed platform folders drift from `knowledge/`.
+6. **Run `node scripts/sync-v3.mjs` after every change.** CI rejects PRs where committed platform folders drift from `knowledge/`.

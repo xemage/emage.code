@@ -15,7 +15,8 @@ emage.code is a structured multi-agent development system that brings discipline
 | GitHub Copilot (VS Code) | `.github/` + `.vscode/mcp.json` | `.agent.md`, `.prompt.md`, `.instructions.md` |
 | Gemini CLI | `.gemini/` | `.md` (no `tools` field), `settings.json` with hooks |
 | Opencode | `.opencode/` | `.md` (object `tools`), `opencode.json` |
-| **Cursor** _(new in v2)_ | `.cursor/` | `.mdc`, `applyTo` → `globs`, `mcp.json` |
+| Cursor | `.cursor/` | `.mdc`, `applyTo` → `globs`, `mcp.json` |
+| **Pi** _(new)_ | `.pi/` | `.md`, `mcp.json` |
 
 ---
 
@@ -44,6 +45,7 @@ implementation/
 ├── .gemini/    (generated)
 ├── .opencode/  (generated)
 ├── .cursor/    (generated)
+├── .pi/        (generated)
 ├── .vscode/
 │   ├── mcp.json            (generated)
 │   └── settings.json       ← see SECURITY.md
@@ -109,6 +111,19 @@ cp -r v2/implementation/docs       <your-project>/
 
 ```powershell
 Copy-Item -Recurse v2/implementation/.cursor   <your-project>/
+Copy-Item          v2/implementation/AGENTS.md  <your-project>/
+Copy-Item -Recurse v2/implementation/docs      <your-project>/
+```
+
+### Pi
+```bash
+cp -r v2/implementation/.pi   <your-project>/
+cp    v2/implementation/AGENTS.md  <your-project>/
+cp -r v2/implementation/docs       <your-project>/
+```
+
+```powershell
+Copy-Item -Recurse v2/implementation/.pi   <your-project>/
 Copy-Item          v2/implementation/AGENTS.md  <your-project>/
 Copy-Item -Recurse v2/implementation/docs      <your-project>/
 ```

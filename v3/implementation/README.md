@@ -28,7 +28,7 @@ node v3/implementation/scripts/verify-v3.mjs --root v2/implementation
 v3 now ships the same drop-in surface as v2:
 
 - canonical source: `knowledge/`, `platforms/`, `_extras/`
-- generated outputs: `.github/`, `.gemini/`, `.opencode/`, `.cursor/`, `.vscode/mcp.json`
+- generated outputs: `.github/`, `.gemini/`, `.opencode/`, `.cursor/`, `.pi/`, `.vscode/mcp.json`
 - workspace conventions: `AGENTS.md`, `PREREQUISITES.md`, `SECURITY.md`, `docs/`
 
 Copy for immediate use (GitHub Copilot example):
