@@ -4,10 +4,10 @@ help:           ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 sync:           ## Regenerate platform mirrors from knowledge/
-	cd v2/implementation && node scripts/sync.mjs
+	cd v3/implementation && node scripts/sync-v3.mjs
 
 verify:         ## Verify generated mirrors match knowledge/
-	cd v2/implementation && node scripts/verify.mjs
+	cd v3/implementation && node scripts/sync-v3.mjs --check
 
 test:           ## Run all functional + performance tests
 	python3 tests/run.py -v
