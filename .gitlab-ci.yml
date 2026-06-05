@@ -1,7 +1,7 @@
 # ────────────────────────────────────────────────────────────────────────────
 # emage.code — GitLab CI pipeline
 #
-# Stages:
+# S intages:
 #   lint        — markdown link check (informational)
 #   verify      — scripts/verify.mjs drift check (BLOCKING)
 #   sync        — re-run scripts/sync.mjs and assert no diff (BLOCKING)
@@ -28,7 +28,7 @@ default:
   interruptible: true
   tags:
     - docker
-    - dind
+    # - dind
 
 variables:
   GIT_DEPTH: "20"
