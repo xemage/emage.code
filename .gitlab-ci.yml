@@ -1,7 +1,7 @@
 # ────────────────────────────────────────────────────────────────────────────
 # emage.code — GitLab CI pipeline
 #
-# S intages:
+# Stages:
 #   lint        — markdown link check (informational)
 #   verify      — scripts/verify.mjs drift check (BLOCKING)
 #   sync        — re-run scripts/sync.mjs and assert no diff (BLOCKING)
