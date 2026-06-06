@@ -5,7 +5,7 @@ title: MCP Servers
 
 emage.code uses [Model Context Protocol](https://modelcontextprotocol.io) servers as the integration layer between agents and external tools.
 
-All servers are declared once in [`v2/implementation/knowledge/mcp/servers.yaml`](https://gitlab.com/em-age/emage.code/-/blob/main/v2/implementation/knowledge/mcp/servers.yaml) and projected to platform-specific config files.
+All servers are declared once in [`v3/implementation/knowledge/mcp/servers.yaml`](https://gitlab.com/em-age/emage.code/-/blob/main/v3/implementation/knowledge/mcp/servers.yaml) and projected to platform-specific config files.
 
 ## Tag system
 

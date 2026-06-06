@@ -52,6 +52,13 @@ def run_git(args: list[str]) -> str:
     return result.stdout.strip()
 
 
+def ensure_full_history() -> None:
+    """Unshallow CI clones so release notes include the full commit range."""
+    is_shallow = run_git(["rev-parse", "--is-shallow-repository"]).strip()
+    if is_shallow == "true":
+        run_git(["fetch", "--unshallow", "--tags", "origin"])
+
+
 def get_tag_list() -> list[str]:
     output = run_git(["tag", "--sort=-v:refname"])
     return [line for line in output.splitlines() if line]
@@ -65,13 +72,38 @@ def resolve_previous_tag(current_tag: str, tags: list[str]) -> str | None:
     return tags[index + 1] if index + 1 < len(tags) else None
 
 
+def _revision_range(current_tag: str, previous_tag: str | None) -> str:
+    if previous_tag is None:
+        return current_tag
+    # Prefer merge-base range when histories diverged (non-linear GitFlow).
+    try:
+        base = run_git(["merge-base", previous_tag, current_tag])
+        count = run_git(["rev-list", "--count", f"{base}..{current_tag}"])
+        direct = run_git(["rev-list", "--count", f"{previous_tag}..{current_tag}"])
+        if int(count) >= int(direct):
+            return f"{base}..{current_tag}"
+    except ReleasePublishError:
+        pass
+    return f"{previous_tag}..{current_tag}"
+
+
 def get_commit_subjects(current_tag: str, previous_tag: str | None) -> list[str]:
-    revision = current_tag if previous_tag is None else f"{previous_tag}..{current_tag}"
+    revision = _revision_range(current_tag, previous_tag)
     output = run_git(["log", revision, "--pretty=%s"])
     subjects = [line.strip() for line in output.splitlines() if line.strip()]
     if not subjects:
         raise ReleasePublishError(f"no commits found for revision range '{revision}'")
     return subjects
+
+
+def load_release_brief(tag: str) -> str:
+    brief_path = ROOT / "docs" / "releases" / f"{tag}.md"
+    if not brief_path.is_file():
+        raise ReleasePublishError(
+            f"missing release brief: docs/releases/{tag}.md "
+            "(copy docs/releases/_template.md and fill Install + Highlights)"
+        )
+    return brief_path.read_text(encoding="utf-8").strip() + "\n"
 
 
 def classify_subjects(subjects: Iterable[str]) -> dict[str, list[str]]:
@@ -112,25 +144,40 @@ def classify_subjects(subjects: Iterable[str]) -> dict[str, list[str]]:
     return grouped
 
 
-def render_release_notes(tag: str, previous_tag: str | None, grouped: dict[str, list[str]]) -> str:
-    header = [f"# Release {tag}", ""]
+def render_changelog_section(previous_tag: str | None, grouped: dict[str, list[str]]) -> str:
+    lines: list[str] = ["## Changelog"]
     if previous_tag:
-        header.append(f"Changes since {previous_tag}.")
+        lines.append(f"_Commits since {previous_tag}._")
     else:
-        header.append("Initial release notes for this tag.")
-    header.append("")
+        lines.append("_Initial release._")
+    lines.append("")
 
-    body: list[str] = []
+    wrote = False
     for section, entries in grouped.items():
         if not entries:
             continue
-        body.append(f"## {section}")
-        body.extend(f"- {entry}" for entry in entries)
-        body.append("")
+        wrote = True
+        lines.append(f"### {section}")
+        lines.extend(f"- {entry}" for entry in entries)
+        lines.append("")
 
-    if not body:
-        body.extend(["## Changes", "- No user-facing changes recorded.", ""])
-    return "\n".join(header + body).strip() + "\n"
+    if not wrote:
+        lines.extend(["- No additional commit changes recorded.", ""])
+    return "\n".join(lines).strip() + "\n"
+
+
+def render_release_notes(
+    tag: str,
+    previous_tag: str | None,
+    grouped: dict[str, list[str]],
+    brief: str,
+) -> str:
+    brief_body = brief
+    if brief_body.startswith(f"# Release {tag}"):
+        brief_body = "\n".join(brief_body.splitlines()[1:]).lstrip("\n")
+
+    changelog = render_changelog_section(previous_tag, grouped)
+    return f"# Release {tag}\n\n{brief_body}\n\n---\n\n{changelog}\n"
 
 
 def update_changelog(tag: str, notes_body: str) -> str:
@@ -227,13 +274,15 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     run_git(["fetch", "--tags", "--force"])
+    ensure_full_history()
 
     tags = get_tag_list()
     previous_tag = resolve_previous_tag(args.tag, tags)
+    brief = load_release_brief(args.tag)
     subjects = get_commit_subjects(args.tag, previous_tag)
     grouped = classify_subjects(subjects)
 
-    release_notes = render_release_notes(args.tag, previous_tag, grouped)
+    release_notes = render_release_notes(args.tag, previous_tag, grouped, brief)
     changelog = update_changelog(args.tag, release_notes)
     write_artifacts(release_notes, changelog)
 
