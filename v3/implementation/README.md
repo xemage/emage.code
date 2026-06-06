@@ -1,7 +1,40 @@
 # emage.code v3 implementation
 
-v3 contains the next-generation implementation stream for schema-first knowledge,
-managed cookbooks, and validation super-gates.
+v3 is the **current release stream** — schema-first canonical knowledge,
+managed cookbooks, triggers, packaging, and validation super-gates.
+
+Latest release: v3.0.0
+
+## Install
+
+Copy the platform folder for your assistant plus shared workspace files:
+
+```bash
+# GitHub Copilot
+cp -r v3/implementation/.github         <your-project>/
+mkdir -p <your-project>/.vscode
+cp    v3/implementation/.vscode/mcp.json <your-project>/.vscode/
+
+# Gemini CLI
+cp -r v3/implementation/.gemini         <your-project>/
+
+# Opencode
+cp -r v3/implementation/.opencode       <your-project>/
+
+# Cursor
+cp -r v3/implementation/.cursor         <your-project>/
+
+# Pi (https://pi.dev)
+cp -r v3/implementation/.pi             <your-project>/.pi/
+
+# Always include
+cp    v3/implementation/AGENTS.md       <your-project>/
+cp -r v3/implementation/docs            <your-project>/
+```
+
+Set MCP env vars from the generated config, then run `/new-project "Your idea"`.
+
+Per-release install notes: [`docs/releases/v3.0.0.md`](../../docs/releases/v3.0.0.md).
 
 ## Validation commands
 

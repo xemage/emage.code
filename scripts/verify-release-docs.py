@@ -20,6 +20,10 @@ MARKER_FILES = [
     Path("docs/wiki/home.md"),
 ]
 
+def release_brief_path(tag: str) -> Path:
+    return Path("docs/releases") / f"{tag}.md"
+
+
 REQUIRED_FILES = [
     Path("README.md"),
     Path("CONTRIBUTING.md"),
@@ -29,14 +33,17 @@ REQUIRED_FILES = [
     Path("docs/wiki/agents-overview.md"),
     Path("docs/wiki/v3-implementation.md"),
     Path("v3/implementation/README.md"),
+    Path("docs/releases/_template.md"),
 ]
 
 SECTION_REQUIREMENTS: dict[Path, list[str]] = {
     Path("README.md"): [
+        "## Install",
         "## Quick start",
         "## Use emage.code in practice",
         "## Documentation release contract",
         "### v3 implementation",
+        "docs/releases/",
     ],
     Path("CONTRIBUTING.md"): [
         "## Releasing",
@@ -71,6 +78,7 @@ SECTION_REQUIREMENTS: dict[Path, list[str]] = {
         "node v3/implementation/scripts/verify-v3.mjs",
     ],
     Path("v3/implementation/README.md"): [
+        "## Install",
         "## Validation commands",
         "## Package workflow",
         "## Trigger workflow",
@@ -129,7 +137,10 @@ def main() -> int:
     marker = f"Latest release: {args.tag}"
     errors: list[str] = []
 
-    for relative in REQUIRED_FILES:
+    release_brief = release_brief_path(args.tag)
+    required_for_tag = [*REQUIRED_FILES, release_brief]
+
+    for relative in required_for_tag:
         absolute = ROOT / relative
         if not absolute.is_file():
             errors.append(f"missing required file: {relative}")
@@ -150,7 +161,12 @@ def main() -> int:
             if snippet not in text:
                 errors.append(f"missing required content in {relative}: {snippet}")
 
-    for relative in REQUIRED_FILES:
+    brief_text = (ROOT / release_brief).read_text(encoding="utf-8", errors="ignore")
+    for snippet in ("## Install", "## Highlights", f"Latest release: {args.tag}"):
+        if snippet not in brief_text:
+            errors.append(f"missing required content in {release_brief}: {snippet}")
+
+    for relative in required_for_tag:
         check_links(ROOT / relative, errors)
 
     if errors:

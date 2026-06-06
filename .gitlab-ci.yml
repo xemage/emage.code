@@ -212,6 +212,8 @@ release:
   stage: release
   needs: ["release-docs-gate"]
   image: python:3.12-alpine
+  variables:
+    GIT_DEPTH: "0"
   before_script:
     - python3 -c "import shutil, subprocess; apk=shutil.which('apk'); subprocess.check_call([apk, 'add', '--no-cache', 'git']) if apk else None"
   script:

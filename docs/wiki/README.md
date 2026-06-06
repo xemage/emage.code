@@ -3,7 +3,7 @@
 These are the **canonical sources** for the project Wiki at
 <https://gitlab.com/em-age/emage.code/-/wikis/home>.
 
-Latest release: v2.0.2
+Latest release: v3.0.0
 
 The wiki is hand-curated and the source of truth lives here, in version
 control. To update a wiki page:
@@ -41,6 +41,7 @@ Required release docs:
 - `README.md`
 - `docs/wiki/README.md`
 - `docs/wiki/home.md`
+- `docs/releases/vX.Y.Z.md` (Install + Highlights for the tagged version)
 
 Local verification command:
 

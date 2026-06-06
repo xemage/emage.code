@@ -2,11 +2,11 @@
 
 Welcome to the **emage.code** wiki — the central knowledge hub for the multi-platform AI dev-team orchestration framework.
 
-Latest release: v2.0.2
+Latest release: v3.0.0
 
 ## What is emage.code?
 
-emage.code projects a single canonical knowledge base into the major AI coding assistants (GitHub Copilot, Gemini CLI, Opencode, Cursor) so that every assistant runs the *same* dev team with the *same* protocols.
+emage.code projects a single canonical knowledge base into the major AI coding assistants (GitHub Copilot, Gemini CLI, Opencode, Cursor, Pi) so that every assistant runs the *same* dev team with the *same* protocols.
 
 ## Wiki contents
 
@@ -25,9 +25,6 @@ Release note: documentation updates are a required release gate. Before tagging,
 update release markers and run `python3 scripts/verify-release-docs.py --tag vX.Y.Z`.
 The release gate also checks the v3 documentation surface so the wiki and repo
 stay aligned.
-
-Release note: documentation updates are a required release gate. Before tagging,
-update release markers and run `python3 scripts/verify-release-docs.py --tag vX.Y.Z`.
 
 ## Performance snapshot
 
@@ -54,7 +51,7 @@ flowchart TD
 ## Status
 
 - **v1** — frozen, kept under [`v1/`](https://gitlab.com/em-age/emage.code/-/tree/main/v1) for reference
-- **v2** — active, new contributions go to [`v2/implementation/knowledge/`](https://gitlab.com/em-age/emage.code/-/tree/main/v2/implementation/knowledge)
-- **v3** — ready for controlled use, see [`v3/implementation/`](https://gitlab.com/em-age/emage.code/-/tree/main/v3/implementation) and the [v3 Implementation](v3-implementation) page
+- **v2** — maintained as the previous stable stream under [`v2/implementation/`](https://gitlab.com/em-age/emage.code/-/tree/main/v2/implementation)
+- **v3** — current release stream; new work goes to [`v3/implementation/`](https://gitlab.com/em-age/emage.code/-/tree/main/v3/implementation), see the [v3 Implementation](v3-implementation) page
 
 > The wiki is **hand-curated** and version-controlled separately from the main repo. To propose changes, open an MR against the main repo's wiki sources at [`docs/wiki/`](https://gitlab.com/em-age/emage.code/-/tree/main/docs/wiki).

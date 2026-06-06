@@ -1,7 +1,7 @@
 {
   "$schema": "./_manifest.schema.json",
   "platform": "pi",
-  "displayName": "pi",
+  "displayName": "Pi",
   "outputDir": ".pi",
   "fileMap": {
     "agents":       { "dir": "agents",       "ext": ".md" },

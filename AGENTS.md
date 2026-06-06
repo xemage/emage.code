@@ -66,17 +66,17 @@ pending → in_progress → blocked → in_review → done | cancelled
 - Input validation at all system boundaries.
 
 ## Knowledge Base
-- The single source of truth for agents, skills, commands, and instructions is `v3/implementation/knowledge/`.
-- Per-platform folders (`.github/`, `.gemini/`, `.opencode/`, `.cursor/`, `.pi/`) are **generated** by `v3/implementation/scripts/sync-v3.mjs`. **Do not edit them by hand.**
-- See [`v3/implementation/knowledge/README.md`](v3/implementation/knowledge/README.md) for authoring rules.
+- The single source of truth for agents, skills, commands, and instructions is `knowledge/`.
+- Per-platform folders (`.github/`, `.gemini/`, `.opencode/`, `.cursor/`) are **generated** by `scripts/sync-v3.mjs`. **Do not edit them by hand.**
+- See [`knowledge/README.md`](knowledge/README.md) for authoring rules.
 
 ## MCP Servers
-Declared in [`v3/implementation/knowledge/mcp/servers.yaml`](v3/implementation/knowledge/mcp/servers.yaml). Each server is tagged:
+Declared in [`knowledge/mcp/servers.yaml`](knowledge/mcp/servers.yaml). Each server is tagged:
 
 | Tag | Emitted to |
 |-----|-----------|
 | `core` | every platform |
-| `extended` | platforms whose manifest opts in (`gemini`, `opencode`, `cursor`, `pi`) |
+| `extended` | platforms whose manifest opts in (`gemini`, `opencode`, `cursor`) |
 
 ### Core servers (always available)
 
@@ -91,7 +91,7 @@ Declared in [`v3/implementation/knowledge/mcp/servers.yaml`](v3/implementation/k
 | `context7` | Framework/API documentation | Technology Scout, Integration |
 
 ### Extended servers (opt-in)
-`hf-mcp-server`, `filesystem`, `github`, `git`, `supabase`, `e2b`, `docker`, `redis`, `postgresql`, `figma`, `notion`, `toolradar`. Most require additional credentials — see `servers.yaml` for the env-var contract. (Available on `gemini`, `opencode`, `cursor`, `pi`).
+`hf-mcp-server`, `filesystem`, `github`, `git`, `supabase`, `e2b`, `docker`, `redis`, `postgresql`, `figma`, `notion`, `toolradar`. Most require additional credentials — see `servers.yaml` for the env-var contract.
 
 ## Token Governance
 | Phase | Budget |

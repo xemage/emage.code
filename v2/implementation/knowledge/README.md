@@ -1,6 +1,6 @@
 # Canonical knowledge base
 
-This folder is the **single source of truth** for every emage.code platform integration. Files here are platform-neutral; the sync script (`scripts/sync.mjs`) projects them into per-platform folders (`.github/`, `.gemini/`, `.opencode/`, `.cursor/`, `.pi/`).
+This folder is the **single source of truth** for every emage.code platform integration. Files here are platform-neutral; the sync script (`scripts/sync.mjs`) projects them into per-platform folders (`.github/`, `.gemini/`, `.opencode/`, `.cursor/`).
 
 > **Never edit files inside the generated platform folders.** Edit here, then re-run sync.
 
