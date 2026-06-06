@@ -44,8 +44,8 @@ schema-first architecture.
 
 1. `feature/v4-ecosystem-workflows` → `develop` — **done** ([!23](https://gitlab.com/em-age/emage.code/-/merge_requests/23))
 2. `release/v4.0.0` → `main` — **done** ([!24](https://gitlab.com/em-age/emage.code/-/merge_requests/24), tag `v4.0.0`)
-3. Back-merge `main` → `develop` — **in progress** (`bugfix/develop-backmerge-v4`)
+3. Back-merge `main` → `develop` — **done** ([!25](https://gitlab.com/em-age/emage.code/-/merge_requests/25))
 
 ## Status
 
-**Complete** on `main` @ tag `v4.0.0` (2026-06-06). Develop back-merge pending MR merge.
+**Complete** on `main` @ tag `v4.0.0` and `develop` (2026-06-06).
