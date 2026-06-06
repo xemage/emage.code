@@ -11,7 +11,7 @@
 emage.code brings a **structured multi-agent development team** to your
 favourite AI assistant. Every project follows the same protocol:
 
-Latest release: v3.0.0
+Latest release: v3.0.1
 
 - **Plan → Approve → Execute** lifecycle, never silent execution
 - **DAG-based task management** with explicit dependencies
@@ -86,8 +86,8 @@ changes required. See
 
 ## Install
 
-Install the **current release** (`v3.0.0`) by copying from `v3/implementation/`.
-Per-release install steps also live in [`docs/releases/v3.0.0.md`](docs/releases/v3.0.0.md)
+Install the **current release** (`v3.0.1`) by copying from `v3/implementation/`.
+Per-release install steps also live in [`docs/releases/v3.0.1.md`](docs/releases/v3.0.1.md)
 and are embedded in [GitLab Releases](https://gitlab.com/em-age/emage.code/-/releases).
 
 ## Quick start

@@ -14,10 +14,10 @@ Use v3 when you need:
 - adapter smoke testing and compatibility checks
 - stronger validation around schema integrity and projection drift
 
-## Install (v3.0.0)
+## Install (v3.0.1)
 
 Copy from `v3/implementation/` for your platform plus `AGENTS.md` and `docs/`.
-See [Quick Start](quick-start) or [`docs/releases/v3.0.0.md`](https://gitlab.com/em-age/emage.code/-/blob/main/docs/releases/v3.0.0.md)
+See [Quick Start](quick-start) or [`docs/releases/v3.0.1.md`](https://gitlab.com/em-age/emage.code/-/blob/main/docs/releases/v3.0.1.md)
 for the full per-release install block.
 
 Supported projections: GitHub Copilot, Gemini CLI, Opencode, Cursor, Pi.
