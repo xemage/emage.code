@@ -53,3 +53,5 @@ Append-only log. Entries move here after the orchestrator marks a task `done`.
 | T048 | Patch release v3.0.1 | release-manager | 2026-06-06 | docs/releases/v3.0.1.md; tag v3.0.1; [!22](https://gitlab.com/em-age/emage.code/-/merge_requests/22) |
 | T049 | v4 ecosystem workflows implementation | backend-developer | 2026-06-06 | docs/plans/plan-007-v4-ecosystem-workflows.md; 3 skills; /handoff; /discover-skills; triggers; AGENTS.md skill workflow; [!23](https://gitlab.com/em-age/emage.code/-/merge_requests/23) |
 | T050 | Major release v4.0.0 | release-manager | 2026-06-06 | docs/releases/v4.0.0.md; tag v4.0.0; [!24](https://gitlab.com/em-age/emage.code/-/merge_requests/24) |
+| T051 | Develop back-merge v4.0.0 | devops-engineer | 2026-06-06 | [!25](https://gitlab.com/em-age/emage.code/-/merge_requests/25); develop synced with main |
+| T052 | Close plan-007 status docs | technical-writer | 2026-06-06 | docs/plans/plan-007-v4-ecosystem-workflows.md; [!26](https://gitlab.com/em-age/emage.code/-/merge_requests/26) |
