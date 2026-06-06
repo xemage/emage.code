@@ -11,11 +11,12 @@ By participating you agree to abide by the [Code of Conduct](CODE_OF_CONDUCT.md)
 
 | If you want to … | Edit … | Then … |
 |------------------|--------|--------|
-| Update an agent, skill, command, instruction, or MCP server | `v2/implementation/knowledge/**` | re-run sync (see below) |
-| Update workspace conventions | `AGENTS.md` (root) and `v2/implementation/AGENTS.md` | — |
+| Update an agent, skill, command, instruction, or MCP server (current stream) | `v3/implementation/knowledge/**` | re-run v3 sync (see "Working with v3") |
+| Update an agent/skill/command for the previous stable stream | `v2/implementation/knowledge/**` | re-run sync (see below) |
+| Update workspace conventions | `AGENTS.md` (root) and `v3/implementation/AGENTS.md` | — |
 | Update the v2 plan / architecture docs | `v2/plan/**` | — |
 | Touch v1 | **don't** — v1 is frozen | open an issue first |
-| **Never** edit by hand | `.github/`, `.gemini/`, `.opencode/`, `.cursor/` (under `v2/implementation/`) | these are generated |
+| **Never** edit by hand | `.github/`, `.gemini/`, `.opencode/`, `.cursor/` (generated under each implementation stream) | these are generated |
 
 ## Workflow
 
@@ -132,24 +133,27 @@ The project uses **Semantic Versioning** (`vMAJOR.MINOR.PATCH`) and
 
 1. Branch from `develop`: `release/vX.Y.Z`
 2. Bump versions / finalise documentation as needed
-3. Run the local docs verification gate for the target tag:
+3. Create the per-release brief `docs/releases/vX.Y.Z.md` (copy
+   `docs/releases/_template.md`) with **Install** and **Highlights** sections.
+4. Run the local docs verification gate for the target tag:
    ```bash
    python3 scripts/verify-release-docs.py --tag vX.Y.Z
    ```
    This must pass before opening the release MR.
-3. Open MR `release/vX.Y.Z → main` using the **Release** MR template
-4. After merge to `main`:
+5. Open MR `release/vX.Y.Z → main` using the **Release** MR template
+6. After merge to `main`:
    ```bash
    git checkout main && git pull
    git tag -a vX.Y.Z -m "Release vX.Y.Z"
    git push origin vX.Y.Z
    git checkout develop && git merge --no-ff main && git push   # back-merge
    ```
-5. The tag push triggers the `release` CI job which:
-   - Runs `release-docs-gate` and `scripts/verify-release-docs.py` to verify required docs, marker alignment (`Latest release: vX.Y.Z`), required content sections, and local/internal links
+7. The tag push triggers the `release` CI job which:
+   - Runs `release-docs-gate` and `scripts/verify-release-docs.py` to verify required docs, marker alignment (`Latest release: vX.Y.Z`), per-release brief (`docs/releases/vX.Y.Z.md`), required content sections, and local/internal links
    - Verifies the v3 documentation surface (`docs/wiki/v3-implementation.md` and `v3/implementation/README.md`) alongside the root and wiki release docs
-   - Regenerates [`CHANGELOG.md`](CHANGELOG.md) from Conventional Commits via [git-cliff](https://git-cliff.org)
-   - Creates a [GitLab Release](https://gitlab.com/em-age/emage.code/-/releases) with notes scoped to the new version
+   - Embeds **Install + Highlights** from `docs/releases/vX.Y.Z.md` in GitLab Release notes
+   - Appends a **Changelog** section from Conventional Commits since the previous tag (full git history; `GIT_DEPTH: 0` on release job)
+   - Regenerates [`CHANGELOG.md`](CHANGELOG.md) and creates a [GitLab Release](https://gitlab.com/em-age/emage.code/-/releases)
 
 ### Hotfixes
 
