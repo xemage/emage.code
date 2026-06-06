@@ -46,8 +46,11 @@ Only `core` MCP servers are required; `extended` ones are opt-in. See [MCP Serve
 In your AI assistant chat:
 
 ```
+/discover-skills "start new project"
 /new-project "My SaaS application"
 ```
+
+Use `/handoff` before ending a session to resume cleanly later.
 
 The orchestrator will:
 1. **Plan** — propose tasks, dependencies, and agent assignments
