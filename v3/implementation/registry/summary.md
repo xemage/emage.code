@@ -5,9 +5,9 @@ Generated from: v3/implementation/knowledge
 ## Counts
 
 - agents: 27
-- commands: 16
+- commands: 18
 - instructions: 4
-- skills: 22
+- skills: 25
 
 ## Entries
 
@@ -44,7 +44,9 @@ Generated from: v3/implementation/knowledge
 | bug-report | command | beta | commands/bug-report.md |
 | code-review | command | beta | commands/code-review.md |
 | consolidate-memory | command | beta | commands/consolidate-memory.md |
+| discover-skills | command | beta | commands/discover-skills.md |
 | evaluate-poc | command | beta | commands/evaluate-poc.md |
+| handoff | command | beta | commands/handoff.md |
 | new-feature | command | beta | commands/new-feature.md |
 | new-poc | command | beta | commands/new-poc.md |
 | new-project | command | beta | commands/new-project.md |
@@ -74,12 +76,15 @@ Generated from: v3/implementation/knowledge
 | poc-evaluation | skill | beta | skills/poc-evaluation/SKILL.md |
 | project-planning | skill | beta | skills/project-planning/SKILL.md |
 | rapid-prototyping | skill | beta | skills/rapid-prototyping/SKILL.md |
+| receiving-code-review | skill | beta | skills/receiving-code-review/SKILL.md |
 | release-workflow | skill | beta | skills/release-workflow/SKILL.md |
 | skillify | skill | beta | skills/skillify/SKILL.md |
+| systematic-debugging | skill | beta | skills/systematic-debugging/SKILL.md |
 | task-management | skill | beta | skills/task-management/SKILL.md |
 | technical-debt-tracking | skill | beta | skills/technical-debt-tracking/SKILL.md |
 | technology-scouting | skill | beta | skills/technology-scouting/SKILL.md |
 | testing-strategy | skill | beta | skills/testing-strategy/SKILL.md |
 | validation-gates | skill | beta | skills/validation-gates/SKILL.md |
+| verification-before-completion | skill | beta | skills/verification-before-completion/SKILL.md |
 | worktree-isolation | skill | beta | skills/worktree-isolation/SKILL.md |
 

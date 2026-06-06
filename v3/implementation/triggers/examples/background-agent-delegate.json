@@ -1,0 +1,32 @@
+{
+  "triggerId": "schedule-background-delegate",
+  "type": "schedule",
+  "source": "scheduler.core",
+  "schedule": {
+    "expression": "*/30 * * * *",
+    "timezone": "UTC"
+  },
+  "steeringInput": {
+    "taskId": "T000",
+    "intent": "background-agent-triage",
+    "priority": "normal",
+    "delegateTo": "orchestrator",
+    "async": true,
+    "brief": {
+      "objective": "Review active tasks and delegate ready work to subagents",
+      "constraints": {
+        "maxConcurrentSubagents": 2,
+        "writablePaths": ["docs/tasks/**", "docs/checkpoints/**"],
+        "forbiddenActions": [
+          "git push --force",
+          "git reset --hard",
+          "rm -rf"
+        ]
+      }
+    }
+  },
+  "retryPolicy": {
+    "maxAttempts": 2,
+    "backoffSeconds": 10
+  }
+}
