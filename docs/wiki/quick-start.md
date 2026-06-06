@@ -10,6 +10,7 @@ Get emage.code running in your project in five minutes.
 | Gemini CLI | `v3/implementation/.gemini/` |
 | Opencode | `v3/implementation/.opencode/` |
 | Cursor | `v3/implementation/.cursor/` |
+| Pi | `v3/implementation/.pi/` |
 
 Plus always: `AGENTS.md` and `docs/`.
 
@@ -23,6 +24,9 @@ cp -r ../emage.code/v3/implementation/.github         .
 mkdir -p .vscode && cp ../emage.code/v3/implementation/.vscode/mcp.json .vscode/
 cp    ../emage.code/v3/implementation/AGENTS.md       .
 cp -r ../emage.code/v3/implementation/docs            .
+
+# Pi (terminal agent)
+cp -r ../emage.code/v3/implementation/.pi           .pi/
 ```
 
 ## 3. Set MCP env vars
@@ -82,4 +86,4 @@ When you want the next-generation workflow, follow the v3 implementation page:
 
 - **Agents not loading?** Confirm your assistant supports the `.agent.md` (Copilot), `.md` (Gemini/Opencode), or `.mdc` (Cursor) format.
 - **MCP server failing?** Check the env var is set and the server's network access works.
-- **Slash commands not appearing?** Run `node v2/implementation/scripts/sync.mjs` and re-load your assistant.
+- **Slash commands not appearing?** Run `node v3/implementation/scripts/sync-v3.mjs --root v3/implementation` and re-load your assistant.

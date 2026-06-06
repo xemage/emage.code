@@ -6,7 +6,7 @@ Latest release: v3.0.0
 
 ## What is emage.code?
 
-emage.code projects a single canonical knowledge base into the major AI coding assistants (GitHub Copilot, Gemini CLI, Opencode, Cursor) so that every assistant runs the *same* dev team with the *same* protocols.
+emage.code projects a single canonical knowledge base into the major AI coding assistants (GitHub Copilot, Gemini CLI, Opencode, Cursor, Pi) so that every assistant runs the *same* dev team with the *same* protocols.
 
 ## Wiki contents
 

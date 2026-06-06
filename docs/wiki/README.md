@@ -41,6 +41,7 @@ Required release docs:
 - `README.md`
 - `docs/wiki/README.md`
 - `docs/wiki/home.md`
+- `docs/releases/vX.Y.Z.md` (Install + Highlights for the tagged version)
 
 Local verification command:
 

@@ -56,10 +56,10 @@ preserved as the previous stable stream and v1 is frozen.
 
 ## Versions at a glance
 
-| | **v1** (legacy) | **v2** (current) | **v3** (next-gen) |
+| | **v1** (legacy) | **v2** (previous) | **v3** (current) |
 |---|---|---|---|
 | Source of truth | per-platform folders, **triple-duplicated** | single `knowledge/` tree | schema-first `knowledge/` + runtime workflows |
-| Supported platforms | GitHub Copilot, Gemini CLI, Opencode | + **Cursor** | packaging, triggers, adapters |
+| Supported platforms | GitHub Copilot, Gemini CLI, Opencode | + **Cursor** | + **Pi**, packaging, triggers, adapters |
 | MCP config | three divergent JSON files | one `mcp/servers.yaml` registry | same registry model, stricter validation |
 | Drift detection | none | `verify.mjs` + CI gate | `check-v3.py` + `verify-v3.mjs` |
 | Status | **frozen** — no new development | **maintained** — previous stable stream | **current** — active release stream |
@@ -76,12 +76,19 @@ Migration guide: [`v2/plan/05-migration-from-v1.md`](v2/plan/05-migration-from-v
 | Gemini CLI | `.gemini/` | `.md` (no `tools` field), `settings.json` with hooks |
 | Opencode | `.opencode/` | `.md` (object `tools`), `opencode.json` |
 | Cursor | `.cursor/` | `.mdc`, `applyTo` → `globs`, `mcp.json` |
+| Pi | `.pi/` | agents, prompts, instructions, skills (`.md`) |
 
 Adding a new platform = adding a `platforms/<name>.json` manifest. No script
 changes required. See
 [`v2/plan/02-platform-adapter-spec.md`](v2/plan/02-platform-adapter-spec.md).
 
 ---
+
+## Install
+
+Install the **current release** (`v3.0.0`) by copying from `v3/implementation/`.
+Per-release install steps also live in [`docs/releases/v3.0.0.md`](docs/releases/v3.0.0.md)
+and are embedded in [GitLab Releases](https://gitlab.com/em-age/emage.code/-/releases).
 
 ## Quick start
 
@@ -103,6 +110,9 @@ cp -r v3/implementation/.opencode       <your-project>/
 # Cursor
 cp -r v3/implementation/.cursor         <your-project>/
 
+# Pi (terminal coding agent — https://pi.dev)
+cp -r v3/implementation/.pi             <your-project>/.pi/
+
 # Always include
 cp    v3/implementation/AGENTS.md       <your-project>/
 cp -r v3/implementation/docs            <your-project>/
@@ -122,8 +132,8 @@ and [project Wiki](https://gitlab.com/em-age/emage.code/-/wikis/home).
 
 ### v3 implementation
 
-The v3 stream is ready for controlled use when you need the schema-first
-runtime model rather than the original release stream.
+v3 is the **current release stream** (schema-first knowledge, cookbooks,
+triggers, packaging, adapters, validation super-gate).
 
 Start here:
 
@@ -161,12 +171,14 @@ For contributor detail, see [`CONTRIBUTING.md`](CONTRIBUTING.md).
 Release publication is blocked unless documentation is updated for the tag.
 
 - Required marker in release docs: `Latest release: vX.Y.Z`
+- Required per-release brief: `docs/releases/vX.Y.Z.md` (Install + Highlights)
 - Required files:
   - `README.md`
   - `docs/wiki/README.md`
   - `docs/wiki/home.md`
-   - `docs/wiki/v3-implementation.md`
-   - `v3/implementation/README.md`
+  - `docs/wiki/v3-implementation.md`
+  - `v3/implementation/README.md`
+  - `docs/releases/vX.Y.Z.md`
 - Content verification script:
   ```bash
   python3 scripts/verify-release-docs.py --tag vX.Y.Z
