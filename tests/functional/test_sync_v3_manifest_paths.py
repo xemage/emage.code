@@ -13,11 +13,11 @@ class TestSyncV3ManifestPaths(unittest.TestCase):
         proc = subprocess.run(
             [
                 "node",
-                "v3/implementation/scripts/sync-v3.mjs",
+                "implementation/scripts/sync-v3.mjs",
                 "--platform",
                 "github",
                 "--root",
-                "v3/implementation",
+                "implementation",
             ],
             cwd=repo_root(),
             capture_output=True,
@@ -26,7 +26,7 @@ class TestSyncV3ManifestPaths(unittest.TestCase):
         )
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
 
-        manifest_path = repo_root() / "v3" / "implementation" / ".github" / ".generated-manifest.json"
+        manifest_path = repo_root() / "implementation" / ".github" / ".generated-manifest.json"
         payload = json.loads(manifest_path.read_text(encoding="utf-8"))
 
         self.assertIn("files", payload)

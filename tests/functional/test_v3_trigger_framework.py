@@ -7,24 +7,20 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tests._helpers.repo import repo_root
+from tests._helpers.repo import current_implementation_root, repo_root
 
 
 class TestV3TriggerFramework(unittest.TestCase):
     def test_schedule_trigger_executes_and_audits(self):
-        runner = repo_root() / "v3" / "implementation" / "runtime" / "triggers" / "runner.py"
+        runner = current_implementation_root() / "runtime" / "triggers" / "runner.py"
         trigger = (
-            repo_root()
-            / "v3"
-            / "implementation"
+            current_implementation_root()
             / "triggers"
             / "examples"
             / "schedule-daily.json"
         )
         policy = (
-            repo_root()
-            / "v3"
-            / "implementation"
+            current_implementation_root()
             / "triggers"
             / "examples"
             / "policy-default.json"
@@ -62,19 +58,15 @@ class TestV3TriggerFramework(unittest.TestCase):
             self.assertIn("success", statuses)
 
     def test_event_trigger_retries_then_succeeds(self):
-        runner = repo_root() / "v3" / "implementation" / "runtime" / "triggers" / "runner.py"
+        runner = current_implementation_root() / "runtime" / "triggers" / "runner.py"
         trigger = (
-            repo_root()
-            / "v3"
-            / "implementation"
+            current_implementation_root()
             / "triggers"
             / "examples"
             / "event-webhook.json"
         )
         policy = (
-            repo_root()
-            / "v3"
-            / "implementation"
+            current_implementation_root()
             / "triggers"
             / "examples"
             / "policy-default.json"
@@ -109,11 +101,9 @@ class TestV3TriggerFramework(unittest.TestCase):
             self.assertEqual(len(retries), 1)
 
     def test_trigger_policy_denies_unknown_source(self):
-        runner = repo_root() / "v3" / "implementation" / "runtime" / "triggers" / "runner.py"
+        runner = current_implementation_root() / "runtime" / "triggers" / "runner.py"
         policy = (
-            repo_root()
-            / "v3"
-            / "implementation"
+            current_implementation_root()
             / "triggers"
             / "examples"
             / "policy-default.json"

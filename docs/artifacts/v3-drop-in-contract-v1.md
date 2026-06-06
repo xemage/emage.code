@@ -1,7 +1,7 @@
 # v3 Drop-In Contract v1
 
 ## Objective
-Define the minimum release contract for `v3/implementation` to be instantly usable with the same bootstrap and operational model as `v2/implementation`.
+Define the minimum release contract for `implementation` to be instantly usable with the same bootstrap and operational model as `v2/implementation`.
 
 ## Required implementation surface
 
@@ -45,15 +45,15 @@ Define the minimum release contract for `v3/implementation` to be instantly usab
 
 ## CI release-readiness requirements
 - Run full v3 super-gate:
-  - `python3 v3/implementation/scripts/check-v3.py --root v3/implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --packaging --triggers --adapters`
+  - `python3 implementation/scripts/check-v3.py --root implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --packaging --triggers --adapters`
 - Run v3 drift gate:
-  - `node v3/implementation/scripts/verify-v3.mjs --root v3/implementation`
+  - `node implementation/scripts/verify-v3.mjs --root implementation`
 - Run v3 sync no-diff gate:
-  - `node v3/implementation/scripts/sync-v3.mjs --root v3/implementation`
+  - `node implementation/scripts/sync-v3.mjs --root implementation`
   - fail if `git diff --quiet` is false afterward.
 
 ## Release candidate checklist
-- `v3/implementation` contains all required contract files and directories.
+- `implementation` contains all required contract files and directories.
 - Generated platform outputs are present and committed.
 - Local validation commands pass.
 - Branch and MR pipelines are green.

@@ -1,5 +1,5 @@
 """Validate that every agent / skill / command / instruction frontmatter
-matches its JSON schema under v2/implementation/knowledge/schemas/."""
+matches its JSON schema under archive/v2/implementation/knowledge/schemas/."""
 from __future__ import annotations
 
 import json

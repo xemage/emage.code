@@ -7,25 +7,21 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tests._helpers.repo import repo_root
+from tests._helpers.repo import current_implementation_root, repo_root
 
 
 class TestV3TelemetryReplay(unittest.TestCase):
     def test_replay_detects_regression_for_sample_fixtures(self):
-        script = repo_root() / "v3" / "implementation" / "runtime" / "telemetry" / "replay.py"
+        script = current_implementation_root() / "runtime" / "telemetry" / "replay.py"
         baseline = (
-            repo_root()
-            / "v3"
-            / "implementation"
+            current_implementation_root()
             / "runtime"
             / "telemetry"
             / "examples"
             / "baseline-run.json"
         )
         candidate = (
-            repo_root()
-            / "v3"
-            / "implementation"
+            current_implementation_root()
             / "runtime"
             / "telemetry"
             / "examples"

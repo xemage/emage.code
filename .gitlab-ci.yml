@@ -45,7 +45,7 @@ markdown-links:
       python3 - <<'PY'
       import os, re, sys
       # Skip: .git, deps, v1 (frozen), docs/wiki (uses GitLab wiki slug links)
-      SKIP = ("/.git", "node_modules", ".vscode-server", "/v1/", "/docs/wiki")
+      SKIP = ("/.git", "node_modules", ".vscode-server", "/archive/", "/docs/wiki")
       link_re = re.compile(r'\[([^\]]+)\]\(([^)]+)\)')
       fence_re = re.compile(r'```.*?```', re.DOTALL)
       inline_re = re.compile(r'`[^`\n]*`')
@@ -101,7 +101,7 @@ unit-tests:
 verify-knowledge-drift:
   stage: verify
   script:
-    - cd v2/implementation
+    - cd archive/v2/implementation
     - node scripts/verify.mjs
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
@@ -110,7 +110,7 @@ verify-knowledge-drift:
 verify-v3-knowledge-drift:
   stage: verify
   script:
-    - node v3/implementation/scripts/verify-v3.mjs --root v3/implementation
+    - node implementation/scripts/verify-v3.mjs --root implementation
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH
@@ -121,7 +121,7 @@ v3-super-gate:
   before_script:
     - python3 -m pip install --no-cache-dir --quiet pyyaml jsonschema
   script:
-    - python3 v3/implementation/scripts/check-v3.py --root v3/implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --packaging --triggers --adapters
+    - python3 implementation/scripts/check-v3.py --root implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --packaging --triggers --adapters
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH
@@ -133,13 +133,13 @@ sync-no-diff:
   before_script:
     - apk add --no-cache git
   script:
-    - cd v2/implementation
+    - cd archive/v2/implementation
     - node scripts/sync.mjs
     - cd "$CI_PROJECT_DIR"
     - |
       if ! git diff --quiet; then
         echo "ERROR: 'sync.mjs' produced changes that were not committed."
-        echo "Run 'cd v2/implementation && node scripts/sync.mjs' locally and commit the result."
+        echo "Run 'cd archive/v2/implementation && node scripts/sync.mjs' locally and commit the result."
         git --no-pager diff --stat
         exit 1
       fi
@@ -154,11 +154,11 @@ sync-v3-no-diff:
   before_script:
     - apk add --no-cache git
   script:
-    - node v3/implementation/scripts/sync-v3.mjs --root v3/implementation
+    - node implementation/scripts/sync-v3.mjs --root implementation
     - |
       if ! git diff --quiet; then
         echo "ERROR: 'sync-v3.mjs' produced changes that were not committed."
-        echo "Run 'node v3/implementation/scripts/sync-v3.mjs --root v3/implementation' locally and commit the result."
+        echo "Run 'node implementation/scripts/sync-v3.mjs --root implementation' locally and commit the result."
         git --no-pager diff --stat
         exit 1
       fi

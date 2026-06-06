@@ -1,49 +1,9 @@
-# v3 Implementation
+# v3 Implementation (redirect)
 
-emage.code v3 is the schema-first implementation stream. It keeps the same
-27-agent permission model, but adds managed cookbooks, trigger workflows,
-packaging, adapter smoke tests, and a stricter validation super-gate.
+> **This page has moved.** The v3 implementation tree was promoted to a
+> version-independent path at the repository root.
 
-## What to use v3 for
+See [Implementation Guide](implementation-guide) for current install, validation,
+and workflow documentation.
 
-Use v3 when you need:
-
-- cookbook-driven orchestration definitions
-- trigger-based execution with policy guardrails
-- package install / update / uninstall workflows
-- adapter smoke testing and compatibility checks
-- stronger validation around schema integrity and projection drift
-
-## Install (v4.0.0)
-
-Copy from `v3/implementation/` for your platform plus `AGENTS.md` and `docs/`.
-See [Quick Start](quick-start) or [`docs/releases/v4.0.0.md`](https://gitlab.com/em-age/emage.code/-/blob/main/docs/releases/v4.0.0.md)
-for the full per-release install block.
-
-v4 adds `/handoff`, `/discover-skills`, and mandatory workflow skills — see
-[`plan-007-v4-ecosystem-workflows`](../plans/plan-007-v4-ecosystem-workflows.md).
-
-Supported projections: GitHub Copilot, Gemini CLI, Opencode, Cursor, Pi.
-
-## Quick start
-
-From the repository root:
-
-```bash
-python3 v3/implementation/scripts/check-v3.py --root v3/implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --packaging --triggers --adapters
-node v3/implementation/scripts/verify-v3.mjs --root v3/implementation
-```
-
-## Main entry points
-
-- [v3 implementation README](https://gitlab.com/em-age/emage.code/-/blob/main/v3/implementation/README.md)
-- [Agents Overview](agents-overview)
-- [Quick Start](quick-start)
-- [Contributing Workflow](contributing-workflow)
-
-## Notes
-
-- v3 is ready for controlled use, but it still follows the same repository
-  release and documentation gate model as v2.
-- Keep `v3/implementation/README.md` and the wiki page in sync when command
-  examples change.
+Historical version trees: [`archive/v3/`](https://gitlab.com/em-age/emage.code/-/tree/main/archive/v3)
