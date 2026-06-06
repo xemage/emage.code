@@ -48,4 +48,8 @@ schema-first architecture.
 
 ## Status
 
-**Complete** on `main` @ tag `v4.0.0` and `develop` (2026-06-06).
+**Complete** on `main` @ tag `v4.0.0` and `develop` (2026-06-06). Tasks T046–T052.
+
+## Follow-up (v4.x, not scheduled)
+
+See research artifact out-of-scope items: Pi extension bridge, plan annotation UI, OPA/Rego policy layer.
