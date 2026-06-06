@@ -3,7 +3,7 @@
 v3 is the **current release stream** — schema-first canonical knowledge,
 managed cookbooks, triggers, packaging, and validation super-gates.
 
-Latest release: v3.0.0
+Latest release: v3.0.1
 
 ## Install
 
@@ -34,7 +34,7 @@ cp -r v3/implementation/docs            <your-project>/
 
 Set MCP env vars from the generated config, then run `/new-project "Your idea"`.
 
-Per-release install notes: [`docs/releases/v3.0.0.md`](../../docs/releases/v3.0.0.md).
+Per-release install notes: [`docs/releases/v3.0.1.md`](../../docs/releases/v3.0.1.md).
 
 ## Validation commands
 
