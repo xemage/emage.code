@@ -1,9 +1,10 @@
 # emage.code v3 implementation
 
-v3 is the **current release stream** — schema-first canonical knowledge,
-managed cookbooks, triggers, packaging, and validation super-gates.
+v3/v4 implementation — schema-first canonical knowledge, managed cookbooks,
+triggers, packaging, and validation super-gates. **v4.0.0** adds ecosystem
+workflow skills, agent safety guards, and handoff/discovery commands.
 
-Latest release: v3.0.0
+Latest release: v4.0.0
 
 ## Install
 
@@ -34,7 +35,7 @@ cp -r v3/implementation/docs            <your-project>/
 
 Set MCP env vars from the generated config, then run `/new-project "Your idea"`.
 
-Per-release install notes: [`docs/releases/v3.0.0.md`](../../docs/releases/v3.0.0.md).
+Per-release install notes: [`docs/releases/v4.0.0.md`](../../docs/releases/v4.0.0.md).
 
 ## Validation commands
 

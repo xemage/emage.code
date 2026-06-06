@@ -30,18 +30,22 @@ schema-first architecture.
 
 ## Acceptance criteria
 
-- [ ] Three new skills in canonical knowledge; projected to all 5 platforms
-- [ ] Two new slash commands; projected to all platforms
-- [ ] Two new trigger examples validated by `check-v3.py --triggers`
-- [ ] Security guidelines include destructive-command and secret-file guards
-- [ ] `AGENTS.md` documents mandatory skill check before implementation
-- [ ] `node sync-v3.mjs` + `verify-v3.mjs` pass with no drift
-- [ ] Registry regenerated with new entries
-- [ ] `docs/releases/v4.0.0.md` with Install + Highlights
-- [ ] 78+ tests pass
+- [x] Three new skills in canonical knowledge; projected to all 5 platforms
+- [x] Two new slash commands; projected to all platforms
+- [x] Two new trigger examples validated by `check-v3.py --triggers`
+- [x] Security guidelines include destructive-command and secret-file guards
+- [x] `AGENTS.md` documents mandatory skill check before implementation
+- [x] `node sync-v3.mjs` + `verify-v3.mjs` pass with no drift
+- [x] Registry regenerated with new entries
+- [x] `docs/releases/v4.0.0.md` with Install + Highlights
+- [x] 78+ tests pass
 
 ## Release path
 
-1. `feature/v4-ecosystem-workflows` → `develop` (MR)
-2. `release/v4.0.0` → `main` (MR + tag)
-3. Back-merge `main` → `develop`
+1. `feature/v4-ecosystem-workflows` → `develop` — **done** ([!23](https://gitlab.com/em-age/emage.code/-/merge_requests/23))
+2. `release/v4.0.0` → `main` — **done** ([!24](https://gitlab.com/em-age/emage.code/-/merge_requests/24), tag `v4.0.0`)
+3. Back-merge `main` → `develop` — **in progress** (`bugfix/develop-backmerge-v4`)
+
+## Status
+
+**Complete** on `main` @ tag `v4.0.0` (2026-06-06). Develop back-merge pending MR merge.
