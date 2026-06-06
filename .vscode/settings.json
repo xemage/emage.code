@@ -5,7 +5,7 @@
 		"dotnet build": true,
         "dotnet ef": true,
 		"dotnet restore": true,
-        "dotnet run": true,		
+        "dotnet run": true,
         "dotnet test": true,
 		"ForEach-Object": true,
         "gemini": true,
@@ -32,6 +32,7 @@
         "Set-Content": true,
         "Tee-Object": true,
         "Test-Path": true,
-        "type": true        
-    }
+        "type": true
+    },
+    "makefile.configureOnOpen": false
 }

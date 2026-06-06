@@ -1,4 +1,4 @@
-# emage.code v2 — Workspace Conventions
+# emage.code v3 — Workspace Conventions
 
 ## Team Model
 - Two orchestration tracks: Production (`@orchestrator`) and PoC (`@poc-orchestrator`)
@@ -66,12 +66,12 @@ pending → in_progress → blocked → in_review → done | cancelled
 - Input validation at all system boundaries.
 
 ## Knowledge Base
-- The single source of truth for agents, skills, commands, and instructions is `v2/implementation/knowledge/`.
-- Per-platform folders (`.github/`, `.gemini/`, `.opencode/`, `.cursor/`) are **generated** by `v2/implementation/scripts/sync.mjs`. **Do not edit them by hand.**
-- See [`v2/implementation/knowledge/README.md`](v2/implementation/knowledge/README.md) for authoring rules.
+- The single source of truth for agents, skills, commands, and instructions is `knowledge/`.
+- Per-platform folders (`.github/`, `.gemini/`, `.opencode/`, `.cursor/`) are **generated** by `scripts/sync-v3.mjs`. **Do not edit them by hand.**
+- See [`knowledge/README.md`](knowledge/README.md) for authoring rules.
 
 ## MCP Servers
-Declared in [`v2/implementation/knowledge/mcp/servers.yaml`](v2/implementation/knowledge/mcp/servers.yaml). Each server is tagged:
+Declared in [`knowledge/mcp/servers.yaml`](knowledge/mcp/servers.yaml). Each server is tagged:
 
 | Tag | Emitted to |
 |-----|-----------|

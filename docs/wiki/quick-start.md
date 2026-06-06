@@ -6,10 +6,10 @@ Get emage.code running in your project in five minutes.
 
 | Platform | What to copy |
 |----------|--------------|
-| GitHub Copilot (VS Code) | `v2/implementation/.github/` + `v2/implementation/.vscode/mcp.json` |
-| Gemini CLI | `v2/implementation/.gemini/` |
-| Opencode | `v2/implementation/.opencode/` |
-| Cursor | `v2/implementation/.cursor/` |
+| GitHub Copilot (VS Code) | `v3/implementation/.github/` + `v3/implementation/.vscode/mcp.json` |
+| Gemini CLI | `v3/implementation/.gemini/` |
+| Opencode | `v3/implementation/.opencode/` |
+| Cursor | `v3/implementation/.cursor/` |
 
 Plus always: `AGENTS.md` and `docs/`.
 
@@ -19,10 +19,10 @@ Plus always: `AGENTS.md` and `docs/`.
 # Example: GitHub Copilot
 git clone https://gitlab.com/em-age/emage.code.git
 cd <your-project>
-cp -r ../emage.code/v2/implementation/.github         .
-mkdir -p .vscode && cp ../emage.code/v2/implementation/.vscode/mcp.json .vscode/
-cp    ../emage.code/v2/implementation/AGENTS.md       .
-cp -r ../emage.code/v2/implementation/docs            .
+cp -r ../emage.code/v3/implementation/.github         .
+mkdir -p .vscode && cp ../emage.code/v3/implementation/.vscode/mcp.json .vscode/
+cp    ../emage.code/v3/implementation/AGENTS.md       .
+cp -r ../emage.code/v3/implementation/docs            .
 ```
 
 ## 3. Set MCP env vars
@@ -74,9 +74,10 @@ When you want the next-generation workflow, follow the v3 implementation page:
 2. Validate the repository from the root:
 	```bash
 	python3 v3/implementation/scripts/check-v3.py --root v3/implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --packaging --triggers --adapters
-	node v3/implementation/scripts/verify-v3.mjs --root v2/implementation
+	node v3/implementation/scripts/verify-v3.mjs --root v3/implementation
 	```
 3. Use the cookbook, package, trigger, and adapter workflows documented there.
+
 ## Troubleshooting
 
 - **Agents not loading?** Confirm your assistant supports the `.agent.md` (Copilot), `.md` (Gemini/Opencode), or `.mdc` (Cursor) format.
