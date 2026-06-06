@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-05-24T11:45:39+02:00",
+  "generatedAt": "2026-06-06T15:57:31+00:00",
   "sourceRoot": "v3/implementation/knowledge",
   "platforms": [
     "cursor",
@@ -692,11 +692,55 @@
       }
     },
     {
+      "id": "discover-skills",
+      "category": "command",
+      "name": "discover-skills",
+      "path": "commands/discover-skills.md",
+      "checksum": "a4a514b9df1607e6beccbb9ce61ca7308e04734e1297c71a99ec2b28bac90ab5",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
       "id": "evaluate-poc",
       "category": "command",
       "name": "evaluate-poc",
       "path": "commands/evaluate-poc.md",
       "checksum": "18a37a98f34065829a23407812d8a13c9bcc0f491fa2d60926d444ead06dea42",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "handoff",
+      "category": "command",
+      "name": "handoff",
+      "path": "commands/handoff.md",
+      "checksum": "6df26531b81bb986cb30d8c668a8d09d315e3fd34f29f28e4c865fa274206cd5",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -1026,7 +1070,7 @@
       "category": "instruction",
       "name": "security-guidelines",
       "path": "instructions/security-guidelines.md",
-      "checksum": "ad1c929e687aa437fc3de3365e9547141b7eabd86ff711e6b974b6b0f3670f8d",
+      "checksum": "e6230578d5d7a0a292ce31cf4b700818973ae829a5b6e858c3ebef2a55aea890",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -1352,6 +1396,28 @@
       }
     },
     {
+      "id": "receiving-code-review",
+      "category": "skill",
+      "name": "receiving-code-review",
+      "path": "skills/receiving-code-review/SKILL.md",
+      "checksum": "f13d39dda83fe4f2705ce4cd3d2373ea57a8611ab8b9c8a4743a130ac585ef2e",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
       "id": "release-workflow",
       "category": "skill",
       "name": "release-workflow",
@@ -1379,6 +1445,28 @@
       "name": "skillify",
       "path": "skills/skillify/SKILL.md",
       "checksum": "16c16c6393bf44b35b91b90258ac89f9c44c15071faf7e6143afd0336a3b0b01",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "systematic-debugging",
+      "category": "skill",
+      "name": "systematic-debugging",
+      "path": "skills/systematic-debugging/SKILL.md",
+      "checksum": "ec6e14fd4253fa89b11b3770819f190d26001f69f2161f9b3166ce9294e3e5ac",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -1489,6 +1577,28 @@
       "name": "validation-gates",
       "path": "skills/validation-gates/SKILL.md",
       "checksum": "a4a7afe0e6652d6de9bbf80685228e5412610f973d42c2755cd6dc70dc7ff68a",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass"
+        }
+      }
+    },
+    {
+      "id": "verification-before-completion",
+      "category": "skill",
+      "name": "verification-before-completion",
+      "path": "skills/verification-before-completion/SKILL.md",
+      "checksum": "31d3b4cc5eb3516526d84c1439edd1c360edb857f174420f826ce9b4b0dc84cc",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [

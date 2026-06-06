@@ -52,6 +52,21 @@ pending → in_progress → blocked → in_review → done | cancelled
 - `FAIL` blocks progression. Orchestrator creates fix tasks and re-routes.
 - `CONDITIONAL_PASS` proceeds with tracked conditions added to the task list.
 
+## Skill Workflow (mandatory)
+
+Before implementation, debugging, review response, or completion claims, agents
+MUST check applicable skills in `knowledge/skills/` (or invoke `/discover-skills`).
+
+| Situation | Required skill |
+|-----------|----------------|
+| Any bug, test failure, unexpected behavior | `systematic-debugging` |
+| Code review feedback to implement | `receiving-code-review` |
+| Marking work done, commit, MR, release | `verification-before-completion` |
+| Phase or validation transition | `validation-gates`, `checkpoint-protocol` |
+
+Skipping a mandatory skill requires orchestrator approval and a logged exception
+in the task brief or checkpoint.
+
 ## Code Standards
 - See `instructions/coding-standards.md` (canonical) — projected to each platform.
 - Max 50-line functions, max 4 parameters, early returns.

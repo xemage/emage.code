@@ -1,0 +1,23 @@
+{
+  "triggerId": "event-handoff-resume",
+  "type": "event",
+  "source": "scheduler.session",
+  "event": {
+    "name": "handoff.resume",
+    "filter": {
+      "checkpointDir": "docs/checkpoints",
+      "pattern": "handoff-*.json"
+    }
+  },
+  "steeringInput": {
+    "taskId": "T000",
+    "intent": "resume-from-handoff",
+    "priority": "high",
+    "command": "/discover-skills",
+    "commandArgs": "resume session from latest handoff"
+  },
+  "retryPolicy": {
+    "maxAttempts": 1,
+    "backoffSeconds": 0
+  }
+}
