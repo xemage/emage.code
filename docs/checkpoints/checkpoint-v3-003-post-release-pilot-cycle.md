@@ -20,7 +20,7 @@ Based on: [docs/plans/plan-003-v3-execution-wave1.md](../plans/plan-003-v3-execu
 - Result: `OK - no drift across 313 files`.
 
 3. v3 pilot validation verified:
-- Command: full super-gate via `python3 v3/implementation/scripts/check-v3.py --root v3/implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --packaging --triggers --adapters`
+- Command: full super-gate via `python3 implementation/scripts/check-v3.py --root implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --packaging --triggers --adapters`
 - Result: `OK - 235 checks passed, 0 errors`.
 
 4. Functional safety baseline verified:
@@ -28,7 +28,7 @@ Based on: [docs/plans/plan-003-v3-execution-wave1.md](../plans/plan-003-v3-execu
 - Result: `Ran 56 tests ... OK`.
 
 5. Feature-flag guardrail verified:
-- Command: `python3 v3/implementation/adapters/smoke.py --adapter antigravity --input tests/fixtures/adapters/sample-input.json`
+- Command: `python3 implementation/adapters/smoke.py --adapter antigravity --input tests/fixtures/adapters/sample-input.json`
 - Result: `adapter_disabled: antigravity`.
 
 ## Pilot verdict

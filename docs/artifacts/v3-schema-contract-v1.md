@@ -66,7 +66,7 @@ Non-breaking change policy:
 
 ## 3) Canonical object schemas (agents, commands, instructions, skills)
 
-Canonical source root: v3/implementation/knowledge
+Canonical source root: implementation/knowledge
 Serialization format: markdown body + YAML frontmatter
 Validation mode: frontmatter schema validation + cross-reference checks
 
@@ -88,7 +88,7 @@ Testable rules:
 
 ### 3.2 Agent schema
 
-File location: v3/implementation/knowledge/agents/<slug>.md
+File location: implementation/knowledge/agents/<slug>.md
 
 Required fields:
 - kind: literal agent
@@ -133,7 +133,7 @@ Agent example (canonical):
 
 ### 3.3 Command schema
 
-File location: v3/implementation/knowledge/commands/<slug>.md
+File location: implementation/knowledge/commands/<slug>.md
 
 Required fields:
 - kind: literal command
@@ -148,7 +148,7 @@ Rules:
 
 ### 3.4 Instruction schema
 
-File location: v3/implementation/knowledge/instructions/<slug>.md
+File location: implementation/knowledge/instructions/<slug>.md
 
 Required fields:
 - kind: literal instruction
@@ -164,7 +164,7 @@ Rules:
 
 ### 3.5 Skill schema
 
-File location: v3/implementation/knowledge/skills/<skill>/SKILL.md
+File location: implementation/knowledge/skills/<skill>/SKILL.md
 
 Required fields:
 - kind: literal skill
@@ -181,7 +181,7 @@ Rules:
 
 ## 4) Projection manifest schema
 
-File location: v3/implementation/platforms/<platform>.json
+File location: implementation/platforms/<platform>.json
 Supported platform ids: github, gemini, opencode, cursor
 
 Required manifest fields:
@@ -222,7 +222,7 @@ Projection integrity requirements:
 
 ## 5) Registry schema
 
-File location: v3/implementation/registry/registry.json
+File location: implementation/registry/registry.json
 Purpose: machine-readable inventory of all canonical objects and projection compatibility metadata.
 
 Required top-level fields:
@@ -255,7 +255,7 @@ Rules:
 
 ## 6) Managed cookbook schema (agent.yaml and subagent references)
 
-Root location: v3/implementation/cookbooks/<cookbook-id>/
+Root location: implementation/cookbooks/<cookbook-id>/
 Primary manifest: agent.yaml
 
 ### 6.1 agent.yaml required fields

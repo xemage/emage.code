@@ -1,7 +1,7 @@
 # v3 Adapter Evaluation v1
 
 Status: Experimental
-Based on: [v3/implementation/triggers/spec-v1.md](../../v3/implementation/triggers/spec-v1.md)
+Based on: [implementation/triggers/spec-v1.md](../../implementation/triggers/spec-v1.md)
 
 ## Scope
 
@@ -11,9 +11,9 @@ Evaluate two optional adapter prototypes that map trigger framework inputs into 
 
 ## Prototype outputs
 
-- [v3/implementation/adapters/antigravity_adapter.py](../../v3/implementation/adapters/antigravity_adapter.py)
-- [v3/implementation/adapters/opencode_adapter.py](../../v3/implementation/adapters/opencode_adapter.py)
-- [v3/implementation/adapters/smoke.py](../../v3/implementation/adapters/smoke.py)
+- [implementation/adapters/antigravity_adapter.py](../../implementation/adapters/antigravity_adapter.py)
+- [implementation/adapters/opencode_adapter.py](../../implementation/adapters/opencode_adapter.py)
+- [implementation/adapters/smoke.py](../../implementation/adapters/smoke.py)
 
 ## Security constraints
 
@@ -33,8 +33,8 @@ Evaluate two optional adapter prototypes that map trigger framework inputs into 
 
 | Adapter | Command | Expected |
 |---|---|---|
-| antigravity | `python3 v3/implementation/adapters/smoke.py --adapter antigravity --input tests/fixtures/adapters/sample-input.json` | exit 0 + normalized orchestration payload |
-| opencode | `python3 v3/implementation/adapters/smoke.py --adapter opencode --input tests/fixtures/adapters/sample-input.json` | exit 0 + guarded automation script |
+| antigravity | `python3 implementation/adapters/smoke.py --adapter antigravity --input tests/fixtures/adapters/sample-input.json` | exit 0 + normalized orchestration payload |
+| opencode | `python3 implementation/adapters/smoke.py --adapter opencode --input tests/fixtures/adapters/sample-input.json` | exit 0 + guarded automation script |
 | disabled flag | same command with flags unset | exit 2 + `adapter_disabled` |
 
 ## Recommendation

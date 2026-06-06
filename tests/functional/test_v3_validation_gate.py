@@ -13,7 +13,7 @@ from tests._helpers.repo import implementation_root, repo_root
 
 def _run_check(args: list[str], cwd: Path | None = None) -> tuple[int, str]:
     proc = subprocess.run(
-        ["python3", "v3/implementation/scripts/check-v3.py", *args],
+        ["python3", "implementation/scripts/check-v3.py", *args],
         cwd=cwd or repo_root(),
         capture_output=True,
         text=True,
@@ -30,7 +30,7 @@ class TestV3ValidationGate(unittest.TestCase):
         rc, out = _run_check([
             "--projection",
             "--root",
-            "v2/implementation",
+            "archive/v2/implementation",
         ])
         self.assertEqual(rc, 0, f"projection check should pass against v2 root\n{out}")
 
@@ -99,7 +99,7 @@ class TestV3ValidationGate(unittest.TestCase):
             self.assertIn("missing directory", out)
 
     def test_hook_policy_gate_passes_for_repo_artifact(self):
-        rc, out = _run_check(["--hook-policy", "--root", "v3/implementation"])
+        rc, out = _run_check(["--hook-policy", "--root", "implementation"])
         self.assertEqual(rc, 0, f"hook-policy gate should pass\n{out}")
 
     def test_hook_policy_gate_fails_when_artifact_missing(self):
@@ -112,7 +112,7 @@ class TestV3ValidationGate(unittest.TestCase):
             self.assertIn("hook-policy: missing artifact", out)
 
     def test_telemetry_gate_passes_for_repo_artifact(self):
-        rc, out = _run_check(["--telemetry", "--root", "v3/implementation"])
+        rc, out = _run_check(["--telemetry", "--root", "implementation"])
         self.assertEqual(rc, 0, f"telemetry gate should pass\n{out}")
 
     def test_telemetry_gate_fails_when_files_missing(self):
@@ -125,7 +125,7 @@ class TestV3ValidationGate(unittest.TestCase):
             self.assertIn("telemetry: missing required file", out)
 
     def test_benchmarks_gate_passes_for_repo_artifact(self):
-        rc, out = _run_check(["--benchmarks", "--root", "v3/implementation"])
+        rc, out = _run_check(["--benchmarks", "--root", "implementation"])
         self.assertEqual(rc, 0, f"benchmarks gate should pass\n{out}")
 
     def test_benchmarks_gate_fails_when_files_missing(self):
@@ -138,7 +138,7 @@ class TestV3ValidationGate(unittest.TestCase):
             self.assertIn("benchmarks: missing required file", out)
 
     def test_registry_gate_passes_for_repo_artifact(self):
-        rc, out = _run_check(["--registry", "--root", "v3/implementation"])
+        rc, out = _run_check(["--registry", "--root", "implementation"])
         self.assertEqual(rc, 0, f"registry gate should pass\n{out}")
 
     def test_registry_gate_fails_when_files_missing(self):
@@ -151,7 +151,7 @@ class TestV3ValidationGate(unittest.TestCase):
             self.assertIn("registry: missing required file", out)
 
     def test_packaging_gate_passes_for_repo_artifact(self):
-        rc, out = _run_check(["--packaging", "--root", "v3/implementation"])
+        rc, out = _run_check(["--packaging", "--root", "implementation"])
         self.assertEqual(rc, 0, f"packaging gate should pass\n{out}")
 
     def test_packaging_gate_fails_when_files_missing(self):
@@ -164,7 +164,7 @@ class TestV3ValidationGate(unittest.TestCase):
             self.assertIn("packaging: missing required file", out)
 
     def test_triggers_gate_passes_for_repo_artifact(self):
-        rc, out = _run_check(["--triggers", "--root", "v3/implementation"])
+        rc, out = _run_check(["--triggers", "--root", "implementation"])
         self.assertEqual(rc, 0, f"triggers gate should pass\n{out}")
 
     def test_triggers_gate_fails_when_files_missing(self):
@@ -177,7 +177,7 @@ class TestV3ValidationGate(unittest.TestCase):
             self.assertIn("triggers: missing required file", out)
 
     def test_adapters_gate_passes_for_repo_artifact(self):
-        rc, out = _run_check(["--adapters", "--root", "v3/implementation"])
+        rc, out = _run_check(["--adapters", "--root", "implementation"])
         self.assertEqual(rc, 0, f"adapters gate should pass\n{out}")
 
     def test_adapters_gate_fails_when_files_missing(self):

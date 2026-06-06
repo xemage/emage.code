@@ -6,12 +6,12 @@ import os
 import subprocess
 import unittest
 
-from tests._helpers.repo import repo_root
+from tests._helpers.repo import current_implementation_root, repo_root
 
 
 class TestV3AdapterSmoke(unittest.TestCase):
     def test_antigravity_smoke_passes_with_flags(self):
-        script = repo_root() / "v3" / "implementation" / "adapters" / "smoke.py"
+        script = current_implementation_root() / "adapters" / "smoke.py"
         fixture = repo_root() / "tests" / "fixtures" / "adapters" / "sample-input.json"
         env = os.environ.copy()
         env["V3_EXPERIMENTAL_ADAPTERS"] = "1"
@@ -36,7 +36,7 @@ class TestV3AdapterSmoke(unittest.TestCase):
         self.assertEqual(payload["adapter"], "antigravity")
 
     def test_opencode_smoke_passes_with_flags(self):
-        script = repo_root() / "v3" / "implementation" / "adapters" / "smoke.py"
+        script = current_implementation_root() / "adapters" / "smoke.py"
         fixture = repo_root() / "tests" / "fixtures" / "adapters" / "sample-input.json"
         env = os.environ.copy()
         env["V3_EXPERIMENTAL_ADAPTERS"] = "1"
@@ -61,7 +61,7 @@ class TestV3AdapterSmoke(unittest.TestCase):
         self.assertEqual(payload["adapter"], "opencode")
 
     def test_smoke_fails_when_flags_are_disabled(self):
-        script = repo_root() / "v3" / "implementation" / "adapters" / "smoke.py"
+        script = current_implementation_root() / "adapters" / "smoke.py"
         fixture = repo_root() / "tests" / "fixtures" / "adapters" / "sample-input.json"
         env = os.environ.copy()
         env.pop("V3_EXPERIMENTAL_ADAPTERS", None)

@@ -3,7 +3,7 @@
 These are the **canonical sources** for the project Wiki at
 <https://gitlab.com/em-age/emage.code/-/wikis/home>.
 
-Latest release: v4.0.0
+Latest release: v5.0.0
 
 The wiki is hand-curated and the source of truth lives here, in version
 control. To update a wiki page:
@@ -80,7 +80,8 @@ The release pipeline blocks publication if this verification fails.
 | `performance-benchmarks.md` | `performance-benchmarks` |
 | `contributing-workflow.md` | `contributing-workflow` |
 | `migration-v1-to-v2.md` | `migration-v1-to-v2` |
-| `v3-implementation.md` | `v3-implementation` |
+| `implementation-guide.md` | `implementation-guide` |
+| `v3-implementation.md` | `v3-implementation` (redirect stub) |
 
 > Wiki pages use the same Markdown flavour as the main repo. Internal wiki
 > links use the slug (no `.md` extension), e.g. `[Quick Start](quick-start)`.

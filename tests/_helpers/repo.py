@@ -12,12 +12,23 @@ def repo_root() -> Path:
     return here.parents[2]
 
 
+def current_implementation_root() -> Path:
+    """Current version-independent implementation tree."""
+    return repo_root() / "implementation"
+
+
+def v2_implementation_root() -> Path:
+    """Archived v2 implementation (CI drift gate)."""
+    return repo_root() / "archive" / "v2" / "implementation"
+
+
 def knowledge_root() -> Path:
-    return repo_root() / "v2" / "implementation" / "knowledge"
+    return v2_implementation_root() / "knowledge"
 
 
 def implementation_root() -> Path:
-    return repo_root() / "v2" / "implementation"
+    """Default implementation root for v2 projection tests."""
+    return v2_implementation_root()
 
 
 def docs_root() -> Path:

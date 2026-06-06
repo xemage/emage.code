@@ -14,8 +14,8 @@ Date: 2026-05-23
 
 - [docs/artifacts/v3-migration-guide-v1.md](../artifacts/v3-migration-guide-v1.md)
 - [docs/artifacts/v3-adapter-evaluation-v1.md](../artifacts/v3-adapter-evaluation-v1.md)
-- [v3/implementation/triggers/spec-v1.md](../../v3/implementation/triggers/spec-v1.md)
-- [v3/implementation/adapters/smoke.py](../../v3/implementation/adapters/smoke.py)
+- [implementation/triggers/spec-v1.md](../../implementation/triggers/spec-v1.md)
+- [implementation/adapters/smoke.py](../../implementation/adapters/smoke.py)
 - [docs/plans/plan-003-v3-execution-wave1.md](../plans/plan-003-v3-execution-wave1.md)
 
 ## Validation summary

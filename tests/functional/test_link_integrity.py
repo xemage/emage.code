@@ -14,19 +14,19 @@ from tests._helpers.repo import repo_root
 
 
 # Skip these path segments entirely
-SKIP_PARTS = ("node_modules", ".vscode-server", "v1", "wiki")
-# More precisely: skip /v1/ and /docs/wiki/ subtrees, plus node_modules anywhere
+SKIP_PARTS = ("node_modules", ".vscode-server", "archive", "wiki")
+# Skip archive/ (frozen releases) and docs/wiki/ (GitLab slug links)
 def _is_skipped(path: Path) -> bool:
     rel = path.relative_to(repo_root())
     parts = rel.parts
     if "node_modules" in parts:
         return True
-    if "v1" in parts:  # frozen
+    if parts and parts[0] == "archive":
         return True
     if len(parts) >= 2 and parts[0] == "docs" and parts[1] == "wiki":
         return True
     # Root-level platform mirror dirs are downstream copies of the canonical
-    # mirrors under v2/implementation/. Auditing them would just duplicate
+    # mirrors under archive/v2/implementation/. Auditing them would just duplicate
     # findings against the source-of-truth mirrors. Skip.
     if parts and parts[0] in {".github", ".gemini", ".opencode", ".cursor"}:
         return True

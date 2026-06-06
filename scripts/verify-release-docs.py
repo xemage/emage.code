@@ -31,8 +31,9 @@ REQUIRED_FILES = [
     Path("docs/wiki/home.md"),
     Path("docs/wiki/quick-start.md"),
     Path("docs/wiki/agents-overview.md"),
-    Path("docs/wiki/v3-implementation.md"),
-    Path("v3/implementation/README.md"),
+    Path("docs/wiki/implementation-guide.md"),
+    Path("implementation/README.md"),
+    Path("scripts/install.sh"),
     Path("docs/releases/_template.md"),
 ]
 
@@ -42,42 +43,44 @@ SECTION_REQUIREMENTS: dict[Path, list[str]] = {
         "## Quick start",
         "## Use emage.code in practice",
         "## Documentation release contract",
-        "### v3 implementation",
+        "### Implementation",
+        "scripts/install.sh",
         "docs/releases/",
     ],
     Path("CONTRIBUTING.md"): [
         "## Releasing",
         "### Cutting a release",
-        "## Working with v3",
+        "## Working with implementation",
         "release-docs-gate",
         "verify-release-docs.py",
     ],
     Path("docs/wiki/home.md"): [
         "## Wiki contents",
         "## Project links",
-        "v3-implementation",
+        "implementation-guide",
     ],
     Path("docs/wiki/quick-start.md"): [
-        "## 1. Pick your platform",
+        "## 1. Install",
         "## 4. Invoke the orchestrator",
         "/new-project",
-        "## 7. Use v3 for schema-first workflows",
+        "scripts/install.sh",
     ],
     Path("docs/wiki/README.md"): [
         "## Sync to live Wiki",
         "## Release documentation contract",
-        "v3-implementation",
+        "implementation-guide",
     ],
     Path("docs/wiki/agents-overview.md"): [
         "## v3 note",
         "schema-first runtime model",
     ],
-    Path("docs/wiki/v3-implementation.md"): [
-        "## What to use v3 for",
-        "python3 v3/implementation/scripts/check-v3.py",
-        "node v3/implementation/scripts/verify-v3.mjs",
+    Path("docs/wiki/implementation-guide.md"): [
+        "## Validate",
+        "python3 implementation/scripts/check-v3.py",
+        "node implementation/scripts/verify-v3.mjs",
+        "scripts/install.sh",
     ],
-    Path("v3/implementation/README.md"): [
+    Path("implementation/README.md"): [
         "## Install",
         "## Validation commands",
         "## Package workflow",

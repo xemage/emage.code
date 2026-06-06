@@ -6,9 +6,9 @@ Validation of v3 drop-in parity with v2 usability surface and deterministic proj
 ## Commands run
 
 ```bash
-node v3/implementation/scripts/sync-v3.mjs
-node v3/implementation/scripts/verify-v3.mjs --root v3/implementation
-python3 v3/implementation/scripts/check-v3.py --root v3/implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --packaging --triggers --adapters
+node implementation/scripts/sync-v3.mjs
+node implementation/scripts/verify-v3.mjs --root implementation
+python3 implementation/scripts/check-v3.py --root implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --packaging --triggers --adapters
 python3 -m unittest tests.functional.test_sync_manifest_paths tests.functional.test_sync_v3_manifest_paths tests.functional.test_publish_release -v
 node v2/implementation/scripts/verify.mjs
 ```
