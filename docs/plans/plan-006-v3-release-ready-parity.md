@@ -66,4 +66,8 @@ T045 -> merge request + green pipelines + release-ready checklist
 ## Approval
 
 - [x] User approved on 2026-05-24
-- [ ] Plan locked; revisions create plan-006-v3-release-ready-parity-v2.md
+- [x] Plan complete — delivered in v3.0.0 (tasks T038–T045, MR [!19](https://gitlab.com/em-age/emage.code/-/merge_requests/19))
+
+## Status
+
+**Complete** (2026-06-06). Superseded for ongoing work by plan-007 (v4.0.0 ecosystem workflows).
