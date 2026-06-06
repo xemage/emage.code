@@ -11,7 +11,7 @@
 emage.code brings a **structured multi-agent development team** to your
 favourite AI assistant. Every project follows the same protocol:
 
-Latest release: v3.0.0
+Latest release: v4.0.0
 
 - **Plan → Approve → Execute** lifecycle, never silent execution
 - **DAG-based task management** with explicit dependencies
@@ -20,10 +20,9 @@ Latest release: v3.0.0
 - **GitFlow** branching with conventional commits
 - **OWASP Top-10** security baseline enforced via the security-engineer agent
 
-**v3 is the current release stream** — schema-first canonical knowledge with
-managed cookbooks, trigger workflows, packaging, adapter smoke tests, and a
-stricter validation super-gate. v2 remains available as the previous stable
-toolchain; v1 is frozen.
+**v4 is the current release** — ecosystem-aligned workflows (mandatory skills,
+agent safety guards, handoff, skill discovery) on the v3 schema-first
+implementation stream. v2 remains the previous stable toolchain; v1 is frozen.
 
 ---
 
@@ -56,13 +55,14 @@ preserved as the previous stable stream and v1 is frozen.
 
 ## Versions at a glance
 
-| | **v1** (legacy) | **v2** (previous) | **v3** (current) |
+| | **v1** (legacy) | **v2** (previous) | **v3/v4** (current) |
 |---|---|---|---|
 | Source of truth | per-platform folders, **triple-duplicated** | single `knowledge/` tree | schema-first `knowledge/` + runtime workflows |
 | Supported platforms | GitHub Copilot, Gemini CLI, Opencode | + **Cursor** | + **Pi**, packaging, triggers, adapters |
+| Workflow skills | ad-hoc prompts | commands + skills | **v4:** mandatory skill workflow + safety guards |
 | MCP config | three divergent JSON files | one `mcp/servers.yaml` registry | same registry model, stricter validation |
 | Drift detection | none | `verify.mjs` + CI gate | `check-v3.py` + `verify-v3.mjs` |
-| Status | **frozen** — no new development | **maintained** — previous stable stream | **current** — active release stream |
+| Status | **frozen** — no new development | **maintained** — previous stable stream | **current** — v4.0.0 on `v3/implementation/` |
 
 Migration guide: [`v2/plan/05-migration-from-v1.md`](v2/plan/05-migration-from-v1.md)
 
@@ -86,8 +86,8 @@ changes required. See
 
 ## Install
 
-Install the **current release** (`v3.0.0`) by copying from `v3/implementation/`.
-Per-release install steps also live in [`docs/releases/v3.0.0.md`](docs/releases/v3.0.0.md)
+Install the **current release** (`v4.0.0`) by copying from `v3/implementation/`.
+Per-release install steps also live in [`docs/releases/v4.0.0.md`](docs/releases/v4.0.0.md)
 and are embedded in [GitLab Releases](https://gitlab.com/em-age/emage.code/-/releases).
 
 ## Quick start
@@ -191,7 +191,7 @@ and local/internal markdown link validity for core release docs.
 
 ## Architecture (6 layers)
 
-1. **Commands** — 16 slash commands, the user entry point
+1. **Commands** — 18 slash commands, the user entry point
 2. **Orchestration** — Plan-Approve-Execute engine (`@orchestrator`, `@poc-orchestrator`)
 3. **Agents** — 27 specialists (backend, frontend, qa, security, devops, …)
 4. **Skills** — 22 reusable capabilities (code-review, validation-gates, …)
