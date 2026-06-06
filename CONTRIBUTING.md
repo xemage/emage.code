@@ -11,11 +11,12 @@ By participating you agree to abide by the [Code of Conduct](CODE_OF_CONDUCT.md)
 
 | If you want to … | Edit … | Then … |
 |------------------|--------|--------|
-| Update an agent, skill, command, instruction, or MCP server | `v2/implementation/knowledge/**` | re-run sync (see below) |
-| Update workspace conventions | `AGENTS.md` (root) and `v2/implementation/AGENTS.md` | — |
+| Update an agent, skill, command, instruction, or MCP server (current stream) | `v3/implementation/knowledge/**` | re-run v3 sync (see "Working with v3") |
+| Update an agent/skill/command for the previous stable stream | `v2/implementation/knowledge/**` | re-run sync (see below) |
+| Update workspace conventions | `AGENTS.md` (root) and `v3/implementation/AGENTS.md` | — |
 | Update the v2 plan / architecture docs | `v2/plan/**` | — |
 | Touch v1 | **don't** — v1 is frozen | open an issue first |
-| **Never** edit by hand | `.github/`, `.gemini/`, `.opencode/`, `.cursor/` (under `v2/implementation/`) | these are generated |
+| **Never** edit by hand | `.github/`, `.gemini/`, `.opencode/`, `.cursor/` (generated under each implementation stream) | these are generated |
 
 ## Workflow
 

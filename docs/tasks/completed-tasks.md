@@ -47,3 +47,4 @@ Append-only log. Entries move here after the orchestrator marks a task `done`.
 | T042 | Add v3 CI gates and release wiring | devops-engineer | 2026-05-24 | .gitlab-ci.yml; docs/tasks/task-T042.md |
 | T043 | Update v3 docs and runbooks | technical-writer | 2026-05-24 | v3/implementation/README.md; README.md; CONTRIBUTING.md; docs/wiki/v3-implementation.md; docs/tasks/task-T043.md |
 | T044 | Execute v3 QA and security gate | qa-engineer | 2026-05-24 | docs/artifacts/v3-release-readiness-gate-v1.md; docs/checkpoints/checkpoint-v3-006-release-ready-execution.md; docs/tasks/task-T044.md |
+| T045 | Prepare v3 release candidate merge | release-manager | 2026-06-06 | README.md; docs/wiki/README.md; docs/wiki/home.md; docs/wiki/quick-start.md; CONTRIBUTING.md; v3.0.0 release markers; docs/tasks/task-T045.md |

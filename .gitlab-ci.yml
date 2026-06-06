@@ -28,7 +28,7 @@ default:
   interruptible: true
   tags:
     - docker
-    - dind
+    # - dind
 
 variables:
   GIT_DEPTH: "20"
