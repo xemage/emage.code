@@ -2,7 +2,7 @@
 
 Based on: [Superpowers](https://github.com/obra/superpowers), [Awesome OpenCode](https://github.com/awesome-opencode/awesome-opencode), [Pi](https://pi.dev), [HackerNoon — 12 OpenCode Skills](https://hackernoon.com/twelve-opencode-skills-every-dev-team-should-steal)
 
-Status: Research artifact for emage.code v3 roadmap (not implemented).
+Status: Research artifact — **implemented in v4.0.0** (see `docs/plans/plan-007-v4-ecosystem-workflows.md`).
 
 ## Executive summary
 
