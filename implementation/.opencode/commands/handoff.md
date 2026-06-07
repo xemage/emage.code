@@ -1,5 +1,5 @@
 ---
-description: "Create a structured session handoff for the next agent or human. Captures state, blockers, and next actions using the v3 handoff schema."
+description: "Create a structured session handoff for the next agent or human. Captures state, blockers, and next actions using the handoff schema."
 agent: "orchestrator"
 argument-hint: "Optional: focus task ID or session summary..."
 ---

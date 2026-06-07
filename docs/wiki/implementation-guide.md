@@ -1,8 +1,8 @@
 # Implementation Guide
 
-emage.code uses a **version-independent** `implementation/` tree at the repository
-root. It provides schema-first canonical knowledge, managed cookbooks, trigger
-workflows, packaging, and validation super-gates (current release: v5.0.0).
+emage.code uses an `implementation/` tree at the repository root. It provides
+schema-first canonical knowledge, managed cookbooks, trigger workflows, packaging,
+and validation super-gates (current release: v6.0.0).
 
 ## What to use it for
 
@@ -22,7 +22,7 @@ cd emage.code
 scripts/install.sh --target <your-project> --platform cursor
 ```
 
-Or see [Quick Start](quick-start) and [`docs/releases/v5.0.0.md`](https://gitlab.com/em-age/emage.code/-/blob/main/docs/releases/v5.0.0.md).
+Or see [Quick Start](quick-start) and [`docs/releases/v6.0.0.md`](https://gitlab.com/em-age/emage.code/-/blob/main/docs/releases/v6.0.0.md).
 
 Supported projections: GitHub Copilot, Gemini CLI, Opencode, Cursor, Pi.
 
@@ -31,8 +31,8 @@ Supported projections: GitHub Copilot, Gemini CLI, Opencode, Cursor, Pi.
 From the repository root:
 
 ```bash
-python3 implementation/scripts/check-v3.py --root implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --packaging --triggers --adapters
-node implementation/scripts/verify-v3.mjs --root implementation
+python3 implementation/scripts/check.py --root implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --packaging --triggers --adapters
+node implementation/scripts/verify.mjs --root implementation
 ```
 
 ## Main entry points
@@ -40,9 +40,7 @@ node implementation/scripts/verify-v3.mjs --root implementation
 - [Implementation README](https://gitlab.com/em-age/emage.code/-/blob/main/implementation/README.md)
 - [Agents Overview](agents-overview)
 - [Quick Start](quick-start)
-- [Archive](https://gitlab.com/em-age/emage.code/-/tree/main/archive) — frozen v1/v2 streams
 
 ## Notes
 
 - Edit canonical files under `implementation/knowledge/` only; run `make sync`.
-- Previous version paths live under `archive/v1`, `archive/v2`, `archive/v3`.

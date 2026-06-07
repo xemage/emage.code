@@ -2,7 +2,7 @@
 
 Phase: Pilot rollout validation
 Date: 2026-05-23
-Based on: [docs/checkpoints/checkpoint-v3-003-post-release-pilot-cycle.md](checkpoint-v3-003-post-release-pilot-cycle.md), [docs/artifacts/v3-pilot-rollout-report-v1.md](../artifacts/v3-pilot-rollout-report-v1.md)
+Based on: [docs/checkpoints/checkpoint-v3-003-post-release-pilot-cycle.md](checkpoint-v3-003-post-release-pilot-cycle.md)
 
 ## Completed items
 

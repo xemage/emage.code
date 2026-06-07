@@ -1,8 +1,9 @@
-# Prerequisites — emage.code v3
+# Prerequisites — emage.code implementation
 
 ## Required
-- **Node.js 18+** — for `scripts/sync-v3.mjs` and for MCP servers launched via `npx`.
-- **Git 2.30+** — for worktree isolation, branch policies.
+- **Node.js 18+** — for `scripts/sync.mjs` and for MCP servers launched via `npx`.
+- **Python 3.10+** — for `check.py`, `package.py`, and registry generation.
+- **Git 2.30+** — for worktree isolation, branch policies, and pack install from git URLs.
 
 ## Per-platform
 | Platform | Requirement |
@@ -11,6 +12,7 @@
 | Gemini CLI | `npm install -g @google/gemini-cli` |
 | Opencode | `npm install -g opencode-ai` |
 | Cursor | Cursor 0.42+ (rules + commands + MCP support) |
+| Pi | [pi.dev](https://pi.dev) terminal agent |
 
 ## MCP server credentials (env vars)
 
@@ -27,16 +29,23 @@ Set whichever you need before launching the AI tool. See [`SECURITY.md`](SECURIT
 
 ## Verifying
 
+From the repository root:
+
 ```bash
 node --version           # ≥ 18
+python3 --version        # ≥ 3.10
 git --version            # ≥ 2.30
-node v3/implementation/scripts/sync-v3.mjs    # emits 4 platform folders
-node v3/implementation/scripts/verify-v3.mjs  # exits 0
+make sync && make verify
+```
+
+From `implementation/scripts/`:
+
+```bash
+./sync.sh
+./verify.sh
 ```
 
 ```powershell
-node --version           # ≥ 18
-git --version            # ≥ 2.30
-node scripts/sync-v3.mjs    # emits 4 platform folders
-node scripts/verify-v3.mjs  # exits 0
+.\sync.ps1
+node verify.mjs --root ..
 ```

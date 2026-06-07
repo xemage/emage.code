@@ -2,7 +2,7 @@
 
 Release: [v0.1.1](https://gitlab.com/em-age/emage.code/-/releases/v0.1.1)
 Date: 2026-05-23
-Based on: [docs/artifacts/v3-migration-guide-v1.md](v3-migration-guide-v1.md), [docs/plans/plan-003-v3-execution-wave1.md](../plans/plan-003-v3-execution-wave1.md)
+Based on: [docs/plans/plan-003-v3-execution-wave1.md](../plans/plan-003-v3-execution-wave1.md)
 
 ## Summary
 

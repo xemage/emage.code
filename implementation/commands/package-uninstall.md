@@ -1,6 +1,6 @@
 ---
 name: package-uninstall
-description: "Uninstall a v3 knowledge pack and remove it from the installed index."
+description: "Uninstall a knowledge pack and remove it from the installed index."
 ---
 
 # package-uninstall
@@ -8,10 +8,10 @@ description: "Uninstall a v3 knowledge pack and remove it from the installed ind
 ## Usage
 
 ```bash
-python3 v3/implementation/scripts/package-v3.py uninstall --root v3/implementation --pack-id <pack-id>
+python3 implementation/scripts/package-v3.py uninstall --root implementation --pack-id <pack-id>
 ```
 
 ## Notes
 
-- Removes package directory from `v3/implementation/packs/installed/<pack-id>`.
-- Removes package record from `v3/implementation/packs/installed/index.json`.
+- Removes package directory from `implementation/packs/installed/<pack-id>`.
+- Removes package record from `implementation/packs/installed/index.json`.

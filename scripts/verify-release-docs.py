@@ -71,13 +71,13 @@ SECTION_REQUIREMENTS: dict[Path, list[str]] = {
         "implementation-guide",
     ],
     Path("docs/wiki/agents-overview.md"): [
-        "## v3 note",
         "schema-first runtime model",
+        "managed cookbooks",
     ],
     Path("docs/wiki/implementation-guide.md"): [
         "## Validate",
-        "python3 implementation/scripts/check-v3.py",
-        "node implementation/scripts/verify-v3.mjs",
+        "python3 implementation/scripts/check.py",
+        "node implementation/scripts/verify.mjs",
         "scripts/install.sh",
     ],
     Path("implementation/README.md"): [

@@ -2,7 +2,7 @@
 
 Phase: Pilot completion and rollout decision
 Date: 2026-05-23
-Based on: [docs/checkpoints/checkpoint-v3-004-pilot-switch-validation.md](checkpoint-v3-004-pilot-switch-validation.md), [docs/artifacts/v3-pilot-rollout-report-v2.md](../artifacts/v3-pilot-rollout-report-v2.md)
+Based on: [docs/checkpoints/checkpoint-v3-004-pilot-switch-validation.md](checkpoint-v3-004-pilot-switch-validation.md)
 
 ## Scope completed
 

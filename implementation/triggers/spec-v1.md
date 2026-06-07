@@ -1,7 +1,7 @@
 # v3 Trigger Framework Spec v1
 
 Status: Draft for implementation (Execution Wave 2, P2)
-Based on: [docs/artifacts/v3-hook-policy-spec-v1.md](../../docs/artifacts/v3-hook-policy-spec-v1.md)
+Based on: [docs/artifacts/hook-policy-spec-v1.md](../../docs/artifacts/hook-policy-spec-v1.md)
 
 ## 1) Purpose
 
