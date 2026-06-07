@@ -43,11 +43,11 @@ Primary threats:
 ## Enforcement points
 
 - Runtime validator module:
-  `v3/implementation/runtime/handoff/validator.py`
+  `implementation/runtime/handoff/validator.py`
 - Runtime schema contract:
-  `v3/implementation/runtime/handoff/schema-v1.json`
+  `implementation/runtime/handoff/schema-v1.json`
 - Super-gate command:
-  `python3 v3/implementation/scripts/check-v3.py --handoff-security --root v3/implementation`
+  `python3 implementation/scripts/check-v3.py --handoff-security --root implementation`
 
 ## Cookbook integration
 

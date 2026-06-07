@@ -9,29 +9,46 @@ section.
 
 Latest release: vX.Y.Z
 
-Pick your platform and copy from `v3/implementation/`:
+**Recommended:** use the installer from a clone of this repository:
+
+```bash
+git clone https://gitlab.com/em-age/emage.code.git
+cd emage.code
+scripts/install.sh --target <your-project> --platform cursor
+```
+
+| Platform | `--platform` value |
+|----------|-------------------|
+| Cursor | `cursor` |
+| GitHub Copilot (VS Code) | `github` |
+| Gemini CLI | `gemini` |
+| Opencode | `opencode` |
+| Pi | `pi` |
+| All platforms | `all` |
+
+**Manual copy** from `implementation/` (alternative):
 
 ```bash
 # GitHub Copilot
-cp -r v3/implementation/.github         <your-project>/
+cp -r implementation/.github         <your-project>/
 mkdir -p <your-project>/.vscode
-cp    v3/implementation/.vscode/mcp.json <your-project>/.vscode/
+cp    implementation/.vscode/mcp.json <your-project>/.vscode/
 
 # Gemini CLI
-cp -r v3/implementation/.gemini         <your-project>/
+cp -r implementation/.gemini         <your-project>/
 
 # Opencode
-cp -r v3/implementation/.opencode       <your-project>/
+cp -r implementation/.opencode       <your-project>/
 
 # Cursor
-cp -r v3/implementation/.cursor         <your-project>/
+cp -r implementation/.cursor         <your-project>/
 
 # Pi (terminal agent)
-cp -r v3/implementation/.pi             <your-project>/.pi/
+cp -r implementation/.pi             <your-project>/.pi/
 
 # Always include
-cp    v3/implementation/AGENTS.md       <your-project>/
-cp -r v3/implementation/docs            <your-project>/
+cp    implementation/AGENTS.md       <your-project>/
+cp -r implementation/docs            <your-project>/
 ```
 
 Set MCP env vars from the generated `mcp.json` / platform config, then run

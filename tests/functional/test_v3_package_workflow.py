@@ -7,13 +7,13 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tests._helpers.repo import repo_root
+from tests._helpers.repo import current_implementation_root, repo_root
 
 
 class TestV3PackageWorkflow(unittest.TestCase):
     def test_local_install_update_uninstall_flow(self):
-        script = repo_root() / "v3" / "implementation" / "scripts" / "package-v3.py"
-        schema = repo_root() / "v3" / "implementation" / "registry" / "package.schema.json"
+        script = current_implementation_root() / "scripts" / "package-v3.py"
+        schema = current_implementation_root() / "registry" / "package.schema.json"
         fixture = repo_root() / "tests" / "fixtures" / "packs" / "sample-pack"
 
         with tempfile.TemporaryDirectory() as tmp:

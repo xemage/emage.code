@@ -11,7 +11,7 @@
 emage.code brings a **structured multi-agent development team** to your
 favourite AI assistant. Every project follows the same protocol:
 
-Latest release: v4.0.0
+Latest release: v5.0.0
 
 - **Plan → Approve → Execute** lifecycle, never silent execution
 - **DAG-based task management** with explicit dependencies
@@ -20,9 +20,9 @@ Latest release: v4.0.0
 - **GitFlow** branching with conventional commits
 - **OWASP Top-10** security baseline enforced via the security-engineer agent
 
-**v4 is the current release** — ecosystem-aligned workflows (mandatory skills,
-agent safety guards, handoff, skill discovery) on the v3 schema-first
-implementation stream. v2 remains the previous stable toolchain; v1 is frozen.
+**v5 is the current release** — ecosystem-aligned workflows (mandatory skills,
+agent safety guards, handoff, skill discovery) on the schema-first
+`implementation/` stream. Older version trees live under `archive/`.
 
 ---
 
@@ -31,25 +31,31 @@ implementation stream. v2 remains the previous stable toolchain; v1 is frozen.
 ```
 emage.code/
 ├── AGENTS.md                  ← workspace-level conventions (loaded by every agent)
-├── docs/                      ← runtime workspace state
+├── implementation/            ← current release — canonical knowledge + projections
+│   ├── knowledge/             ← edit here; platform folders are generated
+│   ├── scripts/               ← sync, verify, check, packaging, registry
+│   ├── cookbooks/             ← managed-agent definitions
+│   ├── triggers/              ← trigger specs and examples
+│   └── .cursor/ … .pi/        ← generated platform outputs (do not edit by hand)
+├── scripts/
+│   └── install.sh             ← one-command install into your project
+├── docs/                      ← runtime workspace state + wiki sources
+│   ├── wiki/                  ← hand-curated wiki (synced to GitLab Wiki)
+│   ├── releases/              ← per-release install + highlights
 │   ├── plans/                 ← Plan-Approve-Execute plans
 │   ├── tasks/                 ← active + completed task ledgers
 │   ├── checkpoints/           ← phase-boundary snapshots
 │   ├── decisions/             ← ADRs (Architecture Decision Records)
 │   └── artifacts/             ← versioned design artifacts
-├── v1/                        ← v1 release — frozen, kept for reference
-│   ├── plan/                  ← original architecture & phase plans
-│   └── implementation/        ← per-platform agent bundles (triple-duplicated)
-├── v2/                        ← previous stable release — single source of truth
-│   ├── plan/                  ← v2 architecture, adapter spec, phase backfills
-│   └── implementation/        ← canonical knowledge + sync engine + generated mirrors
-├── v3/                        ← current release — schema-first knowledge + runtime
-│   └── implementation/        ← canonical knowledge, projections, cookbooks, triggers, packaging
+├── archive/                   ← frozen historical version streams
+│   ├── v1/                    ← legacy triple-duplicated bundles
+│   ├── v2/                    ← previous stable toolchain
+│   └── v3/                    ← pointer to promoted implementation/
 └── .gitlab-ci.yml             ← drift verification + sync sanity pipeline
 ```
 
-Use [`v3/implementation/`](v3/implementation/README.md) for new work — v2 is
-preserved as the previous stable stream and v1 is frozen.
+Use [`implementation/`](implementation/README.md) for new work. See
+[`archive/README.md`](archive/README.md) for historical version trees.
 
 ---
 
@@ -62,9 +68,9 @@ preserved as the previous stable stream and v1 is frozen.
 | Workflow skills | ad-hoc prompts | commands + skills | **v4:** mandatory skill workflow + safety guards |
 | MCP config | three divergent JSON files | one `mcp/servers.yaml` registry | same registry model, stricter validation |
 | Drift detection | none | `verify.mjs` + CI gate | `check-v3.py` + `verify-v3.mjs` |
-| Status | **frozen** — no new development | **maintained** — previous stable stream | **current** — v4.0.0 on `v3/implementation/` |
+| Status | **frozen** — `archive/v1/` | **maintained** — `archive/v2/` | **current** — v5.0.0 on `implementation/` |
 
-Migration guide: [`v2/plan/05-migration-from-v1.md`](v2/plan/05-migration-from-v1.md)
+Migration guide: [`archive/v2/plan/05-migration-from-v1.md`](archive/v2/plan/05-migration-from-v1.md)
 
 ---
 
@@ -78,73 +84,67 @@ Migration guide: [`v2/plan/05-migration-from-v1.md`](v2/plan/05-migration-from-v
 | Cursor | `.cursor/` | `.mdc`, `applyTo` → `globs`, `mcp.json` |
 | Pi | `.pi/` | agents, prompts, instructions, skills (`.md`) |
 
-Adding a new platform = adding a `platforms/<name>.json` manifest. No script
-changes required. See
-[`v2/plan/02-platform-adapter-spec.md`](v2/plan/02-platform-adapter-spec.md).
+Adding a new platform = adding a `platforms/<name>.json` manifest under
+`implementation/`. No script changes required. See
+[`archive/v2/plan/02-platform-adapter-spec.md`](archive/v2/plan/02-platform-adapter-spec.md).
 
 ---
 
 ## Install
 
-Install the **current release** (`v4.0.0`) by copying from `v3/implementation/`.
-Per-release install steps also live in [`docs/releases/v4.0.0.md`](docs/releases/v4.0.0.md)
+Install the **current release** (`v5.0.0`) with the installer script:
+
+```bash
+git clone https://gitlab.com/em-age/emage.code.git
+cd emage.code
+scripts/install.sh --target /path/to/your-project --platform cursor
+```
+
+| Platform | `--platform` value |
+|----------|-------------------|
+| Cursor | `cursor` |
+| GitHub Copilot (VS Code) | `github` |
+| Gemini CLI | `gemini` |
+| Opencode | `opencode` |
+| Pi | `pi` |
+| All platforms | `all` |
+
+Makefile shortcut: `make install TARGET=/path/to/your-project PLATFORM=cursor`
+
+Per-release install steps also live in [`docs/releases/v5.0.0.md`](docs/releases/v5.0.0.md)
 and are embedded in [GitLab Releases](https://gitlab.com/em-age/emage.code/-/releases).
 
 ## Quick start
 
-Pick the platform you use, copy that folder to your project root, plus
-`AGENTS.md` and `docs/`:
-
-```bash
-# GitHub Copilot
-cp -r v3/implementation/.github         <your-project>/
-mkdir -p <your-project>/.vscode
-cp    v3/implementation/.vscode/mcp.json <your-project>/.vscode/
-
-# Gemini CLI
-cp -r v3/implementation/.gemini         <your-project>/
-
-# Opencode
-cp -r v3/implementation/.opencode       <your-project>/
-
-# Cursor
-cp -r v3/implementation/.cursor         <your-project>/
-
-# Pi (terminal coding agent — https://pi.dev)
-cp -r v3/implementation/.pi             <your-project>/.pi/
-
-# Always include
-cp    v3/implementation/AGENTS.md       <your-project>/
-cp -r v3/implementation/docs            <your-project>/
-```
-
-Set the MCP env vars (`GITLAB_PERSONAL_ACCESS_TOKEN`, `BRAVE_API_KEY`, …) — the
-full list lives in the generated `mcp.json`.
-
-Then in your AI assistant:
+After install, set MCP env vars (`GITLAB_PERSONAL_ACCESS_TOKEN`, `BRAVE_API_KEY`, …)
+from the generated `mcp.json`, then in your AI assistant:
 
 ```
+/discover-skills "start new project"
 /new-project "My SaaS application"
 ```
 
-Detailed guide: [`v3/implementation/README.md`](v3/implementation/README.md)
-and [project Wiki](https://gitlab.com/em-age/emage.code/-/wikis/home).
+Detailed guides:
 
-### v3 implementation
+- [`implementation/README.md`](implementation/README.md)
+- [`docs/wiki/quick-start.md`](docs/wiki/quick-start.md)
+- [project Wiki](https://gitlab.com/em-age/emage.code/-/wikis/home)
 
-v3 is the **current release stream** (schema-first knowledge, cookbooks,
-triggers, packaging, adapters, validation super-gate).
+### Implementation
+
+The `implementation/` tree is the **current release stream** (schema-first
+knowledge, cookbooks, triggers, packaging, adapters, validation super-gate).
 
 Start here:
 
-- [`v3/implementation/README.md`](v3/implementation/README.md)
-- [`docs/wiki/v3-implementation.md`](docs/wiki/v3-implementation.md)
+- [`implementation/README.md`](implementation/README.md)
+- [`docs/wiki/implementation-guide.md`](docs/wiki/implementation-guide.md)
 
 Validate from the repository root:
 
 ```bash
-python3 v3/implementation/scripts/check-v3.py --root v3/implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --packaging --triggers --adapters
-node v3/implementation/scripts/verify-v3.mjs --root v3/implementation
+python3 implementation/scripts/check-v3.py --root implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --packaging --triggers --adapters
+node implementation/scripts/verify-v3.mjs --root implementation
 ```
 
 ---
@@ -176,8 +176,9 @@ Release publication is blocked unless documentation is updated for the tag.
   - `README.md`
   - `docs/wiki/README.md`
   - `docs/wiki/home.md`
-  - `docs/wiki/v3-implementation.md`
-  - `v3/implementation/README.md`
+  - `docs/wiki/implementation-guide.md`
+  - `implementation/README.md`
+  - `scripts/install.sh`
   - `docs/releases/vX.Y.Z.md`
 - Content verification script:
   ```bash
@@ -196,12 +197,12 @@ and local/internal markdown link validity for core release docs.
 3. **Agents** — 27 specialists (backend, frontend, qa, security, devops, …)
 4. **Skills** — 22 reusable capabilities (code-review, validation-gates, …)
 5. **Memory** — `docs/` artifacts + MCP `memory` server
-6. **MCP servers** — declared once in [`v2/implementation/knowledge/mcp/servers.yaml`](v2/implementation/knowledge/mcp/servers.yaml)
+6. **MCP servers** — declared once in [`implementation/knowledge/mcp/servers.yaml`](implementation/knowledge/mcp/servers.yaml)
 
 Deep dive:
-- [`v2/plan/00-vision-v2.md`](v2/plan/00-vision-v2.md)
-- [`v2/plan/01-shared-knowledge-architecture.md`](v2/plan/01-shared-knowledge-architecture.md)
-- [`v2/plan/04-sync-script-design.md`](v2/plan/04-sync-script-design.md)
+- [`archive/v2/plan/00-vision-v2.md`](archive/v2/plan/00-vision-v2.md)
+- [`archive/v2/plan/01-shared-knowledge-architecture.md`](archive/v2/plan/01-shared-knowledge-architecture.md)
+- [`archive/v2/plan/04-sync-script-design.md`](archive/v2/plan/04-sync-script-design.md)
 
 ---
 
@@ -252,18 +253,17 @@ BENCH_STRESS=1 python3 tests/run.py --suite performance -v
 
 ## Contributing
 
-1. Edit canonical knowledge under [`v2/implementation/knowledge/`](v2/implementation/knowledge/) — **never** the generated `.github/`, `.gemini/`, `.opencode/`, `.cursor/` folders.
-2. Run the sync engine:
+1. Edit canonical knowledge under [`implementation/knowledge/`](implementation/knowledge/) — **never** the generated `.github/`, `.gemini/`, `.opencode/`, `.cursor/`, `.pi/` folders.
+2. Run the sync engine from the repo root:
    ```bash
-   cd v2/implementation
-   node scripts/sync.mjs
+   make sync
+   make verify
    ```
 3. Commit both the knowledge change **and** the regenerated platform folders.
-4. CI runs [`scripts/verify.mjs`](v2/implementation/scripts/verify.mjs) — it
-   fails the pipeline if generated folders drift from `knowledge/`.
+4. CI runs drift gates for both `implementation/` (current) and `archive/v2/implementation/` (previous stable).
 
 Full contributor guide: [`CONTRIBUTING.md`](CONTRIBUTING.md)
-Authoring rules: [`v2/implementation/knowledge/README.md`](v2/implementation/knowledge/README.md)
+Authoring rules: [`implementation/knowledge/README.md`](implementation/knowledge/README.md)
 
 ### Branching (GitFlow)
 ```
@@ -290,7 +290,7 @@ This project enforces:
 - OWASP Top-10 audit before every release
 - Permission boundaries per agent role
 
-Report vulnerabilities privately — see [`v2/implementation/SECURITY.md`](v2/implementation/SECURITY.md).
+Report vulnerabilities privately — see [`implementation/SECURITY.md`](implementation/SECURITY.md).
 
 ---
 

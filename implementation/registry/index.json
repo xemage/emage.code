@@ -1,12 +1,12 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-06-06T18:05:43+02:00",
-  "sourceRoot": "v3/implementation/knowledge",
+  "generatedAt": "2026-06-06T22:37:13+00:00",
+  "sourceRoot": "implementation/knowledge",
   "platforms": [
-    "cursor",
-    "gemini",
     "github",
-    "opencode"
+    "gemini",
+    "opencode",
+    "cursor"
   ],
   "entries": [
     {
@@ -18,16 +18,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -40,16 +40,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -62,16 +62,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -84,16 +84,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -106,16 +106,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -128,16 +128,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -150,16 +150,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -172,16 +172,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -194,16 +194,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -216,16 +216,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -238,16 +238,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -260,16 +260,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -282,16 +282,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -304,16 +304,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -326,16 +326,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -348,16 +348,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -370,16 +370,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -392,16 +392,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -414,16 +414,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -436,16 +436,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -458,16 +458,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -480,16 +480,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -502,16 +502,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -524,16 +524,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -546,16 +546,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -568,16 +568,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -590,16 +590,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -612,16 +612,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -634,16 +634,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -656,16 +656,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -678,16 +678,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -700,16 +700,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -722,16 +722,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -744,16 +744,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -766,16 +766,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -788,16 +788,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -810,16 +810,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -832,16 +832,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -854,16 +854,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -876,16 +876,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -898,16 +898,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -920,16 +920,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -942,16 +942,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -964,16 +964,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -986,16 +986,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -1008,16 +1008,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -1030,16 +1030,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -1052,16 +1052,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -1074,16 +1074,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -1096,16 +1096,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -1118,16 +1118,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -1140,16 +1140,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -1162,16 +1162,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -1184,16 +1184,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -1206,16 +1206,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -1228,16 +1228,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -1250,16 +1250,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -1272,16 +1272,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -1294,16 +1294,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -1316,16 +1316,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -1338,16 +1338,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -1360,16 +1360,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -1382,16 +1382,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -1404,16 +1404,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -1426,16 +1426,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -1448,16 +1448,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -1470,16 +1470,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -1492,16 +1492,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -1514,16 +1514,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -1536,16 +1536,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -1558,16 +1558,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -1580,16 +1580,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -1602,16 +1602,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     },
@@ -1624,16 +1624,16 @@
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
-          "cursor",
-          "gemini",
           "github",
-          "opencode"
+          "gemini",
+          "opencode",
+          "cursor"
         ],
         "projectionStatus": {
-          "cursor": "pass",
-          "gemini": "pass",
           "github": "pass",
-          "opencode": "pass"
+          "gemini": "pass",
+          "opencode": "pass",
+          "cursor": "pass"
         }
       }
     }

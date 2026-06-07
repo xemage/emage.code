@@ -1,7 +1,6 @@
 #!/usr/bin/env node
-// emage.code v3 - drift verifier (CI-friendly)
-// Re-runs sync-v3 in --check mode. Exits non-zero if generated platform
-// folders are out of sync with canonical knowledge.
+// Drift verifier (CI-friendly). Re-runs sync-v3.mjs in --check mode.
+// Exits non-zero if generated platform folders drift from knowledge/.
 
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';

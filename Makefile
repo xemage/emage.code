@@ -1,13 +1,17 @@
-.PHONY: help sync verify test test-functional test-performance lint wiki-sync
+.PHONY: help sync verify test test-functional test-performance lint wiki-sync install
 
 help:           ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 sync:           ## Regenerate platform mirrors from knowledge/
-	cd v3/implementation && node scripts/sync-v3.mjs
+	node implementation/scripts/sync-v3.mjs --root implementation
 
 verify:         ## Verify generated mirrors match knowledge/
-	cd v3/implementation && node scripts/sync-v3.mjs --check
+	node implementation/scripts/sync-v3.mjs --root implementation --check
+
+install:        ## Install into a project (see: make install TARGET=... PLATFORM=cursor)
+	@test -n "$(TARGET)" || (echo "Usage: make install TARGET=<dir> [PLATFORM=all|cursor|github|gemini|opencode|pi]" && exit 1)
+	bash scripts/install.sh --target "$(TARGET)" --platform "$(or $(PLATFORM),all)"
 
 test:           ## Run all functional + performance tests
 	python3 tests/run.py -v

@@ -6,10 +6,10 @@ Checks v3 implementation contracts for:
 - cookbook schema and reference integrity,
 - projection drift via verify-v3.mjs.
 
-Usage:
-    python3 scripts/check-v3.py
-    python3 scripts/check-v3.py --schemas --cookbooks
-    python3 scripts/check-v3.py --projection --root ../../../v2/implementation
+Usage (from repository root):
+    python3 implementation/scripts/check-v3.py --root implementation
+    python3 implementation/scripts/check-v3.py --root implementation --schemas --cookbooks
+    python3 implementation/scripts/check-v3.py --projection --root archive/v2/implementation
 """
 from __future__ import annotations
 
@@ -23,6 +23,14 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+
+def _repo_root(implementation_root: Path) -> Path:
+    root = implementation_root.resolve()
+    for candidate in (root, *root.parents):
+        if (candidate / ".gitlab-ci.yml").is_file():
+            return candidate
+    return root.parent
 
 import yaml
 
@@ -319,7 +327,7 @@ def _check_handoff_security(root: Path, result: GateResult) -> None:
     validator_path = runtime_dir / "validator.py"
     example_path = runtime_dir / "examples" / "valid-handoff.json"
     cookbook_path = root / "cookbooks" / "core-delivery" / "agent.yaml"
-    artifact_path = root.parents[1] / "docs" / "artifacts" / "v3-handoff-security-model-v1.md"
+    artifact_path = _repo_root(root) / "docs" / "artifacts" / "v3-handoff-security-model-v1.md"
 
     for path in (schema_path, validator_path, example_path, cookbook_path, artifact_path):
         result.checked += 1
@@ -370,7 +378,7 @@ def _check_handoff_security(root: Path, result: GateResult) -> None:
 
 
 def _check_hook_policy_spec(root: Path, result: GateResult) -> None:
-    spec_path = root.parents[1] / "docs" / "artifacts" / "v3-hook-policy-spec-v1.md"
+    spec_path = _repo_root(root) / "docs" / "artifacts" / "v3-hook-policy-spec-v1.md"
     result.checked += 1
     if not spec_path.is_file():
         result.err(f"hook-policy: missing artifact {spec_path}")
@@ -401,7 +409,7 @@ def _check_telemetry(root: Path, result: GateResult) -> None:
     replay_path = telemetry_dir / "replay.py"
     baseline_path = telemetry_dir / "examples" / "baseline-run.json"
     candidate_path = telemetry_dir / "examples" / "candidate-run.json"
-    artifact_path = root.parents[1] / "docs" / "artifacts" / "v3-telemetry-schema-v1.md"
+    artifact_path = _repo_root(root) / "docs" / "artifacts" / "v3-telemetry-schema-v1.md"
 
     required = (schema_path, replay_path, baseline_path, candidate_path, artifact_path)
     for path in required:
@@ -463,7 +471,7 @@ def _check_telemetry(root: Path, result: GateResult) -> None:
 
 
 def _check_benchmark_pack(root: Path, result: GateResult) -> None:
-    repo = root.parents[1]
+    repo = _repo_root(root)
     fixture_path = repo / "tests" / "fixtures" / "benchmarks" / "v3_benchmark_pack_cases.json"
     test_path = repo / "tests" / "performance" / "test_v3_benchmark_pack.py"
     baseline_path = repo / "tests" / "_baselines" / "benchmark-thresholds-v1.json"
@@ -552,7 +560,7 @@ def _check_registry(root: Path, result: GateResult) -> None:
 
 
 def _check_packaging(root: Path, result: GateResult) -> None:
-    repo = root.parents[1]
+    repo = _repo_root(root)
     commands_dir = root / "commands"
     script_path = root / "scripts" / "package-v3.py"
     schema_path = root / "registry" / "package.schema.json"
@@ -728,7 +736,7 @@ def _check_triggers(root: Path, result: GateResult) -> None:
 
 
 def _check_adapters(root: Path, result: GateResult) -> None:
-    repo = root.parents[1]
+    repo = _repo_root(root)
     adapters_dir = root / "adapters"
     smoke_path = adapters_dir / "smoke.py"
     antigravity_path = adapters_dir / "antigravity_adapter.py"
@@ -859,7 +867,7 @@ def main() -> int:
     root = Path(args.root).resolve()
     compat_knowledge_root = Path(args.compat_knowledge_root).resolve() if args.compat_knowledge_root else None
     if compat_knowledge_root is None:
-        candidate = root.parents[1] / "v2" / "implementation" / "knowledge"
+        candidate = _repo_root(root) / "archive" / "v2" / "implementation" / "knowledge"
         if candidate.is_dir():
             compat_knowledge_root = candidate
 
@@ -885,7 +893,7 @@ def main() -> int:
         _check_required(root, result)
 
     if run_all or selected["schemas"]:
-        schema_doc = root.parents[1] / "docs" / "artifacts" / "v3-schema-contract-v1.md"
+        schema_doc = _repo_root(root) / "docs" / "artifacts" / "v3-schema-contract-v1.md"
         result.checked += 1
         if not schema_doc.is_file():
             result.err(f"schemas: missing contract artifact {schema_doc}")

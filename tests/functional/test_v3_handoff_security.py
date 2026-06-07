@@ -5,7 +5,7 @@ import json
 import unittest
 from pathlib import Path
 
-from tests._helpers.repo import repo_root
+from tests._helpers.repo import current_implementation_root, repo_root
 
 
 class TestV3HandoffSecurity(unittest.TestCase):
@@ -13,7 +13,7 @@ class TestV3HandoffSecurity(unittest.TestCase):
         import importlib.util
         import sys
 
-        validator_path = repo_root() / "v3" / "implementation" / "runtime" / "handoff" / "validator.py"
+        validator_path = current_implementation_root() / "runtime" / "handoff" / "validator.py"
         spec = importlib.util.spec_from_file_location("v3_handoff_validator", validator_path)
         module = importlib.util.module_from_spec(spec)
         assert spec and spec.loader
@@ -23,9 +23,7 @@ class TestV3HandoffSecurity(unittest.TestCase):
 
     def _load_valid_payload(self) -> dict:
         payload_path = (
-            repo_root()
-            / "v3"
-            / "implementation"
+            current_implementation_root()
             / "runtime"
             / "handoff"
             / "examples"
@@ -40,9 +38,7 @@ class TestV3HandoffSecurity(unittest.TestCase):
         self.assertTrue(result.ok, msg=f"expected valid payload, got: {result.errors}")
 
         cookbook_path = (
-            repo_root()
-            / "v3"
-            / "implementation"
+            current_implementation_root()
             / "cookbooks"
             / "core-delivery"
             / "agent.yaml"
@@ -61,9 +57,7 @@ class TestV3HandoffSecurity(unittest.TestCase):
     def test_unknown_route_is_denied(self):
         module = self._load_validator()
         cookbook_path = (
-            repo_root()
-            / "v3"
-            / "implementation"
+            current_implementation_root()
             / "cookbooks"
             / "core-delivery"
             / "agent.yaml"

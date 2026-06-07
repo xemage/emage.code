@@ -7,7 +7,7 @@
 //                            [--knowledge=<dir>] [--platforms=<dir>] [--extras=<dir>]
 //
 // Defaults:
-//   --root=.. (v3/implementation)
+//   --root=.. (implementation when run from scripts/)
 //   --knowledge=knowledge --platforms=platforms --extras=_extras
 
 import { promises as fs } from 'node:fs';

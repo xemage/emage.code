@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate v3 knowledge registry from canonical metadata (compat mode supported)."""
+"""Generate knowledge registry from canonical metadata under implementation/knowledge/."""
 from __future__ import annotations
 
 import argparse
@@ -11,6 +11,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import yaml
+
+
+def _repo_root(implementation_root: Path) -> Path:
+    root = implementation_root.resolve()
+    for candidate in (root, *root.parents):
+        if (candidate / ".gitlab-ci.yml").is_file():
+            return candidate
+    return root.parent
 
 FRONTMATTER_RE = re.compile(r"^---\\s*\\n(.*?\\n)---\\s*\\n", re.DOTALL)
 SEMVER = "3.0.0"
@@ -167,14 +175,14 @@ def _determine_source(root: Path, override: str) -> Path:
     preferred = root / "knowledge"
     if preferred.is_dir():
         return preferred
-    compat = root.parents[1] / "v2" / "implementation" / "knowledge"
+    compat = _repo_root(root) / "archive" / "v2" / "implementation" / "knowledge"
     return compat
 
 
 def main() -> int:
     args = parse_args()
     root = Path(args.root).resolve()
-    repo_root = root.parents[1]
+    repo_root = _repo_root(root)
     source_root = _determine_source(root, args.source_knowledge_root)
     out_path = Path(args.out).resolve() if args.out else root / "registry" / "index.json"
     summary_path = Path(args.summary_out).resolve() if args.summary_out else root / "registry" / "summary.md"

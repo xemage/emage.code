@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install, update, and uninstall v3 knowledge packs from local paths or HTTPS git URLs."""
+"""Install, update, and uninstall knowledge packs from local paths or HTTPS git URLs."""
 from __future__ import annotations
 
 import argparse
