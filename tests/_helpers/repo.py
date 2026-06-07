@@ -8,27 +8,21 @@ from typing import Iterable
 def repo_root() -> Path:
     """Return the absolute path to the repo root (regardless of cwd)."""
     here = Path(__file__).resolve()
-    # tests/_helpers/repo.py → parents[2] = repo root
     return here.parents[2]
 
 
 def current_implementation_root() -> Path:
-    """Current version-independent implementation tree."""
+    """Implementation tree at repository root."""
     return repo_root() / "implementation"
 
 
-def v2_implementation_root() -> Path:
-    """Archived v2 implementation (CI drift gate)."""
-    return repo_root() / "archive" / "v2" / "implementation"
-
-
 def knowledge_root() -> Path:
-    return v2_implementation_root() / "knowledge"
+    return current_implementation_root() / "knowledge"
 
 
 def implementation_root() -> Path:
-    """Default implementation root for v2 projection tests."""
-    return v2_implementation_root()
+    """Default implementation root for projection tests."""
+    return current_implementation_root()
 
 
 def docs_root() -> Path:
@@ -36,7 +30,6 @@ def docs_root() -> Path:
 
 
 def iter_markdown(directory: Path, *, exclude_dirs: Iterable[str] = ()) -> list[Path]:
-    """Yield .md files under directory, skipping any path containing an excluded dir name."""
     excluded = set(exclude_dirs)
     return sorted(
         p for p in directory.rglob("*.md")

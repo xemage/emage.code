@@ -4,10 +4,10 @@ help:           ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 sync:           ## Regenerate platform mirrors from knowledge/
-	node implementation/scripts/sync-v3.mjs --root implementation
+	node implementation/scripts/sync.mjs --root implementation
 
 verify:         ## Verify generated mirrors match knowledge/
-	node implementation/scripts/sync-v3.mjs --root implementation --check
+	node implementation/scripts/sync.mjs --root implementation --check
 
 install:        ## Install into a project (see: make install TARGET=... PLATFORM=cursor)
 	@test -n "$(TARGET)" || (echo "Usage: make install TARGET=<dir> [PLATFORM=all|cursor|github|gemini|opencode|pi]" && exit 1)

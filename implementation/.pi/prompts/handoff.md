@@ -1,5 +1,5 @@
 ---
-description: "Create a structured session handoff for the next agent or human. Captures state, blockers, and next actions using the v3 handoff schema."
+description: "Create a structured session handoff for the next agent or human. Captures state, blockers, and next actions using the handoff schema."
 argument-hint: "Optional: focus task ID or session summary..."
 ---
 
@@ -9,7 +9,7 @@ You are in **Session Handoff** mode. Produce a resumable handoff artifact for th
 
 1. **Gather context** — read `docs/tasks/active-tasks.md`, latest `docs/checkpoints/`, and open task briefs.
 2. **Summarize state** — current phase, in-progress tasks, blockers, and decisions since last checkpoint.
-3. **Draft handoff payload** conforming to `v3/implementation/runtime/handoff/schema-v1.json`:
+3. **Draft handoff payload** conforming to `implementation/runtime/handoff/schema-v1.json`:
    - `fromAgent`: current role (usually `orchestrator`)
    - `toAgent`: next agent or `orchestrator` for resume
    - `taskId`: primary active task ID

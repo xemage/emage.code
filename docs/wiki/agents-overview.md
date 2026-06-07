@@ -2,9 +2,7 @@
 
 emage.code ships with **27 specialist agents** organised by role. Only orchestrators are user-invocable.
 
-v3 does not add new agent roles. It keeps the same roster while introducing a
-schema-first runtime model with managed cookbooks, triggers, packaging, and
-adapter validation.
+The implementation stream keeps the same roster while providing a schema-first runtime model with managed cookbooks, triggers, packaging, and adapter validation.
 
 ## Orchestration
 

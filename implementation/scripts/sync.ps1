@@ -1,5 +1,5 @@
-# Regenerate platform mirrors from canonical knowledge (v3 sync engine).
+# Regenerate platform mirrors from canonical knowledge.
 $ErrorActionPreference = 'Stop'
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $root = Resolve-Path (Join-Path $here '..')
-node "$here/sync-v3.mjs" --root $root @args
+node "$here/sync.mjs" --root $root @args

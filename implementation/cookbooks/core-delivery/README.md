@@ -33,4 +33,4 @@ Default policy: deny.
 ## Notes
 
 This cookbook is deployment-oriented and does not replace canonical knowledge
-authoring under `v3/implementation/knowledge`.
+authoring under `implementation/knowledge`.

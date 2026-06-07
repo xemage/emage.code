@@ -1,4 +1,4 @@
-"""Validate platform manifests under archive/v2/implementation/platforms/."""
+"""Validate platform manifests under implementation/platforms/."""
 from __future__ import annotations
 
 import json

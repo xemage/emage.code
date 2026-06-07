@@ -11,7 +11,7 @@
 emage.code brings a **structured multi-agent development team** to your
 favourite AI assistant. Every project follows the same protocol:
 
-Latest release: v5.0.0
+Latest release: v6.0.0
 
 - **Plan → Approve → Execute** lifecycle, never silent execution
 - **DAG-based task management** with explicit dependencies
@@ -20,10 +20,6 @@ Latest release: v5.0.0
 - **GitFlow** branching with conventional commits
 - **OWASP Top-10** security baseline enforced via the security-engineer agent
 
-**v5 is the current release** — ecosystem-aligned workflows (mandatory skills,
-agent safety guards, handoff, skill discovery) on the schema-first
-`implementation/` stream. Older version trees live under `archive/`.
-
 ---
 
 ## Repository layout
@@ -31,7 +27,7 @@ agent safety guards, handoff, skill discovery) on the schema-first
 ```
 emage.code/
 ├── AGENTS.md                  ← workspace-level conventions (loaded by every agent)
-├── implementation/            ← current release — canonical knowledge + projections
+├── implementation/            ← canonical knowledge + platform projections
 │   ├── knowledge/             ← edit here; platform folders are generated
 │   ├── scripts/               ← sync, verify, check, packaging, registry
 │   ├── cookbooks/             ← managed-agent definitions
@@ -47,30 +43,10 @@ emage.code/
 │   ├── checkpoints/           ← phase-boundary snapshots
 │   ├── decisions/             ← ADRs (Architecture Decision Records)
 │   └── artifacts/             ← versioned design artifacts
-├── archive/                   ← frozen historical version streams
-│   ├── v1/                    ← legacy triple-duplicated bundles
-│   ├── v2/                    ← previous stable toolchain
-│   └── v3/                    ← pointer to promoted implementation/
 └── .gitlab-ci.yml             ← drift verification + sync sanity pipeline
 ```
 
-Use [`implementation/`](implementation/README.md) for new work. See
-[`archive/README.md`](archive/README.md) for historical version trees.
-
----
-
-## Versions at a glance
-
-| | **v1** (legacy) | **v2** (previous) | **v3/v4** (current) |
-|---|---|---|---|
-| Source of truth | per-platform folders, **triple-duplicated** | single `knowledge/` tree | schema-first `knowledge/` + runtime workflows |
-| Supported platforms | GitHub Copilot, Gemini CLI, Opencode | + **Cursor** | + **Pi**, packaging, triggers, adapters |
-| Workflow skills | ad-hoc prompts | commands + skills | **v4:** mandatory skill workflow + safety guards |
-| MCP config | three divergent JSON files | one `mcp/servers.yaml` registry | same registry model, stricter validation |
-| Drift detection | none | `verify.mjs` + CI gate | `check-v3.py` + `verify-v3.mjs` |
-| Status | **frozen** — `archive/v1/` | **maintained** — `archive/v2/` | **current** — v5.0.0 on `implementation/` |
-
-Migration guide: [`archive/v2/plan/05-migration-from-v1.md`](archive/v2/plan/05-migration-from-v1.md)
+Use [`implementation/`](implementation/README.md) for all development work.
 
 ---
 
@@ -85,14 +61,13 @@ Migration guide: [`archive/v2/plan/05-migration-from-v1.md`](archive/v2/plan/05-
 | Pi | `.pi/` | agents, prompts, instructions, skills (`.md`) |
 
 Adding a new platform = adding a `platforms/<name>.json` manifest under
-`implementation/`. No script changes required. See
-[`archive/v2/plan/02-platform-adapter-spec.md`](archive/v2/plan/02-platform-adapter-spec.md).
+`implementation/`. No script changes required.
 
 ---
 
 ## Install
 
-Install the **current release** (`v5.0.0`) with the installer script:
+Install the current release with the installer script:
 
 ```bash
 git clone https://gitlab.com/em-age/emage.code.git
@@ -111,7 +86,7 @@ scripts/install.sh --target /path/to/your-project --platform cursor
 
 Makefile shortcut: `make install TARGET=/path/to/your-project PLATFORM=cursor`
 
-Per-release install steps also live in [`docs/releases/v5.0.0.md`](docs/releases/v5.0.0.md)
+Per-release install steps live in [`docs/releases/v6.0.0.md`](docs/releases/v6.0.0.md)
 and are embedded in [GitLab Releases](https://gitlab.com/em-age/emage.code/-/releases).
 
 ## Quick start
@@ -132,8 +107,8 @@ Detailed guides:
 
 ### Implementation
 
-The `implementation/` tree is the **current release stream** (schema-first
-knowledge, cookbooks, triggers, packaging, adapters, validation super-gate).
+The `implementation/` tree provides schema-first knowledge, cookbooks, triggers,
+packaging, adapters, and a validation super-gate.
 
 Start here:
 
@@ -143,8 +118,8 @@ Start here:
 Validate from the repository root:
 
 ```bash
-python3 implementation/scripts/check-v3.py --root implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --packaging --triggers --adapters
-node implementation/scripts/verify-v3.mjs --root implementation
+python3 implementation/scripts/check.py --root implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --packaging --triggers --adapters
+node implementation/scripts/verify.mjs --root implementation
 ```
 
 ---
@@ -199,17 +174,14 @@ and local/internal markdown link validity for core release docs.
 5. **Memory** — `docs/` artifacts + MCP `memory` server
 6. **MCP servers** — declared once in [`implementation/knowledge/mcp/servers.yaml`](implementation/knowledge/mcp/servers.yaml)
 
-Deep dive:
-- [`archive/v2/plan/00-vision-v2.md`](archive/v2/plan/00-vision-v2.md)
-- [`archive/v2/plan/01-shared-knowledge-architecture.md`](archive/v2/plan/01-shared-knowledge-architecture.md)
-- [`archive/v2/plan/04-sync-script-design.md`](archive/v2/plan/04-sync-script-design.md)
+Deep dive: [`docs/wiki/architecture.md`](docs/wiki/architecture.md)
 
 ---
 
 ## Benchmark and performance
 
-v2 includes a deterministic benchmark suite for agent-team quality and runtime
-health under `tests/performance/`.
+The repository includes a deterministic benchmark suite for agent-team quality
+and runtime health under `tests/performance/`.
 
 ### Benchmark coverage map
 
@@ -260,7 +232,7 @@ BENCH_STRESS=1 python3 tests/run.py --suite performance -v
    make verify
    ```
 3. Commit both the knowledge change **and** the regenerated platform folders.
-4. CI runs drift gates for both `implementation/` (current) and `archive/v2/implementation/` (previous stable).
+4. CI runs drift gates for `implementation/`.
 
 Full contributor guide: [`CONTRIBUTING.md`](CONTRIBUTING.md)
 Authoring rules: [`implementation/knowledge/README.md`](implementation/knowledge/README.md)

@@ -1,8 +1,8 @@
 # Prerequisites — emage.code implementation
 
 ## Required
-- **Node.js 18+** — for `scripts/sync-v3.mjs` and for MCP servers launched via `npx`.
-- **Python 3.10+** — for `check-v3.py`, `package-v3.py`, and registry generation.
+- **Node.js 18+** — for `scripts/sync.mjs` and for MCP servers launched via `npx`.
+- **Python 3.10+** — for `check.py`, `package.py`, and registry generation.
 - **Git 2.30+** — for worktree isolation, branch policies, and pack install from git URLs.
 
 ## Per-platform
@@ -47,5 +47,5 @@ From `implementation/scripts/`:
 
 ```powershell
 .\sync.ps1
-node verify-v3.mjs --root ..
+node verify.mjs --root ..
 ```

@@ -1,5 +1,5 @@
 ---
-description: "List and recommend skills from the v3 knowledge registry for the current task or intent."
+description: "List and recommend skills from the knowledge registry for the current task or intent."
 argument-hint: "Task intent, e.g. 'debug CI failure' or 'prepare release'..."
 ---
 
@@ -7,7 +7,7 @@ You are in **Skill Discovery** mode. Match the user's intent to canonical skills
 
 ## Instructions
 
-1. **Read registry** — load `v3/implementation/registry/index.json` (or `registry/summary.md` for overview).
+1. **Read registry** — load `implementation/registry/index.json` (or `registry/summary.md` for overview).
 2. **Parse intent** — from `{{input}}` or active task brief; identify phase (plan, implement, debug, review, release).
 3. **Recommend skills** — return a ranked table:
 

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "v3/runtime/telemetry/schema-v1.json",
-  "title": "emage.code v3 telemetry trajectory",
+  "title": "emage.code telemetry trajectory",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema", "schemaVersion", "events"],

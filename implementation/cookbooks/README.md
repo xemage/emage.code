@@ -17,7 +17,7 @@ Each cookbook lives in its own directory and includes:
 
 ## Validation expectations
 
-Cookbooks are validated by `check-v3 --cookbooks` (T012) for:
+Cookbooks are validated by `check.py --cookbooks` for:
 
 - required fields and schema version
 - `orchestrator` and `workers` reference integrity

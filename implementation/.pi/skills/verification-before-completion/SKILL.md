@@ -41,7 +41,7 @@ NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE
 | Linter clean | Linter: 0 errors on changed paths |
 | Build succeeds | Build command: exit 0 |
 | Bug fixed | Original reproduction now passes |
-| No drift | `verify-v3.mjs` or `verify.mjs`: OK |
+| No drift | `verify.mjs`: OK |
 | Release ready | `verify-release-docs.py --tag X`: passed |
 | Gate PASS | Checklist filled with command output |
 
@@ -55,11 +55,11 @@ NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE
 ## emage.code Standard Commands
 
 ```bash
-# v3 super-gate (implementation changes)
-python3 v3/implementation/scripts/check-v3.py --root v3/implementation --required
+# Validation super-gate (implementation changes)
+python3 implementation/scripts/check.py --root implementation --required
 
 # Projection drift
-node v3/implementation/scripts/verify-v3.mjs --root v3/implementation
+node implementation/scripts/verify.mjs --root implementation
 
 # Repository test suite
 python3 tests/run.py
