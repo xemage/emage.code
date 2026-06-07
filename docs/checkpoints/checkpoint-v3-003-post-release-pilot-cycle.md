@@ -2,7 +2,7 @@
 
 Phase: Pilot rollout (Path A) after release publication
 Date: 2026-05-23
-Based on: [docs/plans/plan-003-v3-execution-wave1.md](../plans/plan-003-v3-execution-wave1.md), [docs/artifacts/v3-migration-guide-v1.md](../artifacts/v3-migration-guide-v1.md), [docs/artifacts/release-announcement-v1.md](../artifacts/release-announcement-v1.md)
+Based on: [docs/plans/plan-003-v3-execution-wave1.md](../plans/plan-003-v3-execution-wave1.md), [docs/artifacts/release-announcement-v1.md](../artifacts/release-announcement-v1.md)
 
 ## Pilot scope
 

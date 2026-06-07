@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Cross-platform bash wrapper for emage.code sync.
+# Regenerate platform mirrors from canonical knowledge.
 set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-exec node "$here/sync.mjs" "$@"
+root="$(cd "$here/.." && pwd)"
+exec node "$here/sync.mjs" --root "$root" "$@"

@@ -23,7 +23,6 @@ graph TD
 
 ## Deliverables
 
-- [docs/artifacts/v3-migration-guide-v1.md](../artifacts/v3-migration-guide-v1.md)
 - [docs/checkpoints/checkpoint-v3-002-implementation-readiness.md](../checkpoints/checkpoint-v3-002-implementation-readiness.md)
 - CI run evidence with green pipeline and gate parity.
 

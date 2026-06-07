@@ -1,5 +1,5 @@
 ---
-description: "List and recommend skills from the v3 knowledge registry for the current task or intent."
+description: "List and recommend skills from the knowledge registry for the current task or intent."
 argument-hint: "Task intent, e.g. 'debug CI failure' or 'prepare release'..."
 ---
 

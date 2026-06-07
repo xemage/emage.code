@@ -2,7 +2,7 @@
 
 Welcome to the **emage.code** wiki — the central knowledge hub for the multi-platform AI dev-team orchestration framework.
 
-Latest release: v5.0.0
+Latest release: v6.0.0
 
 ## What is emage.code?
 
@@ -18,7 +18,6 @@ emage.code projects a single canonical knowledge base into the major AI coding a
 | [MCP Servers](mcp-servers) | Tool integrations: GitLab, Playwright, Memory, Brave, … |
 | [Performance Benchmarks](performance-benchmarks) | Benchmark dimensions, thresholds, and runtime diagrams |
 | [Contributing Workflow](contributing-workflow) | GitFlow + Conventional Commits + sync engine |
-| [Migration v1 → v2](migration-v1-to-v2) | What changed and how to upgrade |
 | [Implementation Guide](implementation-guide) | Schema-first workflows, cookbooks, triggers, packaging |
 
 Release note: documentation updates are a required release gate. Before tagging,
@@ -50,8 +49,7 @@ flowchart TD
 
 ## Status
 
-- **v1** — frozen under [`archive/v1/`](https://gitlab.com/em-age/emage.code/-/tree/main/archive/v1)
-- **v2** — previous stable stream under [`archive/v2/`](https://gitlab.com/em-age/emage.code/-/tree/main/archive/v2)
-- **v4** — current release; new work goes to [`implementation/`](https://gitlab.com/em-age/emage.code/-/tree/main/implementation), see the [Implementation Guide](implementation-guide) page
+New work goes to [`implementation/`](https://gitlab.com/em-age/emage.code/-/tree/main/implementation).
+See the [Implementation Guide](implementation-guide) page.
 
 > The wiki is **hand-curated** and version-controlled separately from the main repo. To propose changes, open an MR against the main repo's wiki sources at [`docs/wiki/`](https://gitlab.com/em-age/emage.code/-/tree/main/docs/wiki).

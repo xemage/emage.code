@@ -11,12 +11,9 @@ By participating you agree to abide by the [Code of Conduct](CODE_OF_CONDUCT.md)
 
 | If you want to … | Edit … | Then … |
 |------------------|--------|--------|
-| Update an agent, skill, command, instruction, or MCP server (current stream) | `implementation/knowledge/**` | re-run sync (see "Working with implementation") |
-| Update an agent/skill/command for the previous stable stream | `archive/v2/implementation/knowledge/**` | re-run v2 sync |
+| Update an agent, skill, command, instruction, or MCP server | `implementation/knowledge/**` | re-run sync (see "Working with implementation") |
 | Update workspace conventions | `AGENTS.md` (root) and `implementation/AGENTS.md` | — |
-| Update the v2 plan / architecture docs | `archive/v2/plan/**` | — |
-| Touch v1 | **don't** — v1 is frozen under `archive/v1/` | open an issue first |
-| **Never** edit by hand | `.github/`, `.gemini/`, `.opencode/`, `.cursor/`, `.pi/` (generated under each implementation stream) | these are generated |
+| **Never** edit by hand | `.github/`, `.gemini/`, `.opencode/`, `.cursor/`, `.pi/` (generated under `implementation/`) | these are generated |
 
 ## Workflow
 
@@ -70,16 +67,8 @@ are **generated**. CI fails if they drift from `knowledge/`.
 From the repository root:
 
 ```bash
-make sync      # node implementation/scripts/sync-v3.mjs --root implementation
-make verify    # node implementation/scripts/verify-v3.mjs --root implementation
-```
-
-For the archived v2 stream:
-
-```bash
-cd archive/v2/implementation
-node scripts/sync.mjs
-node scripts/verify.mjs
+make sync      # node implementation/scripts/sync.mjs --root implementation
+make verify    # node implementation/scripts/verify.mjs --root implementation
 ```
 
 ## Working with implementation
@@ -90,8 +79,8 @@ managed cookbooks, triggers, packaging, and adapter workflows.
 Validate from the repository root:
 
 ```bash
-python3 implementation/scripts/check-v3.py --root implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --packaging --triggers --adapters
-node implementation/scripts/verify-v3.mjs --root implementation
+python3 implementation/scripts/check.py --root implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --packaging --triggers --adapters
+node implementation/scripts/verify.mjs --root implementation
 ```
 
 If you change docs, update the wiki sources in `docs/wiki/` as well and ensure
@@ -124,7 +113,7 @@ on merge.
 2. Run `make sync`
 3. Verify the generated `<name>/` folder
 4. Add a row to the README "Supported platforms" table
-5. Document any platform-specific quirks in `archive/v2/plan/` or a new ADR
+5. Document any platform-specific quirks in a new ADR under `docs/decisions/`
 
 No script changes are needed — the sync engine is fully manifest-driven.
 

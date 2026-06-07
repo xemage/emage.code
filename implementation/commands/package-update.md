@@ -1,6 +1,6 @@
 ---
 name: package-update
-description: "Update an installed v3 knowledge pack from source or by existing pack id."
+description: "Update an installed knowledge pack from source or by existing pack id."
 ---
 
 # package-update
@@ -9,10 +9,10 @@ description: "Update an installed v3 knowledge pack from source or by existing p
 
 ```bash
 # update using explicit source
-python3 v3/implementation/scripts/package-v3.py update --root v3/implementation --source <local-path-or-https-git-url>
+python3 implementation/scripts/package-v3.py update --root implementation --source <local-path-or-https-git-url>
 
 # update from recorded source
-python3 v3/implementation/scripts/package-v3.py update --root v3/implementation --pack-id <pack-id>
+python3 implementation/scripts/package-v3.py update --root implementation --pack-id <pack-id>
 ```
 
 ## Notes

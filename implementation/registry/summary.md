@@ -1,4 +1,4 @@
-# v3 Registry Summary
+# Registry Summary
 
 Generated from: implementation/knowledge
 

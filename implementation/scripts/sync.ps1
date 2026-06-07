@@ -1,4 +1,5 @@
-# Cross-platform PowerShell wrapper for emage.code sync.
+# Regenerate platform mirrors from canonical knowledge.
 $ErrorActionPreference = 'Stop'
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
-node "$here/sync.mjs" @args
+$root = Resolve-Path (Join-Path $here '..')
+node "$here/sync.mjs" --root $root @args

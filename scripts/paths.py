@@ -7,11 +7,6 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 IMPLEMENTATION = REPO_ROOT / "implementation"
-ARCHIVE = REPO_ROOT / "archive"
-ARCHIVE_V1 = ARCHIVE / "v1"
-ARCHIVE_V2 = ARCHIVE / "v2"
-ARCHIVE_V3 = ARCHIVE / "v3"
-V2_IMPLEMENTATION = ARCHIVE_V2 / "implementation"
 
 
 def repo_root_from_implementation(implementation_root: Path) -> Path:
