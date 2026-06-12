@@ -29,6 +29,8 @@ Makefile shortcut: `make install TARGET=/path/to/your-project PLATFORM=cursor`
 scripts/install.sh --target /path/to/your-project --platform cursor --update
 ```
 
+On update, listed tasks in `docs/tasks/active-tasks.md` and `docs/tasks/completed-tasks.md` are preserved.
+
 ## 2. Manual copy (alternative)
 
 | Platform | What to copy from `implementation/` |
