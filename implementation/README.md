@@ -1,9 +1,9 @@
 # emage.code implementation
 
 Canonical knowledge and platform projections for the current release stream
-(**v6.0.0**).
+(**v6.0.1**).
 
-Latest release: v6.0.0
+Latest release: v6.0.1
 
 ## Install
 
@@ -14,6 +14,12 @@ scripts/install.sh --target <your-project> --platform cursor
 # or: make install TARGET=<your-project> PLATFORM=cursor
 ```
 
+**Update** an existing install (requires `AGENTS.md` in the target):
+
+```bash
+scripts/install.sh --target <your-project> --platform cursor --update
+```
+
 **Manual copy** — platform folder plus shared files:
 
 ```bash
@@ -22,7 +28,7 @@ cp    implementation/AGENTS.md         <your-project>/
 cp -r implementation/docs            <your-project>/docs/
 ```
 
-Per-release notes: [`docs/releases/v6.0.0.md`](../docs/releases/v6.0.0.md).
+Per-release notes: [`docs/releases/v6.0.1.md`](../docs/releases/v6.0.1.md).
 
 ## Validation commands
 
