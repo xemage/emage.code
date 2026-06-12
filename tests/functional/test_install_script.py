@@ -1,6 +1,7 @@
 """Functional tests for scripts/install.sh."""
 from __future__ import annotations
 
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -10,9 +11,15 @@ from tests._helpers.repo import repo_root
 
 
 class TestInstallScript(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.bash = shutil.which("bash")
+        if not cls.bash:
+            raise unittest.SkipTest("bash not available on PATH")
+
     def _run_install(self, target: Path, platform: str = "pi", update: bool = False) -> subprocess.CompletedProcess[str]:
         args = [
-            "bash",
+            self.bash,
             str(repo_root() / "scripts" / "install.sh"),
             "--target",
             str(target),
