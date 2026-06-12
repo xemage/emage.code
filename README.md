@@ -11,7 +11,7 @@
 emage.code brings a **structured multi-agent development team** to your
 favourite AI assistant. Every project follows the same protocol:
 
-Latest release: v6.0.0
+Latest release: v6.0.1
 
 - **Plan → Approve → Execute** lifecycle, never silent execution
 - **DAG-based task management** with explicit dependencies
@@ -86,7 +86,13 @@ scripts/install.sh --target /path/to/your-project --platform cursor
 
 Makefile shortcut: `make install TARGET=/path/to/your-project PLATFORM=cursor`
 
-Per-release install steps live in [`docs/releases/v6.0.0.md`](docs/releases/v6.0.0.md)
+**Update an existing install:**
+
+```bash
+scripts/install.sh --target /path/to/your-project --platform cursor --update
+```
+
+Per-release install steps live in [`docs/releases/v6.0.1.md`](docs/releases/v6.0.1.md)
 and are embedded in [GitLab Releases](https://gitlab.com/em-age/emage.code/-/releases).
 
 ## Quick start

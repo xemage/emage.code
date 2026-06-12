@@ -23,6 +23,12 @@ scripts/install.sh --target /path/to/your-project --platform cursor
 
 Makefile shortcut: `make install TARGET=/path/to/your-project PLATFORM=cursor`
 
+**Update** an existing install (requires `AGENTS.md` in the target):
+
+```bash
+scripts/install.sh --target /path/to/your-project --platform cursor --update
+```
+
 ## 2. Manual copy (alternative)
 
 | Platform | What to copy from `implementation/` |
