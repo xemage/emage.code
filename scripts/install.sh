@@ -7,18 +7,20 @@ IMPLEMENTATION="${REPO_ROOT}/implementation"
 
 usage() {
   cat <<'EOF'
-Usage: scripts/install.sh --target <dir> [--platform <name>|all]
+Usage: scripts/install.sh --target <dir> [--platform <name>|all] [--update]
 
 Install emage.code into an existing or new project directory.
 
 Options:
   --target <dir>       Destination project root (created if missing)
   --platform <name>    cursor | github | gemini | opencode | pi | all (default: all)
+  -u, --update         Update an existing install (replaces platform trees; requires AGENTS.md)
   -n, --dry-run        Print actions without copying
   -h, --help           Show this help
 
 Examples:
   scripts/install.sh --target ~/projects/my-app --platform cursor
+  scripts/install.sh --target ~/projects/my-app --platform pi --update
   scripts/install.sh --target . --platform all
 
 After install, set MCP env vars from the generated mcp.json, then run:
@@ -30,11 +32,13 @@ EOF
 PLATFORM="all"
 TARGET=""
 DRY_RUN=0
+UPDATE=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --target) TARGET="$2"; shift 2 ;;
     --platform) PLATFORM="$2"; shift 2 ;;
+    -u|--update) UPDATE=1; shift ;;
     -n|--dry-run) DRY_RUN=1; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown option: $1" >&2; usage >&2; exit 1 ;;
@@ -60,33 +64,82 @@ run() {
   fi
 }
 
+# Merge source tree into dest without nesting when dest already exists.
+# `cp -r src dest` creates dest/srcname when dest is present; this copies contents.
+copy_tree_into() {
+  local src="$1"
+  local dest="$2"
+  run mkdir -p "$dest"
+  run cp -r "$src/." "$dest/"
+}
+
+# Replace dest with source, removing files that no longer exist upstream.
+sync_tree_into() {
+  local src="$1"
+  local dest="$2"
+  if command -v rsync >/dev/null 2>&1; then
+    run mkdir -p "$dest"
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+      run rsync -a --delete --dry-run "$src/" "$dest/"
+    else
+      run rsync -a --delete "$src/" "$dest/"
+    fi
+  else
+    run rm -rf "$dest"
+    run mkdir -p "$dest"
+    run cp -r "$src/." "$dest/"
+  fi
+}
+
+install_tree_into() {
+  local src="$1"
+  local dest="$2"
+  if [[ "$UPDATE" -eq 1 ]]; then
+    sync_tree_into "$src" "$dest"
+  else
+    copy_tree_into "$src" "$dest"
+  fi
+}
+
+require_existing_install() {
+  if [[ ! -f "$TARGET/AGENTS.md" ]]; then
+    echo "error: --update requires an existing emage.code install (missing $TARGET/AGENTS.md)" >&2
+    exit 1
+  fi
+}
+
 mkdir -p "$TARGET"
+
+if [[ "$UPDATE" -eq 1 ]]; then
+  require_existing_install
+fi
 
 install_common() {
   run cp "$IMPLEMENTATION/AGENTS.md" "$TARGET/AGENTS.md"
-  run cp -r "$IMPLEMENTATION/docs" "$TARGET/docs"
+  # Workspace docs are merged so local task/checkpoint state is preserved.
+  copy_tree_into "$IMPLEMENTATION/docs" "$TARGET/docs"
 }
 
 install_cursor() {
-  run cp -r "$IMPLEMENTATION/.cursor" "$TARGET/.cursor"
+  install_tree_into "$IMPLEMENTATION/.cursor" "$TARGET/.cursor"
 }
 
 install_github() {
-  run cp -r "$IMPLEMENTATION/.github" "$TARGET/.github"
+  install_tree_into "$IMPLEMENTATION/.github" "$TARGET/.github"
   run mkdir -p "$TARGET/.vscode"
   run cp "$IMPLEMENTATION/.vscode/mcp.json" "$TARGET/.vscode/mcp.json"
 }
 
 install_gemini() {
-  run cp -r "$IMPLEMENTATION/.gemini" "$TARGET/.gemini"
+  install_tree_into "$IMPLEMENTATION/.gemini" "$TARGET/.gemini"
 }
 
 install_opencode() {
-  run cp -r "$IMPLEMENTATION/.opencode" "$TARGET/.opencode"
+  install_tree_into "$IMPLEMENTATION/.opencode" "$TARGET/.opencode"
 }
 
 install_pi() {
-  run cp -r "$IMPLEMENTATION/.pi" "$TARGET/.pi"
+  install_tree_into "$IMPLEMENTATION/.pi" "$TARGET/.pi"
 }
 
 case "$PLATFORM" in
@@ -109,5 +162,9 @@ case "$PLATFORM" in
     ;;
 esac
 
-echo "Installed emage.code ($PLATFORM) into $TARGET"
+if [[ "$UPDATE" -eq 1 ]]; then
+  echo "Updated emage.code ($PLATFORM) in $TARGET"
+else
+  echo "Installed emage.code ($PLATFORM) into $TARGET"
+fi
 echo "Next: configure MCP env vars, then invoke /new-project in your assistant."
