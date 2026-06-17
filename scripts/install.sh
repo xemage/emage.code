@@ -14,7 +14,7 @@ Install emage.code into an existing or new project directory.
 Options:
   --target <dir>       Destination project root (created if missing)
   --platform <name>    cursor | github | gemini | opencode | pi | all (default: all)
-  -u, --update         Update an existing install (replaces platform trees; requires AGENTS.md)
+  -u, --update         Update an existing install (replaces platform trees; preserves task rows in docs/tasks/*.md)
   -n, --dry-run        Print actions without copying
   -h, --help           Show this help
 
@@ -114,10 +114,38 @@ if [[ "$UPDATE" -eq 1 ]]; then
   require_existing_install
 fi
 
+merge_task_docs() {
+  local args=(
+    "$REPO_ROOT/scripts/merge-task-docs.py"
+    --template-dir "$IMPLEMENTATION/docs/tasks"
+    --dest-dir "$TARGET/docs/tasks"
+  )
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    args+=(--dry-run)
+  fi
+  run python3 "${args[@]}"
+}
+
+install_docs() {
+  run mkdir -p "$TARGET/docs"
+  if [[ "$UPDATE" -eq 1 ]]; then
+    for sub in "$IMPLEMENTATION/docs"/*/; do
+      [[ -d "$sub" ]] || continue
+      name="$(basename "$sub")"
+      if [[ "$name" == "tasks" ]]; then
+        merge_task_docs
+      else
+        copy_tree_into "$sub" "$TARGET/docs/$name"
+      fi
+    done
+  else
+    copy_tree_into "$IMPLEMENTATION/docs" "$TARGET/docs"
+  fi
+}
+
 install_common() {
   run cp "$IMPLEMENTATION/AGENTS.md" "$TARGET/AGENTS.md"
-  # Workspace docs are merged so local task/checkpoint state is preserved.
-  copy_tree_into "$IMPLEMENTATION/docs" "$TARGET/docs"
+  install_docs
 }
 
 install_cursor() {

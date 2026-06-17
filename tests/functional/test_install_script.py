@@ -104,6 +104,54 @@ class TestInstallScript(unittest.TestCase):
             self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
             self.assertTrue((target / "docs" / "custom-task.md").is_file())
 
+    def test_update_preserves_task_ledger_rows(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "project"
+            target.mkdir()
+            (target / "AGENTS.md").write_text("# existing", encoding="utf-8")
+            tasks = target / "docs" / "tasks"
+            tasks.mkdir(parents=True)
+            (tasks / "completed-tasks.md").write_text(
+                "\n".join(
+                    [
+                        "# Completed Tasks",
+                        "",
+                        "Append-only log.",
+                        "",
+                        "| ID | Title | Owner | Done on | Outcome / artifact |",
+                        "|----|-------|-------|---------|--------------------|",
+                        "| T042 | CI gates | devops-engineer | 2026-05-24 | .gitlab-ci.yml |",
+                        "",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            (tasks / "active-tasks.md").write_text(
+                "\n".join(
+                    [
+                        "# Active Tasks",
+                        "",
+                        "| ID | Title | Owner | Status | Priority | Depends on | Last update |",
+                        "|----|-------|-------|--------|----------|-----------|-------------|",
+                        "| T099 | Open item | orchestrator | in_progress | P0 | — | 2026-06-12 |",
+                        "",
+                        "> Keep this note.",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            proc = self._run_install(target, platform="pi", update=True)
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+
+            completed = (tasks / "completed-tasks.md").read_text(encoding="utf-8")
+            active = (tasks / "active-tasks.md").read_text(encoding="utf-8")
+            self.assertIn("| T042 | CI gates |", completed)
+            self.assertIn("| T099 | Open item |", active)
+            self.assertIn("Append-only log. Entries move here", completed)
+            self.assertIn("Per-task briefs live alongside", active)
+            self.assertNotIn("> Keep this note.", active)
+
 
 if __name__ == "__main__":
     unittest.main()
