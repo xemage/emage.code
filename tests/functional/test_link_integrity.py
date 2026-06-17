@@ -23,6 +23,10 @@ def _is_skipped(path: Path) -> bool:
         return True
     if parts and parts[0] == "archive":
         return True
+    # docs/archiv/ contains frozen chat exports and historical session logs —
+    # relative links inside them resolve to non-existent paths; skip entirely.
+    if len(parts) >= 2 and parts[0] == "docs" and parts[1] == "archiv":
+        return True
     if len(parts) >= 2 and parts[0] == "docs" and parts[1] == "wiki":
         return True
     # Root-level platform mirror dirs are downstream copies of the canonical
