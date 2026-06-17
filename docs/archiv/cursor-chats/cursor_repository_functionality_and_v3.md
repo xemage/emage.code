@@ -35,7 +35,7 @@ Main and develop pipelines are green; MR !24 is merged. Tagging v4.0.0, back-mer
 
 1. **Tagged `v4.0.0`** on `main` — release CI passed and GitLab Release published.
 2. **Back-merged `main` → `develop`** via [!25](https://gitlab.com/em-age/emage.code/-/merge_requests/25) — resolved release-marker conflicts; pipeline green; merged.
-3. **Updated plan** — [`docs/plans/plan-007-v4-ecosystem-workflows.md`](docs/plans/plan-007-v4-ecosystem-workflows.md): all acceptance criteria checked; release path steps 1–3 marked done.
+3. **Updated plan** — docs/plans/plan-007-v4-ecosystem-workflows.md: all acceptance criteria checked; release path steps 1–3 marked done.
 4. **Updated task board** — [`docs/tasks/completed-tasks.md`](docs/tasks/completed-tasks.md) on `develop` with **T046–T050** (v3.0.1 patch, develop hygiene, v4 implementation, v4.0.0 release).
 
 ---
@@ -99,8 +99,8 @@ MR !26 pipeline is green — merging it, then syncing the plan and task board on
 
 | Plan | Status |
 |------|--------|
-| [plan-006](docs/plans/plan-006-v3-release-ready-parity.md) | **Complete** — delivered in v3.0.0 (T038–T045) |
-| [plan-007](docs/plans/plan-007-v4-ecosystem-workflows.md) | **Complete** — v4.0.0 on `main`/`develop`; v4.x follow-ups noted |
+| plan-006 (docs/plans/plan-006-v3-release-ready-parity.md) | **Complete** — delivered in v3.0.0 (T038–T045) |
+| plan-007 (docs/plans/plan-007-v4-ecosystem-workflows.md) | **Complete** — v4.0.0 on `main`/`develop`; v4.x follow-ups noted |
 
 ---
 
@@ -127,7 +127,7 @@ MR !26 pipeline is green — merging it, then syncing the plan and task board on
 **User**
 
 1) Archive v1, v2, v3 (move to version independent folder) - build, verification and other scripts must still work though
-2) Create an easy to use installation method. 
+2) Create an easy to use installation method.
 3) Create updated documentation with installation / usage instructions
 
 ---
@@ -327,7 +327,7 @@ I can do that back-merge over HTTPS if you want.
 **User**
 
 Back-merge main into develop so the task ledger and branch stay aligned
-Then, check, verify and clean up all scripts in @implementation/scripts/ 
+Then, check, verify and clean up all scripts in @implementation/scripts/
 Fix / remove if needed
 
 ---
@@ -636,7 +636,7 @@ Re-run your install; files should land directly in `<target>/.pi/` and `<target>
 **User**
 
 Also add an option (i.e. -u / --update) to update an exisitng version.
- 
+
 
 ---
 
@@ -740,7 +740,7 @@ scripts/install.sh --target /path/to/your-project --platform pi --update
 **User**
 
 I used 'scripts/install.sh --target /home/emage/Code/emage/emage.code/ --platform all --update' to update the version of emage.code in the current folder.
-The only thing I wonder if it is as expected (at an update): the file @docs/tasks/completed-tasks.md was emptied completely. 
+The only thing I wonder if it is as expected (at an update): the file @docs/tasks/completed-tasks.md was emptied completely.
 May this lead to issues?
 
 ---
@@ -949,7 +949,7 @@ Working tree is clean. This commit is local only — say if you want it pushed o
 
 **User**
 
-/"Orchestrator" Plan new features. Read https://hackernoon.com/twelve-opencode-skills-every-dev-team-should-steal , follow links included, especially read https://raw.githubusercontent.com/obra/superpowers/main/skills/test-driven-development/SKILL.md?ref=hackernoon.com 
+/"Orchestrator" Plan new features. Read https://hackernoon.com/twelve-opencode-skills-every-dev-team-should-steal , follow links included, especially read https://raw.githubusercontent.com/obra/superpowers/main/skills/test-driven-development/SKILL.md?ref=hackernoon.com
 2) Implement optional enforcement of 'Test Driven Development' (i.e. user is asked)
 1) Evaluate, which other features could be missing in current implementation of 'emage.code'
 
@@ -966,7 +966,7 @@ Creating the orchestrator plan artifact and checkpoint from the gap analysis.
 
 ## Orchestrator plan complete (Plan-Approve-Execute)
 
-Research is synthesized from [12 OpenCode Skills Every Dev Team Should Steal](https://hackernoon.com/twelve-opencode-skills-every-dev-team-should-steal), [obra/superpowers TDD](https://raw.githubusercontent.com/obra/superpowers/main/skills/test-driven-development/SKILL.md), and the existing [research artifact](docs/artifacts/research-agents-skills-ecosystem-v1.md). v4 already closed most Superpowers gaps; **test-first implementation** is the main remaining behavioral gap.
+Research is synthesized from [12 OpenCode Skills Every Dev Team Should Steal](https://hackernoon.com/twelve-opencode-skills-every-dev-team-should-steal), [obra/superpowers TDD](https://raw.githubusercontent.com/obra/superpowers/main/skills/test-driven-development/SKILL.md), and the existing research artifact: docs/artifacts/research-agents-skills-ecosystem-v1.md. v4 already closed most Superpowers gaps; **test-first implementation** is the main remaining behavioral gap.
 
 ### Gap evaluation (current emage.code)
 
@@ -998,9 +998,9 @@ workflow:
 
 ### Artifacts created
 
-- [docs/plans/plan-008-optional-tdd-and-skill-gaps.md](docs/plans/plan-008-optional-tdd-and-skill-gaps.md) — full plan + task breakdown T055–T060
-- [docs/artifacts/requirements-optional-tdd-v1.md](docs/artifacts/requirements-optional-tdd-v1.md) — functional requirements
-- [docs/checkpoints/checkpoint-001-planning-tdd-skills.md](docs/checkpoints/checkpoint-001-planning-tdd-skills.md) — planning checkpoint
+- docs/plans/plan-008-optional-tdd-and-skill-gaps.md — full plan + task breakdown T055–T060
+- docs/artifacts/requirements-optional-tdd-v1.md — functional requirements
+- docs/checkpoints/checkpoint-001-planning-tdd-skills.md — planning checkpoint
 
 ### Approval
 
