@@ -100,7 +100,7 @@ function parseYamlBlock(yaml) {
     }
 
     if (rest !== '') {
-      out[key] = stripQuotes(rest);
+      out[key] = parseScalar(stripQuotes(rest));
       i++;
       continue;
     }
