@@ -3,7 +3,7 @@
 Canonical knowledge and platform projections for the current release stream
 (**v6.0.1**).
 
-Latest release: v6.0.4
+Latest release: v6.0.5
 
 ## Install
 

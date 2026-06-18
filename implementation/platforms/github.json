@@ -12,7 +12,9 @@
   "frontmatter": {
     "agents": {
       "tools": "array",
-      "keepKeys": ["name", "description", "tools", "agents"]
+      "keepKeys": ["description", "tools", "agents", "user-invocable"],
+      "addToOrchestrators": { "user-invocable": true },
+      "orchestratorNames": ["orchestrator", "poc-orchestrator"]
     },
     "commands": {
       "keepKeys": ["description", "agent", "argument-hint"]
