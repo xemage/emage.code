@@ -57,3 +57,8 @@ Append-only log. Entries move here after the orchestrator marks a task `done`.
 | T052 | Close plan-007 status docs | technical-writer | 2026-06-06 | docs/plans/plan-007-v4-ecosystem-workflows.md; [!26](https://gitlab.com/em-age/emage.code/-/merge_requests/26) |
 | T053 | Back-merge v5.0.0 into develop | devops-engineer | 2026-06-06 | archive layout + install.sh; [!30](https://gitlab.com/em-age/emage.code/-/merge_requests/30) |
 | T054 | Clean up implementation/scripts | backend-developer | 2026-06-06 | sync.sh/sync.ps1/verify.sh wrappers; package command paths; PREREQUISITES.md |
+| T201 | Live MCP contract snapshot + auth helper | backend-developer | 2026-06-20 | docs/artifacts/cwso-mcp-contract-v1.md; implementation/runtime/cwso/mcp_client.py; tests/functional/test_cwso_mcp_contract_snapshot.py |
+| T202 | ADR: CWSO×SIA integration patterns A/B/C (Polar-already-GA) | solution-architect | 2026-06-20 | docs/decisions/ADR-001-cwso-sia-integration.md |
+| T203 | CWSO dev profile with rollout enabled + `<some-model>` via vLLM/HAL | devops-engineer | 2026-06-20 | docs/artifacts/cwso-dev-profile-t203-v1.md |
+| T210 | `CwsoClient` library (JWT, tools/call, rate-limit pacing) | backend-developer | 2026-06-20 | implementation/runtime/cwso/client.py; tests/unit/test_cwso_client.py |
+| T211 | Map emage.code agent roles → CWSO permission tiers | solution-architect | 2026-06-20 | docs/artifacts/role-mapping-cwso-v1.md |
