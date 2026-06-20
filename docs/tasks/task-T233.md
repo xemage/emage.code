@@ -1,0 +1,22 @@
+# Task T233 - Closed-loop eval on held-out task; measure deltas
+
+## Objective
+Run several SIA generations against a fixed held-out task using the fine-tuned model and measure performance
+deltas versus the baseline model, validating that the loop improves outcomes.
+
+## Inputs
+- Fine-tuned + redeployed model (T231)
+- Gated pipeline (T232)
+- A held-out SIA task with ground truth (separate from training data)
+
+## Expected outputs
+- `docs/artifacts/closed-loop-eval-report-v1.md` with baseline vs fine-tuned metrics across generations
+- Per-generation results and convergence/regression observations
+
+## Acceptance criteria
+- Held-out task is not represented in the training data (no leakage; verified).
+- Report shows measured deltas (improvement or regression) with the eval metric, not assumed numbers.
+- Negative result (regression) is reported honestly and triggers a rollback recommendation.
+
+## Blocker protocol
+If blocked, report blocker type and severity with one proposed mitigation.
