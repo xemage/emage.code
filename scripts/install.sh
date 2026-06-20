@@ -108,10 +108,46 @@ require_existing_install() {
   fi
 }
 
+validate_github_agents() {
+  # Guard: --update must not propagate corrupted subagent aliases (v6.0.5 contract).
+  # GitHub agents must omit `name:` (use slug aliases) and orchestrators must use kebab-case.
+  local github_agents="$IMPLEMENTATION/.github/agents"
+  if [[ ! -d "$github_agents" ]]; then
+    return 0
+  fi
+
+  # Check that no agent file has a `name:` key (they should omit it for slug aliasing).
+  if rg -q '^name:' "$github_agents" 2>/dev/null; then
+    echo "error: source .github/agents have corrupted 'name:' keys (violates v6.0.5 contract)." >&2
+    echo "  Run 'make sync' in the emage.code repo to regenerate projections." >&2
+    exit 1
+  fi
+
+  # Check that orchestrator agents: lists use kebab-case slugs, not display names.
+  for orch in orchestrator poc-orchestrator; do
+    local file="$github_agents/${orch}.agent.md"
+    if [[ -f "$file" ]]; then
+      if grep -q '^agents: \[.*[A-Z]' "$file"; then
+        echo "error: $file has display-name aliases (not kebab-case slugs)." >&2
+        echo "  Run 'make sync' in the emage.code repo to regenerate projections." >&2
+        exit 1
+      fi
+    fi
+  done
+}
+
+validate_before_update() {
+  # Pre-flight checks before --update to prevent propagating corrupted state.
+  if [[ "$UPDATE" -eq 1 ]]; then
+    validate_github_agents
+  fi
+}
+
 mkdir -p "$TARGET"
 
 if [[ "$UPDATE" -eq 1 ]]; then
   require_existing_install
+  validate_before_update
 fi
 
 merge_task_docs() {
