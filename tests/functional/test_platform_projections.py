@@ -172,6 +172,51 @@ class TestPlatformProjections(unittest.TestCase):
                 f"{orchestrator}.md: user-invocable must be true in Opencode projection",
             )
 
+    def test_github_agent_aliases_match_filename_slugs(self):
+        """GitHub Copilot resolves subagents by filename slug when `name` is omitted.
+
+        Orchestrator `agents:` lists use kebab-case slugs; projecting display names
+        into `name` breaks runSubagent delegation (alias not registered).
+        """
+        github_agents = _generated_root("github") / "agents"
+        for path in sorted(github_agents.glob("*.agent.md")):
+            slug = path.name.replace(".agent.md", "")
+            fm, _ = parse_file(path)
+            with self.subTest(agent=slug):
+                self.assertNotIn(
+                    "name",
+                    fm,
+                    f"{path.name}: GitHub projection must omit `name` so Copilot uses slug {slug!r}",
+                )
+
+    def test_github_orchestrator_agents_list_matches_slug_aliases(self):
+        github_agents = _generated_root("github") / "agents"
+        for orchestrator in ("orchestrator", "poc-orchestrator"):
+            fm, _ = parse_file(github_agents / f"{orchestrator}.agent.md")
+            delegated = fm.get("agents") or []
+            with self.subTest(orchestrator=orchestrator):
+                for ref in delegated:
+                    agent_path = github_agents / f"{ref}.agent.md"
+                    self.assertTrue(
+                        agent_path.exists(),
+                        f"{orchestrator} delegates to {ref!r} but {agent_path.name} is missing",
+                    )
+                    sub_fm, _ = parse_file(agent_path)
+                    self.assertNotIn(
+                        "name",
+                        sub_fm,
+                        f"{agent_path.name}: subagent must register under slug {ref!r}",
+                    )
+
+    def test_github_orchestrators_are_user_invocable(self):
+        github_agents = _generated_root("github") / "agents"
+        for orchestrator in ("orchestrator", "poc-orchestrator"):
+            fm, _ = parse_file(github_agents / f"{orchestrator}.agent.md")
+            self.assertTrue(
+                fm.get("user-invocable") is True,
+                f"{orchestrator}.agent.md: user-invocable must be true for GitHub Copilot",
+            )
+
     def test_github_prompt_agent_references_resolve(self):
         github_prompts = _generated_root("github") / "prompts"
         agent_slugs = {p.stem for p in list_agents()}
