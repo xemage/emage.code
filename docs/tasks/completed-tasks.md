@@ -62,3 +62,4 @@ Append-only log. Entries move here after the orchestrator marks a task `done`.
 | T203 | CWSO dev profile with rollout enabled + `<some-model>` via vLLM/HAL | devops-engineer | 2026-06-20 | docs/artifacts/cwso-dev-profile-t203-v1.md |
 | T210 | `CwsoClient` library (JWT, tools/call, rate-limit pacing) | backend-developer | 2026-06-20 | implementation/runtime/cwso/client.py; tests/unit/test_cwso_client.py |
 | T211 | Map emage.code agent roles → CWSO permission tiers | solution-architect | 2026-06-20 | docs/artifacts/role-mapping-cwso-v1.md |
+| T212 | Concurrent-merge orchestration (N workers → shadow → merge) | backend-developer | 2026-06-20 | implementation/runtime/cwso/concurrent_merge.py; tests/unit/test_cwso_concurrent_merge.py; [!42](https://gitlab.com/em-age/emage.code/-/merge_requests/42) |

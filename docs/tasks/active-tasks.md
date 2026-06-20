@@ -2,8 +2,7 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T212 | Concurrent-merge orchestration (N workers → shadow → merge) | backend-developer | in_progress | P0 | T210, T211 | 2026-06-20 |
-| T213 | `query_ast` conflict pre-check + heuristic selection | backend-developer | pending | P1 | T212 | 2026-06-19 |
+| T213 | `query_ast` conflict pre-check + heuristic selection | backend-developer | in_progress | P1 | T212 | 2026-06-20 |
 | T214 | Pattern A integration test (3 agents, deterministic merge) | qa-engineer | pending | P0 | T212 | 2026-06-19 |
 | T220 | Real harness-adapter image for SIA target agent | backend-developer | pending | P0 | T203 | 2026-06-19 |
 | T221 | Patch SIA openhands backend to honor `base_url` | backend-developer | pending | P1 | T203 | 2026-06-19 |

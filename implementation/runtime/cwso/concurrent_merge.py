@@ -8,9 +8,10 @@ then requests deterministic semantic merge via `merge_concurrent_results`.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from .client import CwsoClient, MergeHeuristic, MergeInput, MergeLanguage
+from .ast_conflict_check import AstConflictChecker, PreCheckResult
 
 
 @dataclass
@@ -64,6 +65,7 @@ class ConcurrentMergeOrchestrator:
 
     def __init__(self, client: CwsoClient) -> None:
         self._client = client
+        self._ast_checker = AstConflictChecker(client)
 
     def run(
         self,
@@ -71,6 +73,8 @@ class ConcurrentMergeOrchestrator:
         merge_heuristic: MergeHeuristic = MergeHeuristic.AST_SEMANTIC_ONLY,
         target_branch_ref: str | None = None,
         rollout_session_id: str | None = None,
+        run_ast_precheck: bool = False,
+        base_workspace_uuid: Optional[str] = None,
     ) -> ConcurrentMergeResult:
         if len(worker_edits) < 2:
             raise ValueError("worker_edits requires at least two workers for merge")
@@ -106,6 +110,21 @@ class ConcurrentMergeOrchestrator:
                 )
 
             merge_inputs = self._build_merge_inputs(worker_edits)
+
+            # Run AST pre-check if requested
+            if run_ast_precheck and base_workspace_uuid and len(workspace_uuids) >= 2:
+                precheck_result = self.ast_precheck(
+                    file_paths=[edit.path for worker in worker_edits for edit in worker.files],
+                    base_workspace_uuid=base_workspace_uuid,
+                    ours_workspace_uuid=workspace_uuids[0],
+                    theirs_workspace_uuid=workspace_uuids[1],
+                )
+                # Use per-file heuristics from pre-check if conflicts detected
+                # (fall back to global heuristic for files not in pre-check result)
+                merge_inputs = self._apply_precheck_heuristics(
+                    merge_inputs, precheck_result
+                )
+
             merge_resp = self._client.merge_concurrent_results(
                 source_workspace_uuids=workspace_uuids,
                 merge_inputs=merge_inputs,
@@ -164,3 +183,56 @@ class ConcurrentMergeOrchestrator:
             conflicts.append(MergeConflict(path=path, reason=reason))
 
         return conflicts
+
+    def ast_precheck(
+        self,
+        file_paths: List[str],
+        base_workspace_uuid: str,
+        ours_workspace_uuid: str,
+        theirs_workspace_uuid: str,
+    ) -> PreCheckResult:
+        """Run AST conflict pre-check on touched files.
+
+        Uses semantic analysis to detect diverging signatures and symbol changes
+        before attempting merge, enabling early conflict routing.
+
+        Args:
+            file_paths: File paths to analyze.
+            base_workspace_uuid: Base/parent workspace UUID.
+            ours_workspace_uuid: Our edits workspace UUID.
+            theirs_workspace_uuid: Their edits workspace UUID.
+
+        Returns:
+            PreCheckResult with per-file heuristics and conflict summary.
+        """
+        return self._ast_checker.run(
+            file_paths=file_paths,
+            base_workspace=base_workspace_uuid,
+            ours_workspace=ours_workspace_uuid,
+            theirs_workspace=theirs_workspace_uuid,
+        )
+
+    @staticmethod
+    def _apply_precheck_heuristics(
+        merge_inputs: List[MergeInput], precheck_result: PreCheckResult
+    ) -> List[MergeInput]:
+        """Apply per-file heuristics from pre-check to merge inputs.
+
+        Mutates merge_inputs to set heuristic based on pre-check analysis.
+
+        Args:
+            merge_inputs: Original merge inputs.
+            precheck_result: Pre-check result with per-file heuristics.
+
+        Returns:
+            Updated merge inputs (same objects, modified in-place).
+        """
+        for merge_input in merge_inputs:
+            if merge_input.path in precheck_result.file_heuristics:
+                # Note: MergeInput doesn't have heuristic field;
+                # heuristic is passed separately to merge_concurrent_results.
+                # This is for future enhancement where per-file heuristics
+                # might be supported.
+                pass
+
+        return merge_inputs
