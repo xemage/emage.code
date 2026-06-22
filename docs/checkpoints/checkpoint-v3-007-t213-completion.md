@@ -118,7 +118,7 @@ T213 (AST conflict pre-check module) successfully implemented, tested, integrate
 
 ## References
 
-- [T213 Task Brief](task-T213.md)
+- [T213 Task Brief](../tasks/task-T213.md)
 - [MR !43: T213 AST Conflict Pre-check](https://gitlab.com/em-age/emage.code/-/merge_requests/43)
 - [ADR-001: CWSO×SIA Integration Patterns](../decisions/ADR-001-cwso-sia-integration.md)
 - [CWSO MCP Contract](../artifacts/cwso-mcp-contract-v1.md)

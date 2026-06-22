@@ -178,7 +178,7 @@ If blocked, report blocker type and severity with one proposed mitigation:
 
 ## References
 
-- [Checkpoint T213](checkpoint-v3-007-t213-completion.md)
+- [Checkpoint T213](../checkpoints/checkpoint-v3-007-t213-completion.md)
 - [ADR-001: CWSO×SIA Integration](../decisions/ADR-001-cwso-sia-integration.md)
 - [CWSO MCP Contract](../artifacts/cwso-mcp-contract-v1.md)
 - [ConcurrentMergeOrchestrator](../../implementation/runtime/cwso/concurrent_merge.py)
