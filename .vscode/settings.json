@@ -28,6 +28,9 @@
         "go test": true,
         "go env": true,
         "grep": true,
+        "head": true,
+        "jq": true,
+        "make": true,
         "node": true,
         "opencode": true,
         "python": true,
@@ -38,8 +41,9 @@
         "tail": true,
         "Tee-Object": true,
         "Test-Path": true,
-        "type": true,
-        "true": true
+        "timeout": true,
+        "true": true,
+        "type": true
     },
     "makefile.configureOnOpen": false
 }

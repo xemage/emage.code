@@ -51,14 +51,6 @@
     },
     "context7": {
       "url": "https://mcp.context7.com/mcp"
-    },
-    "cwso": {
-      "type": "http",
-      "url": "http://127.0.0.1:8080/mcp",
-      "headers": {
-        "Authorization": "Bearer ${env:CWSO_MCP_TOKEN}",
-        "Origin": "http://localhost"
-      }
     }
   }
 }
