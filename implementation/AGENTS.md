@@ -68,13 +68,13 @@ Skipping a mandatory skill requires orchestrator approval and a logged exception
 in the task brief or checkpoint.
 
 ## Code Standards
-- See `instructions/coding-standards.md` (canonical) — projected to each platform.
+- See `knowledge/instructions/coding-standards.md` (canonical source) — projected to each platform.
 - Max 50-line functions, max 4 parameters, early returns.
 - Conventional Commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`.
 - GitFlow: `main`, `develop`, `feature/*`, `bugfix/*`, `release/*`, `hotfix/*`.
 
 ## Security
-- See `instructions/security-guidelines.md` and `SECURITY.md`.
+- See `knowledge/instructions/security-guidelines.md` and `SECURITY.md`.
 - OWASP Top 10 compliance required.
 - No secrets in code — use environment variables or vault. **Never commit live API keys.**
 - Parameterized queries only.

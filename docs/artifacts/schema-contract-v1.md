@@ -310,8 +310,8 @@ Cookbook example (agent.yaml):
     orchestrator:
       ref: orchestrator
       instructions:
-        - ../../knowledge/instructions/coding-standards.md
-        - ../../knowledge/instructions/security-guidelines.md
+        - ../../implementation/knowledge/instructions/coding-standards.md
+        - ../../implementation/knowledge/instructions/security-guidelines.md
       skills:
         - ../../knowledge/skills/task-management/SKILL.md
     workers:

@@ -179,8 +179,24 @@ install_docs() {
   fi
 }
 
+  install_agents_doc() {
+    local src="$IMPLEMENTATION/AGENTS.md"
+    local dest="$TARGET/AGENTS.md"
+
+    local args=(
+    "$REPO_ROOT/scripts/render_installed_agents.py"
+    --source "$src"
+    --dest "$dest"
+    --platform "$PLATFORM"
+    )
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+    args+=(--dry-run)
+    fi
+    run python3 "${args[@]}"
+  }
+
 install_common() {
-  run cp "$IMPLEMENTATION/AGENTS.md" "$TARGET/AGENTS.md"
+    install_agents_doc
   install_docs
 }
 
