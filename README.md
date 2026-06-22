@@ -153,6 +153,7 @@ Release publication is blocked unless documentation is updated for the tag.
 
 - Required marker in release docs: `Latest release: vX.Y.Z`
 - Required per-release brief: `docs/releases/vX.Y.Z.md` (Install + Highlights)
+- GitLab release notes source of truth: publish from `docs/releases/vX.Y.Z.md` using `glab release create vX.Y.Z --ref vX.Y.Z --name vX.Y.Z -F docs/releases/vX.Y.Z.md`
 - Required files:
   - `README.md`
   - `docs/wiki/README.md`

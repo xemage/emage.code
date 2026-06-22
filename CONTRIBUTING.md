@@ -148,6 +148,14 @@ The project uses **Semantic Versioning** (`vMAJOR.MINOR.PATCH`) and
    - Appends a **Changelog** section from Conventional Commits since the previous tag (full git history; `GIT_DEPTH: 0` on release job)
    - Regenerates [`CHANGELOG.md`](CHANGELOG.md) and creates a [GitLab Release](https://gitlab.com/em-age/emage.code/-/releases)
 
+If you must manually create or repair a GitLab release entry, always source notes from the release brief file:
+
+```bash
+glab release create vX.Y.Z --ref vX.Y.Z --name vX.Y.Z -F docs/releases/vX.Y.Z.md
+```
+
+Do not use ad-hoc inline `--notes`, as that can drift from `docs/releases/vX.Y.Z.md`.
+
 ### Hotfixes
 
 1. Branch from `main`: `hotfix/vX.Y.Z+1`

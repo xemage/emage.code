@@ -105,6 +105,8 @@ When delegating to a specialist agent, always provide:
 
 1. **Release Documentation Gate:**
    - Before calling `glab release create`, verify that `docs/releases/vX.Y.Z.md` exists and is committed
+   - Publish/update release notes from that file only: `glab release create vX.Y.Z --ref vX.Y.Z --name vX.Y.Z -F docs/releases/vX.Y.Z.md`
+   - Do not pass ad-hoc inline `--notes`; it can drift from `docs/releases/vX.Y.Z.md`
    - File must include: "Latest release: vX.Y.Z", "## Install", "## Highlights", valid install instructions
    - Use `scripts/verify-release-docs.py --tag vX.Y.Z` to validate locally before tag
 
