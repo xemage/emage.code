@@ -63,3 +63,4 @@ Append-only log. Entries move here after the orchestrator marks a task `done`.
 | T210 | `CwsoClient` library (JWT, tools/call, rate-limit pacing) | backend-developer | 2026-06-20 | implementation/runtime/cwso/client.py; tests/unit/test_cwso_client.py |
 | T211 | Map emage.code agent roles → CWSO permission tiers | solution-architect | 2026-06-20 | docs/artifacts/role-mapping-cwso-v1.md |
 | T212 | Concurrent-merge orchestration (N workers → shadow → merge) | backend-developer | 2026-06-20 | implementation/runtime/cwso/concurrent_merge.py; tests/unit/test_cwso_concurrent_merge.py; [!42](https://gitlab.com/em-age/emage.code/-/merge_requests/42) |
+| T213 | `query_ast` conflict pre-check + heuristic selection | backend-developer | 2026-06-20 | implementation/runtime/cwso/ast_conflict_check.py; tests/unit/test_ast_conflict_check.py; [!43](https://gitlab.com/em-age/emage.code/-/merge_requests/43) |
