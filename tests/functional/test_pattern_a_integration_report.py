@@ -9,6 +9,7 @@ import json
 import unittest
 from pathlib import Path
 
+from tests._helpers.pattern_a_report import build_pattern_a_report
 from tests._helpers.repo import repo_root
 
 
@@ -53,6 +54,17 @@ class TestPatternAIntegrationReport(unittest.TestCase):
 
         expected_overall = "pass" if failed == 0 else "fail"
         self.assertEqual(summary.get("overallStatus"), expected_overall)
+
+    def test_report_matches_regenerated_outcomes(self) -> None:
+        report_path = repo_root() / REPORT_PATH
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+
+        regenerated = build_pattern_a_report()
+        self.assertEqual(
+            report,
+            regenerated,
+            "Report artifact is stale. Run: python3 scripts/update_pattern_a_integration_report.py",
+        )
 
 
 if __name__ == "__main__":

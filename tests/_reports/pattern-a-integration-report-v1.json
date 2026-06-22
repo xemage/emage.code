@@ -1,7 +1,7 @@
 {
   "version": "v1",
   "taskId": "T214",
-  "generatedBy": "tests/functional/test_pattern_a_integration.py",
+  "generatedBy": "scripts/update_pattern_a_integration_report.py",
   "scenarios": [
     {
       "id": "S1",
