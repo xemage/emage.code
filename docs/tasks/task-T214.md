@@ -1,10 +1,10 @@
 # Task T214: Pattern A Integration Test (3 Agents, Deterministic Merge)
 
-**ID**: T214  
-**Owner**: qa-engineer  
-**Priority**: P0 (Critical Path)  
-**Status**: Pending  
-**Depends on**: T212 (Concurrent merge orchestrator) ✓, T213 (AST conflict pre-check) ✓  
+**ID**: T214
+**Owner**: qa-engineer
+**Priority**: P0 (Critical Path)
+**Status**: Pending
+**Depends on**: T212 (Concurrent merge orchestrator) ✓, T213 (AST conflict pre-check) ✓
 
 ---
 
@@ -186,5 +186,5 @@ If blocked, report blocker type and severity with one proposed mitigation:
 
 ---
 
-**Next Task**: T220 (SIA harness adapter) — after T214 passes  
+**Next Task**: T220 (SIA harness adapter) — after T214 passes
 **Team**: @qa-engineer (lead); @backend-developer (support)
