@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-06-22T13:46:01+02:00",
+  "generatedAt": "2026-06-22T14:13:18+02:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "cursor",
@@ -231,7 +231,7 @@
       "category": "agent",
       "name": "orchestrator",
       "path": "agents/orchestrator.md",
-      "checksum": "97b81c4d511587dbff6551f62e8dad1fb521b3a0d050f624c9d57d30d7d161ef",
+      "checksum": "14adb285a6a1489fc7f19a5c94365c386e283c16e910ecba5cdc5ab7ac063ad7",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
