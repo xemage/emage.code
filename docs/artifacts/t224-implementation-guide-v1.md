@@ -534,6 +534,6 @@ class T224MergeIntegration(unittest.TestCase):
 
 ## References
 
-- [T223 Integration Test Report](../artifacts/test-report-t223-v1.md) — harness launcher architecture
-- [T212 Pattern A Design](../artifacts/concurrent-merge-orchestration-v1.md) — merge contract reference
+- [T223 Integration Test Report](test-report-t223-v1.md) — harness launcher architecture
+- [CWSO MCP Contract](cwso-mcp-contract-v1.md) — merge endpoint schema reference
 - [Task T224 Brief](../tasks/task-T224.md) — objectives and dependencies
