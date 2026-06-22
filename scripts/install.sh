@@ -38,10 +38,10 @@ TARGET_ABS=""
 
 resolve_abs_path() {
   local path="$1"
-  if command -v realpath >/dev/null 2>&1; then
-    realpath -m "$path"
-  elif command -v python3 >/dev/null 2>&1; then
+  if command -v python3 >/dev/null 2>&1; then
     python3 -c 'import os,sys; print(os.path.abspath(sys.argv[1]))' "$path"
+  elif command -v realpath >/dev/null 2>&1; then
+    realpath "$path"
   else
     echo "$path"
   fi
