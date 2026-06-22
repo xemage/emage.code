@@ -73,8 +73,10 @@ markdown-links:
 unit-tests:
   stage: test
   image: python:3.12-alpine
+  tags:
+    - dind  # Docker-in-Docker for T223 docker availability test
   before_script:
-    - python3 -c "import shutil, subprocess; apk=shutil.which('apk'); subprocess.check_call([apk, 'add', '--no-cache', 'nodejs', 'git', 'bash']) if apk else None"
+    - python3 -c "import shutil, subprocess; apk=shutil.which('apk'); subprocess.check_call([apk, 'add', '--no-cache', 'nodejs', 'git', 'bash', 'docker']) if apk else None"
     - python3 -m pip install --no-cache-dir --quiet pyyaml jsonschema
   script:
     - python3 tests/run.py

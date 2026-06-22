@@ -127,7 +127,7 @@ class T223TestSetup(unittest.TestCase):
             )
 
     def test_docker_available(self) -> None:
-        """Verify Docker CLI is available (needed for image checks, but skip in CI if unavailable)."""
+        """Verify Docker CLI is available (needed for image checks)."""
         try:
             result = subprocess.run(
                 ["docker", "--version"],
@@ -135,11 +135,16 @@ class T223TestSetup(unittest.TestCase):
                 text=True,
                 timeout=5,
             )
-            if result.returncode != 0:
-                self.skipTest(f"Docker not available in this environment: {result.stderr}")
+            self.assertEqual(
+                result.returncode,
+                0,
+                f"Docker not available: {result.stderr}",
+            )
         except FileNotFoundError:
-            # Docker command not found in PATH; skip gracefully in CI
-            self.skipTest("Docker CLI not found in PATH; skipping docker-dependent checks")
+            self.fail(
+                "Docker CLI not found in PATH. "
+                "For CI: use runner tag 'dind' (Docker-in-Docker) to enable docker command."
+            )
 
 
 class T223ExecutionWithMockCwso(unittest.TestCase):
