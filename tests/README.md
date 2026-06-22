@@ -71,6 +71,11 @@ python3 tests/run.py -v
 
 # Single test file
 python3 -m unittest tests.functional.test_schemas
+
+# Regenerate Pattern A integration report artifact
+make update-pattern-a-report
+# or
+python3 scripts/update_pattern_a_integration_report.py
 ```
 
 ## CI
