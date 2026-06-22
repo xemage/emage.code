@@ -1,0 +1,37 @@
+{
+  "version": "v1",
+  "taskId": "T214",
+  "generatedBy": "tests/functional/test_pattern_a_integration.py",
+  "scenarios": [
+    {
+      "id": "S1",
+      "name": "Three independent edits merge successfully",
+      "expectedOutcome": "merge_success",
+      "status": "pass"
+    },
+    {
+      "id": "S2",
+      "name": "AST pre-check invocation when enabled",
+      "expectedOutcome": "precheck_invoked",
+      "status": "pass"
+    },
+    {
+      "id": "S3",
+      "name": "Conflicting edits are reported",
+      "expectedOutcome": "merge_conflict_reported",
+      "status": "pass"
+    },
+    {
+      "id": "S4",
+      "name": "Merge input build is deterministic",
+      "expectedOutcome": "deterministic_projection",
+      "status": "pass"
+    }
+  ],
+  "summary": {
+    "totalScenarios": 4,
+    "passed": 4,
+    "failed": 0,
+    "overallStatus": "pass"
+  }
+}
