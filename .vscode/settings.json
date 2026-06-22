@@ -1,5 +1,6 @@
 {
     "chat.tools.terminal.autoApprove": {
+        "cat": true,
         "dotnet": true,
         "dotnet add": true,
         "dotnet build": true,
@@ -35,6 +36,7 @@
         "opencode": true,
         "python": true,
         "python3": true,
+        "sed": true,
         "Select": true,
         "set": true,
         "Set-Content": true,

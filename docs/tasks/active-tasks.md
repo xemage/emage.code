@@ -14,6 +14,7 @@
 | T232 | sia-harness release gate + Ed25519 witness signing | devops-engineer | pending | P1 | T230 | 2026-06-19 |
 | T233 | Closed-loop eval on held-out task; measure deltas | qa-engineer | pending | P0 | T231, T232 | 2026-06-19 |
 | T234 | Cost/latency telemetry per generation | devops-engineer | pending | P2 | T233 | 2026-06-19 |
+
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
 > Owners are agent names from `knowledge/agents/`.

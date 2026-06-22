@@ -17,5 +17,5 @@ Refer to your provider's documentation for wiki configuration.
 
 ## Implementation guide
 
-For complex documentation about your implementation, create an `implementation-guide.md` 
+For complex documentation about your implementation, create an `implementation-guide.md`
 file that covers architecture, design patterns, and how to contribute.
