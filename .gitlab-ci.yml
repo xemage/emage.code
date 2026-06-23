@@ -80,7 +80,7 @@ unit-tests:
     DOCKER_HOST: unix:///var/run/docker.sock
   before_script:
     - apk add --no-cache git bash nodejs docker-cli
-    - python3 -m pip install --no-cache-dir pyyaml jsonschema requests
+    - python3 -m pip install --no-cache-dir pyyaml jsonschema requests pyarrow
   script:
     - python3 tests/run.py
   artifacts:
