@@ -45,7 +45,8 @@
         "Test-Path": true,
         "timeout": true,
         "true": true,
-        "type": true
+        "type": true,
+        "docker build": true
     },
     "makefile.configureOnOpen": false
 }

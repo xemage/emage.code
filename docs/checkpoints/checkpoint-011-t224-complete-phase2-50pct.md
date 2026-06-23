@@ -1,8 +1,8 @@
 # Checkpoint 011 — T224 Reward Attachment Complete ✅
 
-**Date**: 2026-06-23 09:00 UTC  
-**Status**: T224 complete and merged to develop  
-**Commit**: 48282c4  
+**Date**: 2026-06-23 09:00 UTC
+**Status**: T224 complete and merged to develop
+**Commit**: 48282c4
 **Phase**: Phase 2 Pattern B — Critical Path Progression
 
 ---
@@ -11,8 +11,8 @@
 
 ### T224: Reward Attachment via Merge ✅
 
-**Status**: Delivered and merged to develop  
-**Owner**: Backend Developer  
+**Status**: Delivered and merged to develop
+**Owner**: Backend Developer
 **Merge**: MR !46 (commit 48282c4)
 
 #### Deliverables
@@ -117,9 +117,9 @@ T233: Closed-loop eval .......................... ⏳ READY (depends on T231, T2
 
 ### Infrastructure Deployment (Parallel)
 
-**Owner**: DevOps Engineer  
-**Dependencies**: T203 (CWSO dev profile ready ✅)  
-**Effort**: ~4 hours  
+**Owner**: DevOps Engineer
+**Dependencies**: T203 (CWSO dev profile ready ✅)
+**Effort**: ~4 hours
 **Deliverables**:
 - CWSO running with rollout enabled
 - Polar sidecar configured for trajectory capture
@@ -130,9 +130,9 @@ T233: Closed-loop eval .......................... ⏳ READY (depends on T231, T2
 
 ### T225 Implementation (Parallel)
 
-**Owner**: Backend Developer  
-**Dependencies**: T224 ✅ (now complete)  
-**Effort**: ~3.5 hours  
+**Owner**: Backend Developer
+**Dependencies**: T224 ✅ (now complete)
+**Effort**: ~3.5 hours
 **Deliverables**:
 - Merge ±1 signal injection
 - `results.json` evaluation metric attachment
@@ -141,9 +141,9 @@ T233: Closed-loop eval .......................... ⏳ READY (depends on T231, T2
 
 ### Phase 2 Live Integration Testing (Sequence: Post-Infrastructure)
 
-**Owner**: QA Engineer  
-**Dependencies**: T225 ✅, Infrastructure deployed  
-**Effort**: ~2 hours  
+**Owner**: QA Engineer
+**Dependencies**: T225 ✅, Infrastructure deployed
+**Effort**: ~2 hours
 **Deliverables**:
 - End-to-end SIA generation via harness
 - Trajectory records in Parquet store verified
@@ -170,26 +170,26 @@ T233: Closed-loop eval .......................... ⏳ READY (depends on T231, T2
 ## Progress Snapshot
 
 ### Completed (10 tasks)
-✅ T201: MCP contract + auth  
-✅ T202: ADR (integration patterns)  
-✅ T203: CWSO dev profile  
-✅ T210: CwsoClient library  
-✅ T211: Role mapping  
-✅ T212: Concurrent-merge orchestration  
-✅ T213: AST conflict pre-check  
-✅ T220: Harness adapter  
-✅ T221: OpEnHands routing  
-✅ T222: SIA target + evaluator  
-✅ T223: Harness launcher integration  
+✅ T201: MCP contract + auth
+✅ T202: ADR (integration patterns)
+✅ T203: CWSO dev profile
+✅ T210: CwsoClient library
+✅ T211: Role mapping
+✅ T212: Concurrent-merge orchestration
+✅ T213: AST conflict pre-check
+✅ T220: Harness adapter
+✅ T221: OpEnHands routing
+✅ T222: SIA target + evaluator
+✅ T223: Harness launcher integration
 ✅ T224: Reward attachment (TODAY ✅)
 
 ### Pending (7 tasks)
-⏳ T225: Reward shaping (ready to start)  
-⏳ T230: Trainer bridge (ready to start post-T225)  
-⏳ T231: Fine-tune model (ready to start post-T230)  
-⏳ T232: Release gate + signing (ready to start post-T230)  
-⏳ T233: Closed-loop eval (ready to start post-T231)  
-⏳ T234: Telemetry (ready to start post-T233)  
+⏳ T225: Reward shaping (ready to start)
+⏳ T230: Trainer bridge (ready to start post-T225)
+⏳ T231: Fine-tune model (ready to start post-T230)
+⏳ T232: Release gate + signing (ready to start post-T230)
+⏳ T233: Closed-loop eval (ready to start post-T231)
+⏳ T234: Telemetry (ready to start post-T233)
 ⏳ T235: Documentation & release (ready to start post-T233)
 
 ---

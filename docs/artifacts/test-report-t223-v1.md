@@ -1,8 +1,8 @@
 # T223 Test Report: SIA Harness Capture via CWSO
 
-**Test Date:** 2026-06-22  
-**Test Suite:** `tests/functional/test_t223_sia_harness_capture.py`  
-**Test Framework:** Python unittest + pytest  
+**Test Date:** 2026-06-22
+**Test Suite:** `tests/functional/test_t223_sia_harness_capture.py`
+**Test Framework:** Python unittest + pytest
 **Status:** ✅ **ALL TESTS PASSED** (14 passed, 1 skipped)
 
 ---
@@ -273,6 +273,6 @@ T223 test suite is fully functional and ready for integration with live CWSO inf
 
 ---
 
-**Report Prepared By:** QA Engineer (T223 Implementation)  
-**Approval Status:** Pending Tech Lead Review  
+**Report Prepared By:** QA Engineer (T223 Implementation)
+**Approval Status:** Pending Tech Lead Review
 **Next Phase:** T224 - Reward Attachment & Capture Verification

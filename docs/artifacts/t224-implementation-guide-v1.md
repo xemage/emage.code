@@ -1,9 +1,9 @@
 # T224 Implementation Guide — Reward Attachment via Merge
 
-**Version**: 1.0  
-**Date**: 2026-06-22  
-**Status**: Ready for implementation  
-**Owner**: Backend Developer  
+**Version**: 1.0
+**Date**: 2026-06-22
+**Status**: Ready for implementation
+**Owner**: Backend Developer
 **Dependencies**: T223 ✅, T212 ✅, T203 (deploy-pending)
 
 ---
@@ -12,7 +12,7 @@
 
 T224 implements reward attachment in the CWSO merge orchestration layer. When a SIA generation completes via the harness launcher (T223), the evaluator produces a `results.json` with `overall_score` and `passed` fields. T224 sends this reward signal to the CWSO merge engine via `merge_concurrent_results`, which attaches the evaluation result to the trajectory record captured in the Parquet store.
 
-**Key Concept**: 
+**Key Concept**:
 - Harness launcher runs SIA generation → evaluator produces results
 - T224 calls `merge_concurrent_results(rollout_session_id, evaluation_reward)`
 - CWSO merge engine embeds reward in trajectory record
@@ -122,10 +122,10 @@ implementation/adapters/sia-target/
 ```python
 def read_evaluation_result(workspace_path: str) -> dict:
     """Read results.json from completed job workspace.
-    
+
     Args:
         workspace_path: Path to job workspace (from DispatchResult)
-        
+
     Returns:
         {
             overall_score: float,
@@ -133,7 +133,7 @@ def read_evaluation_result(workspace_path: str) -> dict:
             diagnostics_count: int,
             ...other fields...
         }
-        
+
     Raises:
         FileNotFoundError: If results.json not found
         json.JSONDecodeError: If results.json malformed
@@ -141,16 +141,16 @@ def read_evaluation_result(workspace_path: str) -> dict:
     results_path = Path(workspace_path) / "results.json"
     if not results_path.exists():
         raise FileNotFoundError(f"results.json not found in {workspace_path}")
-    
+
     with open(results_path) as f:
         results = json.load(f)
-    
+
     # Validate required fields
     required = ["overall_score", "passed"]
     missing = [k for k in required if k not in results]
     if missing:
         raise ValueError(f"results.json missing required fields: {missing}")
-    
+
     return results
 ```
 
@@ -161,7 +161,7 @@ def build_merge_request(
     evaluation: dict
 ) -> dict:
     """Build MergeRequest payload for CWSO merge_concurrent_results.
-    
+
     Args:
         dispatch_result: {
             workspace_uuid: str,
@@ -174,7 +174,7 @@ def build_merge_request(
             diagnostics_count: int,
             ...
         }
-        
+
     Returns:
         MergeRequest {
             workspace_uuid: str,
@@ -206,20 +206,20 @@ def attach_reward_via_merge(
     timeout: int = 5
 ) -> dict:
     """Call CWSO merge_concurrent_results with evaluation reward.
-    
+
     Args:
         merge_request: {workspace_uuid, rollout_session_id, evaluation_reward, ...}
         cwso_base_url: e.g., "http://localhost:8080"
         jwt_token: CWSO JWT auth token
         timeout: request timeout in seconds
-        
+
     Returns:
         MergeResult {
             merged: bool,
             conflict_resolution_strategy: str,
             trajectory_id: str
         }
-        
+
     Raises:
         ConnectionError: If CWSO unavailable
         HTTPError: If merge failed
@@ -229,7 +229,7 @@ def attach_reward_via_merge(
         "Authorization": f"Bearer {jwt_token}",
         "Content-Type": "application/json"
     }
-    
+
     try:
         response = requests.post(
             url,
@@ -254,40 +254,40 @@ def attach_reward_to_job(
     fail_gracefully: bool = True
 ) -> str:
     """Orchestrate reward attachment for completed job.
-    
+
     Args:
         dispatch_result: From harness dispatch_concurrent_jobs
         workspace_path: Path to job workspace
         cwso_base_url: CWSO endpoint (default: $CWSO_BASE_URL)
         cwso_jwt: CWSO JWT token (default: $CWSO_JWT_SECRET)
         fail_gracefully: If True, log but don't fail job if merge fails
-        
+
     Returns:
         log_message: "Reward attached: rollout_session_id={id}, score={score}, passed={passed}"
     """
     cwso_base_url = cwso_base_url or os.getenv("CWSO_BASE_URL", "http://localhost:8080")
     cwso_jwt = cwso_jwt or os.getenv("CWSO_JWT_SECRET", "")
-    
+
     try:
         # Step 1: Read evaluation
         evaluation = read_evaluation_result(workspace_path)
         logger.info(f"Evaluation read: score={evaluation['overall_score']}, passed={evaluation['passed']}")
-        
+
         # Step 2: Build merge request
         merge_req = build_merge_request(dispatch_result, evaluation)
-        
+
         # Step 3: Attach reward
         if not cwso_jwt:
             logger.warning("CWSO_JWT_SECRET not set; merge attachment skipped (testing mode)")
             return f"Reward attached (mock): rollout_session_id={dispatch_result['rollout_session_id']}, score={evaluation['overall_score']}, passed={evaluation['passed']}"
-        
+
         merge_result = attach_reward_via_merge(merge_req, cwso_base_url, cwso_jwt)
-        
+
         # Step 4: Log result
         log_msg = f"Reward attached: rollout_session_id={dispatch_result['rollout_session_id']}, score={evaluation['overall_score']}, passed={evaluation['passed']}, trajectory_id={merge_result.get('trajectory_id', 'N/A')}"
         logger.info(log_msg)
         return log_msg
-        
+
     except Exception as e:
         error_msg = f"Reward attachment failed: {e}"
         logger.error(error_msg)
@@ -308,11 +308,11 @@ for dispatch_result in dispatch_concurrent_jobs(...):
     # Existing: wait for job completion, validate outputs
     await job_done.wait()
     workspace_path = dispatch_result["workspace_path"]
-    
+
     # Existing: read evaluator results
     evaluate_result = json.loads(Path(workspace_path) / "results.json")
     logger.info(f"Evaluation result: {evaluate_result}")
-    
+
     # NEW T224: Attach reward to merge
     from reward_attachment import attach_reward_to_job
     reward_log = attach_reward_to_job(dispatch_result, workspace_path)
@@ -327,19 +327,19 @@ for dispatch_result in dispatch_concurrent_jobs(...):
 ```python
 class T224EvaluationReading(unittest.TestCase):
     """Test evaluation result parsing and validation."""
-    
+
     def test_read_good_evaluation(self):
         """Read well-formed results.json."""
         results = read_evaluation_result(self.good_results_dir)
         self.assertEqual(results["overall_score"], 1.0)
         self.assertTrue(results["passed"])
-    
+
     def test_read_bad_evaluation(self):
         """Read poorly-formed submission with low score."""
         results = read_evaluation_result(self.bad_results_dir)
         self.assertLess(results["overall_score"], 1.0)
         self.assertFalse(results["passed"])
-    
+
     def test_missing_required_fields(self):
         """Fail gracefully if results.json missing fields."""
         with self.assertRaises(ValueError) as cm:
@@ -351,7 +351,7 @@ class T224EvaluationReading(unittest.TestCase):
 ```python
 class T224MergeRequestBuilding(unittest.TestCase):
     """Test MergeRequest contract construction."""
-    
+
     def test_merge_request_schema_good(self):
         """Build valid MergeRequest from good evaluation."""
         dispatch = {
@@ -367,7 +367,7 @@ class T224MergeRequestBuilding(unittest.TestCase):
         self.assertEqual(merge_req["evaluation_reward"], 0.95)
         self.assertTrue(merge_req["evaluation_passed"])
         self.assertEqual(merge_req["finish_reason"], "success")
-    
+
     def test_merge_request_schema_bad(self):
         """Build valid MergeRequest from bad evaluation."""
         dispatch = {
@@ -383,7 +383,7 @@ class T224MergeRequestBuilding(unittest.TestCase):
         self.assertEqual(merge_req["evaluation_reward"], 0.41)
         self.assertFalse(merge_req["evaluation_passed"])
         self.assertEqual(merge_req["finish_reason"], "failure")
-    
+
     def test_merge_request_has_timestamp(self):
         """MergeRequest includes ISO8601 timestamp."""
         merge_req = build_merge_request({...}, {...})
@@ -395,49 +395,49 @@ class T224MergeRequestBuilding(unittest.TestCase):
 ```python
 class T224MergeIntegration(unittest.TestCase):
     """Test CWSO merge attachment with mocked endpoint."""
-    
+
     def setUp(self):
         """Mock CWSO merge endpoint."""
         self.patcher = patch("requests.post")
         self.mock_post = self.patcher.start()
-    
+
     def tearDown(self):
         self.patcher.stop()
-    
+
     def test_attach_reward_via_merge_success(self):
         """Successfully attach reward to merge."""
         self.mock_post.return_value.json.return_value = {
             "merged": True,
             "trajectory_id": "traj-001"
         }
-        
+
         merge_req = {...}
         result = attach_reward_via_merge(merge_req, "http://localhost:8080", "jwt-token")
-        
+
         self.assertEqual(result["trajectory_id"], "traj-001")
         self.assertTrue(result["merged"])
-    
+
     def test_attach_reward_cwso_unavailable(self):
         """Handle CWSO unavailable gracefully."""
         self.mock_post.side_effect = requests.exceptions.ConnectionError("CWSO down")
-        
+
         with self.assertRaises(ConnectionError):
             attach_reward_via_merge({...}, "http://localhost:8080", "jwt-token")
-    
+
     def test_orchestrate_reward_attachment_end_to_end(self):
         """Full orchestration: read evaluation → build merge → attach."""
         dispatch = {
             "workspace_uuid": "uuid-001",
             "rollout_session_id": "session-001"
         }
-        
+
         result_log = attach_reward_to_job(
             dispatch,
             self.good_results_dir,
             cwso_base_url="http://localhost:8080",
             cwso_jwt="jwt-token"
         )
-        
+
         self.assertIn("rollout_session_id=session-001", result_log)
         self.assertIn("score=1.0", result_log)
         self.assertIn("passed=True", result_log)
