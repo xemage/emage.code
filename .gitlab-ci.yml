@@ -74,13 +74,13 @@ unit-tests:
   stage: test
   image: python:3.12-alpine
   tags:
-    - dind  # Docker-in-Docker for T223 docker availability test
+    - dind  # Docker socket binding for T223 docker availability test
+  variables:
+    # dind runners bind the host Docker socket (Option A); point the CLI at it.
+    DOCKER_HOST: unix:///var/run/docker.sock
   before_script:
-    - echo "Setting up test environment..."
-    - apk add --no-cache git bash nodejs 2>&1 | head -5 || echo "Some packages may already exist"
-    - apk add --no-cache docker 2>&1 | head -5 || echo "⚠️  docker unavailable, tests will skip docker-specific checks"
-    - python3 -m pip install --no-cache-dir pyyaml jsonschema 2>&1 | tail -3
-    - echo "Setup complete"
+    - apk add --no-cache git bash nodejs docker-cli
+    - python3 -m pip install --no-cache-dir pyyaml jsonschema requests
   script:
     - python3 tests/run.py
   artifacts:
