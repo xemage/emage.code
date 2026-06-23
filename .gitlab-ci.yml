@@ -76,12 +76,11 @@ unit-tests:
   tags:
     - dind  # Docker-in-Docker for T223 docker availability test
   before_script:
-    - |
-      apk add --no-cache python3 git bash nodejs 2>/dev/null || true
-      if command -v apk &> /dev/null; then
-        apk add --no-cache docker 2>/dev/null || echo "⚠️  docker install failed, tests will skip docker-specific checks"
-      fi
-    - python3 -m pip install --no-cache-dir --quiet pyyaml jsonschema
+    - echo "Setting up test environment..."
+    - apk add --no-cache git bash nodejs 2>&1 | head -5 || echo "Some packages may already exist"
+    - apk add --no-cache docker 2>&1 | head -5 || echo "⚠️  docker unavailable, tests will skip docker-specific checks"
+    - python3 -m pip install --no-cache-dir pyyaml jsonschema 2>&1 | tail -3
+    - echo "Setup complete"
   script:
     - python3 tests/run.py
   artifacts:
