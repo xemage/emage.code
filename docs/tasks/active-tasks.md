@@ -3,6 +3,8 @@
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
 | T214 | Pattern A integration test (3 agents, deterministic merge) | qa-engineer | in_progress | P0 | T212 | 2026-06-22 |
+| T226 | Deploy CWSO + Polar infrastructure for Phase 2 live testing | devops-engineer | in_progress | P1 | T203 ✅ | 2026-06-23 |
+| T228 | Phase 2 live integration: SIA harness → reward → trajectory | qa-engineer | pending | P0 | T226, T225 ✅ | 2026-06-23 |
 | T230 | Trainer bridge: Parquet trajectories → GRPO/SFT dataset | backend-developer | pending | P0 | T225 ✅ | 2026-06-23 |
 | T231 | Fine-tune `<some-model>` (LoRA/GRPO) + redeploy behind HAL | backend-developer | pending | P1 | T230 | 2026-06-19 |
 | T232 | sia-harness release gate + Ed25519 witness signing | devops-engineer | pending | P1 | T230 | 2026-06-19 |
