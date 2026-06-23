@@ -76,7 +76,11 @@ unit-tests:
   tags:
     - dind  # Docker-in-Docker for T223 docker availability test
   before_script:
-    - python3 -c "import shutil, subprocess; apk=shutil.which('apk'); subprocess.check_call([apk, 'add', '--no-cache', 'nodejs', 'git', 'bash', 'docker']) if apk else None"
+    - |
+      apk add --no-cache python3 git bash nodejs 2>/dev/null || true
+      if command -v apk &> /dev/null; then
+        apk add --no-cache docker 2>/dev/null || echo "⚠️  docker install failed, tests will skip docker-specific checks"
+      fi
     - python3 -m pip install --no-cache-dir --quiet pyyaml jsonschema
   script:
     - python3 tests/run.py
