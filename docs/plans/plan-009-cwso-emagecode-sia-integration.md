@@ -282,12 +282,14 @@ Artifacts: `cwso-emagecode-adapter-v1.md`, `merge-orchestration-v1.md`.
 | T223 | Run a SIA generation through CWSO harness launcher; confirm trajectories land in Parquet store | qa-engineer | M | T220, T221, T222 |
 | T224 | Attach reward: pass `rollout_session_id` through `merge_concurrent_results`; verify reward record | backend-developer | M | T223, T212 |
 | T225 | Reward shaping: combine merge ±1 with `results.json` eval metric | backend-developer | M | T224 |
+| T226 | Deploy CWSO + Polar infrastructure with rollout enabled on localhost | devops-engineer | M | T203 ✅ |
+| T228 | Phase 2 live integration: SIA harness → reward → trajectory capture validation | qa-engineer | M | T226, T225 ✅ |
 
 Gate 2 (tech-lead + security): one SIA generation's LLM calls are captured with token IDs + logprobs,
 a merge-derived + eval-derived reward is attached, and **no provider secrets** are persisted in
 trajectories or logs (security review of capture path).
 
-Artifacts: `sia-target-adapter-v1.md`, `reward-shaping-v1.md`, `capture-poc-report-v1.md`.
+Artifacts: `sia-target-adapter-v1.md`, `reward-shaping-v1.md`, `infra-deployment-t226-v1.md`, `capture-poc-report-v1.md`.
 
 ### Phase 3 — Pattern C: weight updates from trajectories (SIA-W), governed by sia-harness
 
