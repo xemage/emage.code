@@ -266,7 +266,8 @@ def attach_reward_to_job(
     cwso_base_url = cwso_base_url or os.getenv(
         "CWSO_BASE_URL", "http://localhost:8080"
     )
-    cwso_jwt = cwso_jwt or os.getenv("CWSO_JWT_SECRET", "")
+    if cwso_jwt is None:
+        cwso_jwt = os.getenv("CWSO_JWT_SECRET", "")
 
     try:
         # Step 1: Read evaluation result
