@@ -376,7 +376,7 @@ echo "test-jwt-dev-token-$(date +%s)" > .env.jwt.dev
 
 - [deploy/docker-compose-t226.yml](../../deploy/docker-compose-t226.yml): Multi-container orchestration
 - [deploy/t226-phase2.env](../../deploy/t226-phase2.env): Environment configuration template
-- [../CWSO/deploy/Dockerfile.rollout](../CWSO/deploy/Dockerfile.rollout): Rollout proxy container image
+- `../CWSO/deploy/Dockerfile.rollout` (sibling repo): Rollout proxy container image
 - [implementation/scripts/dispatch-test-sia.py](../../implementation/scripts/dispatch-test-sia.py): Test dispatch helper script
 - [docs/artifacts/infra-deployment-t226-v1.md](infra-deployment-t226-v1.md): This deployment guide
 
