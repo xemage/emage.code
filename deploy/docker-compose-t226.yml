@@ -37,12 +37,12 @@ services:
       CWSO_WORKSPACE: "/workspace"
       CWSO_GIT_SHADOW_SOCKET: "/run/cwso/git-shadow.sock"
       CWSO_MERGE_ENGINE_SOCKET: "/run/cwso/merge-engine.sock"
-      
+
       # Phase 2: Rollout API integration
       CWSO_ROLLOUT_API_ENABLED: "${CWSO_ROLLOUT_API_ENABLED:-true}"
       CWSO_ROLLOUT_REWARD_ENABLED: "${CWSO_ROLLOUT_REWARD_ENABLED:-true}"
       CWSO_ROLLOUT_SOCKET: "/run/cwso/rollout.sock"
-      
+
       # Phase 4: Merge orchestration
       CWSO_MERGE_ORCHESTRATION_ENABLED: "${CWSO_MERGE_ORCHESTRATION_ENABLED:-true}"
     secrets:
@@ -122,13 +122,13 @@ services:
       CWSO_ROLLOUT_HTTP_BIND: "0.0.0.0:8787"
       CWSO_ROLLOUT_UPSTREAM_URL: "${CWSO_ROLLOUT_UPSTREAM_URL:-http://127.0.0.1:18080}"
       CWSO_ROLLOUT_UPSTREAM_API_KEY: "${CWSO_ROLLOUT_UPSTREAM_API_KEY:-}"
-      
+
       # Parquet capture configuration
       CWSO_ROLLOUT_TRAJECTORY_STORE_ENABLED: "${CWSO_ROLLOUT_TRAJECTORY_STORE_ENABLED:-true}"
       CWSO_ROLLOUT_TRAJECTORY_STORE_PATH: "${CWSO_ROLLOUT_TRAJECTORY_STORE_PATH:-/data/parquet-store}"
       CWSO_ROLLOUT_CAPTURE_ENABLED: "${CWSO_ROLLOUT_CAPTURE_ENABLED:-true}"
       CWSO_ROLLOUT_DEFAULT_SESSION_ID: "${CWSO_ROLLOUT_DEFAULT_SESSION_ID:-t226-live-session}"
-      
+
       # Logging
       CWSO_LOG_LEVEL: "${CWSO_LOG_LEVEL:-info}"
       RUST_LOG: "${RUST_LOG:-info}"

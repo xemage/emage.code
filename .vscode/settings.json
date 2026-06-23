@@ -46,7 +46,10 @@
         "timeout": true,
         "true": true,
         "type": true,
-        "docker build": true
+        "docker build": true,
+        "docker compose": true,
+        "docker stop": true,
+        "docker rm": true
     },
     "makefile.configureOnOpen": false
 }

@@ -1,8 +1,8 @@
 # Artifact: Infrastructure Deployment for Phase 2 Live Integration Testing (T226)
 
-**Producer**: devops-engineer  
-**Task**: T226  
-**Date**: 2026-06-23  
+**Producer**: devops-engineer
+**Task**: T226
+**Date**: 2026-06-23
 **Based on**: docs/tasks/task-T226.md, docs/artifacts/cwso-dev-profile-t203-v1.md
 
 ---
@@ -29,9 +29,9 @@ The infrastructure includes:
 - ~2GB disk space (for Parquet store)
 
 ### Checked Dependencies
-✅ CWSO repository available at `/home/emage/Code/emage/CWSO`  
-✅ JWT dev secret at `/home/emage/Code/emage/CWSO/.env.jwt.dev`  
-✅ emage.code repository at `/home/emage/Code/emage/emage.code`  
+✅ CWSO repository available at `/home/emage/Code/emage/CWSO`
+✅ JWT dev secret at `/home/emage/Code/emage/CWSO/.env.jwt.dev`
+✅ emage.code repository at `/home/emage/Code/emage/emage.code`
 
 ---
 

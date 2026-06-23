@@ -50,7 +50,7 @@ def read_prompt(prompt_file: str) -> str:
     if prompt_file and Path(prompt_file).exists():
         with open(prompt_file, 'r', encoding='utf-8') as f:
             return f.read().strip()
-    
+
     # Default test prompt
     return """
     Write a Python function that validates an email address.
@@ -71,7 +71,7 @@ def dispatch_sia(
 ) -> Dict[str, Any]:
     """
     Dispatch SIA generation to CWSO harness.
-    
+
     Args:
         cwso_url: CWSO orchestrator base URL
         jwt_token: JWT token for MCP authentication
@@ -81,14 +81,14 @@ def dispatch_sia(
         model: Model ID to use
         max_turns: Maximum agent iterations
         dry_run: If True, print request but don't send
-    
+
     Returns:
         Dispatch result with workspace_uuid, rollout_session_id, etc.
     """
-    
+
     # Construct dispatch endpoint
     dispatch_url = f"{cwso_url}/dispatch"
-    
+
     # Build dispatch payload
     payload = {
         "prompt": prompt,
@@ -98,15 +98,15 @@ def dispatch_sia(
         "max_turns": max_turns,
         "timestamp": datetime.utcnow().isoformat()
     }
-    
+
     headers = {
         "Authorization": f"Bearer {jwt_token}",
         "Content-Type": "application/json"
     }
-    
+
     logger.info(f"Dispatching SIA generation to {dispatch_url}")
     logger.debug(f"Payload: {json.dumps(payload, indent=2)}")
-    
+
     if dry_run:
         logger.info("[DRY RUN] Would send POST request (not actually sending)")
         return {
@@ -114,7 +114,7 @@ def dispatch_sia(
             "rollout_session_id": "dry-run-session",
             "status": "dry_run"
         }
-    
+
     try:
         response = requests.post(
             dispatch_url,
@@ -140,20 +140,20 @@ def wait_for_evaluation(
 ) -> Dict[str, Any]:
     """
     Wait for evaluation to complete (results.json written).
-    
+
     Args:
         workspace: Workspace directory path
         timeout: Max seconds to wait
         poll_interval: Seconds between polls
-    
+
     Returns:
         Parsed results.json
     """
     results_file = Path(workspace) / "results.json"
     start_time = time.time()
-    
+
     logger.info(f"Waiting for evaluation to complete: {results_file}")
-    
+
     while time.time() - start_time < timeout:
         if results_file.exists():
             try:
@@ -163,9 +163,9 @@ def wait_for_evaluation(
                 return results
             except json.JSONDecodeError:
                 logger.debug("results.json not yet valid JSON, retrying...")
-        
+
         time.sleep(poll_interval)
-    
+
     logger.warning(f"Evaluation timeout ({timeout}s) — results.json not written")
     return {}
 
@@ -180,7 +180,7 @@ def attach_reward(
 ) -> Optional[Dict[str, Any]]:
     """
     Attach evaluation reward via CWSO merge endpoint (T224).
-    
+
     Args:
         cwso_url: CWSO orchestrator base URL
         jwt_token: JWT token
@@ -188,17 +188,17 @@ def attach_reward(
         rollout_session_id: Session ID from dispatch
         evaluation: Results from results.json
         dry_run: If True, don't actually send
-    
+
     Returns:
         Merge result or None if skipped/failed
     """
-    
+
     if not evaluation or "overall_score" not in evaluation:
         logger.warning("No evaluation results; skipping reward attachment")
         return None
-    
+
     merge_url = f"{cwso_url}/mcp/merge_concurrent_results"
-    
+
     # Build merge request (T224 contract)
     merge_payload = {
         "workspace_uuid": workspace_uuid,
@@ -209,19 +209,19 @@ def attach_reward(
             "diagnostics": evaluation.get("diagnostics_count", 0)
         }
     }
-    
+
     headers = {
         "Authorization": f"Bearer {jwt_token}",
         "Content-Type": "application/json"
     }
-    
+
     logger.info(f"Attaching reward via {merge_url}")
     logger.debug(f"Merge payload: {json.dumps(merge_payload, indent=2)}")
-    
+
     if dry_run:
         logger.info("[DRY RUN] Would send merge request (not actually sending)")
         return {"status": "dry_run_merge"}
-    
+
     try:
         response = requests.post(
             merge_url,
@@ -245,29 +245,29 @@ def verify_parquet_capture(
 ) -> bool:
     """
     Verify that Parquet trajectories were written.
-    
+
     Args:
         parquet_store: Path to Parquet store directory
         rollout_session_id: Session ID to search for
-    
+
     Returns:
         True if at least one Parquet file found for session
     """
-    
+
     store_path = Path(parquet_store)
-    
+
     if not store_path.exists():
         logger.warning(f"Parquet store not found: {parquet_store}")
         return False
-    
+
     # Search for Parquet files matching session ID
     parquet_files = list(store_path.rglob(f"*{rollout_session_id}*.parquet*"))
-    
+
     if parquet_files:
         logger.info(f"Found {len(parquet_files)} Parquet file(s) for session {rollout_session_id}")
         for pf in parquet_files:
             logger.info(f"  - {pf}")
-        
+
         # Try to validate Parquet format
         try:
             import pyarrow.parquet as pq
@@ -296,7 +296,7 @@ def verify_parquet_capture(
 
 def main():
     """Main test entry point."""
-    
+
     parser = argparse.ArgumentParser(
         description="Test SIA dispatch via CWSO harness with Parquet verification"
     )
@@ -354,23 +354,23 @@ def main():
         default=False,
         help="Print request without sending (dry run mode)"
     )
-    
+
     args = parser.parse_args()
-    
+
     # Validate prerequisites
     if not args.jwt_secret and not args.dry_run:
         logger.error("CWSO_JWT_SECRET not set; use --jwt-secret or export CWSO_JWT_SECRET")
         sys.exit(1)
-    
+
     # Create workspace
     workspace_path = Path(args.workspace)
     workspace_path.mkdir(parents=True, exist_ok=True)
     logger.info(f"Workspace: {workspace_path}")
-    
+
     # Read prompt
     prompt = read_prompt(args.prompt_file)
     logger.info(f"Prompt: {prompt[:100]}...")
-    
+
     try:
         # Step 1: Dispatch
         dispatch_result = dispatch_sia(
@@ -383,28 +383,28 @@ def main():
             max_turns=args.max_turns,
             dry_run=args.dry_run
         )
-        
+
         workspace_uuid = dispatch_result.get("workspace_uuid")
         rollout_session_id = dispatch_result.get("rollout_session_id")
-        
+
         logger.info(f"✓ Dispatch succeeded")
         logger.info(f"  workspace_uuid: {workspace_uuid}")
         logger.info(f"  rollout_session_id: {rollout_session_id}")
-        
+
         # Step 2: Wait for evaluation (skip in dry-run)
         if not args.dry_run:
             evaluation = wait_for_evaluation(str(workspace_path), timeout=120)
         else:
             evaluation = {"overall_score": 0.75, "passed": True, "diagnostics_count": 0}
             logger.info("[DRY RUN] Skipping evaluation wait")
-        
+
         if evaluation:
             logger.info(f"✓ Evaluation complete")
             logger.info(f"  overall_score: {evaluation.get('overall_score')}")
             logger.info(f"  passed: {evaluation.get('passed')}")
         else:
             logger.warning("! Evaluation timeout or missing")
-        
+
         # Step 3: Attach reward
         if workspace_uuid and rollout_session_id:
             merge_result = attach_reward(
@@ -419,7 +419,7 @@ def main():
                 logger.info(f"✓ Reward attachment succeeded")
             else:
                 logger.warning("! Reward attachment failed (continuing...)")
-        
+
         # Step 4: Verify Parquet
         if rollout_session_id and not args.dry_run:
             parquet_ok = verify_parquet_capture(args.parquet_store, rollout_session_id)
@@ -427,7 +427,7 @@ def main():
                 logger.info(f"✓ Parquet trajectories verified")
             else:
                 logger.warning("! Parquet trajectories not found")
-        
+
         logger.info("\n=== Test Summary ===")
         logger.info(f"✓ SIA dispatch via CWSO harness succeeded")
         logger.info(f"  workspace_uuid: {workspace_uuid}")
@@ -435,9 +435,9 @@ def main():
         logger.info(f"  workspace: {workspace_path}")
         logger.info(f"  results.json: {Path(workspace_path) / 'results.json'}")
         logger.info(f"  parquet_store: {args.parquet_store}")
-        
+
         return 0
-    
+
     except Exception as e:
         logger.error(f"Test failed: {e}", exc_info=True)
         return 1

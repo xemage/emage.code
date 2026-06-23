@@ -1,9 +1,9 @@
 # Live Integration Test Report — T228
 
-**Task**: T228 — Phase 2 Live Integration Testing  
-**Date/Time**: 2026-06-23T08:35–08:38 UTC+2 (local)  
-**Environment**: Development — emage.code `develop` branch  
-**Executed by**: QA Engineer (automated)  
+**Task**: T228 — Phase 2 Live Integration Testing
+**Date/Time**: 2026-06-23T08:35–08:38 UTC+2 (local)
+**Environment**: Development — emage.code `develop` branch
+**Executed by**: QA Engineer (automated)
 **Based on**: `requirements-optional-tdd-v1.md`, T220–T226 implementation artifacts
 
 ---
@@ -69,7 +69,7 @@ Files at test time: 0 (empty — no live SIA dispatch has been run yet)
 
 ## 3. Test 1 — Full Test Suite (Unit-Level End-to-End)
 
-**Command**: `python3 tests/run.py`  
+**Command**: `python3 tests/run.py`
 **Result**: **REGRESSION DETECTED** (1 failure)
 
 ```
@@ -160,7 +160,7 @@ INFO -   passed: True
 INFO - Attaching reward via http://localhost:8080/mcp/merge_concurrent_results
 INFO - [DRY RUN] Would send merge request (not actually sending)
 INFO - ✓ Reward attachment succeeded
-INFO - 
+INFO -
 === Test Summary ===
 INFO - ✓ SIA dispatch via CWSO harness succeeded
 INFO -   workspace_uuid: dry-run-uuid
