@@ -504,6 +504,141 @@ docker run \
 
 ---
 
+## Reward Attachment Integration (T224)
+
+### Overview
+
+T224 integrates reward attachment into the harness execution flow. When a SIA generation completes, the evaluator produces a `results.json` with `overall_score` and `passed` fields. The harness then calls the CWSO merge orchestration layer to attach this reward signal to the trajectory record captured in the Parquet store.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  SIA Target Agent (harness-entrypoint.py)               │
+│                                                         │
+│  1. Execute SIA agent                                   │
+│  2. Write output.json                                   │
+│  3. Call attach_reward_to_job() ← T224 NEW              │
+│                                                         │
+└────────────┬────────────────────────────────────────────┘
+             │
+             ↓ (if dispatch_result available)
+    ┌─────────────────────────────────┐
+    │  reward-attachment.py (T224)    │
+    │                                 │
+    │  read_evaluation_result()        │
+    │  build_merge_request()           │
+    │  attach_reward_via_merge()       │
+    │                                 │
+    └────────┬────────────────────────┘
+             │
+             ↓ (POST /mcp/merge_concurrent_results)
+    ┌─────────────────────────────────┐
+    │  CWSO Merge Orchestration       │
+    │  Attaches reward to trajectory  │
+    │  in Parquet store               │
+    └─────────────────────────────────┘
+```
+
+### Integration Flow
+
+#### 1. Dispatch Result Injection
+
+The CWSO harness launcher injects dispatch context via environment variable:
+
+```bash
+docker run ... \
+  -e CWSO_DISPATCH_RESULT='{"workspace_uuid": "uuid-123", "rollout_session_id": "session-abc"}' \
+  ...
+```
+
+#### 2. Post-Job Reward Attachment
+
+After the agent execution completes, `attempt_reward_attachment()` is called:
+
+```python
+# In harness-entrypoint.py main()
+if result["status"] == "success":
+    attempt_reward_attachment(config["workspace"])
+```
+
+#### 3. Merge Request Creation
+
+The `attach_reward_to_job()` function orchestrates three steps:
+
+```python
+# Step 1: Read evaluation
+evaluation = read_evaluation_result(workspace_path)
+# → {"overall_score": 0.95, "passed": True, ...}
+
+# Step 2: Build merge request
+merge_req = build_merge_request(dispatch_result, evaluation)
+# → {
+#     "workspace_uuid": "uuid-123",
+#     "rollout_session_id": "session-abc",
+#     "evaluation_reward": 0.95,
+#     "evaluation_passed": true,
+#     "finish_reason": "success",
+#     "diagnostics_count": 0,
+#     "attach_timestamp": "2026-06-23T12:00:00Z"
+#   }
+
+# Step 3: Attach via CWSO merge endpoint
+merge_result = attach_reward_via_merge(
+    merge_req,
+    cwso_base_url="http://localhost:8080",
+    jwt_token=os.getenv("CWSO_JWT_SECRET")
+)
+# → {"merged": true, "trajectory_id": "traj-001"}
+```
+
+#### 4. Error Handling
+
+Reward attachment uses graceful failure by default:
+- If `results.json` not found → log warning, job succeeds
+- If CWSO unavailable → log error, job succeeds
+- If JWT token missing → log info, skip merge (testing mode)
+
+This ensures SIA job success is not blocked by infrastructure unavailability.
+
+### Environment Variables
+
+#### Required (injected by CWSO launcher)
+
+| Variable | Purpose | Example |
+|----------|---------|---------|
+| `CWSO_DISPATCH_RESULT` | Dispatch context (JSON) | `{"workspace_uuid": "...", "rollout_session_id": "..."}` |
+
+#### Optional (for merge endpoint)
+
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `CWSO_BASE_URL` | CWSO endpoint | `http://localhost:8080` |
+| `CWSO_JWT_SECRET` | JWT auth token | (empty = testing mode) |
+
+### File Dependencies
+
+- **Implementation**: `implementation/adapters/sia-target/reward_attachment.py` (T224)
+- **Entrypoint**: `implementation/adapters/sia-target/harness-entrypoint.py` (modified)
+- **Tests**: `tests/functional/test_t224_reward_attachment.py`
+
+### Graceful Degradation
+
+The reward attachment is designed to not block job execution:
+
+```python
+attempt_reward_attachment(workspace, dispatch_result)
+# Logs all errors but always returns True
+# Job continues regardless of merge success/failure
+```
+
+This allows:
+- **Development**: Run without CWSO infrastructure
+- **Infrastructure Issues**: Job completes even if CWSO unreachable
+- **Production**: Rewards attached when infrastructure available
+
+---
+
 ## Acceptance Criteria Checklist
 
 - [x] Dockerfile builds successfully
@@ -516,6 +651,8 @@ docker run \
 - [x] Sandbox isolation enforced (cannot escape /workspace)
 - [x] Adapter registered in registry.go
 - [x] Integration test written and passing
+- [x] T224 reward attachment integrated (post-job merge call)
+- [x] Graceful failure if CWSO unavailable
 
 ---
 
