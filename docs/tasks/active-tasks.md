@@ -3,10 +3,10 @@
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
 | T214 | Pattern A integration test (3 agents, deterministic merge) | qa-engineer | in_progress | P0 | T212 | 2026-06-22 |
-| T228 | Phase 2 live integration: SIA harness → reward → trajectory | qa-engineer | in_progress | P0 | T226 ✅, T225 ✅ | 2026-06-23 |
-| T230 | Trainer bridge: Parquet trajectories → GRPO/SFT dataset | backend-developer | in_progress | P0 | T225 ✅ | 2026-06-23 |
-| T231 | Fine-tune `<some-model>` (LoRA/GRPO) + redeploy behind HAL | backend-developer | pending | P1 | T230 | 2026-06-19 |
-| T232 | sia-harness release gate + Ed25519 witness signing | devops-engineer | pending | P1 | T230 | 2026-06-19 |
+| T228 | Phase 2 live integration: SIA harness → reward → trajectory | qa-engineer | in_review | P0 | T226 ✅, T225 ✅ | 2026-06-23 |
+| T230 | Trainer bridge: Parquet trajectories → GRPO/SFT dataset | backend-developer | done | P0 | T225 ✅ | 2026-06-23 |
+| T231 | Fine-tune `<some-model>` (LoRA/GRPO) + redeploy behind HAL | backend-developer | pending | P1 | T230 ✅ | 2026-06-19 |
+| T232 | sia-harness release gate + Ed25519 witness signing | devops-engineer | pending | P1 | T230 ✅ | 2026-06-19 |
 | T233 | Closed-loop eval on held-out task; measure deltas | qa-engineer | pending | P0 | T231, T232 | 2026-06-19 |
 | T234 | Cost/latency telemetry per generation | devops-engineer | pending | P2 | T233 | 2026-06-19 |
 
