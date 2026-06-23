@@ -28,6 +28,12 @@ tmp/
 *.crt
 secrets/
 
+# Ed25519 witness signing keys — private key material is NEVER committed (T232).
+# Public keys (*.pub) are allowed so verification works in CI.
+*.ed25519.key
+deploy/keys/
+**/keys/*.key
+
 # OS cruft
 .DS_Store
 Thumbs.db

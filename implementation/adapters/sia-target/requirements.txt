@@ -18,3 +18,7 @@ urllib3==2.0.7
 # Utility libraries
 python-dotenv==1.0.0
 
+# Cryptography — Ed25519 witness signing for release-gate provenance (T232)
+# Pinned >=43.0.1 to pick up security fixes (T232 SEC-003); Ed25519 API unchanged.
+cryptography>=43.0.1
+
