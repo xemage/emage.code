@@ -639,6 +639,25 @@ This allows:
 
 ---
 
+## Reward Shaping (T225)
+
+T225 blends two independent reward sources captured during a SIA generation into
+a single, bounded, deterministic **shaped reward** for downstream training: the
+CWSO merge state-machine outcome (T224, mapped to ±1) and the SIA evaluation
+metric (T222, the normalized `overall_score` re-centered from `[0, 1]` to
+`[-1, 1]`). Under default equal weights the two components are combined and
+clamped to `[-1, 1]`. Implementation lives in
+`implementation/adapters/sia-target/reward_shaping.py` with tests in
+`tests/functional/test_t225_reward_shaping.py`.
+
+The canonical design — full formula, re-centering rationale, weights/defaults
+and normalization, env-var overrides and precedence, output record schema, and
+the complete degenerate-case behavior table — is documented in
+[reward-shaping-v1.md](reward-shaping-v1.md). That artifact is the single source
+of truth; this section is a summary only.
+
+---
+
 ## Acceptance Criteria Checklist
 
 - [x] Dockerfile builds successfully
