@@ -28,6 +28,15 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+# T224: Reward attachment integration
+try:
+    from reward_attachment import attach_reward_to_job
+    HAS_REWARD_ATTACHMENT = True
+except ImportError:
+    HAS_REWARD_ATTACHMENT = False
+    logger_temp = logging.getLogger(__name__)
+    logger_temp.debug("reward_attachment module not available (expected in container context)")
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -252,6 +261,61 @@ def write_output(output_data: Dict[str, Any], workspace: str) -> None:
         sys.exit(1)
 
 
+def attempt_reward_attachment(
+    workspace: str,
+    dispatch_result: Optional[Dict[str, str]] = None,
+) -> bool:
+    """
+    Attempt to attach reward to job if dispatch_result available.
+
+    This is called post-job completion. The dispatch_result is typically
+    injected by the CWSO harness launcher and contains workspace_uuid and
+    rollout_session_id for trajectory linking.
+
+    T224 Integration Point:
+    - CWSO launcher calls harness with -e CWSO_DISPATCH_RESULT='{...json...}'
+    - After job completes, this function is called
+    - If successful, reward is attached to the trajectory record
+    - If CWSO unavailable (development), graceful failure (logged but not fatal)
+
+    Args:
+        workspace: Path to workspace (where results.json is located)
+        dispatch_result: Optional dispatch result from CWSO launcher
+
+    Returns:
+        True if reward attached successfully or skipped gracefully, False if error
+    """
+    if not HAS_REWARD_ATTACHMENT:
+        logger.debug("Reward attachment skipped: module not available")
+        return True
+
+    # Check if dispatch result was injected
+    if dispatch_result is None:
+        dispatch_result_env = os.getenv("CWSO_DISPATCH_RESULT")
+        if dispatch_result_env:
+            try:
+                dispatch_result = json.loads(dispatch_result_env)
+            except json.JSONDecodeError as e:
+                logger.warning(f"CWSO_DISPATCH_RESULT is not valid JSON: {e}")
+                return True
+
+    if not dispatch_result:
+        logger.debug("No dispatch_result provided; reward attachment skipped")
+        return True
+
+    try:
+        log_msg = attach_reward_to_job(
+            dispatch_result,
+            workspace,
+            fail_gracefully=True  # Don't fail the job if CWSO is unavailable
+        )
+        logger.info(log_msg)
+        return True
+    except Exception as e:
+        logger.error(f"Reward attachment error (non-fatal): {e}")
+        return True  # Non-fatal: job succeeded even if reward attachment failed
+
+
 async def main() -> None:
     """Main entrypoint."""
     try:
@@ -269,6 +333,10 @@ async def main() -> None:
 
         # Write output with sanitization
         write_output(result, config["workspace"])
+
+        # T224: Attempt reward attachment post-job (graceful failure)
+        if result["status"] == "success":
+            attempt_reward_attachment(config["workspace"])
 
         # Exit with appropriate status
         if result["status"] == "success":
