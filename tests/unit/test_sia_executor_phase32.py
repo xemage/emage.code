@@ -275,6 +275,33 @@ class TestExecuteSessionPhase33(unittest.TestCase):
         self.assertEqual(env["SIA_BACKEND"], "openhands")
         self.assertEqual(env["SIA_MODEL"], "v1-ft")
 
+    def test_harness_environment_infers_model_from_workspace_when_missing(self):
+        executor = _make_executor()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            workspace = Path(tmp)
+            finetuned_env = executor._build_harness_environment(
+                {
+                    "description": "implement plan summary",
+                    "workspace_id": "/tmp/t236-optA7-finetuned",
+                    "max_steps": 5,
+                },
+                workspace,
+                "sess-ft",
+            )
+            baseline_env = executor._build_harness_environment(
+                {
+                    "description": "implement plan summary",
+                    "workspace_id": "/tmp/t236-optA7-baseline",
+                    "max_steps": 5,
+                },
+                workspace,
+                "sess-base",
+            )
+
+        self.assertEqual(finetuned_env["SIA_MODEL"], "v1-ft")
+        self.assertEqual(baseline_env["SIA_MODEL"], "baseline")
+
     def test_maps_harness_outputs_into_executor_result(self):
         executor = _make_executor(execution_timeout=5.0)
 

@@ -94,6 +94,18 @@ def _text_to_token_ids(value: str, limit: int = MAX_STEP_TOKENS) -> List[int]:
     return [int(byte) for byte in raw]
 
 
+def _infer_model_label_from_workspace(workspace_id: str) -> str:
+    """Infer rollout model label from workspace naming when model is omitted."""
+    normalized = (workspace_id or "").strip().lower()
+    if not normalized:
+        return ""
+    if any(token in normalized for token in ("finetuned", "fine-tuned", "v1-ft", "v1_ft", "candidate")):
+        return "v1-ft"
+    if "baseline" in normalized:
+        return "baseline"
+    return ""
+
+
 def _preview_workspace_file(path: Path) -> Optional[str]:
     """Return a small preview for likely text artifacts."""
     if path.suffix.lower() not in {".py", ".js", ".ts", ".json", ".md", ".txt", ".yaml", ".yml"}:
@@ -292,6 +304,8 @@ class SIAExecutor:
         )
         backend = str(task_spec.get("backend") or "").strip()
         model = str(task_spec.get("model") or "").strip()
+        if not model:
+            model = _infer_model_label_from_workspace(str(task_spec.get("workspace_id") or workspace_path))
         if backend:
             env["SIA_BACKEND"] = backend
         if model:
