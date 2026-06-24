@@ -77,3 +77,44 @@ The real implementation requires invoking an actual LLM through the rollout prox
 - Local regression tests: `tests/unit/test_sia_executor_phase32.py` pass (19/19).
 - Validation blocker: live LLM run could not be executed in this shell because
   `ANTHROPIC_API_KEY` is not present in the active terminal environment.
+
+## Execution Notes (2026-06-24, post-credit rerun)
+
+- Local relay troubleshooting edits were reverted from the working tree before rerun.
+- Re-ran Option A dispatches with fresh workspaces:
+  - baseline: `bc349b82-7cfa-4f03-ac45-e4486f0115c3`
+  - v1-ft: `30cd8b0c-efd9-4384-adc9-b92e5eb844ca`
+- Current rollout status for both tasks remains `running` (no terminal result yet).
+- `partial_results` and `trajectories` are empty for both runs, so reward values are
+  still unavailable and delta is currently `null`.
+- Captured summary artifact:
+  - `docs/artifacts/t236-optionA-run-summary-2026-06-24.json`
+- Captured diagnostics:
+  - `/tmp/t236-rollout-baseline-optA5.json` reports `incomplete_phase2_runtime`
+    with missing progression signals: no partial results, no trajectories,
+    no parquet capture.
+- Parquet store timestamps remain unchanged since 2026-06-23 14:02 for
+  `/tmp/t226-parquet-store/trajectories-shard-00.parquet`,
+  `/tmp/t226-parquet-store/trajectories-shard-01.parquet`, and
+  `/tmp/t226-parquet-store/trajectories-shard-02.parquet`.
+
+## Execution Notes (2026-06-24, optA6 live terminal polling)
+
+- Previously stuck optA5 tasks (`bc349b82-7cfa-4f03-ac45-e4486f0115c3`,
+  `30cd8b0c-efd9-4384-adc9-b92e5eb844ca`) were re-checked before cancellation and
+  had already transitioned to terminal `completed` with timeout-origin outcomes,
+  so no explicit cancel operation was required.
+- Ran fresh Option A pair with extended live polling (`timeout=900s`) to force
+  terminal states:
+  - baseline: `04985794-0c24-4b59-bed7-0a07febf04f7`
+  - v1-ft: `e6fdf50f-e68d-4824-a6df-41b32a901468`
+- Both reached terminal `completed` with `merge_outcome=completed` and
+  `trajectories_count=1`.
+- Rewards remained non-discriminative:
+  - baseline reward: `0`
+  - v1-ft reward: `0`
+  - delta: `0`
+- Updated artifact with terminal evidence:
+  - `docs/artifacts/t236-optionA-run-summary-2026-06-24.json`
+- Parquet shard mtimes remain unchanged (still 2026-06-23 14:02), indicating no
+  observable new shard writes in `/tmp/t226-parquet-store` despite terminal runs.
