@@ -20,3 +20,8 @@ deltas versus the baseline model, validating that the loop improves outcomes.
 
 ## Blocker protocol
 If blocked, report blocker type and severity with one proposed mitigation.
+
+## Execution Notes (2026-06-23)
+- Status moved to `blocked` after live rollout attempts did not progress to terminal completion.
+- Evidence captured in `docs/artifacts/closed-loop-eval-report-v1.md`.
+- Blocker: `technical` / `critical` (`T233-BLK-001`) with mitigation routed to T235 Phase 3.2/3.3 runtime completion.

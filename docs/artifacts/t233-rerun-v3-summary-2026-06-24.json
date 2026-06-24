@@ -1,0 +1,18 @@
+{
+  "baseline-v3": {
+    "task_id": "a6bed1c8-782a-4476-8d4c-6f0a38878139",
+    "status": "completed",
+    "partial_results_count": 1,
+    "trajectories_count": 1,
+    "first_partial_reward": 0,
+    "first_partial_merge_outcome": "failed"
+  },
+  "finetuned-v3": {
+    "task_id": "f2f50c54-c318-4156-8596-4c6ebb1deace",
+    "status": "completed",
+    "partial_results_count": 1,
+    "trajectories_count": 1,
+    "first_partial_reward": 0,
+    "first_partial_merge_outcome": "failed"
+  }
+}

@@ -132,7 +132,7 @@ def validate_environment() -> Dict[str, str]:
         )
 
     # Workspace validation
-    workspace = Path("/workspace")
+    workspace = Path(os.getenv("CWSO_HARNESS_WORKSPACE", "/workspace")).expanduser()
     if not workspace.exists():
         raise ValueError(f"Workspace directory does not exist: {workspace}")
 

@@ -1,0 +1,16 @@
+{
+  "baseline-v3-final": {
+    "task_id": "07c25530-c8a0-437e-8421-44e75bebfb3d",
+    "reward": 0,
+    "merge_outcome": "completed",
+    "step": 0
+  },
+  "finetuned-v3-final": {
+    "task_id": "7be3c023-7eec-4ae6-acd9-8897829e9abb",
+    "reward": 0,
+    "merge_outcome": "completed",
+    "step": 0
+  },
+  "delta": 0,
+  "timestamp": "2026-06-24T14:56:00Z"
+}

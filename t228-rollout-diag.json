@@ -1,0 +1,43 @@
+{
+  "generated_at": "2026-06-23T09:08:48.548314+00:00",
+  "cwso_url": "http://localhost:8080",
+  "task_id": "d6609c91-1257-4139-9627-30d14e40e50d",
+  "rollout_session_id": "d6609c91-1257-4139-9627-30d14e40e50d",
+  "signals": {
+    "healthz": {
+      "ok": true,
+      "status_code": 200,
+      "data": {
+        "raw_text": "ok"
+      }
+    },
+    "rollout_status": {
+      "ok": true,
+      "status_code": 200,
+      "data": {
+        "pending_sessions": 0,
+        "running_sessions": 7,
+        "registered_nodes": 0,
+        "cache_hit_rate": 0
+      }
+    },
+    "task_status": {
+      "ok": true,
+      "status_code": 200,
+      "data": {
+        "task_id": "d6609c91-1257-4139-9627-30d14e40e50d",
+        "status": "running"
+      }
+    },
+    "tool_count": 11,
+    "has_merge_concurrent_results": true,
+    "parquet_file_count_for_session": 0
+  },
+  "missing_progression_signals": [
+    "task_running_without_partial_results",
+    "task_running_without_trajectories",
+    "task_running_without_parquet_capture",
+    "no_registered_rollout_nodes"
+  ],
+  "blocker_assessment": "incomplete_phase2_runtime"
+}
