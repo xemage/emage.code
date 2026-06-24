@@ -1,23 +1,25 @@
 # Task T235 - SIA Executor Production Integration
 
-**Status:** in_progress
+**Status:** in_review
 **Owner:** backend-developer
 **Priority:** P1
-**Depends on:** T226 ✅, T228
+**Depends on:** T226 ✅, T228 ✅
 **Created:** 2026-06-23
 **Context checkpoint:** docs/artifacts/t226-sia-executor-403-debug-report-v1.md
 
 ## Phase 3.1 ✅ — Task Assignment Mechanism (merged 2026-06-23)
 ## Phase 3.2 ✅ — Executor Delivery (merged 2026-06-23)
+## Phase 3.3 ✅ — Real Harness Wiring (merged 2026-06-24)
 
-**Commits:**
-- emage.code `3ac90d4` feat(executor): Phase 3.2 — heartbeat loop, retry/backoff in sia-executor
-- CWSO `39bf92e` feat(rollout): Phase 3.2 — stale node reaper in NodeRegistry + Service
+**Phase 3.3 Evidence (2026-06-24):**
+- Executor container patched with `/implementation` volume mount and `PYTHONPATH=/implementation:/adapters`
+- `implementation/sia/__init__.py` and `implementation/sia/util.py` stub created to satisfy harness import
+- `docker exec cwso-sia-executor cat /tmp/t233-eval-baseline/output.json` shows `status=success`
+- Executor logs confirm: "SIA agent execution completed successfully" for v3 baseline and fine-tuned runs
+- 19/19 Python unit tests pass (`tests/unit/test_sia_executor_phase32.py`)
+- MR48 CI green (#324 branch + #325 MR pipeline both success) and merged to develop
 
-**Evidence:**
-- 13/13 Python unit tests pass (`tests/unit/test_sia_executor_phase32.py`)
-- 6/6 Go NodeRegistry tests pass including `TestNodeRegistry_DeregisterStaleNodes`
-- Full CWSO rollout suite passes (0 failures)
+**Phase 3.4 status:** Blocked pending real LLM execution (T236)
 
 ## Objective
 

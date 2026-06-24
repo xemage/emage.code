@@ -83,11 +83,61 @@ Acceptance:
   Mitigation: tolerant parsing with fallback to raw stderr/stdout snapshot.
 
 ## Token Budget
+## Phase 3.5 — Evaluator Discriminative Scoring (T236)
+
+Status: pending approval
+Owner: backend-developer
+Priority: P0
+
+### Context
+
+After T235 Phase 3.3 completion (container wiring + harness execution), both T233 baseline
+and fine-tuned runs complete with `harness_status=success`. However, `reward=0` for both
+groups because `sia.util.run_agent` is a stub that produces placeholder trajectories with
+no real code. This prevents T233 from measuring discriminative deltas.
+
+### Objective
+
+Wire real or discriminatively-differentiated execution in `sia.util.run_agent` so the
+evaluator returns non-zero, model-label-dependent reward values.
+
+### Task Graph
+
+```mermaid
+graph TD
+  T235.3["T235 Phase 3.3 ✅ (harness wired)"] --> T236A["T236-A: Option A — real LLM via rollout proxy"]
+  T235.3 --> T236B["T236-B: Option B — deterministic stub scoring"]
+  T236A --> T233R["T233 rerun with real evaluator deltas"]
+  T236B --> T233R
+```
+
+### Work Packages
+
+**T236 Option A — Real LLM via rollout proxy (preferred)**
+- Set `ANTHROPIC_BASE_URL` to rollout proxy in executor environment
+- Implement `sia.util.run_agent()` to call real LLM API for code generation
+- Confirm Parquet trajectories captured per session ID
+- Acceptance: reward > 0 for at least one execution; Parquet file matches session ID
+
+**T236 Option B — Deterministic stub scoring (faster validation path)**
+- Implement `sia.util.run_agent()` to return model-label-dependent output quality
+- Allows evaluator to return different scores for baseline vs v1-ft labels
+- Validates T233 scoring pipeline end-to-end (harness → evaluator → reward)
+- NOTE: Scores are synthetic — document clearly; not for production promotion decisions
+- Acceptance: baseline and fine-tuned produce different reward values; delta != 0
+
+### Risks
+
+- Real LLM API credentials may not be available in CI environment
+- Rollout proxy must correctly intercept LLM calls for Parquet capture
+
+## Token Budget
 
 - Planning: 10k
 - Implementation: 45k
 - Validation: 20k
-- Total: 75k max for this phase slice
+- T236 addition: 20k
+- Total: 95k max for this plan
 
 ## Definition of Done
 
