@@ -118,3 +118,28 @@ The real implementation requires invoking an actual LLM through the rollout prox
   - `docs/artifacts/t236-optionA-run-summary-2026-06-24.json`
 - Parquet shard mtimes remain unchanged (still 2026-06-23 14:02), indicating no
   observable new shard writes in `/tmp/t226-parquet-store` despite terminal runs.
+
+## Execution Notes (2026-06-24, post-merge root-cause confirmation)
+
+- MR !51 merged successfully to `develop` after all CI jobs passed.
+- Follow-up investigation confirms a contract mismatch between generation output
+  and evaluator input:
+  - runtime generation writes `solution.py` from `implementation/sia/util.py`
+  - evaluator in `implementation/adapters/sia-target/tasks/emage-agent-task-v1/data/public/evaluate.py`
+    expects `solution.json` and writes `results.json` with `overall_score`
+  - executor reward path in `implementation/scripts/sia-executor.py` only uses
+    `results.json.overall_score`; missing evaluator output defaults reward to `0`
+- This explains why baseline/v1-ft runs can reach terminal `completed` with
+  trajectories, yet still produce `reward=0` and `delta=0`.
+
+### Next Best Implementation Steps
+
+1. Add evaluator invocation in harness completion path so `results.json` is always
+   produced for SIA task runs (or explicit failure is raised when evaluator inputs
+   are absent).
+2. Align generation artifact with evaluator contract by emitting `solution.json`
+   when task objective expects structured JSON output.
+3. Update dispatch prompt fixture for T236 validation to the evaluator objective
+   schema (`objective`, `architecture_version`, `summary`, `tasks`, `risks`) so
+   score variation is measurable and meaningful.
+4. Re-run baseline/v1-ft pair, recompute delta, and verify parquet movement.
