@@ -1,0 +1,21 @@
+{
+  "baseline": {
+    "task_id": "04985794-0c24-4b59-bed7-0a07febf04f7",
+    "status": "completed",
+    "reward": 0,
+    "merge_outcome": "completed",
+    "trajectories_count": 1,
+    "error": null
+  },
+  "finetuned": {
+    "task_id": "e6fdf50f-e68d-4824-a6df-41b32a901468",
+    "status": "completed",
+    "reward": 0,
+    "merge_outcome": "completed",
+    "trajectories_count": 1,
+    "error": null
+  },
+  "delta": 0,
+  "generated_at": "2026-06-24T16:23:58Z",
+  "poll_timeout_seconds": 900
+}
