@@ -1,6 +1,6 @@
 # Task T236 - SIA Evaluator Discriminative Scoring
 
-**Status:** pending
+**Status:** in_progress
 **Owner:** backend-developer
 **Priority:** P0
 **Depends on:** T235
@@ -65,3 +65,15 @@ The real implementation requires invoking an actual LLM through the rollout prox
 2. Baseline and fine-tuned groups produce different reward values (delta != 0)
 3. T233 acceptance criteria achievable with new scoring signal
 4. No hardcoded reward values in production path (Option B must be clearly documented as test-only)
+
+## Execution Notes (2026-06-24)
+
+- Option A implementation started and code changes applied:
+  - `implementation/sia/util.py` now calls Anthropic `/v1/messages` via `ANTHROPIC_BASE_URL`
+  - model label mapping added (`baseline`/`v1-ft` -> runtime model IDs)
+  - generated code is extracted from response and persisted as `solution.py`
+  - harness output now exposes `generated_code`, `runtime_model`, and usage metadata
+  - executor compose wiring includes proxy + API key env passthrough
+- Local regression tests: `tests/unit/test_sia_executor_phase32.py` pass (19/19).
+- Validation blocker: live LLM run could not be executed in this shell because
+  `ANTHROPIC_API_KEY` is not present in the active terminal environment.

@@ -223,6 +223,10 @@ async def run_sia_agent(
             "prompt": prompt,
             "workspace": workspace,
             "error": None,
+            "runtime_model": result.get("model") if isinstance(result, dict) else model,
+            "generated_code": result.get("generated_code") if isinstance(result, dict) else None,
+            "artifact_path": result.get("artifact_path") if isinstance(result, dict) else None,
+            "usage": result.get("usage") if isinstance(result, dict) else None,
             "trajectory": result.get("trajectory") if isinstance(result, dict) else None,
         }
 

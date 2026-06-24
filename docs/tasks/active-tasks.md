@@ -6,7 +6,7 @@
 | T233 | Closed-loop eval on held-out task; measure deltas | qa-engineer | blocked | P0 | T231 ✅, T232 ✅ | 2026-06-24 |
 | T234 | Cost/latency telemetry per generation | devops-engineer | pending | P2 | T233 | 2026-06-19 |
 | T235 | SIA executor production integration (Phase 3.1 ✅ / 3.2 ✅ / 3.3 ✅) | backend-developer | in_review | P1 | T226 ✅, T228 ✅ | 2026-06-24 |
-| T236 | SIA evaluator discriminative scoring (T233-BLK-002 remediation) | backend-developer | pending | P0 | T235 | 2026-06-24 |
+| T236 | SIA evaluator discriminative scoring (T233-BLK-002 remediation) | backend-developer | in_progress | P0 | T235 | 2026-06-24 |
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
