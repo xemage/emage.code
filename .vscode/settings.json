@@ -49,7 +49,8 @@
         "docker build": true,
         "docker compose": true,
         "docker stop": true,
-        "docker rm": true
+        "docker rm": true,
+        "printf": true
     },
     "makefile.configureOnOpen": false
 }

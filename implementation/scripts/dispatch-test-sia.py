@@ -27,12 +27,15 @@ Environment Variables (if not provided as args):
 """
 
 import argparse
+import base64
+import hashlib
+import hmac
 import json
 import logging
 import os
 import time
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 import requests
@@ -59,9 +62,43 @@ def read_prompt(prompt_file: str) -> str:
     """.strip()
 
 
+def _b64url(data: bytes) -> str:
+    """Encode bytes as URL-safe base64 without padding."""
+    return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
+
+
+def generate_jwt_token(secret: str, role: str = "worker") -> str:
+    """
+    Generate a properly signed JWT token for CWSO authentication.
+
+    Args:
+        secret: The JWT secret key (from CWSO_JWT_SECRET)
+        role: JWT role claim ("worker" or "orchestrator")
+    Returns:
+        A valid HS256-signed JWT token with required claims
+    """
+    now = int(time.time())
+    header = {"alg": "HS256", "typ": "JWT"}
+    payload = {
+        "sub": "emage-code",
+        "role": role,
+        "iss": "cwso",
+        "aud": ["cwso-mcp"],
+        "iat": now,
+        "nbf": now,
+        "exp": now + 3600,
+    }
+    encoded_header = _b64url(json.dumps(header, separators=(",", ":")).encode("utf-8"))
+    encoded_payload = _b64url(json.dumps(payload, separators=(",", ":")).encode("utf-8"))
+    message = f"{encoded_header}.{encoded_payload}"
+    signature = hmac.new(secret.encode("utf-8"), message.encode("utf-8"), hashlib.sha256).digest()
+    encoded_sig = _b64url(signature)
+    return f"{message}.{encoded_sig}"
+
+
 def dispatch_sia(
     cwso_url: str,
-    jwt_token: str,
+    jwt_secret: str,
     prompt: str,
     workspace: str,
     backend: str = "claude",
@@ -74,7 +111,7 @@ def dispatch_sia(
 
     Args:
         cwso_url: CWSO orchestrator base URL
-        jwt_token: JWT token for MCP authentication
+        jwt_secret: JWT secret for MCP authentication (generates HS256 token)
         prompt: Task prompt for SIA agent
         workspace: Workspace directory for outputs
         backend: Agent backend ('claude' or 'openhands')
@@ -86,30 +123,35 @@ def dispatch_sia(
         Dispatch result with workspace_uuid, rollout_session_id, etc.
     """
 
-    # Construct dispatch endpoint
-    dispatch_url = f"{cwso_url}/dispatch"
+    # CWSO Phase 2 dispatches via rollout REST API (not /dispatch).
+    dispatch_url = f"{cwso_url}/rollout/task/submit"
 
     # Build dispatch payload
     payload = {
-        "prompt": prompt,
-        "workspace": workspace,
-        "backend": backend,
-        "model": model,
-        "max_turns": max_turns,
-        "timestamp": datetime.utcnow().isoformat()
+        "task_spec": {
+            "description": prompt,
+            "workspace_id": workspace,
+            "max_steps": max_turns,
+            "backend": backend,
+            "model": model,
+        },
+        "num_samples": 1,
+        "trajectory_builder_strategy": "prefix_merge",
     }
 
+    # Generate JWT token from secret (worker role for dispatch)
+    jwt_token = generate_jwt_token(jwt_secret, role="worker")
     headers = {
         "Authorization": f"Bearer {jwt_token}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Origin": "http://localhost",
     }
-
-    logger.info(f"Dispatching SIA generation to {dispatch_url}")
     logger.debug(f"Payload: {json.dumps(payload, indent=2)}")
 
     if dry_run:
         logger.info("[DRY RUN] Would send POST request (not actually sending)")
         return {
+            "task_id": "dry-run-task",
             "workspace_uuid": "dry-run-uuid",
             "rollout_session_id": "dry-run-session",
             "status": "dry_run"
@@ -123,8 +165,18 @@ def dispatch_sia(
             timeout=30
         )
         response.raise_for_status()
-        result = response.json()
-        logger.info(f"Dispatch succeeded: {result}")
+        rollout_result = response.json()
+        task_id = rollout_result.get("task_id")
+        if not task_id:
+            raise RuntimeError(f"rollout submit response missing task_id: {rollout_result}")
+        # In single-sample rollout mode, task_id is the session identifier.
+        result = {
+            "task_id": task_id,
+            "workspace_uuid": workspace,
+            "rollout_session_id": task_id,
+            "status": rollout_result.get("status", "running"),
+        }
+        logger.info(f"Dispatch accepted via rollout API: {result}")
         return result
     except requests.exceptions.RequestException as e:
         logger.error(f"Dispatch failed: {e}")
@@ -133,46 +185,228 @@ def dispatch_sia(
         raise
 
 
-def wait_for_evaluation(
-    workspace: str,
+def wait_for_rollout_completion(
+    cwso_url: str,
+    jwt_secret: str,
+    task_id: str,
     timeout: int = 60,
-    poll_interval: int = 2
+    poll_interval: int = 2,
+    mock_execution: bool = False
 ) -> Dict[str, Any]:
     """
-    Wait for evaluation to complete (results.json written).
+    Wait for rollout task completion via GET /rollout/task/{task_id}.
 
     Args:
-        workspace: Workspace directory path
+        cwso_url: CWSO orchestrator base URL
+        jwt_secret: JWT secret used to mint bearer token
+        task_id: Rollout task UUID
         timeout: Max seconds to wait
+        mock_execution: If True, simulate task completion after brief polling
         poll_interval: Seconds between polls
 
     Returns:
-        Parsed results.json
+        Rollout task status response
     """
-    results_file = Path(workspace) / "results.json"
+    task_url = f"{cwso_url}/rollout/task/{task_id}"
     start_time = time.time()
+    # Use worker role for task polling (dispatch/status checks)
+    jwt_token = generate_jwt_token(jwt_secret, role="worker")
+    headers = {
+        "Authorization": f"Bearer {jwt_token}",
+        "Origin": "http://localhost",
+    }
 
-    logger.info(f"Waiting for evaluation to complete: {results_file}")
+    logger.info(f"Polling rollout task completion: {task_url}")
+
+    if mock_execution:
+        logger.info("[MOCK EXECUTION] Simulating task completion after 1 poll")
+        # Return immediately with completed status for E2E testing
+        return {
+            "task_id": task_id,
+            "status": "completed",
+            "partial_results": [{"reward": 0.85, "code_quality": "good"}],
+            "trajectories": ["mock-trajectory"],
+        }
 
     while time.time() - start_time < timeout:
-        if results_file.exists():
-            try:
-                with open(results_file, 'r', encoding='utf-8') as f:
-                    results = json.load(f)
-                logger.info(f"Evaluation complete: {results}")
-                return results
-            except json.JSONDecodeError:
-                logger.debug("results.json not yet valid JSON, retrying...")
+        try:
+            response = requests.get(task_url, headers=headers, timeout=15)
+            response.raise_for_status()
+            task = response.json()
+            status = str(task.get("status", "")).lower()
+            logger.info(f"Task status: {status}")
+            if status in {"completed", "failed", "cancelled"}:
+                return task
+        except requests.exceptions.RequestException as exc:
+            logger.warning(f"Task status poll failed ({exc}); retrying")
 
         time.sleep(poll_interval)
 
-    logger.warning(f"Evaluation timeout ({timeout}s) — results.json not written")
-    return {}
+    logger.warning(
+        f"Rollout task timeout ({timeout}s) while waiting for completion; "
+        "this usually indicates incomplete Phase 2 runtime wiring "
+        "(gateway/worker callback path not progressing)."
+    )
+    return {"task_id": task_id, "status": "timeout"}
+
+
+def derive_evaluation_from_task(task: Dict[str, Any]) -> Dict[str, Any]:
+    """Convert rollout task status into a compact evaluation summary."""
+    status = str(task.get("status", "")).lower()
+    partial_results = task.get("partial_results") or []
+    score = 0.0
+    if partial_results and isinstance(partial_results, list):
+        first = partial_results[0]
+        if isinstance(first, dict):
+            score = float(first.get("reward", 0.0))
+    return {
+        "overall_score": score,
+        "passed": status == "completed",
+        "diagnostics_count": len(partial_results) if isinstance(partial_results, list) else 0,
+        "rollout_status": status,
+    }
+
+
+def _safe_get_json(url: str, headers: Dict[str, str], timeout: int = 15) -> Dict[str, Any]:
+    """GET JSON endpoint and return either payload or a structured error."""
+    try:
+        response = requests.get(url, headers=headers, timeout=timeout)
+        response.raise_for_status()
+        try:
+            payload = response.json()
+        except ValueError:
+            payload = {"raw_text": response.text.strip()}
+        return {"ok": True, "status_code": response.status_code, "data": payload}
+    except Exception as exc:  # noqa: BLE001 - diagnostics should never crash caller
+        return {"ok": False, "error": str(exc)}
+
+
+def _safe_post_json(
+    url: str,
+    headers: Dict[str, str],
+    payload: Dict[str, Any],
+    timeout: int = 15,
+) -> Dict[str, Any]:
+    """POST JSON endpoint and return either payload or a structured error."""
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=timeout)
+        response.raise_for_status()
+        return {"ok": True, "status_code": response.status_code, "data": response.json()}
+    except Exception as exc:  # noqa: BLE001 - diagnostics should never crash caller
+        return {"ok": False, "error": str(exc)}
+
+
+def collect_rollout_diagnostics(
+    cwso_url: str,
+    jwt_secret: str,
+    task_id: str,
+    rollout_session_id: str,
+    parquet_store: str,
+    diagnostic_output: str,
+) -> Dict[str, Any]:
+    """Collect focused Phase 2 progression signals and blocker evidence."""
+    # Use worker role for status/diagnostics collection
+    jwt_token = generate_jwt_token(jwt_secret, role="worker")
+    auth_headers = {
+        "Authorization": f"Bearer {jwt_token}",
+        "Origin": "http://localhost",
+    }
+    json_headers = {
+        "Authorization": f"Bearer {jwt_token}",
+        "Content-Type": "application/json",
+        "Origin": "http://localhost",
+    }
+
+    health = _safe_get_json(f"{cwso_url}/healthz", auth_headers)
+    rollout_status = _safe_get_json(f"{cwso_url}/rollout/status", auth_headers)
+    task_status = _safe_get_json(f"{cwso_url}/rollout/task/{task_id}", auth_headers)
+    tools_list = _safe_post_json(
+        f"{cwso_url}/mcp",
+        json_headers,
+        {"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}},
+    )
+
+    tool_names = []
+    if tools_list.get("ok"):
+        result = tools_list.get("data", {}).get("result", {})
+        tools = result.get("tools", [])
+        if isinstance(tools, list):
+            tool_names = [str(t.get("name")) for t in tools if isinstance(t, dict)]
+
+    parquet_files = []
+    store_path = Path(parquet_store)
+    if store_path.exists() and rollout_session_id:
+        parquet_files = [str(p) for p in store_path.rglob(f"*{rollout_session_id}*.parquet*")]
+
+    running_task = False
+    partial_count = 0
+    trajectory_count = 0
+    if task_status.get("ok"):
+        task_data = task_status.get("data", {})
+        running_task = str(task_data.get("status", "")).lower() == "running"
+        partial_results = task_data.get("partial_results") or []
+        trajectories = task_data.get("trajectories") or []
+        if isinstance(partial_results, list):
+            partial_count = len(partial_results)
+        if isinstance(trajectories, list):
+            trajectory_count = len(trajectories)
+
+    registered_nodes = None
+    running_sessions = None
+    if rollout_status.get("ok"):
+        data = rollout_status.get("data", {})
+        registered_nodes = data.get("registered_nodes")
+        running_sessions = data.get("running_sessions")
+
+    missing_signals = []
+    if running_task and partial_count == 0:
+        missing_signals.append("task_running_without_partial_results")
+    if running_task and trajectory_count == 0:
+        missing_signals.append("task_running_without_trajectories")
+    if running_task and len(parquet_files) == 0:
+        missing_signals.append("task_running_without_parquet_capture")
+    if isinstance(registered_nodes, int) and registered_nodes == 0:
+        missing_signals.append("no_registered_rollout_nodes")
+    if "merge_concurrent_results" not in tool_names:
+        missing_signals.append("merge_tool_missing_from_mcp")
+
+    evidence = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "cwso_url": cwso_url,
+        "task_id": task_id,
+        "rollout_session_id": rollout_session_id,
+        "signals": {
+            "healthz": health,
+            "rollout_status": rollout_status,
+            "task_status": task_status,
+            "tool_count": len(tool_names),
+            "has_merge_concurrent_results": "merge_concurrent_results" in tool_names,
+            "parquet_file_count_for_session": len(parquet_files),
+        },
+        "missing_progression_signals": missing_signals,
+        "blocker_assessment": (
+            "incomplete_phase2_runtime"
+            if len(missing_signals) > 0 and running_task
+            else "no_runtime_blocker_detected"
+        ),
+    }
+
+    output_path = diagnostic_output.strip()
+    if not output_path:
+        output_path = f"/tmp/t228-rollout-diagnostics-{task_id}.json"
+    try:
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+        Path(output_path).write_text(json.dumps(evidence, indent=2), encoding="utf-8")
+        evidence["diagnostic_output"] = output_path
+    except Exception as exc:  # noqa: BLE001 - keep run going even if write fails
+        evidence["diagnostic_output_error"] = str(exc)
+
+    return evidence
 
 
 def attach_reward(
     cwso_url: str,
-    jwt_token: str,
+    jwt_secret: str,
     workspace_uuid: str,
     rollout_session_id: str,
     evaluation: Dict[str, Any],
@@ -197,7 +431,7 @@ def attach_reward(
         logger.warning("No evaluation results; skipping reward attachment")
         return None
 
-    merge_url = f"{cwso_url}/mcp/merge_concurrent_results"
+    merge_url = f"{cwso_url}/mcp"
 
     # Build merge request (T224 contract)
     merge_payload = {
@@ -210,9 +444,12 @@ def attach_reward(
         }
     }
 
+    # Use orchestrator role for reward attachment (merge_concurrent_results requires orchestrator)
+    jwt_token = generate_jwt_token(jwt_secret, role="orchestrator")
     headers = {
         "Authorization": f"Bearer {jwt_token}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Origin": "http://localhost",
     }
 
     logger.info(f"Attaching reward via {merge_url}")
@@ -223,14 +460,26 @@ def attach_reward(
         return {"status": "dry_run_merge"}
 
     try:
+        rpc_payload = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
+            "params": {
+                "name": "merge_concurrent_results",
+                "arguments": merge_payload,
+            },
+        }
         response = requests.post(
             merge_url,
-            json=merge_payload,
+            json=rpc_payload,
             headers=headers,
             timeout=30
         )
         response.raise_for_status()
         result = response.json()
+        if isinstance(result, dict) and "error" in result:
+            logger.error(f"Reward attachment RPC error: {result['error']}")
+            return None
         logger.info(f"Reward attachment succeeded: {result}")
         return result
     except requests.exceptions.RequestException as e:
@@ -322,7 +571,7 @@ def main():
         "--jwt-secret",
         type=str,
         default=os.getenv("CWSO_JWT_SECRET", ""),
-        help="JWT token for MCP authentication"
+        help="JWT secret used to mint MCP bearer tokens"
     )
     parser.add_argument(
         "--parquet-store",
@@ -349,10 +598,34 @@ def main():
         help="Maximum agent iterations"
     )
     parser.add_argument(
+        "--rollout-timeout",
+        type=int,
+        default=120,
+        help="Seconds to wait for rollout task terminal state before diagnostics"
+    )
+    parser.add_argument(
         "--dry-run",
         type=lambda x: x.lower() in ('true', '1', 'yes'),
         default=False,
         help="Print request without sending (dry run mode)"
+    )
+    parser.add_argument(
+        "--diagnose-on-timeout",
+        type=lambda x: x.lower() in ('true', '1', 'yes'),
+        default=True,
+        help="Collect focused infrastructure diagnostics when rollout does not progress"
+    )
+    parser.add_argument(
+        "--mock-execution",
+        type=lambda x: x.lower() in ('true', '1', 'yes'),
+        default=False,
+        help="Enable mock execution mode (simulates task completion for E2E testing)"
+    )
+    parser.add_argument(
+        "--diagnostic-output",
+        type=str,
+        default="",
+        help="Optional path to write JSON blocker evidence"
     )
 
     args = parser.parse_args()
@@ -375,7 +648,7 @@ def main():
         # Step 1: Dispatch
         dispatch_result = dispatch_sia(
             cwso_url=args.cwso_url,
-            jwt_token=args.jwt_secret,
+            jwt_secret=args.jwt_secret,
             prompt=prompt,
             workspace=str(workspace_path),
             backend=args.backend,
@@ -386,30 +659,65 @@ def main():
 
         workspace_uuid = dispatch_result.get("workspace_uuid")
         rollout_session_id = dispatch_result.get("rollout_session_id")
+        task_id = dispatch_result.get("task_id")
 
         logger.info(f"✓ Dispatch succeeded")
         logger.info(f"  workspace_uuid: {workspace_uuid}")
         logger.info(f"  rollout_session_id: {rollout_session_id}")
 
-        # Step 2: Wait for evaluation (skip in dry-run)
+        # Step 2: Wait for rollout completion (skip in dry-run)
         if not args.dry_run:
-            evaluation = wait_for_evaluation(str(workspace_path), timeout=120)
+            rollout_task = wait_for_rollout_completion(
+                cwso_url=args.cwso_url,
+                jwt_secret=args.jwt_secret,
+                task_id=str(task_id),
+                timeout=args.rollout_timeout,
+                mock_execution=args.mock_execution,
+            )
+            evaluation = derive_evaluation_from_task(rollout_task)
         else:
             evaluation = {"overall_score": 0.75, "passed": True, "diagnostics_count": 0}
-            logger.info("[DRY RUN] Skipping evaluation wait")
+            rollout_task = {"status": "dry_run"}
+            logger.info("[DRY RUN] Skipping rollout polling")
 
         if evaluation:
             logger.info(f"✓ Evaluation complete")
             logger.info(f"  overall_score: {evaluation.get('overall_score')}")
             logger.info(f"  passed: {evaluation.get('passed')}")
+            logger.info(f"  rollout_status: {evaluation.get('rollout_status')}")
         else:
             logger.warning("! Evaluation timeout or missing")
+
+        # Focused blocker evidence when rollout doesn't progress to terminal state.
+        if (
+            not args.dry_run
+            and args.diagnose_on_timeout
+            and str(rollout_task.get("status", "")).lower() in {"timeout", "running"}
+            and task_id
+            and rollout_session_id
+        ):
+            diagnostics = collect_rollout_diagnostics(
+                cwso_url=args.cwso_url,
+                jwt_secret=args.jwt_secret,
+                task_id=str(task_id),
+                rollout_session_id=str(rollout_session_id),
+                parquet_store=args.parquet_store,
+                diagnostic_output=args.diagnostic_output,
+            )
+            logger.warning("! Rollout progression diagnostics collected")
+            logger.warning(f"  blocker_assessment: {diagnostics.get('blocker_assessment')}")
+            logger.warning(
+                f"  missing_progression_signals: "
+                f"{diagnostics.get('missing_progression_signals', [])}"
+            )
+            if diagnostics.get("diagnostic_output"):
+                logger.warning(f"  diagnostic_output: {diagnostics.get('diagnostic_output')}")
 
         # Step 3: Attach reward
         if workspace_uuid and rollout_session_id:
             merge_result = attach_reward(
                 cwso_url=args.cwso_url,
-                jwt_token=args.jwt_secret,
+                jwt_secret=args.jwt_secret,
                 workspace_uuid=workspace_uuid,
                 rollout_session_id=rollout_session_id,
                 evaluation=evaluation,
@@ -430,10 +738,11 @@ def main():
 
         logger.info("\n=== Test Summary ===")
         logger.info(f"✓ SIA dispatch via CWSO harness succeeded")
+        logger.info(f"  task_id: {task_id}")
         logger.info(f"  workspace_uuid: {workspace_uuid}")
         logger.info(f"  rollout_session_id: {rollout_session_id}")
         logger.info(f"  workspace: {workspace_path}")
-        logger.info(f"  results.json: {Path(workspace_path) / 'results.json'}")
+        logger.info(f"  rollout_status: {rollout_task.get('status')}")
         logger.info(f"  parquet_store: {args.parquet_store}")
 
         return 0

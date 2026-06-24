@@ -1,0 +1,12 @@
+{
+  "deployment_type": "vllm",
+  "model_path": "/home/emage/Code/emage/emage.code/models/fine-tuned-v1",
+  "port": 8000,
+  "model_version": "v1-ft",
+  "endpoints": {
+    "models": "http://localhost:8000/v1/models",
+    "completions": "http://localhost:8000/v1/completions",
+    "chat": "http://localhost:8000/v1/chat/completions"
+  },
+  "notes": "Fine-tuned model deployment. See model-v1-fine-tune-rollback.md for recovery."
+}

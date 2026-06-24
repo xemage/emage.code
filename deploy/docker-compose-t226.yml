@@ -33,7 +33,7 @@ services:
       CWSO_JWT_ALG: "HS256"
       CWSO_JWT_ISSUER: "cwso"
       CWSO_JWT_AUDIENCE: "cwso-mcp"
-      CWSO_ALLOWED_ORIGINS: "http://localhost,http://127.0.0.1,http://localhost:8080,http://docker:8080"
+      CWSO_ALLOWED_ORIGINS: "http://localhost,http://127.0.0.1,http://localhost:8080,http://docker:8080,http://orchestrator,http://orchestrator:8080"
       CWSO_WORKSPACE: "/workspace"
       CWSO_GIT_SHADOW_SOCKET: "/run/cwso/git-shadow.sock"
       CWSO_MERGE_ENGINE_SOCKET: "/run/cwso/merge-engine.sock"
@@ -42,6 +42,12 @@ services:
       CWSO_ROLLOUT_API_ENABLED: "${CWSO_ROLLOUT_API_ENABLED:-true}"
       CWSO_ROLLOUT_REWARD_ENABLED: "${CWSO_ROLLOUT_REWARD_ENABLED:-true}"
       CWSO_ROLLOUT_SOCKET: "/run/cwso/rollout.sock"
+
+      # Phase 2: Execution gateway & trajectory builder (T146, T149)
+      CWSO_ROLLOUT_GATEWAY_STAGING_ENABLED: "${CWSO_ROLLOUT_GATEWAY_STAGING_ENABLED:-true}"
+      CWSO_ROLLOUT_EVALUATOR_REGISTRY_ENABLED: "${CWSO_ROLLOUT_EVALUATOR_REGISTRY_ENABLED:-true}"
+      CWSO_ROLLOUT_TRAJECTORY_BUILDER_ENABLED: "${CWSO_ROLLOUT_TRAJECTORY_BUILDER_ENABLED:-true}"
+      CWSO_ROLLOUT_TRAJECTORY_BUILDER_STRATEGY: "${CWSO_ROLLOUT_TRAJECTORY_BUILDER_STRATEGY:-per_request}"
 
       # Phase 4: Merge orchestration
       CWSO_MERGE_ORCHESTRATION_ENABLED: "${CWSO_MERGE_ORCHESTRATION_ENABLED:-true}"
@@ -148,6 +154,47 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
+
+  # Phase 2: Minimal SIA executor service (PoC for T223 harness launcher)
+  # This service registers as a node with the gateway and processes sessions
+  sia-executor:
+    image: python:3.11-slim
+    container_name: cwso-sia-executor
+    working_dir: /workspace
+    environment:
+      CWSO_URL: "http://orchestrator:8080"
+      PYTHONUNBUFFERED: "1"
+      PYTHONPATH: "/implementation:/adapters"
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        set -x
+        echo "=== SIA Executor Container Starting ==="
+        echo "Workspace: $(pwd)"
+        echo "PYTHONPATH: $$PYTHONPATH"
+        echo "Files: $(ls -la)"
+        echo "Secret file: $(ls -la /run/secrets/ 2>/dev/null || echo 'NOT FOUND')"
+        JWT_SECRET=$$(cat /run/secrets/jwt_secret 2>/dev/null || echo "ERROR_NO_SECRET")
+        echo "JWT_SECRET length: $${#JWT_SECRET}"
+        echo "Running executor..."
+        exec python3 sia-executor.py \
+          --cwso-url http://orchestrator:8080 \
+          --node-id sia-executor-1 \
+          --jwt-secret "$$JWT_SECRET" \
+          --mock-delay 1.5 \
+          --poll-interval 2.0
+    secrets:
+      - jwt_secret
+    volumes:
+      - /home/emage/Code/emage/emage.code/implementation/scripts:/workspace
+      - /home/emage/Code/emage/emage.code/implementation/adapters:/adapters:ro
+      - /home/emage/Code/emage/emage.code/implementation:/implementation:ro
+    depends_on:
+      orchestrator:
+        condition: service_healthy
+    restart: on-failure:3
+    # POC-DEBT: Entrypoint uses shell expansion for secret; production must use proper secret injection
 
 volumes:
   cwso-runtime:

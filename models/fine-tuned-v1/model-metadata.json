@@ -1,0 +1,8 @@
+{
+  "model_version": "v1-ft",
+  "model_type": "causal-lm",
+  "fine_tuning_method": "lora",
+  "merged": true,
+  "ready_for_deployment": true,
+  "merged_at": "2026-06-23T12:02:51.596971"
+}
