@@ -24,6 +24,7 @@ import json
 import logging
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -265,6 +266,91 @@ def write_output(output_data: Dict[str, Any], workspace: str) -> None:
         sys.exit(1)
 
 
+def resolve_evaluator_script() -> Optional[Path]:
+    """Resolve evaluator script path from env override or task default."""
+    override = os.getenv("CWSO_EVALUATOR_SCRIPT", "").strip()
+    if override:
+        candidate = Path(override).expanduser()
+        return candidate if candidate.exists() else None
+
+    default = (
+        Path(__file__).resolve().parent
+        / "tasks"
+        / "emage-agent-task-v1"
+        / "data"
+        / "public"
+        / "evaluate.py"
+    )
+    return default if default.exists() else None
+
+
+def run_evaluator(workspace: str) -> Dict[str, Any]:
+    """Execute evaluator to materialize results.json for reward extraction."""
+    evaluator_script = resolve_evaluator_script()
+    if evaluator_script is None:
+        return {
+            "status": "skipped",
+            "reason": "evaluator_script_not_found",
+            "results_path": str(Path(workspace) / "results.json"),
+        }
+
+    results_path = Path(workspace) / "results.json"
+    command = [
+        sys.executable,
+        str(evaluator_script),
+        "--gen-dir",
+        workspace,
+        "--out",
+        str(results_path),
+    ]
+    try:
+        completed = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=60,
+        )
+    except subprocess.TimeoutExpired:
+        return {
+            "status": "failed",
+            "reason": "evaluator_timeout",
+            "results_path": str(results_path),
+        }
+
+    if completed.returncode != 0:
+        return {
+            "status": "failed",
+            "reason": "evaluator_nonzero_exit",
+            "exit_code": completed.returncode,
+            "stderr": (completed.stderr or "")[:500],
+            "results_path": str(results_path),
+        }
+
+    if not results_path.exists():
+        return {
+            "status": "failed",
+            "reason": "results_not_written",
+            "results_path": str(results_path),
+        }
+
+    try:
+        results = json.loads(results_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return {
+            "status": "failed",
+            "reason": "results_parse_error",
+            "error": str(exc),
+            "results_path": str(results_path),
+        }
+
+    return {
+        "status": "success",
+        "results_path": str(results_path),
+        "results": results,
+    }
+
+
 def attempt_reward_attachment(
     workspace: str,
     dispatch_result: Optional[Dict[str, str]] = None,
@@ -334,6 +420,18 @@ async def main() -> None:
             max_turns=int(config["max_turns"]),
             workspace=config["workspace"],
         )
+
+        evaluation_result = run_evaluator(config["workspace"])
+        result["evaluation_status"] = evaluation_result.get("status")
+        result["results_path"] = evaluation_result.get("results_path")
+        if evaluation_result.get("status") == "success":
+            result["evaluation"] = evaluation_result.get("results")
+        else:
+            result["evaluation_error"] = {
+                key: value
+                for key, value in evaluation_result.items()
+                if key not in {"results"}
+            }
 
         # Write output with sanitization
         write_output(result, config["workspace"])
