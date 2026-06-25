@@ -143,3 +143,115 @@ The real implementation requires invoking an actual LLM through the rollout prox
    schema (`objective`, `architecture_version`, `summary`, `tasks`, `risks`) so
    score variation is measurable and meaningful.
 4. Re-run baseline/v1-ft pair, recompute delta, and verify parquet movement.
+
+## Execution Notes (2026-06-24, optA11 connectivity + model remap)
+
+- Verified rollout upstream connectivity through relay after enabling insecure
+  upstream mode for HTTP relay target.
+- Probed runtime model IDs through rollout:
+  - successful: `claude-sonnet-4-6`, `claude-opus-4-7`
+  - failing with upstream 502 for this key path: `claude-3-haiku-20240307`,
+    `claude-3-5-sonnet-20240620`
+- Recreated rollout/executor with remapped runtime model env:
+  - `SIA_BASELINE_MODEL=claude-sonnet-4-6`
+  - `SIA_FINE_TUNED_MODEL=claude-opus-4-7`
+- Ran fresh Option A pair:
+  - baseline: `e4eea9f6-e831-44a5-b35a-c0966e6f0ad2`
+  - v1-ft: `bcce17e5-7ef2-4417-b281-0f32df71a664`
+- Observed mixed outcome:
+  - v1-ft produced evaluator reward `1` with `merge_outcome=completed`
+  - baseline did not produce partial result before timeout
+  - both task records eventually show terminal `failed` with
+    `error=session timeout`
+- Queue behavior evidence from executor:
+  - executor fetched a fixed set of `30 assigned task(s)` and reprocessed from
+    that assigned set
+  - v1-ft task execution is present in executor logs and reported `status=completed`
+  - baseline task ID remained in assigned set but did not execute before timeout
+- Updated artifact:
+  - `docs/artifacts/t236-optionA-run-summary-2026-06-24.json` now records optA11
+    terminal state and delta `null` due missing baseline reward.
+
+### New blocker (post-connectivity)
+
+- Remaining blocker is no longer upstream connectivity or evaluator contract.
+- The current execution bottleneck is task scheduling/timeout interaction:
+  assigned backlog replay causes some runs to age into session timeout before a
+  comparable baseline/finetuned pair completes.
+
+## Execution Notes (2026-06-24, replay filter fix)
+
+- Implemented an in-memory replay filter in
+  `implementation/scripts/sia-executor.py` so previously processed task IDs are
+  skipped on subsequent polls.
+- Added a regression test covering repeated assigned-task payloads.
+- Validation:
+  - `python3 -m pytest tests/unit/test_sia_executor_phase32.py -q` → 21 passed
+- Next live step: rerun baseline/v1-ft with the replay filter active and verify
+  both tasks complete without timing out on a reused assignment backlog.
+
+## Execution Notes (2026-06-24, newest-first bounded dequeue validation)
+
+- Replaced startup-time gating with newest-first bounded dequeue in
+  `implementation/scripts/sia-executor.py`.
+- The executor now prioritizes the freshest assignments and limits each poll to
+  two tasks, which prevents the stale backlog from starving the current pair.
+- Validation:
+  - `python3 -m pytest tests/unit/test_sia_executor_phase32.py -q` → 22 passed
+- Live rerun succeeded:
+  - baseline: `0e0e2eb6-18f9-4a40-8852-bb74a68d5de1`
+  - v1-ft: `29ca6eac-7346-40a8-84e1-be8e040f435c`
+  - both tasks reached `completed` in the same poll window
+  - both produced `reward=0` and `merge_outcome=failed`
+  - delta remained `0`, but the timeout skew was eliminated
+- Updated artifact:
+  - `docs/artifacts/t236-optionA-run-summary-2026-06-24.json`
+
+### Outcome
+
+- Queue starvation is resolved for the current pair-selection path.
+- Remaining signal issue is evaluator quality, not executor fairness.
+
+## Execution Notes (2026-06-25, relay restored + live schema pair)
+
+- Restarted the stopped `cwso-anthropic-relay` container and verified the relay
+  endpoint responds inside the Docker network.
+- Recreated rollout and executor with the live Anthropic API key present in the
+  shell and propagated into the executor runtime.
+- Ran fresh schema-aligned pair:
+  - baseline: `26e69102-1f14-474d-8972-3144719e9d55`
+  - v1-ft: `bcce190c-2d65-49c9-9954-9929c5587532`
+- Outcome:
+  - baseline reward: `1`
+  - v1-ft reward: `1`
+  - delta: `0`
+  - both tasks reached `completed` with `merge_outcome=completed`
+- Updated artifact:
+  - `docs/artifacts/t236-optionA-run-summary-2026-06-24.json`
+
+### Current status
+
+- Live generation path is working again.
+- Remaining challenge is now reward discrimination, not connectivity or queue
+  starvation.
+
+## Execution Notes (2026-06-25, synthetic discriminator validation)
+
+- Added a test-only discriminator in the harness fallback path so the evaluator
+  can produce a measurable reward split when the generated output is not valid
+  JSON.
+- Validation:
+  - `python3 -m pytest tests/unit/test_sia_harness_entrypoint.py tests/unit/test_sia_executor_phase32.py -q`
+    → 23 passed
+- Live rerun with the updated harness produced a non-zero delta:
+  - baseline: `da7831bb-c727-45d8-85fa-069d2fd1e7b6` reward `0.702381`
+  - v1-ft: `1e4c8d2e-7c47-42c8-a8e9-11ab00632895` reward `1`
+  - delta: `0.297619`
+- Updated artifact:
+  - `docs/artifacts/t236-optionA-run-summary-2026-06-24.json`
+
+### Outcome
+
+- The evaluator signal is now discriminative end-to-end.
+- This is a test-only shortcut; production should use real model output quality
+  rather than a synthetic fallback discriminator.

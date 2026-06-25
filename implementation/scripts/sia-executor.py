@@ -49,6 +49,7 @@ STALE_NODE_TIMEOUT = 90.0 # seconds — orchestrator reaps nodes silent longer t
 DEFAULT_EXECUTION_TIMEOUT = 120.0
 MAX_TEXT_PREVIEW_CHARS = 4000
 MAX_STEP_TOKENS = 512
+MAX_TASKS_PER_POLL = 2
 
 
 def _truncate_text(value: Optional[str], limit: int = MAX_TEXT_PREVIEW_CHARS) -> str:
@@ -144,6 +145,28 @@ class SIAExecutor:
         self.running = True
         self.session_count = 0
         self._heartbeat_thread: Optional[threading.Thread] = None
+        self._processed_task_ids: set[str] = set()
+
+    def _task_identity(self, task: Dict[str, Any]) -> str:
+        """Return the stable task identity used to suppress replayed assignments."""
+        task_id = str(task.get("task_id") or "").strip()
+        if task_id:
+            return task_id
+        session_id = str(task.get("session_id") or "").strip()
+        return session_id
+
+    def _task_assigned_sort_key(self, task: Dict[str, Any]) -> tuple[int, str]:
+        """Sort newest assignments first, falling back to task identity."""
+        assigned_at = str(task.get("assigned_at") or "").strip()
+        if assigned_at:
+            try:
+                parsed = datetime.fromisoformat(assigned_at.replace("Z", "+00:00"))
+                if parsed.tzinfo is None:
+                    parsed = parsed.replace(tzinfo=timezone.utc)
+                return (int(parsed.timestamp()), assigned_at)
+            except ValueError:
+                pass
+        return (0, self._task_identity(task))
 
     def _snapshot_workspace(self, workspace_path: Path) -> Dict[str, int]:
         """Capture file mtimes before harness execution for artifact diffing."""
@@ -490,12 +513,24 @@ class SIAExecutor:
             assigned_tasks = data.get("assigned_tasks", [])
 
             sessions = []
-            for task in assigned_tasks:
+            ordered_tasks = sorted(
+                assigned_tasks,
+                key=self._task_assigned_sort_key,
+                reverse=True,
+            )
+            for task in ordered_tasks:
+                task_identity = self._task_identity(task)
+                if task_identity and task_identity in self._processed_task_ids:
+                    continue
                 sessions.append({
                     "task_id": task.get("task_id"),
                     "session_id": task.get("session_id"),
                     "task_spec": task.get("task_spec", {}),
                 })
+                if task_identity:
+                    self._processed_task_ids.add(task_identity)
+                if len(sessions) >= MAX_TASKS_PER_POLL:
+                    break
 
             if sessions:
                 log.info(f"Fetched {len(sessions)} assigned task(s) from orchestrator")

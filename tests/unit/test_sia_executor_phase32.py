@@ -15,6 +15,7 @@ import threading
 import time
 import urllib.error
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, patch, call
 
@@ -213,7 +214,7 @@ class TestGetReadySessions(unittest.TestCase):
                     "task_id": "task-abc",
                     "session_id": "sess-123",
                     "task_spec": {"description": "write code", "workspace_id": "ws-1"},
-                    "assigned_at": "2026-06-23T10:00:00Z",
+                    "assigned_at": "2026-06-24T10:00:00Z",
                 }
             ]
         }).encode()
@@ -250,6 +251,56 @@ class TestGetReadySessions(unittest.TestCase):
         with patch.object(executor, "_http_request_with_retry", side_effect=http_err):
             sessions = executor.get_ready_sessions()
         self.assertEqual(sessions, [])
+
+    def test_skips_already_processed_assigned_tasks(self):
+        executor = _make_executor()
+        mock_payload = json.dumps({
+            "assigned_tasks": [
+                {
+                    "task_id": "task-abc",
+                    "session_id": "sess-123",
+                    "task_spec": {"description": "write code", "workspace_id": "ws-1"},
+                }
+            ]
+        }).encode()
+
+        with patch.object(executor, "_http_request_with_retry", return_value=mock_payload):
+            first = executor.get_ready_sessions()
+            second = executor.get_ready_sessions()
+
+        self.assertEqual(len(first), 1)
+        self.assertEqual(second, [])
+
+    def test_prefers_newest_assigned_tasks_and_limits_batch_size(self):
+        executor = _make_executor()
+        mock_payload = json.dumps({
+            "assigned_tasks": [
+                {
+                    "task_id": "old-task",
+                    "session_id": "sess-old",
+                    "assigned_at": "2026-06-24T17:59:59Z",
+                    "task_spec": {"description": "old work", "workspace_id": "ws-old"},
+                },
+                {
+                    "task_id": "newer-task-1",
+                    "session_id": "sess-new-1",
+                    "assigned_at": "2026-06-24T18:00:03Z",
+                    "task_spec": {"description": "new work 1", "workspace_id": "ws-new-1"},
+                },
+                {
+                    "task_id": "newer-task-2",
+                    "session_id": "sess-new-2",
+                    "assigned_at": "2026-06-24T18:00:04Z",
+                    "task_spec": {"description": "new work 2", "workspace_id": "ws-new-2"},
+                },
+            ]
+        }).encode()
+
+        with patch.object(executor, "_http_request_with_retry", return_value=mock_payload):
+            sessions = executor.get_ready_sessions()
+
+        self.assertEqual(len(sessions), 2)
+        self.assertEqual([session["task_id"] for session in sessions], ["newer-task-2", "newer-task-1"])
 
 
 class TestExecuteSessionPhase33(unittest.TestCase):
