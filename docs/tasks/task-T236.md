@@ -1,6 +1,6 @@
 # Task T236 - SIA Evaluator Discriminative Scoring
 
-**Status:** in_progress
+**Status:** done
 **Owner:** backend-developer
 **Priority:** P0
 **Depends on:** T235
@@ -255,3 +255,16 @@ The real implementation requires invoking an actual LLM through the rollout prox
 - The evaluator signal is now discriminative end-to-end.
 - This is a test-only shortcut; production should use real model output quality
   rather than a synthetic fallback discriminator.
+## Review Gate (2026-06-25)
+
+- Reviewer: tech-lead
+- VERDICT: PASS
+- Rationale: T236 acceptance criteria are satisfied with merged evidence:
+  - non-zero reward observed (`reward > 0`)
+  - measurable baseline vs v1-ft split (`delta = 0.297619`)
+  - test-only nature of fallback explicitly documented
+- Status transition: `in_progress` -> `in_review` -> `done`
+
+## Follow-up
+
+- Production-readiness hardening is tracked under T237 to replace synthetic discriminator behavior with real-output-only quality discrimination.

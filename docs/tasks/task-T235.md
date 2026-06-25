@@ -1,6 +1,6 @@
 # Task T235 - SIA Executor Production Integration
 
-**Status:** in_review
+**Status:** done
 **Owner:** backend-developer
 **Priority:** P1
 **Depends on:** T226 ✅, T228 ✅
@@ -19,7 +19,13 @@
 - 19/19 Python unit tests pass (`tests/unit/test_sia_executor_phase32.py`)
 - MR48 CI green (#324 branch + #325 MR pipeline both success) and merged to develop
 
-**Phase 3.4 status:** Blocked pending real LLM execution (T236)
+**Phase 3.4 status:** Completed via downstream T236 remediation evidence and merged runtime path validation
+
+## Completion Update (2026-06-25)
+
+- Task status transitioned from `in_review` to `done` after T236 delivered non-zero discriminative reward signal over the integrated executor+harness path.
+- Executor/runtime path remains green in merged CI lineage (MR48 for Phase 3.3 and MR55 for discriminative scoring follow-up).
+- Remaining production-hardening work has been split into follow-up task T237.
 
 ## Objective
 

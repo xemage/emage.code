@@ -212,3 +212,47 @@ Evidence files:
   2. Verify evaluator schema compatibility with harness trajectory format
   3. If evaluator is a learning component (T232-era), verify it has been trained on expected trajectory inputs
   4. Implement discriminative evaluator scoring or mock evaluator with reasonable reward distribution for testing
+
+## Validation Gate Update (2026-06-25)
+
+### New merged evidence
+
+- T236 remediation merged via MR55; related pipelines are green.
+- Discriminative measured run captured in T236 artifact path:
+  - baseline reward: `0.702381`
+  - fine-tuned reward: `1`
+  - delta: `+0.297619`
+- This resolves the prior zero-signal runtime condition and confirms end-to-end scoring discrimination in the current integrated path.
+
+### Gate reassessment against T233 acceptance criteria
+
+1. Held-out leakage verification
+- **PASS**: prior string-level leakage checks remain valid.
+
+2. Measured delta reporting with evaluator metric
+- **CONDITIONAL_PASS**: measured non-zero delta now exists, but current discriminative behavior is supported by a documented test-only synthetic fallback path.
+
+3. Honest reporting and rollback/promotion guidance
+- **PASS**: evidence is explicitly scoped as not yet production-credible for final promotion decisions.
+
+### Validation Gate Verdict
+
+**VERDICT: CONDITIONAL_PASS**
+
+### Rationale
+
+- T233 is no longer blocked on runtime completion or zero-signal scoring.
+- However, closure-quality evidence must be produced without synthetic discriminator assistance.
+
+### Task status recommendation
+
+- Reclassify T233 from `blocked` to `in_progress`.
+- Keep T233 open until production-credible held-out results are gathered.
+
+### Required follow-up before T233 can be marked done
+
+1. Remove synthetic discriminator behavior from scoring-critical path.
+2. Re-run held-out baseline vs fine-tuned evaluation with real-output-only scoring.
+3. Capture multi-generation stability metrics and final promotion recommendation.
+
+Follow-up is tracked under task T237.
