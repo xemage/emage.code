@@ -35,10 +35,10 @@
 ## Commands Run
 
 1. Baseline-labeled rollout attempt
-- `python3 implementation/scripts/dispatch-test-sia.py --rollout-timeout 45 --max-turns 6 --model baseline --diagnostic-output t233-rollout-baseline-1.json`
+- `python3 implementation/scripts/dispatch-test-sia.py --rollout-timeout 45 --max-turns 6 --model baseline --diagnostic-output docs/artifacts/t233-rollout-baseline-1.json`
 
 2. Fine-tuned-labeled rollout attempt
-- `python3 implementation/scripts/dispatch-test-sia.py --rollout-timeout 30 --max-turns 6 --model v1-ft --diagnostic-output t233-rollout-finetuned-1.json`
+- `python3 implementation/scripts/dispatch-test-sia.py --rollout-timeout 30 --max-turns 6 --model v1-ft --diagnostic-output docs/artifacts/t233-rollout-finetuned-1.json`
 
 3. Evaluator sanity test
 - `python3 -m pytest tests/functional/test_t222_sia_task_evaluator.py -q`
@@ -52,8 +52,8 @@
 | fine-tuned-labeled | 1 | dd16c7ee-a252-4ff9-8504-c2cea40a7f60 | timeout | 0.0 | false | 0 | 0 |
 
 Evidence files:
-- `t233-rollout-baseline-1.json`
-- `t233-rollout-finetuned-1.json`
+- `docs/artifacts/t233-rollout-baseline-1.json`
+- `docs/artifacts/t233-rollout-finetuned-1.json`
 
 ## Delta Calculations
 
@@ -79,7 +79,7 @@ Using measured values from the two attempted generations:
 - owner: `backend-developer` (T235 runtime integration owner)
 - retry_attempt: `1`
 - evidence:
-  - rollout diagnostics in `t233-rollout-baseline-1.json` and `t233-rollout-finetuned-1.json`
+  - rollout diagnostics in `docs/artifacts/t233-rollout-baseline-1.json` and `docs/artifacts/t233-rollout-finetuned-1.json`
   - `missing_progression_signals` includes:
     - `task_running_without_partial_results`
     - `task_running_without_trajectories`

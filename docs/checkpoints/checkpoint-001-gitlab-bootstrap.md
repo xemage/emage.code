@@ -11,7 +11,7 @@
 |------|---------|
 | Audit & repair broken markdown links | 37 broken links found; all v2 links repaired (root `AGENTS.md`, `v2/implementation/README.md`, `v2/plan/README.md`, `v2/plan/06-phase2-detail.md`); skill reference stubs created and synced to all platform mirrors |
 | Root `README.md` | Project overview covering both `v1/` (frozen) and `v2/` (active) |
-| `LICENSE` (MIT), `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), `.editorconfig`, root `.gitignore` | Added |
+| `LICENSE` (MIT), `CONTRIBUTING.md`, `.editorconfig`, root `.gitignore` | Added |
 | `.gitlab-ci.yml` | Three stages: `lint` (markdown-links, allow_failure), `verify` (drift gate), `sync` (sync sanity, no-diff assert) |
 | GitLab project metadata | Description set, 11 topics applied (`ai-agents`, `multi-agent`, `orchestration`, `mcp`, `knowledge-base`, `devtools`, `github-copilot`, `gemini`, `cursor`, `opencode-ai`, `gitlab-ci`), MR rules: pipeline-must-succeed, all-discussions-resolved, default squash, source-branch-removed |
 | GitFlow | `develop` created from `main`, set as **default branch**; `main` protected (no-one push, maintainer merge), `develop` protected (maintainer push, dev+maintainer merge) |

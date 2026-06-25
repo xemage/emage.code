@@ -5,7 +5,7 @@ project. **Please read it before opening a merge request.**
 
 ## Code of conduct
 
-By participating you agree to abide by the [Code of Conduct](CODE_OF_CONDUCT.md).
+By participating you agree to follow the collaboration and review expectations documented in this guide.
 
 ## Where to make changes
 
