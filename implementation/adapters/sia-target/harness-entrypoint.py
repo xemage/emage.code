@@ -375,42 +375,11 @@ def _extract_json_payload(text: str) -> Optional[Any]:
     return None
 
 
-def _build_fallback_solution_payload(prompt: str, generated_code: str, model: str) -> Dict[str, Any]:
+def _build_fallback_solution_payload(prompt: str, generated_code: str) -> Dict[str, Any]:
     """Create evaluator-compatible fallback payload when output is not JSON."""
     prompt_summary = (prompt or "").strip()
     code_summary = (generated_code or "").strip()
     summary = code_summary[:400] if code_summary else prompt_summary[:400]
-
-    normalized_model = (model or "").strip().lower()
-    if normalized_model == "baseline":
-        # POC-DEBT: Synthetic baseline payload is intentionally weaker to force a
-        # discriminative reward signal; production should evaluate authentic model output.
-        return {
-            "objective": "Produce a robust implementation artifact from prompt instructions.",
-            "architecture_version": "t236-v1",
-            "summary": summary or "Generated candidate output for evaluator contract adaptation.",
-            "tasks": [
-                {
-                    "id": "T1",
-                    "title": "Parse prompt requirements",
-                    "status": "done",
-                    "priority": "P1",
-                    "acceptance_criteria": ["Prompt requirements extracted into actionable steps"],
-                    "dependencies": [],
-                },
-                {
-                    "id": "T2",
-                    "title": "Generate candidate implementation",
-                    "status": "done",
-                    "priority": "P1",
-                    "acceptance_criteria": [],
-                    "dependencies": ["T9"],
-                },
-            ],
-            "risks": [
-                "Generated implementation may need manual review for task-specific constraints.",
-            ],
-        }
 
     return {
         "objective": "Produce a robust implementation artifact from prompt instructions.",
@@ -454,13 +423,12 @@ def _build_fallback_solution_payload(prompt: str, generated_code: str, model: st
 def write_solution_json_from_output(result: Dict[str, Any], prompt: str, workspace: str) -> Optional[str]:
     """Emit solution.json expected by evaluator from model output."""
     generated_code = result.get("generated_code") if isinstance(result, dict) else None
-    model = result.get("model") if isinstance(result, dict) else None
     if not isinstance(generated_code, str) or not generated_code.strip():
         return None
 
     payload = _extract_json_payload(generated_code)
     if not isinstance(payload, dict):
-        payload = _build_fallback_solution_payload(prompt, generated_code, str(model or ""))
+        payload = _build_fallback_solution_payload(prompt, generated_code)
 
     solution_path = Path(workspace) / "solution.json"
     solution_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
