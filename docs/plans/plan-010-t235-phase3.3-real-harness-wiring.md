@@ -126,6 +126,29 @@ graph TD
 - NOTE: Scores are synthetic — document clearly; not for production promotion decisions
 - Acceptance: baseline and fine-tuned produce different reward values; delta != 0
 
+## Phase 3.6 — Production-Credible Discrimination Follow-up (T237)
+
+Status: planned
+Owner: backend-developer
+Priority: P0
+
+### Context
+
+T236 delivered non-zero discriminative signal and unblocked T233 progression, but
+the current discriminator path is explicitly test-only and not sufficient for
+production-quality promotion decisions.
+
+### Objective
+
+Remove synthetic discriminator behavior from scoring-critical flow and validate
+real-output-only baseline vs fine-tuned quality discrimination on held-out tasks.
+
+### Acceptance
+
+- T237 is tracked as the production-hardening follow-up for T236.
+- Held-out reruns use real evaluator/model output quality only.
+- Updated T233 gate evidence is suitable for final closeout decision.
+
 ### Risks
 
 - Real LLM API credentials may not be available in CI environment
