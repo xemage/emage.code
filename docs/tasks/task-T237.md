@@ -1,6 +1,6 @@
 # Task T237 - Replace Synthetic Discriminator with Real Quality Discrimination
 
-**Status:** pending
+**Status:** in_progress
 **Owner:** backend-developer
 **Priority:** P0
 **Depends on:** T233, T236 ✅
@@ -46,3 +46,11 @@ T236 unblocked end-to-end discriminative scoring with a documented test-only fal
 
 - Add strict output-contract validation with explicit retry and failure labeling.
 - Run evaluations in bounded batches and keep full per-run artifacts for auditability.
+
+## Execution Update (2026-06-26)
+
+- Removed model-label-dependent synthetic fallback shaping from `implementation/adapters/sia-target/harness-entrypoint.py` so fallback payload generation is model-agnostic.
+- Updated `tests/unit/test_sia_harness_entrypoint.py` to verify fallback behavior does not create synthetic baseline-vs-finetuned score separation.
+- Local verification:
+	- `PYTHONPATH=. pytest -q tests/unit/test_sia_harness_entrypoint.py` -> pass
+	- `pytest -q tests/unit/test_sia_executor_phase32.py` -> pass

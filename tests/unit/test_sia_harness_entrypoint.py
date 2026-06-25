@@ -58,7 +58,7 @@ class TestHarnessFallbackSolutionWriter(unittest.TestCase):
         with (workspace / "results.json").open("r", encoding="utf-8") as handle:
             return json.load(handle)
 
-    def test_baseline_fallback_scores_lower_than_v1_ft(self):
+    def test_fallback_payload_is_model_agnostic(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             baseline_workspace = Path(tmp_dir) / "baseline"
             finetuned_workspace = Path(tmp_dir) / "finetuned"
@@ -91,9 +91,8 @@ class TestHarnessFallbackSolutionWriter(unittest.TestCase):
             baseline_results = self._evaluate_workspace(baseline_workspace)
             finetuned_results = self._evaluate_workspace(finetuned_workspace)
 
-        self.assertLess(baseline_results["overall_score"], finetuned_results["overall_score"])
-        self.assertFalse(baseline_results["passed"])
-        self.assertTrue(finetuned_results["passed"])
+        self.assertEqual(baseline_results["overall_score"], finetuned_results["overall_score"])
+        self.assertEqual(baseline_results["passed"], finetuned_results["passed"])
 
 
 if __name__ == "__main__":
