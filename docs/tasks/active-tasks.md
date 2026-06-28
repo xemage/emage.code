@@ -2,8 +2,7 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T233 | Closed-loop eval on held-out task; measure deltas | Orchestrator | in_review | P0 | T231 ✅, T232 ✅, T236 ✅, T237 ✅ | 2026-06-27 |
-| T234 | Cost/latency telemetry per generation | devops-engineer | pending | P2 | T233 | 2026-06-19 |
+| T234 | Cost/latency telemetry per generation | devops-engineer | pending | P2 | T233 ✅ | 2026-06-28 |
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
