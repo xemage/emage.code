@@ -52,7 +52,7 @@ If blocked, report blocker type and severity with one proposed mitigation.
 
 ## Validation Gate RERUN (2026-06-27 via T239 Aggregation)
 
-**Status moved to: `in_review`** (awaiting orchestrator promotion decision)  
+**Status moved to: `in_review`** (awaiting orchestrator promotion decision)
 **Gate verdict: `PASS` ✅**
 
 ### Evidence basis (New — Production-Credible)
