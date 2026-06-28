@@ -1,8 +1,9 @@
 # Task T233 - Closed-loop eval on held-out task; measure deltas
 
-**Status:** in_progress
-**Owner:** qa-engineer
+**Status:** done
+**Owner:** Orchestrator (qa-engineer executed)
 **Priority:** P0
+**Completed:** 2026-06-28
 
 ## Objective
 Run several SIA generations against a fixed held-out task using the fine-tuned model and measure performance
@@ -93,4 +94,6 @@ If blocked, report blocker type and severity with one proposed mitigation.
 
 ---
 
-**Next step:** Await orchestrator approval to proceed with T240 (production deployment).
+**PROMOTION DECISION: APPROVED** ✅ (2026-06-28)
+
+Fine-tuned model v1-ft promoted to production with full telemetry validation (T241) confirming no regressions. Task T233 marked complete.
