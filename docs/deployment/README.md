@@ -57,27 +57,17 @@ gcloud run deploy cwso-orchestrator \
 
 ---
 
-### ☁️ Cloud — AWS ECS (Coming Soon)
-Documentation for AWS ECS deployment (Elastic Container Service)
-
----
-
-### ☁️ Edge — Vercel (Coming Soon)
-Documentation for edge deployment via Vercel
-
----
-
 ## Deployment Comparison
 
-| Feature | Docker Desktop | Proxmox | GCP Cloud Run | AWS ECS | Vercel |
-|---------|---|---|---|---|---|
-| **Setup Time** | 5 min | 15 min | 20 min | 30 min | 10 min |
-| **Cost** | Free | Infrastructure | $$$$ | $$$$$ | $$$$$ |
-| **Scalability** | Single machine | Vertical | Automatic | Auto-scaling | Automatic |
-| **Persistence** | Volumes | Storage pools | Cloud Storage | S3 | Blob storage |
-| **Monitoring** | Docker stats | Proxmox | Cloud Logging | CloudWatch | Vercel Analytics |
-| **Best For** | Development | Staging/Lab | Production | Enterprise | Global CDN |
-| **Difficulty** | ⭐ Easy | ⭐⭐ Moderate | ⭐⭐ Moderate | ⭐⭐⭐ Advanced | ⭐ Easy |
+| Feature | Docker Desktop | Proxmox | GCP Cloud Run |
+|---------|---|---|---|
+| **Setup Time** | 5 min | 15 min | 20 min |
+| **Cost** | Free | Infrastructure | $$$$ |
+| **Scalability** | Single machine | Vertical | Automatic |
+| **Persistence** | Volumes | Storage pools | Cloud Storage |
+| **Monitoring** | Docker stats | Proxmox | Cloud Logging |
+| **Best For** | Development | Staging/Lab | Production |
+| **Difficulty** | ⭐ Easy | ⭐⭐ Moderate | ⭐⭐ Moderate |
 
 ---
 
@@ -108,7 +98,7 @@ Documentation for edge deployment via Vercel
 
 ### All Environments
 - [ ] Repository cloned: `git clone https://gitlab.com/em-age/emage.code.git`
-- [ ] Dependencies installed (Docker/kubectl/gcloud as needed)
+- [ ] Dependencies installed (Docker/gcloud as needed)
 - [ ] Internet connectivity verified
 - [ ] Sufficient disk space available (minimum 10GB)
 - [ ] Adequate memory allocated (4GB minimum)
@@ -288,7 +278,7 @@ bash scripts/deploy/cwso-gcp-deploy.sh --restore-data
 ### JWT Secrets
 - **Never commit secrets** to version control
 - Store in `.env.local` (gitignored)
-- Use Secret Manager in production (GCP, AWS)
+- Use Secret Manager in production (GCP)
 - Rotate secrets regularly
 
 ### Network Access
@@ -406,7 +396,6 @@ bash scripts/deploy/cwso-gcp-deploy.sh --restore-data
 - [Docker Documentation](https://docs.docker.com)
 - [Proxmox Documentation](https://pve.proxmox.com/wiki)
 - [Google Cloud Docs](https://cloud.google.com/docs)
-- [AWS Documentation](https://docs.aws.amazon.com)
 
 ### Getting Help
 1. Review the specific deployment guide for your environment
@@ -431,9 +420,6 @@ Have feedback on these guides? Found errors or confusing sections?
 | Version | Date | Changes |
 |---------|------|---------|
 | 1.0 | 2026-06-28 | Initial release: Docker Desktop, Proxmox, GCP |
-| — | TBD | AWS ECS guide |
-| — | TBD | Vercel edge deployment |
-| — | TBD | Kubernetes deployment |
 
 ---
 
