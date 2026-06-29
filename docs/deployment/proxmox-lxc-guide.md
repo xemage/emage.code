@@ -1,8 +1,8 @@
 # CWSO Proxmox LXC Deployment Guide
 
-**Version:** 1.0  
-**Last updated:** 2026-06-28  
-**Environment:** Proxmox VE 7.0+ with LXC containers  
+**Version:** 1.0
+**Last updated:** 2026-06-28
+**Environment:** Proxmox VE 7.0+ with LXC containers
 **Minimum resources:** 4GB RAM, 20GB storage per container
 
 ---

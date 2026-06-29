@@ -38,7 +38,7 @@ print_error() {
 
 check_prerequisites() {
     print_header "Checking Prerequisites"
-    
+
     # Check Docker
     if ! command -v docker &> /dev/null; then
         print_error "Docker is not installed"
@@ -46,7 +46,7 @@ check_prerequisites() {
         exit 1
     fi
     print_success "Docker is installed: $(docker --version)"
-    
+
     # Check Docker daemon
     if ! docker info &> /dev/null; then
         print_error "Docker daemon is not running"
@@ -54,14 +54,14 @@ check_prerequisites() {
         exit 1
     fi
     print_success "Docker daemon is running"
-    
+
     # Check docker-compose
     if ! command -v docker-compose &> /dev/null; then
         print_error "docker-compose is not installed"
         exit 1
     fi
     print_success "docker-compose is installed: $(docker-compose --version)"
-    
+
     # Check available ports
     local occupied_ports=()
     for port in 8080 8787 8788 8789; do
@@ -69,20 +69,20 @@ check_prerequisites() {
             occupied_ports+=($port)
         fi
     done
-    
+
     if [ ${#occupied_ports[@]} -gt 0 ]; then
         print_warning "Ports in use: ${occupied_ports[@]}"
         echo "These ports are already in use. You may need to:"
         echo "  - Stop existing CWSO: cd $DEPLOY_DIR && docker-compose down"
         echo "  - Or use different ports (edit docker-compose.yml)"
     fi
-    
+
     print_success "Prerequisites check complete"
 }
 
 setup_deploy_directory() {
     print_header "Setting Up Deployment Directory"
-    
+
     # Create deploy directory
     if [ ! -d "$DEPLOY_DIR" ]; then
         mkdir -p "$DEPLOY_DIR"
@@ -94,26 +94,26 @@ setup_deploy_directory() {
 
 copy_configuration() {
     print_header "Configuring CWSO"
-    
+
     # Check source files exist
     if [ ! -f "$DOCKER_COMPOSE_SOURCE" ]; then
         print_error "docker-compose file not found: $DOCKER_COMPOSE_SOURCE"
         exit 1
     fi
-    
+
     if [ ! -f "$ENV_SOURCE" ]; then
         print_error "Environment file not found: $ENV_SOURCE"
         exit 1
     fi
-    
+
     # Copy docker-compose
     cp "$DOCKER_COMPOSE_SOURCE" "$DEPLOY_DIR/docker-compose.yml"
     print_success "Copied docker-compose configuration"
-    
+
     # Copy environment template
     cp "$ENV_SOURCE" "$DEPLOY_DIR/.env"
     print_success "Copied environment configuration"
-    
+
     # Configure JWT
     if [ -f "$JWT_SOURCE" ]; then
         JWT_SECRET=$(tr -d '\r\n' < "$JWT_SOURCE")
@@ -130,9 +130,9 @@ copy_configuration() {
 
 pull_images() {
     print_header "Pulling Docker Images"
-    
+
     cd "$DEPLOY_DIR"
-    
+
     if docker-compose pull; then
         print_success "All images pulled successfully"
     else
@@ -142,16 +142,16 @@ pull_images() {
 
 start_services() {
     print_header "Starting CWSO Services"
-    
+
     cd "$DEPLOY_DIR"
-    
+
     if docker-compose up -d; then
         print_success "Services started"
     else
         print_error "Failed to start services"
         exit 1
     fi
-    
+
     # Wait for services to be ready
     echo "Waiting for services to be ready..."
     sleep 5
@@ -159,16 +159,16 @@ start_services() {
 
 verify_deployment() {
     print_header "Verifying Deployment"
-    
+
     cd "$DEPLOY_DIR"
-    
+
     # Check container status
     if ! docker-compose ps | grep -q "Up"; then
         print_error "Services are not running"
         docker-compose logs
         exit 1
     fi
-    
+
     local all_running=true
     for service in orchestrator rollout-proxy; do
         if docker-compose ps | grep "$service" | grep -q "Up"; then
@@ -178,25 +178,25 @@ verify_deployment() {
             all_running=false
         fi
     done
-    
+
     if [ "$all_running" = false ]; then
         print_error "Some services failed to start"
         print_header "Service Logs"
         docker-compose logs
         exit 1
     fi
-    
+
     # Test health endpoints
     echo "Testing health endpoints..."
     sleep 2
-    
+
     if curl -s http://localhost:8080/health | grep -q "healthy" 2>/dev/null || curl -s http://localhost:8080/health | grep -q "status" 2>/dev/null; then
         print_success "Orchestrator health check passed"
     else
         print_warning "Orchestrator health check didn't respond as expected"
         echo "Response: $(curl -s http://localhost:8080/health)"
     fi
-    
+
     if curl -s http://localhost:8787/health | grep -q "healthy" 2>/dev/null || curl -s http://localhost:8787/health | grep -q "status" 2>/dev/null; then
         print_success "Rollout proxy health check passed"
     else
@@ -207,17 +207,17 @@ verify_deployment() {
 
 show_status() {
     print_header "CWSO Deployment Status"
-    
+
     cd "$DEPLOY_DIR"
-    
+
     echo "Container Status:"
     docker-compose ps
-    
+
     echo ""
     echo "Configuration Location: $DEPLOY_DIR"
     echo "Environment File: $DEPLOY_DIR/.env"
     echo "Docker Compose File: $DEPLOY_DIR/docker-compose.yml"
-    
+
     echo ""
     echo "Available Endpoints:"
     echo "  Orchestrator:   http://localhost:8080"
@@ -228,7 +228,7 @@ show_status() {
 
 show_usage() {
     print_header "CWSO Docker Desktop Setup"
-    
+
     cat << 'EOF'
 Usage: bash cwso-docker-desktop.sh [OPTION]
 
@@ -260,26 +260,26 @@ EOF
 
 update_deployment() {
     print_header "Updating CWSO Deployment"
-    
+
     cd "$DEPLOY_DIR"
-    
+
     echo "Pulling latest images..."
     docker-compose pull
-    
+
     echo "Recreating containers..."
     docker-compose up -d --force-recreate
-    
+
     sleep 5
     verify_deployment
-    
+
     print_success "Deployment updated successfully"
 }
 
 clean_deployment() {
     print_header "Cleaning CWSO Deployment"
-    
+
     cd "$DEPLOY_DIR"
-    
+
     print_warning "This will stop and remove all containers and volumes"
     read -p "Are you sure? (y/N): " -n 1 -r
     echo
@@ -287,29 +287,29 @@ clean_deployment() {
         print_success "Cleanup cancelled"
         return
     fi
-    
+
     echo "Stopping services..."
     docker-compose down -v
-    
+
     print_success "Deployment cleaned"
     print_warning "All data has been removed. Run setup again to restart."
 }
 
 show_logs() {
     print_header "CWSO Service Logs"
-    
+
     cd "$DEPLOY_DIR"
-    
+
     echo "Press Ctrl+C to stop"
     sleep 2
-    
+
     docker-compose logs -f
 }
 
 # Main execution
 main() {
     local command="${1:-setup}"
-    
+
     case "$command" in
         --help|-h)
             show_usage
@@ -335,7 +335,7 @@ main() {
             start_services
             verify_deployment
             show_status
-            
+
             print_success "CWSO is ready!"
             echo ""
             echo "Next steps:"

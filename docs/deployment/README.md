@@ -7,9 +7,9 @@ Complete documentation for deploying CWSO (Orchestration & SIA Infrastructure) a
 ## Choose Your Deployment Environment
 
 ### 🖥️ Local Development — Docker Desktop
-**Best for:** Developers, testing, rapid prototyping  
-**Setup time:** 5 minutes  
-**Requirements:** Docker Desktop, 4GB RAM  
+**Best for:** Developers, testing, rapid prototyping
+**Setup time:** 5 minutes
+**Requirements:** Docker Desktop, 4GB RAM
 **Cost:** Free (on your machine)
 
 [📖 Docker Desktop Deployment Guide →](local-docker-desktop-guide.md)
@@ -23,9 +23,9 @@ curl http://localhost:8080/health
 ---
 
 ### 🏢 On-Premises Lab — Proxmox LXC
-**Best for:** Lab environments, staging, local infrastructure  
-**Setup time:** 15 minutes  
-**Requirements:** Proxmox VE 7.0+, 4GB RAM per container  
+**Best for:** Lab environments, staging, local infrastructure
+**Setup time:** 15 minutes
+**Requirements:** Proxmox VE 7.0+, 4GB RAM per container
 **Cost:** Infrastructure-dependent
 
 [📖 Proxmox LXC Deployment Guide →](proxmox-lxc-guide.md)
@@ -39,9 +39,9 @@ ssh root@proxmox-host "bash /tmp/cwso-proxmox-setup.sh --auto"
 ---
 
 ### ☁️ Cloud — Google Cloud Run
-**Best for:** Production, high availability, auto-scaling  
-**Setup time:** 20 minutes  
-**Requirements:** GCP account with billing  
+**Best for:** Production, high availability, auto-scaling
+**Setup time:** 20 minutes
+**Requirements:** GCP account with billing
 **Cost:** $0.40 per million invocations + compute
 
 [📖 GCP Cloud Run Deployment Guide →](gcp-cloud-run-guide.md)
@@ -358,7 +358,7 @@ bash scripts/deploy/cwso-gcp-deploy.sh --restore-data
 
 ### GCP Cloud Run
 - **Cost**: Per-invocation + compute
-- **Optimization**: 
+- **Optimization**:
   - Increase min-instances cautiously
   - Use Cloud CDN for static content
   - Archive old data to Cloud Archive Storage
@@ -423,6 +423,6 @@ Have feedback on these guides? Found errors or confusing sections?
 
 ---
 
-**Last updated:** 2026-06-28  
-**Maintainer:** DevOps Team  
+**Last updated:** 2026-06-28
+**Maintainer:** DevOps Team
 **Next review:** 2026-09-28
