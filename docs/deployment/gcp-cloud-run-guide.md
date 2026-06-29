@@ -607,6 +607,7 @@ gcloud secrets create cwso-jwt-secret \
 
 For GCP-specific issues:
 1. Check [Cloud Run troubleshooting](https://cloud.google.com/run/docs/troubleshooting)
-2. Review [Cloud Run logs](https://cloud.google.com/run/docs/logging)
-3. Consult [GCP documentation](https://cloud.google.com/docs)
-4. Create support ticket via Google Cloud Console
+2. See [Deployment Troubleshooting Guide](troubleshooting-guide.md)
+3. Review [Cloud Run logs](https://cloud.google.com/run/docs/logging)
+4. Consult [GCP documentation](https://cloud.google.com/docs)
+5. Create support ticket via Google Cloud Console

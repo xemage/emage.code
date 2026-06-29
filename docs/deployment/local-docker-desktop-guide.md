@@ -494,6 +494,7 @@ echo "Restore complete"
 
 ### For Support
 - Review the troubleshooting section above
+- See [Deployment Troubleshooting Guide](troubleshooting-guide.md)
 - Check deployment logs
 - Consult the main README
 
@@ -503,9 +504,10 @@ echo "Restore complete"
 
 For issues or questions:
 1. Check the troubleshooting section above
-2. Review deployment logs: `docker-compose logs`
-3. Consult the main README: `/home/emage/Code/emage/emage.code/README.md`
-4. Check CWSO documentation: `/home/emage/Code/emage/CWSO/README.md`
+2. See [Deployment Troubleshooting Guide](troubleshooting-guide.md)
+3. Review deployment logs: `docker-compose logs`
+4. Consult the main README: `/home/emage/Code/emage/emage.code/README.md`
+5. Check CWSO documentation: `/home/emage/Code/emage/CWSO/README.md`
 
 ---
 
