@@ -144,33 +144,33 @@ parse_arguments() {
 
 verify_proxmox() {
     print_header "Verifying Proxmox Environment"
-    
+
     # Check if running on Proxmox
     if [ ! -f /etc/proxmox-release ]; then
         print_error "This script must be run on a Proxmox VE host"
         exit 1
     fi
-    
+
     print_success "Proxmox VE detected"
-    
+
     # Check LXC tools
     if ! command -v pct &> /dev/null; then
         print_error "pct command not found. Install Proxmox VE LXC tools."
         exit 1
     fi
-    
+
     print_success "pct tool available"
-    
+
     # Check template
     if [ ! -f "$TEMPLATE" ]; then
         print_warning "Template not found: $TEMPLATE"
         print_info "Available templates:"
         ls -lh /var/lib/vz/template/cache/ 2>/dev/null || echo "  (none found)"
-        
+
         if [ $NON_INTERACTIVE -eq 1 ]; then
             exit 1
         fi
-        
+
         read -p "Enter template path or press Enter to use default: " TEMPLATE_INPUT
         if [ -n "$TEMPLATE_INPUT" ]; then
             TEMPLATE="$TEMPLATE_INPUT"
@@ -180,9 +180,9 @@ verify_proxmox() {
             fi
         fi
     fi
-    
+
     print_success "Template found: $TEMPLATE"
-    
+
     # Check if container ID already exists
     if pct status $CTID &>/dev/null; then
         print_warning "Container $CTID already exists"
@@ -201,7 +201,7 @@ verify_proxmox() {
             exit 1
         fi
     fi
-    
+
     # Check storage pool
     if ! pvesm list $STORAGE &>/dev/null; then
         print_error "Storage pool not found: $STORAGE"
@@ -209,9 +209,9 @@ verify_proxmox() {
         pvesm list
         exit 1
     fi
-    
+
     print_success "Storage pool available: $STORAGE"
-    
+
     # Check network bridge
     if ! ip link show $BRIDGE &>/dev/null; then
         print_warning "Network bridge not found: $BRIDGE"
@@ -219,13 +219,13 @@ verify_proxmox() {
         ip link show | grep "^ *[0-9]*:" | grep -i bridge
         exit 1
     fi
-    
+
     print_success "Network bridge available: $BRIDGE"
 }
 
 confirm_configuration() {
     print_header "Container Configuration"
-    
+
     echo "Configuration:"
     echo "  Container ID:    $CTID"
     echo "  Hostname:        $HOSTNAME"
@@ -238,7 +238,7 @@ confirm_configuration() {
     echo "  Network Bridge:  $BRIDGE"
     echo "  Template:        $TEMPLATE"
     echo ""
-    
+
     if [ $NON_INTERACTIVE -eq 0 ]; then
         read -p "Proceed with container creation? (y/N): " -n 1 -r
         echo
@@ -247,15 +247,15 @@ confirm_configuration() {
             exit 0
         fi
     fi
-    
+
     print_success "Configuration confirmed"
 }
 
 create_container() {
     print_header "Creating LXC Container"
-    
+
     print_info "Creating container $CTID with CWSO configuration..."
-    
+
     pct create $CTID "$TEMPLATE" \
         --hostname "$HOSTNAME" \
         --cores "$CORES" \
@@ -265,15 +265,15 @@ create_container() {
         --net0 "name=eth0,bridge=$BRIDGE,ip=$IP_ADDRESS,gw=$GATEWAY" \
         --onboot 1 \
         --start 1
-    
+
     print_success "Container created"
 }
 
 wait_container_boot() {
     print_header "Waiting for Container to Boot"
-    
+
     print_info "Waiting for container $CTID to be ready..."
-    
+
     for i in {1..30}; do
         if pct exec $CTID test -f /etc/os-release 2>/dev/null; then
             print_success "Container is ready"
@@ -282,16 +282,16 @@ wait_container_boot() {
         echo -ne "\r  Attempt $i/30... "
         sleep 2
     done
-    
+
     print_error "Container failed to boot after 60 seconds"
     exit 1
 }
 
 configure_container_network() {
     print_header "Configuring Container Network"
-    
+
     print_info "Setting up network configuration..."
-    
+
     # Configure network inside container
     pct exec $CTID tee /etc/network/interfaces > /dev/null << EOF
 auto lo
@@ -304,10 +304,10 @@ iface eth0 inet static
     gateway $GATEWAY
     dns-nameservers 8.8.8.8 8.8.4.4
 EOF
-    
+
     # Restart networking
     pct exec $CTID systemctl restart networking
-    
+
     # Verify connectivity
     sleep 2
     if pct exec $CTID ping -c 1 8.8.8.8 &>/dev/null; then
@@ -319,19 +319,19 @@ EOF
 
 install_docker() {
     print_header "Installing Docker"
-    
+
     print_info "Updating system packages..."
     pct exec $CTID apt-get update
     pct exec $CTID apt-get upgrade -y
-    
+
     print_info "Installing Docker..."
     pct exec $CTID curl -fsSL https://get.docker.com -o /tmp/get-docker.sh
     pct exec $CTID bash /tmp/get-docker.sh
-    
+
     print_info "Enabling Docker service..."
     pct exec $CTID systemctl enable docker
     pct exec $CTID systemctl start docker
-    
+
     # Verify Docker
     if pct exec $CTID docker --version &>/dev/null; then
         print_success "Docker installed"
@@ -343,12 +343,12 @@ install_docker() {
 
 install_docker_compose() {
     print_header "Installing Docker Compose"
-    
+
     print_info "Installing docker-compose..."
     pct exec $CTID curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" \
         -o /usr/local/bin/docker-compose
     pct exec $CTID chmod +x /usr/local/bin/docker-compose
-    
+
     if pct exec $CTID docker-compose --version &>/dev/null; then
         print_success "docker-compose installed"
     else
@@ -359,13 +359,13 @@ install_docker_compose() {
 
 deploy_cwso() {
     print_header "Deploying CWSO"
-    
+
     print_info "Creating CWSO deployment directory..."
     pct exec $CTID mkdir -p /opt/cwso/data
-    
+
     print_info "Cloning CWSO repository..."
     pct exec $CTID git clone https://gitlab.com/em-age/emage.code.git /opt/cwso/repo
-    
+
     print_info "Setting up CWSO configuration..."
     pct exec $CTID bash << 'EOF'
 cd /opt/cwso/repo
@@ -385,23 +385,23 @@ fi
 # Add Parquet store configuration
 echo "PARQUET_STORE_PATH=/opt/cwso/data" >> .env
 EOF
-    
+
     print_info "Starting CWSO services..."
     pct exec $CTID bash << 'EOF'
 cd /opt/cwso/repo
 docker-compose pull
 docker-compose up -d
 EOF
-    
+
     print_success "CWSO deployed"
 }
 
 verify_deployment() {
     print_header "Verifying Deployment"
-    
+
     print_info "Waiting for services to be ready..."
     sleep 10
-    
+
     # Check container running
     if pct status $CTID | grep -q "running"; then
         print_success "Container is running"
@@ -409,7 +409,7 @@ verify_deployment() {
         print_error "Container is not running"
         exit 1
     fi
-    
+
     # Check services
     print_info "Checking CWSO services..."
     pct exec $CTID bash << 'EOF'
@@ -431,13 +431,13 @@ else
     echo "⚠ Health check response unclear"
 fi
 EOF
-    
+
     print_success "Deployment verified"
 }
 
 show_summary() {
     print_header "Deployment Complete"
-    
+
     echo "✓ Container $CTID created and running"
     echo ""
     echo "Container Details:"
@@ -466,7 +466,7 @@ show_summary() {
 # Main execution
 main() {
     print_header "CWSO Proxmox LXC Setup"
-    
+
     parse_arguments "$@"
     verify_proxmox
     confirm_configuration
@@ -478,7 +478,7 @@ main() {
     deploy_cwso
     verify_deployment
     show_summary
-    
+
     print_success "CWSO is ready on Proxmox!"
     print_info "Run 'pct enter $CTID' to access the container"
 }

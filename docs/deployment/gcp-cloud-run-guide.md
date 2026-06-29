@@ -1,8 +1,8 @@
 # CWSO Google Cloud Run Deployment Guide
 
-**Version:** 1.0  
-**Last updated:** 2026-06-28  
-**Platform:** Google Cloud Run  
+**Version:** 1.0
+**Last updated:** 2026-06-28
+**Platform:** Google Cloud Run
 **Region:** us-central1 (configurable)
 
 ---
