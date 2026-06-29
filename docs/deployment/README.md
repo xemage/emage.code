@@ -208,6 +208,8 @@ gsutil -m cp -r gs://project-cwso-parquet/* ~/backups/cwso/
 
 See individual deployment guides for detailed troubleshooting sections.
 
+[📖 Full Deployment Troubleshooting Guide →](troubleshooting-guide.md)
+
 ---
 
 ## Monitoring and Operations
@@ -390,6 +392,7 @@ bash scripts/deploy/cwso-gcp-deploy.sh --restore-data
 
 ### Documentation
 - Individual deployment guides (see sections above)
+- [Deployment Troubleshooting Guide](troubleshooting-guide.md)
 - Deployment scripts and configuration (in `scripts/deploy/`)
 
 ### External Resources

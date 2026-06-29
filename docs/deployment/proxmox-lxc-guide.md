@@ -565,9 +565,10 @@ pct move-disk 201 --storage <new-storage>
 
 For issues:
 1. Check troubleshooting section
-2. Review Proxmox logs: `journalctl -xe`
-3. Check container logs: `pct logs 201`
-4. Consult Proxmox documentation: https://pve.proxmox.com/wiki/
+2. See [Deployment Troubleshooting Guide](troubleshooting-guide.md)
+3. Review Proxmox logs: `journalctl -xe`
+4. Check container logs: `pct logs 201`
+5. Consult Proxmox documentation: https://pve.proxmox.com/wiki/
 
 ---
 
