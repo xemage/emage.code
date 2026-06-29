@@ -12,7 +12,7 @@
 Create comprehensive deployment guides and automation tools for CWSO (the orchestration infrastructure used by SIA) across multiple hosting environments:
 1. **Local development** (Docker Desktop)
 2. **Local network infrastructure** (Proxmox with LXC containers)
-3. **Cloud platforms** (Google Cloud, AWS, Azure, Vercel, etc.)
+3. **Cloud platform** (Google Cloud)
 
 Enable teams to deploy CWSO quickly and consistently in any environment.
 
@@ -49,22 +49,18 @@ Enable teams to deploy CWSO quickly and consistently in any environment.
 - `scripts/deploy/cwso-proxmox-restore.sh` (restore from backup)
 - Terraform/IaC template for Proxmox (optional)
 
-### Scenario C: Cloud Deployments
-**Platforms:** Google Cloud, AWS, Azure, Vercel, DigitalOcean  
+### Scenario C: Cloud Deployment
+**Platform:** Google Cloud  
 **Key requirements:** (platform-specific)
-- Managed container orchestration (GKE, ECS, AKS)
+- Managed container orchestration (Cloud Run/GKE)
 - Auto-scaling configuration
 - DNS/load balancing
-- Persistent storage (Cloud Storage, S3, etc.)
+- Persistent storage (Cloud Storage)
 - Monitoring and logging integration
 
 **Deliverables:**
 - `docs/deployment/gcp-cloud-run-guide.md`
-- `docs/deployment/aws-ecs-guide.md`
-- `docs/deployment/vercel-guide.md` (for edge deployment)
 - `scripts/deploy/cwso-gcp-deploy.sh`
-- `scripts/deploy/cwso-aws-deploy.sh`
-- `scripts/deploy/cwso-vercel-deploy.sh`
 
 ---
 
@@ -122,15 +118,6 @@ Enable teams to deploy CWSO quickly and consistently in any environment.
 - [ ] DNS/load balancer configuration
 - [ ] Monitoring setup
 
-### T_DEPLOY_005: Additional Cloud Platforms (AWS, Vercel)
-**Status:** Not started  
-**Owner:** devops-engineer  
-**Scope:**
-- [ ] AWS ECS deployment guide
-- [ ] AWS automation script
-- [ ] Vercel edge deployment guide
-- [ ] Platform comparison matrix
-
 ### T_DEPLOY_006: Troubleshooting and Common Issues
 **Status:** Not started  
 **Owner:** technical-writer + devops-engineer  
@@ -176,7 +163,7 @@ Enable teams to deploy CWSO quickly and consistently in any environment.
 
 - **Day 1-2:** Create Docker Desktop guide + scripts
 - **Day 2-3:** Create Proxmox LXC guide + scripts
-- **Day 3-4:** Create cloud guides (GCP + AWS)
+- **Day 3-4:** Create cloud guide (GCP)
 - **Day 4-5:** Testing, integration, and documentation cleanup
 - **Day 5:** Final MR and deployment
 
@@ -191,8 +178,6 @@ docs/
     local-docker-desktop-guide.md          # Development guide
     proxmox-lxc-guide.md                  # On-premises guide
     gcp-cloud-run-guide.md                # Cloud deployment
-    aws-ecs-guide.md                      # AWS ECS deployment
-    vercel-edge-guide.md                  # Edge deployment
     troubleshooting-guide.md              # Common issues and fixes
     architecture.md                       # Deployment architecture
 
@@ -201,8 +186,6 @@ scripts/deploy/
     cwso-proxmox-setup.sh                 # Proxmox provisioning
     cwso-proxmox-restore.sh               # Proxmox restore
     cwso-gcp-deploy.sh                    # GCP deployment
-    cwso-aws-deploy.sh                    # AWS deployment
-    cwso-vercel-deploy.sh                 # Vercel deployment
     common-functions.sh                   # Shared utility functions
 
 deploy/
@@ -235,7 +218,6 @@ deploy/
 - [ ] Create deployment troubleshooting matrix
 
 ### Medium-term (1-2 months)
-- [ ] Add AWS ECS and other cloud platforms
 - [ ] Create infrastructure-as-code templates (Terraform)
 - [ ] Establish quarterly documentation update cadence
 
