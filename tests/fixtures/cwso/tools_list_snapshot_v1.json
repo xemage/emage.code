@@ -1,0 +1,15 @@
+{
+  "expectedTools": [
+    "commit_shadow",
+    "create_shadow_workspace",
+    "dispatch_concurrent_jobs",
+    "drop_shadow_workspace",
+    "list_dir",
+    "merge_concurrent_results",
+    "query_ast",
+    "read_file_sync",
+    "read_shadow_file",
+    "write_file_sync",
+    "write_shadow_file"
+  ]
+}

@@ -1,0 +1,24 @@
+# SIA Target Agent Harness Adapter - Python Dependencies
+# All versions are pinned for reproducible builds
+# Last updated: 2026-06-22
+
+# Core agent and LLM SDKs
+anthropic==0.7.0
+openai==1.3.0
+google-generativeai==0.3.0
+
+# Agent orchestration and tools
+pydantic==2.4.0
+pydantic-settings==2.0.0
+
+# HTTP and networking
+requests==2.31.0
+urllib3==2.0.7
+
+# Utility libraries
+python-dotenv==1.0.0
+
+# Cryptography — Ed25519 witness signing for release-gate provenance (T232)
+# Pinned >=43.0.1 to pick up security fixes (T232 SEC-003); Ed25519 API unchanged.
+cryptography>=43.0.1
+

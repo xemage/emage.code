@@ -73,9 +73,14 @@ markdown-links:
 unit-tests:
   stage: test
   image: python:3.12-alpine
+  tags:
+    - dind  # Docker socket binding for T223 docker availability test
+  variables:
+    # dind runners bind the host Docker socket (Option A); point the CLI at it.
+    DOCKER_HOST: unix:///var/run/docker.sock
   before_script:
-    - python3 -c "import shutil, subprocess; apk=shutil.which('apk'); subprocess.check_call([apk, 'add', '--no-cache', 'nodejs', 'git', 'bash']) if apk else None"
-    - python3 -m pip install --no-cache-dir --quiet pyyaml jsonschema
+    - apk add --no-cache git bash nodejs docker-cli
+    - python3 -m pip install --no-cache-dir pyyaml jsonschema requests pyarrow "cryptography>=43.0.1"
   script:
     - python3 tests/run.py
   artifacts:

@@ -1,0 +1,7 @@
+{
+  "bos_token": "<s>",
+  "eos_token": "</s>",
+  "model_max_length": 2048,
+  "pad_token": "<pad>",
+  "unk_token": "<unk>"
+}

@@ -1,0 +1,51 @@
+{
+  "generated_at": "2026-06-27T05:28:28.285771+00:00",
+  "cwso_url": "http://localhost:8080",
+  "task_id": "79cc8d9b-9d54-485a-9476-c1dfca3edb2e",
+  "rollout_session_id": "79cc8d9b-9d54-485a-9476-c1dfca3edb2e",
+  "signals": {
+    "healthz": {
+      "ok": true,
+      "status_code": 200,
+      "data": {
+        "raw_text": "ok"
+      }
+    },
+    "rollout_status": {
+      "ok": true,
+      "status_code": 200,
+      "data": {
+        "pending_sessions": 0,
+        "running_sessions": 0,
+        "registered_nodes": 1,
+        "cache_hit_rate": 0
+      }
+    },
+    "task_status": {
+      "ok": true,
+      "status_code": 200,
+      "data": {
+        "task_id": "79cc8d9b-9d54-485a-9476-c1dfca3edb2e",
+        "status": "completed",
+        "partial_results": [
+          {
+            "step": 0,
+            "reward": 0,
+            "merge_outcome": "failed"
+          }
+        ],
+        "trajectories": [
+          {
+            "chain_id": "79cc8d9b-9d54-485a-9476-c1dfca3edb2e-harness",
+            "loss_mask_token_count": 512
+          }
+        ]
+      }
+    },
+    "tool_count": 11,
+    "has_merge_concurrent_results": true,
+    "parquet_file_count_for_session": 0
+  },
+  "missing_progression_signals": [],
+  "blocker_assessment": "no_runtime_blocker_detected"
+}

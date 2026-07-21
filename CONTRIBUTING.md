@@ -5,7 +5,7 @@ project. **Please read it before opening a merge request.**
 
 ## Code of conduct
 
-By participating you agree to abide by the [Code of Conduct](CODE_OF_CONDUCT.md).
+By participating you agree to follow the collaboration and review expectations documented in this guide.
 
 ## Where to make changes
 
@@ -147,6 +147,14 @@ The project uses **Semantic Versioning** (`vMAJOR.MINOR.PATCH`) and
    - Embeds **Install + Highlights** from `docs/releases/vX.Y.Z.md` in GitLab Release notes
    - Appends a **Changelog** section from Conventional Commits since the previous tag (full git history; `GIT_DEPTH: 0` on release job)
    - Regenerates [`CHANGELOG.md`](CHANGELOG.md) and creates a [GitLab Release](https://gitlab.com/em-age/emage.code/-/releases)
+
+If you must manually create or repair a GitLab release entry, always source notes from the release brief file:
+
+```bash
+glab release create vX.Y.Z --ref vX.Y.Z --name vX.Y.Z -F docs/releases/vX.Y.Z.md
+```
+
+Do not use ad-hoc inline `--notes`, as that can drift from `docs/releases/vX.Y.Z.md`.
 
 ### Hotfixes
 

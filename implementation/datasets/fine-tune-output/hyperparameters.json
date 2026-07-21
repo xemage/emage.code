@@ -1,0 +1,13 @@
+{
+  "timestamp": "2026-06-23T12:02:51.591972",
+  "model_id": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+  "lora_r": 8,
+  "lora_alpha": 16,
+  "lora_dropout": 0.05,
+  "learning_rate": 0.0005,
+  "num_train_epochs": 2,
+  "batch_size": 4,
+  "seed": 42,
+  "num_examples": 50,
+  "max_seq_length": 512
+}
