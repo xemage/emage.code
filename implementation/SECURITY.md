@@ -50,7 +50,7 @@ Set credentials via:
 
 ## 4. Code-execution surface
 
-emage.code agents have `execute` tool access by default. Combined with broad terminal auto-approval, this is effectively a remote shell guided by an LLM. Treat any untrusted input that flows into agent context (web fetches, MCP responses, third-party PRs) as adversarial. The included `instructions/security-guidelines.md` covers OWASP Top 10 considerations for generated code; review it during onboarding.
+emage.code agents have `execute` tool access by default. Combined with broad terminal auto-approval, this is effectively a remote shell guided by an LLM. Treat any untrusted input that flows into agent context (web fetches, MCP responses, third-party PRs) as adversarial. The included `knowledge/instructions/security-guidelines.md` covers OWASP Top 10 considerations for generated code; review it during onboarding.
 
 ---
 

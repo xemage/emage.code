@@ -1,8 +1,8 @@
 # Plan 008 — Optional TDD Enforcement & Skill Gap Closure
 
-**Author:** orchestrator  
-**Date:** 2026-06-06  
-**Status:** draft — **awaiting user approval**  
+**Author:** orchestrator
+**Date:** 2026-06-06
+**Status:** draft — **awaiting user approval**
 Based on: `docs/artifacts/requirements-optional-tdd-v1.md`, `docs/artifacts/research-agents-skills-ecosystem-v1.md`
 
 ## Objective
@@ -80,6 +80,10 @@ workflow:
 This mirrors [OpenCode skill permissions `ask`](https://opencode.ai/docs/skills/): user approval before loading strict process.
 
 ## Scope (v6.1.0 target)
+
+## Active Task Linkage
+
+- T235 (SIA executor production integration) remains on the active board and is tracked as an implementation follow-up dependency during this planning wave.
 
 ### In scope
 

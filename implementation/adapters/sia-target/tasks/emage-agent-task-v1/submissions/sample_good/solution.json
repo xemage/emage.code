@@ -1,0 +1,50 @@
+{
+  "objective": "Deliver Pattern A integration with deterministic concurrent merge behavior",
+  "architecture_version": "architecture-v2.md",
+  "summary": "Implement CWSO-backed concurrent execution with clear ownership boundaries, validation gates, and rollout capture hooks.",
+  "tasks": [
+    {
+      "id": "T300",
+      "title": "Wire CWSO MCP client adapter",
+      "owner": "backend-developer",
+      "status": "in_progress",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "Adapter can authenticate and call create_shadow_workspace",
+        "Error handling maps transport failures to structured diagnostics"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "T301",
+      "title": "Implement deterministic merge orchestration",
+      "owner": "backend-developer",
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "Concurrent worker edits are merged with stable ordering",
+        "Unresolved conflicts include structured reason and path"
+      ],
+      "dependencies": [
+        "T300"
+      ]
+    },
+    {
+      "id": "T302",
+      "title": "Add integration validation gate",
+      "owner": "qa-engineer",
+      "status": "pending",
+      "priority": "P1",
+      "acceptance_criteria": [
+        "Functional tests assert success and conflict outcomes",
+        "Gate emits PASS or FAIL verdict with evidence"
+      ],
+      "dependencies": [
+        "T301"
+      ]
+    }
+  ],
+  "risks": [
+    "Role-to-tool permission mismatches can block merge operations"
+  ]
+}

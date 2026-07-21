@@ -1,0 +1,43 @@
+{
+  "objective_id": "emage-agent-plan-summary-v1",
+  "description": "Submission must provide a valid structured plan summary with required fields and internally consistent task dependencies.",
+  "required_top_level_fields": {
+    "objective": "string",
+    "architecture_version": "string",
+    "summary": "string",
+    "tasks": "list",
+    "risks": "list"
+  },
+  "task_required_fields": {
+    "id": "string",
+    "title": "string",
+    "owner": "string",
+    "status": "string",
+    "priority": "string",
+    "acceptance_criteria": "list",
+    "dependencies": "list"
+  },
+  "allowed_statuses": [
+    "pending",
+    "in_progress",
+    "blocked",
+    "in_review",
+    "done",
+    "cancelled"
+  ],
+  "allowed_priorities": [
+    "P0",
+    "P1",
+    "P2"
+  ],
+  "minimum_tasks": 3,
+  "minimum_risks": 1,
+  "primary_metric": "schema_validity",
+  "pass_threshold": 0.85,
+  "weights": {
+    "schema_validity": 0.4,
+    "task_quality": 0.3,
+    "dependency_integrity": 0.2,
+    "content_completeness": 0.1
+  }
+}

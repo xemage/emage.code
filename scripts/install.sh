@@ -34,6 +34,19 @@ TARGET=""
 DRY_RUN=0
 UPDATE=0
 
+TARGET_ABS=""
+
+resolve_abs_path() {
+  local path="$1"
+  if command -v python3 >/dev/null 2>&1; then
+    python3 -c 'import os,sys; print(os.path.abspath(sys.argv[1]))' "$path"
+  elif command -v realpath >/dev/null 2>&1; then
+    realpath "$path"
+  else
+    echo "$path"
+  fi
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --target) TARGET="$2"; shift 2 ;;
@@ -49,6 +62,22 @@ if [[ -z "$TARGET" ]]; then
   echo "error: --target is required" >&2
   usage >&2
   exit 1
+fi
+
+TARGET_ABS="$(resolve_abs_path "$TARGET")"
+
+if [[ "$TARGET_ABS" == "$REPO_ROOT" ]]; then
+  if [[ "$UPDATE" -eq 1 ]]; then
+    echo "warning: updating in-place at repository root; templates will be merged without overwriting existing docs files." >&2
+  else
+    echo "error: refusing to install into the emage.code source repository root:" >&2
+    echo "  $REPO_ROOT" >&2
+    echo "reason: install mode can overwrite curated repository files." >&2
+    echo "use one of the following instead:" >&2
+    echo "  - For repo maintenance: git pull && make sync && make verify" >&2
+    echo "  - For installation testing: scripts/install.sh --target /tmp/emage-test --platform all" >&2
+    exit 1
+  fi
 fi
 
 if [[ ! -d "$IMPLEMENTATION" ]]; then
@@ -91,6 +120,24 @@ sync_tree_into() {
   fi
 }
 
+# Merge source tree into dest while preserving existing dest files.
+# Used by --update for docs templates so local/project docs are never overwritten.
+merge_tree_preserve_existing() {
+  local src="$1"
+  local dest="$2"
+  if command -v rsync >/dev/null 2>&1; then
+    run mkdir -p "$dest"
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+      run rsync -a --ignore-existing --dry-run "$src/" "$dest/"
+    else
+      run rsync -a --ignore-existing "$src/" "$dest/"
+    fi
+  else
+    run mkdir -p "$dest"
+    run cp -rn "$src/." "$dest/"
+  fi
+}
+
 install_tree_into() {
   local src="$1"
   local dest="$2"
@@ -108,10 +155,46 @@ require_existing_install() {
   fi
 }
 
+validate_github_agents() {
+  # Guard: --update must not propagate corrupted subagent aliases (v6.0.5 contract).
+  # GitHub agents must omit `name:` (use slug aliases) and orchestrators must use kebab-case.
+  local github_agents="$IMPLEMENTATION/.github/agents"
+  if [[ ! -d "$github_agents" ]]; then
+    return 0
+  fi
+
+  # Check that no agent file has a `name:` key (they should omit it for slug aliasing).
+  if rg -q '^name:' "$github_agents" 2>/dev/null; then
+    echo "error: source .github/agents have corrupted 'name:' keys (violates v6.0.5 contract)." >&2
+    echo "  Run 'make sync' in the emage.code repo to regenerate projections." >&2
+    exit 1
+  fi
+
+  # Check that orchestrator agents: lists use kebab-case slugs, not display names.
+  for orch in orchestrator poc-orchestrator; do
+    local file="$github_agents/${orch}.agent.md"
+    if [[ -f "$file" ]]; then
+      if grep -q '^agents: \[.*[A-Z]' "$file"; then
+        echo "error: $file has display-name aliases (not kebab-case slugs)." >&2
+        echo "  Run 'make sync' in the emage.code repo to regenerate projections." >&2
+        exit 1
+      fi
+    fi
+  done
+}
+
+validate_before_update() {
+  # Pre-flight checks before --update to prevent propagating corrupted state.
+  if [[ "$UPDATE" -eq 1 ]]; then
+    validate_github_agents
+  fi
+}
+
 mkdir -p "$TARGET"
 
 if [[ "$UPDATE" -eq 1 ]]; then
   require_existing_install
+  validate_before_update
 fi
 
 merge_task_docs() {
@@ -135,7 +218,7 @@ install_docs() {
       if [[ "$name" == "tasks" ]]; then
         merge_task_docs
       else
-        copy_tree_into "$sub" "$TARGET/docs/$name"
+        merge_tree_preserve_existing "$sub" "$TARGET/docs/$name"
       fi
     done
   else
@@ -143,8 +226,24 @@ install_docs() {
   fi
 }
 
+  install_agents_doc() {
+    local src="$IMPLEMENTATION/AGENTS.md"
+    local dest="$TARGET/AGENTS.md"
+
+    local args=(
+    "$REPO_ROOT/scripts/render_installed_agents.py"
+    --source "$src"
+    --dest "$dest"
+    --platform "$PLATFORM"
+    )
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+    args+=(--dry-run)
+    fi
+    run python3 "${args[@]}"
+  }
+
 install_common() {
-  run cp "$IMPLEMENTATION/AGENTS.md" "$TARGET/AGENTS.md"
+    install_agents_doc
   install_docs
 }
 

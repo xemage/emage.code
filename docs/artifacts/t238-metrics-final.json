@@ -1,0 +1,18 @@
+{
+  "baseline": {
+    "total": 5,
+    "completed": 5,
+    "timeout": 0,
+    "pass_count": 5,
+    "mean_score": 0.0,
+    "median_score": 0.0
+  },
+  "v1-ft": {
+    "total": 7,
+    "completed": 5,
+    "timeout": 2,
+    "pass_count": 5,
+    "mean_score": 0.0,
+    "median_score": 0.0
+  }
+}

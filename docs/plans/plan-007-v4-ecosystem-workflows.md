@@ -16,7 +16,7 @@ schema-first architecture.
 | Systematic debugging | `knowledge/skills/systematic-debugging/SKILL.md` | P1 |
 | Receiving code review | `knowledge/skills/receiving-code-review/SKILL.md` | P1 |
 | Verification before completion | `knowledge/skills/verification-before-completion/SKILL.md` | P1 |
-| Agent safety guards | `knowledge/instructions/security-guidelines.md` section | P1 |
+| Agent safety guards | `implementation/knowledge/instructions/security-guidelines.md` section | P1 |
 | Session handoff | `/handoff` command + `triggers/examples/handoff-resume.json` | P1 |
 | Background agents | `triggers/examples/background-agent-delegate.json` | P2 |
 | Skill discovery | `/discover-skills` command + registry integration | P2 |
