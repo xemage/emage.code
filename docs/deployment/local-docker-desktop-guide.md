@@ -1,8 +1,8 @@
 # CWSO Local Docker Desktop Deployment Guide
 
-**Version:** 1.0  
-**Last updated:** 2026-06-28  
-**Environment:** Docker Desktop (Mac, Windows, Linux)  
+**Version:** 1.0
+**Last updated:** 2026-06-28
+**Environment:** Docker Desktop (Mac, Windows, Linux)
 **Minimum requirements:** Docker 20.10+, 4GB RAM, 2GB disk space
 
 ---
@@ -62,7 +62,7 @@ export JWT_SECRET=$(head -c 32 /dev/urandom | base64)
 echo "JWT_SECRET=$JWT_SECRET" >> .env
 ```
 
-**⚠️ Important:** 
+**⚠️ Important:**
 - The `.env.jwt.dev` JWT is **for development only**
 - Never use development JWTs in production
 - Store JWT secrets securely (use env vars, vault, or secrets management)

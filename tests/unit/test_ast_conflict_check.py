@@ -97,10 +97,13 @@ class TestAstConflictCheckerSymbolQuerying(unittest.TestCase):
 
     def test_query_signatures_multiple_symbols(self):
         """Query signatures for multiple symbols."""
-        self.mock_client.query_ast.side_effect = [
-            {"signature": "def foo(x: int) -> str:"},
-            {"signature": "def bar(a, b) -> None:"},
-        ]
+        _sigs = {
+            "foo": {"signature": "def foo(x: int) -> str:"},
+            "bar": {"signature": "def bar(a, b) -> None:"},
+        }
+        self.mock_client.query_ast.side_effect = (
+            lambda **kw: _sigs[kw["target_symbol"]]
+        )
 
         result = self.checker._query_signatures(
             "workspace-123", "src/main.py", {"foo", "bar"}
@@ -111,10 +114,12 @@ class TestAstConflictCheckerSymbolQuerying(unittest.TestCase):
 
     def test_query_signatures_partial_failure(self):
         """Handle partial signature query failures."""
-        self.mock_client.query_ast.side_effect = [
-            {"signature": "def foo(x) -> int:"},
-            Exception("Query failed for bar"),
-        ]
+        def _side_effect(**kw):
+            if kw["target_symbol"] == "foo":
+                return {"signature": "def foo(x) -> int:"}
+            raise Exception("Query failed for bar")
+
+        self.mock_client.query_ast.side_effect = _side_effect
 
         result = self.checker._query_signatures(
             "workspace-123", "src/main.py", {"foo", "bar"}
