@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-05-23
 # Task T024 — Release documentation gate and v1.0.1 docs refresh
 
 ## Objective

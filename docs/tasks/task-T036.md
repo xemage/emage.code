@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-05-23
 # Task T036 — Run docs and v3 validation
 
 ## Objective

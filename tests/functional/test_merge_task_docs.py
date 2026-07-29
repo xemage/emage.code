@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import importlib.util
+import io
 import tempfile
 import unittest
+from contextlib import redirect_stderr
 from pathlib import Path
 
 from tests._helpers.repo import repo_root
@@ -86,6 +88,35 @@ Old intro text.
             self.assertTrue((dest_dir / "active-tasks.md").is_file())
             self.assertEqual((dest_dir / "task-T099.md").read_text(encoding="utf-8"), "user brief")
             self.assertEqual(len(actions), 2)
+
+    def test_four_digit_ids_survive_merge(self):
+        template = (Path(__file__).resolve().parents[2] / "implementation" / "docs" / "tasks" / "active-tasks.md").read_text(
+            encoding="utf-8"
+        )
+        existing = """# Active Tasks
+
+| ID | Title | Owner | Status | Priority | Depends on | Last update |
+|----|-------|-------|--------|----------|-----------|-------------|
+| T1001 | four digit id | owner | pending | P1 | — | 2026-07-27 |
+"""
+        merged = merge_ledger(template, existing)
+        self.assertIn("T1001", merged)
+
+    def test_bug_prefixed_row_warns(self):
+        template = (Path(__file__).resolve().parents[2] / "implementation" / "docs" / "tasks" / "active-tasks.md").read_text(
+            encoding="utf-8"
+        )
+        existing = """# Active Tasks
+
+| ID | Title | Owner | Status | Priority | Depends on | Last update |
+|----|-------|-------|--------|----------|-----------|-------------|
+| BUG-7 | bad row | owner | pending | P1 | — | 2026-07-27 |
+"""
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            merged = merge_ledger(template, existing)
+        self.assertNotIn("BUG-7", merged)
+        self.assertIn("warning: dropping non-conforming", stderr.getvalue())
 
 
 if __name__ == "__main__":

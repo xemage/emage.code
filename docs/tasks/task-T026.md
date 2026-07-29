@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-05-23
 # Task T026 — Update core README and contributor docs
 
 ## Objective

@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-05-22
 # Task T013 — Security handoff hardening
 
 ## Objective

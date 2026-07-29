@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-06-23
 # Task T222 - Wrap an emage.code agent as SIA target + author `evaluate.py`
 
 ## Objective

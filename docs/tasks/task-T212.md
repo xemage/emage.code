@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-06-20
 # Task T212 - Concurrent-merge orchestration (N workers → shadow → merge)
 
 ## Objective

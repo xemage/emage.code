@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-05-23
 # Task T031 — Audit v3 documentation gaps
 
 ## Objective

@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-05-23
 # Task T032 — Update root docs for v3 usage
 
 ## Objective

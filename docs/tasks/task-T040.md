@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-05-24
 # Task T040 - Implement v3 projection parity
 
 ## Objective

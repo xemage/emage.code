@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-06-22T14:13:18+02:00",
+  "generatedAt": "2026-07-29T11:42:55+02:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "cursor",
@@ -471,7 +471,7 @@
       "category": "agent",
       "name": "scrum-master",
       "path": "agents/scrum-master.md",
-      "checksum": "5c5db544438bcc85f3cb873317cb4225131ed3dcb886bcc81e219f18e8173f5f",
+      "checksum": "60b9820ab7028f3865b9ceb46335725111a84bda812dd9b79164304d607cbd6f",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -687,7 +687,7 @@
       "category": "command",
       "name": "bug-report",
       "path": "commands/bug-report.md",
-      "checksum": "62faa74d8f00eb4b8f40277b05282a828ae36b65ee47a7d49d3af923811044f7",
+      "checksum": "9cf16777182f50effd84be3136d0833f3ff10342bd462fffb07f133b124b24c8",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -879,7 +879,7 @@
       "category": "command",
       "name": "new-project",
       "path": "commands/new-project.md",
-      "checksum": "0dae6ed5dff80744f8c165dc12da13c6835843dc35f64da6c5fe232b533cd946",
+      "checksum": "8cac0306f692ff03742f8e1ff003023655eec1890a79d28166514ae87668030b",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -1023,7 +1023,7 @@
       "category": "command",
       "name": "sprint-status",
       "path": "commands/sprint-status.md",
-      "checksum": "8c28ee5386a138520130f4b50114a0b0616f9d460af583fe0343c2400e17387d",
+      "checksum": "4f810373f964fd632357de54b38712f488cfa92a0a55b4202fd35c9674dbd11e",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -1047,7 +1047,31 @@
       "category": "command",
       "name": "team-status",
       "path": "commands/team-status.md",
-      "checksum": "7f37f88b73662638da21950b72b62f00f55f4583b801642b17cf254e19fba744",
+      "checksum": "b4f768e201c212ee7602c4c5f60f5d1a2897015de274f30a16275db37afda9d2",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "cursor",
+          "gemini",
+          "github",
+          "opencode",
+          "pi"
+        ],
+        "projectionStatus": {
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass",
+          "pi": "pass"
+        }
+      }
+    },
+    {
+      "id": "validate-tasks",
+      "category": "command",
+      "name": "validate-tasks",
+      "path": "commands/validate-tasks.md",
+      "checksum": "d6c2dfc8d2fc8b87db140154a952935a81299924313ac126a195c3395c538ef6",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -1119,7 +1143,7 @@
       "category": "instruction",
       "name": "git-workflow",
       "path": "instructions/git-workflow.md",
-      "checksum": "26bbf08253c8b81ca093a171a7482e7e2726a6ca739f9b031284dd369e91ef71",
+      "checksum": "514ddb48b4c56047d383b2cc0d871991731beb728e07e1ec39ad00a03db195e0",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -1215,7 +1239,7 @@
       "category": "skill",
       "name": "blocker-escalation",
       "path": "skills/blocker-escalation/SKILL.md",
-      "checksum": "f2976f3d99c4b0fab6183e662bc951667b5253106b69e3e6a24295481111eb19",
+      "checksum": "b77854ad3506dba4b891e6bdd19933fd760b40b046c9997f619f2005ca494ed0",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -1239,7 +1263,7 @@
       "category": "skill",
       "name": "checkpoint-protocol",
       "path": "skills/checkpoint-protocol/SKILL.md",
-      "checksum": "e544fd4ed4365e177e11a1d6b0d305bdb19df39c75cef79869a4c08c0e75e4ef",
+      "checksum": "4c9996882efe7d1044cbc3b33bd4cf11095ae8ef2c5b11c1a86291ad62217ad7",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -1359,7 +1383,7 @@
       "category": "skill",
       "name": "dependency-graphing",
       "path": "skills/dependency-graphing/SKILL.md",
-      "checksum": "61550e405827af7f7e72090b9118f1ff86f2d5690c878a23d03a85759b1f1627",
+      "checksum": "18340ad209d5f98e21e1ab953f858a41b4a9fa8b3dca2ebe7b1c8e79138f067e",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -1383,7 +1407,7 @@
       "category": "skill",
       "name": "gitlab-management",
       "path": "skills/gitlab-management/SKILL.md",
-      "checksum": "e320f2b7ad3cd898b6fb6881278edb24deb79da06eeb8096246220b286f13240",
+      "checksum": "403b31bb8c71f5ac6fc469618742b2c8f7cbcae1c14883d5bd9f1194be855ef5",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -1407,7 +1431,7 @@
       "category": "skill",
       "name": "memory-management",
       "path": "skills/memory-management/SKILL.md",
-      "checksum": "51213a3710e6242ee5dc9524dc4acc3d2a6323f23c2b4f579810fecb00dd9f52",
+      "checksum": "fcfd04deb581ccdfaaf001e67ed91eadd8d85080095d4fa6df7c76ba1d56ca95",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -1431,7 +1455,7 @@
       "category": "skill",
       "name": "plan-approve-execute",
       "path": "skills/plan-approve-execute/SKILL.md",
-      "checksum": "2e4e7b606e52393766499b1deb9e04400cc64b7f9c1ccdf12003c09b5695cbf7",
+      "checksum": "821f320cafb973b430a9da27af59bf31901fc790a80d9d7baf14c479eeab5ca3",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -1479,7 +1503,7 @@
       "category": "skill",
       "name": "project-planning",
       "path": "skills/project-planning/SKILL.md",
-      "checksum": "7b3ff5ef961010e6089093d70191fe0fe3190783c446cc581724d9553831a2e2",
+      "checksum": "b615f8889d6297f28591a2d35edba11a2ad18c2332d4b751a987c109b5e5cfac",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -1551,7 +1575,7 @@
       "category": "skill",
       "name": "release-workflow",
       "path": "skills/release-workflow/SKILL.md",
-      "checksum": "74d6d0bc563b7dfc81c8dcdb1257662f4a36d97e3e6effafc4c5c1196a6dccb6",
+      "checksum": "5155f9575654ac71ae52ab299e4411ff705be9b0c1ed0d93dcb4edc47bd7c4db",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -1623,7 +1647,7 @@
       "category": "skill",
       "name": "task-management",
       "path": "skills/task-management/SKILL.md",
-      "checksum": "060f619af509cf237ef7f2fcb02033d975782ad55ca32409a8a70fa437159b63",
+      "checksum": "69c04ef4ed5ec0f9def5d60c1d3c7c9fc1e6315159f5a2d060b8b3c510ce7097",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -1647,7 +1671,7 @@
       "category": "skill",
       "name": "technical-debt-tracking",
       "path": "skills/technical-debt-tracking/SKILL.md",
-      "checksum": "22c60aa3a77b80265158fd207defee5ba892c4323a204491b6c0e36317846099",
+      "checksum": "0010fe3550f98d6180c7e9d84400705a3054215100d34aca32002857a714f138",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -1719,7 +1743,7 @@
       "category": "skill",
       "name": "validation-gates",
       "path": "skills/validation-gates/SKILL.md",
-      "checksum": "a4a7afe0e6652d6de9bbf80685228e5412610f973d42c2755cd6dc70dc7ff68a",
+      "checksum": "4e2051068f806ac855e8d4a7d6efb1b06753e5875376f894057198ed8c9a64c0",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -1767,7 +1791,7 @@
       "category": "skill",
       "name": "worktree-isolation",
       "path": "skills/worktree-isolation/SKILL.md",
-      "checksum": "c9e11f3af40eeb81c7de618e1e07f8fce7ec097b5175fd8a9a6a56534feee3f3",
+      "checksum": "b22b90d7c4b80f200cd486cc346603c3411740fc489aa8f616d9989d8d70837a",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [

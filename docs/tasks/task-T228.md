@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-06-23
 # Task T228 - Phase 2 live integration testing: SIA harness → reward → trajectory storage
 
 ## Objective

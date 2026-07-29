@@ -186,6 +186,11 @@ validate_github_agents() {
 validate_before_update() {
   # Pre-flight checks before --update to prevent propagating corrupted state.
   if [[ "$UPDATE" -eq 1 ]]; then
+    for d in .github .cursor .gemini .opencode .pi; do
+      if [[ -d "$TARGET/$d" ]]; then
+        echo "warning: --update replaces $TARGET/$d entirely (rsync --delete). Local edits there will be lost." >&2
+      fi
+    done
     validate_github_agents
   fi
 }

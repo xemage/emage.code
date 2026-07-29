@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-05-24
 # Task T041 - Generate and verify v3 outputs
 
 ## Objective

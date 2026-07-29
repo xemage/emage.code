@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-05-23
 # Task T033 — Create and refresh v3 wiki pages
 
 ## Objective

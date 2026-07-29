@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-05-23
 # Task T020 — SDK adapter experiments
 
 ## Objective

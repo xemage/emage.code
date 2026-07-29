@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-05-23
 # Task T028 — Harden release documentation verification gate
 
 ## Objective

@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-06-23
 # Task T221 - Patch SIA openhands backend to honor `base_url`
 
 ## Objective

@@ -1,3 +1,7 @@
+**ID:** T037
+**Owner:** release-manager
+**Status:** done
+**Completed:** 2026-05-23
 # Task T037 — Commit push and merge updates
 
 ## Objective
