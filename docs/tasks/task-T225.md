@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-06-23
 # Task T225 - Reward shaping: merge ±1 + `results.json` eval metric
 
 ## Objective

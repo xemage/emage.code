@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-06-20
 # Task T213 - `query_ast` conflict pre-check + heuristic selection
 
 ## Objective

@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-05-24
 # Task T044 - Execute v3 QA and security gate
 
 ## Objective

@@ -159,8 +159,6 @@ class TestTaskLifecycle(unittest.TestCase):
             seen.append(tid)
         # uniqueness across both files
         dupes = {x for x in seen if seen.count(x) > 1}
-        # T001 placeholder may legitimately appear in both as a template — allow it
-        dupes.discard("T001")
         self.assertFalse(dupes, msg=f"duplicate task ids: {sorted(dupes)}")
 
 
@@ -242,6 +240,31 @@ class TestConventionalCommits(unittest.TestCase):
                 if not self.CC_RE.match(s):
                     print(f"  - {s}")
         # informational only — do not fail
+
+
+class TestShippedTaskValidator(unittest.TestCase):
+    """Run the shipped docs/tasks/validate-tasks.py validator as a hard CI gate."""
+
+    def test_shipped_validator_passes(self):
+        root = repo_root()
+        validator = root / "implementation" / "docs" / "tasks" / "validate-tasks.py"
+        self.assertTrue(validator.is_file(), f"shipped validator not found at {validator}")
+
+        res = subprocess.run(
+            ["python3", str(validator)],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(
+            res.returncode,
+            0,
+            msg=(
+                f"shipped validate-tasks.py failed (exit {res.returncode}).\n"
+                f"STDOUT:\n{res.stdout}\n"
+                f"STDERR:\n{res.stderr}"
+            ),
+        )
 
 
 if __name__ == "__main__":

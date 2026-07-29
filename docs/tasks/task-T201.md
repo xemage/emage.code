@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-06-20
 # Task T201 - Live MCP contract snapshot + auth helper
 
 ## Objective

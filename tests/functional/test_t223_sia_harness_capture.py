@@ -127,7 +127,13 @@ class T223TestSetup(unittest.TestCase):
             )
 
     def test_docker_available(self) -> None:
-        """Verify Docker CLI is available (needed for image checks)."""
+        """Verify Docker CLI is available (needed for image checks).
+
+        Docker is mandatory in CI (dind runner). Locally it is optional: a missing
+        or non-functional CLI skips instead of failing, matching how the suite
+        treats other external tools.
+        """
+        docker_required = bool(os.environ.get("CI"))
         try:
             result = subprocess.run(
                 ["docker", "--version"],
@@ -135,16 +141,22 @@ class T223TestSetup(unittest.TestCase):
                 text=True,
                 timeout=5,
             )
-            self.assertEqual(
-                result.returncode,
-                0,
-                f"Docker not available: {result.stderr}",
-            )
         except FileNotFoundError:
-            self.fail(
-                "Docker CLI not found in PATH. "
-                "For CI: use runner tag 'dind' (Docker-in-Docker) to enable docker command."
-            )
+            if docker_required:
+                self.fail(
+                    "Docker CLI not found in PATH. "
+                    "For CI: use runner tag 'dind' (Docker-in-Docker) to enable docker command."
+                )
+            self.skipTest("docker not available on PATH")
+            return
+
+        if result.returncode != 0:
+            # A non-functional shim (e.g. Docker Desktop without WSL integration)
+            # reports the reason on stdout, so include both streams.
+            detail = (result.stderr.strip() or result.stdout.strip() or "unknown error")
+            if docker_required:
+                self.fail(f"Docker not available: {detail}")
+            self.skipTest(f"docker CLI present but not usable: {detail}")
 
 
 class T223ExecutionWithMockCwso(unittest.TestCase):

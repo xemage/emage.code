@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-06-23
 # Task T226 - Deploy CWSO + Polar infrastructure for Phase 2 live integration testing
 
 ## Objective

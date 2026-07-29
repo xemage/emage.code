@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-05-22
 # Task T012 — Add validation super-gate
 
 ## Objective
