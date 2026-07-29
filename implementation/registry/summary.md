@@ -5,7 +5,7 @@ Generated from: implementation/knowledge
 ## Counts
 
 - agents: 27
-- commands: 18
+- commands: 19
 - instructions: 4
 - skills: 25
 
@@ -57,6 +57,7 @@ Generated from: implementation/knowledge
 | skillify | command | beta | commands/skillify.md |
 | sprint-status | command | beta | commands/sprint-status.md |
 | team-status | command | beta | commands/team-status.md |
+| validate-tasks | command | beta | commands/validate-tasks.md |
 | validate-workflow | command | beta | commands/validate-workflow.md |
 | coding-standards | instruction | beta | instructions/coding-standards.md |
 | git-workflow | instruction | beta | instructions/git-workflow.md |

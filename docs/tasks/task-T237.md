@@ -1,6 +1,6 @@
 # Task T237 - Replace Synthetic Discriminator with Real Quality Discrimination
 
-**Status:** in_progress
+**Status:** done
 **Owner:** backend-developer
 **Priority:** P0
 **Depends on:** T233, T236 ✅

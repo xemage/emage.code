@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-06-23
 # Task T230 - Trainer bridge: Parquet trajectories → GRPO/SFT dataset
 
 ## Objective

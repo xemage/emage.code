@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-07-21
 # Task T234 - Cost/latency telemetry per generation
 
 ## Objective

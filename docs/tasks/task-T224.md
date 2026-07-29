@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-06-23
 # Task T224 - Attach reward via `rollout_session_id` through merge
 
 ## Objective

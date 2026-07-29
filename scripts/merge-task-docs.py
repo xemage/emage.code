@@ -16,7 +16,7 @@ from pathlib import Path
 
 LEDGER_FILES = frozenset({"active-tasks.md", "completed-tasks.md"})
 SEPARATOR_RE = re.compile(r"^\|[\s\-:|]+\|$")
-TASK_ROW_RE = re.compile(r"^\| T\d{3} \|")
+TASK_ROW_RE = re.compile(r"^\|\s*T\d{3,}\s*\|")
 EXAMPLE_ROW_RE = re.compile(r"_Example:")
 
 
@@ -25,6 +25,21 @@ def _extract_task_rows(text: str) -> list[str]:
     for line in text.splitlines():
         if TASK_ROW_RE.match(line) and not EXAMPLE_ROW_RE.search(line):
             rows.append(line)
+            continue
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            continue
+        if SEPARATOR_RE.match(stripped):
+            continue
+        if EXAMPLE_ROW_RE.search(line):
+            continue
+        first_cell = stripped.split("|")[1].strip() if stripped.count("|") > 1 else ""
+        if first_cell == "ID":
+            continue
+        print(
+            f"warning: dropping non-conforming task row (ID must match T<NNN>): {line}",
+            file=sys.stderr,
+        )
     return rows
 
 

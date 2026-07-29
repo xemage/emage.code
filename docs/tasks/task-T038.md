@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-05-24
 # Task T038 - Define v3 drop-in contract
 
 ## Objective

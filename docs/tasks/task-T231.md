@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-06-23
 # Task T231 - Fine-tune `<some-model>` (LoRA/GRPO) + redeploy behind HAL
 
 ## Objective

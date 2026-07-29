@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-05-24
 # Task T043 - Update v3 docs and runbooks
 
 ## Objective

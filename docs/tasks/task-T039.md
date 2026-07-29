@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-05-24
 # Task T039 - Bootstrap v3 canonical tree
 
 ## Objective
