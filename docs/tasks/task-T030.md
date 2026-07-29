@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-05-23
 # Task T030 — Push changes and verify CI to green
 
 ## Objective

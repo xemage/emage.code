@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-06-23
 # Task T223 - Run SIA generation via harness launcher; confirm Parquet capture
 
 ## Objective

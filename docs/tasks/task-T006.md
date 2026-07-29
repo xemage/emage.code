@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-05-11
 # Task T006 — Runner and CI Integration
 
 ## Objective

@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-06-06
 # Task T045 - Prepare v3 release candidate merge
 
 ## Objective

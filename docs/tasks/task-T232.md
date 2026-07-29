@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-06-23
 # Task T232 - sia-harness release gate + Ed25519 witness signing
 
 ## Objective

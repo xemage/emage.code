@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-06-20
 # Task T203 - CWSO dev profile with rollout enabled + `<some-model>` via vLLM/HAL
 
 ## Objective

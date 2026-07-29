@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-05-23
 # Task T029 — Run documentation validation checks
 
 ## Objective

@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-05-11
 # Task T005 — Implement Scalability and Throughput Benchmarks
 
 ## Objective

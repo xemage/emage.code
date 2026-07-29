@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-05-24
 # Task T042 - Add v3 CI gates and release wiring
 
 ## Objective

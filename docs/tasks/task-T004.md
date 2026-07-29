@@ -1,3 +1,5 @@
+**Status:** done
+**Completed:** 2026-05-11
 # Task T004 — Implement Orchestration Trajectory Benchmarks
 
 ## Objective
