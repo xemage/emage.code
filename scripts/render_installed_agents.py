@@ -39,6 +39,12 @@ PLATFORM_MAP = {
         "security": ".pi/instructions/security-guidelines.md",
         "mcp": ".pi/mcp.json",
     },
+    "claude-code": {
+        "skills": ".claude/skills/",
+        "standards": ".claude/rules/coding-standards.md",
+        "security": ".claude/rules/security-guidelines.md",
+        "mcp": ".mcp.json",
+    },
 }
 
 
@@ -54,7 +60,7 @@ def render(source_text: str, platform: str) -> str:
         skills_ref = (
             "MUST check applicable skills in the active platform projection "
             "(`.github/skills/`, `.cursor/skills/`, `.gemini/skills/`, "
-            "`.opencode/skills/`, `.pi/skills/`) "
+            "`.opencode/skills/`, `.pi/skills/`, `.claude/skills/`) "
             "(or invoke `/discover-skills`)."
         )
         code_ref = (
@@ -63,7 +69,8 @@ def render(source_text: str, platform: str) -> str:
             "`.cursor/rules/coding-standards.mdc`, "
             "`.gemini/instructions/coding-standards.md`, "
             "`.opencode/instructions/coding-standards.md`, "
-            "`.pi/instructions/coding-standards.md`."
+            "`.pi/instructions/coding-standards.md`, "
+            "`.claude/rules/coding-standards.md`."
         )
         sec_ref = (
             "- See platform security instruction projections: "
@@ -71,16 +78,17 @@ def render(source_text: str, platform: str) -> str:
             "`.cursor/rules/security-guidelines.mdc`, "
             "`.gemini/instructions/security-guidelines.md`, "
             "`.opencode/instructions/security-guidelines.md`, "
-            "`.pi/instructions/security-guidelines.md`, and `implementation/SECURITY.md`."
+            "`.pi/instructions/security-guidelines.md`, "
+            "`.claude/rules/security-guidelines.md`, and `implementation/SECURITY.md`."
         )
         readme_ref = (
             "- Use the installed platform folders (`.github/`, `.cursor/`, `.gemini/`, "
-            "`.opencode/`, `.pi/`) as runtime references in this target project."
+            "`.opencode/`, `.pi/`, `.claude/`) as runtime references in this target project."
         )
         mcp_ref = (
             "Declared in platform MCP configs "
             "(`.vscode/mcp.json`, `.cursor/mcp.json`, `.gemini/settings.json`, "
-            "`.opencode/opencode.json`, `.pi/mcp.json`). Each server is tagged:"
+            "`.opencode/opencode.json`, `.pi/mcp.json`, `.mcp.json`). Each server is tagged:"
         )
     else:
         if platform not in PLATFORM_MAP:
@@ -138,7 +146,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", required=True)
     parser.add_argument("--dest", required=True)
-    parser.add_argument("--platform", required=True, choices=["github", "cursor", "gemini", "opencode", "pi", "all"])
+    parser.add_argument("--platform", required=True, choices=["github", "cursor", "gemini", "opencode", "pi", "claude-code", "all"])
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 

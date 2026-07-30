@@ -19,6 +19,7 @@ scripts/install.sh --target /path/to/your-project --platform cursor
 | Gemini CLI | `gemini` |
 | Opencode | `opencode` |
 | Pi | `pi` |
+| Claude Code | `claude-code` |
 | All platforms | `all` |
 
 Makefile shortcut: `make install TARGET=/path/to/your-project PLATFORM=cursor`
@@ -40,6 +41,7 @@ On update, listed tasks in `docs/tasks/active-tasks.md` and `docs/tasks/complete
 | Opencode | `.opencode/` |
 | Cursor | `.cursor/` |
 | Pi | `.pi/` |
+| Claude Code | `.claude/` + `.mcp.json` + `CLAUDE.md` |
 
 Plus always: `AGENTS.md` and `docs/`.
 
@@ -81,6 +83,6 @@ See [Implementation Guide](implementation-guide) for cookbooks, triggers, packag
 
 ## Troubleshooting
 
-- **Agents not loading?** Confirm format: `.mdc` (Cursor), `.agent.md` (Copilot), `.md` (Gemini/Opencode/Pi).
+- **Agents not loading?** Confirm format: `.mdc` (Cursor), `.agent.md` (Copilot), `.md` (Gemini/Opencode/Pi/Claude Code).
 - **MCP failing?** Check env vars and network access.
 - **Drift after editing knowledge?** Run `make sync` from repo root.

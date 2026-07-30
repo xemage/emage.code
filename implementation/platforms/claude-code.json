@@ -1,0 +1,33 @@
+{
+  "$schema": "./_manifest.schema.json",
+  "platform": "claude-code",
+  "displayName": "Claude Code",
+  "outputDir": ".claude",
+  "fileMap": {
+    "agents":       { "dir": "agents",       "ext": ".md" },
+    "commands":     { "dir": "commands",     "ext": ".md" },
+    "instructions": { "dir": "rules",        "ext": ".md" },
+    "skills":       { "dir": "skills",       "preserveTree": true }
+  },
+  "frontmatter": {
+    "agents": {
+      "tools": "string",
+      "keepKeys": ["name", "description", "tools"]
+    },
+    "commands": {
+      "keepKeys": ["description", "argument-hint"]
+    },
+    "instructions": {
+      "renameKeys": { "applyTo": "paths" },
+      "keepKeys": ["description", "paths"]
+    },
+    "skills": {
+      "keepKeys": ["name", "description"]
+    }
+  },
+  "mcp": {
+    "tags": ["core", "extended"],
+    "outputFile": "../.mcp.json",
+    "format": "claude-code"
+  }
+}

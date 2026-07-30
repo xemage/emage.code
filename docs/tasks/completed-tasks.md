@@ -128,3 +128,17 @@ Append-only log. Entries move here after the orchestrator marks a task `done`.
 | T280 | Add the registry check to the executable FINAL GATE brief | technical-writer | 2026-07-29 | docs/tasks/task-T280.md |
 | T281 | GATE 4: registry check is wired into every gate | qa-engineer | 2026-07-29 | docs/tasks/task-T281.md |
 | T275 | FINAL GATE: four checks | qa-engineer | 2026-07-29 | docs/tasks/task-T275.md |
+| T285 | sync.mjs: add tools=string frontmatter mode | backend-developer | 2026-07-30 | implementation/scripts/sync.mjs; docs/tasks/task-T285.md |
+| T286 | sync.mjs: add .mcp.json MCP output format | backend-developer | 2026-07-30 | implementation/scripts/sync.mjs; docs/tasks/task-T286.md |
+| T287 | Create platforms/claude-code.json manifest | backend-developer | 2026-07-30 | implementation/platforms/claude-code.json; docs/tasks/task-T287.md |
+| T288 | Run make sync; verify implementation/.claude generated | backend-developer | 2026-07-30 | implementation/.claude/**; implementation/.mcp.json; docs/tasks/task-T288.md |
+| T289 | Add CLAUDE.md AGENTS.md import bridge | technical-writer | 2026-07-30 | implementation/CLAUDE.md; docs/tasks/task-T289.md |
+| T290 | install.sh: add claude-code platform | backend-developer | 2026-07-30 | scripts/install.sh; Makefile; docs/tasks/task-T290.md |
+| T291 | render_installed_agents.py: add claude-code mapping | backend-developer | 2026-07-30 | scripts/render_installed_agents.py; docs/tasks/task-T291.md |
+| T292 | Update README.md + wiki quick-start platform tables | technical-writer | 2026-07-30 | README.md; docs/wiki/quick-start.md; docs/tasks/task-T292.md |
+| T293 | Update CONTRIBUTING.md + AGENTS.md platform refs | technical-writer | 2026-07-30 | CONTRIBUTING.md; AGENTS.md; docs/tasks/task-T293.md |
+| T294 | Extend test coverage for claude-code platform | qa-engineer | 2026-07-30 | tests/functional/test_manifests.py; tests/functional/test_platform_projections.py; tests/functional/test_install_agents_mapping.py; tests/functional/test_install_script.py; docs/tasks/task-T294.md |
+| T298 | Regenerate implementation/registry after claude-code manifest addition | backend-developer | 2026-07-30 | implementation/registry/index.json; docs/tasks/task-T298.md |
+| T299 | Fix task-brief Status headers for T285-T294/T298 (C8 ledger check) | qa-engineer | 2026-07-30 | docs/tasks/task-T285.md; task-T286.md; task-T287.md; task-T288.md; task-T289.md; task-T290.md; task-T291.md; task-T292.md; task-T293.md; task-T294.md; task-T298.md; docs/tasks/task-T299.md |
+| T295 | GATE: full validation suite green (sync, verify, super-gate, full tests, install syntax, markdown links) | qa-engineer | 2026-07-30 | docs/tasks/task-T295.md (no code changes; verification only) |
+| T296 | Release docs: v6.4.0.md + version markers | release-manager | 2026-07-30 | docs/releases/v6.4.0.md; README.md; docs/wiki/README.md; docs/wiki/home.md; docs/tasks/task-T296.md |
