@@ -38,6 +38,15 @@ class TestInstallAgentsMapping(unittest.TestCase):
         self.assertIn("`.cursor/rules/security-guidelines.mdc`", content)
         self.assertIn("`.cursor/mcp.json`", content)
 
+    def test_claude_code_install_rewrites_agents_paths(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="emage-install-claude-") as tmp:
+            content = self._run_install(Path(tmp), "claude-code")
+
+        self.assertIn("`.claude/skills/`", content)
+        self.assertIn("`.claude/rules/coding-standards.md`", content)
+        self.assertIn("`.claude/rules/security-guidelines.md`", content)
+        self.assertIn("`.mcp.json`", content)
+
     def test_all_platform_install_includes_projection_map(self) -> None:
         with tempfile.TemporaryDirectory(prefix="emage-install-all-") as tmp:
             content = self._run_install(Path(tmp), "all")
@@ -47,6 +56,7 @@ class TestInstallAgentsMapping(unittest.TestCase):
         self.assertIn("`.gemini/skills/`", content)
         self.assertIn("`.opencode/skills/`", content)
         self.assertIn("`.pi/skills/`", content)
+        self.assertIn("`.claude/skills/`", content)
         self.assertIn("`.vscode/mcp.json`", content)
         self.assertIn("`.gemini/settings.json`", content)
         self.assertIn("`.opencode/opencode.json`", content)

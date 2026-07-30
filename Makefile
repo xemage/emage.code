@@ -10,7 +10,7 @@ verify:         ## Verify generated mirrors match knowledge/
 	node implementation/scripts/sync.mjs --root implementation --check
 
 install:        ## Install into a project (see: make install TARGET=... PLATFORM=cursor)
-	@test -n "$(TARGET)" || (echo "Usage: make install TARGET=<dir> [PLATFORM=all|cursor|github|gemini|opencode|pi]" && exit 1)
+	@test -n "$(TARGET)" || (echo "Usage: make install TARGET=<dir> [PLATFORM=all|cursor|github|gemini|opencode|pi|claude-code]" && exit 1)
 	bash scripts/install.sh --target "$(TARGET)" --platform "$(or $(PLATFORM),all)"
 
 test:           ## Run all functional + performance tests

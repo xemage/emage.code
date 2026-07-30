@@ -13,7 +13,7 @@ By participating you agree to follow the collaboration and review expectations d
 |------------------|--------|--------|
 | Update an agent, skill, command, instruction, or MCP server | `implementation/knowledge/**` | re-run sync (see "Working with implementation") |
 | Update workspace conventions | `AGENTS.md` (root) and `implementation/AGENTS.md` | — |
-| **Never** edit by hand | `.github/`, `.gemini/`, `.opencode/`, `.cursor/`, `.pi/` (generated under `implementation/`) | these are generated |
+| **Never** edit by hand | `.github/`, `.gemini/`, `.opencode/`, `.cursor/`, `.pi/`, `.claude/` (generated under `implementation/`) | these are generated |
 
 ## Workflow
 
@@ -61,8 +61,8 @@ Refs #<issue>
 
 ## Sync engine — required before every commit
 
-The platform folders (`.github/`, `.gemini/`, `.opencode/`, `.cursor/`, `.pi/`)
-are **generated**. CI fails if they drift from `knowledge/`.
+The platform folders (`.github/`, `.gemini/`, `.opencode/`, `.cursor/`, `.pi/`,
+`.claude/`) are **generated**. CI fails if they drift from `knowledge/`.
 
 From the repository root:
 
@@ -115,7 +115,12 @@ on merge.
 4. Add a row to the README "Supported platforms" table
 5. Document any platform-specific quirks in a new ADR under `docs/decisions/`
 
-No script changes are needed — the sync engine is fully manifest-driven.
+Most platforms are fully manifest-driven and need no script changes. If the
+platform's subagent `tools` frontmatter or MCP config shape doesn't match an
+existing mode in `implementation/scripts/sync.mjs` (see the `tools` and MCP
+`format` branches — e.g. `claude-code` added a `"string"` tools mode and a
+`"claude-code"` MCP format), add a new branch there first, as its own commit,
+before writing the manifest.
 
 ## Releasing
 

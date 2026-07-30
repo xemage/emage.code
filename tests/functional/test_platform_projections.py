@@ -19,7 +19,7 @@ from tests._helpers.repo import (
     list_skills,
 )
 
-_TARGET_PLATFORMS = ("github", "gemini", "opencode")
+_TARGET_PLATFORMS = ("github", "gemini", "opencode", "claude-code")
 
 
 def _load_manifest(platform: str) -> dict:
@@ -171,6 +171,23 @@ class TestPlatformProjections(unittest.TestCase):
                 fm.get("user-invocable") is True,
                 f"{orchestrator}.md: user-invocable must be true in Opencode projection",
             )
+
+    def test_claude_code_agents_use_tools_string(self):
+        claude_agents = _generated_root("claude-code") / "agents"
+        source_agents_dir = knowledge_root() / "agents"
+
+        for path in sorted(claude_agents.glob("*.md")):
+            source_fm, _ = parse_file(source_agents_dir / f"{path.stem}.md")
+            projected_fm, _ = parse_file(path)
+            source_tools = source_fm.get("tools", [])
+            projected_tools = projected_fm.get("tools")
+            with self.subTest(agent=path.stem):
+                self.assertIsInstance(projected_tools, str, f"{path.name}: tools should be a string")
+                self.assertEqual(
+                    [t.strip() for t in projected_tools.split(",")],
+                    source_tools,
+                    f"{path.name}: tools string must list source tools in order",
+                )
 
     def test_github_agent_aliases_match_filename_slugs(self):
         """GitHub Copilot resolves subagents by filename slug when `name` is omitted.

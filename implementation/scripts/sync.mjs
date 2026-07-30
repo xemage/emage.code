@@ -142,6 +142,10 @@ function emitFrontmatter(obj, opts = { toolsFormat: 'array' }) {
       for (const t of val) lines.push(`  ${t}: true`);
       continue;
     }
+    if (key === 'tools' && opts.toolsFormat === 'string' && Array.isArray(val)) {
+      lines.push(`tools: ${val.join(', ')}`);
+      continue;
+    }
     if (Array.isArray(val)) {
       lines.push(`${key}: [${val.join(', ')}]`);
       continue;
@@ -250,6 +254,8 @@ function applyAgentFrontmatter(data, name, cfg) {
     delete out.tools;
   } else if (cfg.tools === 'object') {
     if (Array.isArray(tools)) out.tools = tools;
+  } else if (cfg.tools === 'string') {
+    if (Array.isArray(tools)) out.tools = tools;
   } else {
     if (Array.isArray(tools)) out.tools = tools;
   }
@@ -336,6 +342,18 @@ function emitMcp(servers, tags, format) {
     return { __mcpObject: mcp };
   }
 
+  if (format === 'claude-code') {
+    const mcpServers = {};
+    for (const [name, s] of Object.entries(filtered)) {
+      if (s.transport === 'remote') mcpServers[name] = { type: 'http', url: s.url };
+      else {
+        mcpServers[name] = { command: s.command, args: s.args || [] };
+        if (s.env) mcpServers[name].env = mapEnv(s.env, '${env:VAR}');
+      }
+    }
+    return JSON.stringify({ mcpServers }, null, 2) + '\n';
+  }
+
   throw new Error(`Unknown MCP format: ${format}`);
 }
 
@@ -400,7 +418,7 @@ async function syncPlatform(manifest, servers) {
     const { data, body } = parseFrontmatter(raw);
     const newData = applyAgentFrontmatter(data, baseName, agentCfg);
     const fm = emitFrontmatter(newData, {
-      toolsFormat: agentCfg.tools === 'object' ? 'object' : 'array',
+      toolsFormat: agentCfg.tools === 'object' ? 'object' : agentCfg.tools === 'string' ? 'string' : 'array',
     });
     const outPath = path.join(outRoot, agentMap.dir, baseName + agentMap.ext);
     await emitFile(outPath, fm + body);
