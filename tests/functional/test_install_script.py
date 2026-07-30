@@ -152,6 +152,17 @@ class TestInstallScript(unittest.TestCase):
             self.assertIn("Per-task briefs live alongside", active)
             self.assertNotIn("> Keep this note.", active)
 
+    def test_claude_code_install_places_root_files(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "project"
+            target.mkdir()
+
+            proc = self._run_install(target, platform="claude-code")
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            self.assertTrue((target / "CLAUDE.md").is_file())
+            self.assertTrue((target / ".mcp.json").is_file())
+            self.assertTrue((target / ".claude" / "agents").is_dir())
+
 
 if __name__ == "__main__":
     unittest.main()

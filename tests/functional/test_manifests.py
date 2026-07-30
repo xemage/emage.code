@@ -15,7 +15,7 @@ class TestPlatformManifests(unittest.TestCase):
     def test_at_least_four_platforms(self):
         manifests = list_platform_manifests()
         names = [p.stem for p in manifests]
-        for required in ("github", "gemini", "opencode", "cursor"):
+        for required in ("github", "gemini", "opencode", "cursor", "claude-code"):
             self.assertIn(required, names, f"missing platform manifest: {required}")
 
     def test_manifests_parse_and_have_required_keys(self):

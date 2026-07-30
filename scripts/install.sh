@@ -13,7 +13,7 @@ Install emage.code into an existing or new project directory.
 
 Options:
   --target <dir>       Destination project root (created if missing)
-  --platform <name>    cursor | github | gemini | opencode | pi | all (default: all)
+  --platform <name>    cursor | github | gemini | opencode | pi | claude-code | all (default: all)
   -u, --update         Update an existing install (replaces platform trees; preserves task rows in docs/tasks/*.md)
   -n, --dry-run        Print actions without copying
   -h, --help           Show this help
@@ -186,7 +186,7 @@ validate_github_agents() {
 validate_before_update() {
   # Pre-flight checks before --update to prevent propagating corrupted state.
   if [[ "$UPDATE" -eq 1 ]]; then
-    for d in .github .cursor .gemini .opencode .pi; do
+    for d in .github .cursor .gemini .opencode .pi .claude; do
       if [[ -d "$TARGET/$d" ]]; then
         echo "warning: --update replaces $TARGET/$d entirely (rsync --delete). Local edits there will be lost." >&2
       fi
@@ -274,12 +274,19 @@ install_pi() {
   install_tree_into "$IMPLEMENTATION/.pi" "$TARGET/.pi"
 }
 
+install_claude_code() {
+  install_tree_into "$IMPLEMENTATION/.claude" "$TARGET/.claude"
+  run cp "$IMPLEMENTATION/.mcp.json" "$TARGET/.mcp.json"
+  run cp "$IMPLEMENTATION/CLAUDE.md" "$TARGET/CLAUDE.md"
+}
+
 case "$PLATFORM" in
   cursor) install_common; install_cursor ;;
   github) install_common; install_github ;;
   gemini) install_common; install_gemini ;;
   opencode) install_common; install_opencode ;;
   pi) install_common; install_pi ;;
+  claude-code) install_common; install_claude_code ;;
   all)
     install_common
     install_cursor
@@ -287,6 +294,7 @@ case "$PLATFORM" in
     install_gemini
     install_opencode
     install_pi
+    install_claude_code
     ;;
   *)
     echo "error: unknown platform '$PLATFORM'" >&2
