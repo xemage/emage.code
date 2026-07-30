@@ -2,11 +2,11 @@
 
 **ID:** T297
 **Owner:** release-manager
-**Status:** pending
+**Status:** done
 **Priority:** P0
 **Depends on:** T296
 **Created:** 2026-07-30
-**Completed:** —
+**Completed:** 2026-07-30
 **Based on:** docs/plans/plan-015-add-claude-code-platform.md § Task graph T297;
 `CONTRIBUTING.md` § "Cutting a release".
 
