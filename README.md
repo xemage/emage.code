@@ -11,7 +11,7 @@
 emage.code brings a **structured multi-agent development team** to your
 favourite AI assistant. Every project follows the same protocol:
 
-Latest release: v6.3.0
+Latest release: v6.4.0
 
 - **Plan → Approve → Execute** lifecycle, never silent execution
 - **DAG-based task management** with explicit dependencies
@@ -59,9 +59,12 @@ Use [`implementation/`](implementation/README.md) for all development work.
 | Opencode | `.opencode/` | `.md` (object `tools`), `opencode.json` |
 | Cursor | `.cursor/` | `.mdc`, `applyTo` → `globs`, `mcp.json` |
 | Pi | `.pi/` | agents, prompts, instructions, skills (`.md`) |
+| Claude Code | `.claude/` + `.mcp.json` | `.md` (string `tools`), subagents + skills + rules |
 
 Adding a new platform = adding a `platforms/<name>.json` manifest under
-`implementation/`. No script changes required.
+`implementation/`. Usually no script changes are required; add a new
+`tools`/MCP format branch to `sync.mjs` only if the platform's frontmatter or
+MCP shape doesn't match an existing mode (see `implementation/scripts/sync.mjs`).
 
 ---
 
@@ -82,6 +85,7 @@ scripts/install.sh --target /path/to/your-project --platform cursor
 | Gemini CLI | `gemini` |
 | Opencode | `opencode` |
 | Pi | `pi` |
+| Claude Code | `claude-code` |
 | All platforms | `all` |
 
 Makefile shortcut: `make install TARGET=/path/to/your-project PLATFORM=cursor`
