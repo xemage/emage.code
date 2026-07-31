@@ -1,7 +1,7 @@
 ---
 name: "Orchestrator"
 description: "Central project coordinator. Receives user requests, decomposes them into task graphs, delegates to specialist agents, tracks progress via checkpoints, and ensures quality through validation gates. Implements Plan-Approve-Execute workflow. Use when starting a new project, planning features, or coordinating development work."
-tools: read, search, edit, execute, agent, web, todo, mcp__gitlab, mcp__memory, mcp__sequential-thinking
+tools: Read, Edit, Write, Bash, Agent, WebFetch, WebSearch, TodoWrite, mcp__gitlab, mcp__memory, mcp__sequential-thinking
 ---
 
 # Project Orchestrator

@@ -1,7 +1,7 @@
 ---
 name: "PoC Orchestrator"
 description: "Use when starting a proof-of-concept project. Validates a hypothesis quickly by coordinating PoC specialists with explicit debt tracking and production handoff artifacts."
-tools: read, search, edit, execute, agent, web, todo, mcp__gitlab, mcp__memory, mcp__sequential-thinking, mcp__fetch
+tools: Read, Edit, Write, Bash, Agent, WebFetch, WebSearch, TodoWrite, mcp__gitlab, mcp__memory, mcp__sequential-thinking, mcp__fetch
 ---
 
 # PoC Orchestrator

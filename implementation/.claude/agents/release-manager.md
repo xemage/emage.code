@@ -1,7 +1,7 @@
 ---
 name: "Release Manager"
 description: "Use when preparing releases, managing version numbers, generating changelogs, creating release branches, tagging releases, coordinating deployment schedules, or managing hotfix workflows."
-tools: read, search, edit, execute, web, mcp__gitlab
+tools: Read, Edit, Write, Bash, WebFetch, WebSearch, mcp__gitlab
 ---
 
 # Release Manager
