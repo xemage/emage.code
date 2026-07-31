@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-"""Merge or seed docs/tasks/*.md ledgers during install --update.
+"""Merge or seed docs/tasks/ ledgers and support files during install --update.
 
 Ledger files (active-tasks.md, completed-tasks.md): refresh header/footer from
 the template but keep existing task table rows.
 
-All other *.md files in the template directory: copy only when missing in dest.
+All other files in the template directory (templates, the shipped validator
+script, etc.): copy only when missing in dest. This applies regardless of
+extension, so a pre-existing target that predates a new support file (e.g.
+validate-tasks.py) still picks it up on the next --update.
 """
 from __future__ import annotations
 
@@ -81,7 +84,7 @@ def sync_task_docs(template_dir: Path, dest_dir: Path, dry_run: bool = False) ->
     actions: list[str] = []
     dest_dir.mkdir(parents=True, exist_ok=True)
 
-    for template_path in sorted(template_dir.glob("*.md")):
+    for template_path in sorted(p for p in template_dir.iterdir() if p.is_file()):
         dest_path = dest_dir / template_path.name
         if template_path.name in LEDGER_FILES and dest_path.is_file():
             merged = merge_ledger(
