@@ -12,7 +12,16 @@
   "frontmatter": {
     "agents": {
       "tools": "string",
-      "keepKeys": ["name", "description", "tools"]
+      "keepKeys": ["name", "description", "tools"],
+      "toolMap": {
+        "read": "Read",
+        "search": "Read",
+        "edit": "Edit, Write",
+        "execute": "Bash",
+        "agent": "Agent",
+        "web": "WebFetch, WebSearch",
+        "todo": "TodoWrite"
+      }
     },
     "commands": {
       "keepKeys": ["description", "argument-hint"]

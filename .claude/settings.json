@@ -1,0 +1,46 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat:*)",
+      "Bash(cd:*)",
+      "Bash(diff:*)",
+      "Bash(dotnet:*)",
+      "Bash(find:*)",
+      "Bash(gemini:*)",
+      "Bash(Get-Command:*)",
+      "Bash(git:*)",
+      "Bash(glab:*)",
+      "Bash(go:*)",
+      "Bash(gofmt:*)",
+      "Bash(grep:*)",
+      "Bash(head:*)",
+      "Bash(jq:*)",
+      "Bash(make:*)",
+      "Bash(node:*)",
+      "Bash(opencode:*)",
+      "Bash(python:*)",
+      "Bash(python3:*)",
+      "Bash(sed:*)",
+      "Bash(Select-Object:*)",
+      "Bash(Set-Content:*)",
+      "Bash(tail:*)",
+      "Bash(Tee-Object:*)",
+      "Bash(Test-Path:*)",
+      "Bash(timeout:*)",
+      "Bash(type:*)",
+      "Bash(printf:*)",
+      "Bash(wc:*)",
+      "Bash(xargs:*)",
+      "Bash(ForEach-Object:*)",
+      "Bash(docker build:*)",
+      "Bash(docker compose:*)",
+      "Bash(docker stop:*)",
+      "Bash(docker rm:*)"
+    ],
+    "additionalDirectories": [
+      "../CWSO",
+      "../sia",
+      "../sia-harness"
+    ]
+  }
+}
