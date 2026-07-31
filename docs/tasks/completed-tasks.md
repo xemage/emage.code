@@ -142,3 +142,4 @@ Append-only log. Entries move here after the orchestrator marks a task `done`.
 | T299 | Fix task-brief Status headers for T285-T294/T298 (C8 ledger check) | qa-engineer | 2026-07-30 | docs/tasks/task-T285.md; task-T286.md; task-T287.md; task-T288.md; task-T289.md; task-T290.md; task-T291.md; task-T292.md; task-T293.md; task-T294.md; task-T298.md; docs/tasks/task-T299.md |
 | T295 | GATE: full validation suite green (sync, verify, super-gate, full tests, install syntax, markdown links) | qa-engineer | 2026-07-30 | docs/tasks/task-T295.md (no code changes; verification only) |
 | T296 | Release docs: v6.4.0.md + version markers | release-manager | 2026-07-30 | docs/releases/v6.4.0.md; README.md; docs/wiki/README.md; docs/wiki/home.md; docs/tasks/task-T296.md |
+| T297 | Prepare release v6.4.0 (branch + final checks; MR !74 merged to develop) | release-manager | 2026-07-30 | local branch release/v6.4.0 (not pushed); docs/tasks/task-T297.md |

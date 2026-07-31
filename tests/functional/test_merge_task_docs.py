@@ -89,6 +89,43 @@ Old intro text.
             self.assertEqual((dest_dir / "task-T099.md").read_text(encoding="utf-8"), "user brief")
             self.assertEqual(len(actions), 2)
 
+    def test_sync_seeds_non_md_files_when_missing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            template_dir = Path(tmp) / "template"
+            dest_dir = Path(tmp) / "dest"
+            template_dir.mkdir()
+            dest_dir.mkdir()
+            (template_dir / "completed-tasks.md").write_text("# Completed Tasks\n", encoding="utf-8")
+            (template_dir / "active-tasks.md").write_text("# Active Tasks\n", encoding="utf-8")
+            (template_dir / "validate-tasks.py").write_text("print('ok')\n", encoding="utf-8")
+            (template_dir / "__pycache__").mkdir()
+            (template_dir / "__pycache__" / "validate-tasks.cpython-312.pyc").write_bytes(b"\x00")
+
+            actions = sync_task_docs(template_dir, dest_dir)
+            self.assertTrue((dest_dir / "validate-tasks.py").is_file())
+            self.assertEqual(
+                (dest_dir / "validate-tasks.py").read_text(encoding="utf-8"), "print('ok')\n"
+            )
+            self.assertFalse((dest_dir / "__pycache__").exists())
+            self.assertEqual(len(actions), 3)
+
+    def test_sync_skips_existing_non_md_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            template_dir = Path(tmp) / "template"
+            dest_dir = Path(tmp) / "dest"
+            template_dir.mkdir()
+            dest_dir.mkdir()
+            (template_dir / "completed-tasks.md").write_text("# Completed Tasks\n", encoding="utf-8")
+            (template_dir / "active-tasks.md").write_text("# Active Tasks\n", encoding="utf-8")
+            (template_dir / "validate-tasks.py").write_text("print('new')\n", encoding="utf-8")
+            (dest_dir / "validate-tasks.py").write_text("print('local edits')\n", encoding="utf-8")
+
+            actions = sync_task_docs(template_dir, dest_dir)
+            self.assertEqual(
+                (dest_dir / "validate-tasks.py").read_text(encoding="utf-8"), "print('local edits')\n"
+            )
+            self.assertEqual(len(actions), 2)
+
     def test_four_digit_ids_survive_merge(self):
         template = (Path(__file__).resolve().parents[2] / "implementation" / "docs" / "tasks" / "active-tasks.md").read_text(
             encoding="utf-8"

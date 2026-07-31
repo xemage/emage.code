@@ -1,6 +1,6 @@
 # Plan 014: Task Ledger Hardening (Post-Install Safe)
 
-**Status:** draft — awaiting user approval
+**Status:** approved — execution complete (Waves 0-7 finished 2026-07-29; approval sign-off recorded 2026-07-31 after the fact, see Approval section)
 **Created:** 2026-07-27
 **Owner:** orchestrator
 **Based on:** audit of `docs/tasks/`, `implementation/knowledge/skills/task-management/`, `scripts/install.sh`, `scripts/merge-task-docs.py`, `tests/performance/test_team_health.py`
@@ -820,11 +820,20 @@ graph TD
 
 ## Approval
 
-- [ ] User approved on YYYY-MM-DD
-- [ ] GATE 1 passed on YYYY-MM-DD
-- [ ] GATE 2 passed on YYYY-MM-DD
-- [ ] GATE 3 passed on YYYY-MM-DD
-- [ ] FINAL GATE passed on YYYY-MM-DD
+- [x] User approved on 2026-07-31 (retroactive — execution had already happened via T242-T284; this sign-off closes the paperwork gap)
+- [x] GATE 1 passed — re-verified 2026-07-31: `make verify` OK (no drift, 505 files), `check.py --registry` OK (158 checks)
+- [x] GATE 2 passed — re-verified 2026-07-31: no `TASK-0`/`→ review →` patterns remain in the four command files
+- [x] GATE 3 passed — re-verified 2026-07-31: virgin `install.sh --target <tmp> --platform all` ships a working `docs/tasks/validate-tasks.py` that exits 0
+- [x] FINAL GATE passed — re-verified 2026-07-31: `tests/run.py -v` is 264/264 green (13 skipped); fresh-install-then-`--update` round trip on a disposable target still exits 0
+
+### Known residual gap (not closed by this plan, found during 2026-07-31 verification)
+`merge-task-docs.py` only globs `*.md` when updating an **existing** target's `docs/tasks/`.
+A target whose `docs/tasks/` predates `validate-tasks.py` (e.g. this repo's own root
+`docs/tasks/`, which has never been through a *fresh* install) will never receive the
+script via `--update` — only `*.md` templates are copied-if-missing. Confirmed: a virgin
+install and a fresh-install-then-update round trip both work; this repo's own
+`docs/tasks/validate-tasks.py` is still missing because it was never freshly installed.
+Not tracked as a task yet — ask before opening one.
 
 ## Task ID index (traceability)
 

@@ -11,7 +11,9 @@ pending → in_progress → blocked → in_review → done | cancelled
 ```
 
 ## Task Protocol
-- Task list: `docs/tasks/active-tasks.md` (table: ID, status, owner, dependencies)
+- Task list: `docs/tasks/active-tasks.md` — columns: `ID | Title | Owner | Status | Priority | Depends on | Last update`
+- **INVARIANT:** `active-tasks.md` MUST NEVER hold a `done` or `cancelled` row. Terminal rows move to `docs/tasks/completed-tasks.md` (columns: `ID | Title | Owner | Done on | Outcome / artifact`) in the same edit.
+- Archival is orchestrator-only and immediate. See skill `task-management` § "Complete a Task".
 - Task briefs: `docs/tasks/task-<ID>.md` (objective, inputs, outputs, acceptance criteria)
 - Only orchestrators create/transition tasks. Agents report completion and blockers.
 - Sequential IDs: `T001`, `T002`, … Priorities: `P0` (critical path), `P1`, `P2`.
@@ -63,6 +65,7 @@ MUST check applicable skills in the active platform projection (`.github/skills/
 | Code review feedback to implement | `receiving-code-review` |
 | Marking work done, commit, MR, release | `verification-before-completion` |
 | Phase or validation transition | `validation-gates`, `checkpoint-protocol` |
+| Before any checkpoint, release, or after `install --update` | run `/validate-tasks` |
 
 Skipping a mandatory skill requires orchestrator approval and a logged exception
 in the task brief or checkpoint.
@@ -82,7 +85,7 @@ in the task brief or checkpoint.
 
 ## Knowledge Base
 - Source knowledge lives in the emage.code repository under `implementation/knowledge/`; this target uses installed platform projections.
-- Per-platform folders (`.github/`, `.gemini/`, `.opencode/`, `.cursor/`, `.pi/`, `.claude/`) are **generated** by `scripts/sync.mjs`. **Do not edit them by hand.**
+- Per-platform folders (`.github/`, `.gemini/`, `.opencode/`, `.cursor/`, `.pi/`) are **generated** by `scripts/sync.mjs`. **Do not edit them by hand.**
 - Use the installed platform folders (`.github/`, `.cursor/`, `.gemini/`, `.opencode/`, `.pi/`, `.claude/`) as runtime references in this target project.
 
 ## MCP Servers
