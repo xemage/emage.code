@@ -9,6 +9,7 @@
       "Bash(gemini:*)",
       "Bash(Get-Command:*)",
       "Bash(git:*)",
+      "Bash(git checkout:*)",
       "Bash(glab:*)",
       "Bash(go:*)",
       "Bash(gofmt:*)",
