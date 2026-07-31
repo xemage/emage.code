@@ -2,8 +2,8 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T304 | Real Docker build + healthcheck of T226 compose stack | devops-engineer | pending | P0 | T300 (done) | 2026-07-31 |
-| T310 | Document confirmed CWSO-core defects in ../CWSO | devops-engineer | pending | P1 | T304 | 2026-07-31 |
+| T304 | Real Docker build + healthcheck of T226 compose stack | devops-engineer | blocked | P0 | T300 (done) | 2026-07-31 |
+| T311 | cwso-rollout container fails healthcheck (405) + trajectory store write error | devops-engineer | blocked | P1 | — (external, see T310 done) | 2026-07-31 |
 | T305 | Validate local-docker-desktop-guide.md end to end | qa-engineer | pending | P1 | T304 | 2026-07-31 |
 | T214 | Pattern A Integration Test (3 Agents, Deterministic Merge) | qa-engineer | pending | P0 | T212, T213, T301 (done), T304, T305 | 2026-07-31 |
 | T306 | FINAL GATE: clean-install proof | qa-engineer | pending | P0 | T301 (done), T303 (done), T304, T305, T214 | 2026-07-31 |
