@@ -188,3 +188,41 @@ If blocked, report blocker type and severity with one proposed mitigation:
 
 **Next Task**: T220 (SIA harness adapter) — after T214 passes
 **Team**: @qa-engineer (lead); @backend-developer (support)
+
+---
+
+## Addendum (Plan 016, 2026-07-31)
+
+**Depends on (updated):** T212 ✓, T213 ✓, T301 (Claude Code tool-projection fix — unrelated
+platform bug, does not block CWSO calls, but must land first per plan-016's Wave ordering),
+T304 (real CWSO Docker stack, healthy), T305 (deployment guide validated).
+
+**Correction to the blocker mitigation above:** the "Technical: CWSO endpoint unreachable → mock
+with in-memory shadow workspace simulator" mitigation is **superseded and forbidden** by
+plan-016's R8 (anti-fabrication rule). If the CWSO endpoint is unreachable, that is a T304 failure
+to resolve first (and report upstream per T310 if it's a CWSO-core defect) — do NOT substitute a
+mock simulator to make T214 appear to pass. T214 may ONLY be marked done against the real, live
+CWSO stack verified healthy in T304.
+
+**Execution requirement:** run all four scenarios above against the live stack via the real MCP
+endpoint (`CwsoClient` from `implementation/runtime/cwso/client.py`):
+1. `create_shadow_workspace` for each of the 3 agents via the real MCP endpoint.
+2. Write the scenario's baseline + per-agent edits via `write_shadow_file`.
+3. Run the AST conflict pre-check (`implementation/runtime/cwso/ast_conflict_check.py`) and confirm
+   the reported severity matches the scenario's "Expected" severity.
+4. Call `merge_concurrent_results` with the heuristic the pre-check selected.
+5. Paste the actual `workspace_uuid`, blob OIDs, and final commit/tree OID (or the actual conflict
+   error text, for scenarios 2/3) into this file's Execution notes below. A scenario without a
+   pasted real OID/error string is NOT considered passed.
+6. `drop_shadow_workspace` each workspace when done.
+
+Do not proceed to mark T214 done in the ledger until all 4 scenarios have real, pasted evidence.
+
+**Ledger completion (only after all 4 scenarios pass with evidence):** follow
+`docs/tasks/_template.md` / AGENTS.md § "Complete a Task" exactly — append T214's row to
+`docs/tasks/completed-tasks.md` (5-column schema), delete T214's row from
+`docs/tasks/active-tasks.md`, and set this file's header to `Status: done`,
+`Completed: <date>`. Then `python3 docs/tasks/validate-tasks.py` must exit 0.
+
+### Execution notes (Plan 016 addendum)
+<filled during execution — real workspace_uuid / OIDs / conflict text per scenario>

@@ -51,9 +51,9 @@ Thumbs.db
 .history/
 
 # Claude Code CLI runtime settings at repo root (session/local tool state,
-# not project content — distinct from the tracked implementation/.claude/
-# platform projection, hence the anchored leading slash).
 # /.claude/
+# .claude/settings.json
+.claude/settings.local.json
 
 # Python (in case generators or scripts use it)
 __pycache__/

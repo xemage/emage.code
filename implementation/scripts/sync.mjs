@@ -255,7 +255,15 @@ function applyAgentFrontmatter(data, name, cfg) {
   } else if (cfg.tools === 'object') {
     if (Array.isArray(tools)) out.tools = tools;
   } else if (cfg.tools === 'string') {
-    if (Array.isArray(tools)) out.tools = tools;
+    if (Array.isArray(tools)) {
+      const toolMap = cfg.toolMap || {};
+      const expanded = tools.flatMap((t) =>
+        Object.prototype.hasOwnProperty.call(toolMap, t)
+          ? toolMap[t].split(',').map((s) => s.trim())
+          : [t]
+      );
+      out.tools = [...new Set(expanded)];
+    }
   } else {
     if (Array.isArray(tools)) out.tools = tools;
   }

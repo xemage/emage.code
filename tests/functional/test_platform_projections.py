@@ -173,21 +173,43 @@ class TestPlatformProjections(unittest.TestCase):
             )
 
     def test_claude_code_agents_use_tools_string(self):
+        """Projected tools must be real Claude Code tool identifiers.
+
+        Abstract emage.code categories (read/search/edit/execute/agent/web/todo) are not
+        valid Claude Code tool names and must be translated via the manifest's `toolMap`
+        (T301) — asserting a raw echo of the source array here would re-codify the bug
+        where generated subagents received almost no usable tools.
+        """
         claude_agents = _generated_root("claude-code") / "agents"
         source_agents_dir = knowledge_root() / "agents"
+        tool_map = _load_manifest("claude-code")["frontmatter"]["agents"].get("toolMap", {})
 
         for path in sorted(claude_agents.glob("*.md")):
             source_fm, _ = parse_file(source_agents_dir / f"{path.stem}.md")
             projected_fm, _ = parse_file(path)
             source_tools = source_fm.get("tools", [])
             projected_tools = projected_fm.get("tools")
+
+            expected: list[str] = []
+            for t in source_tools:
+                names = [n.strip() for n in tool_map[t].split(",")] if t in tool_map else [t]
+                for n in names:
+                    if n not in expected:
+                        expected.append(n)
+
             with self.subTest(agent=path.stem):
                 self.assertIsInstance(projected_tools, str, f"{path.name}: tools should be a string")
                 self.assertEqual(
                     [t.strip() for t in projected_tools.split(",")],
-                    source_tools,
-                    f"{path.name}: tools string must list source tools in order",
+                    expected,
+                    f"{path.name}: tools string must list translated, deduplicated tool names in order",
                 )
+                for abstract_name in ("read", "search", "edit", "execute", "todo"):
+                    self.assertNotIn(
+                        abstract_name,
+                        [t.strip() for t in projected_tools.split(",")],
+                        f"{path.name}: abstract category '{abstract_name}' leaked untranslated into tools string",
+                    )
 
     def test_github_agent_aliases_match_filename_slugs(self):
         """GitHub Copilot resolves subagents by filename slug when `name` is omitted.
