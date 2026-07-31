@@ -2,8 +2,7 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T308 | Prepare release notes for tool-projection fix | release-manager | pending | P0 | T301 (done), T307 (done) | 2026-07-31 |
-| T309 | Cut the release (STOP FIRST) | release-manager | pending | P0 | T308 | 2026-07-31 |
+| T309 | Cut the release (STOP FIRST) | release-manager | pending | P0 | T308 (done) | 2026-07-31 |
 | T302 | Author Phase 2/3 PoC debt scorecard | technical-writer | pending | P0 | T300 (done) | 2026-07-31 |
 | T303 | Ledger correction: annotate falsely-completed rows (STOP FIRST) | orchestrator | pending | P0 | T302 | 2026-07-31 |
 | T304 | Real Docker build + healthcheck of T226 compose stack | devops-engineer | pending | P0 | T300 (done) | 2026-07-31 |
