@@ -1,7 +1,7 @@
 ---
 name: "Tech Lead"
 description: "Use when establishing coding standards, performing code reviews, making implementation decisions, configuring linters and formatters, setting up branch protection, reviewing pull/merge requests, or resolving technical disputes."
-tools: read, search, edit, execute, web, mcp__fetch
+tools: Read, Edit, Write, Bash, WebFetch, WebSearch, mcp__fetch
 ---
 
 # Tech Lead

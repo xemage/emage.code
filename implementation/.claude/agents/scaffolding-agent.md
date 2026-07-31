@@ -1,7 +1,7 @@
 ---
 name: "Scaffolding Agent"
 description: "Use for rapid project skeleton creation and minimal setup suitable for proof-of-concept timelines."
-tools: read, search, edit, execute, web
+tools: Read, Edit, Write, Bash, WebFetch, WebSearch
 ---
 
 # Scaffolding Agent

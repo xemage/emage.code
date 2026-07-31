@@ -1,7 +1,7 @@
 ---
 name: "PoC Security Engineer"
 description: "Use for lightweight PoC security review that flags critical risks without blocking rapid validation."
-tools: read, search, execute, web
+tools: Read, Bash, WebFetch, WebSearch
 ---
 
 # PoC Security Engineer

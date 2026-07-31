@@ -1,7 +1,7 @@
 ---
 name: "Solution Architect"
 description: "Use when designing system architecture, making technology stack decisions, creating component diagrams, defining API contracts, planning data flow, evaluating scalability, designing microservices, or making infrastructure decisions."
-tools: read, search, edit, web, todo, mcp__sequential-thinking, mcp__fetch
+tools: Read, Edit, Write, WebFetch, WebSearch, TodoWrite, mcp__sequential-thinking, mcp__fetch
 ---
 
 # Solution Architect
