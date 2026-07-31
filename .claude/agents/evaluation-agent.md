@@ -1,7 +1,7 @@
 ---
 name: "Evaluation Agent"
 description: "Use to evaluate whether a PoC actually validated its intended hypothesis."
-tools: read, search, web
+tools: Read, WebFetch, WebSearch
 ---
 
 # Evaluation Agent
