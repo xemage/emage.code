@@ -412,6 +412,13 @@ and the tools/list response into task-T304.md Execution notes. Leave the stack r
 for Wave 4/5 — do NOT `docker compose down` at the end of this task.
 ```
 
+**Outcome (2026-07-31):** T304 hit Case B. `orchestrator`, `git-shadow`, `merge-engine` came up
+healthy; `cwso-rollout` built and started but never turned healthy (`curl -f .../v1/models` → HTTP
+405; trajectory store writer failed to create `./rollout_store`), independently re-verified twice.
+T304 stays `blocked`, not done. **T311** was filed in this repo's ledger
+(`docs/tasks/task-T311.md`) to track the defect, and T310 (below) was executed for real to hand it
+off to CWSO's own team. Waves 4/5/6 remain blocked per GATE 3 until CWSO resolves it.
+
 #### T310 · Document confirmed CWSO-core defects directly in the CWSO repository
 ```
 Owner: devops-engineer · Priority: P1 · Depends on: T304 (runs only if T304 or T305 found
@@ -651,3 +658,8 @@ T306 → closing evidence pack (this plan's proof of "done")
 ## Task ID index (traceability)
 
 T300, T301, T307, T308, T309, T302, T303, T304, T310, T305, T214 (addendum), T306
+
+T311 — bug task filed 2026-07-31 in this repo's ledger (`docs/tasks/task-T311.md`), tracking the
+real `cwso-rollout` unhealthy defect found while executing T304 (see T304's Outcome note above).
+Not part of the original task graph; added as a direct consequence of T304's Case B outcome, per
+plan-016 §"WAVE 3" T304's own acceptance criteria.
