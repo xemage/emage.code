@@ -2,8 +2,7 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T302 | Author Phase 2/3 PoC debt scorecard | technical-writer | pending | P0 | T300 (done) | 2026-07-31 |
-| T303 | Ledger correction: annotate falsely-completed rows (STOP FIRST) | orchestrator | pending | P0 | T302 | 2026-07-31 |
+| T303 | Ledger correction: annotate falsely-completed rows (STOP FIRST) | orchestrator | pending | P0 | T302 (done) | 2026-07-31 |
 | T304 | Real Docker build + healthcheck of T226 compose stack | devops-engineer | pending | P0 | T300 (done) | 2026-07-31 |
 | T310 | Document confirmed CWSO-core defects in ../CWSO | devops-engineer | pending | P1 | T304 | 2026-07-31 |
 | T305 | Validate local-docker-desktop-guide.md end to end | qa-engineer | pending | P1 | T304 | 2026-07-31 |
