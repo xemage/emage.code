@@ -663,3 +663,17 @@ T311 — bug task filed 2026-07-31 in this repo's ledger (`docs/tasks/task-T311.
 real `cwso-rollout` unhealthy defect found while executing T304 (see T304's Outcome note above).
 Not part of the original task graph; added as a direct consequence of T304's Case B outcome, per
 plan-016 §"WAVE 3" T304's own acceptance criteria.
+
+T312 — fix task filed and completed 2026-08-01 (`docs/tasks/task-T312.md`), correcting a stale
+`rollout` healthcheck target in this repo's own `deploy/docker-compose-t226.yml` (found during the
+T304 re-verification after CWSO's own team fixed the original T311 defect upstream). Not part of
+the original task graph; a direct, this-repo-owned follow-on to T304/T311, merged via MR !89.
+T304 and T311 were both subsequently closed `done` once T312 confirmed `cwso-rollout` genuinely
+healthy — see T304's 2026-08-01 re-verification section and T311's Resolution section.
+
+T313 — bug/fix task filed 2026-08-01 (`docs/tasks/task-T313.md`), consolidating 13 findings from
+T305's real, end-to-end validation of `docs/deployment/local-docker-desktop-guide.md` (see
+`docs/artifacts/t305-deployment-guide-validation-report-v1.md`). Not part of the original task
+graph; a direct consequence of T305's own acceptance criterion 3 ("any failing step... is filed as
+a new bug task"). All 13 findings trace to this repo's own guide/script/compose-naming, not to a
+CWSO-core defect, so T310's hand-off convention does not apply to T313.
