@@ -151,7 +151,7 @@ services:
     security_opt:
       - no-new-privileges:true
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8787/v1/models"]
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8787/healthz"]
       interval: 10s
       timeout: 3s
       retries: 5
