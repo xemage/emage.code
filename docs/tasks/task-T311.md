@@ -2,11 +2,11 @@
 
 **ID:** T311
 **Owner:** devops-engineer
-**Status:** blocked
+**Status:** done
 **Priority:** P1
-**Depends on:** — (external: fix owned by CWSO team, tracked via T310's hand-off into `../CWSO`)
+**Depends on:** — (external: fix owned by CWSO team, tracked via T310's hand-off into `../CWSO`); completion also required T312 (this-repo-owned healthcheck-wiring follow-on)
 **Created:** 2026-07-31
-**Completed:** —
+**Completed:** 2026-08-01
 **Based on:** docs/plans/plan-016-pattern-a-hardening-and-phase23-poc-closure.md, docs/tasks/task-T304.md
 
 ## Objective
@@ -84,5 +84,29 @@ Upstream hand-off: `../CWSO/docs/artifacts/emagecode-integration-defect-cwso-rol
 `grep -n "^| T" ../CWSO/docs/tasks/active-tasks.md ../CWSO/docs/tasks/completed-tasks.md | tail -5`
 before writing — see task-T310.md Execution notes for the full grep output).
 
-This task stays `blocked` — not `done`. It will be revisited once CWSO's own team resolves the
-upstream defect.
+This task stayed `blocked` until CWSO's own team resolved the upstream defect.
+
+### Resolution (2026-08-01)
+
+CWSO's team shipped the fix upstream: `../CWSO` develop @ `29dea45`, commit `f7400f3
+"fix(rollout): add /healthz liveness route and fix trajectory store path env var"`, produced via
+their own `bugfix/T170-rollout-healthcheck-and-store-path` branch — exactly the remediation this
+task's T310 hand-off (their T169/T170) requested. Independently re-verified (not just trusted from
+their commit message): the trajectory-store write error is gone and `/data/parquet-store` is
+correctly used; `GET /healthz` returns `200 {"status":"ok"}` inside the container. CWSO's board
+also shows T169/T170 archived to their own completed-tasks board.
+
+Re-verification surfaced one further, narrower, **this-repo-owned** issue (not a CWSO defect, so
+T310 does not apply to it): `deploy/docker-compose-t226.yml`'s own Compose-level `healthcheck.test`
+for the `rollout` service still targeted the old `/v1/models` endpoint, overriding CWSO's
+now-correct image-baked healthcheck. Filed and fixed as **T312**
+(`docs/tasks/task-T312.md`), merged via MR !89 (CI green). After that merge, `cwso-rollout` reports
+`healthy` (see `docs/tasks/task-T304.md`'s 2026-08-01 re-verification section for full evidence:
+`docker inspect` showing `"Status":"healthy"` with 4 consecutive successful probes).
+
+Full re-verification evidence (build/up output, `docker compose ps`, `docker inspect`, MCP
+`tools/list`) lives in `docs/tasks/task-T304.md` to avoid duplicating/drifting from a single source
+of truth — this task's own acceptance criterion 3 ("a re-run of the T304-equivalent verification
+shows `cwso-rollout` healthy") is now met by that re-verification.
+
+**Resolved. Status: done.**
