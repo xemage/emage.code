@@ -170,7 +170,7 @@ verify_deployment() {
     fi
 
     local all_running=true
-    for service in orchestrator rollout-proxy; do
+    for service in orchestrator rollout; do
         if docker-compose ps | grep "$service" | grep -q "Up"; then
             print_success "$service is running"
         else
@@ -207,6 +207,12 @@ verify_deployment() {
 
 show_status() {
     print_header "CWSO Deployment Status"
+
+    if [ ! -d "$DEPLOY_DIR" ]; then
+        print_warning "CWSO is not deployed yet (no $DEPLOY_DIR found)."
+        echo "Run 'bash scripts/deploy/cwso-docker-desktop.sh' first."
+        exit 0
+    fi
 
     cd "$DEPLOY_DIR"
 
