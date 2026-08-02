@@ -677,3 +677,37 @@ T305's real, end-to-end validation of `docs/deployment/local-docker-desktop-guid
 graph; a direct consequence of T305's own acceptance criterion 3 ("any failing step... is filed as
 a new bug task"). All 13 findings trace to this repo's own guide/script/compose-naming, not to a
 CWSO-core defect, so T310's hand-off convention does not apply to T313.
+
+T314 — bug/fix task filed and completed 2026-08-02 (`docs/tasks/task-T314.md`), fixing a real MCP
+tool-result envelope-unwrapping defect in `implementation/runtime/cwso/mcp_client.py`
+(`CwsoMcpClient.call_tool`) found live during pre-flight probing ahead of executing T214 — the real
+server wraps every `tools/call` payload in `{"content":[{"type":"text","text":"<json>"}]}`, which
+the client never unwrapped, so none of `CwsoClient`'s typed accessors worked against the real
+server. Not part of the original task graph; a direct prerequisite discovered while starting
+Wave 5 (T214). Fixed with a defensive fallback, re-verified live twice, merged via MR !94.
+
+T315 — bug/fix task filed and completed 2026-08-02 (`docs/tasks/task-T315.md`), fixing real
+response-shape defects in `implementation/runtime/cwso/ast_conflict_check.py`
+(`AstConflictChecker`) and `implementation/runtime/cwso/concurrent_merge.py`
+(`ConcurrentMergeOrchestrator._extract_conflicts`) found by qa-engineer's first real, live run of
+T214's 4 scenarios (see `docs/tasks/task-T214.md` Execution notes): the AST pre-check always
+reported LOW severity against the live server because it assumed `query_ast` response keys
+(`"exports"`/`"signature"`) that don't exist in the real server's actual `"hits"`-list shape, and
+merge-conflict extraction looked for a key (`"unresolved_conflicts"`) the real
+`merge_concurrent_results` response never has. Not part of the original task graph; exactly the
+"integration reveals a bug unit tests didn't catch" risk this plan's own risk table anticipated for
+T213/T212. Fixed with defensive fallbacks, MEDIUM/HIGH severity detection independently re-verified
+live twice, merged via MR !95. Directly blocked T214's remaining 3 scenarios; T214 was re-run
+against the fix (see T214's Execution notes for the post-fix evidence).
+
+T316 — tracked, non-blocking follow-up task filed 2026-08-02 (`docs/tasks/task-T316.md`),
+recording the remaining minor findings from the same T214 live run that T315 did not need to fix
+to satisfy T214's stated acceptance criteria: BUG-A (`ConcurrentMergeOrchestrator.run()` cannot
+complete end-to-end against the live server with a single-role `CwsoClient` — the live permission
+model splits `worker`/`orchestrator` tool access in a way the single-client design doesn't
+accommodate), BUG-E (`write_shadow_file`'s real response is prose, not JSON, so no `blob_oid` key
+is ever surfaced), BUG-F (`_build_merge_inputs()` silently drops the middle worker's edits for 3+
+workers on the same path), BUG-G (real conflict messages are generic, not symbol-specific — CWSO
+server behavior, not a this-repo defect), BUG-H (an inconsistent absolute import in
+`ast_conflict_check.py` creates two distinct module identities at runtime). Priority P2; does not
+gate T214, T306, or any other task in this plan. Not part of the original task graph.

@@ -170,8 +170,52 @@ class ConcurrentMergeOrchestrator:
 
     @staticmethod
     def _extract_conflicts(merge_response: Dict[str, Any]) -> List[MergeConflict]:
-        conflicts: List[MergeConflict] = []
+        """Extract structured conflicts from a merge_concurrent_results response.
+
+        Real server shape: {"outcome": "conflict"|"success",
+        "results": [{"path":..., "status": "conflict"|"merged",
+        "reason_code":..., "message":...}], "conflict_count":..., ...}.
+        Falls back to the old assumed top-level "unresolved_conflicts" shape.
+
+        Args:
+            merge_response: Raw response from `CwsoClient.merge_concurrent_results`.
+
+        Returns:
+            List of MergeConflict entries for every result with a conflict status.
+        """
+        if "results" in merge_response:
+            return ConcurrentMergeOrchestrator._extract_conflicts_from_results(
+                merge_response.get("results", [])
+            )
+
+        # Defensive fallback: old assumed top-level "unresolved_conflicts" shape.
         raw_conflicts = merge_response.get("unresolved_conflicts", [])
+        return ConcurrentMergeOrchestrator._extract_conflicts_legacy(raw_conflicts)
+
+    @staticmethod
+    def _extract_conflicts_from_results(
+        results: Any,
+    ) -> List[MergeConflict]:
+        """Build MergeConflict entries from the real "results" list shape."""
+        conflicts: List[MergeConflict] = []
+        if not isinstance(results, list):
+            return conflicts
+
+        for entry in results:
+            if not isinstance(entry, dict):
+                continue
+            if entry.get("status") != "conflict":
+                continue
+            path = str(entry.get("path", ""))
+            reason = entry.get("message") or entry.get("reason_code") or "unknown"
+            conflicts.append(MergeConflict(path=path, reason=str(reason)))
+
+        return conflicts
+
+    @staticmethod
+    def _extract_conflicts_legacy(raw_conflicts: Any) -> List[MergeConflict]:
+        """Build MergeConflict entries from the old "unresolved_conflicts" shape."""
+        conflicts: List[MergeConflict] = []
         if not isinstance(raw_conflicts, list):
             return conflicts
 

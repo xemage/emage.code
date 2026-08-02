@@ -63,10 +63,17 @@ class TestAstConflictCheckerSymbolQuerying(unittest.TestCase):
         self.mock_client = Mock()
         self.checker = AstConflictChecker(self.mock_client)
 
-    def test_query_exports_success(self):
-        """Query exports and return symbol set."""
+    def test_query_exports_success_real_hits_shape(self):
+        """Query exports and return symbol set from the real hits-list shape."""
         self.mock_client.query_ast.return_value = {
-            "exports": ["function_a", "class_b", "const_c"]
+            "hits": [
+                {"kind": "function_definition", "name": "function_a"},
+                {"kind": "class_definition", "name": "class_b"},
+                {"kind": "assignment", "name": "const_c"},
+            ],
+            "language": "python",
+            "query_type": "list_exports",
+            "target_symbol": None,
         }
 
         result = self.checker._query_exports("workspace-123", "src/main.py")
@@ -79,9 +86,40 @@ class TestAstConflictCheckerSymbolQuerying(unittest.TestCase):
             target_symbol=None,
         )
 
-    def test_query_exports_empty(self):
-        """Return empty set if no exports found."""
-        self.mock_client.query_ast.return_value = {"exports": []}
+    def test_query_exports_skips_hits_missing_name(self):
+        """Hits without a 'name' key are skipped defensively."""
+        self.mock_client.query_ast.return_value = {
+            "hits": [
+                {"kind": "function_definition", "name": "foo"},
+                {"kind": "comment"},
+            ]
+        }
+
+        result = self.checker._query_exports("workspace-123", "src/main.py")
+
+        self.assertEqual(result, {"foo"})
+
+    def test_query_exports_empty_hits(self):
+        """Return empty set if hits list is empty."""
+        self.mock_client.query_ast.return_value = {"hits": []}
+
+        result = self.checker._query_exports("workspace-123", "src/main.py")
+
+        self.assertEqual(result, set())
+
+    def test_query_exports_fallback_legacy_exports_key(self):
+        """Defensive fallback: old top-level 'exports' key shape still works."""
+        self.mock_client.query_ast.return_value = {
+            "exports": ["function_a", "class_b", "const_c"]
+        }
+
+        result = self.checker._query_exports("workspace-123", "src/main.py")
+
+        self.assertEqual(result, {"function_a", "class_b", "const_c"})
+
+    def test_query_exports_neither_shape_returns_empty(self):
+        """Return empty set if response has neither 'hits' nor 'exports'."""
+        self.mock_client.query_ast.return_value = {"language": "python"}
 
         result = self.checker._query_exports("workspace-123", "src/main.py")
 
@@ -95,11 +133,27 @@ class TestAstConflictCheckerSymbolQuerying(unittest.TestCase):
 
         self.assertEqual(result, set())
 
-    def test_query_signatures_multiple_symbols(self):
-        """Query signatures for multiple symbols."""
+    def test_query_signatures_multiple_symbols_real_hits_shape(self):
+        """Query signatures for multiple symbols from the real hits-list shape."""
         _sigs = {
-            "foo": {"signature": "def foo(x: int) -> str:"},
-            "bar": {"signature": "def bar(a, b) -> None:"},
+            "foo": {
+                "hits": [
+                    {
+                        "kind": "function_definition",
+                        "signature": "def foo(x: int) -> str:",
+                        "start_row": 0,
+                    }
+                ]
+            },
+            "bar": {
+                "hits": [
+                    {
+                        "kind": "function_definition",
+                        "signature": "def bar(a, b) -> None:",
+                        "start_row": 4,
+                    }
+                ]
+            },
         }
         self.mock_client.query_ast.side_effect = (
             lambda **kw: _sigs[kw["target_symbol"]]
@@ -112,11 +166,35 @@ class TestAstConflictCheckerSymbolQuerying(unittest.TestCase):
         self.assertEqual(result["foo"], "def foo(x: int) -> str:")
         self.assertEqual(result["bar"], "def bar(a, b) -> None:")
 
+    def test_query_signatures_fallback_legacy_signature_key(self):
+        """Defensive fallback: old top-level 'signature' key shape still works."""
+        self.mock_client.query_ast.return_value = {
+            "signature": "def foo(x: int) -> str:"
+        }
+
+        result = self.checker._query_signatures(
+            "workspace-123", "src/main.py", {"foo"}
+        )
+
+        self.assertEqual(result["foo"], "def foo(x: int) -> str:")
+
+    def test_query_signatures_no_hit_for_symbol_returns_nothing(self):
+        """No matching hit means the symbol is simply absent from the result."""
+        self.mock_client.query_ast.return_value = {
+            "hits": [{"kind": "comment"}]
+        }
+
+        result = self.checker._query_signatures(
+            "workspace-123", "src/main.py", {"foo"}
+        )
+
+        self.assertNotIn("foo", result)
+
     def test_query_signatures_partial_failure(self):
         """Handle partial signature query failures."""
         def _side_effect(**kw):
             if kw["target_symbol"] == "foo":
-                return {"signature": "def foo(x) -> int:"}
+                return {"hits": [{"kind": "function_definition", "signature": "def foo(x) -> int:"}]}
             raise Exception("Query failed for bar")
 
         self.mock_client.query_ast.side_effect = _side_effect
@@ -200,11 +278,21 @@ class TestFileAnalysis(unittest.TestCase):
         self.checker = AstConflictChecker(self.mock_client)
 
     def test_analyze_file_queries_all_workspaces(self):
-        """Analyze file queries exports from all three workspaces."""
+        """Analyze file queries exports from all three workspaces (real hits shape)."""
         self.mock_client.query_ast.side_effect = [
-            {"exports": ["base_func"]},  # base
-            {"exports": ["base_func", "ours_func"]},  # ours
-            {"exports": ["base_func", "theirs_func"]},  # theirs
+            {"hits": [{"kind": "function_definition", "name": "base_func"}]},  # base
+            {
+                "hits": [
+                    {"kind": "function_definition", "name": "base_func"},
+                    {"kind": "function_definition", "name": "ours_func"},
+                ]
+            },  # ours
+            {
+                "hits": [
+                    {"kind": "function_definition", "name": "base_func"},
+                    {"kind": "function_definition", "name": "theirs_func"},
+                ]
+            },  # theirs
         ]
 
         result = self.checker.analyze_file(
@@ -218,9 +306,9 @@ class TestFileAnalysis(unittest.TestCase):
     def test_analyze_file_language_detection(self):
         """Analysis detects and stores language."""
         self.mock_client.query_ast.side_effect = [
-            {"exports": []},
-            {"exports": []},
-            {"exports": []},
+            {"hits": []},
+            {"hits": []},
+            {"hits": []},
         ]
 
         result = self.checker.analyze_file(
@@ -228,6 +316,70 @@ class TestFileAnalysis(unittest.TestCase):
         )
 
         self.assertEqual(result.language, MergeLanguage.RUST.value)
+
+    def test_analyze_file_simultaneous_add_reports_medium_real_shape(self):
+        """End-to-end: simultaneous same-symbol add reports MEDIUM against real hits shape."""
+        # base: def foo(): pass
+        # ours adds helper() with body "return 1"; theirs adds helper() with body "return 2"
+        self.mock_client.query_ast.side_effect = [
+            {"hits": [{"kind": "function_definition", "name": "foo"}]},  # base exports
+            {
+                "hits": [
+                    {"kind": "function_definition", "name": "foo"},
+                    {"kind": "function_definition", "name": "helper"},
+                ]
+            },  # ours exports
+            {
+                "hits": [
+                    {"kind": "function_definition", "name": "foo"},
+                    {"kind": "function_definition", "name": "helper"},
+                ]
+            },  # theirs exports
+            # signatures for ours (order depends on set iteration; both symbols queried).
+            # Real signature extraction returns the declaration only (no body), so
+            # both agents' `helper` additions share the same signature even though
+            # their bodies diverge ("return 1" vs "return 2") — the conflict here is
+            # the simultaneous add, not a signature divergence.
+            {"hits": [{"kind": "function_definition", "signature": "def foo():"}]},
+            {"hits": [{"kind": "function_definition", "signature": "def helper():"}]},
+            # signatures for theirs
+            {"hits": [{"kind": "function_definition", "signature": "def foo():"}]},
+            {"hits": [{"kind": "function_definition", "signature": "def helper():"}]},
+        ]
+
+        result = self.checker.analyze_file(
+            "src/main.py", "base-ws", "ours-ws", "theirs-ws"
+        )
+
+        self.assertEqual(result.severity, ConflictSeverity.MEDIUM)
+        self.assertEqual(
+            result.recommended_heuristic, MergeHeuristic.FAIL_RAPIDLY_ON_CONFLICT
+        )
+
+    def test_analyze_file_diverging_signature_reports_high_real_shape(self):
+        """End-to-end: diverging signatures for a shared symbol report HIGH against real hits shape."""
+        # base: def compute(x): return x * 2
+        # ours: def compute(x, y): return x * y (arity changed)
+        # theirs: def compute(x): return x + 1 (body changed, same arity)
+        self.mock_client.query_ast.side_effect = [
+            {"hits": [{"kind": "function_definition", "name": "compute"}]},  # base
+            {"hits": [{"kind": "function_definition", "name": "compute"}]},  # ours
+            {"hits": [{"kind": "function_definition", "name": "compute"}]},  # theirs
+            # signatures for ours
+            {"hits": [{"kind": "function_definition", "signature": "def compute(x, y):"}]},
+            # signatures for theirs
+            {"hits": [{"kind": "function_definition", "signature": "def compute(x):"}]},
+        ]
+
+        result = self.checker.analyze_file(
+            "src/main.py", "base-ws", "ours-ws", "theirs-ws"
+        )
+
+        self.assertEqual(result.severity, ConflictSeverity.HIGH)
+        self.assertEqual(
+            result.recommended_heuristic, MergeHeuristic.FAIL_RAPIDLY_ON_CONFLICT
+        )
+        self.assertIn("compute", result.diverging_symbols)
 
 
 class TestPreCheckOrchestration(unittest.TestCase):
