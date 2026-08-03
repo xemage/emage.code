@@ -55,12 +55,12 @@ check_prerequisites() {
     fi
     print_success "Docker daemon is running"
 
-    # Check docker-compose
-    if ! command -v docker-compose &> /dev/null; then
-        print_error "docker-compose is not installed"
+    # Check docker compose plugin
+        if ! docker compose version &> /dev/null; then
+            print_error "docker compose plugin is not available"
         exit 1
     fi
-    print_success "docker-compose is installed: $(docker-compose --version)"
+        print_success "docker compose is available: $(docker compose version --short)"
 
     # Check available ports
     local occupied_ports=()
@@ -73,8 +73,8 @@ check_prerequisites() {
     if [ ${#occupied_ports[@]} -gt 0 ]; then
         print_warning "Ports in use: ${occupied_ports[@]}"
         echo "These ports are already in use. You may need to:"
-        echo "  - Stop existing CWSO: cd $DEPLOY_DIR && docker-compose down"
-        echo "  - Or use different ports (edit docker-compose.yml)"
+        echo "  - Stop existing CWSO: docker compose -f $DOCKER_COMPOSE_SOURCE down"
+        echo "  - Or use different ports (edit $DOCKER_COMPOSE_SOURCE)"
     fi
 
     print_success "Prerequisites check complete"
@@ -131,9 +131,7 @@ copy_configuration() {
 pull_images() {
     print_header "Pulling Docker Images"
 
-    cd "$DEPLOY_DIR"
-
-    if docker-compose pull; then
+    if docker compose -f "$DOCKER_COMPOSE_SOURCE" pull; then
         print_success "All images pulled successfully"
     else
         print_warning "Some images may not be available, will build locally"
@@ -143,9 +141,7 @@ pull_images() {
 start_services() {
     print_header "Starting CWSO Services"
 
-    cd "$DEPLOY_DIR"
-
-    if docker-compose up -d; then
+    if docker compose -f "$DOCKER_COMPOSE_SOURCE" up -d; then
         print_success "Services started"
     else
         print_error "Failed to start services"
@@ -160,18 +156,16 @@ start_services() {
 verify_deployment() {
     print_header "Verifying Deployment"
 
-    cd "$DEPLOY_DIR"
-
     # Check container status
-    if ! docker-compose ps | grep -q "Up"; then
+    if ! docker compose -f "$DOCKER_COMPOSE_SOURCE" ps | grep -q "Up"; then
         print_error "Services are not running"
-        docker-compose logs
+        docker compose -f "$DOCKER_COMPOSE_SOURCE" logs
         exit 1
     fi
 
     local all_running=true
     for service in orchestrator rollout; do
-        if docker-compose ps | grep "$service" | grep -q "Up"; then
+        if docker compose -f "$DOCKER_COMPOSE_SOURCE" ps | grep "$service" | grep -q "Up"; then
             print_success "$service is running"
         else
             print_error "$service is not running"
@@ -182,7 +176,7 @@ verify_deployment() {
     if [ "$all_running" = false ]; then
         print_error "Some services failed to start"
         print_header "Service Logs"
-        docker-compose logs
+        docker compose -f "$DOCKER_COMPOSE_SOURCE" logs
         exit 1
     fi
 
@@ -190,18 +184,18 @@ verify_deployment() {
     echo "Testing health endpoints..."
     sleep 2
 
-    if curl -s http://localhost:8080/health | grep -q "healthy" 2>/dev/null || curl -s http://localhost:8080/health | grep -q "status" 2>/dev/null; then
+    if curl -s http://localhost:8080/healthz | grep -q "ok" 2>/dev/null; then
         print_success "Orchestrator health check passed"
     else
         print_warning "Orchestrator health check didn't respond as expected"
-        echo "Response: $(curl -s http://localhost:8080/health)"
+        echo "Response: $(curl -s http://localhost:8080/healthz)"
     fi
 
-    if curl -s http://localhost:8787/health | grep -q "healthy" 2>/dev/null || curl -s http://localhost:8787/health | grep -q "status" 2>/dev/null; then
+    if curl -s http://localhost:8787/healthz | grep -q '"status":"ok"' 2>/dev/null; then
         print_success "Rollout proxy health check passed"
     else
         print_warning "Rollout proxy health check didn't respond as expected"
-        echo "Response: $(curl -s http://localhost:8787/health)"
+        echo "Response: $(curl -s http://localhost:8787/healthz)"
     fi
 }
 
@@ -214,15 +208,13 @@ show_status() {
         exit 0
     fi
 
-    cd "$DEPLOY_DIR"
-
     echo "Container Status:"
-    docker-compose ps
+    docker compose -f "$DOCKER_COMPOSE_SOURCE" ps
 
     echo ""
     echo "Configuration Location: $DEPLOY_DIR"
     echo "Environment File: $DEPLOY_DIR/.env"
-    echo "Docker Compose File: $DEPLOY_DIR/docker-compose.yml"
+    echo "Docker Compose File: $DOCKER_COMPOSE_SOURCE"
 
     echo ""
     echo "Available Endpoints:"
@@ -256,10 +248,10 @@ After successful deployment, test with:
   curl http://localhost:8080/health
 
 To stop services:
-  cd deploy/local-dev && docker-compose down
+    docker compose -f deploy/docker-compose-t226.yml down
 
 To view logs:
-  cd deploy/local-dev && docker-compose logs -f
+    docker compose -f deploy/docker-compose-t226.yml logs -f
 
 EOF
 }
@@ -267,13 +259,11 @@ EOF
 update_deployment() {
     print_header "Updating CWSO Deployment"
 
-    cd "$DEPLOY_DIR"
-
     echo "Pulling latest images..."
-    docker-compose pull
+    docker compose -f "$DOCKER_COMPOSE_SOURCE" pull
 
     echo "Recreating containers..."
-    docker-compose up -d --force-recreate
+    docker compose -f "$DOCKER_COMPOSE_SOURCE" up -d --force-recreate
 
     sleep 5
     verify_deployment
@@ -284,8 +274,6 @@ update_deployment() {
 clean_deployment() {
     print_header "Cleaning CWSO Deployment"
 
-    cd "$DEPLOY_DIR"
-
     print_warning "This will stop and remove all containers and volumes"
     read -p "Are you sure? (y/N): " -n 1 -r
     echo
@@ -295,7 +283,7 @@ clean_deployment() {
     fi
 
     echo "Stopping services..."
-    docker-compose down -v
+    docker compose -f "$DOCKER_COMPOSE_SOURCE" down -v
 
     print_success "Deployment cleaned"
     print_warning "All data has been removed. Run setup again to restart."
@@ -304,12 +292,10 @@ clean_deployment() {
 show_logs() {
     print_header "CWSO Service Logs"
 
-    cd "$DEPLOY_DIR"
-
     echo "Press Ctrl+C to stop"
     sleep 2
 
-    docker-compose logs -f
+    docker compose -f "$DOCKER_COMPOSE_SOURCE" logs -f
 }
 
 # Main execution
@@ -345,8 +331,8 @@ main() {
             print_success "CWSO is ready!"
             echo ""
             echo "Next steps:"
-            echo "  1. Test health: curl http://localhost:8080/health"
-            echo "  2. View logs: cd $DEPLOY_DIR && docker-compose logs"
+            echo "  1. Test health: curl http://localhost:8080/healthz"
+            echo "  2. View logs: docker compose -f $DOCKER_COMPOSE_SOURCE logs"
             echo "  3. Run tests: pytest tests/"
             ;;
         *)
