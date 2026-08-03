@@ -1,0 +1,20 @@
+services:
+  orchestrator:
+    build:
+      context: ${CWSO_SOURCE_DIR:-../CWSO}
+      dockerfile: deploy/Dockerfile.orchestrator
+
+  git-shadow:
+    build:
+      context: ${CWSO_SOURCE_DIR:-../CWSO}
+      dockerfile: deploy/Dockerfile.git-shadow
+
+  merge-engine:
+    build:
+      context: ${CWSO_SOURCE_DIR:-../CWSO}
+      dockerfile: deploy/Dockerfile.merge-engine
+
+  rollout:
+    build:
+      context: ${CWSO_SOURCE_DIR:-../CWSO}
+      dockerfile: deploy/Dockerfile.rollout

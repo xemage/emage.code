@@ -204,16 +204,14 @@ docker-compose down -v
 ### Updating CWSO Image
 
 ```bash
-cd deploy/local-dev
+# Pull pinned images from the registry (v0.5.2 by default in compose)
+docker compose -f deploy/docker-compose-t226.yml pull
 
-# Pull latest images
-docker-compose pull
-
-# Recreate containers with latest images
-docker-compose up -d --force-recreate
+# Recreate containers with the pulled images
+docker compose -f deploy/docker-compose-t226.yml up -d --force-recreate
 
 # Or via convenience script
-bash ../../scripts/deploy/cwso-docker-desktop.sh --update
+bash scripts/deploy/cwso-docker-desktop.sh --update
 ```
 
 ### Testing with Sample Requests

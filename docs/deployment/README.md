@@ -143,7 +143,7 @@ curl $(gcloud run services describe cwso-orchestrator \
 
 ```bash
 # Docker Desktop
-cd deploy/local-dev && docker-compose logs -f
+docker compose -f deploy/docker-compose-t226.yml logs -f
 
 # Proxmox
 pct enter 201 "docker-compose logs -f"
@@ -156,7 +156,7 @@ gcloud logging read "resource.type=cloud_run_revision" --limit 50 --follow
 
 ```bash
 # Docker Desktop
-cd deploy/local-dev && docker-compose down
+docker compose -f deploy/docker-compose-t226.yml down
 
 # Proxmox
 pct stop 201
@@ -169,7 +169,7 @@ gcloud run services delete cwso-orchestrator --region us-central1
 
 ```bash
 # Docker Desktop
-docker volume inspect cwso-local-dev_orchestrator-data
+docker volume inspect cwso-runtime
 
 # Proxmox
 vzdump 201 --dumpdir /var/backups/cwso
@@ -184,7 +184,7 @@ gsutil -m cp -r gs://project-cwso-parquet/* ~/backups/cwso/
 
 ### Service Won't Start
 
-1. **Docker Desktop**: `docker-compose logs` → check for port conflicts
+1. **Docker Desktop**: `docker compose -f deploy/docker-compose-t226.yml logs` → check for port conflicts
 2. **Proxmox**: `pct logs 201` → verify network configuration
 3. **GCP**: `gcloud run operations list` → check deployment errors
 
