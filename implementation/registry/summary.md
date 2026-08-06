@@ -7,7 +7,7 @@ Generated from: implementation/knowledge
 - agents: 27
 - commands: 19
 - instructions: 4
-- skills: 25
+- skills: 26
 
 ## Entries
 
@@ -70,6 +70,7 @@ Generated from: implementation/knowledge
 | code-review | skill | beta | skills/code-review/SKILL.md |
 | context-window-management | skill | beta | skills/context-window-management/SKILL.md |
 | cost-token-governance | skill | beta | skills/cost-token-governance/SKILL.md |
+| cwso-awareness | skill | beta | skills/cwso-awareness/SKILL.md |
 | dependency-graphing | skill | beta | skills/dependency-graphing/SKILL.md |
 | gitlab-management | skill | beta | skills/gitlab-management/SKILL.md |
 | memory-management | skill | beta | skills/memory-management/SKILL.md |

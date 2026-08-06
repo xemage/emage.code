@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-07-30T18:29:44+02:00",
+  "generatedAt": "2026-08-06T17:44:07+02:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -16,7 +16,7 @@
       "category": "agent",
       "name": "backend-developer",
       "path": "agents/backend-developer.md",
-      "checksum": "4e67075507fddbdae64a316c6b29ca2eb31db1357c879c8cd33f836b30086535",
+      "checksum": "3ac52d2bd748a1678ab9ff789c56619670b00e5e85815b355fe2cc51813fbbba",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -120,7 +120,7 @@
       "category": "agent",
       "name": "devops-engineer",
       "path": "agents/devops-engineer.md",
-      "checksum": "9d8e85641686277dd261064381c6d8263d5bd60a4b9664cb636cc1404325210c",
+      "checksum": "4f0f1ade122288bbc73c5908d9847ec0e90f04a58c5afd10b937413a1571bdae",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -250,7 +250,7 @@
       "category": "agent",
       "name": "orchestrator",
       "path": "agents/orchestrator.md",
-      "checksum": "14adb285a6a1489fc7f19a5c94365c386e283c16e910ecba5cdc5ab7ac063ad7",
+      "checksum": "6ea8d684738b497dca832bb1557f8ed57057c3224a48eaf392c475f5af62ed16",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -1473,6 +1473,32 @@
       "name": "cost-token-governance",
       "path": "skills/cost-token-governance/SKILL.md",
       "checksum": "38f98583341aed1783183842a4db24de6460f5b71c048e03149635313c844427",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "claude-code",
+          "cursor",
+          "gemini",
+          "github",
+          "opencode",
+          "pi"
+        ],
+        "projectionStatus": {
+          "claude-code": "pass",
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass",
+          "pi": "pass"
+        }
+      }
+    },
+    {
+      "id": "cwso-awareness",
+      "category": "skill",
+      "name": "cwso-awareness",
+      "path": "skills/cwso-awareness/SKILL.md",
+      "checksum": "ea42b3ee6450fc2e75a1556dd45ffd459da011c8b813a4341ce40c5c100b0f58",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
