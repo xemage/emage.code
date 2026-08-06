@@ -14,6 +14,8 @@ Complete documentation for deploying CWSO (Orchestration & SIA Infrastructure) a
 
 [📖 Docker Desktop Deployment Guide →](local-docker-desktop-guide.md)
 
+[🔌 Connect CWSO to emage.code Orchestrator (Tested) →](cwso-emage-orchestrator-connection-guide.md)
+
 **Quick start:**
 ```bash
 bash scripts/deploy/cwso-docker-desktop.sh

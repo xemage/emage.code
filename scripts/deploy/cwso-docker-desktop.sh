@@ -245,7 +245,7 @@ Examples:
   bash cwso-docker-desktop.sh --logs       # Watch logs
 
 After successful deployment, test with:
-  curl http://localhost:8080/health
+    curl http://localhost:8080/healthz
 
 To stop services:
     docker compose -f deploy/docker-compose-t226.yml down
@@ -300,7 +300,7 @@ show_logs() {
 
 # Main execution
 main() {
-    local command="${1:-setup}"
+    local command="${1:-}"
 
     case "$command" in
         --help|-h)
@@ -318,7 +318,7 @@ main() {
         --logs|-l)
             show_logs
             ;;
-        "")
+        ""|setup)
             # Full setup
             check_prerequisites
             setup_deploy_directory

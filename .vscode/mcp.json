@@ -51,6 +51,22 @@
     },
     "context7": {
       "url": "https://mcp.context7.com/mcp"
+    },
+    "cwso": {
+      "url": "http://127.0.0.1:8080/mcp",
+      "headers": {
+        "Authorization": "Bearer ${input:cwso_jwt_token}",
+        "Origin": "http://localhost"
+      },
+      "type": "http"
     }
-  }
+  },
+  "inputs": [
+    {
+      "id": "cwso_jwt_token",
+      "type": "promptString",
+      "description": "CWSO JWT bearer token (role=orchestrator or worker)",
+      "password": true
+    }
+  ]
 }
