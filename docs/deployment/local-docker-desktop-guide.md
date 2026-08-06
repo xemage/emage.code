@@ -1,7 +1,7 @@
 # CWSO Local Docker Desktop Deployment Guide
 
-**Version:** 1.1
-**Last updated:** 2026-08-01
+**Version:** 1.2
+**Last updated:** 2026-08-04
 **Based on:** `docs/tasks/task-T313.md`, `docs/artifacts/t305-deployment-guide-validation-report-v1.md`,
 `deploy/docker-compose-t226.yml`, `scripts/deploy/cwso-docker-desktop.sh`
 **Environment:** Docker Desktop (Mac, Windows, Linux)
@@ -48,15 +48,13 @@ token and Step 4 for testing the authenticated endpoint.
 # Navigate to repository
 cd ~/Code/emage/emage.code
 
-# Create deployment directory
-mkdir -p deploy/local-dev
+# Ensure host parquet store path exists (default from deploy/t226-phase2.env)
+mkdir -p /tmp/t226-parquet-store
 
-# Copy configuration — these are the real, existing files in deploy/ (the same
-# ones the automated setup script uses; see DOCKER_COMPOSE_SOURCE / ENV_SOURCE in
-# scripts/deploy/cwso-docker-desktop.sh). There is no separate "local-dev" compose
-# profile — deploy/local-dev/ is just a working copy of these two files.
-cp deploy/docker-compose-t226.yml deploy/local-dev/docker-compose.yml
-cp deploy/t226-phase2.env deploy/local-dev/.env
+# Load runtime environment defaults for this shell session
+set -a
+source deploy/t226-phase2.env
+set +a
 ```
 
 ### Step 2: Configure JWT Secret
@@ -64,22 +62,21 @@ cp deploy/t226-phase2.env deploy/local-dev/.env
 **Option B (recommended default — use this unless you know you need Option A):**
 
 ```bash
-cd deploy/local-dev
 export JWT_SECRET=$(head -c 32 /dev/urandom | base64)
-echo "JWT_SECRET=$JWT_SECRET" >> .env
+echo "JWT_SECRET is generated for ad-hoc local tests in this shell"
 ```
 
-This only generates a fresh secret; it never reads an existing credential file, so it works
-identically for a human operator or an AI coding agent following this guide.
+This only generates a fresh secret; it never reads an existing credential file. Use it for
+client-side local test tokens only.
 
 **Option A (human operators only — reuse the shared CWSO dev JWT):**
 
 ```bash
-# Run from the emage.code repo root (NOT from deploy/local-dev) — the source file
+# Run from the emage.code repo root — the source file
 # lives in a sibling repository checkout, not inside emage.code itself.
 cd ~/Code/emage/emage.code
 source ../CWSO/.env.jwt.dev
-echo "JWT_SECRET=$JWT_SECRET" >> deploy/local-dev/.env
+export JWT_SECRET
 ```
 
 - This only works if you also have the `CWSO` repository checked out as a sibling directory of
@@ -100,13 +97,11 @@ echo "JWT_SECRET=$JWT_SECRET" >> deploy/local-dev/.env
 ### Step 3: Start CWSO Stack
 
 ```bash
-cd deploy/local-dev
-
 # Start all containers
-docker-compose up -d
+docker compose -f deploy/docker-compose-t226.yml up -d
 
 # Verify all containers are running
-docker-compose ps
+docker compose -f deploy/docker-compose-t226.yml ps
 
 # Expected output (actual containers are tini-wrapped compiled Go/Rust binaries,
 # NOT Python — the guide previously showed "python3 ..." for all 4, which is
@@ -145,7 +140,6 @@ curl -i http://localhost:8787/healthz
 # /healthz for liveness checks instead.
 
 # Test JWT authentication
-JWT_SECRET=$(grep JWT_SECRET deploy/local-dev/.env | cut -d= -f2)
 TOKEN=$(python3 -c "
 import jwt
 import json
@@ -165,40 +159,34 @@ curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/status
 ### Viewing Logs
 
 ```bash
-cd deploy/local-dev
-
 # View all logs (follow mode)
-docker-compose logs -f
+docker compose -f deploy/docker-compose-t226.yml logs -f
 
 # View specific service
-docker-compose logs -f orchestrator
+docker compose -f deploy/docker-compose-t226.yml logs -f orchestrator
 
 # View last 50 lines
-docker-compose logs --tail=50 rollout
+docker compose -f deploy/docker-compose-t226.yml logs --tail=50 rollout
 ```
 
 ### Stopping CWSO
 
 ```bash
-cd deploy/local-dev
-
 # Stop all containers (data preserved)
-docker-compose stop
+docker compose -f deploy/docker-compose-t226.yml stop
 
 # Restart containers
-docker-compose start
+docker compose -f deploy/docker-compose-t226.yml start
 ```
 
 ### Removing CWSO (Clean Slate)
 
 ```bash
-cd deploy/local-dev
-
 # Stop and remove containers
-docker-compose down
+docker compose -f deploy/docker-compose-t226.yml down
 
 # Remove volumes (⚠️ deletes all data)
-docker-compose down -v
+docker compose -f deploy/docker-compose-t226.yml down -v
 ```
 
 ### Updating CWSO Image
@@ -217,10 +205,7 @@ bash scripts/deploy/cwso-docker-desktop.sh --update
 ### Testing with Sample Requests
 
 ```bash
-cd deploy/local-dev
-
 # Generate JWT token
-JWT_SECRET=$(grep JWT_SECRET .env | cut -d= -f2)
 TOKEN=$(python3 -c "
 import jwt
 secret = '$JWT_SECRET'
@@ -255,12 +240,12 @@ lsof -i :8080
 kill -9 <PID>
 
 # Option 2: Use different ports
-# Edit deploy/local-dev/docker-compose.yml
+# Edit deploy/docker-compose-t226.yml
 # Change ports: "8080:8080" to "8081:8080"
 # Then rebuild
 
 # Option 3: Check if CWSO is already running
-docker-compose ps
+docker compose -f deploy/docker-compose-t226.yml ps
 ```
 
 ### Out of Memory
@@ -270,11 +255,11 @@ docker-compose ps
 **Solutions:**
 1. Increase Docker memory allocation:
    - Mac/Windows: Docker Desktop → Preferences → Resources → Memory → increase to 6-8GB
-   - Linux: Increase available memory or reduce container limits in docker-compose.yml
+  - Linux: Increase available memory or reduce container limits in deploy/docker-compose-t226.yml
 
 2. Reduce container resource limits:
 ```yaml
-# In docker-compose.yml
+# In deploy/docker-compose-t226.yml
 services:
   orchestrator:
     mem_limit: 1024m  # Reduce from default 2G
@@ -288,23 +273,19 @@ services:
 **Solutions:**
 ```bash
 # 1. Verify JWT is in environment
-grep JWT_SECRET deploy/local-dev/.env
+echo "$JWT_SECRET"
 
 # 2. Verify JWT matches in requests
 TOKEN=$(python3 -c "import jwt; print(jwt.encode({'sub': 'test'}, '$(grep JWT_SECRET .env | cut -d= -f2)', algorithm='HS256'))")
 echo "Token: $TOKEN"
 
 # 3. Check logs for token validation errors
-docker-compose logs orchestrator | grep -i "token\|auth"
+docker compose -f deploy/docker-compose-t226.yml logs orchestrator | grep -i "token\|auth"
 
 # 4. Regenerate JWT if corrupted (recommended: Option B from "Configure JWT
-#    Secret" above — generates a fresh secret without reading any credential
-#    file; see that section for why Option A is not AI-agent-safe)
-rm deploy/local-dev/.env
-cp deploy/t226-phase2.env deploy/local-dev/.env
+#    Secret" above)
 export JWT_SECRET=$(head -c 32 /dev/urandom | base64)
-echo "JWT_SECRET=$JWT_SECRET" >> deploy/local-dev/.env
-docker-compose restart
+docker compose -f deploy/docker-compose-t226.yml restart
 ```
 
 ### Network Connection Issues
@@ -314,7 +295,7 @@ docker-compose restart
 **Solutions:**
 ```bash
 # 1. Verify containers are running
-docker-compose ps
+docker compose -f deploy/docker-compose-t226.yml ps
 
 # 2. Check network configuration
 docker network ls
@@ -325,40 +306,40 @@ docker inspect cwso-orchestrator | grep -A 10 NetworkSettings
 
 # 4. Test from the host against the published port — do NOT exec into the
 #    container. The orchestrator image is a minimal, distroless-style Go binary
-#    image and ships no `curl` (or shell tooling); `docker-compose exec orchestrator
+#    image and ships no `curl` (or shell tooling); `docker compose exec orchestrator
 #    curl ...` fails with "executable file not found in $PATH".
 curl -i http://localhost:8080/healthz
 
 # 5. Restart containers
-docker-compose restart
+docker compose -f deploy/docker-compose-t226.yml restart
 ```
 
 ### Containers Won't Start
 
-**Problem:** `docker-compose up` fails with errors
+**Problem:** `docker compose -f deploy/docker-compose-t226.yml up` fails with errors
 
 **Solutions:**
 ```bash
 # 1. Check logs for errors
-docker-compose logs
+docker compose -f deploy/docker-compose-t226.yml logs
 
 # 2. Verify images exist
 docker images | grep cwso
 
 # 3. Pull images explicitly
-docker-compose pull
+docker compose -f deploy/docker-compose-t226.yml pull
 
 # 4. Rebuild images
-docker-compose build --no-cache
+docker compose -f deploy/docker-compose-t226.yml -f deploy/docker-compose-t226.build.yml build --no-cache
 
 # 5. Check configuration
-docker-compose config | grep -A 5 orchestrator
+docker compose -f deploy/docker-compose-t226.yml config | grep -A 5 orchestrator
 
 # 6. Full reset
-docker-compose down -v
+docker compose -f deploy/docker-compose-t226.yml down -v
 docker system prune
-docker-compose pull
-docker-compose up -d
+docker compose -f deploy/docker-compose-t226.yml pull
+docker compose -f deploy/docker-compose-t226.yml up -d
 ```
 
 ---
@@ -368,7 +349,7 @@ docker-compose up -d
 **Note:** The `mem_limit`/`cpus` examples below are aspirational sizing guidance only — they are
 **not** currently applied in `deploy/docker-compose-t226.yml` (the real compose file defines zero
 `mem_limit`/`cpus:` keys on any service today). Add these keys yourself under the relevant service
-block in your `deploy/local-dev/docker-compose.yml` copy if you want to enforce them locally.
+block in your `deploy/docker-compose-t226.yml` copy if you want to enforce them locally.
 
 ### For Development (Default)
 ```yaml
@@ -435,7 +416,7 @@ docker stats cwso-orchestrator cwso-rollout
 docker compose -f deploy/docker-compose-t226.yml ps git-shadow merge-engine
 
 # Memory usage over time
-docker-compose exec orchestrator free -h
+docker stats cwso-orchestrator --no-stream
 
 # Disk usage
 docker system df
@@ -445,13 +426,13 @@ docker system df
 
 ```bash
 # View logs with timestamps
-docker-compose logs --timestamps
+docker compose -f deploy/docker-compose-t226.yml logs --timestamps
 
 # Search for errors
-docker-compose logs | grep -i error
+docker compose -f deploy/docker-compose-t226.yml logs | grep -i error
 
 # Stream specific service logs
-docker-compose logs -f orchestrator --tail 20
+docker compose -f deploy/docker-compose-t226.yml logs -f orchestrator --tail 20
 ```
 
 ---
@@ -513,7 +494,8 @@ docker volume inspect cwso-local-dev_cwso-runtime 2>/dev/null && \
   alpine tar czf /backup/volumes.tar.gz /data
 
 # Backup configuration
-cp -r deploy/local-dev $BACKUP_DIR/config
+cp deploy/docker-compose-t226.yml $BACKUP_DIR/
+cp deploy/t226-phase2.env $BACKUP_DIR/
 
 # Backup trajectories
 cp -r /tmp/t226-parquet-store $BACKUP_DIR/trajectories 2>/dev/null || true
@@ -530,8 +512,7 @@ ls -la ~/backups/cwso-local/
 BACKUP_DIR=~/backups/cwso-local/cwso-backup-<timestamp>
 
 # Stop CWSO
-cd deploy/local-dev
-docker-compose down -v
+docker compose -f deploy/docker-compose-t226.yml down -v
 
 # Restore volumes (real volume name is cwso-runtime, project-prefixed — see
 # "Volume Management" above)
@@ -540,14 +521,14 @@ docker run --rm -v cwso-local-dev_cwso-runtime:/data -v $BACKUP_DIR:/backup \
   alpine tar xzf /backup/volumes.tar.gz -C /
 
 # Restore configuration (if needed)
-cp $BACKUP_DIR/config/.env .env
+cp $BACKUP_DIR/t226-phase2.env deploy/t226-phase2.env
 
 # Restore trajectories
 mkdir -p /tmp/t226-parquet-store
 cp -r $BACKUP_DIR/trajectories/* /tmp/t226-parquet-store/ 2>/dev/null || true
 
 # Restart CWSO
-docker-compose up -d
+docker compose -f deploy/docker-compose-t226.yml up -d
 
 echo "Restore complete"
 ```
@@ -580,7 +561,7 @@ echo "Restore complete"
 For issues or questions:
 1. Check the troubleshooting section above
 2. See [Deployment Troubleshooting Guide](troubleshooting-guide.md)
-3. Review deployment logs: `docker-compose logs`
+3. Review deployment logs: `docker compose -f deploy/docker-compose-t226.yml logs`
 4. Consult the main README: `/home/emage/Code/emage/emage.code/README.md`
 5. Check CWSO documentation: `/home/emage/Code/emage/CWSO/README.md`
 
@@ -589,8 +570,7 @@ For issues or questions:
 ## Appendix: Docker Compose Configuration
 
 See `docker-compose-t226.yml` and `t226-phase2.env` in the `deploy/` directory for full
-configuration details (these are copied into `deploy/local-dev/` as `docker-compose.yml` and
-`.env` respectively during Step 1 above).
+configuration details.
 
 Key services:
 - **orchestrator** (port 8080) — Main CWSO orchestration engine. Liveness: `GET /healthz`
