@@ -19,10 +19,7 @@ secrets:
 services:
   # Main orchestration server
   orchestrator:
-    image: cwso/orchestrator:dev
-    build:
-      context: /home/emage/Code/emage/CWSO
-      dockerfile: deploy/Dockerfile.orchestrator
+    image: registry.gitlab.com/em-age/emage.code.cwso/orchestrator:v0.5.2
     container_name: cwso-orchestrator
     ports:
       - "8080:8080"
@@ -75,10 +72,7 @@ services:
 
   # Phase 2: Git conflict detection sidecar
   git-shadow:
-    image: cwso/git-shadow:dev
-    build:
-      context: /home/emage/Code/emage/CWSO
-      dockerfile: deploy/Dockerfile.git-shadow
+    image: registry.gitlab.com/em-age/emage.code.cwso/git-shadow:v0.5.2
     container_name: cwso-git-shadow
     environment:
       CWSO_IPC_ALLOWED_UIDS: "0,100"
@@ -95,10 +89,7 @@ services:
 
   # Phase 4: Merge orchestration sidecar
   merge-engine:
-    image: cwso/merge-engine:dev
-    build:
-      context: /home/emage/Code/emage/CWSO
-      dockerfile: deploy/Dockerfile.merge-engine
+    image: registry.gitlab.com/em-age/emage.code.cwso/merge-engine:v0.5.2
     container_name: cwso-merge-engine
     environment:
       CWSO_MERGE_ENGINE_SOCKET: "/run/cwso/merge-engine.sock"
@@ -115,10 +106,7 @@ services:
 
   # Rollout proxy with Parquet trajectory capture
   rollout:
-    image: cwso/rollout:dev
-    build:
-      context: /home/emage/Code/emage/CWSO
-      dockerfile: deploy/Dockerfile.rollout
+    image: registry.gitlab.com/em-age/emage.code.cwso/rollout:v0.5.2
     container_name: cwso-rollout
     ports:
       - "${CWSO_ROLLOUT_HTTP_BIND_PORT:-8787}:8787"
@@ -151,7 +139,7 @@ services:
     security_opt:
       - no-new-privileges:true
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8787/v1/models"]
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8787/healthz"]
       interval: 10s
       timeout: 3s
       retries: 5
