@@ -2,7 +2,7 @@
 
 Welcome to the **emage.code** wiki — the central knowledge hub for the multi-platform AI dev-team orchestration framework.
 
-Latest release: v6.5.0
+Latest release: v6.6.0
 
 ## What is emage.code?
 
