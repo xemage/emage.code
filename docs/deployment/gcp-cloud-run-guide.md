@@ -5,6 +5,13 @@
 **Platform:** Google Cloud Run
 **Region:** us-central1 (configurable)
 
+> **⚠️ Not yet validated end-to-end.** This guide was written from the original deployment plan
+> (`docs/plans/plan-013-cwso-deployment-guides.md`) but has not been run against a real
+> GCP project since. Unlike `local-docker-desktop-guide.md` (validated and
+> corrected in `docs/tasks/task-T313.md`), no task in this repo’s history confirms this guide
+> works as written. Treat it as a starting point, not a proven procedure, until a future task
+> validates it for real and removes this notice.
+
 ---
 
 ## Quick Start (20 minutes)

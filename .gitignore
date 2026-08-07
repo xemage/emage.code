@@ -34,6 +34,11 @@ secrets/
 deploy/keys/
 **/keys/*.key
 
+# scripts/deploy/cwso-docker-desktop.sh generates deploy/local-dev/ at runtime as a working
+# copy of deploy/docker-compose-t226.yml + deploy/t226-phase2.env (including the JWT secret
+# reference) — never a source-controlled directory.
+deploy/local-dev/
+
 # OS cruft
 .DS_Store
 Thumbs.db

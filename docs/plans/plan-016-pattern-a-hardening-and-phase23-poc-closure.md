@@ -412,6 +412,13 @@ and the tools/list response into task-T304.md Execution notes. Leave the stack r
 for Wave 4/5 — do NOT `docker compose down` at the end of this task.
 ```
 
+**Outcome (2026-07-31):** T304 hit Case B. `orchestrator`, `git-shadow`, `merge-engine` came up
+healthy; `cwso-rollout` built and started but never turned healthy (`curl -f .../v1/models` → HTTP
+405; trajectory store writer failed to create `./rollout_store`), independently re-verified twice.
+T304 stays `blocked`, not done. **T311** was filed in this repo's ledger
+(`docs/tasks/task-T311.md`) to track the defect, and T310 (below) was executed for real to hand it
+off to CWSO's own team. Waves 4/5/6 remain blocked per GATE 3 until CWSO resolves it.
+
 #### T310 · Document confirmed CWSO-core defects directly in the CWSO repository
 ```
 Owner: devops-engineer · Priority: P1 · Depends on: T304 (runs only if T304 or T305 found
@@ -651,3 +658,56 @@ T306 → closing evidence pack (this plan's proof of "done")
 ## Task ID index (traceability)
 
 T300, T301, T307, T308, T309, T302, T303, T304, T310, T305, T214 (addendum), T306
+
+T311 — bug task filed 2026-07-31 in this repo's ledger (`docs/tasks/task-T311.md`), tracking the
+real `cwso-rollout` unhealthy defect found while executing T304 (see T304's Outcome note above).
+Not part of the original task graph; added as a direct consequence of T304's Case B outcome, per
+plan-016 §"WAVE 3" T304's own acceptance criteria.
+
+T312 — fix task filed and completed 2026-08-01 (`docs/tasks/task-T312.md`), correcting a stale
+`rollout` healthcheck target in this repo's own `deploy/docker-compose-t226.yml` (found during the
+T304 re-verification after CWSO's own team fixed the original T311 defect upstream). Not part of
+the original task graph; a direct, this-repo-owned follow-on to T304/T311, merged via MR !89.
+T304 and T311 were both subsequently closed `done` once T312 confirmed `cwso-rollout` genuinely
+healthy — see T304's 2026-08-01 re-verification section and T311's Resolution section.
+
+T313 — bug/fix task filed 2026-08-01 (`docs/tasks/task-T313.md`), consolidating 13 findings from
+T305's real, end-to-end validation of `docs/deployment/local-docker-desktop-guide.md` (see
+`docs/artifacts/t305-deployment-guide-validation-report-v1.md`). Not part of the original task
+graph; a direct consequence of T305's own acceptance criterion 3 ("any failing step... is filed as
+a new bug task"). All 13 findings trace to this repo's own guide/script/compose-naming, not to a
+CWSO-core defect, so T310's hand-off convention does not apply to T313.
+
+T314 — bug/fix task filed and completed 2026-08-02 (`docs/tasks/task-T314.md`), fixing a real MCP
+tool-result envelope-unwrapping defect in `implementation/runtime/cwso/mcp_client.py`
+(`CwsoMcpClient.call_tool`) found live during pre-flight probing ahead of executing T214 — the real
+server wraps every `tools/call` payload in `{"content":[{"type":"text","text":"<json>"}]}`, which
+the client never unwrapped, so none of `CwsoClient`'s typed accessors worked against the real
+server. Not part of the original task graph; a direct prerequisite discovered while starting
+Wave 5 (T214). Fixed with a defensive fallback, re-verified live twice, merged via MR !94.
+
+T315 — bug/fix task filed and completed 2026-08-02 (`docs/tasks/task-T315.md`), fixing real
+response-shape defects in `implementation/runtime/cwso/ast_conflict_check.py`
+(`AstConflictChecker`) and `implementation/runtime/cwso/concurrent_merge.py`
+(`ConcurrentMergeOrchestrator._extract_conflicts`) found by qa-engineer's first real, live run of
+T214's 4 scenarios (see `docs/tasks/task-T214.md` Execution notes): the AST pre-check always
+reported LOW severity against the live server because it assumed `query_ast` response keys
+(`"exports"`/`"signature"`) that don't exist in the real server's actual `"hits"`-list shape, and
+merge-conflict extraction looked for a key (`"unresolved_conflicts"`) the real
+`merge_concurrent_results` response never has. Not part of the original task graph; exactly the
+"integration reveals a bug unit tests didn't catch" risk this plan's own risk table anticipated for
+T213/T212. Fixed with defensive fallbacks, MEDIUM/HIGH severity detection independently re-verified
+live twice, merged via MR !95. Directly blocked T214's remaining 3 scenarios; T214 was re-run
+against the fix (see T214's Execution notes for the post-fix evidence).
+
+T316 — tracked, non-blocking follow-up task filed 2026-08-02 (`docs/tasks/task-T316.md`),
+recording the remaining minor findings from the same T214 live run that T315 did not need to fix
+to satisfy T214's stated acceptance criteria: BUG-A (`ConcurrentMergeOrchestrator.run()` cannot
+complete end-to-end against the live server with a single-role `CwsoClient` — the live permission
+model splits `worker`/`orchestrator` tool access in a way the single-client design doesn't
+accommodate), BUG-E (`write_shadow_file`'s real response is prose, not JSON, so no `blob_oid` key
+is ever surfaced), BUG-F (`_build_merge_inputs()` silently drops the middle worker's edits for 3+
+workers on the same path), BUG-G (real conflict messages are generic, not symbol-specific — CWSO
+server behavior, not a this-repo defect), BUG-H (an inconsistent absolute import in
+`ast_conflict_check.py` creates two distinct module identities at runtime). Priority P2; does not
+gate T214, T306, or any other task in this plan. Not part of the original task graph.

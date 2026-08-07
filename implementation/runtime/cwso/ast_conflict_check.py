@@ -117,12 +117,61 @@ class AstConflictChecker:
                 target_symbol=None,
             )
 
-            if isinstance(result, dict) and "exports" in result:
+            if not isinstance(result, dict):
+                return set()
+
+            # Real server shape: {"hits": [{"kind": ..., "name": ...}, ...], ...}
+            if "hits" in result:
+                hits = result["hits"]
+                if not isinstance(hits, list):
+                    return set()
+                return {
+                    hit["name"]
+                    for hit in hits
+                    if isinstance(hit, dict) and "name" in hit
+                }
+
+            # Defensive fallback: old assumed top-level "exports" key shape.
+            if "exports" in result:
                 return set(result["exports"])
+
             return set()
-        except Exception as e:
+        except Exception:
             # Graceful fallback: if AST query fails, assume no exports known
             return set()
+
+    @staticmethod
+    def _extract_signature(result: object) -> Optional[str]:
+        """Extract a signature string from a query_ast EXTRACT_SIGNATURE response.
+
+        Handles the real server shape (`{"hits": [{"signature": ...}, ...]}`)
+        with a defensive fallback to the old assumed top-level `"signature"`
+        key shape.
+
+        Args:
+            result: Raw response from `CwsoClient.query_ast`.
+
+        Returns:
+            The signature string if found, else None.
+        """
+        if not isinstance(result, dict):
+            return None
+
+        # Real server shape: {"hits": [{"kind": ..., "signature": ...}], ...}
+        if "hits" in result:
+            hits = result["hits"]
+            if not isinstance(hits, list):
+                return None
+            for hit in hits:
+                if isinstance(hit, dict) and "signature" in hit:
+                    return hit["signature"]
+            return None
+
+        # Defensive fallback: old assumed top-level "signature" key shape.
+        if "signature" in result:
+            return result["signature"]
+
+        return None
 
     def _query_signatures(
         self, workspace_uuid: str, path: str, symbols: Set[str]
@@ -147,8 +196,9 @@ class AstConflictChecker:
                     target_symbol=symbol,
                 )
 
-                if isinstance(result, dict) and "signature" in result:
-                    sigs[symbol] = result["signature"]
+                signature = self._extract_signature(result)
+                if signature is not None:
+                    sigs[symbol] = signature
             except Exception:
                 # If signature extraction fails, treat as unknown
                 pass

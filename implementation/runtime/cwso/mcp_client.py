@@ -178,11 +178,49 @@ class CwsoMcpClient:
         return tools
 
     def call_tool(self, *, role: str, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
-        return self.rpc(
+        result = self.rpc(
             role=role,
             method="tools/call",
             params={"name": name, "arguments": arguments},
         )
+        return self._unwrap_tool_result(result)
+
+    @staticmethod
+    def _unwrap_tool_result(result: dict[str, Any]) -> dict[str, Any]:
+        """Unwrap the standard MCP tool-result envelope.
+
+        The real CWSO MCP server wraps every `tools/call` result as
+        `{"content": [{"type": "text", "text": "<json-encoded-payload>"}]}`,
+        with the actual payload (e.g. `workspace_uuid`, `blob_oid`) JSON-encoded
+        inside `content[0]["text"]` rather than present as top-level keys.
+
+        Defensive fallback: if `result` does not match this envelope shape (no
+        `content` key, `content` not a non-empty list, `content[0]` not a dict,
+        or `content[0]["text"]` not valid JSON / not a JSON object), return
+        `result` unmodified rather than raising — a future server version may
+        already return a flat dict.
+        """
+        content = result.get("content")
+        if not isinstance(content, list) or not content:
+            return result
+
+        first_item = content[0]
+        if not isinstance(first_item, dict) or first_item.get("type") != "text":
+            return result
+
+        text = first_item.get("text")
+        if not isinstance(text, str):
+            return result
+
+        try:
+            parsed = json.loads(text)
+        except (json.JSONDecodeError, ValueError):
+            return result
+
+        if not isinstance(parsed, dict):
+            return result
+
+        return parsed
 
     @staticmethod
     def normalized_tools(tools: list[dict[str, Any]]) -> list[dict[str, Any]]:
