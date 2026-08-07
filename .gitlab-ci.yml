@@ -111,6 +111,21 @@ validation-super-gate:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH
 
+main-develop-drift-check:
+  stage: verify
+  image: python:3.12-alpine
+  variables:
+    GIT_DEPTH: "1"
+  before_script:
+    - apk add --no-cache git
+  script:
+    - git fetch origin main develop --depth=1
+    - git fetch origin 'refs/tags/*:refs/tags/*'
+    - python3 scripts/check-main-develop-drift.py --main-ref origin/main --develop-ref origin/develop
+  allow_failure: true
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "develop"'
+
 sync-no-diff:
   stage: sync
   needs: ["verify-knowledge-drift", "validation-super-gate"]
@@ -161,9 +176,23 @@ release-docs-gate:
   rules:
     - if: '$CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$/'
 
+main-develop-drift-gate:
+  stage: release
+  image: python:3.12-alpine
+  variables:
+    GIT_DEPTH: "1"
+  before_script:
+    - apk add --no-cache git
+  script:
+    - git fetch origin main develop --depth=1
+    - git fetch origin 'refs/tags/*:refs/tags/*'
+    - python3 scripts/check-main-develop-drift.py --main-ref origin/main --develop-ref origin/develop
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$/'
+
 release:
   stage: release
-  needs: ["release-docs-gate"]
+  needs: ["release-docs-gate", "main-develop-drift-gate"]
   image: python:3.12-alpine
   variables:
     GIT_DEPTH: "0"
