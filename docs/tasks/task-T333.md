@@ -2,11 +2,11 @@
 
 **ID:** T333
 **Owner:** qa-engineer
-**Status:** pending
+**Status:** done
 **Priority:** P0
 **Depends on:** T332
 **Created:** 2026-08-07
-**Completed:** —
+**Completed:** 2026-08-07
 **Based on:** `docs/plans/plan-019-main-develop-drift-detection.md` §5, `scripts/check-main-develop-drift.py` (T332)
 
 ## Objective
@@ -177,4 +177,112 @@ Report blockers as: type (`technical` | `dependency` | `unclear_requirements` | 
 + severity (`critical` | `major` | `minor`) + one proposed mitigation. Max 2 retries.
 
 ## Execution notes
-<not yet picked up>
+
+**Executed by:** qa-engineer, 2026-08-07, worktree `agent-af40748c222647533` (branch
+`feature/332-main-develop-drift-detection`).
+
+### AC1 — file exists with exact content
+
+`tests/functional/test_check_main_develop_drift.py` was created with the **exact** content given
+in this brief, verbatim. No import/syntax issue was found — the module-loading pattern mirrors
+`tests/functional/test_publish_release.py` exactly, and manual trace of every test case against
+`scripts/check-main-develop-drift.py`'s actual `parse_marker`/`semver_key`/`sorted_valid_tags`/
+`releases_behind`/`evaluate` implementations confirmed the expected values before running (e.g.
+`releases_behind("v6.4.2", "v6.5.0", TAGS)` → index 3 to index 5 → `2`, matching the "real
+incident shape" assertion). No deviation was made from the brief's file content.
+
+### AC2 — full functional suite
+
+Command: `python3 tests/run.py --suite functional -v 2>&1 | grep -A2
+"test_check_main_develop_drift\|Ran"`
+
+```
+test_fail_when_develop_marker_missing (tests.functional.test_check_main_develop_drift.TestEvaluate.test_fail_when_develop_marker_missing) ... ok
+test_fail_when_main_ahead_of_develop (tests.functional.test_check_main_develop_drift.TestEvaluate.test_fail_when_main_ahead_of_develop) ... ok
+test_fail_when_main_marker_missing (tests.functional.test_check_main_develop_drift.TestEvaluate.test_fail_when_main_marker_missing) ... ok
+test_fail_when_more_than_one_release_behind (tests.functional.test_check_main_develop_drift.TestEvaluate.test_fail_when_more_than_one_release_behind) ... ok
+test_pass_when_in_sync (tests.functional.test_check_main_develop_drift.TestEvaluate.test_pass_when_in_sync) ... ok
+test_pass_within_one_release_grace (tests.functional.test_check_main_develop_drift.TestEvaluate.test_pass_within_one_release_grace) ... ok
+test_parses_standard_marker (tests.functional.test_check_main_develop_drift.TestParseMarker.test_parses_standard_marker) ... ok
+test_returns_none_when_marker_absent (tests.functional.test_check_main_develop_drift.TestParseMarker.test_returns_none_when_marker_absent) ... ok
+test_counts_gap_correctly_matching_real_incident_shape (tests.functional.test_check_main_develop_drift.TestReleasesBehind.test_counts_gap_correctly_matching_real_incident_shape) ... ok
+test_raises_on_unknown_develop_version (tests.functional.test_check_main_develop_drift.TestReleasesBehind.test_raises_on_unknown_develop_version) ... ok
+test_raises_on_unknown_main_version (tests.functional.test_check_main_develop_drift.TestReleasesBehind.test_raises_on_unknown_main_version) ... ok
+test_raises_when_main_ahead_of_develop (tests.functional.test_check_main_develop_drift.TestReleasesBehind.test_raises_when_main_ahead_of_develop) ... ok
+test_zero_when_versions_match (tests.functional.test_check_main_develop_drift.TestReleasesBehind.test_zero_when_versions_match) ... ok
+test_drops_invalid_tags_from_sort (tests.functional.test_check_main_develop_drift.TestSemverKeyAndSort.test_drops_invalid_tags_from_sort) ... ok
+test_rejects_non_semver_tags (tests.functional.test_check_main_develop_drift.TestSemverKeyAndSort.test_rejects_non_semver_tags) ... ok
+test_sorts_ascending_numerically_not_lexically (tests.functional.test_check_main_develop_drift.TestSemverKeyAndSort.test_sorts_ascending_numerically_not_lexically) ... ok
+test_agent_references_resolve (tests.functional.test_cross_references.TestCrossReferences.test_agent_references_resolve) ... ok
+test_mcp_tool_references_resolve (tests.functional.test_cross_references.TestCrossReferences.test_mcp_tool_references_resolve) ... ok
+--
+Ran 268 tests in 17.438s
+
+OK (skipped=17)
+```
+
+All 16 new test methods appear as `ok`; full functional suite `OK (skipped=17)`, no failures. PASS.
+
+### AC3 — direct isolated run
+
+Command:
+```bash
+python3 -m unittest tests.functional.test_check_main_develop_drift -v
+echo "EXIT_CODE=$?"
+```
+
+```
+test_fail_when_develop_marker_missing (tests.functional.test_check_main_develop_drift.TestEvaluate.test_fail_when_develop_marker_missing) ... ok
+test_fail_when_main_ahead_of_develop (tests.functional.test_check_main_develop_drift.TestEvaluate.test_fail_when_main_ahead_of_develop) ... ok
+test_fail_when_main_marker_missing (tests.functional.test_check_main_develop_drift.TestEvaluate.test_fail_when_main_marker_missing) ... ok
+test_fail_when_more_than_one_release_behind (tests.functional.test_check_main_develop_drift.TestEvaluate.test_fail_when_more_than_one_release_behind) ... ok
+test_pass_when_in_sync (tests.functional.test_check_main_develop_drift.TestEvaluate.test_pass_when_in_sync) ... ok
+test_pass_within_one_release_grace (tests.functional.test_check_main_develop_drift.TestEvaluate.test_pass_within_one_release_grace) ... ok
+test_parses_standard_marker (tests.functional.test_check_main_develop_drift.TestParseMarker.test_parses_standard_marker) ... ok
+test_returns_none_when_marker_absent (tests.functional.test_check_main_develop_drift.TestParseMarker.test_returns_none_when_marker_absent) ... ok
+test_counts_gap_correctly_matching_real_incident_shape (tests.functional.test_check_main_develop_drift.TestReleasesBehind.test_counts_gap_correctly_matching_real_incident_shape) ... ok
+test_raises_on_unknown_develop_version (tests.functional.test_check_main_develop_drift.TestReleasesBehind.test_raises_on_unknown_develop_version) ... ok
+test_raises_on_unknown_main_version (tests.functional.test_check_main_develop_drift.TestReleasesBehind.test_raises_on_unknown_main_version) ... ok
+test_raises_when_main_ahead_of_develop (tests.functional.test_check_main_develop_drift.TestReleasesBehind.test_raises_when_main_ahead_of_develop) ... ok
+test_zero_when_versions_match (tests.functional.test_check_main_develop_drift.TestReleasesBehind.test_zero_when_versions_match) ... ok
+test_drops_invalid_tags_from_sort (tests.functional.test_check_main_develop_drift.TestSemverKeyAndSort.test_drops_invalid_tags_from_sort) ... ok
+test_rejects_non_semver_tags (tests.functional.test_check_main_develop_drift.TestSemverKeyAndSort.test_rejects_non_semver_tags) ... ok
+test_sorts_ascending_numerically_not_lexically (tests.functional.test_check_main_develop_drift.TestSemverKeyAndSort.test_sorts_ascending_numerically_not_lexically) ... ok
+
+----------------------------------------------------------------------
+Ran 16 tests in 0.003s
+
+OK
+EXIT_CODE=0
+```
+
+**Discrepancy note (documentation-only, not a code/test fix):** the brief's Acceptance Criteria §3
+states "all listed test methods (14 total) `ok`". Counting the methods actually listed in this
+brief's "Exact file content" section gives **16**: `TestParseMarker` (2) + `TestSemverKeyAndSort`
+(3) + `TestReleasesBehind` (5) + `TestEvaluate` (6) = 16. Both the isolated run and the full-suite
+run above independently confirm "Ran 16 tests ... OK". The test file content itself was not
+altered — this is purely an inaccurate expected count in the brief's narrative text, not a defect
+in the file or in `scripts/check-main-develop-drift.py`. Reporting as informational per the "note
+deviations in Execution notes" instruction rather than as a blocker, since all 16 tests pass and
+zero failures/errors occurred.
+
+### AC4 — `scripts/check-main-develop-drift.py` untouched
+
+```
+$ git diff scripts/check-main-develop-drift.py
+(empty output)
+```
+
+Confirmed no modification was made to `scripts/check-main-develop-drift.py` in this task.
+
+### Scope note
+
+`git status --porcelain` at the time of this run also showed pre-existing unstaged modifications
+to `CONTRIBUTING.md` and `docs/tasks/task-T335.md` in this shared worktree. These are outside this
+task's scope (T333 only touches `tests/functional/test_check_main_develop_drift.py` and this task
+brief) and were not made by this task execution.
+
+### Verdict
+
+All 4 acceptance criteria PASS. No blockers. `scripts/check-main-develop-drift.py` was not
+modified.
