@@ -161,6 +161,32 @@ glab release create vX.Y.Z --ref vX.Y.Z --name vX.Y.Z -F docs/releases/vX.Y.Z.md
 
 Do not use ad-hoc inline `--notes`, as that can drift from `docs/releases/vX.Y.Z.md`.
 
+### Drift detection
+
+`main` and `develop` are checked for content drift on every release and on every push to
+`develop`, using `scripts/check-main-develop-drift.py`. The check compares the
+`Latest release: vX.Y.Z` marker in `README.md` on each branch and counts how many tagged
+releases separate them.
+
+- **Grace window:** `main` may lag `develop` by up to 1 release — the normal transient state
+  between a release being tagged and its `release/vX.Y.Z → main` sync MR landing.
+- **Blocking gate (`main-develop-drift-gate`, `release` stage):** runs on every tag push. If
+  `main` is already more than 1 release behind at the moment a new release is tagged, this job
+  fails and blocks the `release` job (CHANGELOG + GitLab Release publish) until the outstanding
+  `release/vX.Y.Z → main` MR is merged.
+- **Informational check (`main-develop-drift-check`, `verify` stage):** runs on every push to
+  `develop`, non-blocking (`allow_failure: true`), for earlier visibility between releases.
+
+**If the gate fails:** the job output lists exactly which release tags are missing from `main`.
+Resolve it the normal way — branch `release/vX.Y.Z` from `develop` for the oldest missing
+release, open an MR to `main` per the "Cutting a release" steps above, get it merged, then retry
+the tag push (or re-run the pipeline once `main` is caught up).
+
+See `docs/tasks/task-T331.md` for the incident this gate was built to prevent, and
+`docs/plans/plan-019-main-develop-drift-detection.md` for the full design rationale (why content
+comparison instead of `git merge-base --is-ancestor`, why a 1-release grace window, why a
+blocking release-time gate instead of a scheduled pipeline).
+
 ### Hotfixes
 
 1. Branch from `main`: `hotfix/vX.Y.Z+1`
