@@ -2,7 +2,8 @@
 
 **ID:** T349
 **Owner:** devops-engineer
-**Status:** in_progress
+**Status:** done
+**Completed:** 2026-08-08
 **Priority:** P1
 **Depends on:** —
 **Created:** 2026-08-08
@@ -160,3 +161,15 @@ Branch `docs/349-fix-release-merge-procedure` → MR !129
 (<https://gitlab.com/em-age/emage.code/-/merge_requests/129>) to `develop`. Opened, not
 self-merged, per the brief's constraint — awaiting orchestrator review and independent
 verification before merge.
+
+### Orchestrator closeout (2026-08-08)
+Independently re-verified before merging: reviewed the actual `CONTRIBUTING.md` diff in full
+(both sections match the exact commands and confidence framing from `task-T348.md`'s evidence,
+nothing invented or overstated), confirmed zero diff on `scripts/verify-main-sync-merge.py`,
+independently re-ran the full verification bar on the MR branch myself (293 tests OK, 0 sync
+drift, ledger PASS). MR !129 merged (squash, source branch removed):
+`merge_commit_sha: c136c05b3b85fc0be6d9a473b9477530d0529a9d`, target `develop`.
+
+The next real `release/*→main` sync (whenever it happens) is the actual test of whether the
+PUT-first sequence generalizes beyond its one confirmed success — no action needed until then;
+`scripts/verify-main-sync-merge.py` remains the safety net regardless of outcome.
