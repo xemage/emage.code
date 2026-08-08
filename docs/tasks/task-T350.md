@@ -2,7 +2,8 @@
 
 **ID:** T350
 **Owner:** release-manager
-**Status:** in_progress
+**Status:** done
+**Completed:** 2026-08-08
 **Priority:** P1
 **Depends on:** —
 **Created:** 2026-08-08
@@ -129,3 +130,20 @@ branching directly from the fetched remote tip rather than the stale local branc
 **Not done (explicitly out of scope for this pass, per the brief):** merge, tag `v6.7.1`, watch
 tag-triggered pipeline, verify GitLab Release publish, and any ledger transition of T350 itself in
 `active-tasks.md`/`completed-tasks.md`. This task's Status header is left as `in_progress`.
+
+### Orchestrator closeout (2026-08-08)
+- Independently re-verified before merging: reviewed `docs/releases/v6.7.1.md` and the checkpoint
+  in full (both T348/T349 correctly classified under Internal, breaking-changes "None" claim
+  verified accurate); independently re-ran the full verification bar on the MR branch myself (all
+  5 checks green, matching the delegate's report).
+- MR !132 merged (squash, source branch removed):
+  `merge_commit_sha: 2cbd7d59cb1453697d6503e8ce54f303f0fe3617`, target `develop`.
+- Local `develop` synced to `2cbd7d5`. Tagged directly by the orchestrator:
+  `git tag -a v6.7.1 -m "Release v6.7.1" 2cbd7d5`, pushed to origin.
+- Tag-triggered pipeline (`2743104371`) watched to completion: **success**, all 3 release-stage
+  jobs green. `main-develop-drift-gate`: `drift-check: main=v6.7.0 develop=v6.7.1
+  releases_behind=1` → `PASS`.
+- GitLab Release independently verified via `glab api projects/.../releases/v6.7.1`:
+  `tag_name: v6.7.1`, `released_at: 2026-08-08T10:45:53.943Z`.
+
+Release URL: <https://gitlab.com/em-age/emage.code/-/releases/v6.7.1>
