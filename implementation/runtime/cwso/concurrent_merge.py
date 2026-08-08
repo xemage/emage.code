@@ -61,11 +61,22 @@ class ConcurrentMergeResult:
 
 
 class ConcurrentMergeOrchestrator:
-    """Run N worker edit sets through shadow-workspace fanout and merge."""
+    """Run N worker edit sets through shadow-workspace fanout and merge.
 
-    def __init__(self, client: CwsoClient) -> None:
-        self._client = client
-        self._ast_checker = AstConflictChecker(client)
+    Requires two role-scoped `CwsoClient` instances because the live CWSO
+    server's permission model denies each role the other's operations: a
+    `worker`-role client may create/write/commit/query_ast/drop shadow
+    workspaces but may NOT call `merge_concurrent_results`; an
+    `orchestrator`-role client may call `merge_concurrent_results` but may
+    NOT write_shadow_file or commit_shadow. This mirrors the proven-live
+    pattern in `tests/functional/test_pattern_a_integration_live.py`
+    (`cls.worker` / `cls.orch`).
+    """
+
+    def __init__(self, worker_client: CwsoClient, orchestrator_client: CwsoClient) -> None:
+        self._worker_client = worker_client
+        self._orchestrator_client = orchestrator_client
+        self._ast_checker = AstConflictChecker(worker_client)
 
     def run(
         self,
@@ -84,18 +95,18 @@ class ConcurrentMergeOrchestrator:
 
         try:
             for worker in worker_edits:
-                create_resp = self._client.create_shadow_workspace()
+                create_resp = self._worker_client.create_shadow_workspace()
                 workspace_uuid = str(create_resp["workspace_uuid"])
                 workspace_uuids.append(workspace_uuid)
 
                 for file_edit in worker.files:
-                    self._client.write_shadow_file(
+                    self._worker_client.write_shadow_file(
                         workspace_uuid=workspace_uuid,
                         path=file_edit.path,
                         content=file_edit.content,
                     )
 
-                commit_resp = self._client.commit_shadow(
+                commit_resp = self._worker_client.commit_shadow(
                     workspace_uuid=workspace_uuid,
                     message=worker.commit_message,
                 )
@@ -125,7 +136,7 @@ class ConcurrentMergeOrchestrator:
                     merge_inputs, precheck_result
                 )
 
-            merge_resp = self._client.merge_concurrent_results(
+            merge_resp = self._orchestrator_client.merge_concurrent_results(
                 source_workspace_uuids=workspace_uuids,
                 merge_inputs=merge_inputs,
                 auto_resolve_heuristic=merge_heuristic,
@@ -142,17 +153,44 @@ class ConcurrentMergeOrchestrator:
         finally:
             for workspace_uuid in workspace_uuids:
                 try:
-                    self._client.drop_shadow_workspace(workspace_uuid=workspace_uuid)
+                    self._worker_client.drop_shadow_workspace(workspace_uuid=workspace_uuid)
                 except Exception:
                     # Cleanup failure should not mask merge result/error.
                     pass
 
     @staticmethod
     def _build_merge_inputs(worker_edits: List[WorkerEditSet]) -> List[MergeInput]:
+        """Build one MergeInput per distinct path touched by the worker edits.
+
+        Raises:
+            ValueError: If 3 or more workers edit the same path. The
+                `merge_concurrent_results` server call (and MergeInput itself)
+                is strictly 2-way (base/ours/theirs); silently collapsing a
+                3rd+ worker's edit into `theirs_content` would drop the
+                previous contributor's edit without warning. Genuine N-way
+                merge composition is explicitly out of scope for this
+                orchestrator (see plan-023-t316-pattern-a-cleanup.md § 3.2) --
+                callers with 3+ real contributors per path must compose
+                pairwise `merge_concurrent_results` calls themselves.
+        """
         merged_by_path: Dict[str, MergeInput] = {}
+        contributors_by_path: Dict[str, List[str]] = {}
 
         for worker in worker_edits:
             for file_edit in worker.files:
+                contributors = contributors_by_path.setdefault(file_edit.path, [])
+                contributors.append(worker.agent_role)
+                if len(contributors) >= 3:
+                    raise ValueError(
+                        f"Cannot build merge input for path {file_edit.path!r}: "
+                        f"{len(contributors)} workers ({', '.join(contributors)}) edited "
+                        "the same path. ConcurrentMergeOrchestrator only supports a 2-way "
+                        "merge per path (base/ours/theirs); genuine N-way merge composition "
+                        "is out of scope (see plan-023-t316-pattern-a-cleanup.md § 3.2). "
+                        "Reduce to at most 2 workers per path, or compose pairwise "
+                        "merge_concurrent_results calls yourself."
+                    )
+
                 existing = merged_by_path.get(file_edit.path)
                 if existing is None:
                     merged_by_path[file_edit.path] = MergeInput(

@@ -64,6 +64,7 @@ from runtime.cwso.client import (  # noqa: E402
     MergeLanguage,
 )
 from runtime.cwso.ast_conflict_check import AstConflictChecker, ConflictSeverity  # noqa: E402
+from runtime.cwso.concurrent_merge import ConcurrentMergeOrchestrator  # noqa: E402
 
 
 def requires_cwso_live_test(test):
@@ -100,6 +101,21 @@ class TestPatternAIntegrationLive(unittest.TestCase):
         cls.worker = CwsoClient(jwt_secret=secret, role="worker", base_url=base_url)
         cls.orch = CwsoClient(jwt_secret=secret, role="orchestrator", base_url=base_url)
         cls.checker = AstConflictChecker(cls.worker)
+        # BUG-A fix (T344): ConcurrentMergeOrchestrator now takes two role-scoped
+        # clients directly, mirroring the cls.worker/cls.orch split this suite has
+        # always hand-rolled. Constructed here to prove the new signature builds
+        # correctly against the real role-scoped clients used by this live suite.
+        # The scenario methods below intentionally continue to call cls.worker /
+        # cls.orch directly rather than cls.orchestrator.run(): each scenario needs
+        # per-file pre-check heuristics, a separately-created "base" workspace, and
+        # raw-response evidence printing that run() does not expose, and Scenario 1
+        # specifically needs genuine 3-way pairwise merge composition (see comment
+        # below) which run() now explicitly rejects via the BUG-F fix. Migrating the
+        # scenario bodies to use cls.orchestrator.run() would either lose that
+        # evidence/precision or require the out-of-scope N-way merge composition
+        # rejected in plan-023-t316-pattern-a-cleanup.md § 3.2 -- so it is not done
+        # here.
+        cls.orchestrator = ConcurrentMergeOrchestrator(cls.worker, cls.orch)
 
     # ------------------------------------------------------------------
     # Helpers (all print real, literal evidence as they execute)
@@ -226,8 +242,13 @@ class TestPatternAIntegrationLive(unittest.TestCase):
 
             print("\n-- Merge (composed as two real 2-way merge_concurrent_results calls, "
                   "since the live merge_concurrent_results/MergeInput schema is base/ours/theirs "
-                  "i.e. strictly 2-way; see task-T214.md Finding BUG-F for why "
-                  "ConcurrentMergeOrchestrator itself cannot be used unmodified for a 3-way case) --")
+                  "i.e. strictly 2-way; see task-T214.md Finding BUG-F. As of the T344 fix, "
+                  "ConcurrentMergeOrchestrator.run()/_build_merge_inputs() now raises ValueError "
+                  "for exactly this same-path 3-worker case rather than silently dropping agent "
+                  "B's edit, so this manual pairwise composition remains the correct way to "
+                  "achieve a genuine 3-way merge here -- see "
+                  "plan-023-t316-pattern-a-cleanup.md § 3.2 for why full N-way merge composition "
+                  "inside the orchestrator itself is out of scope) --")
 
             step1_heuristic = precheck_ab.file_heuristics.get(path, MergeHeuristic.AST_SEMANTIC_ONLY)
             mi_step1 = MergeInput(
