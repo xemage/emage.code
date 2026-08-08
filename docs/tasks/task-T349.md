@@ -94,3 +94,69 @@ worked the one time it was tried (MR !126). Fix both.
 Report blockers per `AGENTS.md`: type + severity. Max 2 retries before escalating. If
 `CONTRIBUTING.md`'s section line numbers have moved since this brief was written, that's not a
 blocker — just locate the sections by heading text instead.
+
+## Outcome (2026-08-08)
+
+Worktree note: this worktree's local `develop` was stale (still pointing at old `main`-sync
+commits from a prior task, missing `task-T349.md` entirely — the recurring staleness issue flagged
+in the delegation). Working tree was clean, so recovered via `git fetch origin` +
+`git reset --hard origin/develop` to `c60204c` before starting; no work was lost since nothing had
+been written yet.
+
+`CONTRIBUTING.md`'s two sections were located by heading text (line numbers from the brief still
+matched closely: "Cutting a release" at line 130, "Post-merge squash verification" at line 190 as
+filed; actual line numbers after `git reset` were 130 and 190 too — no drift).
+
+### Edit 1 — "Cutting a release" step 5/6 area
+Inserted a new step 6 ("Merge it.") between the existing "Open MR" step (now still step 5) and the
+existing "After merge to `main`" step (renumbered 6→7, and the CI-trigger step renumbered 7→8, no
+other content changed). New step 6 documents the PUT-first sequence as standard specifically for
+`release/*→main` merges, explicitly scoped as not applying to `feature/*`/`bugfix/* → develop`
+squash-and-merge convention elsewhere in the doc:
+```bash
+glab api -X PUT projects/:id/merge_requests/:iid -f squash=false
+glab api -X PUT projects/:id/merge_requests/:iid/merge -f should_remove_source_branch=true
+python3 scripts/verify-main-sync-merge.py <mr_iid>
+```
+States the confidence caveat honestly (1 confirmed success, MR !126, against 3 prior failures of
+the old sequence, MR !103/!109/!125) and cites `docs/tasks/task-T348.md` § Outcome, Steps 5–7 for
+the evidence trail, matching the citation style already used in this file's "Drift detection" §
+(`See docs/tasks/task-T331.md for..., and docs/plans/plan-019-... for the full design rationale`).
+
+### Edit 2 — "Post-merge squash verification" → "Recovery procedure"
+Replaced the `git push` (direct-to-`main`) recovery sequence with the branch+MR sequence T348 §
+Outcome Step 6 actually used, generalized with `vX.Y.Z`/`<true-source-branch-tip-sha>` placeholders
+in place of T348's concrete `v6.7.0`/`cbd4d62` values:
+```bash
+git fetch origin
+git checkout -b chore/restore-ancestry-vX.Y.Z origin/main
+git merge --no-ff <true-source-branch-tip-sha> -s ours -m "chore(release): restore true ancestry after GitLab squash"
+git diff origin/main HEAD                                                    # must be empty
+git merge-base --is-ancestor <true-source-branch-tip-sha> HEAD && echo ok    # must exit 0
+git push -u origin chore/restore-ancestry-vX.Y.Z
+```
+followed by opening `chore/restore-ancestry-vX.Y.Z → main` as an MR and merging it via the same
+PUT-first sequence from Edit 1 (mirroring T348 § Outcome Step 7, where the restore MR !126 was
+merged that way). Leads with an explicit statement of *why* — `main`'s
+`push_access_levels: ['No one']`, cited to `docs/tasks/task-T348.md` § Outcome, Step 6 where this
+was confirmed via `glab api projects/:id/protected_branches/main` — so a future operator can't miss
+why the old instruction was wrong. Both `docs/tasks/task-T340.md` § Findings §4 (original
+rationale) and `docs/tasks/task-T348.md` § Outcome, Step 6 (the adapted sequence that actually
+worked) are cited together at the end, matching this doc's existing multi-citation style.
+
+### Out of scope, confirmed untouched
+`git diff --stat` after both edits: only `CONTRIBUTING.md` changed (44 insertions, 11 deletions).
+`git diff -- scripts/verify-main-sync-merge.py`: empty — file byte-identical to `develop`'s
+version, confirming the constraint held.
+
+### Verification
+- `python3 tests/run.py` → `Ran 293 tests in 10.147s`, `OK (skipped=17)` — identical pass/skip
+  counts to T348 § Outcome Step 4's bar.
+- `node implementation/scripts/sync.mjs --check` → `OK - no drift across 511 files.`
+- `python3 docs/tasks/validate-tasks.py` → `TASK LEDGER: PASS (1 active, 189 completed)`.
+
+### Landed via
+Branch `docs/349-fix-release-merge-procedure` → MR !129
+(<https://gitlab.com/em-age/emage.code/-/merge_requests/129>) to `develop`. Opened, not
+self-merged, per the brief's constraint — awaiting orchestrator review and independent
+verification before merge.
