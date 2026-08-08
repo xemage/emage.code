@@ -3,6 +3,7 @@
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
 | T316 | Tracked follow-up: role-split + minor Pattern A gaps (BUG-A/E/F/G/H, non-blocking) | backend-developer | pending | P2 | — | 2026-08-02 |
+| T342 | Codify "no direct commits to protected branches, ever" in git-workflow knowledge | devops-engineer | in_progress | P1 | — | 2026-08-07 |
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
