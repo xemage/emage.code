@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import concurrent.futures
 import logging
+import re
 import threading
 from dataclasses import dataclass
 from enum import Enum
@@ -161,6 +162,13 @@ class MergeInput:
 # ============================================================================
 # Main CwsoClient
 # ============================================================================
+
+# Best-effort pattern for BUG-E: the real CWSO server's write_shadow_file
+# response is non-JSON prose (e.g. "wrote 32 bytes (blob 77a8c908...)"),
+# so `_unwrap_tool_result` correctly leaves it enveloped. This pattern is
+# applied only to that still-enveloped prose as a convenience extraction,
+# never as a validation gate — see `_extract_blob_oid` below.
+_BLOB_OID_PATTERN = re.compile(r"blob\s+([0-9a-f]+)")
 
 
 class CwsoClient:
@@ -465,9 +473,45 @@ class CwsoClient:
             content: File contents to write
 
         Returns:
-            Dict with 'blob_oid' key
+            Dict with 'blob_oid' key. The real CWSO server currently returns
+            a prose confirmation for this specific tool (e.g. "wrote 32
+            bytes (blob 77a8c908...)") rather than the JSON envelope other
+            tools use, so `_unwrap_tool_result` leaves the response
+            enveloped. `blob_oid` is populated on a best-effort basis by
+            regex-extracting it from that prose when present; this is a
+            convenience only — if extraction fails, the response is
+            returned unmodified (no `blob_oid` key, no exception raised).
         """
-        return self.call_tool("write_shadow_file", workspace_uuid=workspace_uuid, path=path, content=content)
+        response = self.call_tool("write_shadow_file", workspace_uuid=workspace_uuid, path=path, content=content)
+        return self._extract_blob_oid(response)
+
+    @staticmethod
+    def _extract_blob_oid(response: dict[str, Any]) -> dict[str, Any]:
+        """Best-effort `blob_oid` extraction from a still-enveloped prose response.
+
+        Only applies when `response` still has the raw MCP text envelope
+        shape (i.e. `_unwrap_tool_result` could not JSON-decode `text`,
+        per BUG-E) — an already-flattened response (current mocks, or a
+        future JSON-returning server) is returned unmodified. Never raises:
+        any unexpected shape or non-matching prose leaves `response` as-is.
+        """
+        content = response.get("content")
+        if not isinstance(content, list) or not content:
+            return response
+
+        first_item = content[0]
+        if not isinstance(first_item, dict):
+            return response
+
+        text = first_item.get("text")
+        if not isinstance(text, str):
+            return response
+
+        match = _BLOB_OID_PATTERN.search(text)
+        if not match:
+            return response
+
+        return {**response, "blob_oid": match.group(1)}
 
     def read_shadow_file(self, workspace_uuid: str, path: str) -> dict[str, Any]:
         """Read file from shadow workspace.
