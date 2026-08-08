@@ -81,3 +81,51 @@ new capabilities).
 
 ## Blocker Protocol
 Report blockers per `AGENTS.md`: type + severity. Max 2 retries before escalating.
+
+## Outcome (2026-08-08, docs-prep portion — status remains `in_progress`)
+
+**Stale worktree base caught before doing any work.** This worktree's checked-out branch
+(`worktree-agent-ad36fdb93a1e85e24`) was at `2a07558`, on `main`'s v6.7.0 ancestry line, which
+predates `docs/tasks/task-T350.md` existing at all. Ran `git fetch origin --prune`, confirmed
+`origin/develop` tip was `32cd2f3` (includes `d4afe11 docs(tasks): plan-027 - file T350/T351 for
+v6.7.1 release + main sync`), then `git checkout -b docs/release-v6.7.1 origin/develop` —
+branching directly from the fetched remote tip rather than the stale local branch.
+
+**Docs authored:**
+- Bumped `Latest release: v6.7.0` → `v6.7.1` in `README.md`, `docs/wiki/README.md`,
+  `docs/wiki/home.md`.
+- Read `docs/tasks/completed-tasks.md` rows for T348 and T349 directly (`grep -n "^| T34[89]"
+  docs/tasks/completed-tasks.md`) before writing changelog content — not from memory.
+- Wrote `docs/releases/v6.7.1.md`: no new capability, so "Highlights" states that plainly and
+  defers to "Internal"; both T348 (main-sync operation, no develop-side code artifact) and T349
+  (CONTRIBUTING.md process-doc fix, no shippable code capability) placed under "Internal" per the
+  brief's constraint. Breaking changes: "None" — verified by confirming neither task touched
+  application code (T348's own record: "verified byte-identical" merge of develop's already-vetted
+  content into main; T349's own record: `git diff -- scripts/verify-main-sync-merge.py` was empty,
+  only `CONTRIBUTING.md` changed).
+- Wrote `docs/checkpoints/checkpoint-release-v6.7.1.md`, format-matched to
+  `checkpoint-release-v6.7.0.md`.
+
+**Verification bar — all green, exact output:**
+- `python3 scripts/verify-release-docs.py --tag v6.7.1`:
+  ```
+  release-docs-verify: all documentation checks passed
+  release-docs-verify: verified marker 'Latest release: v6.7.1'
+  ```
+- `python3 tests/run.py`: `Ran 293 tests in 11.027s` → `OK (skipped=17)`
+- `node implementation/scripts/sync.mjs --check`: `OK - no drift across 511 files.`
+- `python3 implementation/scripts/generate-registry.py --check`: `registry is up to date`
+- `python3 docs/tasks/validate-tasks.py`: `TASK LEDGER: PASS (2 active, 190 completed)`
+
+**Git/MR:**
+- Committed `1bc9c5471c54b28a01abef00f6a5846bb4703386` on `docs/release-v6.7.1` (5 files changed:
+  `README.md`, `docs/wiki/README.md`, `docs/wiki/home.md`, `docs/releases/v6.7.1.md`,
+  `docs/checkpoints/checkpoint-release-v6.7.1.md`).
+- Pushed `docs/release-v6.7.1` to origin.
+- Opened MR !132 (`docs/release-v6.7.1 → develop`) via `glab mr create`:
+  <https://gitlab.com/em-age/emage.code/-/merge_requests/132>. Not self-merged, per the brief —
+  left for the orchestrator to review, merge, tag, and verify the publish.
+
+**Not done (explicitly out of scope for this pass, per the brief):** merge, tag `v6.7.1`, watch
+tag-triggered pipeline, verify GitLab Release publish, and any ledger transition of T350 itself in
+`active-tasks.md`/`completed-tasks.md`. This task's Status header is left as `in_progress`.
