@@ -2,7 +2,8 @@
 
 **ID:** T344
 **Owner:** backend-developer
-**Status:** pending
+**Status:** done
+**Completed:** 2026-08-08
 **Priority:** P2
 **Depends on:** —
 **Created:** 2026-08-08
@@ -206,6 +207,18 @@ this session.
       `test_pattern_a_integration.py`, `test_pattern_a_integration_live.py`)
 - [x] Full local test suite green (293 passed, 16 skipped/live-gated)
 - [x] Live integration test run and reported (4/4 passed, live stack reachable — see above)
-- [ ] Landed via `bugfix/344-concurrent-merge-role-split → develop` MR — **opened**, not
-      self-merged (see MR link to be added by orchestrator/reviewer; this task's own Status header
-      intentionally left `pending` per dispatch instructions, for the orchestrator to transition)
+- [x] Landed via `bugfix/344-concurrent-merge-role-split → develop` MR — opened
+      (https://gitlab.com/em-age/emage.code/-/merge_requests/118), not self-merged
+
+### Orchestrator closeout (2026-08-08)
+Independently re-verified before merging, not just trusting the report: reviewed the actual
+`concurrent_merge.py` diff (role routing exactly as specified — worker-scoped calls to
+`worker_client`, `merge_concurrent_results` to `orchestrator_client`; BUG-F guard raises with a
+clear path+roles message), reviewed the test diffs (the `test_pattern_a_integration.py` changes
+adjust test *data* — distinct paths, or 2 workers for the inherently-2-way conflict case — without
+weakening any assertion), independently re-ran the full suite (293 tests, OK) on the MR branch
+myself, and independently re-ran the live integration test myself against the actually-reachable
+live CWSO stack: `CWSO_LIVE_CONTRACT_TEST=1 python3 -m pytest
+tests/functional/test_pattern_a_integration_live.py -v` → **4/4 passed in 116.97s**, confirming
+the agent's own reported result rather than taking it on faith. MR !118 merged (squash, source
+branch removed): `merge_commit_sha: 069ba1d21d96b593b10166e984482dca28267870`, target `develop`.
