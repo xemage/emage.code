@@ -321,6 +321,45 @@ class TestCwsoClientTypedWrappers(unittest.TestCase):
         self.assertEqual(result["blob_oid"], "def456")
 
     @patch.object(CwsoClient, "call_tool")
+    def test_write_shadow_file_extracts_blob_oid_from_real_prose_format(self, mock_call_tool):
+        """BUG-E: real server returns prose; blob_oid extracted via regex fallback."""
+        mock_call_tool.return_value = {
+            "content": [
+                {"type": "text", "text": "wrote 32 bytes (blob 77a8c908abcdef1234567890abcdef1234567890)"}
+            ]
+        }
+
+        result = self.client.write_shadow_file("uuid1", "/file.py", "content")
+
+        self.assertEqual(result["blob_oid"], "77a8c908abcdef1234567890abcdef1234567890")
+        # Original envelope content is preserved, not clobbered.
+        self.assertIn("content", result)
+
+    @patch.object(CwsoClient, "call_tool")
+    def test_write_shadow_file_non_matching_prose_does_not_raise(self, mock_call_tool):
+        """Non-matching prose: no blob_oid added, dict unmodified, no exception."""
+        mock_call_tool.return_value = {
+            "content": [{"type": "text", "text": "something unexpected happened"}]
+        }
+
+        result = self.client.write_shadow_file("uuid1", "/file.py", "content")
+
+        self.assertNotIn("blob_oid", result)
+        self.assertEqual(
+            result,
+            {"content": [{"type": "text", "text": "something unexpected happened"}]},
+        )
+
+    @patch.object(CwsoClient, "call_tool")
+    def test_write_shadow_file_already_json_unaffected(self, mock_call_tool):
+        """Already-unwrapped JSON response (current mocks / future server): unaffected."""
+        mock_call_tool.return_value = {"blob_oid": "abc123", "path": "/file.py"}
+
+        result = self.client.write_shadow_file("uuid1", "/file.py", "content")
+
+        self.assertEqual(result, {"blob_oid": "abc123", "path": "/file.py"})
+
+    @patch.object(CwsoClient, "call_tool")
     def test_query_ast(self, mock_call_tool):
         """Test query_ast wrapper."""
         mock_call_tool.return_value = {"results": []}

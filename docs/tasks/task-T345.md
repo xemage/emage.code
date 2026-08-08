@@ -53,12 +53,85 @@ waiting on a CWSO-side response-shape change.
 - Task brief updated with an `## Outcome` section.
 
 ## Acceptance Criteria
-- [ ] `blob_oid` correctly extracted from the exact real example format cited in T316's BUG-E
-- [ ] Non-matching prose does not raise, returns dict unmodified
-- [ ] Already-JSON responses unaffected (no regression to existing unwrap behavior)
-- [ ] Full local test suite green
-- [ ] No other file changed
-- [ ] Landed via `bugfix/345-blob-oid-extraction → develop` MR — opened, not self-merged
+- [x] `blob_oid` correctly extracted from the exact real example format cited in T316's BUG-E
+- [x] Non-matching prose does not raise, returns dict unmodified
+- [x] Already-JSON responses unaffected (no regression to existing unwrap behavior)
+- [x] Full local test suite green
+- [x] No other file changed
+- [x] Landed via `bugfix/345-blob-oid-extraction → develop` MR — opened, not self-merged
 
 ## Blocker Protocol
 Report blockers per `AGENTS.md`: type + severity. Max 2 retries before escalating.
+
+## Outcome
+
+**Architecture/design version referenced:** `docs/plans/plan-023-t316-pattern-a-cleanup.md` § 3.3
+(design decision consumed as-is, not re-derived).
+
+### Files changed
+- `implementation/runtime/cwso/client.py` — added `_BLOB_OID_PATTERN` module constant, a
+  `CwsoClient._extract_blob_oid` static helper, and wired it into `write_shadow_file` (docstring
+  updated to describe the best-effort behavior instead of unconditionally promising `blob_oid`).
+- `tests/unit/test_cwso_client.py` — 3 new regression tests added to `TestCwsoClientTypedWrappers`:
+  `test_write_shadow_file_extracts_blob_oid_from_real_prose_format`,
+  `test_write_shadow_file_non_matching_prose_does_not_raise`,
+  `test_write_shadow_file_already_json_unaffected`.
+
+No other file touched (confirmed via `git diff --stat`).
+
+### Extraction logic (exact)
+```python
+_BLOB_OID_PATTERN = re.compile(r"blob\s+([0-9a-f]+)")
+
+@staticmethod
+def _extract_blob_oid(response: dict[str, Any]) -> dict[str, Any]:
+    content = response.get("content")
+    if not isinstance(content, list) or not content:
+        return response
+
+    first_item = content[0]
+    if not isinstance(first_item, dict):
+        return response
+
+    text = first_item.get("text")
+    if not isinstance(text, str):
+        return response
+
+    match = _BLOB_OID_PATTERN.search(text)
+    if not match:
+        return response
+
+    return {**response, "blob_oid": match.group(1)}
+```
+Called from `write_shadow_file` on the result of `self.call_tool(...)`. Only triggers on the
+still-enveloped shape (`{"content": [{"type": "text", "text": ...}]}`) that `_unwrap_tool_result`
+leaves untouched when `text` isn't valid JSON — i.e. exactly BUG-E's case. Never raises; any
+unexpected shape or non-matching prose returns `response` unmodified.
+
+### Test results
+- `python3 -m pytest tests/unit/test_cwso_client.py -v` — 37 passed (34 pre-existing + 3 new).
+- `python3 -m pytest tests/unit -q` — 118 passed.
+- `python3 tests/run.py` (the CI `unit-tests` job's actual command; functional + performance
+  suites, 16 live/network tests self-skip as expected) — first run: 293 tests, 1 failure
+  (`test_scaling_and_throughput_envelope`, a timing/coefficient-of-variation performance
+  assertion unrelated to this change — confirmed pre-existing/environmental by rerunning it in
+  isolation, `python3 -m pytest tests/performance/test_scaling_and_throughput.py -q` → 1 passed).
+  Second full `tests/run.py` rerun: `Ran 293 tests in 73.169s / OK (skipped=16)` — clean.
+- `git status --short` / `git diff --stat` confirm only `implementation/runtime/cwso/client.py`
+  and `tests/unit/test_cwso_client.py` changed.
+
+### Branch / MR
+- Branch: `bugfix/345-blob-oid-extraction`, pushed to `origin`.
+- MR opened to `develop`, not self-merged — awaiting orchestrator review per task constraint.
+
+### Assumptions / decisions
+- Followed plan-023 § 3.3's exact regex verbatim (`re.search(r"blob\s+([0-9a-f]+)", text)`,
+  compiled as a module-level constant for reuse/testability rather than inlined).
+- Placed the extraction as a private static helper on `CwsoClient` rather than in `mcp_client.py`,
+  per the task's explicit scope constraint (`_unwrap_tool_result` itself untouched).
+- Merged the extracted `blob_oid` into a **new** dict (`{**response, "blob_oid": ...}`) rather than
+  mutating `response` in place, to avoid any risk of aliasing surprises for callers that might hold
+  a reference to the original envelope dict.
+
+### Blocker status
+None.
