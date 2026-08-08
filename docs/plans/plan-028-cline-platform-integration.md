@@ -1,6 +1,6 @@
 # Plan 028 — Cline platform integration
 
-**Status:** drafted — awaiting user approval to execute
+**Status:** approved — executing this session
 **Created:** 2026-08-08
 **Owner:** orchestrator
 **Based on:** `implementation/platforms/cursor.json`, `implementation/platforms/claude-code.json`,
@@ -161,5 +161,5 @@ the task brief, not the plan file).
 
 ## 9. Approval
 
-- [ ] User approved on YYYY-MM-DD
+- [x] User approved on 2026-08-08
 - [ ] Plan locked; revisions create `plan-028-cline-platform-integration-v2.md`
