@@ -2,8 +2,6 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T316 | Tracked follow-up: role-split + minor Pattern A gaps (BUG-A/E/F/G/H, non-blocking) | backend-developer | in_progress | P2 | — | 2026-08-08 |
-| T346 | GATE: verify T343/T344/T345, record BUG-G disposition, close T316 | qa-engineer | pending | P2 | T343, T344, T345 | 2026-08-08 |
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
