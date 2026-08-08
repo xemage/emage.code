@@ -2,7 +2,8 @@
 
 **ID:** T341
 **Owner:** devops-engineer
-**Status:** in_progress
+**Status:** done
+**Completed:** 2026-08-07
 **Priority:** P2
 **Depends on:** —
 **Created:** 2026-08-07
@@ -218,3 +219,39 @@ or pushed to during this task.
 3. Per delegation: `active-tasks.md` and `completed-tasks.md` intentionally left untouched — for
    the orchestrator to transition after independently reviewing MR !111 and this Outcome section's
    evidence.
+
+### Orchestrator closeout (2026-08-07)
+- Independently re-verified the agent's work: read `scripts/verify-main-sync-merge.py` in full,
+  ran it live against the real API myself (`python3 scripts/verify-main-sync-merge.py 103` and
+  `109` both correctly FAIL, matching T340's finding; a bad IID correctly exits 2), and read the
+  new `CONTRIBUTING.md` subsection in full.
+- Filed `docs/plans/plan-021-post-merge-squash-verification.md` to resolve concern #1 above
+  (`test_every_active_task_has_a_plan` requires every active task ID to appear in some
+  `docs/plans/*.md` file) — pushed directly to `bugfix/341-post-merge-squash-verification`, which
+  fixed the `unit-tests` job on the MR pipeline.
+- CI infrastructure incident: the MR pipeline hit a genuine stuck-runner condition unrelated to
+  this task's diff — every job lacking a per-job `image:` override (inheriting
+  `.gitlab-ci.yml`'s `default: image: node:20-alpine`) hung indefinitely (`verify-knowledge-drift`
+  ran 16+ min with zero trace output before a `markdown-links` retry finally failed with GitLab's
+  own `no_updates_running` reason), while jobs with an explicit `image: python:3.12-alpine`
+  succeeded in single-digit seconds throughout — a clean split pointing at the runner's Docker
+  daemon being wedged specifically on `node:20-alpine`, not at anything in this MR. Cancel
+  requests did not take effect for over 30 minutes (consistent with a genuinely unresponsive
+  runner agent, not just a slow job). User confirmed the GitLab runners were fixed
+  (infra-side, outside this repo); a fresh MR pipeline
+  (`https://gitlab.com/em-age/emage.code/-/pipelines/2742737626`) then ran clean end-to-end
+  (`sync-no-diff` 8.1s, `validation-super-gate` 12.7s, `verify-knowledge-drift` 6.3s, `unit-tests`
+  39.1s, `markdown-links` 5.7s — all normal durations, all `success`).
+- MR !111 merged (squash, source branch removed):
+  `merge_commit_sha: 9452c0756eac637e3f859032fb457ffb172ace04`, target `develop`, `main` untouched
+  throughout.
+- Local `develop` synchronized: the branch's history contains a squash commit, so local `develop`
+  (which had 2 of the same-content commits from earlier local work, never pushed since `develop`
+  is protected against direct push) was reset to `origin/develop` after confirming via
+  `git diff origin/develop develop` that local held nothing origin didn't already have.
+- Worktree and branches cleaned up: `.claude/worktrees/agent-a8e4f8825b4bcba2d` removed, local and
+  remote `bugfix/341-post-merge-squash-verification` deleted.
+- Concern #2 (worktree branched from a stale point instead of `develop`) has now recurred across
+  at least two consecutive agent dispatches (T340 and T341) — worth a dedicated look at how this
+  session's worktree-creation step picks its base ref, though not urgent since it has been
+  self-resolvable by the dispatched agent each time.
