@@ -2,7 +2,8 @@
 
 **ID:** T347
 **Owner:** release-manager
-**Status:** in_progress
+**Status:** done
+**Completed:** 2026-08-08
 **Priority:** P1
 **Depends on:** —
 **Created:** 2026-08-08
@@ -158,3 +159,25 @@ review before merge):
 **Not done (explicitly out of scope for this pass, per the brief):** merge, tag `v6.7.0`, watch
 tag-triggered pipeline, verify GitLab Release publish, and any ledger transition of T347 itself in
 `active-tasks.md`/`completed-tasks.md`. This task's Status header is left as `in_progress`.
+
+### Orchestrator closeout (2026-08-08)
+- Independently re-verified before merging: reviewed `docs/releases/v6.7.0.md` and
+  `docs/checkpoints/checkpoint-release-v6.7.0.md` in full (changelog content cross-checked against
+  `completed-tasks.md`'s actual T340–T346 rows, breaking-changes wording reviewed and confirmed
+  accurate); independently re-ran the full verification bar myself on the MR branch (all 5 checks
+  green, matching the delegate's report).
+- MR !122 merged (squash, source branch removed):
+  `merge_commit_sha: f180d1b65e239d8b4d57a5533059ac115eff57cc`, target `develop`.
+- Local `develop` synced to `f180d1b`. Tagged directly by the orchestrator (per this session's
+  established pattern — tag creation/push performed by the orchestrator/user, not delegated):
+  `git tag -a v6.7.0 -m "Release v6.7.0" f180d1b`, pushed to origin.
+- Tag-triggered pipeline (`2743000750`) watched to completion: **success** on first check, all 3
+  release-stage jobs green (`release-docs-gate`, `main-develop-drift-gate`, `release`).
+  `main-develop-drift-gate` produced a real verdict:
+  `drift-check: main=v6.6.0 develop=v6.7.0 releases_behind=1` → `PASS` (within the 1-release grace
+  window).
+- GitLab Release independently verified via `glab api projects/.../releases/v6.7.0` — not assumed
+  from pipeline success alone: `tag_name: v6.7.0`, `released_at: 2026-08-08T09:44:43.143Z`,
+  description sourced correctly from `docs/releases/v6.7.0.md`.
+
+Release URL: <https://gitlab.com/em-age/emage.code/-/releases/v6.7.0>
