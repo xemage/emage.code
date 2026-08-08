@@ -2,7 +2,7 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T352 | Create Cline platform manifest | backend-developer | pending | P0 | — | 2026-08-08 |
+| T352 | Create Cline platform manifest | backend-developer | blocked | P0 | — | 2026-08-08 |
 | T353 | Extend sync.mjs for Cline | backend-developer | pending | P0 | T352 | 2026-08-08 |
 | T354 | Generate & validate Cline output | qa-engineer | pending | P0 | T353 | 2026-08-08 |
 | T355 | Update install script for Cline | devops-engineer | pending | P1 | T354 | 2026-08-08 |
