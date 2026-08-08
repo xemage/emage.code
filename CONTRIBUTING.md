@@ -139,14 +139,36 @@ The project uses **Semantic Versioning** (`vMAJOR.MINOR.PATCH`) and
    ```
    This must pass before opening the release MR.
 5. Open MR `release/vX.Y.Z → main` using the **Release** MR template
-6. After merge to `main`:
+6. Merge it. For `release/*→main` merges specifically (not the generic squash-and-merge
+   convention used for `feature/*`/`bugfix/* → develop` MRs elsewhere in this doc), use this
+   PUT-first sequence as the standard merge step:
+   ```bash
+   # Update the MR resource's own persisted squash attribute BEFORE merging — confirm the
+   # response shows "squash": false.
+   glab api -X PUT projects/:id/merge_requests/:iid -f squash=false
+   # No squash param needed here — the MR resource itself now already carries the correct value.
+   glab api -X PUT projects/:id/merge_requests/:iid/merge -f should_remove_source_branch=true
+   # Still required immediately after, as the safety net — a FAIL here means it squashed anyway
+   # and the recovery procedure below is needed.
+   python3 scripts/verify-main-sync-merge.py <mr_iid>
+   ```
+   Passing `squash: false` only in the `/merge` call's own body (the previous documented step)
+   failed to prevent squashing on all 3 attempts made this session (MR !103, !109, !125). Updating
+   the MR resource's `squash` attribute via `PUT` first, then calling `/merge` with no `squash`
+   param, held on the one attempt made (MR !126). **Confidence:** 1 confirmed success against 3
+   prior failures of the old sequence — adopted as the new standard now anyway because it is a
+   strict superset of the old step (adds one call, changes nothing else) with a plausible mechanism
+   (the `/merge` endpoint appears to read the MR's persisted `squash` field rather than honoring a
+   same-call body override). See `docs/tasks/task-T348.md` § Outcome, Steps 5–7 for the full
+   evidence trail.
+7. After merge to `main`:
    ```bash
    git checkout main && git pull
    git tag -a vX.Y.Z -m "Release vX.Y.Z"
    git push origin vX.Y.Z
    git checkout develop && git merge --no-ff main && git push   # back-merge
    ```
-7. The tag push triggers the `release` CI job which:
+8. The tag push triggers the `release` CI job which:
    - Runs `release-docs-gate` and `scripts/verify-release-docs.py` to verify required docs, marker alignment (`Latest release: vX.Y.Z`), per-release brief (`docs/releases/vX.Y.Z.md`), required content sections, and local/internal links
    - Verifies the implementation documentation surface (`docs/wiki/implementation-guide.md`, `implementation/README.md`, `scripts/install.sh`) alongside the root and wiki release docs
    - Embeds **Install + Highlights** from `docs/releases/vX.Y.Z.md` in GitLab Release notes
@@ -216,20 +238,31 @@ happened — this check cannot prevent it, only catch it immediately instead of 
 later. See `docs/tasks/task-T340.md` § Findings §2–3 for why this can happen even with an explicit
 `squash: false` in the request.
 
-**Recovery procedure:** open a small "ancestry restore" follow-up MR so the *next* sync's
-`merge-base` resolves correctly — a no-op commit on `main` with the true source-branch tip as an
-explicit second parent:
+**Recovery procedure:** `main` is push-protected (`push_access_levels: ['No one']`, identical to
+`develop` — confirmed via `glab api projects/:id/protected_branches/main`, see
+`docs/tasks/task-T348.md` § Outcome, Step 6), so a direct `git push` to `main` **cannot work**.
+Instead, open a small "ancestry restore" follow-up MR so the *next* sync's `merge-base` resolves
+correctly — a no-op commit on `main` with the true source-branch tip as an explicit second parent:
 
 ```bash
-git checkout main && git pull
+git fetch origin
+git checkout -b chore/restore-ancestry-vX.Y.Z origin/main
 git merge --no-ff <true-source-branch-tip-sha> -s ours -m "chore(release): restore true ancestry after GitLab squash"
-git push
+git diff origin/main HEAD                                                    # must be empty
+git merge-base --is-ancestor <true-source-branch-tip-sha> HEAD && echo ok    # must exit 0
+git push -u origin chore/restore-ancestry-vX.Y.Z
 ```
 
-(`docs/tasks/task-T340.md` § Findings §4, option 1, for the full rationale.) This is deliberately
-the cheapest remediation — bypassing the `/merge` API via direct push, or disabling
-`squash_option` project-wide, are heavier options deferred until this one is shown insufficient on
-a real sync.
+Open an MR `chore/restore-ancestry-vX.Y.Z → main` and merge it using the same PUT-first sequence
+documented in "Cutting a release" step 6 above, then re-run
+`python3 scripts/verify-main-sync-merge.py <mr_iid>` against that MR too.
+
+(`docs/tasks/task-T340.md` § Findings §4, option 1, for the original rationale;
+`docs/tasks/task-T348.md` § Outcome, Step 6 for the exact branch+MR sequence that worked in
+production, adapted here from that incident's actual commands.) This is deliberately the cheapest
+remediation — bypassing the `/merge` API via direct push is not possible on this project's branch
+protection, and disabling `squash_option` project-wide is a heavier option deferred until this one
+is shown insufficient on a real sync.
 
 ### Hotfixes
 
