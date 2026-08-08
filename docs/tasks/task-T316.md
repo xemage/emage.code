@@ -2,7 +2,7 @@
 
 **ID:** T316
 **Owner:** backend-developer
-**Status:** pending
+**Status:** in_progress
 **Priority:** P2
 **Depends on:** — (does NOT block T214 or T306; tracked debt only)
 **Created:** 2026-08-02
