@@ -2,7 +2,8 @@
 
 **ID:** T342
 **Owner:** devops-engineer
-**Status:** in_progress
+**Status:** done
+**Completed:** 2026-08-08
 **Priority:** P1
 **Depends on:** —
 **Created:** 2026-08-07
@@ -324,3 +325,27 @@ per §"Real propagation pipeline used" step 3 above, and confirmed absent from t
 3. MR CI pipeline status was not polled to completion as part of this task (acceptance criterion
    stops at "MR opened") — the orchestrator should confirm the MR pipeline (including
    `sync-no-diff`) is green before merging, consistent with how MR !111 (T341) was handled.
+
+### Orchestrator closeout (2026-08-08)
+- Independently reviewed the actual diff (not just the agent's summary): confirmed the new
+  "Protected Branches — No Direct Commits, Ever" section in
+  `implementation/knowledge/instructions/git-workflow.md` states the rule unambiguously (no
+  docs/ledger exception, applies to orchestrator edits, cites the concrete T340/T341 incident,
+  includes a working recovery procedure), and confirmed the one-line `task-management` skill
+  cross-reference lands at the correct point (right before the ledger commit step).
+- Independently confirmed all 12 platform projections (6 under `implementation/`, 6 at repo root)
+  are body-identical to the canonical source via direct `diff`, and confirmed
+  `.vscode/mcp.json`/`.claude/settings.json` were NOT touched in the final commit (the agent's
+  reported transient `install.sh --update` side-effect was correctly reverted before committing).
+- Resolved concern #1: filed `docs/plans/plan-022-protected-branch-commit-rule.md` on the same MR
+  branch, which fixed the `unit-tests` job (`test_every_active_task_has_a_plan`).
+- Resolved concern #3: polled MR !113's pipeline to completion after the plan-022 fix — green
+  (`mergeable`), re-ran the full local suite and ledger validator one more time on the final branch
+  state (293 tests OK, `TASK LEDGER: PASS`) before merging.
+- MR !113 merged (squash, source branch removed):
+  `merge_commit_sha: b5686bf4c29919912f15ca3a71d18967e189c189`, target `develop`, `main` untouched.
+- Landed this closeout itself via `docs/342-ledger-closeout → develop` (not a direct commit to
+  `develop`) — dogfooding the rule this task just added, same pattern used for T340/T341's
+  closeouts after the mistake was first caught.
+- Worktree and branch cleaned up: `.claude/worktrees/agent-ae571659fd355bf7b` removed, remote
+  `docs/342-protected-branch-commit-rule` deleted (local copy never existed outside the worktree).
