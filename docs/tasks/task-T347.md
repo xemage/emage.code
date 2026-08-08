@@ -99,3 +99,62 @@ pipeline fails on something unrelated to this task's own docs (e.g. a CI infrast
 happened with T338's tag-fetch bug during v6.6.0's own release), report it plainly rather than
 guessing at a fix outside this task's scope — the orchestrator will decide whether to fix inline or
 file a follow-up task.
+
+## Outcome (2026-08-08, docs-prep portion — status remains `in_progress`)
+
+**Stale worktree base caught before doing any work.** This worktree's checked-out branch
+(`worktree-agent-afbb94c9b4ac24b97`) was at `c14bf79`, which predates `docs/tasks/task-T347.md`
+existing at all (`origin/develop` tip was `efd6b12`, 9 commits ahead, including
+`7e7f712 docs(tasks): plan-024 - file T347 to release v6.7.0`). Per the brief's explicit
+instruction, ran `git fetch origin --prune` then `git checkout -b docs/release-v6.7.0
+origin/develop` — branching directly from the fetched remote tip rather than the stale local
+branch. Confirmed via `git rev-parse HEAD origin/develop` before and after.
+
+**Docs authored:**
+- Bumped `Latest release: v6.6.0` → `v6.7.0` in `README.md`, `docs/wiki/README.md`,
+  `docs/wiki/home.md`.
+- Read `docs/tasks/completed-tasks.md` rows for T340–T346 directly (`grep -n "^| T34[0-6]"
+  docs/tasks/completed-tasks.md`) before writing changelog content — not from memory.
+- Wrote `docs/releases/v6.7.0.md`: Highlights split into Added (T341) / Fixed (T343, T344, T345);
+  Breaking changes section covers T344's `ConcurrentMergeOrchestrator.__init__` change explicitly
+  (see exact wording below); Internal covers T340, T342, T346 (all three have no code artifact per
+  the brief's constraint — kept out of Highlights).
+- Wrote `docs/checkpoints/checkpoint-release-v6.7.0.md`, format-matched to
+  `checkpoint-release-v6.6.0.md`.
+
+**Breaking-changes wording used** (verbatim from `docs/releases/v6.7.0.md`, for orchestrator
+review before merge):
+> **`ConcurrentMergeOrchestrator.__init__` signature change** (T344,
+> `implementation/runtime/cwso/concurrent_merge.py`): changed from `(self, client)` to
+> `(self, worker_client, orchestrator_client)`. Callers must now supply two role-scoped clients —
+> `worker_client` for shadow-workspace lifecycle and AST precheck, `orchestrator_client` for
+> `merge_concurrent_results` — instead of a single shared client. This changed because the live
+> CWSO server's permission model requires role-scoped credentials for these two operation classes;
+> a single shared client cannot satisfy both. A full-repo `grep` (performed during T344 and
+> independently re-confirmed during T346's gate) found no caller of this constructor outside this
+> repo's own tests — no external caller is known to be affected as of this release.
+
+**Verification bar — all green, exact output:**
+- `python3 scripts/verify-release-docs.py --tag v6.7.0`:
+  ```
+  release-docs-verify: all documentation checks passed
+  release-docs-verify: verified marker 'Latest release: v6.7.0'
+  ```
+- `python3 tests/run.py`: `Ran 293 tests in 11.098s` → `OK (skipped=16)`
+- `node implementation/scripts/sync.mjs --check`: `OK - no drift across 511 files.`
+- `python3 implementation/scripts/generate-registry.py --check`: `registry is up to date`
+- `python3 docs/tasks/validate-tasks.py`: `TASK LEDGER: PASS (1 active, 187 completed)`
+
+**Git/MR:**
+- Committed `e88cf88aff0001d4ce974fc8e0a0d7ea1c6ee8c1` on `docs/release-v6.7.0` (5 files changed:
+  `README.md`, `docs/wiki/README.md`, `docs/wiki/home.md`,
+  `docs/releases/v6.7.0.md`, `docs/checkpoints/checkpoint-release-v6.7.0.md`).
+- Pushed `docs/release-v6.7.0` to origin.
+- Opened MR !122 (`docs/release-v6.7.0 → develop`) via `glab mr create`:
+  <https://gitlab.com/em-age/emage.code/-/merge_requests/122>. Not self-merged, per the brief —
+  left for the orchestrator to review, merge, tag, and verify the publish, matching T337's actual
+  execution split.
+
+**Not done (explicitly out of scope for this pass, per the brief):** merge, tag `v6.7.0`, watch
+tag-triggered pipeline, verify GitLab Release publish, and any ledger transition of T347 itself in
+`active-tasks.md`/`completed-tasks.md`. This task's Status header is left as `in_progress`.
