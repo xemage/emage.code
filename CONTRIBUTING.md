@@ -187,6 +187,50 @@ See `docs/tasks/task-T331.md` for the incident this gate was built to prevent, a
 comparison instead of `git merge-base --is-ancestor`, why a 1-release grace window, why a
 blocking release-time gate instead of a scheduled pipeline).
 
+### Post-merge squash verification
+
+GitLab's `/merge` API has twice (`docs/tasks/task-T331.md`, `docs/tasks/task-T339.md`) squashed a
+`release/vX.Y.Z → main` merge despite an explicit `squash: false` override passed in the request
+body, on this project's `squash_option: default_on` setting. When that happens, `main`'s new merge
+commit gets GitLab's own `squash_commit_sha` as its second parent instead of the release branch's
+real tip — content-identical, but not a genuine ancestor of it — which corrupts
+`git merge-base(main, develop)` for the *next* sync and can resurface stale conflicts that were
+never actually there (exactly what happened in `docs/tasks/task-T339.md`, discovered a full release
+cycle later). `docs/tasks/task-T340.md` § Findings independently confirmed the mechanism: this is
+GitLab's documented squash-then-merge behavior, not a bug, but the `squash: false` override
+demonstrably does not reliably take effect on this project.
+
+**When to run it:** immediately after every `release/vX.Y.Z → main` merge (step 6 above), before
+considering the sync complete:
+
+```bash
+python3 scripts/verify-main-sync-merge.py <mr_iid>
+```
+
+It fetches the just-merged MR's own record (`GET projects/:id/merge_requests/:iid`) and asserts
+`squash == false` and `squash_commit_sha == null` — the two fields GitLab itself uses to report
+that a squash occurred.
+
+**What a failure means:** GitLab squashed the merge despite the override. The merge has already
+happened — this check cannot prevent it, only catch it immediately instead of a release cycle
+later. See `docs/tasks/task-T340.md` § Findings §2–3 for why this can happen even with an explicit
+`squash: false` in the request.
+
+**Recovery procedure:** open a small "ancestry restore" follow-up MR so the *next* sync's
+`merge-base` resolves correctly — a no-op commit on `main` with the true source-branch tip as an
+explicit second parent:
+
+```bash
+git checkout main && git pull
+git merge --no-ff <true-source-branch-tip-sha> -s ours -m "chore(release): restore true ancestry after GitLab squash"
+git push
+```
+
+(`docs/tasks/task-T340.md` § Findings §4, option 1, for the full rationale.) This is deliberately
+the cheapest remediation — bypassing the `/merge` API via direct push, or disabling
+`squash_option` project-wide, are heavier options deferred until this one is shown insufficient on
+a real sync.
+
 ### Hotfixes
 
 1. Branch from `main`: `hotfix/vX.Y.Z+1`
