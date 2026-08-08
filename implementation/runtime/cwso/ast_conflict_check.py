@@ -10,12 +10,7 @@ from enum import Enum
 from typing import Dict, List, Optional, Set
 import json
 
-from implementation.runtime.cwso.client import (
-    CwsoClient,
-    QueryType,
-    MergeHeuristic,
-    MergeLanguage,
-)
+from .client import CwsoClient, QueryType, MergeHeuristic, MergeLanguage
 
 
 class ConflictSeverity(Enum):

@@ -19,8 +19,11 @@ from runtime.cwso.concurrent_merge import (
 
 class TestConcurrentMergeOrchestrator(unittest.TestCase):
     def setUp(self) -> None:
+        # The mock doesn't enforce role restrictions, so the same mock object
+        # can stand in for both roles in tests that don't need to distinguish
+        # which client a call was routed to.
         self.client = Mock()
-        self.orchestrator = ConcurrentMergeOrchestrator(self.client)
+        self.orchestrator = ConcurrentMergeOrchestrator(self.client, self.client)
 
     def test_requires_at_least_two_workers(self) -> None:
         with self.assertRaises(ValueError):
@@ -148,6 +151,85 @@ class TestConcurrentMergeOrchestrator(unittest.TestCase):
         conflicts = self.orchestrator._extract_conflicts(merge_response)
 
         self.assertEqual(conflicts, [])
+
+    def test_two_client_constructor_routes_calls_to_correct_role(self) -> None:
+        """BUG-A regression: worker-role calls go to worker_client, merge to orchestrator_client."""
+        worker_client = Mock()
+        orchestrator_client = Mock()
+        orchestrator = ConcurrentMergeOrchestrator(worker_client, orchestrator_client)
+
+        worker_client.create_shadow_workspace.side_effect = [
+            {"workspace_uuid": "ws-1", "base_tree_oid": "base-1"},
+            {"workspace_uuid": "ws-2", "base_tree_oid": "base-2"},
+        ]
+        worker_client.commit_shadow.side_effect = [
+            {"commit_oid": "c1", "tree_oid": "t1"},
+            {"commit_oid": "c2", "tree_oid": "t2"},
+        ]
+        orchestrator_client.merge_concurrent_results.return_value = {
+            "outcome": "success",
+            "results": [{"path": "/main.py", "status": "merged"}],
+            "conflict_count": 0,
+        }
+
+        worker_edits = [
+            WorkerEditSet(
+                agent_role="backend-developer",
+                commit_message="worker 1 changes",
+                files=[FileEdit(path="/main.py", content="print('one')", language=MergeLanguage.PYTHON)],
+            ),
+            WorkerEditSet(
+                agent_role="frontend-developer",
+                commit_message="worker 2 changes",
+                files=[FileEdit(path="/main.py", content="print('two')", language=MergeLanguage.PYTHON)],
+            ),
+        ]
+
+        orchestrator.run(worker_edits=worker_edits)
+
+        # Worker-scoped operations must go to worker_client only.
+        self.assertEqual(worker_client.create_shadow_workspace.call_count, 2)
+        self.assertEqual(worker_client.write_shadow_file.call_count, 2)
+        self.assertEqual(worker_client.commit_shadow.call_count, 2)
+        worker_client.drop_shadow_workspace.assert_any_call(workspace_uuid="ws-1")
+        worker_client.drop_shadow_workspace.assert_any_call(workspace_uuid="ws-2")
+        worker_client.merge_concurrent_results.assert_not_called()
+
+        # merge_concurrent_results must go to orchestrator_client only.
+        orchestrator_client.merge_concurrent_results.assert_called_once()
+        orchestrator_client.create_shadow_workspace.assert_not_called()
+        orchestrator_client.write_shadow_file.assert_not_called()
+        orchestrator_client.commit_shadow.assert_not_called()
+        orchestrator_client.drop_shadow_workspace.assert_not_called()
+
+    def test_same_path_three_worker_collision_raises_value_error(self) -> None:
+        """BUG-F regression: 3+ workers editing the same path raise, not silently drop."""
+        workers = [
+            WorkerEditSet(
+                agent_role="backend-developer",
+                commit_message="worker A",
+                files=[FileEdit(path="/shared.py", content="def a(): pass\n", language=MergeLanguage.PYTHON)],
+            ),
+            WorkerEditSet(
+                agent_role="frontend-developer",
+                commit_message="worker B",
+                files=[FileEdit(path="/shared.py", content="def b(): pass\n", language=MergeLanguage.PYTHON)],
+            ),
+            WorkerEditSet(
+                agent_role="database-engineer",
+                commit_message="worker C",
+                files=[FileEdit(path="/shared.py", content="def c(): pass\n", language=MergeLanguage.PYTHON)],
+            ),
+        ]
+
+        with self.assertRaises(ValueError) as ctx:
+            ConcurrentMergeOrchestrator._build_merge_inputs(workers)
+
+        message = str(ctx.exception)
+        self.assertIn("/shared.py", message)
+        self.assertIn("backend-developer", message)
+        self.assertIn("frontend-developer", message)
+        self.assertIn("database-engineer", message)
 
     def test_conflict_extraction_legacy_unresolved_conflicts_fallback(self) -> None:
         """Defensive fallback: old top-level 'unresolved_conflicts' shape still parses."""

@@ -2,7 +2,7 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T316 | Tracked follow-up: role-split + minor Pattern A gaps (BUG-A/E/F/G/H, non-blocking) | backend-developer | pending | P2 | — | 2026-08-02 |
+| T348 | Sync main with develop for v6.7.0 (release/v6.7.0 → main) | release-manager | in_progress | P1 | T347 | 2026-08-08 |
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)

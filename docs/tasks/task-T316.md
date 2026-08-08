@@ -2,11 +2,11 @@
 
 **ID:** T316
 **Owner:** backend-developer
-**Status:** pending
+**Status:** done
 **Priority:** P2
 **Depends on:** — (does NOT block T214 or T306; tracked debt only)
 **Created:** 2026-08-02
-**Completed:** —
+**Completed:** 2026-08-08
 **Based on:** `docs/tasks/task-T214.md` Execution notes (qa-engineer's first real, live run of
 T214's 4 scenarios, 2026-08-02), findings BUG-A, BUG-E, BUG-F, BUG-G, BUG-H.
 
@@ -98,5 +98,60 @@ Report blockers as: type (`technical` | `dependency` | `unclear_requirements` | 
 severity (`critical` | `major` | `minor`) + one proposed mitigation. Max 2 retries.
 
 ## Execution notes
-<not yet picked up — filed for tracking per this repo's anti-fabrication/debt-tracking norms,
-consequent to T214's real live run finding these gaps. Does not block T214/T306.>
+
+### 2026-08-08 — T343/T344/T345 verified, T346 GATE, BUG-G disposition recorded
+
+Per `docs/plans/plan-023-t316-pattern-a-cleanup.md`, four of the five findings were routed to
+dedicated fix tasks (T343, T344, T345) and independently re-verified by T346 (this gate); BUG-G is
+recorded here directly, per plan-023 § 3.4.
+
+**Dispositions:**
+- **BUG-H (fixed):** `ast_conflict_check.py`'s import changed to relative style, matching
+  `concurrent_merge.py`. Landed via T343 (MR !117, `develop` merge `b18b552`).
+- **BUG-A (fixed):** `ConcurrentMergeOrchestrator.__init__` now takes `worker_client` +
+  `orchestrator_client`, routed per plan-023 § 3.1. Landed via T344 (MR !118, `develop` merge
+  `069ba1d`).
+- **BUG-F (fixed):** `_build_merge_inputs` now raises `ValueError` (naming the path and
+  contributing roles) for same-path 3+-worker collisions instead of silently dropping data.
+  Landed via T344 (same MR as BUG-A, same file).
+- **BUG-E (fixed):** `write_shadow_file` now best-effort regex-extracts `blob_oid` from the
+  prose response, never raises on non-match. Landed via T345 (MR !116, `develop` merge `f23e480`).
+- **BUG-G (deferred — disposition below).**
+
+**BUG-G disposition (this task's own, per T346's gate brief):**
+
+Quoting `docs/plans/plan-023-t316-pattern-a-cleanup.md` § 3.4 verbatim:
+
+> **Chosen:** deferred, per T316's own acceptance criteria explicitly allowing "deferred with
+> reason" as a valid disposition (not every finding must become a CWSO hand-off). Reason: the
+> generic `"AST semantic overlap conflict"` message is not incorrect, only less specific than
+> originally hoped; T214 passes without needing symbol-specific wording; and per §3.1/§3.2's
+> survey, `ConcurrentMergeOrchestrator` has no real caller outside tests today, so there is no
+> active consumer asking for more specific messages. Not routed to `../CWSO` via the T310
+> convention at this time — that convention is reserved for confirmed defects or real
+> integration blockers (per T310's own acceptance criteria), and a wording preference with no
+> active consumer doesn't meet that bar. If a real caller later needs symbol-specific messages,
+> file the CWSO hand-off then, with a concrete use case attached.
+
+T346 (this gate) independently re-derived and confirms the above as its own recommendation, not a
+mechanical copy: re-ran the full local test suite (293 tests OK / 380 passed+7 skipped via direct
+pytest) plus the live contract suite (4/4 `test_pattern_a_integration_live.py` scenarios passed
+against a reachable live CWSO stack) on current `develop` tip (post T343/T344/T345 merges,
+`61c3465`) and observed the same generic `"AST semantic overlap conflict"` message T214/plan-023
+originally found — the underlying CWSO-server behavior this disposition is about is unchanged.
+Separately re-ran `grep -rn "ConcurrentMergeOrchestrator(" --include="*.py" .` across the full
+repo and confirmed the only construction call sites remain the three test files
+(`tests/unit/test_cwso_concurrent_merge.py`, `tests/functional/test_pattern_a_integration.py`,
+`tests/functional/test_pattern_a_integration_live.py`) — no production/non-test caller has
+emerged since plan-023 § 3.4 was written. On that basis, T346 confirms no active consumer exists
+today that would change the reasoning above, and endorses BUG-G remaining **deferred, not routed
+to CWSO**, with the same re-opening condition plan-023 stated: file a CWSO hand-off if and when a
+real caller with a concrete use case for symbol-specific messages emerges.
+
+**Full verification evidence:** see `docs/tasks/task-T346.md` Outcome section for the complete
+independent re-verification (test suite, BUG-H identity check, BUG-A/BUG-F/BUG-E regression tests,
+live contract test) that grounds this closeout.
+
+This task is now considered addressed per its own acceptance criteria (every bug has an explicit
+disposition: BUG-A/E/F/H fixed, BUG-G deferred with reason). Ready for orchestrator archival to
+`completed-tasks.md`.

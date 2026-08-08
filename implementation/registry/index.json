@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-08-06T17:44:07+02:00",
+  "generatedAt": "2026-08-08T09:06:56+02:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -1238,7 +1238,7 @@
       "category": "instruction",
       "name": "git-workflow",
       "path": "instructions/git-workflow.md",
-      "checksum": "514ddb48b4c56047d383b2cc0d871991731beb728e07e1ec39ad00a03db195e0",
+      "checksum": "57080647a17f86304c686252d5d7800dee908e3ea5e885d6faa2e9a61f3a92ef",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -1810,7 +1810,7 @@
       "category": "skill",
       "name": "task-management",
       "path": "skills/task-management/SKILL.md",
-      "checksum": "69c04ef4ed5ec0f9def5d60c1d3c7c9fc1e6315159f5a2d060b8b3c510ce7097",
+      "checksum": "24cab38aeb1a65c6c8b045bf885bdff5edc7d904e515753a57fa0ef5a5933221",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
