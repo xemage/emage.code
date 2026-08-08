@@ -2,7 +2,8 @@
 
 **ID:** T345
 **Owner:** backend-developer
-**Status:** pending
+**Status:** done
+**Completed:** 2026-08-08
 **Priority:** P2
 **Depends on:** —
 **Created:** 2026-08-08
@@ -135,3 +136,11 @@ unexpected shape or non-matching prose returns `response` unmodified.
 
 ### Blocker status
 None.
+
+### Orchestrator closeout (2026-08-08)
+Independently re-verified before merging: reviewed the actual `client.py` diff (extraction only
+fires on still-enveloped prose, never raises, returns a new dict rather than mutating in place),
+reviewed all 3 new regression tests (real-format extraction, non-matching prose no-raise,
+already-JSON unaffected), independently re-ran `tests/unit/test_cwso_client.py` (37 passed) and
+the full suite (293 tests, OK) on the MR branch myself. MR !116 merged (squash, source branch
+removed): `merge_commit_sha: f23e480cac9751178b854080a0bc721e79a25a3a`, target `develop`.

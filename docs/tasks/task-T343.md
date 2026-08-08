@@ -2,7 +2,8 @@
 
 **ID:** T343
 **Owner:** backend-developer
-**Status:** pending
+**Status:** done
+**Completed:** 2026-08-08
 **Priority:** P2
 **Depends on:** —
 **Created:** 2026-08-08
@@ -154,3 +155,10 @@ instructions, fetched `origin` and created `bugfix/343-ast-checker-relative-impo
 `origin/develop`'s actual tip (`bdbda9e`) rather than working from the stale base.
 
 **Blocker status:** None.
+
+### Orchestrator closeout (2026-08-08)
+Independently re-verified before merging: reviewed the actual diff (1 file, absolute→relative
+import matching `concurrent_merge.py`'s style exactly), independently re-ran the identity check
+(`ast_conflict_check.CwsoClient is concurrent_merge.CwsoClient` → `True`) and the full suite
+(293 tests, OK) on the MR branch myself. MR !117 merged (squash, source branch removed):
+`merge_commit_sha: b18b5528ff03093e69348bfbd18bd353cd48426e`, target `develop`.
