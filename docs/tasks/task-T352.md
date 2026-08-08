@@ -2,7 +2,7 @@
 
 **ID:** T352
 **Owner:** backend-developer
-**Status:** pending
+**Status:** blocked
 **Priority:** P0
 **Depends on:** —
 **Created:** 2026-08-08
