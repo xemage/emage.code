@@ -98,6 +98,17 @@ Makefile shortcut: `make install TARGET=/path/to/your-project PLATFORM=cursor`
 scripts/install.sh --target /path/to/your-project --platform cursor --update
 ```
 
+On `--update`, the single-file MCP configs — `.vscode/mcp.json` (`github`
+platform) and `.mcp.json` (`claude-code` platform) — are merged, not
+overwritten: any existing top-level key the generator doesn't know about
+(e.g. a hand-added MCP server entry, or a top-level `inputs` prompt block) is
+preserved, while every generator-known key is refreshed to the current
+generated content, recursing into nested objects (so hand-added fields inside
+a known server's config are preserved too). See `scripts/merge-mcp-json.py`
+for the exact algorithm. Platform directory trees (`.github/`, `.claude/`,
+etc.) are still replaced wholesale on `--update` — only these two MCP config
+files get this merge treatment.
+
 Per-release install steps live in [`docs/releases/v6.0.1.md`](docs/releases/v6.0.1.md)
 and are embedded in [GitLab Releases](https://gitlab.com/em-age/emage.code/-/releases).
 
