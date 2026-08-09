@@ -2,11 +2,11 @@
 
 **ID:** T371
 **Owner:** tech-lead
-**Status:** in_progress
+**Status:** done
 **Priority:** P0
 **Depends on:** T369, T370
 **Created:** 2026-08-09
-**Completed:** —
+**Completed:** 2026-08-09
 **Based on:** docs/plans/plan-031-install-mcp-json-merge-and-repo-update.md
 
 ## Objective
@@ -39,4 +39,19 @@ Report blockers as: type (`technical` | `dependency` | `unclear_requirements` | 
 + severity (`critical` | `major` | `minor`) + one proposed mitigation. Max 2 retries.
 
 ## Execution notes
-<filled after gate runs and MR merges>
+VERDICT: PASS. Ran the full verification bar on `bugfix/T368-install-vscode-mcp-merge`: `make verify`
+(0 drift, 550 files), `implementation/scripts/generate-registry.py --check` (up to date),
+`docs/tasks/validate-tasks.py` (TASK LEDGER PASS), `python3 tests/run.py` (299 tests, OK, skipped=17),
+`node implementation/scripts/sync.mjs --check` (0 drift). Independently reviewed the full diff (11
+files, +857/-2 — `scripts/install.sh`, `scripts/merge-mcp-json.py`,
+`tests/functional/test_install_script.py`, `README.md`, plan + task-brief docs) before proceeding.
+
+Pushed branch, opened MR !158
+(https://gitlab.com/em-age/emage.code/-/merge_requests/158). CI pipeline #2745395767 went green on
+all 5 jobs (sync-no-diff, validation-super-gate, verify-knowledge-drift, unit-tests,
+markdown-links). Merged via `glab mr merge 158 --squash=false --yes`; GitLab squashed the merge
+anyway (commit `07b141a`, merge commit `2b11d20`) despite the explicit override — same
+`squash_option: default_on` behavior CONTRIBUTING.md documents for this project; acceptable here
+since squash-and-merge is this repo's own documented default for feature/bugfix branches. Re-ran
+the entire verification bar a second time directly against `develop` post-merge — identical results,
+no drift introduced by the squash. Local and remote feature branch cleaned up.
