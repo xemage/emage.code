@@ -85,8 +85,9 @@ in the task brief or checkpoint.
 
 ## Knowledge Base
 - Source knowledge lives in the emage.code repository under `implementation/knowledge/`; this target uses installed platform projections.
-- Per-platform folders (`.github/`, `.gemini/`, `.opencode/`, `.cursor/`, `.pi/`) are **generated** by `scripts/sync.mjs`. **Do not edit them by hand.**
-- Use the installed platform folders (`.github/`, `.cursor/`, `.gemini/`, `.opencode/`, `.pi/`, `.claude/`) as runtime references in this target project.
+- Per-platform folders (`.github/`, `.gemini/`, `.opencode/`, `.cursor/`, `.pi/`, `.clinerules/`, `.cline/`) are **generated** by `scripts/sync.mjs`. **Do not edit them by hand.**
+- Use the installed platform folders (`.github/`, `.cursor/`, `.gemini/`, `.opencode/`, `.pi/`, `.claude/`, `.clinerules/`, `.cline/`) as runtime references in this target project.
+- Cline auto-detects this root `AGENTS.md` natively — no projection is needed for this file itself, it already works as-is. Cline users should also check `.clinerules/` for path-scoped project rules.
 
 ## MCP Servers
 Declared in platform MCP configs (`.vscode/mcp.json`, `.cursor/mcp.json`, `.gemini/settings.json`, `.opencode/opencode.json`, `.pi/mcp.json`, `.mcp.json`). Each server is tagged:

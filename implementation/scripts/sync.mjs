@@ -362,6 +362,18 @@ function emitMcp(servers, tags, format) {
     return JSON.stringify({ mcpServers }, null, 2) + '\n';
   }
 
+  if (format === 'cline') {
+    const mcpServers = {};
+    for (const [name, s] of Object.entries(filtered)) {
+      if (s.transport === 'remote') mcpServers[name] = { type: 'http', url: s.url };
+      else {
+        mcpServers[name] = { command: s.command, args: s.args || [] };
+        if (s.env) mcpServers[name].env = mapEnv(s.env, '${env:VAR}');
+      }
+    }
+    return JSON.stringify({ mcpServers }, null, 2) + '\n';
+  }
+
   throw new Error(`Unknown MCP format: ${format}`);
 }
 
@@ -417,42 +429,56 @@ async function syncPlatform(manifest, servers) {
     await fs.rm(outRoot, { recursive: true, force: true });
   }
 
-  const agentMap = manifest.fileMap.agents;
-  const agentCfg = manifest.frontmatter.agents;
-  for (const file of await walk(path.join(KNOWLEDGE, 'agents'))) {
-    if (!file.endsWith('.md')) continue;
-    const baseName = path.basename(file, '.md');
-    const raw = await fs.readFile(file, 'utf8');
-    const { data, body } = parseFrontmatter(raw);
-    const newData = applyAgentFrontmatter(data, baseName, agentCfg);
-    const fm = emitFrontmatter(newData, {
-      toolsFormat: agentCfg.tools === 'object' ? 'object' : agentCfg.tools === 'string' ? 'string' : 'array',
-    });
-    const outPath = path.join(outRoot, agentMap.dir, baseName + agentMap.ext);
-    await emitFile(outPath, fm + body);
-    filesWritten.push(outPath);
+  if (manifest.fileMap.agents) {
+    const agentMap = manifest.fileMap.agents;
+    const agentCfg = manifest.frontmatter.agents;
+    for (const file of await walk(path.join(KNOWLEDGE, 'agents'))) {
+      if (!file.endsWith('.md')) continue;
+      const baseName = path.basename(file, '.md');
+      const raw = await fs.readFile(file, 'utf8');
+      const { data, body } = parseFrontmatter(raw);
+      const newData = applyAgentFrontmatter(data, baseName, agentCfg);
+      const fm = emitFrontmatter(newData, {
+        toolsFormat: agentCfg.tools === 'object' ? 'object' : agentCfg.tools === 'string' ? 'string' : 'array',
+      });
+      const outPath = path.join(outRoot, agentMap.dir, baseName + agentMap.ext);
+      await emitFile(outPath, fm + body);
+      filesWritten.push(outPath);
+    }
   }
 
-  const cmdMap = manifest.fileMap.commands;
-  for (const file of await walk(path.join(KNOWLEDGE, 'commands'))) {
-    if (!file.endsWith('.md')) continue;
-    const baseName = path.basename(file, '.md');
-    const raw = await fs.readFile(file, 'utf8');
-    const { data, body } = parseFrontmatter(raw);
-    const newData = applyGenericFrontmatter(data, manifest.frontmatter.commands);
-    const outPath = path.join(outRoot, cmdMap.dir, baseName + cmdMap.ext);
-    await emitFile(outPath, emitFrontmatter(newData) + body);
-    filesWritten.push(outPath);
+  if (manifest.fileMap.commands) {
+    const cmdMap = manifest.fileMap.commands;
+    for (const file of await walk(path.join(KNOWLEDGE, 'commands'))) {
+      if (!file.endsWith('.md')) continue;
+      const baseName = path.basename(file, '.md');
+      const raw = await fs.readFile(file, 'utf8');
+      const { data, body } = parseFrontmatter(raw);
+      const newData = applyGenericFrontmatter(data, manifest.frontmatter.commands);
+      const outPath = path.join(outRoot, cmdMap.dir, baseName + cmdMap.ext);
+      await emitFile(outPath, emitFrontmatter(newData) + body);
+      filesWritten.push(outPath);
+    }
   }
 
   const insMap = manifest.fileMap.instructions;
+  const insRoot = insMap.rootRelative ? path.resolve(ROOT, insMap.dir) : path.join(outRoot, insMap.dir);
+  if (insMap.rootRelative) {
+    const rootWithSep = ROOT.endsWith(path.sep) ? ROOT : ROOT + path.sep;
+    if (insRoot === ROOT || !insRoot.startsWith(rootWithSep)) {
+      throw new Error(`Refusing rootRelative fileMap target outside or equal to ROOT: ${insRoot}`);
+    }
+    if (!CHECK_ONLY) {
+      await fs.rm(insRoot, { recursive: true, force: true });
+    }
+  }
   for (const file of await walk(path.join(KNOWLEDGE, 'instructions'))) {
     if (!file.endsWith('.md')) continue;
     const baseName = path.basename(file, '.md');
     const raw = await fs.readFile(file, 'utf8');
     const { data, body } = parseFrontmatter(raw);
     const newData = applyGenericFrontmatter(data, manifest.frontmatter.instructions);
-    const outPath = path.join(outRoot, insMap.dir, baseName + insMap.ext);
+    const outPath = path.join(insRoot, baseName + insMap.ext);
     await emitFile(outPath, emitFrontmatter(newData) + body);
     filesWritten.push(outPath);
   }

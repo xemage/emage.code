@@ -45,6 +45,12 @@ PLATFORM_MAP = {
         "security": ".claude/rules/security-guidelines.md",
         "mcp": ".mcp.json",
     },
+    "cline": {
+        "skills": ".cline/skills/",
+        "standards": ".clinerules/coding-standards.md",
+        "security": ".clinerules/security-guidelines.md",
+        "mcp": ".cline/mcp.json",
+    },
 }
 
 
@@ -146,7 +152,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", required=True)
     parser.add_argument("--dest", required=True)
-    parser.add_argument("--platform", required=True, choices=["github", "cursor", "gemini", "opencode", "pi", "claude-code", "all"])
+    parser.add_argument("--platform", required=True, choices=["github", "cursor", "gemini", "opencode", "pi", "claude-code", "cline", "all"])
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 

@@ -11,7 +11,7 @@
 emage.code brings a **structured multi-agent development team** to your
 favourite AI assistant. Every project follows the same protocol:
 
-Latest release: v6.7.1
+Latest release: v6.8.0
 
 - **Plan → Approve → Execute** lifecycle, never silent execution
 - **DAG-based task management** with explicit dependencies
@@ -60,6 +60,7 @@ Use [`implementation/`](implementation/README.md) for all development work.
 | Cursor | `.cursor/` | `.mdc`, `applyTo` → `globs`, `mcp.json` |
 | Pi | `.pi/` | agents, prompts, instructions, skills (`.md`) |
 | Claude Code | `.claude/` + `.mcp.json` | `.md` (string `tools`), subagents + skills + rules |
+| Cline | `.clinerules/` (root) + `.cline/skills/` + `.cline/mcp.json` | `.md` rules (`paths` frontmatter) + skills; MCP config is a staging file, not auto-applied |
 
 Adding a new platform = adding a `platforms/<name>.json` manifest under
 `implementation/`. Usually no script changes are required; add a new
@@ -86,6 +87,7 @@ scripts/install.sh --target /path/to/your-project --platform cursor
 | Opencode | `opencode` |
 | Pi | `pi` |
 | Claude Code | `claude-code` |
+| Cline | `cline` |
 | All platforms | `all` |
 
 Makefile shortcut: `make install TARGET=/path/to/your-project PLATFORM=cursor`
