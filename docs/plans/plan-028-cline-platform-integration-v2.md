@@ -126,13 +126,18 @@ T357 → validation report, CI green
 |------|--------|------|
 | `implementation/platforms/cline.json` | New | T352 |
 | `implementation/scripts/sync.mjs` | Modified | T353 |
+| `implementation/.cline/` (skills, `mcp.json`, `.generated-manifest.json`) | New, generated & committed | T354 |
+| `implementation/.clinerules/` (`*.md` rules) | New, generated & committed | T354 |
 | `scripts/install.sh` | Modified | T355 |
 | `Makefile` | Modified | T355 |
 | `README.md` | Modified | T355, T356 |
 | `AGENTS.md` | Modified | T356 |
 | `docs/wiki/cline-setup.md` | New | T356 |
 
-No `_extras/cline/` content this time (dropped, see §2).
+No `_extras/cline/` content this time (dropped, see §2). Note: `implementation/.cline/` and
+`implementation/.clinerules/` are the canonical generated source (CI-gated, mirroring
+`implementation/.cursor/` etc.) — this plan does not touch this repo's separate, non-CI-gated
+root-level dogfooded install (`.cursor/`, `.claude/`, etc. at the bare repo root).
 
 ## 7. Risks & mitigations
 

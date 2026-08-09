@@ -42,15 +42,18 @@ A validation report (`## Outcome`), exact command output quoted for every criter
 - [ ] `python3 implementation/scripts/check.py --root implementation --required --schemas --cookbooks
       --handoff-security --hook-policy --telemetry --benchmarks --registry --packaging --triggers
       --adapters` passes
-- [ ] `node implementation/scripts/sync.mjs --check` (all platforms, no filter) passes with no drift
-      across all 7 platforms including Cline
-- [ ] `.cline/mcp.json` is valid JSON and contains every expected `core`/`extended` server (re-confirm
-      after T355/T356's changes — neither should have touched `.cline/`/`.clinerules/`, but verify
-      rather than assume)
-- [ ] `.clinerules/` still exists at the repo root, unaffected by T355/T356's changes
+- [ ] `node implementation/scripts/sync.mjs --root implementation --check` (all platforms, no filter)
+      passes with no drift across all 7 platforms including Cline
+- [ ] `implementation/.cline/mcp.json` is valid JSON and contains every expected `core`/`extended`
+      server (re-confirm after T355/T356's changes — neither should have touched
+      `implementation/.cline/`/`implementation/.clinerules/`, but verify rather than assume)
+- [ ] `implementation/.clinerules/` still exists (canonical generated location, committed by T354),
+      unaffected by T355/T356's changes
 - [ ] `git diff --stat` against the pre-T352 (v2) baseline shows only files from plan-028-v2 §6's file
-      inventory — no unexpected files touched, and specifically **no** `.cline/rules/`,
-      `.cline/agents/`, `.cline/commands/`, or root single-file `.clinerules` (v1 leftovers must not
+      inventory (which includes `implementation/.cline/` and `implementation/.clinerules/`, committed
+      by T354) — no unexpected files touched, and specifically **no**
+      `implementation/.cline/rules/`, `implementation/.cline/agents/`,
+      `implementation/.cline/commands/`, or bare repo-root `.clinerules` (v1 leftovers must not
       exist)
 - [ ] All new/modified files pass the repo's `.editorconfig` check (check `.gitlab-ci.yml` for the
       exact command; if none exists, state that explicitly)
