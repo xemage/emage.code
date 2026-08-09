@@ -2,11 +2,11 @@
 
 **ID:** T368
 **Owner:** devops-engineer
-**Status:** in_review
+**Status:** done
 **Priority:** P0
 **Depends on:** —
 **Created:** 2026-08-09
-**Completed:** —
+**Completed:** 2026-08-09
 **Based on:** docs/plans/plan-031-install-mcp-json-merge-and-repo-update.md
 
 ## Objective

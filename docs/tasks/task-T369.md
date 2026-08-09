@@ -2,11 +2,11 @@
 
 **ID:** T369
 **Owner:** qa-engineer
-**Status:** in_review
+**Status:** done
 **Priority:** P0
 **Depends on:** T368
 **Created:** 2026-08-09
-**Completed:** —
+**Completed:** 2026-08-09
 **Based on:** docs/plans/plan-031-install-mcp-json-merge-and-repo-update.md
 
 ## Objective
