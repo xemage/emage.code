@@ -60,6 +60,12 @@ class TestInstallAgentsMapping(unittest.TestCase):
         self.assertIn("`.vscode/mcp.json`", content)
         self.assertIn("`.gemini/settings.json`", content)
         self.assertIn("`.opencode/opencode.json`", content)
+        self.assertIn("`.cline/skills/`", content)
+        self.assertIn("`.clinerules/coding-standards.md`", content)
+        self.assertIn("`.clinerules/security-guidelines.md`", content)
+        self.assertIn("`.cline/mcp.json`", content)
+        self.assertIn("`.cline/`", content)
+        self.assertIn("`.clinerules/`", content)
 
 
 if __name__ == "__main__":
