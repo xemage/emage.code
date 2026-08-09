@@ -2,7 +2,7 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T366 | Release v6.9.0 (MCP remote transport alignment) | release-manager | pending | P0 | T365 | 2026-08-09 |
+| T366 | Release v6.9.0 (MCP remote transport alignment) | release-manager | in_progress | P0 | T365 | 2026-08-09 |
 | T367 | Sync main with develop for v6.9.0 | release-manager | pending | P1 | T366 | 2026-08-09 |
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
