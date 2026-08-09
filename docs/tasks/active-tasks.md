@@ -2,8 +2,6 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T358 | Release v6.8.0: docs prep, tag, publish | release-manager | pending | P1 | — | 2026-08-09 |
-| T359 | Sync main with develop for v6.8.0 | release-manager | pending | P1 | T358 | 2026-08-09 |
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
