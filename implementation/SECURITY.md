@@ -42,7 +42,7 @@ Set credentials via:
 
 ## 3. MCP server reachability
 
-`extended` servers reach external infrastructure (Hugging Face, Figma, Notion, Supabase, Docker socket, Redis, Postgres). Enabling them in your platform manifest grants the AI access to those systems via MCP. Audit each server before use.
+`extended` servers reach external infrastructure (Hugging Face, Supabase, Docker socket, Postgres). Enabling them in your platform manifest grants the AI access to those systems via MCP. Audit each server before use.
 
 `docker` and `filesystem` MCPs in particular can read/write outside your project directory. Restrict their configuration (allowed paths, allowed images) at the host level.
 

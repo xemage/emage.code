@@ -28,7 +28,7 @@ All servers are declared once in [`implementation/knowledge/mcp/servers.yaml`](h
 
 ## Extended servers (opt-in)
 
-`hf-mcp-server`, `filesystem`, `github`, `git`, `supabase`, `e2b`, `docker`, `redis`, `postgresql`, `figma`, `notion`, `toolradar`.
+`hf-mcp-server`, `filesystem`, `github`, `git`, `supabase`, `docker`, `postgresql`, `toolradar`.
 
 Most require additional credentials — see [`servers.yaml`](https://gitlab.com/em-age/emage.code/-/blob/main/implementation/knowledge/mcp/servers.yaml) for the full env-var contract.
 
@@ -40,8 +40,6 @@ Most require additional credentials — see [`servers.yaml`](https://gitlab.com/
 | `BRAVE_API_KEY` | `brave` | Free tier: 2000 queries/month |
 | `GITHUB_TOKEN` | `github` (extended) | Classic PAT or fine-grained |
 | `SUPABASE_ACCESS_TOKEN` | `supabase` (extended) | Project access token |
-| `FIGMA_ACCESS_TOKEN` | `figma` (extended) | Personal access token |
-| `NOTION_API_KEY` | `notion` (extended) | Internal integration token |
 
 > **Never commit these.** Use environment variables or a secret vault. See [`SECURITY.md`](https://gitlab.com/em-age/emage.code/-/blob/main/implementation/SECURITY.md) for the full rules.
 

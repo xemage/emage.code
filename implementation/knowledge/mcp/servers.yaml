@@ -89,41 +89,17 @@ servers:
     command: npx
     args: ["-y", "@supabase/mcp"]
 
-  e2b:
-    tags: [extended]
-    transport: stdio
-    command: npx
-    args: ["-y", "e2b-mcp"]
-
   docker:
     tags: [extended]
     transport: stdio
     command: npx
     args: ["-y", "docker-mcp"]
 
-  redis:
-    tags: [extended]
-    transport: stdio
-    command: npx
-    args: ["-y", "redis-mcp"]
-
   postgresql:
     tags: [extended]
     transport: stdio
     command: npx
     args: ["-y", "postgres-mcp"]
-
-  figma:
-    tags: [extended]
-    transport: stdio
-    command: npx
-    args: ["-y", "@figma/mcp"]
-
-  notion:
-    tags: [extended]
-    transport: stdio
-    command: npx
-    args: ["-y", "@notion/mcp"]
 
   toolradar:
     tags: [extended]
