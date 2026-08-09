@@ -2,7 +2,7 @@
 
 **ID:** T353
 **Owner:** backend-developer
-**Status:** pending
+**Status:** done
 **Priority:** P0
 **Depends on:** T352
 **Created:** 2026-08-08 (revised 2026-08-09 for corrected Cline format)
