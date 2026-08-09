@@ -2,11 +2,11 @@
 
 **ID:** T372
 **Owner:** devops-engineer
-**Status:** pending
+**Status:** done
 **Priority:** P0
 **Depends on:** T371
 **Created:** 2026-08-09
-**Completed:** —
+**Completed:** 2026-08-09
 **Based on:** docs/plans/plan-031-install-mcp-json-merge-and-repo-update.md
 
 ## Objective
@@ -50,4 +50,49 @@ Report blockers as: type (`technical` | `dependency` | `unclear_requirements` | 
 + severity (`critical` | `major` | `minor`) + one proposed mitigation. Max 2 retries.
 
 ## Execution notes
-<filled during execution>
+Checked out fresh `develop` post-T371/MR !159 merge (`3b8ddfc`), branched
+`chore/T372-repo-root-self-install-update`. Read `scripts/install.sh --help` for the exact
+invocation, ran `bash scripts/install.sh --target . --platform all --update --dry-run` first to
+preview (confirmed `merge-mcp-json.py` — not plain `cp` — is invoked for both `.vscode/mcp.json` and
+`.mcp.json`, proving T368's fix is live), captured `git status`/full repo listing as the before
+snapshot, then ran the real `--update`.
+
+Result:
+- `.cline/` and `.clinerules/` created for the first time, byte-identical to
+  `implementation/.cline/`/`implementation/.clinerules/` (`diff -r` clean).
+- `.vscode/mcp.json`: only `context7` changed (gained `"type": "http"`, the generator-known refresh
+  from T361/T362); `cwso` entry (url, headers, `Authorization: Bearer ${input:cwso_jwt_token}`
+  placeholder) and the top-level `inputs` block are byte-for-byte unchanged — no literal secret
+  anywhere, only the placeholder syntax.
+- `.mcp.json`: no diff (still byte-identical to generator output, as T368's audit found).
+- `.claude/`, `.cursor/`, `.github/`, `.gemini/`, `.opencode/`, `.pi/`: no diff (root trees were
+  already current with `implementation/`, confirming `make verify` was accurate pre-update).
+- `docs/tasks/active-tasks.md`/`completed-tasks.md`: no diff (already current from the T368-T371
+  closeout).
+
+Two collateral changes surfaced from `install_tree_into`'s `rsync --delete` / `render_installed_agents.py`
+behavior, both **reverted** (`git checkout -- .claude/settings.json AGENTS.md`) as out-of-scope for
+this plan, matching the T362 precedent of reverting the same class of collateral rather than silently
+committing it:
+1. `.claude/settings.json` — a hand-maintained, repo-root-only file with no counterpart in
+   `implementation/.claude/`; `rsync --delete` wipes anything not in the source tree. Not a MCP-JSON
+   issue (out of plan-031's scope), reverted.
+2. `AGENTS.md` — **new finding, not previously tracked**: `scripts/render_installed_agents.py`'s
+   `render()` function has a `platform == "all"` branch with hardcoded `skills_ref`/`code_ref`/
+   `sec_ref`/`readme_ref`/`mcp_ref` strings that were never updated when Cline shipped in v6.8.0
+   (T352-T357) — all five omit `.cline/skills/`, `.clinerules/coding-standards.md`,
+   `.clinerules/security-guidelines.md`, `.cline/` from the platform-folder list, and
+   `.cline/mcp.json` from the MCP-config list. Running `--platform all` (fresh or `--update`)
+   silently regresses AGENTS.md's Knowledge Base section to omit Cline even though `.cline/`/
+   `.clinerules/` get installed alongside it. Reverted the regression (kept this repo's existing,
+   more-complete hand-verified wording) rather than accept it or silently fix the generator script,
+   since it's a distinct bug outside plan-031's stated scope (JSON merge for two MCP files). Flagged
+   to the user in the final report as a follow-up candidate, not silently absorbed into this task.
+
+Full verification bar re-run after the update and after reverting collateral: `make verify` (0
+drift, 550 files), `generate-registry.py --check` (up to date), `validate-tasks.py` (TASK LEDGER
+PASS), `sync.mjs --check` (0 drift), `python3 tests/run.py` (299 tests, OK, skipped=17) — all green.
+
+Committed `.cline/`, `.clinerules/`, `.vscode/mcp.json` on branch
+`chore/T372-repo-root-self-install-update`, pushed, opened MR, watched CI green, merged to
+`develop` via `glab mr merge --squash=false` (see MR reference below for the resulting commit SHA).
