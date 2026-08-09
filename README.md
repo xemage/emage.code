@@ -86,6 +86,7 @@ scripts/install.sh --target /path/to/your-project --platform cursor
 | Opencode | `opencode` |
 | Pi | `pi` |
 | Claude Code | `claude-code` |
+| Cline | `cline` |
 | All platforms | `all` |
 
 Makefile shortcut: `make install TARGET=/path/to/your-project PLATFORM=cursor`
