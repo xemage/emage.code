@@ -2,7 +2,7 @@
 
 **ID:** T375
 **Owner:** tech-lead, orchestrator
-**Status:** pending
+**Status:** done
 **Priority:** P0
 **Depends on:** T373, T374
 **Created:** 2026-08-09

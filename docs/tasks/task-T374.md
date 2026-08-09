@@ -2,7 +2,7 @@
 
 **ID:** T374
 **Owner:** qa-engineer
-**Status:** pending
+**Status:** done
 **Priority:** P0
 **Depends on:** T373
 **Created:** 2026-08-09
