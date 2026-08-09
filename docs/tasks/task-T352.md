@@ -1,62 +1,59 @@
-# Task T352 — Create Cline Platform Manifest
+# Task T352 v2 — Create Cline Platform Manifest (corrected format)
 
 **ID:** T352
 **Owner:** backend-developer
-**Status:** blocked
+**Status:** pending
 **Priority:** P0
 **Depends on:** —
-**Created:** 2026-08-08
-**Based on:** `docs/plans/plan-028-cline-platform-integration.md` §0, §2; `implementation/platforms/cursor.json`,
-`implementation/platforms/pi.json`, `implementation/platforms/claude-code.json` (shape references)
+**Created:** 2026-08-08 (revised 2026-08-09 for corrected Cline format)
+**Based on:** `docs/plans/plan-028-cline-platform-integration-v2.md` §0, §2 (supersedes v1's brief,
+kept below the fold as historical record — see `## Outcome (v1 attempt)` at the bottom of this file)
 
 ## Objective
-Author `implementation/platforms/cline.json`, the manifest that tells `implementation/scripts/sync.mjs`
-how to project canonical knowledge into Cline's native on-disk format. This is a pure JSON-authoring
-task — no `sync.mjs` changes (that's T353).
+Author `implementation/platforms/cline.json` covering only what's confirmed to exist in Cline's
+documented format: project rules and skills, plus an MCP staging file. No `agents`, `commands`, or
+`extras` block — those are explicitly out of scope this pass (§2 of the v2 plan).
 
 ## Context
-- Phase: Implementation (plan-028, step 1 of 6).
-- This repo already supports 6 platforms via manifests in `implementation/platforms/*.json`:
-  `cursor`, `github`, `gemini`, `opencode`, `pi`, `claude-code`. Read `cursor.json` and `pi.json` in
-  full before starting — they are the closest shape references.
-- **Step 0, before writing anything**: fetch https://docs.cline.bot (the rules/custom-instructions
-  and MCP-configuration pages) and confirm the assumed Cline config format below is still current:
-  - `.cline/rules/*.md` — conditional rules, YAML frontmatter, replacing a legacy single-file
-    `.clinerules`
-  - `.cline/skills/*/SKILL.md`
-  - `.cline/agents/*.md`
-  - `cline_mcp_settings.json` — MCP server config
-  If the live docs describe a **materially different** format (different directory names, different
-  frontmatter keys, a different MCP config filename/shape), **stop and report an
-  `unclear_requirements` blocker** per the Blocker Protocol below — do not silently adapt the manifest
-  to a guess. If the format matches (even with minor wording differences), proceed.
+- Phase: Implementation (plan-028-v2, step 1 of 6).
+- **The live-docs verification this brief would normally ask you to do in a "Step 0" has already
+  been done twice** — once by the delegate who attempted T352 v1 (2026-08-08), once independently by
+  the orchestrator re-fetching the same pages (2026-08-08/09). Both confirmed the same format. You do
+  not need to re-fetch https://docs.cline.bot before writing the manifest. If you have any reason to
+  suspect the format has changed since (e.g. you notice something inconsistent while working), stop
+  and report an `unclear_requirements` blocker rather than guessing — same discipline as before, just
+  not a mandatory re-check this time since it was just done.
+- Confirmed format (this is what you're encoding, not a hypothesis):
+  - Rules live in **`.clinerules/` at the project root** — a directory, not nested under `.cline/`.
+    Files are `.md`/`.txt`, optionally with YAML frontmatter containing exactly one conditional key,
+    `paths` (a glob array). Files with no frontmatter are always active.
+  - Skills live in `.cline/skills/<name>/SKILL.md` with `name` + `description` frontmatter —
+    unchanged from v1, this part was never wrong.
+  - MCP server config is a **global** file (`~/.cline/mcp.json` for the CLI); there is no documented
+    project-relative MCP config file. This manifest generates a **staging file**,
+    `.cline/mcp.json`, that a human copies/merges into the real global config — `sync.mjs` never
+    writes outside the repo.
 
 ## Inputs
-- `implementation/platforms/cursor.json`, `implementation/platforms/pi.json`,
-  `implementation/platforms/claude-code.json` — read all three for shape reference before writing.
-- `implementation/knowledge/mcp/servers.yaml` — the MCP server registry this manifest's `mcp` block
-  projects. Do not add new servers or new tags to this file; T352 only references the existing
-  `core`/`extended` tags.
+- `implementation/platforms/cursor.json` — closest shape reference for the `renameKeys` pattern
+  (`applyTo` → a different key name), even though the target key name differs (`paths`, not
+  `globs`).
+- `implementation/platforms/claude-code.json` — reference for `mcp.format` shape (its `emitMcp`
+  branch is what Cline's will mirror, per T353).
 
 ## Constraints
-- **Do not create `implementation/platforms/_manifest.schema.json`.** It does not exist for *any*
-  platform in this repo today (every existing manifest's `"$schema"` field points at a file that
-  isn't there — a pre-existing, harmless, repo-wide convention). Keep the same `"$schema":
-  "./_manifest.schema.json"` field in `cline.json` for consistency with the other 6 manifests, but do
-  not attempt to make it resolve to a real file — that is out of scope for this task.
-- **Do not modify `implementation/scripts/sync.mjs`, `scripts/install.sh`, or any docs file.** Those
+- **Do not add `fileMap.agents`, `fileMap.commands`, or `extras`.** No confirmed format exists for
+  Cline subagents or slash commands, and there is no legacy-fallback-file concept to project either
+  (that was a v1 mistake — `.clinerules/` the directory is itself the primary current format, not a
+  fallback target).
+- **Do not create `implementation/platforms/_manifest.schema.json`** — same reasoning as v1, it
+  doesn't exist for any platform in this repo.
+- **Do not modify `implementation/scripts/sync.mjs`, `scripts/install.sh`, or any docs file** — those
   are T353/T355/T356.
-- **Do not add anything RAG/vault/Obsidian-related** to the `mcp` block or anywhere else in the file.
-- File must be valid JSON and must not introduce any manifest key that doesn't already appear in at
-  least one of `cursor.json`, `pi.json`, or `claude-code.json` — if Cline genuinely needs a new key
-  shape (e.g. `toolMap`, which is new but is a sub-key of the existing `frontmatter.agents` block, not
-  a new top-level manifest key), that is fine; inventing an unrelated new top-level manifest concept
-  is not — flag it as a blocker instead.
-- Token budget: ≤ 20k.
+- Token budget: ≤ 10k (smaller than v1 — fewer fileMap types to encode).
 
 ## Expected Outputs
-`implementation/platforms/cline.json`, with exactly this content (adjust only if Step 0's live-docs
-check surfaces a material difference, in which case report the blocker instead of silently adjusting):
+`implementation/platforms/cline.json`:
 
 ```json
 {
@@ -65,31 +62,13 @@ check surfaces a material difference, in which case report the blocker instead o
   "displayName": "Cline",
   "outputDir": ".cline",
   "fileMap": {
-    "agents": { "dir": "agents", "ext": ".md" },
-    "commands": { "dir": "commands", "ext": ".md" },
-    "instructions": { "dir": "rules", "ext": ".md" },
+    "instructions": { "dir": ".clinerules", "ext": ".md", "rootRelative": true },
     "skills": { "dir": "skills", "preserveTree": true }
   },
   "frontmatter": {
-    "agents": {
-      "tools": "string",
-      "keepKeys": ["name", "description", "tools"],
-      "toolMap": {
-        "read": "read_file",
-        "search": "search_files",
-        "edit": "apply_diff",
-        "execute": "execute_command",
-        "agent": "use_subagent",
-        "web": "browser_action",
-        "todo": "use_skill"
-      }
-    },
-    "commands": {
-      "keepKeys": ["description", "argument-hint"]
-    },
     "instructions": {
-      "renameKeys": { "applyTo": "globs" },
-      "keepKeys": ["description", "globs", "alwaysApply"]
+      "renameKeys": { "applyTo": "paths" },
+      "keepKeys": ["description", "paths"]
     },
     "skills": {
       "keepKeys": ["name", "description"]
@@ -97,44 +76,44 @@ check surfaces a material difference, in which case report the blocker instead o
   },
   "mcp": {
     "tags": ["core", "extended"],
-    "outputFile": "cline_mcp_settings.json",
+    "outputFile": "mcp.json",
     "format": "cline"
-  },
-  "extras": [
-    { "from": "_extras/cline/dot-clinerules", "to": "../.clinerules" }
-  ]
+  }
 }
 ```
 
-Note: the `mcp.format` value `"cline"` does not exist yet in `sync.mjs`'s `emitMcp()` — that's
-expected, T353 adds it. T352 only needs the manifest to declare it.
+Note on `fileMap.instructions.dir`: this is `.clinerules` (no `../` prefix) because T353 adds a
+`rootRelative: true` flag that resolves `dir` against the repo root directly, not against `outputDir`
+— a cleaner, more explicit design than the `../`-escape trick considered and rejected during
+re-planning. `mcp.format: "cline"` does not exist yet in `sync.mjs`'s `emitMcp()` — that's expected,
+T353 adds it, same as v1.
 
 ## Acceptance Criteria
-- [ ] Step 0 live-docs check performed and recorded in this brief's Outcome section (what was
-      checked, what was found, confirmed-current or blocker-reported)
-- [ ] `implementation/platforms/cline.json` exists and is valid JSON:
-      `python3 -m json.tool < implementation/platforms/cline.json` exits 0
+- [ ] `implementation/platforms/cline.json` exists and is valid JSON
+      (`python3 -m json.tool < implementation/platforms/cline.json` exits 0)
 - [ ] `platform` is `"cline"`, `displayName` is `"Cline"`, `outputDir` is `".cline"`
-- [ ] `fileMap` matches the block above exactly (4 entries: agents/commands/instructions/skills)
-- [ ] `frontmatter.instructions.renameKeys` is `{"applyTo": "globs"}` and `keepKeys` includes
-      `alwaysApply` (this is what T353 will gate its default-injection logic on — must be present)
-- [ ] `frontmatter.agents.tools` is the string `"string"` (not `"array"` or `"object"`) and
-      `toolMap` matches the 7-entry block above exactly
-- [ ] `mcp` block matches exactly: `tags: ["core", "extended"]`, `outputFile:
-      "cline_mcp_settings.json"`, `format: "cline"`
-- [ ] `extras` has exactly one entry: `{"from": "_extras/cline/dot-clinerules", "to":
-      "../.clinerules"}`
+- [ ] `fileMap` has exactly two entries: `instructions` (`dir: ".clinerules"`, `ext: ".md"`,
+      `rootRelative: true`) and `skills` (`dir: "skills"`, `preserveTree: true`) — no `agents`, no
+      `commands`
+- [ ] `frontmatter.instructions.renameKeys` is `{"applyTo": "paths"}` and `keepKeys` is exactly
+      `["description", "paths"]` — no `alwaysApply`, no `globs`
+- [ ] `frontmatter.skills.keepKeys` is `["name", "description"]`
+- [ ] No `frontmatter.agents`, no `frontmatter.commands`
+- [ ] `mcp` block matches exactly: `tags: ["core", "extended"]`, `outputFile: "mcp.json"`,
+      `format: "cline"`
+- [ ] No `extras` key present at all
 - [ ] No other file in the repo modified
-- [ ] Task brief updated with an `## Outcome` section
+- [ ] Task brief updated with an `## Outcome (v2)` section (add this as a new section — do not
+      delete or edit the existing `## Outcome (v1 attempt)` section below, it's kept as history)
 
 ## Blocker Protocol
-Report blockers per `AGENTS.md`: type (`technical` | `dependency` | `unclear_requirements` |
-`external`) + severity (`critical` | `major` | `minor`). Max 2 retries before escalation. A material
-mismatch between this brief's assumed Cline format and the live docs at https://docs.cline.bot is an
-`unclear_requirements` blocker — report it with the specific discrepancy found; do not adapt the
-manifest to a guess and proceed silently.
+Report blockers per `AGENTS.md`: type + severity. Max 2 retries before escalation. If you find a
+reason to doubt the confirmed format above, that's an `unclear_requirements` blocker — report the
+specific new discrepancy found, citing what you checked, rather than guessing.
 
-## Outcome
+---
+
+## Outcome (v1 attempt, 2026-08-08 — historical, format later found wrong, do not use)
 
 **Status:** BLOCKED — `implementation/platforms/cline.json` was **not** created. Step 0's live-docs
 check found a material mismatch between this brief's assumed Cline config format and the current
@@ -184,47 +163,11 @@ index, and direct page fetches on 2026-08-08):
    could not be confirmed or denied as matching the brief's assumption from the pages checked.
 
 ### Classification
-
 - **Type:** `unclear_requirements`
-- **Severity:** `major` (work on this task cannot proceed without new direction; it does not block
-  unrelated work elsewhere in the repo)
-- **Rationale:** items 1, 2, and 4 above are exactly the trigger conditions named in this brief's
-  own Step 0 instructions and Blocker Protocol — "different directory names, different frontmatter
-  keys, a different MCP config filename/shape" — so per explicit brief instruction this was not
-  adapted into a best-guess manifest.
+- **Severity:** `major`
 
-### Suggested resolution
-Re-author the manifest's assumed shape against the confirmed-current format before re-attempting
-T352:
-- `fileMap.instructions` should emit to project-root `.clinerules/` rather than nested under
-  `outputDir: ".cline"` (or `outputDir` needs to become `.` for the `instructions` file-map entry
-  specifically — this is a `sync.mjs` capability question for whoever re-scopes T353 too, since
-  today every fileMap entry is emitted under the platform's single `outputDir`).
-- `frontmatter.instructions` should key off `paths` (glob array), not `applyTo`/`globs`/
-  `alwaysApply` — the `renameKeys`/`alwaysApply` gating described in plan-028 §0 item 6 (and wired
-  for T353) does not apply to Cline as currently documented.
-- `extras` entry mapping to `../.clinerules` should be dropped or re-thought as a directory-based
-  concept, not a single dotfile.
-- `mcp.outputFile` should be reconsidered — possibly `mcp.json` under a `.cline` output dir (to
-  match `~/.cline/mcp.json`'s trailing segment) rather than `cline_mcp_settings.json`.
-- Confirm whether a `.cline/agents/*.md` format exists at all (may need to ask Cline maintainers or
-  check the OSS repo directly, since the public docs site does not appear to define one).
-
-No code changes were made. `implementation/platforms/cline.json` was not created. Only this task
-brief was modified, to record the Step 0 findings and blocker per this task's own instructions.
-
-**Acceptance criteria status:**
-- [x] Step 0 live-docs check performed and recorded in this section
-- [ ] `implementation/platforms/cline.json` exists and is valid JSON — **not attempted**, blocked
-- [ ] `platform`/`displayName`/`outputDir` — **not attempted**, blocked
-- [ ] `fileMap` — **not attempted**, blocked
-- [ ] `frontmatter.instructions.renameKeys`/`keepKeys` — **not attempted**, blocked
-- [ ] `frontmatter.agents.tools`/`toolMap` — **not attempted**, blocked
-- [ ] `mcp` block — **not attempted**, blocked
-- [ ] `extras` — **not attempted**, blocked
-- [x] No other file in the repo modified
-- [x] Task brief updated with an `## Outcome` section
-
-**Blocker status:** `unclear_requirements` / `major` — awaiting orchestrator direction on how to
-reconcile the manifest shape with Cline's confirmed-current on-disk format before this task (and
-downstream T353–T357) can proceed.
+### Resolution
+Orchestrator independently re-verified findings 1, 2, and 4 above against the same live docs
+(2026-08-08/09), confirmed them, escalated to the user via `AskUserQuestion`, and received direction:
+redesign now with reduced scope. See `docs/plans/plan-028-cline-platform-integration-v2.md` and the
+`## Outcome (v2)` section above (once filled in) for what actually shipped.

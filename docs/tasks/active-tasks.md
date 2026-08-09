@@ -2,12 +2,12 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T352 | Create Cline platform manifest | backend-developer | blocked | P0 | — | 2026-08-08 |
-| T353 | Extend sync.mjs for Cline | backend-developer | pending | P0 | T352 | 2026-08-08 |
-| T354 | Generate & validate Cline output | qa-engineer | pending | P0 | T353 | 2026-08-08 |
-| T355 | Update install script for Cline | devops-engineer | pending | P1 | T354 | 2026-08-08 |
-| T356 | Update documentation for Cline | technical-writer | pending | P1 | T355 | 2026-08-08 |
-| T357 | End-to-end validation for Cline platform support | qa-engineer | pending | P0 | T356 | 2026-08-08 |
+| T352 | Create Cline platform manifest (v2 — corrected format) | backend-developer | pending | P0 | — | 2026-08-09 |
+| T353 | Extend sync.mjs for Cline (v2 — corrected format) | backend-developer | pending | P0 | T352 | 2026-08-09 |
+| T354 | Generate & validate Cline output (v2) | qa-engineer | pending | P0 | T353 | 2026-08-09 |
+| T355 | Update install script for Cline (v2) | devops-engineer | pending | P1 | T354 | 2026-08-09 |
+| T356 | Update documentation for Cline (v2) | technical-writer | pending | P1 | T355 | 2026-08-09 |
+| T357 | End-to-end validation for Cline platform support (v2) | qa-engineer | pending | P0 | T356 | 2026-08-09 |
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
