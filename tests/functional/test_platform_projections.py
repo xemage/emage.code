@@ -1,13 +1,17 @@
 """Cross-platform projection integrity checks.
 
-These tests ensure the generated outputs for GitHub Copilot, Gemini, and
-Opencode stay consistent with canonical knowledge and manifest contracts.
+These tests ensure the generated outputs for GitHub Copilot, Gemini, Opencode,
+Claude Code, Cursor, Cline, and Pi stay consistent with canonical knowledge and
+manifest contracts, including each platform's audited remote MCP transport
+encoding (see docs/tasks/task-T360.md § "Audit table").
 """
 from __future__ import annotations
 
 import json
 import unittest
 from pathlib import Path
+
+import yaml
 
 from tests._helpers.frontmatter import parse_file
 from tests._helpers.repo import (
@@ -59,6 +63,21 @@ def _expected_generated_relpaths(platform: str) -> set[str]:
         for source_path in _source_files(kind):
             relpaths.add(_generated_relpath(platform, kind, source_path))
     return relpaths
+
+
+def _remote_server_urls() -> dict[str, str]:
+    """Canonical `url` per remote-transport MCP server, from servers.yaml.
+
+    Sourcing the expected URL from the registry (rather than hardcoding it
+    per test) keeps transport-shape assertions in sync if the URL ever
+    changes, while still asserting the full per-platform field shape below.
+    """
+    raw = yaml.safe_load((knowledge_root() / "mcp" / "servers.yaml").read_text(encoding="utf-8"))
+    return {
+        name: cfg["url"]
+        for name, cfg in raw["servers"].items()
+        if cfg.get("transport") == "remote"
+    }
 
 
 def _expected_frontmatter_keys(platform: str, kind: str, slug: str) -> set[str]:
@@ -270,19 +289,35 @@ class TestPlatformProjections(unittest.TestCase):
                     )
 
     def test_platform_mcp_configs_have_expected_shape(self):
+        """Per-platform remote MCP transport shape, per the T360 audit table.
+
+        Presence checks alone previously let a stale/incorrect transport shape
+        (vscode missing "type", gemini using "url" instead of "httpUrl") ship
+        undetected — each remote server's full field shape is now asserted.
+        """
+        context7_url = _remote_server_urls()["context7"]
+
         gemini_settings = json.loads(
             (_generated_root("gemini") / "settings.json").read_text(encoding="utf-8")
         )
         self.assertIn("mcpServers", gemini_settings)
         self.assertIn("gitlab", gemini_settings["mcpServers"])
-        self.assertIn("context7", gemini_settings["mcpServers"])
+        self.assertEqual(
+            gemini_settings["mcpServers"].get("context7"),
+            {"httpUrl": context7_url},
+            "gemini remote MCP servers must use 'httpUrl' (T360: 'url' selects the "
+            "deprecated SSE transport instead of streamable HTTP)",
+        )
 
         opencode_config = json.loads(
             (_generated_root("opencode") / "opencode.json").read_text(encoding="utf-8")
         )
         self.assertIn("mcp", opencode_config)
         self.assertIn("gitlab", opencode_config["mcp"])
-        self.assertIn("context7", opencode_config["mcp"])
+        self.assertEqual(
+            opencode_config["mcp"].get("context7"),
+            {"type": "remote", "url": context7_url},
+        )
         self.assertEqual(
             opencode_config.get("instructions"),
             [
@@ -298,7 +333,43 @@ class TestPlatformProjections(unittest.TestCase):
         )
         self.assertIn("servers", vscode_mcp)
         self.assertIn("gitlab", vscode_mcp["servers"])
-        self.assertIn("context7", vscode_mcp["servers"])
+        self.assertEqual(
+            vscode_mcp["servers"].get("context7"),
+            {"type": "http", "url": context7_url},
+            "vscode/github remote MCP servers must declare 'type': 'http' (T360: 'type' is a "
+            "required field for HTTP servers per code.visualstudio.com/docs/agents/reference/"
+            "mcp-configuration)",
+        )
+
+    def test_remote_mcp_transport_shape_for_previously_uncovered_platforms(self):
+        """Regression coverage for T360: cursor, pi, cline, and claude-code emit remote
+        MCP servers (context7, hf-mcp-server) but had zero test coverage of their
+        transport shape before this task. Cline's stale `"type": "http"` — not a
+        recognized Cline transport identifier — shipped undetected by the test suite
+        and only surfaced as a real runtime failure (T360). This closes that gap for
+        every remaining platform, not only cline.
+        """
+        urls = _remote_server_urls()
+        shape_by_format = {
+            "cursor": lambda url: {"url": url},
+            "cline": lambda url: {"type": "streamableHttp", "url": url},
+            "claude-code": lambda url: {"type": "http", "url": url},
+        }
+        # pi.json's mcp.format is literally "cursor" (verbatim shared branch, T360).
+        config_path_by_platform = {
+            "cursor": implementation_root() / ".cursor" / "mcp.json",
+            "pi": implementation_root() / ".pi" / "mcp.json",
+            "cline": implementation_root() / ".cline" / "mcp.json",
+            "claude-code": implementation_root() / ".mcp.json",
+        }
+        format_by_platform = {"cursor": "cursor", "pi": "cursor", "cline": "cline", "claude-code": "claude-code"}
+
+        for platform, path in config_path_by_platform.items():
+            servers = json.loads(path.read_text(encoding="utf-8"))["mcpServers"]
+            expected_shape = shape_by_format[format_by_platform[platform]]
+            for name, url in urls.items():
+                with self.subTest(platform=platform, server=name):
+                    self.assertEqual(servers.get(name), expected_shape(url))
 
 
 if __name__ == "__main__":

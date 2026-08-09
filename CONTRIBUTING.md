@@ -122,6 +122,23 @@ existing mode in `implementation/scripts/sync.mjs` (see the `tools` and MCP
 `"claude-code"` MCP format), add a new branch there first, as its own commit,
 before writing the manifest.
 
+**Lesson from a real regression (see `docs/tasks/task-T360.md`):** a platform's
+remote-server (`transport: remote`) encoding can require its own field name or
+discriminator even when nothing else about the platform justifies a new MCP
+`format` branch — this is a narrower axis than the `format` value itself. VS
+Code required an undocumented-in-this-repo `"type": "http"` field, Gemini CLI
+requires `"httpUrl"` instead of `"url"` (it reserves `"url"` for the legacy SSE
+transport), and Cline requires `"type": "streamableHttp"`, not `"http"` — three
+platforms, three different requirements, none discoverable by analogy to
+another platform already wired up. Never assume a new platform's remote-server
+shape by copying a sibling platform's `format` branch verbatim (as `pi.json`
+currently does with `cursor`'s) without checking that platform's *own* current
+official MCP docs for the `context7`/`hf-mcp-server` remote-transport case
+specifically — training-data memory and cross-platform analogy are exactly
+what caused this drift in the first place. See
+[MCP Servers § Remote-server transport encoding differs per platform](https://gitlab.com/em-age/emage.code/-/wikis/mcp-servers)
+for the current per-platform reference.
+
 ## Releasing
 
 The project uses **Semantic Versioning** (`vMAJOR.MINOR.PATCH`) and

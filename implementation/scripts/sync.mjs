@@ -299,8 +299,9 @@ function emitMcp(servers, tags, format) {
     const out = { servers: format === 'vscode' ? {} : undefined, mcpServers: format === 'cursor' ? {} : undefined };
     const target = format === 'vscode' ? out.servers : out.mcpServers;
     for (const [name, s] of Object.entries(filtered)) {
-      if (s.transport === 'remote') target[name] = { url: s.url };
-      else {
+      if (s.transport === 'remote') {
+        target[name] = format === 'vscode' ? { type: 'http', url: s.url } : { url: s.url };
+      } else {
         target[name] = { command: s.command, args: s.args || [] };
         if (s.env) target[name].env = mapEnv(s.env, '${env:VAR}');
       }
@@ -311,7 +312,7 @@ function emitMcp(servers, tags, format) {
   if (format === 'gemini') {
     const mcpServers = {};
     for (const [name, s] of Object.entries(filtered)) {
-      if (s.transport === 'remote') mcpServers[name] = { url: s.url };
+      if (s.transport === 'remote') mcpServers[name] = { httpUrl: s.url };
       else {
         mcpServers[name] = { command: s.command, args: s.args || [] };
         if (s.env) mcpServers[name].env = mapEnv(s.env, '${env:VAR}');
@@ -365,7 +366,7 @@ function emitMcp(servers, tags, format) {
   if (format === 'cline') {
     const mcpServers = {};
     for (const [name, s] of Object.entries(filtered)) {
-      if (s.transport === 'remote') mcpServers[name] = { type: 'http', url: s.url };
+      if (s.transport === 'remote') mcpServers[name] = { type: 'streamableHttp', url: s.url };
       else {
         mcpServers[name] = { command: s.command, args: s.args || [] };
         if (s.env) mcpServers[name].env = mapEnv(s.env, '${env:VAR}');
