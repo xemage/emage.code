@@ -171,3 +171,45 @@ Orchestrator independently re-verified findings 1, 2, and 4 above against the sa
 (2026-08-08/09), confirmed them, escalated to the user via `AskUserQuestion`, and received direction:
 redesign now with reduced scope. See `docs/plans/plan-028-cline-platform-integration-v2.md` and the
 `## Outcome (v2)` section above (once filled in) for what actually shipped.
+
+## Outcome (v2, 2026-08-09)
+
+**Status:** DONE — `implementation/platforms/cline.json` created exactly per the corrected format in
+this brief's Expected Outputs section (§ above), based on
+`docs/plans/plan-028-cline-platform-integration-v2.md` §0/§2.
+
+### What was produced
+- `implementation/platforms/cline.json` — new file. `fileMap` has exactly two entries
+  (`instructions`: `.clinerules`, root-relative, `.md`; `skills`: `skills`, `preserveTree`). No
+  `agents`, `commands`, or `extras`. `frontmatter.instructions` renames `applyTo` → `paths` and keeps
+  only `["description", "paths"]`. `frontmatter.skills` keeps `["name", "description"]`. `mcp` block
+  is `{"tags": ["core", "extended"], "outputFile": "mcp.json", "format": "cline"}`.
+- Task brief updated with this section (no edits to the `## Outcome (v1 attempt)` section above).
+
+### Acceptance criteria — results
+- [x] `implementation/platforms/cline.json` exists and is valid JSON — verified with
+      `python3 -m json.tool < implementation/platforms/cline.json` (exit 0)
+- [x] `platform` is `"cline"`, `displayName` is `"Cline"`, `outputDir` is `".cline"`
+- [x] `fileMap` has exactly two entries: `instructions` (`dir: ".clinerules"`, `ext: ".md"`,
+      `rootRelative: true`) and `skills` (`dir: "skills"`, `preserveTree: true`) — no `agents`, no
+      `commands`
+- [x] `frontmatter.instructions.renameKeys` is `{"applyTo": "paths"}` and `keepKeys` is exactly
+      `["description", "paths"]` — no `alwaysApply`, no `globs`
+- [x] `frontmatter.skills.keepKeys` is `["name", "description"]`
+- [x] No `frontmatter.agents`, no `frontmatter.commands`
+- [x] `mcp` block matches exactly: `tags: ["core", "extended"]`, `outputFile: "mcp.json"`,
+      `format: "cline"`
+- [x] No `extras` key present at all
+- [x] No other file in the repo modified besides this brief's own `## Outcome (v2)` addition
+- [x] Task brief updated with this `## Outcome (v2)` section, `## Outcome (v1 attempt)` left untouched
+
+All checks verified programmatically (JSON structural assertions against every field above) before
+commit; see MR for the diff.
+
+### Notes
+- Did not re-fetch docs.cline.bot — per this brief's Context section, the format had already been
+  independently confirmed twice (v1 delegate + orchestrator) and no new inconsistency was observed
+  while authoring the manifest, so the live re-check was not triggered.
+- `mcp.format: "cline"` and `fileMap.instructions.rootRelative: true` are consumed by `sync.mjs` only
+  once T353 lands; this task does not modify `sync.mjs` (explicitly out of scope per Constraints).
+- **Blocker status:** None.
