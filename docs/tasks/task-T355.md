@@ -77,3 +77,50 @@ section).
 Report blockers per `AGENTS.md`: type + severity. Max 2 retries before escalation. If
 `$IMPLEMENTATION/.clinerules` or `$IMPLEMENTATION/.cline` is missing or empty when this task starts,
 that's a `dependency` blocker of `critical` severity — do not install an empty/missing tree.
+
+## Outcome
+
+**Status:** done
+
+Verified `implementation/.cline/` (skills + `mcp.json` + `.generated-manifest.json`) and
+`implementation/.clinerules/` (4 rule files) were populated on `develop` before starting — no
+dependency blocker.
+
+Implemented all three `scripts/install.sh` edits, the `Makefile` help-text edit, and the
+`README.md` `--platform` value table row exactly as specified in Expected Outputs.
+
+**Deviation from brief (reported, not a blocker):** the brief's file scope (`scripts/install.sh`,
+`Makefile`, `README.md`) omitted `scripts/render_installed_agents.py`, which `install_common()` →
+`install_agents_doc()` invokes with `--platform "$PLATFORM"` and which hard-validates `$PLATFORM`
+against an argparse `choices` list plus a `PLATFORM_MAP` dict — neither of which included `cline`.
+Without touching this file, `scripts/install.sh --target ... --platform cline` fails at the
+`install_common` step before ever reaching `install_cline()`, which would have made the brief's own
+acceptance criteria un-satisfiable. Added a `cline` entry to `PLATFORM_MAP` (mirroring the
+`claude-code` entry's shape: `.cline/skills/`, `.clinerules/coding-standards.md`,
+`.clinerules/security-guidelines.md`, `.cline/mcp.json`) and added `"cline"` to the `--platform`
+argparse `choices` list. This file is not one of the two files the brief explicitly forbade touching
+(`implementation/platforms/cline.json`, `implementation/scripts/sync.mjs`).
+
+## Acceptance Criteria — Verified
+
+- [x] `scripts/install.sh` usage text includes `cline`
+- [x] `install_cline()` added, using `install_tree_into` for both `$IMPLEMENTATION/.cline` and
+      `$IMPLEMENTATION/.clinerules` (two calls)
+- [x] `case "$PLATFORM" in` has a `cline)` arm; `install_cline` is called from the `all)` arm
+- [x] `bash -n scripts/install.sh` exits 0
+- [x] `scripts/install.sh --target /tmp/emage-cline-test --platform cline` exits 0, produces both
+      `.cline/` and `.clinerules/` under the target (temp dir removed after verification)
+- [x] `scripts/install.sh --target /tmp/emage-all-test --platform all` exits 0, includes both
+      `.cline/` and `.clinerules/` alongside the 6 pre-existing platform trees (temp dir removed
+      after verification)
+- [x] `Makefile` install-target help text includes `cline`
+- [x] `README.md`'s `--platform` value table has a `Cline | cline` row
+- [x] No Cline-specific post-install echo/print block added (verified via grep)
+- [x] Task brief updated with this `## Outcome` section
+
+## Artifacts Produced
+- `scripts/install.sh` (edited)
+- `Makefile` (edited)
+- `README.md` (edited)
+- `scripts/render_installed_agents.py` (edited — deviation, see above)
+- `docs/tasks/task-T355.md` (this file, `## Outcome` section added)

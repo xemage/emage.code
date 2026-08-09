@@ -13,7 +13,7 @@ Install emage.code into an existing or new project directory.
 
 Options:
   --target <dir>       Destination project root (created if missing)
-  --platform <name>    cursor | github | gemini | opencode | pi | claude-code | all (default: all)
+  --platform <name>    cursor | github | gemini | opencode | pi | claude-code | cline | all (default: all)
   -u, --update         Update an existing install (replaces platform trees; preserves task rows in docs/tasks/*.md)
   -n, --dry-run        Print actions without copying
   -h, --help           Show this help
@@ -280,6 +280,11 @@ install_claude_code() {
   run cp "$IMPLEMENTATION/CLAUDE.md" "$TARGET/CLAUDE.md"
 }
 
+install_cline() {
+  install_tree_into "$IMPLEMENTATION/.cline" "$TARGET/.cline"
+  install_tree_into "$IMPLEMENTATION/.clinerules" "$TARGET/.clinerules"
+}
+
 case "$PLATFORM" in
   cursor) install_common; install_cursor ;;
   github) install_common; install_github ;;
@@ -287,6 +292,7 @@ case "$PLATFORM" in
   opencode) install_common; install_opencode ;;
   pi) install_common; install_pi ;;
   claude-code) install_common; install_claude_code ;;
+  cline) install_common; install_cline ;;
   all)
     install_common
     install_cursor
@@ -295,6 +301,7 @@ case "$PLATFORM" in
     install_opencode
     install_pi
     install_claude_code
+    install_cline
     ;;
   *)
     echo "error: unknown platform '$PLATFORM'" >&2
