@@ -110,7 +110,7 @@ Declared in platform MCP configs (`.vscode/mcp.json`, `.cursor/mcp.json`, `.gemi
 | `context7` | Framework/API documentation | Technology Scout, Integration |
 
 ### Extended servers (opt-in)
-`hf-mcp-server`, `filesystem`, `github`, `git`, `supabase`, `e2b`, `docker`, `redis`, `postgresql`, `figma`, `notion`, `toolradar`. Most require additional credentials — see `servers.yaml` for the env-var contract.
+`hf-mcp-server`, `filesystem`, `github`, `git`, `supabase`, `docker`, `postgresql`, `toolradar`. Most require additional credentials — see `servers.yaml` for the env-var contract.
 
 ## Token Governance
 | Phase | Budget |
