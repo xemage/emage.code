@@ -1,6 +1,12 @@
 # Plan 028 — Cline platform integration
 
-**Status:** approved — executing this session
+> **SUPERSEDED by [`plan-028-cline-platform-integration-v2.md`](plan-028-cline-platform-integration-v2.md).**
+> T352 discovered (2026-08-08) that this plan's core Cline-format assumptions were factually wrong —
+> confirmed independently by the orchestrator against live docs. Do not execute this version's task
+> specs; kept only as historical record of what was tried and why it didn't hold up. See v2 §0 for
+> the full discrepancy table.
+
+**Status:** superseded — see v2
 **Created:** 2026-08-08
 **Owner:** orchestrator
 **Based on:** `implementation/platforms/cursor.json`, `implementation/platforms/claude-code.json`,

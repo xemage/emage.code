@@ -1,67 +1,67 @@
-# Task T354 — Generate & Validate Cline Platform Output
+# Task T354 v2 — Generate & Validate Cline Platform Output (corrected format)
 
 **ID:** T354
 **Owner:** qa-engineer
 **Status:** pending
 **Priority:** P0
 **Depends on:** T353
-**Created:** 2026-08-08
-**Based on:** `docs/plans/plan-028-cline-platform-integration.md`; `implementation/platforms/cline.json`
-(T352); `implementation/scripts/sync.mjs` (T353)
+**Created:** 2026-08-08 (revised 2026-08-09 for corrected Cline format)
+**Based on:** `docs/plans/plan-028-cline-platform-integration-v2.md`; `implementation/platforms/cline.json`
+(T352 v2); `implementation/scripts/sync.mjs` (T353 v2)
 
 ## Objective
-Run the sync engine for Cline and verify the generated `.cline/` output structurally matches what
-`cline.json` declares. **Verification only** — this task must not modify `sync.mjs` or the manifest.
-If either needs a fix to pass these checks, that fix belongs back in T352/T353 and this task is
-re-run afterward — do not patch around a bug here.
+Run the sync engine for Cline and verify the generated output structurally matches the corrected
+format: `.clinerules/` at the **repo root**, `.cline/skills/`, `.cline/mcp.json`. Verification only —
+no `sync.mjs` or manifest edits; route bugs back to T352/T353.
 
 ## Context
-- Phase: Implementation (plan-028, step 3 of 6).
-- Run from the repo root: `node implementation/scripts/sync.mjs --platform=cline`. This generates
-  `.cline/` at the repo root (sibling to `.cursor/`, `.github/`, etc. — confirmed by reading
-  `sync.mjs`'s output-path logic, which joins `outputDir` from the manifest against the repo root).
+- Phase: Implementation (plan-028-v2, step 3 of 6).
+- **This supersedes v1's brief entirely** — v1 checked for `.cline/rules/`, `alwaysApply`,
+  `cline_mcp_settings.json`, `.cline/agents/`, and a root `.clinerules` single-file fallback. None of
+  that applies anymore. Use only the criteria below.
+- Run from the repo root: `node implementation/scripts/sync.mjs --platform=cline`.
 
 ## Inputs
-- `implementation/platforms/cline.json` (T352's output)
-- `implementation/scripts/sync.mjs` (T353's output)
-- `implementation/knowledge/mcp/servers.yaml` — cross-reference for the MCP acceptance criterion
-  below
+- `implementation/platforms/cline.json` (T352 v2)
+- `implementation/scripts/sync.mjs` (T353 v2)
+- `implementation/knowledge/mcp/servers.yaml` — cross-reference for the MCP criterion
 
 ## Constraints
-- Read-only with respect to `sync.mjs` and `implementation/platforms/cline.json`. You may run
-  commands and inspect generated output; you may not edit either of those two files.
+- Read-only with respect to `sync.mjs` and `cline.json`.
 - Token budget: ≤ 15k.
 
 ## Expected Outputs
-A validation note (append to this brief's `## Outcome` section) covering every acceptance criterion
-below, with exact command output quoted, not paraphrased.
+A validation note (`## Outcome`) with exact command output quoted for every criterion.
 
 ## Acceptance Criteria
 - [ ] `node implementation/scripts/sync.mjs --platform=cline` exits 0
-- [ ] `.cline/rules/*.md` files each have YAML frontmatter containing `description`, `globs`, and
-      `alwaysApply` — spot-check at least 3 files, quote one full frontmatter block
+- [ ] `.clinerules/` exists at the **repository root** (sibling of `implementation/`, `README.md`,
+      etc. — NOT nested under `.cline/`) and contains `*.md` files
+- [ ] Spot-check at least 3 `.clinerules/*.md` files: frontmatter (if present) contains **only**
+      `description` and/or `paths` — no `globs`, no `alwaysApply`. Quote one full frontmatter block
+      from a file that has `paths` set and one from a file that has none (always-active rule)
 - [ ] `.cline/skills/*/SKILL.md` files preserve the source directory tree structure under
-      `implementation/knowledge/skills/` (compare directory names, not just file count) and have
-      frontmatter containing `name` and `description`
-- [ ] `.cline/agents/*.md` files have `tools` rendered as a **plain comma-separated string** on a
-      single YAML line, e.g. `tools: read_file, search_files, apply_diff` — not a YAML list
-      (`tools: [read_file, ...]`) and not a boolean map. Quote one full agent frontmatter block.
-- [ ] `.cline/cline_mcp_settings.json` exists, is valid JSON
-      (`python3 -m json.tool < .cline/cline_mcp_settings.json`), and its `mcpServers` object contains
-      one entry for every server in `implementation/knowledge/mcp/servers.yaml` tagged `core` or
-      `extended` — count servers in `servers.yaml` with those tags and confirm the count matches
-      `mcpServers` key count exactly
-- [ ] `.cline/.generated-manifest.json` exists and lists the emitted files (compare against
-      `find .cline -type f` output — every file under `.cline/` should appear in the manifest list)
-- [ ] Root `.clinerules` file exists (emitted from `_extras/cline/dot-clinerules` per the `extras`
-      entry) and contains an `@AGENTS.md` line plus a note mentioning `.cline/rules/`
-- [ ] `node implementation/scripts/sync.mjs --check --platform=cline` passes with no drift (run it a
-      second time after the first generation — it must report no changes)
-- [ ] Task brief updated with an `## Outcome` section quoting the actual command output for each
+      `implementation/knowledge/skills/` and have `name` + `description` frontmatter
+- [ ] There is **no** `.cline/rules/`, **no** `.cline/agents/`, **no** `.cline/commands/`, and **no**
+      root-level `.clinerules` (singular file) — confirm all four are absent (v1 leftovers must not
+      linger; if any exist, that's a T353 bug to route back)
+- [ ] `.cline/mcp.json` exists, is valid JSON (`python3 -m json.tool < .cline/mcp.json`), and its
+      `mcpServers` object contains one entry per server in
+      `implementation/knowledge/mcp/servers.yaml` tagged `core` or `extended` — count and compare
+      exactly
+- [ ] `.cline/.generated-manifest.json` exists; its `files` list includes entries like
+      `../.clinerules/<name>.md` (relative-outside-outRoot paths) — **this is expected**, not a bug,
+      per T353's brief. Confirm every file actually on disk under `.clinerules/` and `.cline/` appears
+      somewhere in this manifest.
+- [ ] `node implementation/scripts/sync.mjs --check --platform=cline` passes with no drift (run a
+      second time after the first generation)
+- [ ] `node implementation/scripts/sync.mjs --check` (all platforms, no `--platform` filter) passes
+      with no drift for the 6 pre-existing platforms — independently re-confirm T353's own claim
+      about this, don't just trust its Outcome section
+- [ ] Task brief updated with an `## Outcome` section quoting actual command output for every
       criterion above
 
 ## Blocker Protocol
-Report blockers per `AGENTS.md`: type + severity. Max 2 retries before escalation. If any criterion
-fails because of a genuine bug in `cline.json` or `sync.mjs` (not a mistake in this task's own
-commands), that is a `dependency` blocker of `major` severity — report exactly which criterion failed,
-the actual vs. expected output, and route back to T352 or T353 rather than attempting a fix here.
+Report blockers per `AGENTS.md`: type + severity. Max 2 retries before escalation. Any criterion
+failure due to a genuine `cline.json`/`sync.mjs` bug is a `dependency` blocker of `major` severity —
+report exactly which criterion failed and route back to T352 or T353, don't patch around it here.
