@@ -2,7 +2,6 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T355 | Update install script for Cline (v2) | devops-engineer | pending | P1 | T354 | 2026-08-09 |
 | T356 | Update documentation for Cline (v2) | technical-writer | pending | P1 | T355 | 2026-08-09 |
 | T357 | End-to-end validation for Cline platform support (v2) | qa-engineer | pending | P0 | T356 | 2026-08-09 |
 

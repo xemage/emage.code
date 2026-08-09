@@ -2,7 +2,7 @@
 
 **ID:** T355
 **Owner:** devops-engineer
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Depends on:** T354
 **Created:** 2026-08-08 (revised 2026-08-09 for corrected Cline format)
