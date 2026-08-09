@@ -2,7 +2,7 @@
 
 **ID:** T387
 **Owner:** technical-writer
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Depends on:** T386, T381
 **Created:** 2026-08-09

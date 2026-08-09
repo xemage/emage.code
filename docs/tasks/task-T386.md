@@ -2,7 +2,7 @@
 
 **ID:** T386
 **Owner:** devops-engineer
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Depends on:** T381
 **Created:** 2026-08-09
