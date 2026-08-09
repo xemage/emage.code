@@ -2,7 +2,7 @@
 
 **ID:** T388
 **Owner:** tech-lead, orchestrator
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Depends on:** T386, T387
 **Created:** 2026-08-09
