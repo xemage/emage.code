@@ -12,7 +12,7 @@ All servers are declared once in [`implementation/knowledge/mcp/servers.yaml`](h
 | Tag | Behaviour |
 |-----|-----------|
 | `core` | Emitted to **every** platform, always available |
-| `extended` | Emitted only to platforms that opt in via their manifest (`gemini`, `opencode`, `cursor`) |
+| `extended` | Emitted only to platforms that opt in via their manifest (all except `github`: `cursor`, `gemini`, `opencode`, `pi`, `claude-code`, `cline`) |
 
 ## Core servers (always available)
 

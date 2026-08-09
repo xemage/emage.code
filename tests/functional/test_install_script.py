@@ -343,6 +343,288 @@ class TestInstallScript(unittest.TestCase):
                 "generator-known server key must be refreshed to match the generated source on --update",
             )
 
+    # -- .cursor/mcp.json / .gemini/settings.json / .opencode/opencode.json /
+    #    .pi/mcp.json / .cline/mcp.json merge-on-update (T377) --
+
+    def test_cursor_mcp_json_merge_on_update(self):
+        implementation_mcp = repo_root() / "implementation" / ".cursor" / "mcp.json"
+        source_data = json.loads(implementation_mcp.read_text(encoding="utf-8"))
+        source_context7 = source_data["mcpServers"]["context7"]
+
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "project"
+            target.mkdir()
+
+            # (a) fresh install: byte-identical plain copy
+            proc = self._run_install(target, platform="cursor")
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            mcp_path = target / ".cursor" / "mcp.json"
+            self.assertEqual(
+                mcp_path.read_text(encoding="utf-8"),
+                implementation_mcp.read_text(encoding="utf-8"),
+                "fresh (non --update) install must plain-copy .cursor/mcp.json byte-for-byte",
+            )
+
+            # inject an unknown server key + corrupt a generator-known key
+            data = json.loads(mcp_path.read_text(encoding="utf-8"))
+            data["mcpServers"]["my-custom-server"] = {"url": "https://example.invalid/mcp"}
+            data["mcpServers"]["context7"] = {"url": "https://stale.example.invalid/mcp"}
+            mcp_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+
+            # (d) a stale non-MCP file elsewhere in the same tree
+            stale = target / ".cursor" / "stale-agent-that-should-be-deleted.md"
+            stale.write_text("remove me", encoding="utf-8")
+
+            proc2 = self._run_install(target, platform="cursor", update=True)
+            self.assertEqual(proc2.returncode, 0, proc2.stdout + proc2.stderr)
+
+            updated = json.loads(mcp_path.read_text(encoding="utf-8"))
+            # (b) unknown key survives
+            self.assertEqual(
+                updated["mcpServers"].get("my-custom-server"),
+                {"url": "https://example.invalid/mcp"},
+                "unknown pre-existing server key must survive --update merge",
+            )
+            # (c) generator-known key refreshed
+            self.assertEqual(
+                updated["mcpServers"]["context7"],
+                source_context7,
+                "generator-known server key must be refreshed to match the generated source on --update",
+            )
+            # (d) stale non-MCP file in the same tree still correctly deleted —
+            # proves the exclude is scoped to exactly mcp.json, not the whole tree
+            self.assertFalse(
+                stale.exists(),
+                "--update must still stale-clean the rest of .cursor/ via rsync --delete; "
+                "only mcp.json is exempted",
+            )
+
+    def test_gemini_settings_json_merge_on_update(self):
+        implementation_mcp = repo_root() / "implementation" / ".gemini" / "settings.json"
+        source_data = json.loads(implementation_mcp.read_text(encoding="utf-8"))
+        source_context7 = source_data["mcpServers"]["context7"]
+
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "project"
+            target.mkdir()
+
+            # (a) fresh install: byte-identical plain copy
+            proc = self._run_install(target, platform="gemini")
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            mcp_path = target / ".gemini" / "settings.json"
+            self.assertEqual(
+                mcp_path.read_text(encoding="utf-8"),
+                implementation_mcp.read_text(encoding="utf-8"),
+                "fresh (non --update) install must plain-copy .gemini/settings.json byte-for-byte",
+            )
+
+            # inject an unknown server key + corrupt a generator-known key
+            # (gemini's context7 entry uses "httpUrl", not "url" — corrupt the
+            # actual key present in the generated shape so the merge's
+            # per-key "source wins on scalar leaves" rule fully overwrites it,
+            # rather than leaving a stray "url" key the recursive merge would
+            # otherwise correctly treat as unrelated dest-only content)
+            data = json.loads(mcp_path.read_text(encoding="utf-8"))
+            data["mcpServers"]["my-custom-server"] = {"url": "https://example.invalid/mcp"}
+            data["mcpServers"]["context7"] = {"httpUrl": "https://stale.example.invalid/mcp"}
+            mcp_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+
+            # (d) a stale non-MCP file elsewhere in the same tree
+            stale = target / ".gemini" / "stale-agent-that-should-be-deleted.md"
+            stale.write_text("remove me", encoding="utf-8")
+
+            proc2 = self._run_install(target, platform="gemini", update=True)
+            self.assertEqual(proc2.returncode, 0, proc2.stdout + proc2.stderr)
+
+            updated = json.loads(mcp_path.read_text(encoding="utf-8"))
+            # (b) unknown key survives
+            self.assertEqual(
+                updated["mcpServers"].get("my-custom-server"),
+                {"url": "https://example.invalid/mcp"},
+                "unknown pre-existing server key must survive --update merge",
+            )
+            # (c) generator-known key refreshed
+            self.assertEqual(
+                updated["mcpServers"]["context7"],
+                source_context7,
+                "generator-known server key must be refreshed to match the generated source on --update",
+            )
+            # (d) stale non-MCP file in the same tree still correctly deleted —
+            # proves the exclude is scoped to exactly settings.json, not the whole tree
+            self.assertFalse(
+                stale.exists(),
+                "--update must still stale-clean the rest of .gemini/ via rsync --delete; "
+                "only settings.json is exempted",
+            )
+            # gemini-specific: sibling non-MCP 'hooks' key must survive untouched
+            self.assertEqual(
+                updated.get("hooks"),
+                source_data.get("hooks"),
+                "gemini's non-MCP 'hooks' key must be unaffected by the mcpServers merge",
+            )
+
+    def test_opencode_opencode_json_merge_on_update(self):
+        implementation_mcp = repo_root() / "implementation" / ".opencode" / "opencode.json"
+        source_data = json.loads(implementation_mcp.read_text(encoding="utf-8"))
+        source_context7 = source_data["mcp"]["context7"]
+
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "project"
+            target.mkdir()
+
+            # (a) fresh install: byte-identical plain copy
+            proc = self._run_install(target, platform="opencode")
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            mcp_path = target / ".opencode" / "opencode.json"
+            self.assertEqual(
+                mcp_path.read_text(encoding="utf-8"),
+                implementation_mcp.read_text(encoding="utf-8"),
+                "fresh (non --update) install must plain-copy .opencode/opencode.json byte-for-byte",
+            )
+
+            # inject an unknown server key + corrupt a generator-known key
+            data = json.loads(mcp_path.read_text(encoding="utf-8"))
+            data["mcp"]["my-custom-server"] = {"url": "https://example.invalid/mcp"}
+            data["mcp"]["context7"] = {"url": "https://stale.example.invalid/mcp"}
+            mcp_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+
+            # (d) a stale non-MCP file elsewhere in the same tree
+            stale = target / ".opencode" / "stale-agent-that-should-be-deleted.md"
+            stale.write_text("remove me", encoding="utf-8")
+
+            proc2 = self._run_install(target, platform="opencode", update=True)
+            self.assertEqual(proc2.returncode, 0, proc2.stdout + proc2.stderr)
+
+            updated = json.loads(mcp_path.read_text(encoding="utf-8"))
+            # (b) unknown key survives
+            self.assertEqual(
+                updated["mcp"].get("my-custom-server"),
+                {"url": "https://example.invalid/mcp"},
+                "unknown pre-existing server key must survive --update merge",
+            )
+            # (c) generator-known key refreshed
+            self.assertEqual(
+                updated["mcp"]["context7"],
+                source_context7,
+                "generator-known server key must be refreshed to match the generated source on --update",
+            )
+            # (d) stale non-MCP file in the same tree still correctly deleted —
+            # proves the exclude is scoped to exactly opencode.json, not the whole tree
+            self.assertFalse(
+                stale.exists(),
+                "--update must still stale-clean the rest of .opencode/ via rsync --delete; "
+                "only opencode.json is exempted",
+            )
+            # opencode-specific: sibling non-MCP keys must survive untouched
+            self.assertEqual(updated.get("$schema"), source_data.get("$schema"))
+            self.assertEqual(updated.get("instructions"), source_data.get("instructions"))
+
+    def test_pi_mcp_json_merge_on_update(self):
+        implementation_mcp = repo_root() / "implementation" / ".pi" / "mcp.json"
+        source_data = json.loads(implementation_mcp.read_text(encoding="utf-8"))
+        source_context7 = source_data["mcpServers"]["context7"]
+
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "project"
+            target.mkdir()
+
+            # (a) fresh install: byte-identical plain copy
+            proc = self._run_install(target, platform="pi")
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            mcp_path = target / ".pi" / "mcp.json"
+            self.assertEqual(
+                mcp_path.read_text(encoding="utf-8"),
+                implementation_mcp.read_text(encoding="utf-8"),
+                "fresh (non --update) install must plain-copy .pi/mcp.json byte-for-byte",
+            )
+
+            # inject an unknown server key + corrupt a generator-known key
+            data = json.loads(mcp_path.read_text(encoding="utf-8"))
+            data["mcpServers"]["my-custom-server"] = {"url": "https://example.invalid/mcp"}
+            data["mcpServers"]["context7"] = {"url": "https://stale.example.invalid/mcp"}
+            mcp_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+
+            # (d) a stale non-MCP file elsewhere in the same tree
+            stale = target / ".pi" / "stale-agent-that-should-be-deleted.md"
+            stale.write_text("remove me", encoding="utf-8")
+
+            proc2 = self._run_install(target, platform="pi", update=True)
+            self.assertEqual(proc2.returncode, 0, proc2.stdout + proc2.stderr)
+
+            updated = json.loads(mcp_path.read_text(encoding="utf-8"))
+            # (b) unknown key survives
+            self.assertEqual(
+                updated["mcpServers"].get("my-custom-server"),
+                {"url": "https://example.invalid/mcp"},
+                "unknown pre-existing server key must survive --update merge",
+            )
+            # (c) generator-known key refreshed
+            self.assertEqual(
+                updated["mcpServers"]["context7"],
+                source_context7,
+                "generator-known server key must be refreshed to match the generated source on --update",
+            )
+            # (d) stale non-MCP file in the same tree still correctly deleted —
+            # proves the exclude is scoped to exactly mcp.json, not the whole tree
+            self.assertFalse(
+                stale.exists(),
+                "--update must still stale-clean the rest of .pi/ via rsync --delete; "
+                "only mcp.json is exempted",
+            )
+
+    def test_cline_mcp_json_merge_on_update(self):
+        implementation_mcp = repo_root() / "implementation" / ".cline" / "mcp.json"
+        source_data = json.loads(implementation_mcp.read_text(encoding="utf-8"))
+        source_context7 = source_data["mcpServers"]["context7"]
+
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "project"
+            target.mkdir()
+
+            # (a) fresh install: byte-identical plain copy
+            proc = self._run_install(target, platform="cline")
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            mcp_path = target / ".cline" / "mcp.json"
+            self.assertEqual(
+                mcp_path.read_text(encoding="utf-8"),
+                implementation_mcp.read_text(encoding="utf-8"),
+                "fresh (non --update) install must plain-copy .cline/mcp.json byte-for-byte",
+            )
+
+            # inject an unknown server key + corrupt a generator-known key
+            data = json.loads(mcp_path.read_text(encoding="utf-8"))
+            data["mcpServers"]["my-custom-server"] = {"url": "https://example.invalid/mcp"}
+            data["mcpServers"]["context7"] = {"url": "https://stale.example.invalid/mcp"}
+            mcp_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+
+            # (d) a stale non-MCP file elsewhere in the same tree
+            stale = target / ".cline" / "stale-agent-that-should-be-deleted.md"
+            stale.write_text("remove me", encoding="utf-8")
+
+            proc2 = self._run_install(target, platform="cline", update=True)
+            self.assertEqual(proc2.returncode, 0, proc2.stdout + proc2.stderr)
+
+            updated = json.loads(mcp_path.read_text(encoding="utf-8"))
+            # (b) unknown key survives
+            self.assertEqual(
+                updated["mcpServers"].get("my-custom-server"),
+                {"url": "https://example.invalid/mcp"},
+                "unknown pre-existing server key must survive --update merge",
+            )
+            # (c) generator-known key refreshed
+            self.assertEqual(
+                updated["mcpServers"]["context7"],
+                source_context7,
+                "generator-known server key must be refreshed to match the generated source on --update",
+            )
+            # (d) stale non-MCP file in the same tree still correctly deleted —
+            # proves the exclude is scoped to exactly mcp.json, not the whole tree
+            self.assertFalse(
+                stale.exists(),
+                "--update must still stale-clean the rest of .cline/ via rsync --delete; "
+                "only mcp.json is exempted",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

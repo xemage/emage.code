@@ -95,7 +95,7 @@ Declared in [`knowledge/mcp/servers.yaml`](knowledge/mcp/servers.yaml). Each ser
 | Tag | Emitted to |
 |-----|-----------|
 | `core` | every platform |
-| `extended` | platforms whose manifest opts in (`gemini`, `opencode`, `cursor`) |
+| `extended` | platforms whose manifest opts in (all except `github`: `cursor`, `gemini`, `opencode`, `pi`, `claude-code`, `cline`) |
 
 ### Core servers (always available)
 
