@@ -1,0 +1,24 @@
+{
+  "$schema": "./_manifest.schema.json",
+  "platform": "cline",
+  "displayName": "Cline",
+  "outputDir": ".cline",
+  "fileMap": {
+    "instructions": { "dir": ".clinerules", "ext": ".md", "rootRelative": true },
+    "skills": { "dir": "skills", "preserveTree": true }
+  },
+  "frontmatter": {
+    "instructions": {
+      "renameKeys": { "applyTo": "paths" },
+      "keepKeys": ["description", "paths"]
+    },
+    "skills": {
+      "keepKeys": ["name", "description"]
+    }
+  },
+  "mcp": {
+    "tags": ["core", "extended"],
+    "outputFile": "mcp.json",
+    "format": "cline"
+  }
+}

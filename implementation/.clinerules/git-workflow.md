@@ -1,0 +1,184 @@
+---
+description: "Use when working with Git: committing, branching, merging, creating merge requests, managing release branches, or working with agent worktrees. Covers GitFlow branching strategy, conventional commits, and worktree lifecycle."
+paths: "**"
+---
+
+# Git Workflow
+
+## Branching Strategy (GitFlow)
+
+```
+main         ← production releases only (protected)
+develop      ← integration branch (protected)
+feature/*    ← new features (from develop)
+bugfix/*     ← bug fixes (from develop)
+release/*    ← release stabilization (from develop → main)
+hotfix/*     ← emergency fixes (from main → main + develop)
+```
+
+### Branch Naming
+```
+feature/42-user-authentication
+bugfix/58-fix-pagination
+release/v1.2.0
+hotfix/v1.2.1
+```
+Format: `type/[issue-number]-short-description`
+
+## Protected Branches — No Direct Commits, Ever
+
+`main` and `develop` are protected on the remote. GitLab rejects **any** direct push to
+either branch, with no exceptions for size, urgency, or content:
+
+1. **There is no "it's just a doc update" exception.** A single-file, docs-only, or
+   ledger-only change (a task status transition, a checkpoint, a header edit) requires
+   exactly the same branch + MR flow as an application-code change. GitLab's branch
+   protection does not distinguish by diff size or file type, and neither does this rule.
+2. **This applies equally to orchestrator edits.** Task ledger transitions
+   (`active-tasks.md` / `completed-tasks.md`), checkpoint files, and task-brief
+   status-header updates performed by the orchestrator directly (not delegated to an
+   agent worktree) go through a branch and MR exactly like agent implementation work.
+   The orchestrator's own primary checkout is not a carve-out.
+3. **Concrete precedent:** in one session, the orchestrator committed `docs/tasks/*.md`
+   ledger transitions directly onto the locally-checked-out `develop` twice (once closing
+   out task T340, once closing out T341) and `git push origin develop` was rejected both
+   times with `GitLab: You are not allowed to push code to protected branches on this
+   project`. Both were recoverable, but neither should have been attempted — see the
+   recovery procedure below for what to do if it happens again, and follow the branch/MR
+   flow in the first place to avoid needing it.
+
+### Recovery procedure (if you already committed directly to a protected local branch)
+
+If you discover you've committed directly to a local `develop` or `main` that is
+protected on `origin` — whether caught before attempting to push, or after `git push`
+was rejected — do **not** force-push and do **not** discard the commit:
+
+```bash
+# 1. Create a new branch pointing at the commit(s) you made locally.
+git branch <descriptive-branch-name> <sha-of-your-commit>
+
+# 2. Confirm nothing unique would be lost before resetting.
+git diff origin/<branch> <descriptive-branch-name>
+
+# 3. Reset the local protected branch back to match origin.
+git reset --hard origin/<branch>
+
+# 4. Push the new branch and open a normal MR.
+git push -u origin <descriptive-branch-name>
+```
+
+Then open an MR from `<descriptive-branch-name>` to the target branch as usual.
+
+## Agent Worktree Branch Naming
+
+Agents operate in isolated worktrees. Agent branches follow a dedicated naming convention:
+
+```
+agent/<agent-name>/<task-id>
+```
+
+### Examples
+```
+agent/backend-engineer/T042
+agent/frontend-engineer/T058
+agent/security-engineer/T101
+agent/devops-engineer/T033
+```
+
+### Rules
+- `<agent-name>` is the kebab-case agent role name
+- `<task-id>` matches the task identifier from the task management system
+- Agent branches are always created from `develop`
+- Agent branches merge back to `develop` via merge request after review
+
+## Worktree Lifecycle
+
+Each agent task follows a strict worktree lifecycle:
+
+### 1. Create
+```bash
+git worktree add ../worktrees/agent-<name>-<task-id> -b agent/<agent-name>/<task-id> develop
+```
+- Create a new worktree from `develop`
+- One worktree per agent per task — no sharing
+
+### 2. Work
+- Agent performs all implementation within its worktree
+- Commits follow conventional commit format (see below)
+- Agent must not modify files outside its assigned scope
+
+### 3. Merge
+- Agent signals task completion
+- Tech Lead or Orchestrator reviews the worktree diff
+- Merge to `develop` via squash-and-merge or standard merge
+- All CI checks must pass before merge
+
+### 4. Cleanup
+```bash
+git worktree remove ../worktrees/agent-<name>-<task-id>
+git branch -d agent/<agent-name>/<task-id>
+```
+- Remove worktree directory after successful merge
+- Delete the agent branch
+- Never leave stale worktrees — cleanup is mandatory
+
+## Commit Messages (Conventional Commits)
+
+```
+type(scope): description
+
+[optional body]
+
+[optional footer: Refs #issue]
+```
+
+### Conventional Commit Format Reference
+
+The format is based on the [Conventional Commits 1.0.0](https://www.conventionalcommits.org/) specification:
+
+- **type**: Required. One of the types listed below.
+- **scope**: Optional. The module, feature, or area affected (e.g., `auth`, `api`, `ui`).
+- **description**: Required. Imperative, lowercase, no period at the end.
+- **body**: Optional. Explain *what* and *why*, not *how*. Wrap at 72 characters.
+- **footer**: Optional. Reference issues, breaking changes (`BREAKING CHANGE:`).
+
+### Types
+| Type | Description |
+|------|-------------|
+| `feat` | New feature |
+| `fix` | Bug fix |
+| `docs` | Documentation only |
+| `style` | Formatting, no code change |
+| `refactor` | Code change that doesn't fix or add |
+| `test` | Adding or fixing tests |
+| `ci` | CI/CD changes |
+| `chore` | Maintenance (deps, config) |
+| `perf` | Performance improvement |
+| `revert` | Revert a previous commit |
+
+### Examples
+```
+feat(auth): add OAuth2 login flow
+
+Implement Google and GitHub OAuth2 providers.
+Includes token refresh and session management.
+
+Refs #42
+```
+
+```
+fix(api): prevent duplicate user registration
+
+Add unique constraint check before insert to avoid
+race condition on concurrent registrations.
+
+Closes #58
+```
+
+## Merge Request Rules
+- Always create MR from feature → develop
+- Require at least 1 approval
+- All CI checks must pass
+- Branch must be up-to-date with target
+- Use "Squash and merge" for feature branches
+- Delete source branch after merge

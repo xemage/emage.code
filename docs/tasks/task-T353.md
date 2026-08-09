@@ -166,3 +166,92 @@ Report blockers per `AGENTS.md`: type + severity. Max 2 retries before escalatio
 refactored since 2026-08-09), that's a `technical` blocker of `minor` severity — report the
 difference, adapt the same two capabilities to the current structure, and note the adaptation in the
 Outcome section.
+
+## Outcome
+
+**Status:** Complete. No structural deviation encountered — the current `implementation/scripts/sync.mjs`
+matched the brief's assumed shape of `syncPlatform()` and `emitMcp()` almost exactly (only cosmetic
+line-number drift), so all three changes were applied verbatim per the Expected Outputs snippets, no
+adaptation needed.
+
+**Branch note:** the local branch name `agent/backend-developer/T352-v2` was already checked out in a
+sibling worktree (`.../worktrees/agent-ab21a6e2172f62c6d`, at commit `c9acc08`) at the time this task
+started, so git refused to check out that same branch name a second time in this worktree. Worked
+around by checking out a differently-named local branch (`t353-work`) tracking
+`origin/agent/backend-developer/T352-v2` at the same commit, then pushing the result back to the
+correct remote branch name `agent/backend-developer/T352-v2` (updating MR !141 in place) — no new MR
+opened, no branch rename on the remote side.
+
+### Changes made (`implementation/scripts/sync.mjs`)
+1. `emitMcp()` — added a `format === 'cline'` branch, adjacent to the existing `claude-code` branch,
+   matching the brief's snippet exactly (mcpServers with `type: 'http'` for remote transport,
+   `command`/`args`/`env` for local, `env` mapped via `${env:VAR}`).
+2. `agents` and `commands` loops in `syncPlatform()` — each wrapped in
+   `if (manifest.fileMap.agents) { ... }` / `if (manifest.fileMap.commands) { ... }` guards; loop
+   bodies unchanged, only re-indented under the new guard.
+3. `instructions` loop in `syncPlatform()` — added `insRoot` computation:
+   `insMap.rootRelative ? path.resolve(ROOT, insMap.dir) : path.join(outRoot, insMap.dir)`, with the
+   descendant-of-ROOT safety assertion (`insRoot === ROOT || !insRoot.startsWith(rootWithSep)` →
+   throw) guarding the scoped `fs.rm(insRoot, ...)` wipe before the write loop; all `insMap.dir`
+   references in the loop body switched to use `insRoot` (built from `path.join(insRoot, ...)`
+   instead of `path.join(outRoot, insMap.dir, ...)`).
+
+`applyGenericFrontmatter()` was **not** touched — confirmed via `git diff implementation/scripts/sync.mjs`,
+no hunk overlaps its function body (lines ~278-291); the only `applyGenericFrontmatter(` diff lines are
+call sites shifting under the new `commands`/`instructions` guard indentation, not the function
+definition.
+
+### `grep -n "fileMap.agents\|fileMap.commands" implementation/scripts/sync.mjs` output
+```
+432:  if (manifest.fileMap.agents) {
+433:    const agentMap = manifest.fileMap.agents;
+450:  if (manifest.fileMap.commands) {
+451:    const cmdMap = manifest.fileMap.commands;
+```
+Both hits are the two guard sites added in this change (§2 above) — no other references to
+`fileMap.agents`/`fileMap.commands` exist anywhere else in the file.
+
+### Acceptance criteria — results
+- [x] `emitMcp()` has a new `format === 'cline'` branch matching the snippet above
+- [x] `agents` and `commands` loops guarded by `if (manifest.fileMap.agents)` /
+      `if (manifest.fileMap.commands)` — loop bodies otherwise unchanged
+- [x] `instructions` loop uses `insRoot` per the snippet, descendant-of-ROOT assertion in place before
+      any `fs.rm` call
+- [x] `applyGenericFrontmatter()` not modified (verified via `git diff`, see above)
+- [x] `node implementation/scripts/sync.mjs --platform=cline` exits 0; created `.clinerules/*.md`
+      (`coding-standards.md`, `git-workflow.md`, `poc-guidelines.md`, `security-guidelines.md`) as a
+      sibling of the other generated platform dirs at `ROOT` (i.e. `implementation/.clinerules`,
+      sibling of `implementation/.cursor`, `implementation/.github`, etc. — `ROOT` resolves to
+      `implementation/` by default, since `__dirname` is derived from the script's own location, not
+      cwd), not nested under `.cline/`; `.cline/` contained `skills/`, `mcp.json`,
+      `.generated-manifest.json` as expected. `.generated-manifest.json`'s `files` list correctly shows
+      `../.clinerules/<name>.md` entries per the brief's documented expected side effect.
+- [x] `node implementation/scripts/sync.mjs` (all platforms) exits 0, wrote 550 files across all 7
+      platforms (`claude-code`, `cline`, `cursor`, `gemini`, `github`, `opencode`, `pi`), none skipped
+- [x] `node implementation/scripts/sync.mjs --check` exits 0 for all 7 platforms — "OK - no drift
+      across 550 files." `git status --porcelain` after a real sync run showed only
+      `implementation/.cline/` and `implementation/.clinerules/` (new, untracked) plus the modified
+      `implementation/scripts/sync.mjs` — nothing under `implementation/.cursor/`,
+      `implementation/.github/`, `implementation/.gemini/`, `implementation/.opencode/`,
+      `implementation/.pi/`, `implementation/.claude/` changed (all 6 pre-existing platforms
+      byte-identical to their prior committed output).
+- [x] Safety assertion manually verified in a scratch test (not committed): temporarily set
+      `fileMap.instructions.dir` to `"."` in `implementation/platforms/cline.json` and re-ran
+      `node implementation/scripts/sync.mjs --platform=cline` — threw
+      `Error: Refusing rootRelative fileMap target outside or equal to ROOT: <ROOT path>` and exited
+      1, no wipe occurred. Repeated with `dir: ".."` — threw the same error class for the
+      resolved-parent-of-ROOT path, also exited 1, no wipe. `cline.json` was restored from a backup
+      copy in the scratchpad directory afterward; `git diff --stat -- implementation/platforms/cline.json`
+      showed no changes remaining, confirming the scratch edit was not left in the diff.
+- [x] Task brief updated with this `## Outcome` section
+- [x] `grep -n "fileMap.agents\|fileMap.commands"` output included above
+
+### Scope note
+Per the top-level dispatch instructions, the generated `implementation/.cline/` and
+`implementation/.clinerules/` output produced during the acceptance-criteria test runs above was
+deleted before the final commit (not part of this task's Expected Outputs — plan-028-v2 assigns
+committing the generated output to T354, which consumes this task's `sync.mjs` changes). Only
+`implementation/scripts/sync.mjs` and this task brief's `## Outcome` section are included in the
+commit. `implementation/platforms/cline.json` and `docs/tasks/task-T352.md` were not re-touched.
+
+**Blocker status:** None.

@@ -1,9 +1,10 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-08-08T09:06:56+02:00",
+  "generatedAt": "2026-08-09T09:43:14+02:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
+    "cline",
     "cursor",
     "gemini",
     "github",
@@ -21,6 +22,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -29,6 +31,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -47,6 +50,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -55,6 +59,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -73,6 +78,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -81,6 +87,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -99,6 +106,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -107,6 +115,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -125,6 +134,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -133,6 +143,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -151,6 +162,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -159,6 +171,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -177,6 +190,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -185,6 +199,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -203,6 +218,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -211,6 +227,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -229,6 +246,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -237,6 +255,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -255,6 +274,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -263,6 +283,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -281,6 +302,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -289,6 +311,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -307,6 +330,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -315,6 +339,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -333,6 +358,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -341,6 +367,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -359,6 +386,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -367,6 +395,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -385,6 +414,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -393,6 +423,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -411,6 +442,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -419,6 +451,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -437,6 +470,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -445,6 +479,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -463,6 +498,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -471,6 +507,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -489,6 +526,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -497,6 +535,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -515,6 +554,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -523,6 +563,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -541,6 +582,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -549,6 +591,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -567,6 +610,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -575,6 +619,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -593,6 +638,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -601,6 +647,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -619,6 +666,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -627,6 +675,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -645,6 +694,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -653,6 +703,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -671,6 +722,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -679,6 +731,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -697,6 +750,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -705,6 +759,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -723,6 +778,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -731,6 +787,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -749,6 +806,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -757,6 +815,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -775,6 +834,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -783,6 +843,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -801,6 +862,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -809,6 +871,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -827,6 +890,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -835,6 +899,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -853,6 +918,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -861,6 +927,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -879,6 +946,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -887,6 +955,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -905,6 +974,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -913,6 +983,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -931,6 +1002,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -939,6 +1011,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -957,6 +1030,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -965,6 +1039,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -983,6 +1058,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -991,6 +1067,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1009,6 +1086,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1017,6 +1095,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1035,6 +1114,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1043,6 +1123,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1061,6 +1142,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1069,6 +1151,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1087,6 +1170,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1095,6 +1179,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1113,6 +1198,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1121,6 +1207,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1139,6 +1226,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1147,6 +1235,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1165,6 +1254,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1173,6 +1263,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1191,6 +1282,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1199,6 +1291,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1217,6 +1310,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1225,6 +1319,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1243,6 +1338,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1251,6 +1347,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1269,6 +1366,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1277,6 +1375,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1295,6 +1394,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1303,6 +1403,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1321,6 +1422,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1329,6 +1431,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1347,6 +1450,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1355,6 +1459,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1373,6 +1478,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1381,6 +1487,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1399,6 +1506,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1407,6 +1515,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1425,6 +1534,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1433,6 +1543,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1451,6 +1562,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1459,6 +1571,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1477,6 +1590,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1485,6 +1599,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1503,6 +1618,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1511,6 +1627,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1529,6 +1646,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1537,6 +1655,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1555,6 +1674,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1563,6 +1683,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1581,6 +1702,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1589,6 +1711,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1607,6 +1730,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1615,6 +1739,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1633,6 +1758,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1641,6 +1767,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1659,6 +1786,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1667,6 +1795,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1685,6 +1814,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1693,6 +1823,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1711,6 +1842,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1719,6 +1851,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1737,6 +1870,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1745,6 +1879,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1763,6 +1898,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1771,6 +1907,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1789,6 +1926,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1797,6 +1935,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1815,6 +1954,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1823,6 +1963,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1841,6 +1982,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1849,6 +1991,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1867,6 +2010,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1875,6 +2019,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1893,6 +2038,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1901,6 +2047,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1919,6 +2066,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1927,6 +2075,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1945,6 +2094,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1953,6 +2103,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
@@ -1971,6 +2122,7 @@
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
+          "cline",
           "cursor",
           "gemini",
           "github",
@@ -1979,6 +2131,7 @@
         ],
         "projectionStatus": {
           "claude-code": "pass",
+          "cline": "pass",
           "cursor": "pass",
           "gemini": "pass",
           "github": "pass",

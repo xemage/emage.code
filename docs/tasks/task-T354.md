@@ -97,3 +97,158 @@ edits; route bugs back to T352/T353.
 Report blockers per `AGENTS.md`: type + severity. Max 2 retries before escalation. Any criterion
 failure due to a genuine `cline.json`/`sync.mjs` bug is a `dependency` blocker of `major` severity —
 report exactly which criterion failed and route back to T352 or T353, don't patch around it here.
+
+## Outcome
+
+**Status:** Complete. All 10 acceptance criteria pass (one criterion — the "no-`paths`" spot-check
+half of the frontmatter check — is satisfied as far as the current knowledge base allows; see that
+criterion's note below for why an always-active instruction file doesn't currently exist to quote).
+
+**Branch note:** the local branch name `agent/backend-developer/T352-v2` was already checked out in a
+sibling worktree (`.../worktrees/agent-ab21a6e2172f62c6d`, at commit `c9acc08`) at the time this task
+started, and a second sibling worktree (`.../worktrees/agent-a9af30de19ab17741`) already held
+`t353-work` tracking the same remote branch at its tip (`30efea2`). Worked around exactly like T353
+did: checked out a differently-named local branch (`t354-work`) tracking
+`origin/agent/backend-developer/T352-v2` at commit `30efea2`, confirmed `implementation/platforms/cline.json`
+and the `rootRelative`/optional-fileMap changes in `implementation/scripts/sync.mjs` were present, then
+pushed the result back to the correct remote branch name `agent/backend-developer/T352-v2` (updating MR
+!141 in place) — no new MR opened, no branch rename on the remote side.
+
+Before generating output, `docs/tasks/task-T354.md` on this branch still held the **older, pre-correction**
+brief (repo-root `.clinerules/`, verification-only, no commit step) — the orchestrator's
+`efd7bb6 docs(tasks): fix T354/T357 to target implementation/.clinerules` correction landed on `develop`
+after this branch diverged. Brought the corrected brief content over via
+`git checkout origin/develop -- docs/tasks/task-T354.md` before starting work, so all criteria below are
+evaluated against the corrected (`implementation/.clinerules/`, generate-and-commit) version, matching
+this session's dispatch instructions.
+
+### Acceptance criteria — results
+
+- [x] `node implementation/scripts/sync.mjs --root implementation --platform=cline` exits 0
+  ```
+  [cline] wrote 39 files -> .cline
+
+  Done - 39 files written.
+  EXIT CODE: 0
+  ```
+
+- [x] `implementation/.clinerules/` exists (sibling of `implementation/.cline/`, `implementation/.cursor/`,
+  etc. — not bare repo-root, not nested under `.cline/`) and contains `*.md` files:
+  ```
+  $ ls implementation/.clinerules/
+  coding-standards.md  git-workflow.md  poc-guidelines.md  security-guidelines.md
+  ```
+
+- [x] Spot-checked all 4 `implementation/.clinerules/*.md` files (more than the minimum 3). Frontmatter
+  contains only `description`/`paths`, no `globs`/`alwaysApply`, in every file. One with `paths` set:
+  ```
+  --- implementation/.clinerules/coding-standards.md ---
+  ---
+  description: "Use when writing code in any language. Covers naming conventions, function design, error handling, general clean code principles, and artifact versioning."
+  paths: "**/*.{ts,js,py,java,cs,go,rs,rb,php,swift,kt}"
+  ---
+  ```
+  **Note on the "none" (always-active) half of this criterion:** all 4 source files under
+  `implementation/knowledge/instructions/` define `applyTo` (three of the four — `git-workflow.md`,
+  `poc-guidelines.md`, `security-guidelines.md` — use `applyTo: "**"`, which still renames to a `paths`
+  key present in output, just matching everything). There is currently no source instruction file that
+  omits `applyTo` entirely, so no generated `.clinerules/*.md` file lacks a `paths` key to quote as a
+  counter-example. This is a data-availability gap in the current knowledge base, not a `sync.mjs`
+  transform bug: read `applyGenericFrontmatter()` (`implementation/scripts/sync.mjs` lines 278-291) —
+  it only copies `renamed[k]` into the output `if (renamed[k] !== undefined)`, so an absent `applyTo`
+  in the source would correctly produce no `paths` key in the output, never a defaulted `"**"`. Not a
+  `dependency` blocker — nothing to route back, since the code path is verified correct by inspection;
+  simply no fixture exists yet to exercise it end-to-end for Cline specifically (the same is true for
+  every other platform's `paths`/`globs`-equivalent output, so this predates T352/T353/T354).
+
+- [x] `implementation/.cline/skills/*/SKILL.md` files preserve the source tree under
+  `implementation/knowledge/skills/` and have `name` + `description` frontmatter. `find` over both
+  trees produced the identical sorted list of 25 skill directories. Sample:
+  ```
+  --- implementation/.cline/skills/api-design/SKILL.md ---
+  ---
+  name: "api-design"
+  description: "Design REST and GraphQL APIs with OpenAPI specifications, endpoint contracts, request/response schemas, error handling patterns, pagination, and versioning. Use when designing new APIs, creating API contracts, writing OpenAPI specs, or planning API architecture."
+  ---
+  ```
+
+- [x] No `.cline/rules/`, `.cline/agents/`, `.cline/commands/`, no bare repo-root `.clinerules`:
+  ```
+  ABSENT: .cline/rules
+  ABSENT: .cline/agents
+  ABSENT: .cline/commands
+  ABSENT: bare repo-root .clinerules
+  ```
+
+- [x] `implementation/.cline/mcp.json` exists, is valid JSON, `mcpServers` count matches
+  `servers.yaml` core+extended count exactly:
+  ```
+  $ python3 -m json.tool < implementation/.cline/mcp.json    # exits 0, valid JSON
+  $ python3 -c "... len(data['mcpServers']) ..."
+  mcp.json server count: 19
+  ['brave', 'context7', 'docker', 'e2b', 'fetch', 'figma', 'filesystem', 'git', 'github', 'gitlab',
+   'hf-mcp-server', 'memory', 'notion', 'playwright', 'postgresql', 'redis', 'sequential-thinking',
+   'supabase', 'toolradar']
+  ```
+  `implementation/knowledge/mcp/servers.yaml` lists exactly 19 servers, all tagged `core` or
+  `extended` (7 `core`, 12 `extended`) — every one appears in `mcp.json`, none extra, none missing.
+
+- [x] `implementation/.cline/.generated-manifest.json` exists; `files` includes `../.clinerules/<name>.md`
+  entries (expected, per T353's brief); every on-disk file under `implementation/.clinerules/` and
+  `implementation/.cline/` appears in the manifest:
+  ```
+  $ find implementation/.clinerules implementation/.cline -type f | wc -l
+  40   # includes .generated-manifest.json itself, which doesn't list itself
+  ```
+  Manifest's `files` array has 39 entries (4 `../.clinerules/*.md` + `mcp.json` + 34 skill files
+  including references/templates) — 40 - 1 (the manifest file itself) = 39, exact match, no
+  discrepancies either direction.
+
+- [x] `node implementation/scripts/sync.mjs --root implementation --check --platform=cline` passes with
+  no drift on a second run:
+  ```
+  [cline] checked 39 files -> .cline
+
+  OK - no drift across 39 files.
+  EXIT CODE: 0
+  ```
+
+- [x] `node implementation/scripts/sync.mjs --root implementation --check` (all platforms) passes with
+  no drift, independently re-run (not just trusting T353's Outcome claim):
+  ```
+  [claude-code] checked 85 files -> .claude
+  [cline] checked 39 files -> .cline
+  [cursor] checked 85 files -> .cursor
+  [gemini] checked 85 files -> .gemini
+  [github] checked 86 files -> .github
+  [opencode] checked 85 files -> .opencode
+  [pi] checked 85 files -> .pi
+
+  OK - no drift across 550 files.
+  EXIT CODE: 0
+  ```
+
+- [x] `implementation/.cline/` and `implementation/.clinerules/` `git add`-ed and committed in this
+  task's own commit alongside this Outcome section — confirmed via `git status --short` immediately
+  before staging showing only these two untracked directories plus the modified task brief, and via
+  `git show --stat HEAD` after committing (see commit `<see MR !141>`; both directories' files listed).
+
+- [x] Task brief updated with this `## Outcome` section.
+
+**Blocker status:** None. No genuine `cline.json`/`sync.mjs` bug found — the one incomplete
+spot-check (always-active, no-`paths` instruction file) is a data-availability gap in
+`implementation/knowledge/instructions/`, not a defect in T352's manifest or T353's engine changes,
+and is verified correct by code inspection rather than by an end-to-end fixture. Not escalated.
+
+### Orchestrator follow-up (2026-08-09)
+CI on this branch's MR (!141) surfaced one thing this brief's acceptance criteria didn't cover:
+`implementation/scripts/generate-registry.py --check` (run by the `validation-super-gate` CI job as
+part of `check.py --registry`, and standalone in the release verification bar) also failed with
+`registry drift detected` — `implementation/registry/index.json` lists every supported platform and
+per-content-item `projectionStatus`, and hadn't been regenerated to include `cline`. Fixed directly by
+the orchestrator: `python3 implementation/scripts/generate-registry.py --root implementation`,
+regenerating `implementation/registry/index.json` (purely additive: `cline` added to the `platforms`
+list and to every `supportedPlatforms`/`projectionStatus: "pass"` entry, plus a `generatedAt`
+timestamp bump — `summary.md` had no textual diff). Committed on top of this branch. Noting here so
+future platform-addition task briefs in this repo know to include a `generate-registry.py --check`
+step, not just `sync.mjs --check`.
