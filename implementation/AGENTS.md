@@ -85,8 +85,9 @@ in the task brief or checkpoint.
 
 ## Knowledge Base
 - The single source of truth for agents, skills, commands, and instructions is `knowledge/`.
-- Per-platform folders (`.github/`, `.gemini/`, `.opencode/`, `.cursor/`, `.pi/`) are **generated** by `scripts/sync.mjs`. **Do not edit them by hand.**
+- Per-platform folders (`.github/`, `.gemini/`, `.opencode/`, `.cursor/`, `.pi/`, `.clinerules/`, `.cline/`) are **generated** by `scripts/sync.mjs`. **Do not edit them by hand.**
 - See [`knowledge/README.md`](knowledge/README.md) for authoring rules.
+- Cline auto-detects the root `AGENTS.md` natively — no projection is needed for that file itself, it already works as-is. Cline users should also check `.clinerules/` for path-scoped project rules.
 
 ## MCP Servers
 Declared in [`knowledge/mcp/servers.yaml`](knowledge/mcp/servers.yaml). Each server is tagged:

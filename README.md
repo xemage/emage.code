@@ -60,6 +60,7 @@ Use [`implementation/`](implementation/README.md) for all development work.
 | Cursor | `.cursor/` | `.mdc`, `applyTo` → `globs`, `mcp.json` |
 | Pi | `.pi/` | agents, prompts, instructions, skills (`.md`) |
 | Claude Code | `.claude/` + `.mcp.json` | `.md` (string `tools`), subagents + skills + rules |
+| Cline | `.clinerules/` (root) + `.cline/skills/` + `.cline/mcp.json` | `.md` rules (`paths` frontmatter) + skills; MCP config is a staging file, not auto-applied |
 
 Adding a new platform = adding a `platforms/<name>.json` manifest under
 `implementation/`. Usually no script changes are required; add a new
