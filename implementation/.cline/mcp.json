@@ -50,11 +50,11 @@
       }
     },
     "context7": {
-      "type": "http",
+      "type": "streamableHttp",
       "url": "https://mcp.context7.com/mcp"
     },
     "hf-mcp-server": {
-      "type": "http",
+      "type": "streamableHttp",
       "url": "https://huggingface.co/mcp?login"
     },
     "filesystem": {
