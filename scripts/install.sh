@@ -214,6 +214,24 @@ merge_task_docs() {
   run python3 "${args[@]}"
 }
 
+# Copy a generated single-file MCP config into target, preserving any
+# hand-added keys (e.g. a locally-added MCP server or `inputs` block) when
+# updating an existing install. Falls back to a plain copy on fresh installs
+# or when the dest file doesn't exist yet.
+merge_or_copy_mcp_json() {
+  local src="$1"
+  local dest="$2"
+  if [[ "$UPDATE" -eq 1 && -f "$dest" ]]; then
+    local args=("$REPO_ROOT/scripts/merge-mcp-json.py" --source "$src" --dest "$dest")
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+      args+=(--dry-run)
+    fi
+    run python3 "${args[@]}"
+  else
+    run cp "$src" "$dest"
+  fi
+}
+
 install_docs() {
   run mkdir -p "$TARGET/docs"
   if [[ "$UPDATE" -eq 1 ]]; then
@@ -259,7 +277,7 @@ install_cursor() {
 install_github() {
   install_tree_into "$IMPLEMENTATION/.github" "$TARGET/.github"
   run mkdir -p "$TARGET/.vscode"
-  run cp "$IMPLEMENTATION/.vscode/mcp.json" "$TARGET/.vscode/mcp.json"
+  merge_or_copy_mcp_json "$IMPLEMENTATION/.vscode/mcp.json" "$TARGET/.vscode/mcp.json"
 }
 
 install_gemini() {
@@ -276,7 +294,7 @@ install_pi() {
 
 install_claude_code() {
   install_tree_into "$IMPLEMENTATION/.claude" "$TARGET/.claude"
-  run cp "$IMPLEMENTATION/.mcp.json" "$TARGET/.mcp.json"
+  merge_or_copy_mcp_json "$IMPLEMENTATION/.mcp.json" "$TARGET/.mcp.json"
   run cp "$IMPLEMENTATION/CLAUDE.md" "$TARGET/CLAUDE.md"
 }
 
