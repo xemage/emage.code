@@ -2,7 +2,7 @@
 
 **ID:** T358
 **Owner:** release-manager
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Depends on:** —
 **Created:** 2026-08-09
@@ -143,3 +143,20 @@ switching.
 tag-triggered pipeline, verify GitLab Release publish, and any ledger transition of T358 itself in
 `active-tasks.md`/`completed-tasks.md`. This task's Status header is left as `pending` — the
 orchestrator owns the ledger transition to `in_progress`/`done`.
+
+### Orchestrator closeout (2026-08-09)
+- Independently re-verified before merging: reviewed `docs/releases/v6.8.0.md` and the checkpoint
+  in full (Cline platform support correctly classified under Highlights, scope limitation stated
+  plainly, Breaking changes "None" claim verified accurate); independently re-ran the full
+  verification bar on the MR branch myself (`verify-release-docs.py`, `tests/run.py`, `sync.mjs
+  --check`, `generate-registry.py --check`, `validate-tasks.py` — all 5 green, matching the
+  delegate's report).
+- MR !150 merged (squash, source branch removed): `merge_commit_sha: a2fb072...`, target `develop`.
+- Local `develop` synced to `a2fb072`. Tagged directly by the orchestrator:
+  `git tag -a v6.8.0 -m "Release v6.8.0" a2fb072`, pushed to origin.
+- Tag-triggered pipeline (`2745022108`) watched to completion: **success**, all 3 release-stage jobs
+  green (`release`, `main-develop-drift-gate`, `release-docs-gate`).
+- GitLab Release independently verified via `glab api projects/.../releases/v6.8.0`:
+  `tag_name: v6.8.0`, `released_at: 2026-08-09T08:32:33.879Z`.
+
+Release URL: <https://gitlab.com/em-age/emage.code/-/releases/v6.8.0>
