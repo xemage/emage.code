@@ -2,7 +2,7 @@
 
 **ID:** T384
 **Owner:** devops-engineer
-**Status:** pending
+**Status:** done
 **Priority:** P2
 **Depends on:** T381
 **Created:** 2026-08-09
