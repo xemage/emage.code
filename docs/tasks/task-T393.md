@@ -2,7 +2,7 @@
 
 **ID:** T393
 **Owner:** tech-lead, orchestrator
-**Status:** pending
+**Status:** done
 **Priority:** P0
 **Depends on:** T391, T392
 **Created:** 2026-08-10
