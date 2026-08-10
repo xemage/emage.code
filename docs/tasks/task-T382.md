@@ -4,7 +4,7 @@
 **Owner:** devops-engineer
 **Status:** blocked
 **Priority:** P0
-**Depends on:** T381, T388
+**Depends on:** T381, T388, T393
 **Created:** 2026-08-09
 **Based on:** docs/plans/plan-033-mcp-settings-hardening.md (P033-06)
 
@@ -92,6 +92,37 @@ git status --short
 git diff --stat
 ```
 Capture the full `git status`/`git diff --stat` output — you will need it for Step 3.
+
+## Step 2b — Apply the one-time bootstrap bridge (T393-added; e2b/redis/figma/notion)
+Per plan-034/T389-T393 (its `feature/T389-mcp-merge-provenance-tracking` branch merged via T393
+before this task starts — confirmed in Step 0/T393's own gate), the general provenance-diffing
+mechanism cannot retroactively prune `e2b`/`redis`/`figma`/`notion` on this run, because this repo's
+root had zero provenance history before that fix shipped — this is the general mechanism's own
+documented bootstrap-safe default (see `docs/decisions/ADR-002-mcp-merge-provenance-tracking.md`),
+not a bug. Closing this specific, already-reviewed gap requires the one-time, explicitly-named bridge
+flag T390 added to `scripts/merge-mcp-json.py`. Confirm its exact current name/usage before running —
+```
+python3 scripts/merge-mcp-json.py --help
+```
+— in case it differs from `--force-prune-keys` as named when this brief was written (T390's brief
+explicitly allowed it to deviate from that name if ADR-002 required it); use whichever flag the
+actually-merged script exposes, but always pass exactly the four names below, no more, no fewer:
+
+Run it once per `extended`-tagged root mirror file (the six files confirmed above to currently
+contain these four entries — `.vscode/mcp.json` is `core`-only and never had them, skip it):
+```
+for f in .cursor/mcp.json .gemini/settings.json .opencode/opencode.json .pi/mcp.json .cline/mcp.json .mcp.json; do
+  python3 scripts/merge-mcp-json.py --source "implementation/$f" --dest "$f" --force-prune-keys e2b,redis,figma,notion
+done
+```
+This must run AFTER Step 2's normal `--update` pass (so the ordinary merge/refresh has already
+happened) and BEFORE Step 3's diff classification (so Step 3's "Class (b)" expectation — the four
+names gone — is evaluated against the final, post-bridge state). If any invocation errors (non-zero
+exit), STOP — per T390's design, the bridge flag errors rather than silently no-oping when a named key
+isn't actually present as a dest-only key in that specific file; investigate before proceeding
+(a non-zero exit on one file, e.g. because that file already lost the key via some other path, is not
+necessarily a problem — confirm the key is actually already absent before treating it as a blocker —
+but do not silently retry with a different name list either way).
 
 ## Step 3 — Classify the diff
 Per plan-033's investigation, exactly two classes of change are expected in this run. Every changed

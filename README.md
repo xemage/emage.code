@@ -112,6 +112,22 @@ platform's directory tree (`.github/`, `.cursor/`, `.claude/`, etc.) is still
 replaced wholesale on `--update` — only each platform's one MCP/settings file
 gets this merge treatment.
 
+Each platform's MCP file also carries a `<mcpfile>.provenance.json` sidecar
+recording which server keys the generator owned at last generation. On
+`--update`, if a prior sidecar exists, a dest-only key is pruned automatically
+when it was previously generator-owned and the current source no longer emits
+it — a currently-active generator-owned key is never pruned, regardless of
+sidecar content, and a key with no sidecar history at all (e.g. a genuinely
+hand-added entry) is never pruned either. **The first `--update` run on any
+project after this mechanism shipped has no prior sidecar to diff against and
+therefore prunes nothing** — this is a deliberate, safe default, not a bug;
+automatic pruning only activates from the second post-fix `--update` onward,
+once real history exists. `scripts/merge-mcp-json.py --force-prune-keys
+<names>` is a separate, explicit, one-time bridge for closing a specific,
+already-reviewed retirement gap on an already-installed project with no prior
+history — it is opt-in only, never invoked automatically by `--update`, and
+prunes exactly the named keys and nothing else.
+
 Per-release install steps live in [`docs/releases/v6.0.1.md`](docs/releases/v6.0.1.md)
 and are embedded in [GitLab Releases](https://gitlab.com/em-age/emage.code/-/releases).
 
