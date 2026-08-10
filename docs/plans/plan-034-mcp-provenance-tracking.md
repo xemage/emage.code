@@ -230,6 +230,8 @@ Reasoning:
 | P034-04 | T392 | Document the new provenance-aware merge behavior |
 | P034-05 | T393 | Validation gate and merge to develop |
 | P034-06 | T382 | (existing, unchanged brief) Complete repo-root update install using the fixed tooling |
+| (release, not a P034 step) | T394 | Release v6.10.0 (MCP settings hardening + merge-safety + provenance) |
+| (release, not a P034 step) | T395 | Sync main with develop for v6.10.0 |
 
 ## Task Breakdown
 | ID | Title | Assignee | Priority | BlockedBy | Estimated Effort |
