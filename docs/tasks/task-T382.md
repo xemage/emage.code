@@ -2,7 +2,7 @@
 
 **ID:** T382
 **Owner:** devops-engineer
-**Status:** pending
+**Status:** blocked
 **Priority:** P0
 **Depends on:** T381, T388
 **Created:** 2026-08-09
