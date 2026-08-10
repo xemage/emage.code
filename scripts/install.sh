@@ -106,16 +106,22 @@ copy_tree_into() {
 # If $3 (a path relative to dest) is given, that one file is left untouched
 # by this whole-tree replace — neither deleted nor overwritten — so a
 # separate merge step (merge_or_copy_mcp_json) can update it afterward
-# without losing any hand-added content it may hold.
+# without losing any hand-added content it may hold. If $4 (also relative to
+# dest) is given, that second file — the MCP file's provenance sidecar — gets
+# the same untouched treatment, for the identical reason.
 sync_tree_into() {
   local src="$1"
   local dest="$2"
   local exclude_rel="${3:-}"
+  local exclude_rel_2="${4:-}"
   if command -v rsync >/dev/null 2>&1; then
     run mkdir -p "$dest"
     local rsync_args=(-a --delete)
     if [[ -n "$exclude_rel" ]]; then
       rsync_args+=(--exclude="$exclude_rel")
+    fi
+    if [[ -n "$exclude_rel_2" ]]; then
+      rsync_args+=(--exclude="$exclude_rel_2")
     fi
     if [[ "$DRY_RUN" -eq 1 ]]; then
       run rsync "${rsync_args[@]}" --dry-run "$src/" "$dest/"
@@ -124,9 +130,14 @@ sync_tree_into() {
     fi
   else
     local backup=""
+    local backup_2=""
     if [[ -n "$exclude_rel" && -f "$dest/$exclude_rel" ]]; then
       backup="$(mktemp)"
       cp "$dest/$exclude_rel" "$backup"
+    fi
+    if [[ -n "$exclude_rel_2" && -f "$dest/$exclude_rel_2" ]]; then
+      backup_2="$(mktemp)"
+      cp "$dest/$exclude_rel_2" "$backup_2"
     fi
     run rm -rf "$dest"
     run mkdir -p "$dest"
@@ -135,6 +146,11 @@ sync_tree_into() {
       run mkdir -p "$(dirname "$dest/$exclude_rel")"
       run cp "$backup" "$dest/$exclude_rel"
       rm -f "$backup"
+    fi
+    if [[ -n "$backup_2" ]]; then
+      run mkdir -p "$(dirname "$dest/$exclude_rel_2")"
+      run cp "$backup_2" "$dest/$exclude_rel_2"
+      rm -f "$backup_2"
     fi
   fi
 }
@@ -161,8 +177,9 @@ install_tree_into() {
   local src="$1"
   local dest="$2"
   local exclude_rel="${3:-}"
+  local exclude_rel_2="${4:-}"
   if [[ "$UPDATE" -eq 1 ]]; then
-    sync_tree_into "$src" "$dest" "$exclude_rel"
+    sync_tree_into "$src" "$dest" "$exclude_rel" "$exclude_rel_2"
   else
     copy_tree_into "$src" "$dest"
   fi
@@ -244,18 +261,29 @@ merge_task_docs() {
 # Copy a generated single-file MCP config into target, preserving any
 # hand-added keys (e.g. a locally-added MCP server or `inputs` block) when
 # updating an existing install. Falls back to a plain copy on fresh installs
-# or when the dest file doesn't exist yet.
+# or when the dest file doesn't exist yet. The MCP file's provenance sidecar
+# (<mcpfile>.provenance.json, ADR-002) is carried alongside it: merged runs
+# pass it to merge-mcp-json.py for diff-based pruning and to refresh the
+# dest-side sidecar; fresh-install/no-dest runs plain-copy it too.
 merge_or_copy_mcp_json() {
   local src="$1"
   local dest="$2"
+  local src_sidecar="${src}.provenance.json"
+  local dest_sidecar="${dest}.provenance.json"
   if [[ "$UPDATE" -eq 1 && -f "$dest" ]]; then
     local args=("$REPO_ROOT/scripts/merge-mcp-json.py" --source "$src" --dest "$dest")
+    if [[ -f "$src_sidecar" ]]; then
+      args+=(--old-sidecar "$dest_sidecar" --new-sidecar "$src_sidecar")
+    fi
     if [[ "$DRY_RUN" -eq 1 ]]; then
       args+=(--dry-run)
     fi
     run python3 "${args[@]}"
   else
     run cp "$src" "$dest"
+    if [[ -f "$src_sidecar" ]]; then
+      run cp "$src_sidecar" "$dest_sidecar"
+    fi
   fi
 }
 
@@ -298,7 +326,7 @@ install_common() {
 }
 
 install_cursor() {
-  install_tree_into "$IMPLEMENTATION/.cursor" "$TARGET/.cursor" "mcp.json"
+  install_tree_into "$IMPLEMENTATION/.cursor" "$TARGET/.cursor" "mcp.json" "mcp.json.provenance.json"
   merge_or_copy_mcp_json "$IMPLEMENTATION/.cursor/mcp.json" "$TARGET/.cursor/mcp.json"
 }
 
@@ -309,17 +337,17 @@ install_github() {
 }
 
 install_gemini() {
-  install_tree_into "$IMPLEMENTATION/.gemini" "$TARGET/.gemini" "settings.json"
+  install_tree_into "$IMPLEMENTATION/.gemini" "$TARGET/.gemini" "settings.json" "settings.json.provenance.json"
   merge_or_copy_mcp_json "$IMPLEMENTATION/.gemini/settings.json" "$TARGET/.gemini/settings.json"
 }
 
 install_opencode() {
-  install_tree_into "$IMPLEMENTATION/.opencode" "$TARGET/.opencode" "opencode.json"
+  install_tree_into "$IMPLEMENTATION/.opencode" "$TARGET/.opencode" "opencode.json" "opencode.json.provenance.json"
   merge_or_copy_mcp_json "$IMPLEMENTATION/.opencode/opencode.json" "$TARGET/.opencode/opencode.json"
 }
 
 install_pi() {
-  install_tree_into "$IMPLEMENTATION/.pi" "$TARGET/.pi" "mcp.json"
+  install_tree_into "$IMPLEMENTATION/.pi" "$TARGET/.pi" "mcp.json" "mcp.json.provenance.json"
   merge_or_copy_mcp_json "$IMPLEMENTATION/.pi/mcp.json" "$TARGET/.pi/mcp.json"
 }
 
@@ -330,7 +358,7 @@ install_claude_code() {
 }
 
 install_cline() {
-  install_tree_into "$IMPLEMENTATION/.cline" "$TARGET/.cline" "mcp.json"
+  install_tree_into "$IMPLEMENTATION/.cline" "$TARGET/.cline" "mcp.json" "mcp.json.provenance.json"
   install_tree_into "$IMPLEMENTATION/.clinerules" "$TARGET/.clinerules"
   merge_or_copy_mcp_json "$IMPLEMENTATION/.cline/mcp.json" "$TARGET/.cline/mcp.json"
 }
