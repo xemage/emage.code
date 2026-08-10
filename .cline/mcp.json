@@ -85,13 +85,6 @@
         "@supabase/mcp"
       ]
     },
-    "e2b": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "e2b-mcp"
-      ]
-    },
     "docker": {
       "command": "npx",
       "args": [
@@ -99,32 +92,11 @@
         "docker-mcp"
       ]
     },
-    "redis": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "redis-mcp"
-      ]
-    },
     "postgresql": {
       "command": "npx",
       "args": [
         "-y",
         "postgres-mcp"
-      ]
-    },
-    "figma": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@figma/mcp"
-      ]
-    },
-    "notion": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@notion/mcp"
       ]
     },
     "toolradar": {
