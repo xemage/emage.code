@@ -2,10 +2,11 @@
 
 **ID:** T394
 **Owner:** release-manager
-**Status:** in_progress
+**Status:** done
 **Priority:** P0
 **Depends on:** T382 (plan-034 final proof point)
 **Created:** 2026-08-10
+**Completed:** 2026-08-10
 **Based on:** CONTRIBUTING.md § "Cutting a release"; docs/tasks/task-T366.md, task-T358.md,
 task-T350.md, task-T337.md (precedent); docs/tasks/completed-tasks.md entries T368-T393, T382
 
@@ -71,3 +72,44 @@ task (T366 for a MINOR bump).
 
 ## Blocker Protocol
 Report blockers as: type + severity + proposed mitigation. Max 2 retries.
+
+## Execution notes
+
+**Executed by:** orchestrator, 2026-08-10. Classification: MINOR (v6.9.0 → v6.10.0), classified
+under Highlights/Fixed + Highlights/Removed + Highlights/Hardened (not Internal-only, since several
+items change observable `--update` behavior for existing consumers). Breaking changes remained
+"None" (verified: merge-safety change is strictly additive protection; provenance sidecars are new
+files, not replacements; `--force-prune-keys` is opt-in only and never triggered by a plain
+`--update`).
+
+**Scope correction (verified against source of truth):** T360-T365 (plan-030) was excluded from
+this release's notes — confirmed via `docs/releases/v6.9.0.md` and the existing `v6.9.0` tag that
+it was already shipped, rather than assumed from the task brief's initial framing.
+
+1. Branched `docs/release-v6.10.0` from `develop` (post-T382-closeout tip `f9c35c8`).
+2. Wrote `docs/releases/v6.10.0.md` (Install table, Highlights/Fixed+Removed+Hardened summarizing
+   T368-T393 and T382, Breaking changes: None, Internal section grouped by plan-031/032/033/034).
+3. Bumped `Latest release: v6.10.0` marker in `README.md`, `docs/wiki/README.md`,
+   `docs/wiki/home.md`.
+4. Wrote `docs/checkpoints/checkpoint-release-v6.10.0.md`.
+5. Created this task brief and `docs/tasks/task-T395.md`; added both rows to
+   `docs/tasks/active-tasks.md`.
+6. Full local verification bar: `python3 scripts/verify-release-docs.py --tag v6.10.0` PASS,
+   `make verify` (0 drift/557 files), `generate-registry.py --check` up to date, `validate-tasks.py`
+   PASS. `tests/run.py` initially caught a real pre-existing ledger-health failure
+   (`test_every_active_task_has_a_plan`: T394/T395 not referenced by any plan) — fixed by adding a
+   "(release, not a P034 step)" row for both to `docs/plans/plan-034-mcp-provenance-tracking.md`'s
+   Task ID Index, matching the T366/T367-in-plan-030 precedent exactly. Full suite re-confirmed
+   green after (320/320 OK, 17 skipped).
+7. MR !176 (`docs/release-v6.10.0 → develop`) opened, CI green (5/5 jobs), diff independently
+   re-verified (`git diff develop docs/release-v6.10.0 --stat` — exactly the 9 expected files)
+   before merging via squash.
+8. Post-merge `develop` pipeline (`a09c2425`) confirmed green before tagging.
+9. `git tag -a v6.10.0 -m "Release v6.10.0"` on `develop`'s tip; `git push origin v6.10.0`.
+10. Tag pipeline watched to success: `release-docs-gate`, `main-develop-drift-gate`, `release` job
+    all succeeded (`https://gitlab.com/em-age/emage.code/-/pipelines/2747485125`).
+11. GitLab Release independently confirmed live via API (`glab api
+    projects/em-age%2Femage.code/releases/v6.10.0`): `name: v6.10.0`, `tag_name: v6.10.0`,
+    `released_at: 2026-08-10T13:27:27.640Z`, notes sourced from `docs/releases/v6.10.0.md`.
+
+**Result:** https://gitlab.com/em-age/emage.code/-/releases/v6.10.0
