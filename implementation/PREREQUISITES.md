@@ -25,7 +25,7 @@ Set whichever you need before launching the AI tool. See [`SECURITY.md`](SECURIT
 
 ### Extended (optional)
 - `TOOLRADAR_API_KEY`
-- platform-specific tokens for `github`, `supabase`, `e2b`, `figma`, `notion`, `redis`, `postgresql`
+- platform-specific tokens for `github`, `supabase`, `postgresql`
 
 ## Verifying
 

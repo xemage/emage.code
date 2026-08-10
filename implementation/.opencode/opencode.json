@@ -102,14 +102,6 @@
         "@supabase/mcp"
       ]
     },
-    "e2b": {
-      "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "e2b-mcp"
-      ]
-    },
     "docker": {
       "type": "local",
       "command": [
@@ -118,36 +110,12 @@
         "docker-mcp"
       ]
     },
-    "redis": {
-      "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "redis-mcp"
-      ]
-    },
     "postgresql": {
       "type": "local",
       "command": [
         "npx",
         "-y",
         "postgres-mcp"
-      ]
-    },
-    "figma": {
-      "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "@figma/mcp"
-      ]
-    },
-    "notion": {
-      "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "@notion/mcp"
       ]
     },
     "toolradar": {

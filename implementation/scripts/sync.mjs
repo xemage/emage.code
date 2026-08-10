@@ -511,6 +511,21 @@ async function syncPlatform(manifest, servers) {
       await emitFile(outPath, mcpResult);
     }
     filesWritten.push(outPath);
+
+    // ADR-002: emit a <mcpfile>.provenance.json sidecar recording the
+    // generator-owned server-key set, so merge-mcp-json.py can diff old vs.
+    // new provenance and safely prune a retired dest-only key without ever
+    // touching a hand-added one. Recomputed inline (rather than changed via
+    // emitMcp()'s return contract) to keep the 5 already-passing call sites'
+    // return shape untouched.
+    const filteredKeys = Object.entries(servers)
+      .filter(([, s]) => (s.tags || []).some((t) => manifest.mcp.tags.includes(t)))
+      .map(([name]) => name)
+      .sort();
+    const sidecarPath = outPath + '.provenance.json';
+    const sidecarContent = JSON.stringify({ schemaVersion: 1, generatorOwnedKeys: filteredKeys }, null, 2) + '\n';
+    await emitFile(sidecarPath, sidecarContent);
+    filesWritten.push(sidecarPath);
   }
 
   for (const extra of manifest.extras || []) {

@@ -63,38 +63,44 @@ def _replace_one(text: str, pattern: str, replacement: str) -> str:
 
 def render(source_text: str, platform: str) -> str:
     if platform == "all":
+        skills_paths = [cfg["skills"] for cfg in PLATFORM_MAP.values()]
         skills_ref = (
-            "MUST check applicable skills in the active platform projection "
-            "(`.github/skills/`, `.cursor/skills/`, `.gemini/skills/`, "
-            "`.opencode/skills/`, `.pi/skills/`, `.claude/skills/`) "
-            "(or invoke `/discover-skills`)."
+            "MUST check applicable skills in the active platform projection ("
+            + ", ".join(f"`{p}`" for p in skills_paths)
+            + ") (or invoke `/discover-skills`)."
         )
+
+        standards_paths = [cfg["standards"] for cfg in PLATFORM_MAP.values()]
         code_ref = (
             "- See platform instruction projections: "
-            "`.github/instructions/coding-standards.instructions.md`, "
-            "`.cursor/rules/coding-standards.mdc`, "
-            "`.gemini/instructions/coding-standards.md`, "
-            "`.opencode/instructions/coding-standards.md`, "
-            "`.pi/instructions/coding-standards.md`, "
-            "`.claude/rules/coding-standards.md`."
+            + ", ".join(f"`{p}`" for p in standards_paths)
+            + "."
         )
+
+        security_paths = [cfg["security"] for cfg in PLATFORM_MAP.values()]
         sec_ref = (
             "- See platform security instruction projections: "
-            "`.github/instructions/security-guidelines.instructions.md`, "
-            "`.cursor/rules/security-guidelines.mdc`, "
-            "`.gemini/instructions/security-guidelines.md`, "
-            "`.opencode/instructions/security-guidelines.md`, "
-            "`.pi/instructions/security-guidelines.md`, "
-            "`.claude/rules/security-guidelines.md`, and `implementation/SECURITY.md`."
+            + ", ".join(f"`{p}`" for p in security_paths)
+            + ", and `implementation/SECURITY.md`."
         )
+
+        roots: list[str] = []
+        for cfg in PLATFORM_MAP.values():
+            for field in ("skills", "standards", "security"):
+                root = cfg[field].split("/")[0] + "/"
+                if root not in roots:
+                    roots.append(root)
         readme_ref = (
-            "- Use the installed platform folders (`.github/`, `.cursor/`, `.gemini/`, "
-            "`.opencode/`, `.pi/`, `.claude/`) as runtime references in this target project."
+            "- Use the installed platform folders ("
+            + ", ".join(f"`{r}`" for r in roots)
+            + ") as runtime references in this target project."
         )
+
+        mcp_paths = [cfg["mcp"] for cfg in PLATFORM_MAP.values()]
         mcp_ref = (
-            "Declared in platform MCP configs "
-            "(`.vscode/mcp.json`, `.cursor/mcp.json`, `.gemini/settings.json`, "
-            "`.opencode/opencode.json`, `.pi/mcp.json`, `.mcp.json`). Each server is tagged:"
+            "Declared in platform MCP configs ("
+            + ", ".join(f"`{p}`" for p in mcp_paths)
+            + "). Each server is tagged:"
         )
     else:
         if platform not in PLATFORM_MAP:

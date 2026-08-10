@@ -95,7 +95,7 @@ Declared in [`knowledge/mcp/servers.yaml`](knowledge/mcp/servers.yaml). Each ser
 | Tag | Emitted to |
 |-----|-----------|
 | `core` | every platform |
-| `extended` | platforms whose manifest opts in (`gemini`, `opencode`, `cursor`) |
+| `extended` | platforms whose manifest opts in (all except `github`: `cursor`, `gemini`, `opencode`, `pi`, `claude-code`, `cline`) |
 
 ### Core servers (always available)
 
@@ -110,7 +110,7 @@ Declared in [`knowledge/mcp/servers.yaml`](knowledge/mcp/servers.yaml). Each ser
 | `context7` | Framework/API documentation | Technology Scout, Integration |
 
 ### Extended servers (opt-in)
-`hf-mcp-server`, `filesystem`, `github`, `git`, `supabase`, `e2b`, `docker`, `redis`, `postgresql`, `figma`, `notion`, `toolradar`. Most require additional credentials — see `servers.yaml` for the env-var contract.
+`hf-mcp-server`, `filesystem`, `github`, `git`, `supabase`, `docker`, `postgresql`, `toolradar`. Most require additional credentials — see `servers.yaml` for the env-var contract.
 
 ## Token Governance
 | Phase | Budget |
