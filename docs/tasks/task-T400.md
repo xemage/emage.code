@@ -120,3 +120,69 @@ escalating) if:
   touch `README.md`, `implementation/README.md`, or `scripts/verify-release-docs.py` — those are
   T401's and T404's scope respectively.
 - No unrelated refactor of any existing script.
+
+## Addendum (orchestrator decision, 2026-08-12, after first execution pass)
+The first execution pass delivered a working script (commit `c05f4f1` on
+`feature/T400-phase0-ground-truth-v6.11.0`) but, run with only the four brief-named exclusions,
+it flagged ~840 findings across 121 files — the overwhelming majority being true historical
+statements in `docs/tasks/*.md` (e.g. "T050 | Major release v4.0.0") and `docs/plans/*.md`, which
+match the bare `vX.Y.Z` regex but are not "current state" claims. The agent correctly declined to
+widen the exclusion list unilaterally and reported the finding back rather than guessing.
+
+**Decision — implement both of the following as a second commit on the same branch/worktree:**
+
+1. **Widen the directory-prefix exclusion list** to also exclude `docs/tasks/`, `docs/plans/`, and
+   `docs/artifacts/`. Rationale: all three are structurally the same kind of historical/immutable
+   record the original four exclusions (`docs/releases/`, `docs/checkpoints/`, `docs/archiv/`,
+   `CHANGELOG.md`) already cover, per this repo's own conventions stated in `AGENTS.md`:
+   `docs/tasks/completed-tasks.md` is explicitly documented as an "Append-only log"; `docs/plans/`
+   artifacts are "Immutable... Revisions create new versions, never overwrite" per the Artifact
+   Versioning section; `docs/artifacts/*-v<N>.md` follows the identical immutable-versioned-
+   artifact convention (confirmed by direct inspection: e.g. `docs/artifacts/cwso-mcp-contract-
+   v1.md`'s `v0.4.1` refers to a *different* system's version entirely, not emage.code's own
+   release train — a plain bare-regex match cannot tell the difference, so exclusion is the
+   correct fix here, not a narrower regex).
+2. **Add a context gate before flagging a bare version string as a "current state" claim**, so the
+   script only reports a finding when the version string is either (a) within roughly 80
+   characters of a case-insensitive current-state signal phrase — `"current release"`, `"latest
+   release"`, `"current state"`, or `"release:"` — or (b) inside a markdown link/path targeting
+   `docs/releases/vX.Y.Z.md` (i.e. a live doc presenting a specific release file as *the* relevant
+   one for that context). This eliminates false positives on illustrative/example version strings
+   confirmed present in `implementation/knowledge/instructions/git-workflow.md` (branch-naming
+   examples `release/v1.2.0`, `hotfix/v1.2.1`), `implementation/knowledge/skills/
+   release-workflow/SKILL.md` (semver walkthrough `v1.2.0 → v1.2.1`), and
+   `implementation/knowledge/agents/release-manager.md` (`v2.0.0` in a "legacy API removal"
+   example) — and their platform-projected mirrors under `implementation/.claude/`, `.gemini/`,
+   etc. — without needing a one-off file-level exclusion for each.
+   - This is a deliberately narrow, targeted refinement (not a full rewrite of the matching
+     strategy into pure NLP/phrase-based detection, i.e. not the source roadmap's originally-
+     floated option (c) in full) — it keeps the existing regex-scan architecture and adds one
+     context check on top.
+   - Verified this refinement still catches every currently-known genuine drift point: the three
+     originally-cited lines (`implementation/README.md:4`'s "current release stream (**v6.0.1**)"
+     — "current release" appears in the same sentence; `implementation/README.md:31`'s "Latest
+     release: v6.0.5"; `README.md:131`'s link to `docs/releases/v6.0.1.md`) **plus a fourth
+     genuinely new drift point this same audit surfaced**: `docs/wiki/implementation-guide.md:5`
+     ("current release: v6.0.2") and `:33` (a link to `docs/releases/v6.0.2.md`) — both must
+     remain flagged after the refinement lands, and T401's scope has been expanded to fix this
+     file too (see `task-T401.md`'s addendum).
+3. **Residual limitation, documented rather than silently accepted:** a doc that states a stale
+   version without any of the above signal phrases nearby and without a `docs/releases/` link
+   (e.g. bare prose "this works in v6.0.1" with no "release" language at all) would not be caught
+   by this narrowed heuristic. This is judged an acceptable tradeoff for Gate G0's "cheapest gate"
+   framing — it catches the actual failure mode observed twice now (a version badge/intro line and
+   a release-doc link, both signal-carrying) without drowning in false positives on the historical
+   archive. Revisit if a future false negative of this shape is found (a candidate refinement for
+   Phase 1+, not blocking here).
+
+**Acceptance re-verification required after this second commit:**
+- Re-running the script on the current tree (pre-T401-fix) still flags exactly the four genuine
+  drift files above (three original lines + `docs/wiki/implementation-guide.md`) and nothing from
+  `docs/tasks/`, `docs/plans/`, `docs/artifacts/`, or the three illustrative-example knowledge
+  files (canonical + all platform projections).
+- `tests/functional/test_check_version_consistency.py` gains fixture coverage for: (a) a
+  `docs/tasks/`-style historical mention correctly not flagged, (b) a
+  `docs/releases/vX.Y.Z.md`-link-style current-doc mention correctly flagged even with no nearby
+  "release" phrase, (c) an illustrative semver example (no signal phrase, not a `docs/releases/`
+  link) correctly not flagged.
+- Full test suite (`python3 tests/run.py`) still green.

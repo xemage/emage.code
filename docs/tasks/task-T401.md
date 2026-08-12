@@ -25,12 +25,28 @@ and execution). Specifically:
 (Line numbers above are as read at brief-authoring time — re-verify against the current file
 before editing; if they've shifted, that's not a blocker, just re-locate the same text.)
 
+## Addendum (orchestrator decision, 2026-08-12, scope expanded by one file)
+Running T400's script against the full tree surfaced a **fourth genuine drift point** not in the
+original brief, structurally identical to the three above (a "current release" claim plus a
+`docs/releases/` link, both stale): `docs/wiki/implementation-guide.md:5` states "current release:
+v6.0.2" and `:33` links `docs/releases/v6.0.2.md`. Fix this file too, using the same approach as
+the three originally-named locations — correct the version to match `README.md`'s canonical
+`Latest release:` marker and correct the release-doc link to point at the file that actually
+exists for that version. See `task-T400.md`'s addendum for the full context on how this was found
+(a version-consistency script run, not manual re-audit) and why the script's exclusion list was
+widened rather than expecting T401 to fix the ~700+ historical-record false positives that same
+run also produced (those are legitimate past-tense statements in `docs/tasks/`/`docs/plans/`/
+`docs/artifacts/`, out of scope for this task and now excluded at the script level instead).
+
 ## Inputs
 - `implementation/README.md` (lines 1-35 approx — read the whole file's header/intro section, not
   just the flagged lines, since the surrounding prose may reference the same stale version in
   other phrasing not caught by the line-number grep above)
 - `README.md` (root, around line 131 and its surrounding "Documentation release contract" /
   install section)
+- `docs/wiki/implementation-guide.md` (lines ~1-35 — see Addendum below: line 5's "current
+  release: v6.0.2" and line 33's link to `docs/releases/v6.0.2.md`, a fourth drift point found
+  after this brief was originally written)
 - `README.md`'s own `Latest release: vX.Y.Z` line — this is the canonical value to propagate; do
   not invent a version number, read it from the file.
 - `docs/releases/` directory listing — confirms which release doc actually exists for the current
@@ -41,22 +57,29 @@ before editing; if they've shifted, that's not a blocker, just re-locate the sam
   read of the file's intro) corrected to the true current version; the `docs/releases/v6.0.1.md`
   link corrected to point at the release doc matching the current version.
 - `README.md` (root) — line 131's link corrected the same way.
-- A grep sweep: after your edits, `grep -rn "v6\.0\.[15]" README.md implementation/README.md`
-  (adjust the pattern to whatever stale version you actually found) should return zero hits.
+- `docs/wiki/implementation-guide.md` — line 5 and line 33 corrected the same way (see Addendum).
+- A grep sweep: after your edits, `grep -rn "v6\.0\.[125]" README.md implementation/README.md
+  docs/wiki/implementation-guide.md` (adjust the pattern to whatever stale versions you actually
+  found) should return zero hits.
 
 ## Acceptance criteria
 1. `implementation/README.md` no longer contains any reference to a version older than the current
    `README.md` "Latest release" marker.
 2. `README.md` (root) no longer links to a release doc for a version older than current.
-3. Both files' version references are mutually consistent with each other and with `README.md`'s
-   own marker line (no internal self-contradiction like the current v6.0.1-vs-v6.0.5 mismatch).
-4. Every link you touch or introduce resolves to a file that actually exists (`docs/releases/
+3. `docs/wiki/implementation-guide.md` no longer contains any reference to a version older than
+   current, and its `docs/releases/` link is corrected the same way.
+4. All three files' version references are mutually consistent with each other and with
+   `README.md`'s own marker line (no internal self-contradiction like the current
+   v6.0.1-vs-v6.0.5 mismatch).
+5. Every link you touch or introduce resolves to a file that actually exists (`docs/releases/
    <version>.md`) — verify with a direct file existence check, not by assumption.
-5. No other content in either file changes — this is a targeted drift fix, not a rewrite.
-6. Once `scripts/check-version-consistency.py` (T400) exists, running it against the tree after
-   your fix should no longer flag either of these two files (coordinate order of operations with
-   the orchestrator — T400 and T401 may land in either order on the shared branch, but the final
-   state after both must satisfy this).
+6. No other content in any of the three files changes — this is a targeted drift fix, not a
+   rewrite.
+7. Once `scripts/check-version-consistency.py` (T400, including its addendum's widened exclusion
+   list and context-gate refinement) exists on the shared branch, running it against the tree
+   after your fix should no longer flag any of these three files (coordinate order of operations
+   with the orchestrator — T400 and T401 may land in either order on the shared branch, but the
+   final state after both must satisfy this).
 
 ## Note on tooling access
 Per this repo's agent permission classification (`.claude/rules/security-guidelines.md` —
@@ -93,6 +116,7 @@ Do not push or open an MR — that's handled by the orchestrator per the T400 br
 note; T406 performs the final validation gate and merge.
 
 ## Constraints
-- Token budget: ≤10k tokens.
-- File ownership: `implementation/README.md`, `README.md` (root) — version-reference lines only.
-  Do not touch any other file.
+- Token budget: ≤12k tokens (raised slightly from the original 10k to account for the addendum's
+  third file).
+- File ownership: `implementation/README.md`, `README.md` (root), `docs/wiki/
+  implementation-guide.md` — version-reference lines only. Do not touch any other file.
