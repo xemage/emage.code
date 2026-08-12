@@ -9,7 +9,7 @@
 | T404 | Extend release gate to block on version-consistency failure (plan-035 P0) | release-manager | pending | P0 | T400 | 2026-08-12 |
 | T405 | Rule-set hardening: `/plan` output precondition of task creation (plan-035 P0) | tech-lead | pending | P1 | — | 2026-08-12 |
 | T406 | Validation gate + merge Phase 0 (T400-T405) to develop (plan-035 P0) | qa-engineer | pending | P0 | T400, T401, T402, T403, T404, T405 | 2026-08-12 |
-| T417 | Install Harbor; verify with oracle smoke run (plan-035, pulled forward from Phase 1) | devops-engineer | pending | P1 | — | 2026-08-12 |
+| T417 | Install Harbor; verify with oracle smoke run (plan-035, pulled forward from Phase 1) | devops-engineer | blocked | P1 | — | 2026-08-12 |
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
