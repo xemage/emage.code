@@ -2,11 +2,11 @@
 
 **ID:** T417
 **Owner:** devops-engineer
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Depends on:** — (only Docker; independent of Phase 0's T400–T406 batch)
 **Created:** 2026-08-12
-**Completed:** —
+**Completed:** 2026-08-13
 **Based on:** docs/plans/plan-035-roadmap-v7-ground-up.md (Phase 1, §2.4, "Layer 2 — Terminal-Bench
 delta harness" table; pulled forward into Phase 0 execution per §2.9's Week 1 guidance, since it
 depends only on Docker and de-risks the measurement layer early)
@@ -142,4 +142,54 @@ an independent, unrelated concern (benchmarking infra vs. doc-truth/release-gate
   file under `docs/benchmarks/` (that's T413/T418/T419's later scope, out of bounds here) — do not
   create `docs/benchmarks/tb-subset.json` or any scorecard file, even if it would be convenient;
   those belong to explicitly out-of-scope later tasks.
+
+## Addendum (orchestrator decision, 2026-08-13, retry outcome + Criterion 5/7 reconciliation)
+
+**Retry context:** the 2026-08-12 attempt hit the Docker-unreachable blocker (`type: external`,
+`severity: critical`, per the Blocker Protocol above) before any oracle trial ran — recorded in
+`docs/benchmarks/environment.md`'s historical section. Host conditions measurably improved by
+2026-08-13 (swap had free headroom instead of being fully saturated) and the retry was executed
+in the same worktree/branch, producing a genuine result this time:
+- **Required 5-task oracle smoke** (`terminal-bench/terminal-bench-2-1`, `-l 5`): **5/5 = 100%
+  pass**, 0 exceptions, Docker daemon confirmed healthy/responsive throughout (no recurrence of
+  the D-state wedge seen 2026-08-12, including under a later transient tight-resource moment
+  during the extended run below).
+- **Extended 25-task run** (`terminal-bench/terminal-bench-2`, `-l 25`, run per step 4's own
+  fallback guidance in lieu of the full 89-task set): **17/25 = 68% pass, NOT 100%.** Root cause
+  split two ways: 4/8 failures were a transient Docker Hub registry-side OAuth token 500 error
+  (external, local daemon unaffected, would plausibly pass on retry once the registry recovers);
+  4/8 were genuine task-level oracle non-passes (`caffe-cifar-10`, `crack-7z-hash` —
+  `AgentTimeoutError` on compute-heavy tasks; `install-windows-3-11`, `rstan-to-pystan` —
+  explicit 0.0 reward, no exception, root cause not further investigated in this session).
+
+**Criterion 5 vs. Criterion 7 conflict:** flagged independently by both the executing agent and
+Tech Lead review (`VERDICT: CONDITIONAL_PASS`, full review on file). Criterion 5's "(5-task
+minimum...)" parenthetical and the Blocker Protocol section (which only gates on non-100% at the
+**5-task** set, treating the full/extended run's scope purely as a time/disk budget question, not
+a pass-rate question) together indicate the 5-task result is the binding acceptance floor. Read in
+total isolation, Criterion 7's "any scope attempted" text would instead block completion outright
+on the 25-task result. Tech Lead's independent read reached the same conclusion I had: Criterion 7
+was drafted with the 5-task/full-set binary in mind (the brief's only two "scopes" explicitly
+named as such in the Recommended Execution Order), not anticipating that a sanctioned partial
+fallback (`-l 25`) would itself surface a genuine partial result requiring its own reconciliation.
+
+**Decision:** the 5-task gate (100% pass, required minimum per Criterion 5 and the Blocker
+Protocol) is the binding acceptance bar for T417. It is satisfied. T417 is marked `done`. The
+25-task extended run's findings are **not** treated as a T417 blocker — they are recorded as
+informational stretch validation and carried forward as explicit follow-up items for whichever
+future task first relies on `-l 25`-scale or larger unattended Harbor/oracle runs (this is
+expected to be T418, per plan-035, but T418 itself remains gated on the user's two open Phase 1
+questions per `active-tasks.md` — no new task is opened here to track this, consistent with this
+session's guardrail against authoring Phase 1+ tasks):
+1. Retry the 4 Docker-Hub-registry-OAuth-500-affected tasks (`break-filter-js-from-html`,
+   `protein-assembly`, `path-tracing`, `compile-compcert`) once the registry issue is confirmed
+   clear, to establish whether they pass given a healthy pull path.
+2. Investigate `install-windows-3-11` and `rstan-to-pystan`'s unexplained 0.0-reward outcomes
+   (no exception raised) before relying on them in any delta measurement.
+3. Investigate whether `caffe-cifar-10` and `crack-7z-hash`'s `AgentTimeoutError`s are genuinely
+   compute-bound (would recur regardless of host load) or resource-timing-sensitive (may pass
+   under better-provisioned conditions) — relevant to sizing T41B's later hard time/resource caps.
+
+This addendum is the authoritative resolution of the Criterion 5/7 tension for this task; no
+further debate is needed to close T417.
 - Do not invoke any agent-under-test (`claude-code`/`codex`/`gemini-cli`) via Harbor — oracle only.
