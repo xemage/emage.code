@@ -2,7 +2,7 @@
 
 **ID:** T404
 **Owner:** release-manager
-**Status:** pending
+**Status:** done
 **Priority:** P0
 **Depends on:** T400 (needs `scripts/check-version-consistency.py` to exist)
 **Created:** 2026-08-12

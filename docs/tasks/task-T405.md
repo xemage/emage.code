@@ -2,7 +2,7 @@
 
 **ID:** T405
 **Owner:** tech-lead
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Depends on:** —
 **Created:** 2026-08-12

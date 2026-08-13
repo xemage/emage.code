@@ -2,7 +2,7 @@
 
 **ID:** T406
 **Owner:** qa-engineer (validation), tech-lead (implementation gate review), orchestrator (merge)
-**Status:** pending
+**Status:** done
 **Priority:** P0
 **Depends on:** T400, T401, T402, T403, T404, T405 (all must be committed on the shared branch)
 **Created:** 2026-08-12

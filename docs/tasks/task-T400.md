@@ -2,7 +2,7 @@
 
 **ID:** T400
 **Owner:** devops-engineer
-**Status:** pending
+**Status:** done
 **Priority:** P0
 **Depends on:** —
 **Created:** 2026-08-12
