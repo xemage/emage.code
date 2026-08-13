@@ -2,12 +2,12 @@
 
 **ID:** T414
 **Owner:** release-manager
-**Status:** in_progress
+**Status:** done
 **Priority:** P0
 **Depends on:** T410 (done), T411 (done), T412 (done), T413 (done — `scripts/scorecard.py`,
 `docs/benchmarks/scorecard-v6.12.0.json`/`.md`)
 **Created:** 2026-08-13
-**Completed:** —
+**Completed:** 2026-08-13
 **Based on:** `docs/plans/plan-035-roadmap-v7-ground-up.md` (Phase 1, §2.4, Layer 1 table, row T414:
 *"Publish `docs/benchmarks/baseline-v6.12.0.md`. **Do not optimise anything before this file
 exists.**"*) and the plan's risk table: *"Golden suite is authored too easy, baseline reads 20/20 |
@@ -118,3 +118,32 @@ too-easy) result:
   `docs/benchmarks/scorecard-v6.12.0.json`/`.md` (T413's, generated artifacts — read them, don't
   edit them), `scripts/scorecard.py` (T413's), `tests/golden/**` (read-only), or
   `tests/functional/test_golden_held_out_isolation.py` (T412's).
+
+## Completion addendum (2026-08-13)
+
+Delivered `docs/benchmarks/baseline-v6.12.0.md` (100 lines). Headline numbers sourced from the real
+`scorecard-v6.12.0.json`: 20 total cases, 11 pass, 9 known_failing (6 `tracked_defect`, 3
+`capability_gap`), 0 regressions; `open`/`held-out` breakdown (14: 8 pass/4/2; 6: 3 pass/2/1)
+matching T413's own numbers exactly.
+
+Performed and documented the "reject a too-easy baseline" control in the published file itself
+(not merely a self-report): `known_failing=9` clears T411's ≥5 floor with margin, spread across
+both `known_failing_category` values and both `open`/`held-out` subsets (not concentrated, not a
+near-20/20 result). Mirrored T413's held-out identity-redaction reasoning — the baseline document
+cites aggregate held-out health only, never case identity, since it lives outside `tests/golden/`
+and is exactly the kind of file the isolation guard's Check B exists to cover.
+
+**Orchestrator independently verified rather than accepted the self-report**, applying the same
+standard as T412/T413's own reviews (this is the third independent held-out-isolation check in a
+row — T412's guard, T413's anonymization, now T414's own document — each verified on its own
+merits, not assumed correct because the prior ones were): decoded the real
+`scorecard-v6.12.0.json`'s `content.summary` directly and cross-checked every number in the
+published baseline against it (all match exactly, including the full `by_location` breakdown);
+grepped the published document directly for all six real held-out case IDs (zero matches); re-ran
+`tests/functional/test_golden_held_out_isolation.py`'s own 8-test suite with the new file present
+(8/8 still pass); ran `python3 tests/run.py` fresh (367 tests, exit 0); confirmed `git status`
+clean.
+
+All 6 of this brief's acceptance criteria confirmed PASS. Status set to `done`. See
+`docs/tasks/completed-tasks.md` and `docs/tasks/active-tasks.md`'s "Owner corrections and closure
+history" for the ledger-level closure note.

@@ -2,7 +2,8 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T414 | Publish `docs/benchmarks/baseline-v6.12.0.md` | release-manager | in_progress | P0 | T410 (done), T411 (done), T412 (done), T413 (done) | 2026-08-13 |
+
+_No active rows — see "Backlog" below for what's queued next._
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
@@ -37,9 +38,8 @@ only; it is not machine-parsed (bullets, not `|`-table rows).
 
 **Layer 1** (all owned by the agents named in plan-035 §2.4 Phase 1, T410 owner unchanged, T415
 reassigned to `qa-engineer` — see below):
-- T414 — now dispatched, see table above (row + `task-T414.md` brief on disk)
 - T415 — Failure taxonomy (`cause x behavior x mechanism`) — `qa-engineer` — depends on T411 (done), T413 (done)
-- T416 — Freeze evaluator interface (protected paths, all agent defs) — `tech-lead` — depends on T410 (done), T411 (done), T412 (done), T413 (done), T414, T415
+- T416 — Freeze evaluator interface (protected paths, all agent defs) — `tech-lead` — depends on T410 (done), T411 (done), T412 (done), T413 (done), T414 (done), T415
 
 **Layer 2** (T407/T409 renamed from plan-035's `T41A`/`T41C` per the note above; T418, T419, T408
 all done):
@@ -215,6 +215,21 @@ vs. the expected/stable 367/18) was investigated and resolved as environmental f
 commit touches nothing under `tests/`; two immediate re-runs were stable). See `completed-tasks.md`
 and `task-T413.md`'s Completion addendum. T414, T415 are now unblockable (T414 was the last item
 waiting on T413 — all of T410-T413 are now done).
+
+**T414 closed (2026-08-13).** `docs/benchmarks/baseline-v6.12.0.md` published — the last of
+T410-T413's dependents, closing plan-035's "do not optimise before this file exists" gate.
+Headline numbers (20 cases, 11 pass, 9 known_failing [6 `tracked_defect`, 3 `capability_gap`], 0
+regressions) sourced from and matching T413's real scorecard exactly. The "reject a too-easy
+baseline" risk-table control was performed and documented in the file itself: known_failing=9
+clears T411's ≥5 floor with margin, spread across both categories and both `open`/`held-out`
+subsets. This is the third independent held-out-isolation check in the T412→T413→T414 chain (T412's
+guard, T413's anonymization, now T414's own document), each verified on its own merits by the
+orchestrator rather than assumed correct by association with the prior two: decoded the real
+scorecard JSON directly and cross-checked every published number against it, grepped the published
+document for all six real held-out case IDs (zero matches), re-ran the isolation guard's own 8-test
+suite with the new file present (8/8), ran `python3 tests/run.py` fresh (367 tests, exit 0), `git
+status` clean. See `completed-tasks.md` and `task-T414.md`'s Completion addendum. T415 is now
+unblockable (T416 remains gated on T415).
 
 **CI rejection and fix (2026-08-13):** the first push of this branch failed CI (`unit-tests` job,
 `tests/performance/test_team_health.py::TestTaskLifecycle` + the shipped `validate-tasks.py`
