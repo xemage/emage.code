@@ -17,6 +17,25 @@
   between those two sections over whether T410–T416 needed both open questions resolved, or Gate
   G0 alone — that inconsistency is flagged, not resolved, this pass, so T410–T416 remains treated
   as blocked pending explicit user clarification.
+  **ID-format correction (2026-08-13, during Phase 1 dispatch):** this plan's Layer 2 table (§2.4
+  Phase 1) names three tasks `T41A`, `T41B`, `T41C`. These do not match this repo's actual,
+  pre-existing, mechanically-enforced task ID format — `tests/performance/
+  test_team_health.py::TestTaskLifecycle::test_task_ids_are_unique_and_well_formed` requires
+  `^T\d{3,}$` (purely numeric after the `T`), consistent with `AGENTS.md`'s own stated convention
+  ("Sequential IDs: `T001`, `T002`, …"). This was caught by CI when the Phase 1 dispatch ledger was
+  first pushed for review — a real, correctly-functioning validation gate, not a false alarm to
+  route around. **Renamed for all ledger/task-brief purposes: `T41A` → `T407`, `T41B` → `T408`,
+  `T41C` → `T409`** (the free numeric gap in this plan's own reserved `T400`-`T474` range, between
+  Phase 0's `T406` and Phase 1 Layer 1's `T410` — confirmed unused anywhere in
+  `docs/tasks/completed-tasks.md`/`active-tasks.md` history before this rename). This plan
+  document's own prose below is **left as originally written** (still says `T41A`/`T41B`/`T41C`
+  throughout, including the Layer 2 table, the registered interpretation block, and the acceptance
+  criteria) — this single note is the authoritative translation table for any reader mapping this
+  plan's prose to the actual task ledger; the plan's internal narrative is not rewritten
+  wholesale, consistent with every other formalization note in this document being additive, not a
+  rewrite. Wherever this document says `T41A`, the ledger says `T407`; `T41B` → `T408`;
+  `T41C` → `T409`. `T417`, `T418`, `T419` are unaffected (already valid, already in the ledger
+  unchanged).
   **Further update (2026-08-13, later same day):** open question 4 (null-delta interpretation) is
   also now resolved — see the registered interpretation block in §2.4 Phase 1 (immediately after
   the "Note on the sign of the delta") and the corresponding "resolved" mark on open question 4 in
@@ -352,6 +371,11 @@ health and is genuinely useful. What is added is an **outcome** layer beside it.
 | T416 | Freeze the evaluator interface. `tests/golden/` and `scripts/scorecard.py` become protected paths — declared out of write scope for every agent definition. | tech-lead | small |
 
 **Layer 2 — Terminal-Bench delta harness** (runs in parallel with T410–T416; T417 can start on day 1 since it depends only on Docker)
+
+> **ID-format note (2026-08-13):** `T41A`/`T41B`/`T41C` below do not match this repo's enforced
+> `^T\d{3,}$` task ID format. In the actual task ledger these are `T407`/`T408`/`T409`
+> respectively — see the top-of-document correction note for the full explanation. This table's
+> text is left as originally written.
 
 | ID | Task | Owner agent | Scope |
 |---|---|---|---|
