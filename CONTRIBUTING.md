@@ -3,6 +3,10 @@
 Thanks for your interest! This document describes how to propose changes to the
 project. **Please read it before opening a merge request.**
 
+> Just want to **use** emage.code in your own project rather than contribute to
+> this repo? See the [Quick Start guide](https://gitlab.com/em-age/emage.code/-/wikis/quick-start)
+> instead.
+
 ## Code of conduct
 
 By participating you agree to follow the collaboration and review expectations documented in this guide.
@@ -186,7 +190,7 @@ The project uses **Semantic Versioning** (`vMAJOR.MINOR.PATCH`) and
    git checkout develop && git merge --no-ff main && git push   # back-merge
    ```
 8. The tag push triggers the `release` CI job which:
-   - Runs `release-docs-gate` and `scripts/verify-release-docs.py` to verify required docs, marker alignment (`Latest release: vX.Y.Z`), per-release brief (`docs/releases/vX.Y.Z.md`), required content sections, and local/internal links
+   - Runs `release-docs-gate` and `scripts/verify-release-docs.py` to verify required docs, marker alignment (`Latest release: vX.Y.Z`), per-release brief (`docs/releases/vX.Y.Z.md`), required content sections, local/internal links, and repo-wide version consistency (via `scripts/check-version-consistency.py`, Gate G0 — fails the tag if any non-archived doc still references a stale release)
    - Verifies the implementation documentation surface (`docs/wiki/implementation-guide.md`, `implementation/README.md`, `scripts/install.sh`) alongside the root and wiki release docs
    - Embeds **Install + Highlights** from `docs/releases/vX.Y.Z.md` in GitLab Release notes
    - Appends a **Changelog** section from Conventional Commits since the previous tag (full git history; `GIT_DEPTH: 0` on release job)

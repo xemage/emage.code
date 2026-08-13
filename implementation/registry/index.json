@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-08-09T09:43:14+02:00",
+  "generatedAt": "2026-08-12T22:42:44+02:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -269,7 +269,7 @@
       "category": "agent",
       "name": "orchestrator",
       "path": "agents/orchestrator.md",
-      "checksum": "6ea8d684738b497dca832bb1557f8ed57057c3224a48eaf392c475f5af62ed16",
+      "checksum": "cbecd9b981f4578eae4246c87efd7bb9b6bb4beadd574a239f8b36db0f457bde",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -1053,7 +1053,7 @@
       "category": "command",
       "name": "plan",
       "path": "commands/plan.md",
-      "checksum": "b0ba59ecefb7a122c6e721e4410025afea75d17c39f98d8c08ff866e54cc37e1",
+      "checksum": "487f488127a7595e0a2c489a38fc05a4f939b3eab4b93a71d0fa34df02c7492e",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -1613,7 +1613,7 @@
       "category": "skill",
       "name": "cwso-awareness",
       "path": "skills/cwso-awareness/SKILL.md",
-      "checksum": "ea42b3ee6450fc2e75a1556dd45ffd459da011c8b813a4341ce40c5c100b0f58",
+      "checksum": "3ebec87c27e9131d2b50f117cda4f6fcc1bcf9001a1f4906370a52b9e8b3f18f",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
