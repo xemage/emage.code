@@ -6,6 +6,17 @@
   `proposed` pending Gate G0 closing **and** pending the two open questions in "Open questions"
   below (Arm A agent selection; written interpretation of a null/negative Terminal-Bench delta).
   No task beyond T400–T406 and T417 may be dispatched until both are resolved by the user.
+  **Update (2026-08-13):** open question 3 (Arm A agent selection) is now resolved by the user —
+  `claude-code` — see "Open questions" below. Gate G0 is also closed (Phase 0, `done`). Per
+  §2.4 Phase 1's own status block, this closes both remaining preconditions for T418, T419, T41B,
+  and T41C; open question 4 (null-delta interpretation) remains open and continues to block T41A
+  specifically. This update records precondition status only — it does **not** itself approve
+  task-brief authoring or dispatch for T418/T419/T41B/T41C, which remains a separate decision the
+  user has not yet made. T410–T416 (Layer 1, golden suite) is addressed separately: see the
+  formalization notes in §2.4 Phase 1 and in "Approval" below flagging an unresolved inconsistency
+  between those two sections over whether T410–T416 needed both open questions resolved, or Gate
+  G0 alone — that inconsistency is flagged, not resolved, this pass, so T410–T416 remains treated
+  as blocked pending explicit user clarification.
 - **Author:** synthesis review of two external roadmap documents + live repo audit (orchestrator)
 - **Repo audited:** `github.com/xemage/emage.code` @ `develop` (`f317261`)
 - **Supersedes:** nothing. Complements `docs/plans/plan-033-mcp-settings-hardening.md`.
@@ -273,6 +284,28 @@ selection; written interpretation of a null/negative delta) for the T417–T41C 
 specifically. **T417 is the sole exception**: pulled forward and approved alongside Phase 0
 because it depends only on Docker, not on either open question — see its brief,
 `docs/tasks/task-T417.md`. T418–T41C remain blocked.
+
+> **Formalization note (2026-08-13):** open question 3 (Arm A agent selection) is now resolved —
+> `claude-code` — see "Open questions" below. Per this section's own framing ("for the T417–T41C
+> sub-track specifically"), this closes one of the two preconditions for T418, T419, T41B, and
+> T41C. Gate G0 is also closed (Phase 0, `done`). Open question 4 (null-delta interpretation)
+> remains open and continues to block T41A specifically — it "Blocks T41A only" per its own text,
+> so T418, T419, T41B, and T41C are not blocked by it. **This note records precondition status
+> only; it does not itself approve task-brief authoring or dispatch for T418/T419/T41B/T41C** —
+> that remains a separate decision the user has not yet made this session.
+>
+> Separately, and unresolved: this section's phrase "for the T417–T41C sub-track specifically"
+> appears to conflict with the "Approval" section near the end of this document (~line 578), which
+> names "T410/T418 onward" as blocked by both Gate G0 and the two open questions without this
+> section's sub-track qualifier — read literally, that would mean T410–T416 (Layer 1, golden
+> suite) also waited on both open questions, not Gate G0 alone. Neither open question (Arm A
+> selection; null-delta interpretation) has any apparent bearing on Layer 1's golden-suite
+> mechanics, which favors this section's narrower reading — but the Approval section names T410
+> explicitly by ID and is the document's authoritative approval record, so this inconsistency is
+> flagged here, not silently resolved in either direction. **T410–T416 are treated as still
+> blocked pending explicit user clarification of which passage governs**; see the matching note in
+> "Approval" below. No task brief for T410–T416 is authored on the strength of open question 3's
+> resolution alone.
 
 **Goal:** an eval that can tell you a change made things *worse*.
 
@@ -582,6 +615,25 @@ in writing by the user. Task IDs T400–T474 are reserved on the assumption that
 highest allocated ID prior to this plan; this was verified true at formalization time
 (`docs/tasks/active-tasks.md` empty, `docs/tasks/completed-tasks.md` highest ID T395).
 
+> **Formalization note (2026-08-13):** this paragraph's blanket "No task from T410/T418
+> onward... until Gate G0 closes **and** the two open questions below are resolved" appears to
+> conflict with §2.4 Phase 1's own status block, which scopes the two-open-questions gate to "the
+> T417–T41C sub-track specifically" and implies T410–T416 (Layer 1, golden suite) waits on Gate G0
+> alone. Gate G0 closed with Phase 0 (`done`, 2026-08-12). Neither open question (Arm A agent
+> selection; null-delta interpretation) has any apparent bearing on Layer 1's golden-suite
+> mechanics — which favors the narrower, Phase-1-scoped reading. That said, this paragraph names
+> T410 explicitly by ID, and this "Approval" section is the document's authoritative record of
+> what the user has approved, so the inconsistency is flagged here rather than silently resolved
+> in either direction. **T410–T416 are treated as still blocked pending explicit user
+> clarification of which passage governs**, and no task brief for T410–T416 is authored on the
+> strength of open question 3's resolution alone (see item 3 below).
+>
+> Also recorded here: open question 3 (Arm A agent selection) is resolved — `claude-code` — per
+> the user's explicit instruction on 2026-08-13. This closes the two-open-questions precondition
+> for T418, T419, T41B, and T41C (open question 4 continues to block T41A only). It does not
+> change this paragraph's literal T410 wording, which remains the subject of the inconsistency
+> flagged immediately above.
+
 ### Resolved decisions
 
 1. **Terminal-Bench timing — resolved: as early as it fits.** Implemented as Phase 1, tasks T417–T41C, structured as a two-arm delta harness (§2.2.1). Leaderboard submission stays deferred; the *measurement* does not.
@@ -589,5 +641,5 @@ highest allocated ID prior to this plan; this was verified true at formalization
 
 ### Open questions
 
-3. **Which agent is Arm A?** `claude-code`, `codex`, and `gemini-cli` are all Harbor built-ins and all are emage.code projection targets. Whichever is chosen becomes a fixed constant of every future delta; changing it later invalidates the series. Recommend picking the one you actually use daily. **Blocks T418–T41C. Does not block T417** (T417 only installs Harbor and runs the built-in oracle solutions — no agent-under-test is invoked).
+3. **Which agent is Arm A? — resolved: `claude-code` (2026-08-13).** `claude-code`, `codex`, and `gemini-cli` are all Harbor built-ins and all are emage.code projection targets. The user has explicitly selected `claude-code`. This is now a fixed constant of every future Terminal-Bench delta measurement in this series — changing it later invalidates the series. **Blocks T418–T41C. Does not block T417** (T417 only installs Harbor and runs the built-in oracle solutions — no agent-under-test is invoked). With this resolution, the two-open-questions precondition is met for T418, T419, T41B, and T41C; T41A remains additionally blocked by open question 4 below.
 4. **What does a null delta mean?** Commit the interpretation in writing before T41A runs, per the Phase 1 note. **Blocks T41A only.**
