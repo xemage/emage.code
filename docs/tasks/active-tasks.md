@@ -2,7 +2,8 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T413 | `scripts/scorecard.py` (golden suite JSON + MD scorecard) | devops-engineer | in_progress | P0 | T410 (done), T412 (done) | 2026-08-13 |
+
+_No active rows — see "Backlog" below for what's queued next._
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
@@ -37,10 +38,9 @@ only; it is not machine-parsed (bullets, not `|`-table rows).
 
 **Layer 1** (all owned by the agents named in plan-035 §2.4 Phase 1, T410 owner unchanged, T415
 reassigned to `qa-engineer` — see below):
-- T413 — now dispatched, see table above (row + `task-T413.md` brief on disk)
-- T414 — Publish `docs/benchmarks/baseline-v6.12.0.md` — `release-manager` — depends on T410 (done), T411 (done), T412 (done), T413
-- T415 — Failure taxonomy (`cause x behavior x mechanism`) — `qa-engineer` — depends on T411 (done), T413
-- T416 — Freeze evaluator interface (protected paths, all agent defs) — `tech-lead` — depends on T410 (done), T411 (done), T412 (done), T413, T414, T415
+- T414 — Publish `docs/benchmarks/baseline-v6.12.0.md` — `release-manager` — depends on T410 (done), T411 (done), T412 (done), T413 (done)
+- T415 — Failure taxonomy (`cause x behavior x mechanism`) — `qa-engineer` — depends on T411 (done), T413 (done)
+- T416 — Freeze evaluator interface (protected paths, all agent defs) — `tech-lead` — depends on T410 (done), T411 (done), T412 (done), T413 (done), T414, T415
 
 **Layer 2** (T407/T409 renamed from plan-035's `T41A`/`T41C` per the note above; T418, T419, T408
 all done):
@@ -190,6 +190,32 @@ all 82 case-content files identical. Re-ran all 20 cases from their new nested p
 mismatches), ran the guard's own 8-test suite directly (8/8 OK), ran `python3 tests/run.py` fresh
 (367 tests, exit 0). See `completed-tasks.md` and `task-T412.md`'s Completion addendum for the
 full reasoning. T413 is now unblockable.
+
+**T413 closed (2026-08-13).** `scripts/scorecard.py` + `docs/benchmarks/scorecard-v6.12.0.{json,md}`
+delivered: 20 cases, 11 pass, 0 regressions, `open`/`held-out` breakdown matching T412's split
+exactly. A real design interaction with T412 surfaced during implementation, not pre-anticipated in
+either brief: the output artifacts live outside `tests/golden/`, so unlike `scripts/scorecard.py`'s
+own allowlisted source, they aren't exempt from the isolation guard's Check B — emitting real
+held-out case IDs into them would have been exactly the leak that guard exists to prevent. Resolved
+within this task's own file ownership (the guard's allowlist was correctly treated as out of
+scope): `held-out/` cases report every real field except identity, replaced with a deterministic
+anonymized label. This is a second, independent enforcement of held-out isolation on top of T412's
+own guard.
+
+Given this is a direct extension of Phase 1's single highest-severity risk item, the orchestrator
+applied the same review rigor as T412's own closure rather than treating it as a routine follow-on:
+grepped both output files directly for all six real held-out case IDs (zero matches), re-ran the
+isolation guard's own 8-test suite against the real tree with the new files present (still 8/8,
+including the real-tree-clean test), decoded the redacted JSON entries directly and cross-checked
+each anonymized label's fields against the real `case.yaml` ground truth established during T412's
+own review (all six correct, correct sorted order), independently re-ran the determinism proof
+(two more fresh runs, diffed both JSON and MD myself, confirmed only `generated_at` differs,
+restored the worktree afterward), and spot-checked the T419 schema-reconciliation claim against
+`tb-delta.sh`'s actual shipped schema. One transient, non-reproducing test-count anomaly (355/17
+vs. the expected/stable 367/18) was investigated and resolved as environmental flakiness (T413's
+commit touches nothing under `tests/`; two immediate re-runs were stable). See `completed-tasks.md`
+and `task-T413.md`'s Completion addendum. T414, T415 are now unblockable (T414 was the last item
+waiting on T413 — all of T410-T413 are now done).
 
 **CI rejection and fix (2026-08-13):** the first push of this branch failed CI (`unit-tests` job,
 `tests/performance/test_team_health.py::TestTaskLifecycle` + the shipped `validate-tasks.py`
