@@ -2,11 +2,11 @@
 
 **ID:** T408
 **Owner:** devops-engineer
-**Status:** in_progress
+**Status:** done
 **Priority:** P1
 **Depends on:** T418 (done)
 **Created:** 2026-08-13
-**Completed:** —
+**Completed:** 2026-08-13
 **Based on:** `docs/plans/plan-035-roadmap-v7-ground-up.md` (Phase 1, §2.4, Layer 2 table, row
 named `T41B` in the plan's own text — renamed to `T408` in this ledger per
 `docs/tasks/active-tasks.md`'s "Task ID note"; the ID format `T41B` does not match this repo's
@@ -39,3 +39,16 @@ cover this work; reference "Refs T419, T408" in the commit message.
 ## Constraints
 Covered by task-T419.md's token budget (~55k combined). No separate file ownership beyond what
 task-T419.md already specifies.
+
+## Completion addendum (2026-08-13)
+
+Closed alongside T419 in the same dispatch/commit. See `docs/tasks/task-T419.md`'s Completion
+addendum for the full narrative (interrupted first dispatch, the deprecated-economy-model defect
+that silently broke the original smoke test, the fresh real-Docker re-verification of both the
+smoke test and this task's own budget-guard abort demonstration, and the orchestrator's
+independent artifact-level verification of every claim). This task's specific 3 acceptance
+criteria (guard demonstrably aborts; economy-default with documented frontier override; guard
+configuration documented) were verified as part of that same pass — the abort re-verification
+(RUN_ID `20260813T193832Z`, real 747s probe, real exit-2 abort, real `budget-guard.json` on disk,
+no scorecard produced) is this task's own specific evidence, independently decoded and confirmed
+by the orchestrator, not merely cited from the agent's report. Status set to `done`.

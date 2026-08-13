@@ -2,8 +2,8 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T419 | Two-arm delta runner `scripts/tb-delta.sh` | devops-engineer | in_progress | P0 | T418 (done) | 2026-08-13 |
-| T408 | Budget guard for `tb-delta.sh` (plan-035: `T41B`) | devops-engineer | in_progress | P1 | T418 (done), alongside T419 | 2026-08-13 |
+
+_No active rows — see "Backlog" below for what's queued next._
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
@@ -38,15 +38,15 @@ only; it is not machine-parsed (bullets, not `|`-table rows).
 
 **Layer 1** (all owned by the agents named in plan-035 §2.4 Phase 1, T410 owner unchanged, T415
 reassigned to `qa-engineer` — see below):
-- T412 — Split `tests/golden/open/` vs `tests/golden/held-out/` + guard — `qa-engineer` — depends on T410 (done), T411 (in progress)
+- T412 — Split `tests/golden/open/` vs `tests/golden/held-out/` + guard — `qa-engineer` — depends on T410 (done), T411 (done)
 - T413 — `scripts/scorecard.py` (JSON + MD scorecard) — `devops-engineer` — depends on T410 (done), T412
-- T414 — Publish `docs/benchmarks/baseline-v6.12.0.md` — `release-manager` — depends on T410 (done), T411, T412, T413
-- T415 — Failure taxonomy (`cause x behavior x mechanism`) — `qa-engineer` — depends on T411, T413
-- T416 — Freeze evaluator interface (protected paths, all agent defs) — `tech-lead` — depends on T410 (done), T411, T412, T413, T414, T415
+- T414 — Publish `docs/benchmarks/baseline-v6.12.0.md` — `release-manager` — depends on T410 (done), T411 (done), T412, T413
+- T415 — Failure taxonomy (`cause x behavior x mechanism`) — `qa-engineer` — depends on T411 (done), T413
+- T416 — Freeze evaluator interface (protected paths, all agent defs) — `tech-lead` — depends on T410 (done), T411 (done), T412, T413, T414, T415
 
-**Layer 2** (T407/T409 renamed from plan-035's `T41A`/`T41C` per the note above; T418 reassignment
-already applied and closed; T419/T408 now dispatched, see table above):
-- T407 (plan-035: `T41A`) — First Terminal-Bench delta measurement (`k>=3`), publish `tb-delta-v6.12.0.md` — `devops-engineer` — depends on T418 (done), T419, T408
+**Layer 2** (T407/T409 renamed from plan-035's `T41A`/`T41C` per the note above; T418, T419, T408
+all done):
+- T407 (plan-035: `T41A`) — First Terminal-Bench delta measurement (`k>=3`), publish `tb-delta-v6.12.0.md` — `devops-engineer` — depends on T418 (done), T419 (done), T408 (done)
 - T409 (plan-035: `T41C`) — Extend T415 taxonomy to ingest Harbor trajectories — `devops-engineer` — depends on T415, T407
 
 ## Task-brief authoring note
@@ -126,6 +126,45 @@ affected case's actual `expect.py` logic to confirm the redacted content is genu
 each check inspects. See `completed-tasks.md` and `task-T411.md`'s Completion addendum. T412
 (open/held-out split), T414 (baseline publish), and T415 (taxonomy) are now unblockable — briefs to
 be authored just-in-time per this file's own `C7` discipline before their rows are added.
+
+**T419/T408 closed (2026-08-13).** First dispatch was interrupted mid-task by an account-wide
+Claude usage-limit stop (not a code error, not a blocker report), leaving real but unverified
+uncommitted work: a config-diff mechanism that was genuinely correct, but a smoke test that had
+actually failed silently — both arms' single trial errored (`NonZeroAgentExitCodeError`, API
+404) because `ECONOMY_MODEL`'s hardcoded default, `claude-3-5-haiku-20241022`, was absent from the
+live Anthropic model catalog. The orchestrator found this by reading the raw pre-interruption
+scorecard JSON directly rather than trusting that a "smoke test ran" meant it passed, and
+independently confirmed the catalog gap via a direct `GET /v1/models` call with the host's own
+key. A separate concern was also flagged: the interrupted session's doc claimed a budget-guard
+abort had already been demonstrated, but no on-disk artifacts for that claimed run survived —
+re-verification was required, not just trust in the transcript.
+
+A `devops-engineer` re-dispatch fixed the model default (`claude-haiku-4-5-20251001`, the cheapest
+model actually present in the catalog) and re-ran both pieces of evidence from scratch with real
+Docker runs: a fresh smoke test (RUN_ID `20260813T190348Z`, both arms completed real trials, no
+infra error) and a fresh budget-guard abort (RUN_ID `20260813T193832Z`, real 747s probe, real
+abort at exit 2, real `budget-guard.json` on disk). The re-dispatch's own report included a
+harness-level auto-neutralization flag on instruction-shaped text ("bypass-permissions",
+"permissions.allow/deny") in its output; the orchestrator independently read the raw underlying
+job logs directly (not just the agent's characterization) and confirmed this is Harbor/Claude
+Code's own logged CLI invocation and workspace-trust-dialog text — descriptive data about the
+sandboxed system under test, not directives aimed at the orchestrator — before accepting the
+"benign" read.
+
+Orchestrator independently verified (not just the agent's self-report): re-queried the live model
+catalog directly, confirming the new default is present and the old one is not; decoded the raw
+`tb-delta-scorecard-20260813T190348Z.json` and the Arm B trial's raw `result.json` directly,
+confirming `exception_info: null` (a genuine task-level 0.0 reward, not an infra failure); decoded
+the raw `config-diff.json` from both the pre-fix and a fresh post-fix `--config-only` dry run,
+confirming `"clean": true` in both; decoded `budget-guard.json` for the abort run directly,
+confirming `aborted: true`, no scorecard written, exactly one trial directory on disk; grepped the
+raw agent transcript directly for the flagged permission strings and confirmed
+`"permission_denials":[]` throughout, matching the "benign" claim; ran `python3 tests/run.py`
+fresh in the worktree (355 tests, exit 0). Also removed stale on-disk debris from the pre-fix
+broken run (`jobs/tb-delta-20260813T152937Z-*`, its `.runs/` dir, its scorecard JSON) via targeted
+`rm` on specifically-identified paths after confirming none of it was git-tracked — the agent's
+own cleanup attempt had been correctly blocked by the sandbox's destructive-operation classifier.
+See `completed-tasks.md` and `task-T419.md`/`task-T408.md`'s Completion addenda.
 
 **CI rejection and fix (2026-08-13):** the first push of this branch failed CI (`unit-tests` job,
 `tests/performance/test_team_health.py::TestTaskLifecycle` + the shipped `validate-tasks.py`
