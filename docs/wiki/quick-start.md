@@ -71,11 +71,10 @@ Use `/handoff` before ending a session to resume cleanly later.
 - `docs/checkpoints/` — phase snapshots
 - `docs/decisions/` — ADRs
 
-## 6. Maintainers — release docs gate
+## 6. Contributing or building from source?
 
-```bash
-python3 scripts/verify-release-docs.py --tag vX.Y.Z
-```
+This page covers everyday use only. To build from source, run tests, or cut a
+release, see [CONTRIBUTING.md](https://gitlab.com/em-age/emage.code/-/blob/main/CONTRIBUTING.md).
 
 ## 7. Schema-first workflows
 

@@ -170,11 +170,19 @@ class TestPlanCoverage(unittest.TestCase):
         if not tasks:
             self.skipTest("no real (non-example) tasks in active queue — nothing to verify")
         plans = _plan_files()
-        if not plans:
-            self.skipTest(
-                f"{len(tasks)} active tasks but no plan documents under docs/plans/. "
-                "Either add plan documents or remove the tasks. Skipping for now."
-            )
+        # Hard failure, not a skip: per implementation/knowledge/commands/plan.md
+        # ("Task Creation Precondition"), no task may be created without a
+        # backing plan document under docs/plans/. Active tasks existing while
+        # the plans directory is empty means that upstream rule was violated.
+        self.assertTrue(
+            plans,
+            msg=(
+                f"{len(tasks)} active task(s) in docs/tasks/active-tasks.md but no plan "
+                "documents exist under docs/plans/. Per implementation/knowledge/commands/"
+                "plan.md, task creation requires a backing plan-<ID>.md document — add the "
+                "missing plan document(s) or remove the orphaned task rows."
+            ),
+        )
         # Build set of all task IDs referenced anywhere in any plan
         plan_text = "\n".join(p.read_text(encoding="utf-8") for p in plans)
         referenced = set(re.findall(r"\bT\d{3,}\b", plan_text))

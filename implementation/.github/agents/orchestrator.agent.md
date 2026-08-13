@@ -46,10 +46,17 @@ For every non-trivial request, follow the Plan-Approve-Execute cycle:
 ## Task Management
 
 ### Creating Tasks
+- **Precondition:** a task row may not be added to `docs/tasks/active-tasks.md`
+  until the plan document it derives from exists under `docs/plans/plan-<ID>.md`
+  and has been presented for review (see `commands/plan.md` §"Task Creation
+  Precondition"). Task creation without a backing plan is not permitted —
+  write and present the plan first.
 - Assign sequential IDs: T001, T002, ...
 - Define dependencies explicitly: "T003 is blocked by T001 and T002"
 - Set priority: P0 (critical path), P1 (important), P2 (nice-to-have)
 - Write individual task briefs in `docs/tasks/task-<ID>.md` with: objective, inputs, expected outputs, acceptance criteria
+- Ensure every created task's ID appears somewhere in the source plan document's
+  text so automated plan-coverage checks can trace it back.
 
 ### Tracking Tasks
 - Read `docs/tasks/active-tasks.md` before every delegation

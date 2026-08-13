@@ -128,7 +128,7 @@ already-reviewed retirement gap on an already-installed project with no prior
 history — it is opt-in only, never invoked automatically by `--update`, and
 prunes exactly the named keys and nothing else.
 
-Per-release install steps live in [`docs/releases/v6.0.1.md`](docs/releases/v6.0.1.md)
+Per-release install steps live in [`docs/releases/v6.10.0.md`](docs/releases/v6.10.0.md)
 and are embedded in [GitLab Releases](https://gitlab.com/em-age/emage.code/-/releases).
 
 ## Quick start

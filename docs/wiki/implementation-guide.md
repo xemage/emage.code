@@ -2,7 +2,7 @@
 
 emage.code uses an `implementation/` tree at the repository root. It provides
 schema-first canonical knowledge, managed cookbooks, trigger workflows, packaging,
-and validation super-gates (current release: v6.0.2).
+and validation super-gates (current release: v6.10.0).
 
 ## What to use it for
 
@@ -30,7 +30,7 @@ scripts/install.sh --target <your-project> --platform cursor --update
 
 Task ledgers in `docs/tasks/` keep their rows on `--update`; only format headers/footers refresh.
 
-Or see [Quick Start](quick-start) and [`docs/releases/v6.0.2.md`](https://gitlab.com/em-age/emage.code/-/blob/main/docs/releases/v6.0.2.md).
+Or see [Quick Start](quick-start) and [`docs/releases/v6.10.0.md`](https://gitlab.com/em-age/emage.code/-/blob/main/docs/releases/v6.10.0.md).
 
 Supported projections: GitHub Copilot, Gemini CLI, Opencode, Cursor, Pi.
 

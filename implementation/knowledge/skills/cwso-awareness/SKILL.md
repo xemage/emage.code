@@ -45,13 +45,16 @@ see the canonical runtime guide:
 [`implementation/runtime/cwso/README.md`](../../../runtime/cwso/README.md). Do not re-derive
 usage patterns from first principles — that guide is the accurate, current source.
 
-For **how to stand up CWSO locally or connect it to the emage.code orchestrator**, see:
-- [`docs/deployment/README.md`](../../../../docs/deployment/README.md) — deployment environment index
-- [`docs/deployment/local-docker-desktop-guide.md`](../../../../docs/deployment/local-docker-desktop-guide.md) — local Docker Desktop setup
-- `docs/deployment/cwso-emage-orchestrator-connection-guide.md` — connecting CWSO to the
-  emage.code orchestrator (referenced by name/path only; this doc is maintained separately)
+For **how to use CWSO from emage.code** — what it is, when to reach for it, and how the
+`cwso` MCP connection is wired — see:
+- [`docs/deployment/README.md`](../../../../docs/deployment/README.md) — usage-only guide;
+  links out to the CWSO repository for deployment/installation instructions
 
-Do not duplicate the deployment steps here — link to those docs instead.
+Do not duplicate CWSO usage detail here — link to that doc instead. (Task T403 relocated
+the former `local-docker-desktop-guide.md` and `cwso-emage-orchestrator-connection-guide.md`
+deployment guides out of `docs/deployment/`; their content is staged pending CWSO repo
+task T473 at
+[`docs/archiv/cwso-deployment-guides-pending-t473-handoff/`](../../../../docs/archiv/cwso-deployment-guides-pending-t473-handoff/README.md).)
 
 ## The Mandatory Worker/Orchestrator Role Split
 

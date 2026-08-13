@@ -27,6 +27,17 @@ You are in **Plan-Only mode**. Execute ONLY the **Plan** phase of the Plan-Appro
 - If the request is ambiguous, list your assumptions in the Open Questions section.
 - Keep task granularity small enough that each task can be completed in a single agent session.
 
+## Task Creation Precondition
+
+The plan document produced by this command is a **precondition**, not a
+formality: no task row may be added to `docs/tasks/active-tasks.md` until (a)
+the plan document it derives from exists under `docs/plans/plan-<ID>.md` and
+(b) that plan has been presented for review per step 6 above. Every task ID
+created from this plan must appear in the plan document's text (task
+decomposition, dependency graph, or resource assignments) so automated
+plan-coverage checks can trace it back. Do not create task entries directly
+from an unwritten or unpresented plan — write the plan document first.
+
 ## Request
 
 {{input}}
