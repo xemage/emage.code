@@ -2,11 +2,11 @@
 
 **ID:** T412
 **Owner:** qa-engineer
-**Status:** in_progress
+**Status:** done
 **Priority:** P0
 **Depends on:** T410 (done), T411 (done — 20 golden cases, `docs/artifacts/golden-suite-format-v1.md`)
 **Created:** 2026-08-13
-**Completed:** —
+**Completed:** 2026-08-13
 **Based on:** `docs/plans/plan-035-roadmap-v7-ground-up.md` (Phase 1, §2.4, Layer 1 table, row T412)
 and `docs/artifacts/golden-suite-format-v1.md` §3.1 ("Reservation for T412"), which this brief's
 mechanics MUST follow exactly — read that section in full before doing anything, it is the binding
@@ -139,3 +139,59 @@ exemption, not invent their own.
   `tests/golden/README.md`'s core content beyond what's needed to reflect the new layout, do not
   touch `docs/artifacts/golden-suite-format-v1.md` (T410's, immutable), do not touch any existing
   `tests/functional/test_*.py` file other than adding your new one.
+
+## Completion addendum (2026-08-13)
+
+Delivered: 14 cases in `tests/golden/open/`, 6 in `tests/golden/held-out/` (30%), spanning all 5
+command surfaces (2 `/code-review`, 1 each of the other 4), balanced 3 `expected_pass`/3
+`known_failing` covering both `known_failing_category` values. New
+`tests/functional/test_golden_held_out_isolation.py` (8 tests: 6 synthetic-fixture, 2 against the
+real tree), mirroring the established `test_link_integrity.py`/`test_check_version_consistency.py`
+repo-wide static-guard pattern.
+
+**Design call flagged for explicit sign-off, not treated as pre-settled:** the brief's literal
+text ("never referenced from any file outside `tests/golden/held-out/`") would, applied strictly,
+flag pre-existing T411 `brief.md` cross-references between sibling cases inside `open/` (two real
+examples: `open/security-audit-verdict-fields-compliant/brief.md` naming
+`security-audit-owasp-matrix-compliant`, `open/new-feature-plan-doc-compliant/brief.md` naming
+`new-feature-real-artifact-versioning-drift`, both pre-existing T411 provenance notes that
+acceptance criterion 1's byte-identical requirement forbids editing). The agent scoped the
+case-ID-mention check to "outside `tests/golden/` entirely" rather than merely "outside
+`held-out/`", leaving the stronger Python-functional-access check (imports/`open()`/`Path()`)
+unscoped and repo-wide including inside `open/`.
+
+**Orchestrator independently verified this scoping decision, not merely accepted it as the
+brief's documented default for ambiguity.** Reasoning, arrived at independently: (1) the files
+that matter for the actual threat (plan-035's risk table: "held-out set leaks into improvement
+work") — agent/skill/command definitions, scripts, docs an improvement task would read — have no
+legitimate reason to live under `tests/golden/`, so the narrowing doesn't touch them; confirmed by
+reading the guard's code directly (Check A's branch runs before the `_is_inside_golden_dir` guard
+that only narrows Check B) and then proving it live: planted adversarial probe files in `scripts/`
+(a Python path reference) and `docs/` (a bare case-ID mention) in the real repo tree, ran
+`find_violations()` directly, confirmed both were caught, then removed the probes and confirmed
+`git status` clean; (2) the case-ID token itself isn't secret — `_manifest-t411.md` is required by
+this same brief to name all six held-out case IDs plus reasoning, and is correctly exempted, so a
+sibling `open/` brief naming a held-out case ID discloses strictly less than the manifest's own
+mandated disclosure; (3) the alternative (strict literal scoping) would have required editing
+T411's already-authored content, directly violating this brief's own criterion 1. Independently
+confirmed the two cited real cross-references exist exactly as described (`brief.md` lines checked
+directly). Sign-off: the scoping is correct.
+
+**Full independent verification, artifact-level, not self-report-level:**
+1. Split counts confirmed by direct `ls`: 14 `open/`, 6 `held-out/`, nothing left flat.
+2. Held-out surface/status distribution confirmed by direct `grep` on every `case.yaml`: all 5
+   surfaces represented, 3 `expected_pass`/3 `known_failing` (2 `tracked_defect`, 1
+   `capability_gap`), matching the claim exactly.
+3. Byte-identity confirmed via `git diff 90f1f26 e3381b8 --raw -M100%` — all 82 case-content files
+   show as `R100` renames with **identical blob hashes** before and after (a stronger,
+   independently-derived check than trusting the agent's own SHA-comparison claim).
+4. All 20 cases re-run from their new nested `open/`/`held-out/` paths — zero status mismatches
+   against declared `case.yaml` status.
+5. Guard's real-tree detection independently stress-tested with live adversarial probes (see
+   above), not just the shipped synthetic-fixture tests (which were also run directly and all
+   passed: `python3 -m unittest tests.functional.test_golden_held_out_isolation -v`, 8/8 OK).
+6. `python3 tests/run.py` re-run fresh: 367 tests, exit 0, `git status` clean throughout.
+
+All 6 of this brief's acceptance criteria confirmed PASS. Status set to `done`. See
+`docs/tasks/completed-tasks.md` and `docs/tasks/active-tasks.md`'s "Owner corrections and closure
+history" for the ledger-level closure note.

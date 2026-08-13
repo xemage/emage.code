@@ -2,7 +2,8 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T412 | Split `tests/golden/open/` vs `tests/golden/held-out/` + isolation guard | qa-engineer | in_progress | P0 | T410 (done), T411 (done) | 2026-08-13 |
+
+_No active rows — see "Backlog" below for what's queued next._
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
@@ -37,11 +38,10 @@ only; it is not machine-parsed (bullets, not `|`-table rows).
 
 **Layer 1** (all owned by the agents named in plan-035 §2.4 Phase 1, T410 owner unchanged, T415
 reassigned to `qa-engineer` — see below):
-- T412 — now dispatched, see table above (row + `task-T412.md` brief on disk)
-- T413 — `scripts/scorecard.py` (JSON + MD scorecard) — `devops-engineer` — depends on T410 (done), T412
-- T414 — Publish `docs/benchmarks/baseline-v6.12.0.md` — `release-manager` — depends on T410 (done), T411 (done), T412, T413
+- T413 — `scripts/scorecard.py` (JSON + MD scorecard) — `devops-engineer` — depends on T410 (done), T412 (done)
+- T414 — Publish `docs/benchmarks/baseline-v6.12.0.md` — `release-manager` — depends on T410 (done), T411 (done), T412 (done), T413
 - T415 — Failure taxonomy (`cause x behavior x mechanism`) — `qa-engineer` — depends on T411 (done), T413
-- T416 — Freeze evaluator interface (protected paths, all agent defs) — `tech-lead` — depends on T410 (done), T411 (done), T412, T413, T414, T415
+- T416 — Freeze evaluator interface (protected paths, all agent defs) — `tech-lead` — depends on T410 (done), T411 (done), T412 (done), T413, T414, T415
 
 **Layer 2** (T407/T409 renamed from plan-035's `T41A`/`T41C` per the note above; T418, T419, T408
 all done):
@@ -164,6 +164,33 @@ broken run (`jobs/tb-delta-20260813T152937Z-*`, its `.runs/` dir, its scorecard 
 `rm` on specifically-identified paths after confirming none of it was git-tracked — the agent's
 own cleanup attempt had been correctly blocked by the sandbox's destructive-operation classifier.
 See `completed-tasks.md` and `task-T419.md`/`task-T408.md`'s Completion addenda.
+
+**T412 closed (2026-08-13).** This is plan-035's single highest-severity risk item (risk table:
+"Held-out set leaks into improvement work | Medium | Critical"), so it received the closest review
+pass of any task closed in this phase so far. Delivered: 14/6 `open`/`held-out` split (30% held
+out) spanning all 5 command surfaces, balanced 3 `expected_pass`/3 `known_failing` covering both
+`known_failing_category` values; a new repo-wide static guard
+(`tests/functional/test_golden_held_out_isolation.py`) mirroring the established
+`test_link_integrity.py`/`test_check_version_consistency.py` pattern.
+
+One genuine judgment call surfaced, not resolved by silent deference: the brief's literal text
+("never referenced from any file outside `tests/golden/held-out/`") would, applied strictly, have
+flagged pre-existing T411 sibling cross-references inside `open/*/brief.md` that criterion 1's
+byte-identical requirement forbade editing. The agent narrowed the case-ID-mention check to
+"outside `tests/golden/` entirely" while leaving the stronger functional-access check (Python
+imports/`open()`/`Path()`) unscoped and repo-wide. The orchestrator did not accept this as
+pre-settled by the brief's own ambiguity-handling default — independently reasoned through the
+actual threat model (files that matter for "leaks into improvement work" live outside
+`tests/golden/` entirely and are untouched by the narrowing; the manifest's own mandated
+disclosure already makes case-ID tokens non-secret; the alternative would violate criterion 1) and
+then proved it rather than just asserting it: planted live adversarial probe files in `scripts/`
+and `docs/` in the real repo tree, confirmed the guard's `find_violations()` caught both, removed
+the probes, confirmed `git status` clean. Independently verified byte-identity via raw
+`git diff --raw -M100%` blob-hash comparison (stronger than trusting the agent's own SHA claim) —
+all 82 case-content files identical. Re-ran all 20 cases from their new nested paths (zero status
+mismatches), ran the guard's own 8-test suite directly (8/8 OK), ran `python3 tests/run.py` fresh
+(367 tests, exit 0). See `completed-tasks.md` and `task-T412.md`'s Completion addendum for the
+full reasoning. T413 is now unblockable.
 
 **CI rejection and fix (2026-08-13):** the first push of this branch failed CI (`unit-tests` job,
 `tests/performance/test_team_health.py::TestTaskLifecycle` + the shipped `validate-tasks.py`
