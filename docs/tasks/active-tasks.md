@@ -2,8 +2,7 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-
-_No active rows — see "Backlog" below for what's queued next._
+| T414 | Publish `docs/benchmarks/baseline-v6.12.0.md` | release-manager | in_progress | P0 | T410 (done), T411 (done), T412 (done), T413 (done) | 2026-08-13 |
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
@@ -38,7 +37,7 @@ only; it is not machine-parsed (bullets, not `|`-table rows).
 
 **Layer 1** (all owned by the agents named in plan-035 §2.4 Phase 1, T410 owner unchanged, T415
 reassigned to `qa-engineer` — see below):
-- T414 — Publish `docs/benchmarks/baseline-v6.12.0.md` — `release-manager` — depends on T410 (done), T411 (done), T412 (done), T413 (done)
+- T414 — now dispatched, see table above (row + `task-T414.md` brief on disk)
 - T415 — Failure taxonomy (`cause x behavior x mechanism`) — `qa-engineer` — depends on T411 (done), T413 (done)
 - T416 — Freeze evaluator interface (protected paths, all agent defs) — `tech-lead` — depends on T410 (done), T411 (done), T412 (done), T413 (done), T414, T415
 
