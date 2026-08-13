@@ -2,12 +2,12 @@
 
 **ID:** T413
 **Owner:** devops-engineer
-**Status:** in_progress
+**Status:** done
 **Priority:** P0
 **Depends on:** T410 (done — `docs/artifacts/golden-suite-format-v1.md`), T412 (done —
 `tests/golden/open/`/`tests/golden/held-out/` split + isolation guard)
 **Created:** 2026-08-13
-**Completed:** —
+**Completed:** 2026-08-13
 **Based on:** `docs/plans/plan-035-roadmap-v7-ground-up.md` (Phase 1, §2.4, Layer 1 table, row T413:
 *"`scripts/scorecard.py` → `docs/benchmarks/scorecard-<version>.json` + `.md`. Machine-readable
 first, human-readable rendered from it."*) and the Phase 1 acceptance-criteria block (several
@@ -170,3 +170,46 @@ its side — two-sided tracking, not silently absorbed either direction.
   (T410's, immutable), or `tests/functional/test_golden_held_out_isolation.py` (T412's, do not
   modify its allowlist — if you genuinely need a different allowlist entry, that's a blocker to
   report, not a file to silently edit).
+
+## Completion addendum (2026-08-13)
+
+Delivered: `scripts/scorecard.py`, `docs/benchmarks/scorecard-v6.12.0.json`,
+`docs/benchmarks/scorecard-v6.12.0.md`. Current run: 20 cases, 11 pass, 9 known_failing (6
+`tracked_defect`, 3 `capability_gap`), 0 regressions. `open`/`held-out` breakdown: `open` 14 total
+(8 pass, 4 `tracked_defect`, 2 `capability_gap`), `held-out` 6 total (3 pass, 2 `tracked_defect`, 1
+`capability_gap`) — matches T412's held-out split exactly.
+
+**A real design interaction with T412 surfaced during implementation, not pre-anticipated in the
+brief:** the output artifacts (`docs/benchmarks/scorecard-v6.12.0.*`) live outside `tests/golden/`,
+so — unlike `scripts/scorecard.py`'s own source, which is allowlisted by exact path — they are not
+exempt from `tests/functional/test_golden_held_out_isolation.py`'s Check B. Emitting real held-out
+case IDs into them would have been exactly the leak that guard exists to prevent, and the agent
+could not edit the guard's allowlist (out of scope for this task). Resolution, within this task's
+own file ownership: `open/` cases report full identity (`id`, `case_dir`); `held-out/` cases report
+every real field (`command`, `status`, `bucket`, `known_failing_category`, `actual_result`) except
+identity, which is replaced with a deterministic anonymized label (`held-out-case-<n>`, assigned by
+sorting the real IDs, stable across runs). This is a second, independent enforcement of the
+held-out isolation principle on top of T412's own guard, not a replacement for it.
+
+**Orchestrator independently verified the anonymization actually holds, not merely accepted the
+self-report** (same rigor as T412's review, since this is a direct extension of that same
+highest-severity risk item): grepped both output files directly for all six real held-out case IDs
+— zero matches in either file. Re-ran `tests/functional/test_golden_held_out_isolation.py`'s own
+test suite against the real tree with these new files present — 8/8 still pass, including
+`test_real_repo_has_no_held_out_violations`. Decoded the redacted held-out entries in the JSON
+directly and cross-checked each `held-out-case-<n>` label's `command`/`bucket`/`category` against
+the real `case.yaml` files' ground truth (independently established during T412's own review) —
+all six match in the correct sorted order. Independently re-ran the determinism proof: ran the
+script twice more, diffed both JSON and MD outputs myself — confirmed only `run_metadata.
+generated_at` differs each time, `content` byte-identical; restored the worktree to its committed
+state afterward (`git status` clean). Independently spot-checked the T419 schema-reconciliation
+claim: confirmed `schema_version`/`runner`/`generated_at` field-naming is genuinely shared with
+`tb-delta.sh`'s schema (read directly) while no forced `k`/`model`/`delta` unification was
+attempted, consistent with the claim that the two evals measure genuinely different things.
+`python3 tests/run.py` re-run fresh (after one transient, non-reproducing 355/17-skipped anomaly
+immediately followed by two stable 367/18-skipped re-runs — treated as environmental flakiness, not
+a real regression, since it did not reproduce and T413's commit touches nothing under `tests/`).
+
+All 7 of this brief's acceptance criteria confirmed PASS. Status set to `done`. See
+`docs/tasks/completed-tasks.md` and `docs/tasks/active-tasks.md`'s "Owner corrections and closure
+history" for the ledger-level closure note.
