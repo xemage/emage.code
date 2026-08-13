@@ -2,17 +2,124 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T411 | Author 20 golden cases (≥5 known-failing) | qa-engineer | in_progress | P0 | T410 (done) | 2026-08-13 |
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
 > Owners are agent names from `knowledge/agents/`.
 >
-> Based on: `docs/plans/plan-035-roadmap-v7-ground-up.md`. Phase 0 (T400-T406) is complete — Gate
-> G0 closed 2026-08-13, see `docs/checkpoints/checkpoint-016-phase0-ground-truth-complete.md`.
-> T417 (pulled forward from Phase 1) is also complete as of 2026-08-13 — the earlier
-> Docker-daemon-unreachable blocker (host resource exhaustion) did not recur on retry; see
-> `completed-tasks.md`. No Phase 1+ task may be added until the plan's two open questions (which
-> agent is Arm A for the Terminal-Bench two-arm harness; what a null/negative delta means) are
-> resolved by the user.
+> Based on: `docs/plans/plan-035-roadmap-v7-ground-up.md` §2.4 Phase 1. Phase 0 (T400-T406) and
+> T417 are `done` — see `docs/checkpoints/checkpoint-016-phase0-ground-truth-complete.md` and
+> `checkpoint-017-t417-harbor-oracle-smoke-complete.md`. Both of Phase 1's gating open questions
+> (Arm A agent = `claude-code`; null-delta interpretation) are resolved in `plan-035` §2.4 Phase 1
+> and "Open questions." Dispatch of Phase 1 in full was explicitly authorized by the user on
+> 2026-08-13.
 
-Per-task briefs live alongside this file as `task-T001.md`, `task-T002.md`, …
+## Task ID note
+
+`plan-035`'s Layer 2 table names three tasks `T41A`/`T41B`/`T41C`. These do not match this repo's
+enforced `^T\d{3,}$` task ID format (`tests/performance/test_team_health.py` /
+`docs/tasks/validate-tasks.py`'s `C3` check) — caught by CI when this ledger branch was first
+pushed. **Renamed for all ledger/task-brief purposes: `T41A` → `T407`, `T41B` → `T408`,
+`T41C` → `T409`** (the free numeric gap in this plan's reserved `T400`-`T474` range). See
+`plan-035`'s top-of-document correction note for the full explanation; `plan-035`'s own prose is
+left unchanged (still says `T41A`/`T41B`/`T41C`) — this repo's task ledger is the canonical source
+for the real IDs from here on.
+
+## Backlog (not yet added as rows — no brief exists yet)
+
+Per `docs/tasks/validate-tasks.py`'s `C7` check, a row may not be added to the table above until
+its `task-<ID>.md` brief already exists (confirmed the hard way — CI correctly rejected an earlier
+version of this file that added rows for briefs not yet written). Rows are added to the table
+above, and briefs authored, together, just-in-time as each task unblocks — matching the real
+established Phase 0 pattern, not a deviation from it. This list is for dependency-graph visibility
+only; it is not machine-parsed (bullets, not `|`-table rows).
+
+**Layer 1** (all owned by the agents named in plan-035 §2.4 Phase 1, T410 owner unchanged, T415
+reassigned to `qa-engineer` — see below):
+- T412 — Split `tests/golden/open/` vs `tests/golden/held-out/` + guard — `qa-engineer` — depends on T410 (done), T411 (in progress)
+- T413 — `scripts/scorecard.py` (JSON + MD scorecard) — `devops-engineer` — depends on T410 (done), T412
+- T414 — Publish `docs/benchmarks/baseline-v6.12.0.md` — `release-manager` — depends on T410 (done), T411, T412, T413
+- T415 — Failure taxonomy (`cause x behavior x mechanism`) — `qa-engineer` — depends on T411, T413
+- T416 — Freeze evaluator interface (protected paths, all agent defs) — `tech-lead` — depends on T410 (done), T411, T412, T413, T414, T415
+
+**Layer 2** (T407/T408/T409 renamed from plan-035's `T41A`/`T41B`/`T41C` per the note above; T418
+reassignment already applied and closed):
+- T419 — Two-arm delta runner `scripts/tb-delta.sh` — `devops-engineer` — depends on T418 (done)
+- T408 (plan-035: `T41B`) — Budget guard for `tb-delta.sh` (hard cap, economy default) — `devops-engineer` — depends on T418 (done), implemented alongside T419
+- T407 (plan-035: `T41A`) — First Terminal-Bench delta measurement (`k>=3`), publish `tb-delta-v6.12.0.md` — `devops-engineer` — depends on T418 (done), T419, T408
+- T409 (plan-035: `T41C`) — Extend T415 taxonomy to ingest Harbor trajectories — `devops-engineer` — depends on T415, T407
+
+## Task-brief authoring note
+
+Briefs for T410, T411, and T418 (tasks with no unresolved upstream design dependency, or already
+unblocked) are written in full. Remaining Layer 1/2 briefs are authored just-in-time as each task
+actually unblocks, because T412 onward depends on design decisions T410/T411 finalize, and T419
+onward depends on T418's actual frozen subset content. Writing detailed briefs against a
+not-yet-decided design would risk contradicting it — and, as of this note, is also a hard CI
+requirement (`C7`), not just a style preference: a row cannot exist in the table above without its
+brief already on disk.
+
+Per-task briefs live alongside this file as `task-T410.md`, `task-T411.md`, `task-T418.md`, …
+
+## Owner corrections and closure history
+
+**Owner correction (2026-08-13, after T418's first dispatch attempt):** `plan-035`'s task table
+lists `evaluation-agent` as owner for T415, T418, and plan-035's `T41A`/`T41C` (this ledger's
+T407/T409). The dispatched T418 attempt reported a `type: technical`, `severity: critical` blocker:
+this repo's actual registered `evaluation-agent` (`.claude/agents/evaluation-agent.md` and the
+source `implementation/knowledge/agents/evaluation-agent.md`) grants only
+`Read, WebFetch, WebSearch` — it is scoped for PoC hypothesis validation (read/research only), not
+general write-capable benchmark execution. No worktree, branch, or commit existed from that
+attempt; the agent correctly stopped rather than working around the gap. Reassigned rather than
+widening the tool grant (a registry-wide change with a much larger blast radius than this one
+task): T415 → `qa-engineer` (continuity with T411/T412, which it already owns, and full write/Bash
+access); T418, T407, T409 → `devops-engineer` (matches the T417 precedent — Layer 2/Harbor work was
+already executed by `devops-engineer` despite similar nominal framing — and matches T419/T408,
+already on the same branch/worktree). `evaluation-agent`'s tool grant is unchanged. This
+reassignment is recorded here, not in `plan-035` itself, per this repo's established convention of
+recording such execution-time corrections in the task ledger/briefs (see `task-T400.md`'s addendum
+for precedent) rather than editing the plan document.
+
+**Tool-grant gap #2 (2026-08-13, T410, distinct pattern):** T410's dispatched `solution-architect`
+completed all real design work but reported a `type: technical`, `severity: major` blocker at the
+apply step — `solution-architect`'s registered tool grant has no Bash, so it could not create a
+worktree, run `tests/run.py`, or commit. Unlike T418 this was not a missing-output blocker: the
+agent staged every output file plus an apply runbook to the orchestrator's scratchpad. Per this
+repo's established fallback precedent (T379/T380/T387/T392 — Bash-less delegate produces content,
+Bash-capable orchestrator independently reviews then applies it), the orchestrator read and
+verified every staged file, then executed the worktree/test-run/commit steps itself. T410 is now
+`done` (see `completed-tasks.md`). `solution-architect`'s tool grant is unchanged. **Pattern check
+for remaining Layer 1 owners** (`qa-engineer`: T411/T412/T415; `devops-engineer`:
+T413/T418/T419/T407/T408/T409; `release-manager`: T414; `tech-lead`: T416) — all six confirmed to
+have Bash per their `.claude/agents/*.md` definitions at the time of this note, so this specific
+"no Bash" pattern is not expected to recur, but each dispatch should still independently
+re-confirm rather than assume this holds if the registry changes mid-phase.
+
+**T418 closed (2026-08-13).** `devops-engineer`'s re-dispatch completed cleanly. Independently
+verified by the orchestrator (not just the agent's self-report): 6/25 subset tasks' `category`
+values cross-checked against real local `task.toml` files, all matched; JSON parse + uniqueness/
+category/effect-split checks; `git status` clean; `python3 tests/run.py` 355/355 in the worktree;
+`docker ps -a`/`docker images` inspected, no evidence of a container run for this task. See
+`completed-tasks.md` and `task-T418.md`'s Completion addendum. T419/T408 are now unblocked.
+
+**Ledger branch reconciliation note (2026-08-13):** this file and the task briefs it references
+have lived on `docs/phase1-t410-t418-dispatch`, a branch separate from the two feature branches
+(`feature/T410-phase1-golden-suite-v6.12.0`, `feature/T418-phase1-tb-delta-harness-v6.12.0`) —
+necessary because both feature branches would otherwise independently edit this single shared file
+and diverge. This branch is being pushed and merged to `develop` now (ahead of either feature
+branch's own merge) specifically so `docs/tasks/task-T418.md` and this file are readable directly
+from `develop` rather than requiring `git show <branch>:<path>` from an unmerged branch, as the
+dispatched T418 agent had to do to read its own brief. Future ledger updates in this phase continue
+to accumulate on new short-lived docs branches merged at each natural boundary, same pattern.
+
+**CI rejection and fix (2026-08-13):** the first push of this branch failed CI (`unit-tests` job,
+`tests/performance/test_team_health.py::TestTaskLifecycle` + the shipped `validate-tasks.py`
+validator it wraps) on three independent, genuine defects, all fixed in this revision: (1) invalid
+task IDs `T41A`/`T41B`/`T41C` (see "Task ID note" above); (2) a malformed `completed-tasks.md` row
+— an escaped literal pipe (`` \| ``) in T410's entry text split into an extra table cell, because
+the validator's table parser does a naive `split("|")` with no backslash-escape awareness; fixed by
+rewording to avoid the literal character; (3) this file had rows for tasks with no corresponding
+`task-<ID>.md` brief yet (`C7` — every ledger row must have its brief on disk already, not
+JIT-deferred) — fixed by moving those to the non-table backlog list above until each is actually
+dispatched with a real brief.
