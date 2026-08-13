@@ -2,12 +2,12 @@
 
 **ID:** T411
 **Owner:** qa-engineer
-**Status:** in_progress
+**Status:** done
 **Priority:** P0
 **Depends on:** T410 (done — see `docs/artifacts/golden-suite-format-v1.md`,
 `tests/golden/README.md`, `tests/golden/_example-scaffold/`)
 **Created:** 2026-08-13
-**Completed:** —
+**Completed:** 2026-08-13
 **Based on:** `docs/plans/plan-035-roadmap-v7-ground-up.md` (Phase 1, §2.4, Layer 1 table, row T411)
 
 This brief is self-contained, but you must read `docs/artifacts/golden-suite-format-v1.md` in full
@@ -136,3 +136,50 @@ red flag per the plan's own risk table.
 - File ownership: `tests/golden/<new case dirs>/**`, `tests/golden/_manifest-t411.md`. Do not touch
   `tests/golden/README.md`, `tests/golden/_example-scaffold/`, `docs/artifacts/golden-suite-format-v1.md`,
   or anything under `scripts/`, `tests/functional/`, `tests/performance/`.
+
+## Completion addendum (2026-08-13)
+
+First dispatch was interrupted mid-task by an account-wide Claude usage-limit stop (not a code
+error, not a reported blocker). State on resumption: 11 of 20 case directories complete (all
+independently re-verified correct at that point — each `expect.py` matched its declared status),
+plus one half-authored stub (`security-audit-verdict-fields-compliant/`, `fixture/` only, missing
+`brief.md`/`case.yaml`/`expect.py`), and zero cases for `/new-feature`/`/prepare-release` — failing
+acceptance criterion 4. Everything was uncommitted in the existing worktree/branch.
+
+A second `qa-engineer` dispatch, working in the same worktree/branch, resolved the stub and
+authored the remaining 9 cases (1 `/security-audit`, 4 `/new-feature`, 4 `/prepare-release`),
+bringing the suite to the required 20/20 with exactly 4 cases per surface and 9 `known_failing`
+(6 `tracked_defect`, 3 `capability_gap`) against 11 `expected_pass`. Several new cases ground their
+fixtures in real repo artifacts rather than hand-authored ones
+(`docs/checkpoints/checkpoint-017-t417-harbor-oracle-smoke-complete.md`, copied verbatim;
+`docs/artifacts/adapter-evaluation-v1.md`, `docs/artifacts/benchmark-report-v1.md`, and
+`docs/checkpoints/checkpoint-release-v6.4.1.md`, copied with small, inline-documented cosmetic
+redactions — markdown links converted to inline code spans, leading `v` dropped from version
+tokens — solely because `tests/golden/` is not in the path-exclusion list of this repo's own
+`tests/functional/test_link_integrity.py`/`test_check_version_consistency.py` gates, and an
+unredacted copy would have false-triggered them). Self-resolved per the Blocker Protocol's "pick
+best reading, document, keep moving" allowance (`type: unclear_requirements`, `severity: minor`,
+not escalated) rather than choosing between exact-byte-copy and redaction by asking first.
+
+**Orchestrator independent verification** (not a re-statement of the agent's self-report):
+1. Confirmed 20/20 case dirs (excluding `_example-scaffold/`) via direct `ls`, each with all four
+   required members present, exactly 4 per surface across all 5 surfaces.
+2. Confirmed status distribution matches the claim exactly: 9 `known_failing` (6 `tracked_defect`,
+   3 `capability_gap`), 11 `expected_pass`.
+3. Ran every case's `expect.py` against its own fixture twice in direct succession: identical exit
+   codes both runs (determinism demonstrated, not asserted), every result matches its declared
+   `case.yaml` status, `git status --short` clean after each run (no fixture mutation).
+4. Ran `python3 tests/run.py` fresh: 359 tests, exit 0, no regression (includes the two
+   markdown-link/version-consistency gates the redacted fixtures interact with).
+5. Specifically targeted the one place a shortcut could quietly invalidate a case: diffed all
+   three real-artifact fixtures against their live repo originals, then read each affected case's
+   `expect.py` line-by-line to confirm the redacted content is outside what that check actually
+   inspects — `new-feature-real-artifact-versioning-drift` checks only a filename glob pattern
+   (never reads file content); `prepare-release-real-verdict-missing` checks only for a
+   `## RELEASE VERDICT` heading's presence/absence (absent in both original and redacted copy,
+   the version-string edits are irrelevant to the check); the checkpoint-017 copy needed no
+   redaction at all (diff against the original is empty). Confirmed genuinely cosmetic in all
+   three cases, as claimed.
+
+Status set to `done`. See `docs/tasks/completed-tasks.md` and `docs/tasks/active-tasks.md`'s
+"Owner corrections and closure history" for the ledger-level closure note.

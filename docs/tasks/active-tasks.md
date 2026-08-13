@@ -2,7 +2,6 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T411 | Author 20 golden cases (≥5 known-failing) | qa-engineer | in_progress | P0 | T410 (done) | 2026-08-13 |
 | T419 | Two-arm delta runner `scripts/tb-delta.sh` | devops-engineer | in_progress | P0 | T418 (done) | 2026-08-13 |
 | T408 | Budget guard for `tb-delta.sh` (plan-035: `T41B`) | devops-engineer | in_progress | P1 | T418 (done), alongside T419 | 2026-08-13 |
 
@@ -112,6 +111,21 @@ branch's own merge) specifically so `docs/tasks/task-T418.md` and this file are 
 from `develop` rather than requiring `git show <branch>:<path>` from an unmerged branch, as the
 dispatched T418 agent had to do to read its own brief. Future ledger updates in this phase continue
 to accumulate on new short-lived docs branches merged at each natural boundary, same pattern.
+
+**T411 closed (2026-08-13).** First dispatch was interrupted mid-task by an account-wide Claude
+usage-limit stop (not a code error, not a blocker report). On resumption: 11/20 cases plus one
+half-authored stub existed, uncommitted, with zero coverage for `/new-feature`/`/prepare-release`.
+A second `qa-engineer` dispatch finished the stub and authored the remaining 9 cases. Independently
+verified by the orchestrator (not just the agent's self-report): 20/20 case dirs with all four
+required members; every `expect.py` re-run twice against its own fixture with identical, correctly-
+matching-declared-status results both times and clean `git status` after each; fresh
+`python3 tests/run.py` (359 tests, exit 0); and — because this is the one place a shortcut could
+quietly invalidate a case — the three real-artifact-grounded fixtures' documented cosmetic
+redactions were diffed against their live originals and cross-checked line-by-line against each
+affected case's actual `expect.py` logic to confirm the redacted content is genuinely outside what
+each check inspects. See `completed-tasks.md` and `task-T411.md`'s Completion addendum. T412
+(open/held-out split), T414 (baseline publish), and T415 (taxonomy) are now unblockable — briefs to
+be authored just-in-time per this file's own `C7` discipline before their rows are added.
 
 **CI rejection and fix (2026-08-13):** the first push of this branch failed CI (`unit-tests` job,
 `tests/performance/test_team_health.py::TestTaskLifecycle` + the shipped `validate-tasks.py`
