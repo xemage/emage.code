@@ -3,6 +3,8 @@
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
 | T411 | Author 20 golden cases (≥5 known-failing) | qa-engineer | in_progress | P0 | T410 (done) | 2026-08-13 |
+| T419 | Two-arm delta runner `scripts/tb-delta.sh` | devops-engineer | in_progress | P0 | T418 (done) | 2026-08-13 |
+| T408 | Budget guard for `tb-delta.sh` (plan-035: `T41B`) | devops-engineer | in_progress | P1 | T418 (done), alongside T419 | 2026-08-13 |
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
@@ -43,10 +45,8 @@ reassigned to `qa-engineer` — see below):
 - T415 — Failure taxonomy (`cause x behavior x mechanism`) — `qa-engineer` — depends on T411, T413
 - T416 — Freeze evaluator interface (protected paths, all agent defs) — `tech-lead` — depends on T410 (done), T411, T412, T413, T414, T415
 
-**Layer 2** (T407/T408/T409 renamed from plan-035's `T41A`/`T41B`/`T41C` per the note above; T418
-reassignment already applied and closed):
-- T419 — Two-arm delta runner `scripts/tb-delta.sh` — `devops-engineer` — depends on T418 (done)
-- T408 (plan-035: `T41B`) — Budget guard for `tb-delta.sh` (hard cap, economy default) — `devops-engineer` — depends on T418 (done), implemented alongside T419
+**Layer 2** (T407/T409 renamed from plan-035's `T41A`/`T41C` per the note above; T418 reassignment
+already applied and closed; T419/T408 now dispatched, see table above):
 - T407 (plan-035: `T41A`) — First Terminal-Bench delta measurement (`k>=3`), publish `tb-delta-v6.12.0.md` — `devops-engineer` — depends on T418 (done), T419, T408
 - T409 (plan-035: `T41C`) — Extend T415 taxonomy to ingest Harbor trajectories — `devops-engineer` — depends on T415, T407
 
