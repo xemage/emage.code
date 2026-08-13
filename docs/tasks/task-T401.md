@@ -2,7 +2,7 @@
 
 **ID:** T401
 **Owner:** technical-writer
-**Status:** pending
+**Status:** done
 **Priority:** P0
 **Depends on:** —
 **Created:** 2026-08-12
