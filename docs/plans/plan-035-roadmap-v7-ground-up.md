@@ -17,6 +17,17 @@
   between those two sections over whether T410–T416 needed both open questions resolved, or Gate
   G0 alone — that inconsistency is flagged, not resolved, this pass, so T410–T416 remains treated
   as blocked pending explicit user clarification.
+  **Further update (2026-08-13, later same day):** open question 4 (null-delta interpretation) is
+  also now resolved — see the registered interpretation block in §2.4 Phase 1 (immediately after
+  the "Note on the sign of the delta") and the corresponding "resolved" mark on open question 4 in
+  "Open questions" below. T41A's sole blocker is therefore resolved. The T410–T416 ambiguity noted
+  above is now moot in practice — both readings of the conflicting passages converge on
+  "unblocked" once both open questions are answered — but the underlying wording inconsistency in
+  the document is left as flagged, not fixed, this pass. **None of this is dispatch approval.**
+  The user explicitly chose "not yet" when asked whether to dispatch T418/T419/T41B/T41C, and was
+  explicit that the same holds for T41A and T410–T416 once their gating resolves: no task brief is
+  authored and `docs/tasks/active-tasks.md` is not modified for any of T410–T416, T418, T419,
+  T41A, T41B, or T41C as a result of these updates.
 - **Author:** synthesis review of two external roadmap documents + live repo audit (orchestrator)
 - **Repo audited:** `github.com/xemage/emage.code` @ `develop` (`f317261`)
 - **Supersedes:** nothing. Complements `docs/plans/plan-033-mcp-settings-hardening.md`.
@@ -307,6 +318,24 @@ because it depends only on Docker, not on either open question — see its brief
 > "Approval" below. No task brief for T410–T416 is authored on the strength of open question 3's
 > resolution alone.
 
+> **Formalization note (2026-08-13, update 2):** open question 4 (null-delta interpretation) is
+> also now resolved — see the registered interpretation block in this section, immediately after
+> the "Note on the sign of the delta" above (thematically part of §2.2.1's delta-harness
+> discussion, physically located here in §2.4 Phase 1's acceptance-criteria area), and the
+> corresponding "resolved" mark on open question 4 in "Open questions" below. With both open
+> questions now resolved, **T41A's sole blocker (open question 4) is resolved.** The T410–T416
+> ambiguity flagged in the note immediately above (whether that sub-track needed both open
+> questions or Gate G0 alone) is now **moot in practice**: with both open questions answered, both
+> readings of the two conflicting passages converge on "unblocked" for T410–T416, regardless of
+> which passage was the intended one. This note does not attempt to adjudicate which passage was
+> correct — the underlying wording inconsistency between this section and the "Approval" section
+> below still exists in the document text as written, and should be corrected by whoever next
+> needs to interpret a similar sub-track gating question; fixing it is not required to determine
+> current status, so it is left as-is here. **None of the above is dispatch approval.** Per the
+> user's explicit instruction, resolving a gate is not the same as authorizing dispatch — no task
+> brief is authored and no task is dispatched for T41A, T410–T416, T418, T419, T41B, or T41C on the
+> strength of these resolutions; that remains a separate, later decision.
+
 **Goal:** an eval that can tell you a change made things *worse*.
 
 The existing `tests/performance/` suite is retained unchanged — it measures harness
@@ -353,6 +382,65 @@ health and is genuinely useful. What is added is an **outcome** layer beside it.
 > measures (which is plausible: emage.code optimises for planning discipline and
 > multi-agent workflow, not lone terminal task completion). Decide *before* the first run
 > what a null result implies, so the outcome isn't rationalised after the fact.
+
+**Registered interpretation of the delta (committed before T41A; required by
+Open Question 4).** This block is frozen at authoring time. It may not be
+edited after the first T41A run — only superseded by a dated successor block
+that states what changed and why.
+
+**Prediction registered in advance.**
+
+The projection is expected to move
+Terminal-Bench primarily on tasks requiring multi-step planning before
+execution, and to be neutral on single-command and lookup tasks. The tasks in
+`tb-subset.json` predicted to move are tagged `predicted_effect: positive` in
+that file at T418 time. Expected aggregate delta: small positive, plausibly
+under the resolution floor.
+
+**Decision rule.**
+
+Let `spread` = per-arm min–max across the k runs.
+- **Inconclusive** — either arm's spread ≥ 8pp. The measurement failed; the
+  result is not about emage.code. Action: raise `k`, or reduce nondeterminism,
+  before any interpretation is recorded. Do not report as null.
+- **Null** — both arms tight (spread < 8pp) and their ranges overlap, or
+  `|mean delta| < 4pp` (one task).
+- **Positive / negative** — ranges disjoint and `|mean delta| ≥ 4pp`.
+
+**What a null delta means.**
+
+Terminal-Bench, as configured here, does not
+resolve emage.code's contribution. It does *not* mean the projection is
+without value, and it does *not* mean the projection is safe. It means this
+instrument is not a progress signal for this system, and the golden suite
+carries that role alone.
+
+**Consequences of a null delta, pre-committed:**
+
+- The result is published in `tb-delta-v6.12.0.md` with the same prominence a
+  positive result would receive. A null is a publication, not a shelved run.
+- The subset is **not** re-cut, re-stratified, or extended to search for a
+  positive. T418's freeze holds. Re-cutting after seeing the result is the
+  specific act this block exists to prevent.
+- The harness is **not** deleted. Terminal-Bench is demoted from *improvement
+  signal* to *no-harm guardrail*: subsequent releases must not show a delta
+  below −4pp. Phase 6's improvement loop then optimises against the golden
+  suite only, with the TB guardrail as a merge precondition.
+- Check the `predicted_effect: positive` tasks in isolation. If they moved and
+  the aggregate did not, the subset is diluted — record this, but do not act on
+  it in this release cycle.
+- Leaderboard submission (§2.7) stays deferred permanently rather than
+  provisionally, unless a successor block supersedes this one.
+- A null delta does **not** relax G1, does **not** license reducing `k`, and is
+  **not** grounds for promoting any component out of beta.
+
+**What a negative delta means.**
+
+A defect, not a philosophy. Most likely
+causes, in triage order: projection consuming context budget the agent needed;
+projected instructions conflicting with the agent's own system prompt;
+projection introducing files the agent explores and discards. Triage before any
+further Phase 1 work; a negative delta blocks G1.
 
 ---
 
@@ -633,6 +721,19 @@ highest allocated ID prior to this plan; this was verified true at formalization
 > for T418, T419, T41B, and T41C (open question 4 continues to block T41A only). It does not
 > change this paragraph's literal T410 wording, which remains the subject of the inconsistency
 > flagged immediately above.
+>
+> **Update (2026-08-13, later same day):** open question 4 (null-delta interpretation) is now also
+> resolved — see the registered interpretation block in §2.4 Phase 1 and the "resolved" mark on
+> open question 4 below. This resolves T41A's sole remaining blocker. It also makes the T410–T416
+> inconsistency flagged above **moot in practice**: with both open questions answered, both
+> readings of the conflicting passages ("§2.4 Phase 1 sub-track-specific" vs. this paragraph's
+> literal "T410/T418 onward") now converge on "unblocked" for T410–T416, regardless of which one
+> governs. The underlying wording inconsistency in this paragraph and in §2.4 Phase 1 is left
+> uncorrected — flagged for whoever next needs it, not silently patched over. **Gate/precondition
+> status is not dispatch approval.** The user was explicit this session: choosing "not yet" on
+> dispatching T418/T419/T41B/T41C applies equally to T41A and to T410–T416 once their gating
+> resolves — no task brief is authored and no task is added to `docs/tasks/active-tasks.md` for any
+> of T410–T416, T418, T419, T41A, T41B, or T41C as a result of this update.
 
 ### Resolved decisions
 
@@ -642,4 +743,4 @@ highest allocated ID prior to this plan; this was verified true at formalization
 ### Open questions
 
 3. **Which agent is Arm A? — resolved: `claude-code` (2026-08-13).** `claude-code`, `codex`, and `gemini-cli` are all Harbor built-ins and all are emage.code projection targets. The user has explicitly selected `claude-code`. This is now a fixed constant of every future Terminal-Bench delta measurement in this series — changing it later invalidates the series. **Blocks T418–T41C. Does not block T417** (T417 only installs Harbor and runs the built-in oracle solutions — no agent-under-test is invoked). With this resolution, the two-open-questions precondition is met for T418, T419, T41B, and T41C; T41A remains additionally blocked by open question 4 below.
-4. **What does a null delta mean?** Commit the interpretation in writing before T41A runs, per the Phase 1 note. **Blocks T41A only.**
+4. **What does a null delta mean? — resolved (2026-08-13).** The full registered interpretation — the prediction registered in advance, the decision rule for inconclusive/null/positive/negative outcomes, and the pre-committed consequences of a null or negative result — is recorded in §2.4 Phase 1, immediately after the "Note on the sign of the delta" (thematically part of §2.2.1's delta-harness discussion). That block is frozen at authoring time per its own terms. **Blocked T41A only; T41A's sole blocker is now resolved.**
