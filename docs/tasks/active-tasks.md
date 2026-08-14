@@ -2,10 +2,10 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T416 | Freeze golden-suite evaluator interface (protected paths) | tech-lead | pending | P0 | T410 (done), T411 (done), T412 (done), T413 (done), T414 (done), T415 (done) | 2026-08-14 |
 
-> T415 closed 2026-08-14 (see "Owner corrections and closure history" below and
-> `completed-tasks.md`). T416's brief now exists on disk (`task-T416.md`), per `C7`.
+> T416 closed 2026-08-14 (see "Owner corrections and closure history" below and
+> `completed-tasks.md`). **Phase 1 Layer 1 (T410-T416) is now fully done and merged to `develop`.**
+> Table is empty (0 active rows) — Layer 2 (T407/T409) not yet dispatched; see "Backlog" below.
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
@@ -38,12 +38,12 @@ above, and briefs authored, together, just-in-time as each task unblocks — mat
 established Phase 0 pattern, not a deviation from it. This list is for dependency-graph visibility
 only; it is not machine-parsed (bullets, not `|`-table rows).
 
-**Layer 1** (all owned by the agents named in plan-035 §2.4 Phase 1, T410 owner unchanged, T415
-reassigned to `qa-engineer` — see below):
-- T416 — now dispatched, see table above (row + `task-T416.md` brief on disk)
+**Layer 1** — all done (T410-T416). See "Owner corrections and closure history" below for T416's
+closeout detail.
 
 **Layer 2** (T407/T409 renamed from plan-035's `T41A`/`T41C` per the note above; T418, T419, T408
-all done):
+all done and genuinely merged to `develop`, MR !203 — see "Owner corrections and closure history"
+below):
 - T407 (plan-035: `T41A`) — First Terminal-Bench delta measurement (`k>=3`), publish `tb-delta-v6.12.0.md` — `devops-engineer` — depends on T418 (done), T419 (done), T408 (done)
 - T409 (plan-035: `T41C`) — Extend T415 taxonomy to ingest Harbor trajectories — `devops-engineer` — depends on T415, T407
 
@@ -302,6 +302,38 @@ passed), squash-merged to `develop` (merge commit `98c8d7d`, squash commit `f549
 directly on `develop` post-merge: all five files present with expected content;
 `git log --oneline -3 origin/develop` shows the merge. T407 and T409 are now genuinely unblockable —
 not just ledger-unblockable.
+
+**T416 closed (2026-08-14) — Phase 1 Layer 1 (T410-T416) complete.** Dispatched `tech-lead`
+delivered `docs/artifacts/protected-paths-v1.md`, a pointer in all 27
+`implementation/knowledge/agents/*.md` source files, regenerated platform projections and
+`implementation/registry/`, and `tests/functional/test_protected_paths_declared.py` (10 tests).
+The dispatched agent itself live-tested its own guard (removed the pointer from `tech-lead.md`,
+confirmed the failure, restored, confirmed the pass) before reporting completion — matching this
+phase's own "prove it live" standard, not merely asserting it.
+
+Orchestrator independently re-verified rather than trusting the report: `grep -L` across all 27
+agent source files confirmed none missing the pointer; every one of the 27 diffs checked directly
+to confirm frontmatter (`tools:`/`name:`/`description:`) was never touched, only body Constraints
+sections; `sync.mjs` re-run produced zero further diff; `generate-registry.py` re-run and its
+`backend-developer.md` checksum entry cross-checked against an independently computed
+`sha256sum` of the live file (exact match — the regeneration is real, not stale; only the
+non-deterministic `generatedAt` timestamp differed, restored as noise matching this repo's
+established content/`run_metadata` split pattern already used by `scripts/scorecard.py` and
+`scripts/tb-delta.sh`'s own scorecards); independently reproduced the live-removal probe on a
+**different** file (`qa-engineer.md`) than the one the dispatched agent had already tested
+(`tech-lead.md`) — removed the pointer, confirmed the guard failed and named exactly
+`qa-engineer.md`, restored it, confirmed `sha256sum` byte-identical to the pre-probe original, and
+confirmed the guard passed again (10/10); confirmed `tests/golden/**`/`scripts/scorecard.py`
+untouched (`git diff` empty, as required — this task declares them protected, it does not modify
+them); ran `python3 tests/run.py` fresh (377 tests, up from 367 — the new guard file's own 10 tests
+— exit 0); `git status` clean. Branch pushed, MR !205 opened, CI green, squash-merged to `develop`
+(squash commit `dcad363`, merge commit `c9a9b5b`). See `completed-tasks.md` and `task-T416.md` for
+full detail.
+
+This closes plan-035's Phase 1 Layer 1 in full (T410-T416, all `done`, all genuinely merged to
+`develop`). T407 and T409 (Layer 2) were already independently unblocked by the TB-delta harness
+merge above and do not depend on T416 — both were eligible for dispatch throughout T416's own
+execution and remain the only open work in this phase.
 
 **CI rejection and fix (2026-08-13):** the first push of this branch failed CI (`unit-tests` job,
 `tests/performance/test_team_health.py::TestTaskLifecycle` + the shipped `validate-tasks.py`
