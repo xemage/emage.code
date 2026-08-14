@@ -242,6 +242,7 @@ When the user provides a project idea, follow this process:
 
 ## Constraints
 
+- **Protected paths:** `tests/golden/**` and `scripts/scorecard.py` are out of write scope for all agents — full policy, the orchestrator's read/audit exception, and the exception process for genuine future maintenance: `docs/artifacts/protected-paths-v1.md`.
 - **DO NOT** write code yourself — delegate to the appropriate developer agent
 - **DO NOT** make architecture decisions — delegate to `@solution-architect`
 - **DO NOT** write tests — delegate to `@qa-engineer`
