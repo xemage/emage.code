@@ -174,7 +174,9 @@ not escalated) rather than choosing between exact-byte-copy and redaction by ask
 5. Specifically targeted the one place a shortcut could quietly invalidate a case: diffed all
    three real-artifact fixtures against their live repo originals, then read each affected case's
    `expect.py` line-by-line to confirm the redacted content is outside what that check actually
-   inspects — `new-feature-real-artifact-versioning-drift` checks only a filename glob pattern
+   inspects — the held-out `/new-feature` real-artifact case (`held-out-case-3`, per T413's later
+   redacted-identity numbering; see this file's isolation-fix addendum below for why the real ID
+   is not repeated here) checks only a filename glob pattern
    (never reads file content); `prepare-release-real-verdict-missing` checks only for a
    `## RELEASE VERDICT` heading's presence/absence (absent in both original and redacted copy,
    the version-string edits are irrelevant to the check); the checkpoint-017 copy needed no
@@ -183,3 +185,20 @@ not escalated) rather than choosing between exact-byte-copy and redaction by ask
 
 Status set to `done`. See `docs/tasks/completed-tasks.md` and `docs/tasks/active-tasks.md`'s
 "Owner corrections and closure history" for the ledger-level closure note.
+
+**Isolation-fix addendum (2026-08-14, discovered during a T415-adjacent cross-task audit):** this
+file itself (`docs/tasks/task-T411.md`, outside `tests/golden/`) contained one bare mention of a
+real held-out case's real ID (the held-out `/new-feature` real-artifact case, now labeled
+`held-out-case-3`) in item 5 above. This was not a violation at authoring time (T412's `tests/functional/test_golden_held_out_isolation.py` Check B
+did not exist yet when this file was written, and still does not exist on `develop` today — both
+the guard and `tests/golden/` live only on the unmerged
+`feature/T410-phase1-golden-suite-v6.12.0` branch as of this addendum), but it would become a real
+violation the instant that branch merges to `develop`, since Check B scans every file outside
+`tests/golden/` repo-wide and this file is not on the guard's exemption allowlist. Confirmed
+concretely: temporarily copying this file's pre-fix content into the `feature/T410-...` worktree
+and running the guard reproduced the exact failure. The real ID has been replaced with its
+`held-out-case-3` redacted label (T413's own `redact_held_out_identities()` numbering — the same
+label already used in `docs/benchmarks/failures/held-out-case-3.md`), preserving the sentence's
+meaning (which held-out case's `expect.py` check was independently re-verified as content-blind)
+without repeating the real case ID. See `docs/tasks/task-T412.md`'s matching addendum for the
+sibling fix (two mentions there).
