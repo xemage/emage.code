@@ -1,0 +1,263 @@
+{
+  "content": {
+    "cases": [
+      {
+        "actual_result": "fail",
+        "bucket": "known_failing",
+        "case_dir": "tests/golden/held-out/<redacted>",
+        "command": "/code-review",
+        "error": null,
+        "id": "held-out-case-1",
+        "known_failing_category": "tracked_defect",
+        "location": "held-out",
+        "status": "known_failing"
+      },
+      {
+        "actual_result": "pass",
+        "bucket": "pass",
+        "case_dir": "tests/golden/held-out/<redacted>",
+        "command": "/code-review",
+        "error": null,
+        "id": "held-out-case-2",
+        "known_failing_category": null,
+        "location": "held-out",
+        "status": "expected_pass"
+      },
+      {
+        "actual_result": "fail",
+        "bucket": "known_failing",
+        "case_dir": "tests/golden/held-out/<redacted>",
+        "command": "/new-feature",
+        "error": null,
+        "id": "held-out-case-3",
+        "known_failing_category": "tracked_defect",
+        "location": "held-out",
+        "status": "known_failing"
+      },
+      {
+        "actual_result": "fail",
+        "bucket": "known_failing",
+        "case_dir": "tests/golden/held-out/<redacted>",
+        "command": "/plan",
+        "error": null,
+        "id": "held-out-case-4",
+        "known_failing_category": "capability_gap",
+        "location": "held-out",
+        "status": "known_failing"
+      },
+      {
+        "actual_result": "pass",
+        "bucket": "pass",
+        "case_dir": "tests/golden/held-out/<redacted>",
+        "command": "/prepare-release",
+        "error": null,
+        "id": "held-out-case-5",
+        "known_failing_category": null,
+        "location": "held-out",
+        "status": "expected_pass"
+      },
+      {
+        "actual_result": "pass",
+        "bucket": "pass",
+        "case_dir": "tests/golden/held-out/<redacted>",
+        "command": "/security-audit",
+        "error": null,
+        "id": "held-out-case-6",
+        "known_failing_category": null,
+        "location": "held-out",
+        "status": "expected_pass"
+      },
+      {
+        "actual_result": "fail",
+        "bucket": "known_failing",
+        "case_dir": "golden/open/code-review-conditional-pass-conditions-gap",
+        "command": "/code-review",
+        "error": null,
+        "id": "code-review-conditional-pass-conditions-gap",
+        "known_failing_category": "capability_gap",
+        "location": "open",
+        "status": "known_failing"
+      },
+      {
+        "actual_result": "pass",
+        "bucket": "pass",
+        "case_dir": "golden/open/code-review-fail-blocker-details",
+        "command": "/code-review",
+        "error": null,
+        "id": "code-review-fail-blocker-details",
+        "known_failing_category": null,
+        "location": "open",
+        "status": "expected_pass"
+      },
+      {
+        "actual_result": "pass",
+        "bucket": "pass",
+        "case_dir": "golden/open/new-feature-checkpoint-line-compliant",
+        "command": "/new-feature",
+        "error": null,
+        "id": "new-feature-checkpoint-line-compliant",
+        "known_failing_category": null,
+        "location": "open",
+        "status": "expected_pass"
+      },
+      {
+        "actual_result": "pass",
+        "bucket": "pass",
+        "case_dir": "golden/open/new-feature-plan-doc-compliant",
+        "command": "/new-feature",
+        "error": null,
+        "id": "new-feature-plan-doc-compliant",
+        "known_failing_category": null,
+        "location": "open",
+        "status": "expected_pass"
+      },
+      {
+        "actual_result": "fail",
+        "bucket": "known_failing",
+        "case_dir": "golden/open/new-feature-real-checkpoint-format-drift",
+        "command": "/new-feature",
+        "error": null,
+        "id": "new-feature-real-checkpoint-format-drift",
+        "known_failing_category": "tracked_defect",
+        "location": "open",
+        "status": "known_failing"
+      },
+      {
+        "actual_result": "fail",
+        "bucket": "known_failing",
+        "case_dir": "golden/open/plan-real-doc-header-drift",
+        "command": "/plan",
+        "error": null,
+        "id": "plan-real-doc-header-drift",
+        "known_failing_category": "tracked_defect",
+        "location": "open",
+        "status": "known_failing"
+      },
+      {
+        "actual_result": "pass",
+        "bucket": "pass",
+        "case_dir": "golden/open/plan-required-sections-compliant",
+        "command": "/plan",
+        "error": null,
+        "id": "plan-required-sections-compliant",
+        "known_failing_category": null,
+        "location": "open",
+        "status": "expected_pass"
+      },
+      {
+        "actual_result": "pass",
+        "bucket": "pass",
+        "case_dir": "golden/open/plan-task-creation-precondition-real",
+        "command": "/plan",
+        "error": null,
+        "id": "plan-task-creation-precondition-real",
+        "known_failing_category": null,
+        "location": "open",
+        "status": "expected_pass"
+      },
+      {
+        "actual_result": "pass",
+        "bucket": "pass",
+        "case_dir": "golden/open/prepare-release-changelog-grouping-compliant",
+        "command": "/prepare-release",
+        "error": null,
+        "id": "prepare-release-changelog-grouping-compliant",
+        "known_failing_category": null,
+        "location": "open",
+        "status": "expected_pass"
+      },
+      {
+        "actual_result": "fail",
+        "bucket": "known_failing",
+        "case_dir": "golden/open/prepare-release-conditional-pass-conditions-gap",
+        "command": "/prepare-release",
+        "error": null,
+        "id": "prepare-release-conditional-pass-conditions-gap",
+        "known_failing_category": "capability_gap",
+        "location": "open",
+        "status": "known_failing"
+      },
+      {
+        "actual_result": "fail",
+        "bucket": "known_failing",
+        "case_dir": "golden/open/prepare-release-real-verdict-missing",
+        "command": "/prepare-release",
+        "error": null,
+        "id": "prepare-release-real-verdict-missing",
+        "known_failing_category": "tracked_defect",
+        "location": "open",
+        "status": "known_failing"
+      },
+      {
+        "actual_result": "pass",
+        "bucket": "pass",
+        "case_dir": "golden/open/security-audit-coverage-consistency",
+        "command": "/security-audit",
+        "error": null,
+        "id": "security-audit-coverage-consistency",
+        "known_failing_category": null,
+        "location": "open",
+        "status": "expected_pass"
+      },
+      {
+        "actual_result": "fail",
+        "bucket": "known_failing",
+        "case_dir": "golden/open/security-audit-critical-not-fail",
+        "command": "/security-audit",
+        "error": null,
+        "id": "security-audit-critical-not-fail",
+        "known_failing_category": "tracked_defect",
+        "location": "open",
+        "status": "known_failing"
+      },
+      {
+        "actual_result": "pass",
+        "bucket": "pass",
+        "case_dir": "golden/open/security-audit-verdict-fields-compliant",
+        "command": "/security-audit",
+        "error": null,
+        "id": "security-audit-verdict-fields-compliant",
+        "known_failing_category": null,
+        "location": "open",
+        "status": "expected_pass"
+      }
+    ],
+    "summary": {
+      "by_location": {
+        "held-out": {
+          "capability_gap": 1,
+          "known_failing": 3,
+          "pass": 3,
+          "regression": 0,
+          "total": 6,
+          "tracked_defect": 2,
+          "unexpected_pass": 0
+        },
+        "open": {
+          "capability_gap": 2,
+          "known_failing": 6,
+          "pass": 8,
+          "regression": 0,
+          "total": 14,
+          "tracked_defect": 4,
+          "unexpected_pass": 0
+        }
+      },
+      "capability_gap": 3,
+      "known_failing": 9,
+      "regressions": 0,
+      "total_cases": 20,
+      "total_fail": 9,
+      "total_pass": 11,
+      "tracked_defect": 6,
+      "unexpected_pass": 0,
+      "unrecognized_status": 0
+    }
+  },
+  "run_metadata": {
+    "generated_at": "2026-08-13T20:40:53Z",
+    "golden_version": "v6.12.0",
+    "runner": "scripts/scorecard.py",
+    "schema_version": "golden-scorecard-v1"
+  }
+}

@@ -1,0 +1,4 @@
+id: code-review-fail-blocker-details
+command: /code-review
+status: expected_pass
+tags: [code-review, verdict, fail, blocker, hand-authored]

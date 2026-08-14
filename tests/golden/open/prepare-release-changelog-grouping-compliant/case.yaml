@@ -1,0 +1,4 @@
+id: prepare-release-changelog-grouping-compliant
+command: /prepare-release
+status: expected_pass
+tags: [prepare-release, changelog, hand-authored]

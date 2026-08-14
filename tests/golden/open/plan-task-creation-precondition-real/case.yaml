@@ -1,0 +1,4 @@
+id: plan-task-creation-precondition-real
+command: /plan
+status: expected_pass
+tags: [plan, task-creation-precondition, real-artifact]

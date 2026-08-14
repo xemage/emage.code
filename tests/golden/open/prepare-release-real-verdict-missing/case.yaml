@@ -1,0 +1,13 @@
+id: prepare-release-real-verdict-missing
+command: /prepare-release
+status: known_failing
+known_failing_category: tracked_defect
+known_failing_reason: >-
+  prepare-release.md step 7 requires a "## RELEASE VERDICT" block with 11 structured fields.
+  Real fixture docs/checkpoints/checkpoint-release-v6.4.1.md (copied verbatim) has no such
+  block anywhere -- it uses a "## Quality gates run this cycle" table plus prose instead, and
+  its own text explicitly states "No formal Tech Lead / Security Engineer sign-off was
+  obtained... See RELEASE VERDICT for how this factors into the release status" while never
+  actually including one. Corpus survey: grep -rl "## RELEASE VERDICT" docs/checkpoints/*.md
+  returns zero matches across all real release checkpoints in this repo.
+tags: [prepare-release, verdict, real-artifact, format-drift]

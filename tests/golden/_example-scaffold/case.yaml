@@ -1,0 +1,4 @@
+id: _example-scaffold
+command: none
+status: expected_pass
+tags: [scaffold, format-proof]

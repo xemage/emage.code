@@ -1,0 +1,4 @@
+id: plan-required-sections-compliant
+command: /plan
+status: expected_pass
+tags: [plan, structure, hand-authored]

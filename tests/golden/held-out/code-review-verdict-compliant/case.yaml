@@ -1,0 +1,4 @@
+id: code-review-verdict-compliant
+command: /code-review
+status: expected_pass
+tags: [code-review, verdict, hand-authored]
