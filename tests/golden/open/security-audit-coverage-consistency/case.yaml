@@ -1,0 +1,4 @@
+id: security-audit-coverage-consistency
+command: /security-audit
+status: expected_pass
+tags: [security-audit, coverage, scoped-audit, hand-authored]

@@ -1,0 +1,4 @@
+id: security-audit-owasp-matrix-compliant
+command: /security-audit
+status: expected_pass
+tags: [security-audit, owasp-matrix, verdict, hand-authored]

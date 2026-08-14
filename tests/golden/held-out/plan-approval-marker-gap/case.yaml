@@ -1,0 +1,11 @@
+id: plan-approval-marker-gap
+command: /plan
+status: known_failing
+known_failing_category: capability_gap
+known_failing_reason: >-
+  plan.md step 6 requires waiting for user approval before task creation, but declares no
+  machine-checkable, persisted approval-record convention. The real fixture (plan-030, whose
+  tasks T360-T367 all completed) has no "## Approval" section, so no deterministic check can
+  confirm approval happened from repo state alone -- a capability gap in the command's
+  traceability, not a defect in this specific plan.
+tags: [plan, approval, traceability, real-artifact, capability-gap]
