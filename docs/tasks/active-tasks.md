@@ -278,6 +278,31 @@ disposable clone, then MR !201 opened and merged for real (CI green). Re-verifie
 detail. `develop` HEAD is now `8746eb9`. T416's brief (`task-T416.md`) reflects this — it targets
 paths that now genuinely exist on `develop`, not the stale feature branch.
 
+**TB-delta harness implementation landed to `develop` (2026-08-14, discovered and fixed while
+verifying Layer 2 preconditions ahead of dispatching T407/T409).** Same sequencing gap as the
+golden-suite one above, found independently this time by checking `completed-tasks.md`'s own T418/
+T419/T408 rows before assuming their prerequisite status meant the actual code was reachable from
+`develop`: those rows' artifact columns say "not yet merged" plainly, and a direct `ls` on `develop`
+confirmed `scripts/tb-delta.sh`, `scripts/tb_delta_agent.py`, `docs/benchmarks/tb-subset.json`,
+`docs/benchmarks/tb-subset.md`, and `docs/benchmarks/tb-delta-runner.md` did not exist there — only
+each task's ledger bookkeeping had landed, on the short-lived `docs/phase1-t419-t408-*` branches; the
+actual implementation sat on `feature/T418-phase1-tb-delta-harness-v6.12.0`
+(worktree `../worktrees/phase1-tb-delta`, commits `fb136c2`/`3ba46ca`), with no MR ever opened for it.
+Fixed: dry-run merge in a disposable clone against `develop` — automatic merge, 0 conflicts, purely
+additive (5 files, 1239 insertions, 0 modifications to existing files; the branch predates the
+golden-suite merge, so a raw two-way diff against current `develop` misleadingly shows deletions for
+files the branch's older base never had — a real three-way merge was performed, not just a diff
+inspection, to confirm this). `python3 tests/run.py` on the dry-run-merged result: 367 tests, OK,
+exit 0. The source worktree's untracked job-run debris (`docs/benchmarks/scorecards/`, `jobs/` — real
+smoke-test/budget-guard-abort artifacts from T419/T408's own closeout) was confirmed uncommitted and
+therefore not part of the branch's actual commits before merging, so it was correctly excluded by
+construction, not filtered post hoc. Branch pushed, MR !203 opened, CI green
+(`sync-no-diff`/`validation-super-gate`/`verify-knowledge-drift`/`unit-tests`/`markdown-links` all
+passed), squash-merged to `develop` (merge commit `98c8d7d`, squash commit `f549401`). Re-verified
+directly on `develop` post-merge: all five files present with expected content;
+`git log --oneline -3 origin/develop` shows the merge. T407 and T409 are now genuinely unblockable —
+not just ledger-unblockable.
+
 **CI rejection and fix (2026-08-13):** the first push of this branch failed CI (`unit-tests` job,
 `tests/performance/test_team_health.py::TestTaskLifecycle` + the shipped `validate-tasks.py`
 validator it wraps) on three independent, genuine defects, all fixed in this revision: (1) invalid
