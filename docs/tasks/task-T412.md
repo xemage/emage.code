@@ -152,9 +152,10 @@ repo-wide static-guard pattern.
 **Design call flagged for explicit sign-off, not treated as pre-settled:** the brief's literal
 text ("never referenced from any file outside `tests/golden/held-out/`") would, applied strictly,
 flag pre-existing T411 `brief.md` cross-references between sibling cases inside `open/` (two real
-examples: `open/security-audit-verdict-fields-compliant/brief.md` naming
-`security-audit-owasp-matrix-compliant`, `open/new-feature-plan-doc-compliant/brief.md` naming
-`new-feature-real-artifact-versioning-drift`, both pre-existing T411 provenance notes that
+examples: `open/security-audit-verdict-fields-compliant/brief.md` naming a held-out sibling case
+(`held-out-case-6`, per T413's later redacted-identity numbering — real ID not repeated here; see
+the T415-adjacent isolation-fix addendum at the end of this file), `open/new-feature-plan-doc-compliant/brief.md`
+naming another held-out sibling case (`held-out-case-3`), both pre-existing T411 provenance notes that
 acceptance criterion 1's byte-identical requirement forbids editing). The agent scoped the
 case-ID-mention check to "outside `tests/golden/` entirely" rather than merely "outside
 `held-out/`", leaving the stronger Python-functional-access check (imports/`open()`/`Path()`)
@@ -195,3 +196,22 @@ directly). Sign-off: the scoping is correct.
 All 6 of this brief's acceptance criteria confirmed PASS. Status set to `done`. See
 `docs/tasks/completed-tasks.md` and `docs/tasks/active-tasks.md`'s "Owner corrections and closure
 history" for the ledger-level closure note.
+
+**Isolation-fix addendum (2026-08-14, discovered during a T415-adjacent cross-task audit):** this
+file itself (`docs/tasks/task-T412.md`, outside `tests/golden/`) contained two bare mentions of
+real held-out cases' real IDs (the two held-out siblings now labeled `held-out-case-6` and
+`held-out-case-3`) in the "Design call flagged for explicit sign-off" paragraph above. This was
+not a violation at authoring time (`tests/functional/test_golden_held_out_isolation.py`'s Check B
+did not yet exist on `develop` — the guard and `tests/golden/` itself still live only on the
+unmerged `feature/T410-phase1-golden-suite-v6.12.0` branch as of this addendum), but it would
+become one the moment that branch merges to `develop`, since Check B scans the whole repo tree
+outside `tests/golden/` and this file is not on the guard's exemption allowlist. Confirmed this
+concretely, not just by inspection: temporarily copying this file's pre-fix content into the
+`feature/T410-...` worktree and running the guard reproduced a real-ID-mention failure against
+this exact file, plus a matching one against `task-T411.md`'s own pre-fix mention (see that file's
+addendum). Both real IDs have been replaced with their `held-out-case-<n>` redacted labels (T413's
+own numbering scheme, sorted-real-ID order — the same labels already used in
+`docs/benchmarks/failures/held-out-case-*.md`), preserving the paragraph's meaning (which two
+`open/` cases cite which held-out siblings, and why that's a legitimate, permitted in-suite
+cross-reference) without repeating the real case IDs in a file outside `tests/golden/`. See
+`docs/tasks/task-T411.md`'s matching addendum for the sibling fix.
