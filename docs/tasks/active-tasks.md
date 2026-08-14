@@ -2,10 +2,14 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T407 | First Terminal-Bench delta measurement (k>=3, full frozen subset) | devops-engineer | in_progress | P0 | T418 (done), T419 (done), T408 (done) | 2026-08-14 |
 
 > T416 closed 2026-08-14 (see "Owner corrections and closure history" below and
 > `completed-tasks.md`). **Phase 1 Layer 1 (T410-T416) is now fully done and merged to `develop`.**
-> Table is empty (0 active rows) — Layer 2 (T407/T409) not yet dispatched; see "Backlog" below.
+> T407 dispatched 2026-08-14 per explicit user authorization ("launch now, conservative
+> concurrency") — see `task-T407.md` for the full brief, including the verbatim decision-rule
+> reproduction and the pre-flagged host-resource/oracle-overlap risks. T409 remains in the backlog
+> below, blocked on T407 actually completing (not merely being dispatched).
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
@@ -44,8 +48,8 @@ closeout detail.
 **Layer 2** (T407/T409 renamed from plan-035's `T41A`/`T41C` per the note above; T418, T419, T408
 all done and genuinely merged to `develop`, MR !203 — see "Owner corrections and closure history"
 below):
-- T407 (plan-035: `T41A`) — First Terminal-Bench delta measurement (`k>=3`), publish `tb-delta-v6.12.0.md` — `devops-engineer` — depends on T418 (done), T419 (done), T408 (done)
-- T409 (plan-035: `T41C`) — Extend T415 taxonomy to ingest Harbor trajectories — `devops-engineer` — depends on T415, T407
+- T407 — now dispatched, see table above (row + `task-T407.md` brief on disk)
+- T409 (plan-035: `T41C`) — Extend T415 taxonomy to ingest Harbor trajectories — `devops-engineer` — depends on T415 (done), T407 (in progress, must genuinely complete first)
 
 ## Task-brief authoring note
 
