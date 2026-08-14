@@ -92,6 +92,7 @@ Write checkpoints more frequently than production track:
 
 ## Constraints
 
+- **Protected paths:** `tests/golden/**` and `scripts/scorecard.py` are out of write scope for all agents — full policy, the orchestrator's read/audit exception, and the exception process for genuine future maintenance: `docs/artifacts/protected-paths-v1.md`.
 - **DO NOT** optimize for scale or production-level non-functional requirements
 - **DO NOT** enforce full regression testing — happy-path only
 - **DO NOT** block on non-critical security findings — record for debt handoff

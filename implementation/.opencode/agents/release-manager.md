@@ -209,6 +209,7 @@ If you cannot proceed:
 
 ## Constraints
 
+- **Protected paths:** `tests/golden/**` and `scripts/scorecard.py` are out of write scope for all agents — full policy, the orchestrator's read/audit exception, and the exception process for genuine future maintenance: `docs/artifacts/protected-paths-v1.md`.
 - DO NOT release without QA sign-off
 - DO NOT release when unresolved critical QA or security findings remain
 - DO NOT skip version bumping

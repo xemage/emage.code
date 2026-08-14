@@ -174,6 +174,7 @@ If you cannot proceed:
 
 ## Constraints
 
+- **Protected paths:** `tests/golden/**` and `scripts/scorecard.py` are out of write scope for all agents — full policy, the orchestrator's read/audit exception, and the exception process for genuine future maintenance: `docs/artifacts/protected-paths-v1.md`.
 - DO NOT override architecture decisions — escalate to Solution Architect
 - DO NOT change requirements — escalate to Product Owner
 - DO NOT manage sprints — that's the Scrum Master's role

@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-08-12T22:42:44+02:00",
+  "generatedAt": "2026-08-14T09:24:28+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -17,7 +17,7 @@
       "category": "agent",
       "name": "backend-developer",
       "path": "agents/backend-developer.md",
-      "checksum": "3ac52d2bd748a1678ab9ff789c56619670b00e5e85815b355fe2cc51813fbbba",
+      "checksum": "e8ca5cfc0a2b37381bef0f64c0a95b8ff0a766c9f745cc6d310a44d5e234a566",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -45,7 +45,7 @@
       "category": "agent",
       "name": "data-mockup-agent",
       "path": "agents/data-mockup-agent.md",
-      "checksum": "91ddd7462228dcac61db6a8f0d8bcfa1d367bf61f739cf1cf6fdb49c97780e11",
+      "checksum": "67b6a61fcd227175b3e63bd1667fcb6781aef70326a69386f928fb193cc33ceb",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -73,7 +73,7 @@
       "category": "agent",
       "name": "database-engineer",
       "path": "agents/database-engineer.md",
-      "checksum": "840189d996b55f9625f4678869a957e5086577dc3e0d43633f03551c26907e26",
+      "checksum": "8608fe5bee6dc35918f68057924dc8174fff3945fc5a027208cb56b88f36605b",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -101,7 +101,7 @@
       "category": "agent",
       "name": "demo-agent",
       "path": "agents/demo-agent.md",
-      "checksum": "6e231363517f6c2b001472c324bbcb77ff917bbf106759e2fa9d9b193fcf8e91",
+      "checksum": "21c2790072f8a92dcb055ee89b82180332b043012aa6db657f1b3b5a894e5ea7",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -129,7 +129,7 @@
       "category": "agent",
       "name": "devops-engineer",
       "path": "agents/devops-engineer.md",
-      "checksum": "4f0f1ade122288bbc73c5908d9847ec0e90f04a58c5afd10b937413a1571bdae",
+      "checksum": "022f09530a1854076c31bbfb55e73c6f9a4c1909075f865022fd513cde60de3f",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -157,7 +157,7 @@
       "category": "agent",
       "name": "evaluation-agent",
       "path": "agents/evaluation-agent.md",
-      "checksum": "6cb3557519c829d4702ef863f351c6317cec3fe8dc40403d658afef0c6cb29a3",
+      "checksum": "7b29c386f0f19eee75c1e4e991ce1af464630d06bcfee61fb34fdeee4e45b290",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -185,7 +185,7 @@
       "category": "agent",
       "name": "feasibility-agent",
       "path": "agents/feasibility-agent.md",
-      "checksum": "64376d1ab2da65f79677719eb5dc6af30e76ea5598728536e4e9f08f6c4ffe4c",
+      "checksum": "f90ffcc45741de074bf6e33e3e2c35bdf808ebbc345a463ddb66c29a5ba74e2c",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -213,7 +213,7 @@
       "category": "agent",
       "name": "frontend-developer",
       "path": "agents/frontend-developer.md",
-      "checksum": "4ca290fdf93f1247f410740bdc9279c731ada2f9c02b7e0843aa161e6fe599e9",
+      "checksum": "324e78420de098d88d02f4a1cc6a24507e7e2626e36ab0e027ad3810258adfa8",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -241,7 +241,7 @@
       "category": "agent",
       "name": "integration-agent",
       "path": "agents/integration-agent.md",
-      "checksum": "c2c9a02c25025e5f036466d227f8a2381f86cff0c13eaa4cdeec20979df0dfaa",
+      "checksum": "caa28d13da67c9ce003415681698a29c8bb171916a2505dacfd52ab110c8eeaa",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -269,7 +269,7 @@
       "category": "agent",
       "name": "orchestrator",
       "path": "agents/orchestrator.md",
-      "checksum": "cbecd9b981f4578eae4246c87efd7bb9b6bb4beadd574a239f8b36db0f457bde",
+      "checksum": "9779a1a20504d332ed5331ad2f91ac7b28934159081cbaa49c32016d1d3492c5",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -297,7 +297,7 @@
       "category": "agent",
       "name": "poc-devops-engineer",
       "path": "agents/poc-devops-engineer.md",
-      "checksum": "4a06349701891ec65bb5752e17e6f3f33114210f04ae405cd6f6095ea1348d6a",
+      "checksum": "37ce132859b7dd2d69c63a9f11fb4426baec9c2cb92ad3db5b15e3b5bb8c101c",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -325,7 +325,7 @@
       "category": "agent",
       "name": "poc-orchestrator",
       "path": "agents/poc-orchestrator.md",
-      "checksum": "9743007fc3a9ec3a0f36d5a6148150818e2078f45641675f2d056256bed4a8fe",
+      "checksum": "f18ef48deb8932257ab171186995a29287d799e45f32c0040ee429282f520c59",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -353,7 +353,7 @@
       "category": "agent",
       "name": "poc-qa-engineer",
       "path": "agents/poc-qa-engineer.md",
-      "checksum": "a20b4e4c1ea6446e5c17b6595e68c6cf751132c81f65b31288db5a6ddccbc0d6",
+      "checksum": "23e9c06414d72d6fcbb38173afe02204991428fe0b7fe280d7325c0a0374de70",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -381,7 +381,7 @@
       "category": "agent",
       "name": "poc-security-engineer",
       "path": "agents/poc-security-engineer.md",
-      "checksum": "7e45b24777470f8d76160938929e9464265f7f775de721392e990eab00d91158",
+      "checksum": "f599fc04feb426d40c86e37b411498ef8fbc613aac27a34a995d401a46905d67",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -409,7 +409,7 @@
       "category": "agent",
       "name": "poc-technical-writer",
       "path": "agents/poc-technical-writer.md",
-      "checksum": "8d6041c2d69145f261c1b6a28f697122ae2e6ab88d441681d1291ee0e3bc57a9",
+      "checksum": "7cabd6fa3c09186a5a5018d735cd52b5b54c218743b00f4392931d827b6e4945",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -437,7 +437,7 @@
       "category": "agent",
       "name": "product-owner",
       "path": "agents/product-owner.md",
-      "checksum": "179bc6e1e3b9d1dd8e17ab3a79f37ad3a76df9e52e26577a807f476feebe954f",
+      "checksum": "29b2ff272a127b56135b7009df9ea10c58d09a4945fbf92635bb08a85afd50e2",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -465,7 +465,7 @@
       "category": "agent",
       "name": "qa-engineer",
       "path": "agents/qa-engineer.md",
-      "checksum": "f0a2a269de5d61d7042a187f79f6fbe5de74d915fc1259da4ef27c2ff4fcdbe5",
+      "checksum": "d89ad500b1d160d7617aeb51c59b42666116232e8345d68974368c1710b10a27",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -493,7 +493,7 @@
       "category": "agent",
       "name": "release-manager",
       "path": "agents/release-manager.md",
-      "checksum": "6f31fcf760bdc6033223f927db0b52a9869ee11e3f0a36462dd5b8a402dc3572",
+      "checksum": "d78dea6938256220dcb3f5f476493380b9e1b75d011a7a6413c2d7747e640ca3",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -521,7 +521,7 @@
       "category": "agent",
       "name": "scaffolding-agent",
       "path": "agents/scaffolding-agent.md",
-      "checksum": "85ce4749b57a73e38525a1eb7037b711059b53125f8eb296e11d8e0c14759ff4",
+      "checksum": "dcb1b9274ae603bfc44b26ef23fd14add5804fd3931053b392c6d2de53304a98",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -549,7 +549,7 @@
       "category": "agent",
       "name": "scrum-master",
       "path": "agents/scrum-master.md",
-      "checksum": "60b9820ab7028f3865b9ceb46335725111a84bda812dd9b79164304d607cbd6f",
+      "checksum": "3b62cc7f87a7fa4da52dfca4beb2ff539e7291429451ac5517ed9b938763dc57",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -577,7 +577,7 @@
       "category": "agent",
       "name": "security-engineer",
       "path": "agents/security-engineer.md",
-      "checksum": "c09a4d351c0449dd0089b7e8621605c236071d1288405b8b70537c14c1e60eab",
+      "checksum": "4b09a1794443c07afea9a654763297391f82ade0db342bb485cd0a6b0914d4e1",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -605,7 +605,7 @@
       "category": "agent",
       "name": "solution-architect",
       "path": "agents/solution-architect.md",
-      "checksum": "c7ced0e34f56b3b0c4ea3bd02feb9abdb26dc7bfcc62aa71afd748cbff484664",
+      "checksum": "b4d4424570dbd6b974e7f907e30480779a5a6fcc076874163f030569293cb795",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -633,7 +633,7 @@
       "category": "agent",
       "name": "tech-lead",
       "path": "agents/tech-lead.md",
-      "checksum": "8c30fcc0cf2fb73623aaf005077471c033d0ee81288fb84057f8cf4ffedb2a9a",
+      "checksum": "446b3cc498d0953afcd9cf1732d4bd6341139a5584804b6c1cdd7509567d6b78",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -661,7 +661,7 @@
       "category": "agent",
       "name": "technical-debt-narrator",
       "path": "agents/technical-debt-narrator.md",
-      "checksum": "9c62524f9155acaff3854f4ab10521aefdea528fef478a357de8a51a3554fc48",
+      "checksum": "2de6f7f566631c3cc0d199c0b74d8fda30d0deb1e1b1cb5a85485957cd5da7c9",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -689,7 +689,7 @@
       "category": "agent",
       "name": "technical-writer",
       "path": "agents/technical-writer.md",
-      "checksum": "faf437287cc22a6220ef4c98a8f566ad03bca3899c4eff5007ab40adb2b09507",
+      "checksum": "92650775edeae05217e7c0d2914c5671f294bd1b16313e41ce462f30f4411898",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -717,7 +717,7 @@
       "category": "agent",
       "name": "technology-scout",
       "path": "agents/technology-scout.md",
-      "checksum": "0e1c0f3809a7db615ef2d5679dceabdc6a273ca732a6d950903780a74558a340",
+      "checksum": "eb70e287fbcc5781ac84dd245cd9c6c696c63ccdc836827cdd167aaf69385ab7",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -745,7 +745,7 @@
       "category": "agent",
       "name": "ux-designer",
       "path": "agents/ux-designer.md",
-      "checksum": "87cf09cbca0344c27292a27597a5805838986c906909d262b2b1513b876d65f1",
+      "checksum": "8df140666b0b3b7e4739eb50b2b9d1bc27574d97646c61b49831daa29a20f629",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
