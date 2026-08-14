@@ -2,9 +2,10 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T416 | Freeze golden-suite evaluator interface (protected paths) | tech-lead | pending | P0 | T410 (done), T411 (done), T412 (done), T413 (done), T414 (done), T415 (done) | 2026-08-14 |
 
-> No active rows: T415 closed 2026-08-14 (see "Owner corrections and closure history" below and
-> `completed-tasks.md`). T416 is next — brief not yet authored, per `C7` (see "Backlog" below).
+> T415 closed 2026-08-14 (see "Owner corrections and closure history" below and
+> `completed-tasks.md`). T416's brief now exists on disk (`task-T416.md`), per `C7`.
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
@@ -39,7 +40,7 @@ only; it is not machine-parsed (bullets, not `|`-table rows).
 
 **Layer 1** (all owned by the agents named in plan-035 §2.4 Phase 1, T410 owner unchanged, T415
 reassigned to `qa-engineer` — see below):
-- T416 — Freeze evaluator interface (protected paths, all agent defs) — `tech-lead` — depends on T410 (done), T411 (done), T412 (done), T413 (done), T414 (done), T415 (done)
+- T416 — now dispatched, see table above (row + `task-T416.md` brief on disk)
 
 **Layer 2** (T407/T409 renamed from plan-035's `T41A`/`T41C` per the note above; T418, T419, T408
 all done):
@@ -262,7 +263,20 @@ simulated into the feature-branch worktree (reproduced the failures) and again p
 task briefs against all six real held-out case IDs directly, zero matches in every case; `git
 status` clean under `tests/golden/`, `scripts/`, `docs/benchmarks/scorecard-v6.12.0.*` (untouched,
 as the brief required). See `completed-tasks.md` and `task-T415.md`'s Completion addendum for full
-detail. T416 is now unblockable — brief not yet authored (`C7`).
+detail. T416 is now unblockable.
+
+**Golden-suite implementation landed to `develop` (2026-08-14, discovered and closed alongside
+T416 dispatch).** While investigating T416 (which cannot freeze paths that don't exist on
+`develop`), found that `feature/T410-phase1-golden-suite-v6.12.0` — the actual T410-T415
+implementation (`tests/golden/**`, `scripts/scorecard.py`, `docs/benchmarks/**`,
+`docs/artifacts/golden-suite-format-v1.md`/`failure-taxonomy-v1.md`) — had never been merged to
+`develop`; only each task's ledger bookkeeping had been. No MR for it had ever been opened. Fixed:
+dry-run merge verified clean (0 conflicts, purely additive, 106 files/5717 insertions) in a
+disposable clone, then MR !201 opened and merged for real (CI green). Re-verified directly on
+`develop` post-merge: `python3 tests/run.py` — 367 tests, OK; `test_golden_held_out_isolation.py`
+— 8/8. See `docs/checkpoints/checkpoint-018-phase1-layer1-golden-suite-complete.md` for full
+detail. `develop` HEAD is now `8746eb9`. T416's brief (`task-T416.md`) reflects this — it targets
+paths that now genuinely exist on `develop`, not the stale feature branch.
 
 **CI rejection and fix (2026-08-13):** the first push of this branch failed CI (`unit-tests` job,
 `tests/performance/test_team_health.py::TestTaskLifecycle` + the shipped `validate-tasks.py`
