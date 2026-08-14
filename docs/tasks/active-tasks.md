@@ -2,7 +2,9 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T415 | Failure taxonomy (`cause x behavior x mechanism`) | qa-engineer | in_progress | P0 | T411 (done), T413 (done) | 2026-08-13 |
+
+> No active rows: T415 closed 2026-08-14 (see "Owner corrections and closure history" below and
+> `completed-tasks.md`). T416 is next — brief not yet authored, per `C7` (see "Backlog" below).
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
@@ -37,8 +39,7 @@ only; it is not machine-parsed (bullets, not `|`-table rows).
 
 **Layer 1** (all owned by the agents named in plan-035 §2.4 Phase 1, T410 owner unchanged, T415
 reassigned to `qa-engineer` — see below):
-- T415 — now dispatched, see table above (row + `task-T415.md` brief on disk)
-- T416 — Freeze evaluator interface (protected paths, all agent defs) — `tech-lead` — depends on T410 (done), T411 (done), T412 (done), T413 (done), T414 (done), T415
+- T416 — Freeze evaluator interface (protected paths, all agent defs) — `tech-lead` — depends on T410 (done), T411 (done), T412 (done), T413 (done), T414 (done), T415 (done)
 
 **Layer 2** (T407/T409 renamed from plan-035's `T41A`/`T41C` per the note above; T418, T419, T408
 all done):
@@ -229,6 +230,39 @@ document for all six real held-out case IDs (zero matches), re-ran the isolation
 suite with the new file present (8/8), ran `python3 tests/run.py` fresh (367 tests, exit 0), `git
 status` clean. See `completed-tasks.md` and `task-T414.md`'s Completion addendum. T415 is now
 unblockable (T416 remains gated on T415).
+
+**T415 closed (2026-08-14).** Original delivery (`docs/artifacts/failure-taxonomy-v1.md`,
+`docs/benchmarks/failures/*.md`) landed cleanly at commit `76ab91c`, meeting all 6 stated
+acceptance criteria. The session doing final sign-off was itself interrupted twice by an
+account-wide Claude usage-limit stop before closing this task, so a third resumption picked up a
+requested pre-T416 cross-task review (T416 makes `tests/golden/**`/`scripts/scorecard.py`
+read-only, raising the cost of anything found afterward).
+
+That review found a real issue distinct from case-*identity* leakage (which T412's isolation guard
+already catches): `held-out-case-1.md`/`-3.md`/`-4.md`'s "Why" sections narratively described the
+real held-out fixtures' actual content (quoted requirements, described real document structure) —
+well beyond the categorical axis-value labels the redaction scheme was designed to permit. Fixed
+in commit `3fef6ee`: each "Why" replaced with a redaction notice pointing to the general axis-value
+definitions in `failure-taxonomy-v1.md` §3; axis-value tables (the only non-redacted content)
+unchanged.
+
+The same review's broader mandate — checking every T410-T415 file that touches held-out content,
+not just T415's own three — surfaced one further issue outside T415's file set: `task-T411.md` and
+`task-T412.md` (already merged to `develop`) each contained bare real held-out case-ID mentions,
+latent since neither the isolation guard nor `tests/golden/` itself had merged to `develop` yet,
+but confirmed (by copying pre-fix content into the feature-branch worktree and reproducing the
+guard failure) to become live violations the moment `feature/T410-phase1-golden-suite-v6.12.0`
+merges. Fixed via `docs/phase1-t411-t412-isolation-fix` (MR !199, merged to `develop` ahead of and
+independent of this closeout).
+
+Orchestrator independently verified rather than trusting either fix's self-description:
+`tests/functional/test_golden_held_out_isolation.py` re-run at 8/8 with both fixes' pre-fix content
+simulated into the feature-branch worktree (reproduced the failures) and again post-fix (clean);
+`python3 tests/run.py` fresh in the worktree, exit 0; grepped all three redacted files and both
+task briefs against all six real held-out case IDs directly, zero matches in every case; `git
+status` clean under `tests/golden/`, `scripts/`, `docs/benchmarks/scorecard-v6.12.0.*` (untouched,
+as the brief required). See `completed-tasks.md` and `task-T415.md`'s Completion addendum for full
+detail. T416 is now unblockable — brief not yet authored (`C7`).
 
 **CI rejection and fix (2026-08-13):** the first push of this branch failed CI (`unit-tests` job,
 `tests/performance/test_team_health.py::TestTaskLifecycle` + the shipped `validate-tasks.py`
