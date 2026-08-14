@@ -2,12 +2,12 @@
 
 **ID:** T415
 **Owner:** qa-engineer
-**Status:** in_progress
+**Status:** done
 **Priority:** P0
 **Depends on:** T411 (done — 20 golden cases), T413 (done — `scripts/scorecard.py`,
 `docs/benchmarks/scorecard-v6.12.0.json`)
 **Created:** 2026-08-13
-**Completed:** —
+**Completed:** 2026-08-14
 **Based on:** `docs/plans/plan-035-roadmap-v7-ground-up.md` (Phase 1, §2.4, Layer 1 table, row T415:
 *"Failure taxonomy: classify each golden failure as `cause × behavior × mechanism`, stored in
 `docs/benchmarks/failures/`. Adopted from the source roadmaps."*; also §1.1's verdict on this idea,
@@ -138,3 +138,52 @@ actually validates). Apply the same discipline T413 (`scripts/scorecard.py`) and
   `docs/benchmarks/scorecard-v6.12.0.json`/`.md` (T413's, generated — read only),
   `docs/benchmarks/baseline-v6.12.0.md` (T414's, frozen), or
   `tests/functional/test_golden_held_out_isolation.py` (T412's).
+
+## Completion addendum (2026-08-14)
+
+Original delivery (commit `76ab91c`): `docs/artifacts/failure-taxonomy-v1.md` (the `cause` ×
+`behavior` × `mechanism` scheme, three axes each with 3-4 enumerated values, every value grounded
+in at least one real case) plus `docs/benchmarks/failures/` (9 files, one per `known_failing`
+case — 6 `open` by real ID, 3 `held-out` as `held-out-case-{1,3,4}`). All 6 stated acceptance
+criteria were met at that commit.
+
+**Narrative-leak finding and fix (session interrupted twice by an account-wide Claude usage-limit
+stop; completed on a third resumption).** A cross-task review requested ahead of T416's freeze
+(T416 makes `tests/golden/**`/`scripts/scorecard.py` read-only, so anything wrong here is much
+harder to fix afterward) found that `held-out-case-1.md`, `-3.md`, `-4.md`'s "Why" sections went
+beyond the categorical axis-value labels the redaction scheme (§5 of the taxonomy doc) was
+designed to permit — they narratively described the real held-out fixtures' actual content in
+detail (quoted command-file requirements, described real document structure). This is narrative
+content leakage: distinct from case-*identity* leakage (which the T412 isolation guard's Check B
+already catches), but the same underlying risk the held-out split exists to prevent — an
+improvement-task agent reading these files could infer real fixture content without ever seeing a
+real case ID. Fixed in commit `3fef6ee`: each "Why" section replaced with a redaction notice
+pointing to the general axis-value definitions in `failure-taxonomy-v1.md` §3 (the only
+non-redacted content is the axis-value table itself, unchanged); `held-out-case-4.md` also gained
+one cross-reference note distinguishing its `mechanism` from two open cases without describing its
+own fixture.
+
+**Broader audit performed, not just the one fix.** Per the same review's request, every file
+across T410-T415 that's allowed to touch held-out content was re-checked for the same
+narrative-leak pattern, not just T415's own three files: `docs/artifacts/failure-taxonomy-v1.md`
+(clean — axis tables only), `docs/benchmarks/scorecard-v6.12.0.json`/`.md` (clean — held-out rows
+carry only `command`/`status`/`known_failing_category`/`bucket`/`actual_result`, identity fields
+redacted), `docs/benchmarks/baseline-v6.12.0.md` (clean — aggregate counts only, self-documents its
+own grep verification), `docs/artifacts/golden-suite-format-v1.md` and `tests/golden/README.md`
+(clean — general format specs, no case-specific content), the 6 `open` failure files (clean — no
+held-out mentions; their narrative detail is fine since `open` cases aren't secret). One additional
+issue was found, outside T415's own file set: `docs/tasks/task-T411.md` and `task-T412.md`
+(already on `develop`) each contained bare mentions of real held-out case IDs — latent, not yet a
+live violation (the isolation guard and `tests/golden/` itself hadn't merged to `develop` yet), but
+confirmed to become a real Check B failure the instant this branch merges, by copying each file's
+pre-fix content into this worktree and reproducing the guard failure. Fixed separately via
+`docs/phase1-t411-t412-isolation-fix` (MR !199, merged to `develop` ahead of this closeout,
+independent of this branch since those two files live on `develop` already). Re-verified clean
+after that fix using the same worktree-copy method.
+
+Full acceptance-bar re-verification after both fixes: `tests/functional/test_golden_held_out_isolation.py`
+8/8 (was 7/8 pre-fix, `test_real_repo_has_no_held_out_violations` was never actually run against
+the narrative-leak issue — that check only covers identity mentions, not narrative content, which
+is exactly why the manual cross-task review was needed); `python3 tests/run.py` exit 0; `git
+status` clean under `tests/golden/`, `scripts/`, `docs/benchmarks/scorecard-v6.12.0.*` (untouched,
+as required). Status set to `done`. See `docs/tasks/completed-tasks.md` for the ledger entry.
