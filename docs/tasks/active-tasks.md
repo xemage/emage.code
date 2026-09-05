@@ -2,7 +2,7 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T407 | First Terminal-Bench delta measurement (k>=3, full frozen subset) | devops-engineer | in_progress | P0 | T418 (done), T419 (done), T408 (done) | 2026-08-14 |
+| T407 | First Terminal-Bench delta measurement (k>=3, full frozen subset) | devops-engineer | in_progress | P0 | T418 (done), T419 (done), T408 (done) | 2026-09-05 |
 
 > T416 closed 2026-08-14 (see "Owner corrections and closure history" below and
 > `completed-tasks.md`). **Phase 1 Layer 1 (T410-T416) is now fully done and merged to `develop`.**
@@ -10,6 +10,21 @@
 > concurrency") — see `task-T407.md` for the full brief, including the verbatim decision-rule
 > reproduction and the pre-flagged host-resource/oracle-overlap risks. T409 remains in the backlog
 > below, blocked on T407 actually completing (not merely being dispatched).
+>
+> **T407 "Design A" re-dispatch, 2026-09-05.** The completed 2026-08-14 k=3 run measured
+> within-run trial variance (3 attempts/task inside one pass), not the across-run spread
+> plan-035's decision rule actually requires (`spread` = per-arm min-max across *k independent
+> runs*), so it cannot be classified under the literal rule. Same task, same owner
+> (`devops-engineer`), same worktree/branch (`feature/T407-tb-delta-v6.12.0`) — the 2026-08-14
+> artifacts are preserved untouched as historical evidence, not superseded. Re-dispatched as
+> "Design A": 3 independent full-subset passes (`-k 1 -l 25 --n-concurrent 2
+> --max-budget-seconds 129600` each), both arms, ~150 trials total, run sequentially and launched
+> as a detached background process (verified alive, config-diff clean, a real probe trial running
+> in Docker, host resources healthy). See `task-T407.md`'s "Design A addendum" section for the
+> full rationale, exact invocation, and verification evidence. Expected wall-clock: roughly
+> 6-12h if all three passes run smoothly, up to ~a day at the high end. T407 remains
+> `in_progress`; classification and `tb-delta-v6.12.0.md`'s conclusions are still pending a
+> follow-up check once all 3 passes complete. T409 remains blocked on that.
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
