@@ -2,7 +2,7 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T407 | First Terminal-Bench delta measurement (k>=3, full frozen subset) | devops-engineer | in_progress | P0 | T418 (done), T419 (done), T408 (done) | 2026-09-05 |
+| T407 | First Terminal-Bench delta measurement (k>=3, full frozen subset) | devops-engineer | in_progress | P0 | T418 (done), T419 (done), T408 (done) | 2026-09-06 |
 
 > T416 closed 2026-08-14 (see "Owner corrections and closure history" below and
 > `completed-tasks.md`). **Phase 1 Layer 1 (T410-T416) is now fully done and merged to `develop`.**
@@ -25,6 +25,21 @@
 > 6-12h if all three passes run smoothly, up to ~a day at the high end. T407 remains
 > `in_progress`; classification and `tb-delta-v6.12.0.md`'s conclusions are still pending a
 > follow-up check once all 3 passes complete. T409 remains blocked on that.
+>
+> **T407 Design A — host-exhaustion blocker and restart, 2026-09-06.** The first Design A attempt
+> halted ~1h41m into Pass 1 (Arm A complete 25/25, Arm B 6/25) on a `type: technical`,
+> `severity: major` blocker: the remote Docker host (`10.10.160.11`) genuinely exhausted resources
+> (4.0GB RAM host, RAM+swap fully exhausted, load average 13.79) — root cause was the
+> `rstan-to-pystan` subset task's Stan/httpstan C++ compile alone using ~3.3GB RSS on a 4GB host,
+> a real host-capacity problem, not a harness or design defect. Per this task's own blocker
+> protocol, the run was stopped (not forced): SIGTERM triggered Harbor's own graceful container
+> cleanup, both in-flight Arm B trials ended cleanly with no orphaned containers, and Pass 1's
+> completed Arm A data plus Arm B's partial state were preserved on disk along with the halted
+> attempt's log (`jobs/design-a-run-attempt1-halted.log`). The user then resized the host to 24GB
+> RAM / 8GB swap / 8 CPUs (verified healthy post-resize), and Design A was restarted from scratch
+> (all 3 passes, same invocation) — a second attempt is in progress as of this note. See
+> `task-T407.md`'s "Design A — host-exhaustion blocker and restart" section for full detail. No
+> result or classification exists yet; T409 remains blocked.
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
