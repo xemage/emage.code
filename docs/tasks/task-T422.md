@@ -1,9 +1,10 @@
 # Task T422 — `tests/functional/test_mcp_platform_conformance.py`
 
 **ID:** T422
-**Owner:** qa-engineer
-**Status:** pending
+**Owner:** qa-engineer, orchestrator
+**Status:** done
 **Priority:** P1
+**Completed:** 2026-09-08
 **Depends on:** T420 (contract doc), T421 (config gap re-verified/closed)
 **Created:** 2026-09-08
 **Based on:** `docs/plans/plan-035-roadmap-v7-ground-up.md` §2.4 Phase 2 (T421 row; Phase 2
@@ -78,3 +79,15 @@ missing, rather than padding scope.
 ## Blocker protocol
 
 Report blockers with type and severity per `AGENTS.md`. Max 2 retries before escalating.
+
+## Closure (2026-09-08) — closes Phase 2 in full
+
+All three plan-035 §2.4 Phase 2 acceptance criteria independently verified met via two new live
+round-trip tests. Isolation mechanism reuses `test_sync_determinism.py`'s established copy+cwd
+pattern (confirmed real, not the `--root`/`--knowledge`/`--platforms` flags this brief guessed at).
+Orchestrator independently re-ran everything before merging: read `test_sync_determinism.py`
+directly, ran both new tests (2/2 pass), ran `test_mcp_secret_guard.py` (3/3 pass), ran the full
+suite fresh (379 tests, `+2` from baseline, `OK`, `skipped=17`), confirmed `git status` clean and
+the merged diff scoped to exactly the one new file. This closes Phase 2 (T420-T423) in its
+entirety. Gate G2 is unaffected — see `docs/tasks/active-tasks.md`'s "Phase 2 / Gate G2 closure
+status" note and `docs/tasks/completed-tasks.md`'s T422 row for the full record.
