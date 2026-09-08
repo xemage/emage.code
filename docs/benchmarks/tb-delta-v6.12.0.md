@@ -555,3 +555,95 @@ arm-{A,B}/` (181 trials, confirmed 181/181 `cost_usd: null`) and the original k=
 `result.json` files (confirmed $34.1334 recorded across 130/150 trials). See the corrected §7.2
 table and its methodology/caveat notes for the honest ≈$100 total estimate and the recommendation
 to check the Anthropic Console for ground truth.*
+
+---
+
+## 8. Follow-up: `predicted_effect` split on Design A's raw data (observational, not acted on)
+
+**Status of this section: observational follow-up only.** Per plan-035's Null-branch
+consequences ("Check the `predicted_effect: positive` tasks in isolation. If they moved and the
+aggregate did not, the subset is diluted — record this, but do not act on it in this release
+cycle"), now extended to the Inconclusive result by the 2026-09-08 successor block in
+`docs/plans/plan-035-roadmap-v7-ground-up.md` §2.4 (see also ADR-004). This section records the
+check. It is **not** used to reopen T407's Inconclusive classification, re-cut `tb-subset.json`,
+or authorize further trials — that would be exactly the outcome the frozen decision-rule block
+was written to prevent. Zero new API spend: this is computed entirely from Design A's existing
+raw per-trial `result.json` files, already paid for as part of T407.
+
+**Data source.** For each of the 3 Design A passes
+(`20260907T162617Z`/`20260907T203448Z`/`20260908T001726Z`), both arms, read every trial's
+`result.json` directly from the raw job directories on `10.10.160.11`
+(`/root/emage-code-t407/jobs/tb-delta-<pass>-arm-{A,B}/*/result.json` — not the scorecards, which
+only carry arm-level aggregates). Each of the 25 tasks appears exactly once per arm per pass
+(`k=1` design), so per-task reward is a single 0.0/1.0 value; no aggregation across attempts
+within a pass was needed. All 25 tasks × 3 passes × 2 arms = 150 trials were read and every one
+had a real recorded reward (no missing or duplicate task/pass/arm combinations) — full agreement
+with §6.2's `n_rewarded_trials = 25` for both arms in every pass. `tb-subset.json`'s own
+`predicted_effect` tags (16 `positive`, 9 `neutral`) were used as-is, read-only, per this file's
+freeze policy.
+
+### 8.1 Group means and delta, by pass
+
+| Pass | Group | n | Arm A mean | Arm B mean | Delta (B−A) |
+|---|---|---|---|---|---|
+| 1 (`162617Z`) | positive | 16 | 31.25% (5/16) | 37.50% (6/16) | **+6.25pp** |
+| 1 (`162617Z`) | neutral | 9 | 44.44% (4/9) | 22.22% (2/9) | **−22.22pp** |
+| 2 (`203448Z`) | positive | 16 | 37.50% (6/16) | 37.50% (6/16) | 0.00pp |
+| 2 (`203448Z`) | neutral | 9 | 11.11% (1/9) | 11.11% (1/9) | 0.00pp |
+| 3 (`001726Z`) | positive | 16 | 37.50% (6/16) | 37.50% (6/16) | 0.00pp |
+| 3 (`001726Z`) | neutral | 9 | 11.11% (1/9) | 11.11% (1/9) | 0.00pp |
+
+### 8.2 Aggregate across all 3 passes, by group
+
+| Group | n (task-attempts) | Arm A mean | Arm B mean | Delta (B−A) |
+|---|---|---|---|---|
+| `predicted_effect: positive` | 48 (16 tasks × 3 passes) | 35.42% (17/48) | 37.50% (18/48) | **+2.08pp** |
+| `predicted_effect: neutral` | 27 (9 tasks × 3 passes) | 22.22% (6/27) | 14.81% (4/27) | **−7.41pp** |
+
+Sanity check against §6.3's published aggregate: weighting these two group deltas by their trial
+counts reproduces the document's own aggregate delta exactly — `(48 × +2.08pp + 27 ×
+−7.41pp) / 75 = −1.33pp`, matching §6.3's reported aggregate to the same precision.
+
+### 8.3 What drives the split, and why it should not be read as a pattern
+
+Passes 2 and 3 show **zero** within-group delta for both groups — Arm A and Arm B produced
+identical per-task outcomes for every one of the 25 tasks in both of those passes. The entire
+group-level split in §8.2 is attributable to Pass 1 alone, and within Pass 1, to a small number
+of individual task-level flips:
+
+- Positive group's entire pass-1 delta (+6.25pp) is one task: `custom-memory-heap-crash` (Arm A
+  0.0, Arm B 1.0) — the only positive-tagged task where the two arms differed in that pass.
+- Neutral group's entire pass-1 delta (−22.22pp) is two tasks: `crack-7z-hash` and
+  `sparql-university` (both Arm A 1.0, Arm B 0.0) — the only neutral-tagged tasks where the two
+  arms differed in that pass.
+
+This is the same Pass 1 already identified in §6.4/§6.5 as the source of Arm A's 8.0pp cross-pass
+spread (0.36 → 0.28 pass 1→2) that made the overall measurement Inconclusive. A group of 9
+`neutral` tasks has enough leverage that two single-trial (`k=1`) flips move its mean by 22
+percentage points; a group of 16 `positive` tasks needs only one flip to move 6 points. Neither
+figure reflects a stable, repeated group-level effect — both groups are flat (0.00pp) in the two
+passes that were not affected by whatever produced Pass 1's anomalous Arm A behavior.
+
+**Direction, stated plainly and with the caveats it needs:** in this dataset, the tasks tagged
+`predicted_effect: positive` show a small positive aggregate delta (+2.08pp) and the tasks tagged
+`neutral` show a larger negative aggregate delta (−7.41pp) — the *opposite* pairing from what the
+registered prediction anticipated (positive tasks were expected to move, neutral tasks were
+expected to stay flat), and also the opposite pairing from the number already published in §4.1
+for the original k=3 single-pass run (positive −4.44pp, neutral +1.79pp, computed on a
+structurally different single-run dataset). Two independent measurements on this same
+subset have now produced opposite-signed group splits. Combined with §8.1's evidence that the
+whole split in this dataset reduces to 3 individual task-level flips inside 1 of 3 passes, on
+groups of only 16 and 9 tasks, this is not read as evidence of a real `predicted_effect`-linked
+effect in either direction — the sample is too small and too dominated by single-trial variance
+to distinguish a group-level pattern from noise. No action is taken on this observation, per the
+instruction this section exists to satisfy.
+
+---
+
+**Closing note (2026-09-08).** T407's Design A result classifies as Inconclusive, not Null (§6.4).
+The decision for what follows an Inconclusive classification — and the guardrail it puts in place
+for future releases — is recorded as a dated successor block in
+`docs/plans/plan-035-roadmap-v7-ground-up.md` §2.4 (immediately after the frozen decision-rule
+block) and in `docs/decisions/ADR-004-tb-inconclusive-guardrail-demotion.md`. This document is not
+re-opened or re-classified by that decision; see those two artifacts for the reasoning, not
+restated here.
