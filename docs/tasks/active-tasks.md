@@ -2,9 +2,28 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T421 | Re-verify/close `.claude`/`.github` MCP config gap | backend-developer | in_progress | P1 | T420 (done) | 2026-09-08 |
-| T422 | `tests/functional/test_mcp_platform_conformance.py` | qa-engineer | pending | P1 | T420 (done), T421 | 2026-09-08 |
+| T422 | `tests/functional/test_mcp_platform_conformance.py` | qa-engineer | in_progress | P1 | T420 (done), T421 (done) | 2026-09-08 |
 
+> **T421 closed 2026-09-08.** Fixed the one real, narrow gap T420 surfaced:
+> `.vscode/mcp.json.provenance.json` (the `github` platform's ADR-002 provenance sidecar) was not
+> git-tracked — `.gitignore`'s `.vscode/*` rule matched it with no negation entry, unlike the
+> tracked sidecar for all 6 other platforms. Fixed with a one-line `.gitignore` negation
+> (`!.vscode/mcp.json.provenance.json`) plus force-tracking the file itself (7 core server keys,
+> content matches live generator output). Independently re-confirmed, not re-litigated, that the
+> plan-037 `brave`/`context7`/`cwso` claim remains false. Both `.claude`/`.mcp.json` and
+> `.github`/`.vscode/mcp.json` were explicitly checked (not just one), per the brief's acceptance
+> criteria. Orchestrator independently re-ran every verification command on this task's own branch
+> before merging, not trusting the self-report: `git check-ignore -v .vscode/mcp.json.provenance.
+> json` (exit 1, no longer ignored), `git ls-files | grep provenance` (all 7 platforms now
+> symmetric), `node scripts/sync.mjs --check` (zero drift, 557 files), `pytest tests/functional/
+> test_mcp_secret_guard.py tests/functional/test_platform_projections.py` (16/16 pass), and a full
+> `python3 tests/run.py` (377 tests, OK, skipped=17, no regressions). Diff confirmed scoped to
+> exactly the two files claimed (`.gitignore` +1 line, new tracked sidecar +12 lines) — the agent's
+> own report disclosed and fully reverted an earlier accidental broad `install.sh --update` side
+> effect before committing, and the orchestrator's independent diff check confirms the final commit
+> carries none of it. T422 (qa-engineer) now dispatched — both its dependencies (T420, T421) are
+> done.
+>
 > **T423 closed 2026-09-08 — verify-and-close, no file changes.** `technical-writer` checked every
 > tag/platform-count/output-path/remote-transport-shape section of `docs/wiki/mcp-servers.md`
 > against `docs/artifacts/mcp-platform-contract-v1.md` (T420) and against T384's own

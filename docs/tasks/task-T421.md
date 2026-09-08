@@ -1,9 +1,10 @@
 # Task T421 — Re-verify and close the `.claude`/`.github` MCP config gap
 
 **ID:** T421
-**Owner:** backend-developer
-**Status:** pending
+**Owner:** backend-developer, orchestrator
+**Status:** done
 **Priority:** P1
+**Completed:** 2026-09-08
 **Depends on:** T420 (needs the finalized per-platform contract to check against)
 **Created:** 2026-09-08
 **Based on:** `docs/plans/plan-035-roadmap-v7-ground-up.md` §2.4 Phase 2 (T421 row; "re-verify this
@@ -110,3 +111,15 @@ One of two outcomes, both acceptable:
 ## Blocker protocol
 
 Report blockers with type and severity per `AGENTS.md`. Max 2 retries before escalating.
+
+## Closure (2026-09-08)
+
+Independently re-confirmed (not re-litigated) that plan-037's `brave`/`context7`/`cwso` claim
+remains false. Fixed the real gap: `.vscode/mcp.json.provenance.json` was untracked by git
+(`.gitignore`'s `.vscode/*` rule, no negation entry) — added the negation and force-tracked the
+file. Both `.claude`/`.mcp.json` and `.github`/`.vscode/mcp.json` explicitly checked; no gap found
+in the former. Orchestrator independently re-ran every verification command on this task's own
+branch before merging (`git check-ignore -v`, `git ls-files`, `node scripts/sync.mjs --check`,
+`pytest tests/functional/test_mcp_secret_guard.py tests/functional/test_platform_projections.py`,
+full `python3 tests/run.py`) and confirmed the merged diff is scoped to exactly the two files
+claimed. See `docs/tasks/completed-tasks.md`'s T421 row for the full closure record.
