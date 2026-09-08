@@ -1,9 +1,10 @@
 # Task T423 — Verify/close the manual runtime-verification checklist
 
 **ID:** T423
-**Owner:** technical-writer
-**Status:** pending
+**Owner:** technical-writer, orchestrator
+**Status:** done
 **Priority:** P2
+**Completed:** 2026-09-08
 **Depends on:** T420 (needs the finalized contract to confirm the checklist covers the right server
 set); independent of T421/T422 — may run in parallel with them
 **Created:** 2026-09-08
@@ -75,3 +76,15 @@ rewrite it from scratch; it's to check it against T420's contract doc and close 
 ## Blocker protocol
 
 Report blockers with type and severity per `AGENTS.md`. Max 2 retries before escalating.
+
+## Closure (2026-09-08)
+
+**Verify-and-close, no file changes.** `technical-writer` checked every tag/platform-count/
+output-path/remote-transport-shape-referencing section of `docs/wiki/mcp-servers.md` against
+`docs/artifacts/mcp-platform-contract-v1.md` and found zero discrepancies. Orchestrator
+independently re-verified by reading both documents directly and comparing line-by-line: the 7
+core / 8 extended server lists, all 7 per-platform output paths, and all 7 remote-transport-shape
+encodings match exactly. The provenance-sidecar gap found during T420 (routed to T421) is correctly
+out of scope here — `docs/wiki/mcp-servers.md`'s "Provenance-aware merge" section describes the
+mechanism generically and makes no per-platform completeness claim the missing `.vscode` sidecar
+would falsify. See `docs/tasks/completed-tasks.md`'s T423 row for the full closure record.

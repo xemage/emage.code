@@ -4,8 +4,20 @@
 |----|-------|-------|--------|----------|-----------|-------------|
 | T421 | Re-verify/close `.claude`/`.github` MCP config gap | backend-developer | in_progress | P1 | T420 (done) | 2026-09-08 |
 | T422 | `tests/functional/test_mcp_platform_conformance.py` | qa-engineer | pending | P1 | T420 (done), T421 | 2026-09-08 |
-| T423 | Verify/close manual runtime-verification checklist | technical-writer | in_progress | P2 | T420 (done) | 2026-09-08 |
 
+> **T423 closed 2026-09-08 — verify-and-close, no file changes.** `technical-writer` checked every
+> tag/platform-count/output-path/remote-transport-shape section of `docs/wiki/mcp-servers.md`
+> against `docs/artifacts/mcp-platform-contract-v1.md` (T420) and against T384's own
+> `completed-tasks.md` entry for the runtime-checklist section specifically, and found zero
+> discrepancies. Orchestrator independently re-verified rather than trusting the self-report: read
+> both documents directly and line-by-line compared the tag table (7 core / 8 extended, exact name
+> match), all 7 per-platform output paths, and all 7 remote-transport-shape encodings — all match
+> the contract exactly, no divergence found. The provenance-sidecar gap found during T420 (routed
+> to T421) is correctly out of `docs/wiki/mcp-servers.md`'s scope — its "Provenance-aware merge"
+> section describes the merge mechanism generically and makes no per-platform completeness claim
+> the missing `.vscode` sidecar would falsify, so there is nothing there to correct. As instructed
+> by its own brief, zero file changes means no commit and no MR for this task.
+>
 > **T420 closed 2026-09-08.** `docs/artifacts/mcp-platform-contract-v1.md` published (MR !220,
 > squash-merged `89b1ba3`). Confirms, from primary sources (`servers.yaml`, all 7
 > `implementation/platforms/*.json`, `sync.mjs`, `merge-mcp-json.py`), the per-platform MCP
