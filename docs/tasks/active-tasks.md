@@ -2,22 +2,22 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T409 | Extend the T415 failure taxonomy to ingest Harbor trajectories (one taxonomy, two sources) | devops-engineer | pending | P0 | T415 (done), T407 (done) | 2026-09-08 |
 
-> **G1 determination, 2026-09-08.** Re-read plan-035 §2.4 Phase 1's acceptance-criteria checklist
-> (immediately before "Gate G1 closes here") against real evidence for every bullet. Nine of ten
-> bullets are independently verified met. The tenth — "Terminal-Bench and golden failures appear
-> in one taxonomy" — is T409's own literal deliverable and is **not yet met**:
-> `docs/artifacts/failure-taxonomy-v1.md` §7 ("Reuse notes for T409") explicitly names T409 as the
-> task that extends the scheme to Harbor trajectories, and no such extension has happened — the
-> document currently classifies only the 9 golden-suite `known_failing` cases. **Gate G1 is
-> therefore not yet closed.** ADR-004 (T407's Inconclusive → guardrail-demotion decision) already
-> states this precisely: "T409 (Harbor-trajectory taxonomy ingestion) is unaffected — it depends
-> on T407 genuinely completing, not on classification outcome, and remains a separate dispatch
-> decision not made by this ADR." T409 is now dispatched (row above, `task-T409.md`) specifically
-> to close this gap. This is local analysis/tooling work over Harbor trajectory data that already
-> exists on disk (T407's own runs) — no new Terminal-Bench trials, no new paid API calls — so it
-> does not require the real-external-cost confirmation gate T407's trial dispatches needed.
+> **T409 closed, Gate G1 closed, 2026-09-08.** T409 ("Extend the T415 failure taxonomy to ingest
+> Harbor trajectories") is the task record of plan-035 §2.4 Phase 1's acceptance-criteria checklist
+> (immediately before "Gate G1 closes here") having one bullet unmet — "Terminal-Bench and golden
+> failures appear in one taxonomy" — while all nine others were already independently verified met.
+> `docs/artifacts/failure-taxonomy-v1.md` §7 ("Reuse notes for T409") explicitly named T409 as the
+> task that would extend the scheme to Harbor trajectories; that extension has now happened and was
+> independently verified twice (see "Owner corrections and closure history" below for the full
+> two-pass narrative, including a real gap the orchestrator caught and sent back before accepting
+> the first pass). **All ten of Phase 1's acceptance-criteria bullets are now genuinely met. Gate
+> G1 (`plan-035` §2.2, "Signal") is closed** — no component may be promoted out of beta before an
+> outcome eval exists that can fail it, and that eval (golden suite + Terminal-Bench guardrail, one
+> shared failure taxonomy) now exists in full. Gate G4's evaluator-protection precondition, which
+> plan-035 states closes at the same point as G1, is also closed (already satisfied by T416's
+> protected-paths freeze, confirmed untouched by T409's own diff). This closes Phase 1 (T410-T409,
+> all `done`) in its entirety. See `completed-tasks.md` for T409's full closure record.
 >
 > T416 closed 2026-08-14 (see "Owner corrections and closure history" below and
 > `completed-tasks.md`). **Phase 1 Layer 1 (T410-T416) is now fully done and merged to `develop`.**
@@ -115,8 +115,8 @@ all done and genuinely merged to `develop`, MR !203 — see "Owner corrections a
 below):
 - T407 — closed 2026-09-08, see `completed-tasks.md` and `task-T407.md` (Inconclusive
   classification; not a Null/Positive/Negative result — see the closure note above)
-- T409 — now dispatched, see table above and the "G1 determination" note above (row +
-  `task-T409.md` brief on disk). This is the last open item gating G1's closure.
+- T409 — closed 2026-09-08, see `completed-tasks.md` and `task-T409.md` (one taxonomy, two
+  sources; closes Gate G1 — see the note above the table).
 
 ## Task-brief authoring note
 
@@ -416,3 +416,59 @@ rewording to avoid the literal character; (3) this file had rows for tasks with 
 `task-<ID>.md` brief yet (`C7` — every ledger row must have its brief on disk already, not
 JIT-deferred) — fixed by moving those to the non-table backlog list above until each is actually
 dispatched with a real brief.
+
+**T409 closed (2026-09-08) — Phase 1 complete, Gate G1 closed.** Dispatched `devops-engineer`
+combined T407's two Harbor trajectory sources (local k=3 run, 150 trials; remote Design A's 3
+successful passes on `10.10.160.11`, read via read-only SSH, not copied into the repo per T407's
+own artifact-reconciliation decision) and extended `docs/artifacts/failure-taxonomy-v1.md` (new
+§8) to classify genuine Terminal-Bench task-level failures (`exception_info: null`, `reward: 0.0`)
+along the same three axes T415 defined for golden-suite failures, adding new axis values only
+where no existing value fit without forcing it (2 of the resulting patterns reused existing
+`behavior`/`mechanism` values unmodified). Infrastructure/harness failures (`AgentTimeoutError`,
+the two fully-failed Design A attempts) were explicitly excluded and documented, not dropped.
+
+**First pass (MR !215, commit `2535a54`) was not accepted as-is.** The orchestrator's independent
+re-verification (re-deriving the same `exception_info`/`reward` extraction directly from raw
+`result.json` files on both hosts, not trusting the dispatched agent's own counts) confirmed most
+of the self-report exactly — 157 genuine failures (71 local + 86 remote), 57 infra-exclusions (38 +
+19), and two spot-checked verbatim evidence quotes (`chess-best-move__76RBoFA` locally,
+`custom-memory-heap-crash__kYz3evQ` on the remote host) matched the raw source byte-for-byte — but
+also found a real, independently-verified gap the self-report did not disclose: the headline "157
+failures across 17 task names" was the **local-source-only** task-name count, not the true union
+across both sources (**21**, computed directly from raw data). Three genuine, non-infra failing
+task names present only in the remote source — `caffe-cifar-10`, `rstan-to-pystan`,
+`train-fasttext` (6 trials) — were absent from every pattern file and every summary count, with no
+exclusion note. A smaller arithmetic error was also found (`failure-taxonomy-v1.md` §8.3 stated "45
+local passes," the real figure is 41; the aggregate 86 was always correct). Not merged; sent back
+to the same agent (continuing on the same branch/MR, not a new one) with the exact 3 trials, the
+orchestrator's own independent read of their raw verifier output, and a specific fix scope.
+
+**Second pass (same MR !215, commit `2f7927a`)** independently re-verified each of the 3 flagged
+trials via SSH before acting (not taking the fix request's characterization on faith), confirmed
+`rstan-to-pystan` and 3-of-4 `train-fasttext` trials fit already-existing patterns
+(`incorrect-computed-output-value.md`, `required-output-artifact-absent.md` respectively — the 4th
+`train-fasttext` trial has a genuinely different shape, a loadable-but-wrong-value model, and was
+correctly split into `incorrect-computed-output-value.md` instead of forced into the same bucket as
+its 3 siblings), and created a 6th pattern file
+(`docs/benchmarks/failures/terminal-bench/verifier-crashes-on-missing-dependency.md`, new
+`behavior`/`mechanism` pair) for `caffe-cifar-10`'s fatal in-process `SIGABRT` crash, which the
+agent's own reasoning showed does not fit any of the other 5 patterns. Corrected every "17 task
+name" reference to the real union (21, local=17/remote=20) and fixed the §8.3 arithmetic. Added a
+new §8.6 documenting the gap and the fix, rather than silently rewriting the original narrative.
+
+Orchestrator independently re-verified the fix pass end-to-end, not trusting the second
+self-report either: re-checked the `train-fasttext` split and the new `caffe-cifar-10` pattern
+file directly against raw `result.json`/`verifier/test-stdout.txt` on the remote host (exact
+match); re-derived the 17/20/21 local/remote/union task-name arithmetic independently from raw
+data (exact match); confirmed the 5→6 pattern count and 65→71 cited-trial-hash count arithmetically
+(20+14+14+21+1+1 = 71); confirmed `python3 tests/run.py` fresh (377 tests, exit 0),
+`tests/functional/test_golden_held_out_isolation.py` (8/8), and `git diff` against `develop` for
+`tests/golden/**`/`scripts/scorecard.py` (empty, both passes) directly rather than trusting either
+report; checked `docker ps -a`/`docker images` on the remote host directly (nothing dated after
+2026-08-25, confirming no new Terminal-Bench trial/Docker/Harbor activity from either pass). CI
+green on both pushes; MR !215 squash-merged to `develop` (squash commit `b96d1b9`, merge commit
+`24781c1`). See `completed-tasks.md` and `task-T409.md` for full detail.
+
+**This closes Phase 1 in its entirety (T410-T409, plan-035 §2.4) and Gate G1.** All ten of Phase
+1's acceptance-criteria bullets are now independently verified met — see the note above the active
+tasks table for the full gate-closure statement. `docs/tasks/active-tasks.md`: 0 active rows.
