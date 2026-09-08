@@ -2,8 +2,45 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T422 | `tests/functional/test_mcp_platform_conformance.py` | qa-engineer | in_progress | P1 | T420 (done), T421 (done) | 2026-09-08 |
 
+> **T422 closed 2026-09-08 — closes Phase 2 (T420-T423, MCP Conformance) in full.**
+> `tests/functional/test_mcp_platform_conformance.py` (2 new tests) proves plan-035 §2.4 Phase 2's
+> three acceptance criteria live: (1) adding a `core` server to `servers.yaml` and running
+> `node scripts/sync.mjs` for real propagates it to all 7 platform outputs — an actual add-and-
+> sync-and-assert round trip against a temp copy of `implementation/`, not a static read; (2)
+> deleting a server's entry from one platform's generated output makes the shared presence-check
+> helper raise, naming the offending platform — an actual delete-and-assert-failure round trip,
+> proving the check is load-bearing; (3) `test_mcp_secret_guard.py` still passes (3/3). Reused
+> `test_sync_determinism.py`'s established isolation pattern (deep-copy `implementation/` into a
+> `tempfile.TemporaryDirectory()`, run `node scripts/sync.mjs` with `cwd` set to the copy, relying
+> on `sync.mjs`'s own `ROOT` default) rather than the `--root`/`--knowledge`/`--platforms` flags the
+> brief guessed at — confirmed as the actual pre-existing pattern, not assumed. Orchestrator
+> independently re-ran everything on this task's own branch before merging, not trusting the
+> transcripts in the completion report: read `test_sync_determinism.py` directly and confirmed the
+> claimed isolation mechanism is real; ran the two new tests directly (2/2 pass); ran
+> `test_mcp_secret_guard.py` directly (3/3 pass); ran the full suite fresh (379 tests, up from 377,
+> exactly the +2 new tests, `OK`, `skipped=17`, no regressions); confirmed `git status` clean both
+> mid-run and after (no temp-dir leakage into the real tree); confirmed the merged diff is scoped to
+> exactly the one new file (`tests/functional/test_mcp_platform_conformance.py`, 255 lines, nothing
+> else touched). **Phase 2 (T420-T423) is now fully done, all four tasks independently verified
+> before merge, not merely accepted on self-report.** See "Phase 2 / Gate G2 closure status" note
+> below for what this does and does not close.
+>
+> **Phase 2 / Gate G2 closure status (2026-09-08) — read before proposing next steps.** Phase 2
+> (T420-T423, MCP Conformance) is complete. **This does NOT close Gate G2.** Per `plan-035` §2.4,
+> "Gate G2 closes when Wave 1 (T433) is complete for the routing target classes" — T433 is Phase
+> 3's (Maturity Ladder) Wave-1 promotion task, gated on Phase 3's own T430-T432 first, none of
+> which exist yet: Phase 3 is still `plan-035`'s own "**Status: proposed — not approved for
+> task-brief authoring or execution**," with zero `T43x` rows in either ledger. What Phase 2
+> completing actually does, per `plan-037-phase2-phase5-sequencing.md`'s own framing: it makes
+> Phase 3 *proposable* as a next phase (Phase 3 needed both G1, closed, and Phase 2 at least
+> underway/re-scoped before it could be proposed at all) — it does not itself advance G2 by even
+> one task. Phase 5 (Persistent Memory/RAG) is also now unblocked to start per plan-037's own
+> sequential recommendation ("Start Phase 5 after Phase 2 closes"), but neither Phase 3 nor Phase 5
+> has been planned to execution-ready detail or approved for dispatch — that is next planning work,
+> not yet done, and is a decision for the user per Plan-Approve-Execute, not something this
+> ledger note pre-authorizes.
+>
 > **T421 closed 2026-09-08.** Fixed the one real, narrow gap T420 surfaced:
 > `.vscode/mcp.json.provenance.json` (the `github` platform's ADR-002 provenance sidecar) was not
 > git-tracked — `.gitignore`'s `.vscode/*` rule matched it with no negation entry, unlike the
