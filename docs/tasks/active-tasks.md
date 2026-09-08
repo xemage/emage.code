@@ -2,7 +2,6 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T407 | First Terminal-Bench delta measurement (k>=3, full frozen subset) | devops-engineer | in_progress | P0 | T418 (done), T419 (done), T408 (done) | 2026-09-06 |
 
 > T416 closed 2026-08-14 (see "Owner corrections and closure history" below and
 > `completed-tasks.md`). **Phase 1 Layer 1 (T410-T416) is now fully done and merged to `develop`.**
@@ -40,6 +39,26 @@
 > (all 3 passes, same invocation) — a second attempt is in progress as of this note. See
 > `task-T407.md`'s "Design A — host-exhaustion blocker and restart" section for full detail. No
 > result or classification exists yet; T409 remains blocked.
+>
+> **T407 closed, 2026-09-08.** The restarted second Design A attempt (above) also hit 100% trial
+> failure across all 3 passes — root cause, confirmed by direct filesystem inspection on both
+> hosts: Docker Compose bind mounts resolve against the daemon's filesystem (`10.10.160.11`), not
+> the client's (`10.10.160.12`), so agent/verifier output was silently stranded on `.11`. Fixed by
+> running the Harbor CLI co-located with the daemon, directly on `.11`; a clean 4-trial smoke test
+> there was followed by a full, successful Design A re-run: 3 independent passes, 150 real trials,
+> valid reward data throughout, completed 2026-09-08T05:10Z. Arm A pass means `[0.36, 0.28, 0.28]`
+> (spread = 8.0pp), Arm B `[0.32, 0.28, 0.28]` (spread = 4.0pp), aggregate delta −1.33pp.
+> **Classification: INCONCLUSIVE** per plan-035's frozen rule (Arm A's spread sits exactly on the
+> rule's own `≥ 8pp` threshold, which is inclusive of equality) — this is not a Null, Positive, or
+> Negative result; the rule's own text is explicit that Inconclusive must not be reported as Null.
+> Total real cost across T407's entire history (original k=3 run + both failed Design A attempts
+> + the `.11` smoke test + the 3 successful passes): **≈$78.41**. Full numbers, spread
+> derivation, and rule application: `docs/benchmarks/tb-delta-v6.12.0.md` §6-7. Full narrative,
+> including an independent-verification correction to this note's own 2026-09-06 entry (the
+> 2026-09-05 attempt's Arm A data was not "valid" as previously stated — re-checked during
+> closeout and found to be 100% errored, same root cause, just discovered later):
+> `task-T407.md`'s closing addendum. T407 moved to `completed-tasks.md`. T409 is unblocked — see
+> the "Backlog" section's T409 entry below for its updated status.
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
@@ -78,8 +97,15 @@ closeout detail.
 **Layer 2** (T407/T409 renamed from plan-035's `T41A`/`T41C` per the note above; T418, T419, T408
 all done and genuinely merged to `develop`, MR !203 — see "Owner corrections and closure history"
 below):
-- T407 — now dispatched, see table above (row + `task-T407.md` brief on disk)
-- T409 (plan-035: `T41C`) — Extend T415 taxonomy to ingest Harbor trajectories — `devops-engineer` — depends on T415 (done), T407 (in progress, must genuinely complete first)
+- T407 — closed 2026-09-08, see `completed-tasks.md` and `task-T407.md` (Inconclusive
+  classification; not a Null/Positive/Negative result — see the closure note above)
+- T409 (plan-035: `T41C`) — Extend T415 taxonomy to ingest Harbor trajectories — `devops-engineer`
+  — depends on T415 (done), T407 (**done**, genuinely completed 2026-09-08 — this dependency is
+  on T407 producing real Harbor trajectory data, not on any specific classification outcome, so
+  T407's Inconclusive result does not itself block T409). **T409 is now unblocked.** No brief
+  exists yet (per this file's own `C7` discipline, a table row cannot be added until
+  `task-T409.md` is authored); authoring that brief and dispatching real implementation work are
+  both explicitly deferred to a separate, later decision — not part of T407's closeout.
 
 ## Task-brief authoring note
 

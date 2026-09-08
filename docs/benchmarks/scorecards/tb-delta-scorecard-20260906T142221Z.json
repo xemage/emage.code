@@ -1,0 +1,667 @@
+{
+  "schema_version": "tb-delta-scorecard-v1",
+  "schema_note": "Self-documented interim schema (T419/T408), defined ahead of scripts/scorecard.py (T413, Layer 1, not yet built at authoring time). A reconciliation pass against T413's shape is expected once it lands -- flagged as type: dependency, severity: minor in T419's completion report, not silently absorbed. Fields: per-arm results (arms.A / arms.B), k, model, dataset subset reference (subset_ref + subset_frozen_at), delta, spread, cost/time (elapsed_seconds_per_trial / cost_usd_total per arm), timestamp (generated_at).",
+  "generated_at": "2026-09-06T19:20:35.519899+00:00",
+  "runner": "scripts/tb-delta.sh",
+  "dataset": "terminal-bench/terminal-bench-2",
+  "subset_ref": "docs/benchmarks/tb-subset.json",
+  "subset_frozen_at": "2026-08-13",
+  "k": 1,
+  "model": {
+    "name": "claude-haiku-4-5-20251001",
+    "tier": "economy"
+  },
+  "arms": {
+    "A": {
+      "agent": "claude-code",
+      "job_dir": "/home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A",
+      "job_summary_stats": {
+        "n_completed_trials": 25,
+        "n_errored_trials": 25,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+          "claude-code__claude-haiku-4-5-20251001__terminal-bench/terminal-bench-2": {
+            "n_trials": 0,
+            "n_errors": 25,
+            "metrics": [
+              {
+                "mean": 0.0
+              }
+            ],
+            "pass_at_k": {},
+            "reward_stats": {},
+            "exception_stats": {
+              "RewardFileNotFoundError": [
+                "make-mips-interpreter__Bg6wvjn",
+                "overfull-hbox__EpVd5wH",
+                "video-processing__ppKePyP",
+                "protein-assembly__zex2Agn",
+                "dna-assembly__T8EzEkk",
+                "install-windows-3-11__BkpH74G",
+                "log-summary-date-ranges__vxi4fdh",
+                "rstan-to-pystan__VTFHfiH",
+                "git-leak-recovery__6tfVTyR",
+                "db-wal-recovery__cwK3G9a",
+                "constraints-scheduling__iwo3aLJ",
+                "custom-memory-heap-crash__EqAUaJg",
+                "chess-best-move__gnvKgTd",
+                "gcode-to-text__2Jj5jLy",
+                "kv-store-grpc__j26fdsu",
+                "pypi-server__6CafFbo",
+                "hf-model-inference__aNGc4uL",
+                "sparql-university__wUekyTT",
+                "fix-code-vulnerability__PgM5jaR",
+                "portfolio-optimization__jCYNdP7",
+                "configure-git-webserver__uWXa8CF"
+              ],
+              "AgentTimeoutError": [
+                "caffe-cifar-10__6mWUCie",
+                "crack-7z-hash__xM55Urh",
+                "feal-linear-cryptanalysis__4QN85k7",
+                "train-fasttext__y946LP9"
+              ]
+            }
+          }
+        },
+        "n_input_tokens": null,
+        "n_cache_tokens": null,
+        "n_output_tokens": null,
+        "cost_usd": null
+      },
+      "n_trials": 25,
+      "n_trials_with_reward": 0,
+      "errored_trials": [
+        {
+          "trial_name": "caffe-cifar-10__6mWUCie",
+          "exception": {
+            "exception_type": "AgentTimeoutError",
+            "exception_message": "Agent execution timed out after 1200.0 seconds",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 179, in wrapper\n    return await fn(self, instruction, *args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/claude_code.py\", line 1891, in run\n    await self.exec_as_agent(\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 898, in exec_as_agent\n    return await self._exec(\n           ^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 849, in _exec\n    result = await environment.exec(\n             ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 1101, in exec\n    return await self._compose_exec(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 1178, in _compose_exec\n    return await self._run_docker_compose_command(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 649, in _run_docker_compose_command\n    result = await self._collect_buffered_output(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 679, in _collect_buffered_output\n    stdout_bytes, stderr_bytes = await process.communicate(input=stdin_data)\n                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/subprocess.py\", line 201, in communicate\n    stdin, stdout, stderr = await tasks.gather(stdin, stdout, stderr)\n                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/subprocess.py\", line 181, in _read_stream\n    output = await stream.read()\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/streams.py\", line 706, in read\n    block = await self.read(self._limit)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/streams.py\", line 713, in read\n    await self._wait_for_data('read')\n  File \"/usr/lib/python3.12/asyncio/streams.py\", line 545, in _wait_for_data\n    await self._waiter\nasyncio.exceptions.CancelledError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 545, in _run_agent_phase\n    await asyncio.wait_for(\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 519, in wait_for\n    async with timeouts.timeout(timeout):\n  File \"/usr/lib/python3.12/asyncio/timeouts.py\", line 115, in __aexit__\n    raise TimeoutError from exc_val\nTimeoutError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 77, in _run_agent\n    await self._run_agent_phase(\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 554, in _run_agent_phase\n    raise AgentTimeoutError(\nharbor.trial.errors.AgentTimeoutError: Agent execution timed out after 1200.0 seconds\n",
+            "occurred_at": "2026-09-06T15:17:20.313744Z"
+          }
+        },
+        {
+          "trial_name": "chess-best-move__gnvKgTd",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/chess-best-move__gnvKgTd/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/chess-best-move__gnvKgTd/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/chess-best-move__gnvKgTd/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/chess-best-move__gnvKgTd/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T15:57:31.823788Z"
+          }
+        },
+        {
+          "trial_name": "configure-git-webserver__uWXa8CF",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/configure-git-webserver__uWXa8CF/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/configure-git-webserver__uWXa8CF/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/configure-git-webserver__uWXa8CF/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/configure-git-webserver__uWXa8CF/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T16:24:11.026300Z"
+          }
+        },
+        {
+          "trial_name": "constraints-scheduling__iwo3aLJ",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/constraints-scheduling__iwo3aLJ/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/constraints-scheduling__iwo3aLJ/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/constraints-scheduling__iwo3aLJ/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/constraints-scheduling__iwo3aLJ/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T15:52:52.876594Z"
+          }
+        },
+        {
+          "trial_name": "crack-7z-hash__xM55Urh",
+          "exception": {
+            "exception_type": "AgentTimeoutError",
+            "exception_message": "Agent execution timed out after 900.0 seconds",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 179, in wrapper\n    return await fn(self, instruction, *args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/claude_code.py\", line 1891, in run\n    await self.exec_as_agent(\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 898, in exec_as_agent\n    return await self._exec(\n           ^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 849, in _exec\n    result = await environment.exec(\n             ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 1101, in exec\n    return await self._compose_exec(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 1178, in _compose_exec\n    return await self._run_docker_compose_command(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 649, in _run_docker_compose_command\n    result = await self._collect_buffered_output(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 679, in _collect_buffered_output\n    stdout_bytes, stderr_bytes = await process.communicate(input=stdin_data)\n                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/subprocess.py\", line 201, in communicate\n    stdin, stdout, stderr = await tasks.gather(stdin, stdout, stderr)\n                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/subprocess.py\", line 181, in _read_stream\n    output = await stream.read()\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/streams.py\", line 706, in read\n    block = await self.read(self._limit)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/streams.py\", line 713, in read\n    await self._wait_for_data('read')\n  File \"/usr/lib/python3.12/asyncio/streams.py\", line 545, in _wait_for_data\n    await self._waiter\nasyncio.exceptions.CancelledError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 545, in _run_agent_phase\n    await asyncio.wait_for(\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 519, in wait_for\n    async with timeouts.timeout(timeout):\n  File \"/usr/lib/python3.12/asyncio/timeouts.py\", line 115, in __aexit__\n    raise TimeoutError from exc_val\nTimeoutError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 77, in _run_agent\n    await self._run_agent_phase(\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 554, in _run_agent_phase\n    raise AgentTimeoutError(\nharbor.trial.errors.AgentTimeoutError: Agent execution timed out after 900.0 seconds\n",
+            "occurred_at": "2026-09-06T15:34:49.022287Z"
+          }
+        },
+        {
+          "trial_name": "custom-memory-heap-crash__EqAUaJg",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/custom-memory-heap-crash__EqAUaJg/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/custom-memory-heap-crash__EqAUaJg/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/custom-memory-heap-crash__EqAUaJg/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/custom-memory-heap-crash__EqAUaJg/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T15:59:42.036496Z"
+          }
+        },
+        {
+          "trial_name": "db-wal-recovery__cwK3G9a",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/db-wal-recovery__cwK3G9a/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/db-wal-recovery__cwK3G9a/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/db-wal-recovery__cwK3G9a/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/db-wal-recovery__cwK3G9a/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T15:51:40.690749Z"
+          }
+        },
+        {
+          "trial_name": "dna-assembly__T8EzEkk",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/dna-assembly__T8EzEkk/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/dna-assembly__T8EzEkk/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/dna-assembly__T8EzEkk/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/dna-assembly__T8EzEkk/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T15:10:04.947232Z"
+          }
+        },
+        {
+          "trial_name": "feal-linear-cryptanalysis__4QN85k7",
+          "exception": {
+            "exception_type": "AgentTimeoutError",
+            "exception_message": "Agent execution timed out after 1800.0 seconds",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 179, in wrapper\n    return await fn(self, instruction, *args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/claude_code.py\", line 1891, in run\n    await self.exec_as_agent(\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 898, in exec_as_agent\n    return await self._exec(\n           ^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 849, in _exec\n    result = await environment.exec(\n             ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 1101, in exec\n    return await self._compose_exec(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 1178, in _compose_exec\n    return await self._run_docker_compose_command(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 649, in _run_docker_compose_command\n    result = await self._collect_buffered_output(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 679, in _collect_buffered_output\n    stdout_bytes, stderr_bytes = await process.communicate(input=stdin_data)\n                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/subprocess.py\", line 201, in communicate\n    stdin, stdout, stderr = await tasks.gather(stdin, stdout, stderr)\n                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/subprocess.py\", line 181, in _read_stream\n    output = await stream.read()\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/streams.py\", line 706, in read\n    block = await self.read(self._limit)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/streams.py\", line 713, in read\n    await self._wait_for_data('read')\n  File \"/usr/lib/python3.12/asyncio/streams.py\", line 545, in _wait_for_data\n    await self._waiter\nasyncio.exceptions.CancelledError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 545, in _run_agent_phase\n    await asyncio.wait_for(\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 519, in wait_for\n    async with timeouts.timeout(timeout):\n  File \"/usr/lib/python3.12/asyncio/timeouts.py\", line 115, in __aexit__\n    raise TimeoutError from exc_val\nTimeoutError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 77, in _run_agent\n    await self._run_agent_phase(\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 554, in _run_agent_phase\n    raise AgentTimeoutError(\nharbor.trial.errors.AgentTimeoutError: Agent execution timed out after 1800.0 seconds\n",
+            "occurred_at": "2026-09-06T15:49:47.139360Z"
+          }
+        },
+        {
+          "trial_name": "fix-code-vulnerability__PgM5jaR",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/fix-code-vulnerability__PgM5jaR/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/fix-code-vulnerability__PgM5jaR/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/fix-code-vulnerability__PgM5jaR/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/fix-code-vulnerability__PgM5jaR/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T16:17:01.051223Z"
+          }
+        },
+        {
+          "trial_name": "gcode-to-text__2Jj5jLy",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/gcode-to-text__2Jj5jLy/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/gcode-to-text__2Jj5jLy/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/gcode-to-text__2Jj5jLy/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/gcode-to-text__2Jj5jLy/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T15:59:58.047988Z"
+          }
+        },
+        {
+          "trial_name": "git-leak-recovery__6tfVTyR",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/git-leak-recovery__6tfVTyR/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/git-leak-recovery__6tfVTyR/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/git-leak-recovery__6tfVTyR/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/git-leak-recovery__6tfVTyR/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T15:48:15.821076Z"
+          }
+        },
+        {
+          "trial_name": "hf-model-inference__aNGc4uL",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/hf-model-inference__aNGc4uL/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/hf-model-inference__aNGc4uL/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/hf-model-inference__aNGc4uL/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/hf-model-inference__aNGc4uL/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T16:09:48.804848Z"
+          }
+        },
+        {
+          "trial_name": "install-windows-3-11__BkpH74G",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/install-windows-3-11__BkpH74G/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/install-windows-3-11__BkpH74G/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/install-windows-3-11__BkpH74G/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/install-windows-3-11__BkpH74G/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T15:16:00.651352Z"
+          }
+        },
+        {
+          "trial_name": "kv-store-grpc__j26fdsu",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/kv-store-grpc__j26fdsu/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/kv-store-grpc__j26fdsu/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/kv-store-grpc__j26fdsu/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/kv-store-grpc__j26fdsu/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T16:02:21.366139Z"
+          }
+        },
+        {
+          "trial_name": "log-summary-date-ranges__vxi4fdh",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/log-summary-date-ranges__vxi4fdh/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/log-summary-date-ranges__vxi4fdh/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/log-summary-date-ranges__vxi4fdh/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/log-summary-date-ranges__vxi4fdh/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T15:18:10.726224Z"
+          }
+        },
+        {
+          "trial_name": "make-mips-interpreter__Bg6wvjn",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/make-mips-interpreter__Bg6wvjn/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/make-mips-interpreter__Bg6wvjn/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/make-mips-interpreter__Bg6wvjn/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/make-mips-interpreter__Bg6wvjn/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T14:55:02.537767Z"
+          }
+        },
+        {
+          "trial_name": "overfull-hbox__EpVd5wH",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/overfull-hbox__EpVd5wH/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/overfull-hbox__EpVd5wH/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/overfull-hbox__EpVd5wH/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/overfull-hbox__EpVd5wH/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T14:46:42.038453Z"
+          }
+        },
+        {
+          "trial_name": "portfolio-optimization__jCYNdP7",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/portfolio-optimization__jCYNdP7/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/portfolio-optimization__jCYNdP7/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/portfolio-optimization__jCYNdP7/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/portfolio-optimization__jCYNdP7/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T16:22:09.557058Z"
+          }
+        },
+        {
+          "trial_name": "protein-assembly__zex2Agn",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/protein-assembly__zex2Agn/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/protein-assembly__zex2Agn/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/protein-assembly__zex2Agn/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/protein-assembly__zex2Agn/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T14:55:51.732859Z"
+          }
+        },
+        {
+          "trial_name": "pypi-server__6CafFbo",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/pypi-server__6CafFbo/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/pypi-server__6CafFbo/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/pypi-server__6CafFbo/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/pypi-server__6CafFbo/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T16:04:50.301643Z"
+          }
+        },
+        {
+          "trial_name": "rstan-to-pystan__VTFHfiH",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/rstan-to-pystan__VTFHfiH/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/rstan-to-pystan__VTFHfiH/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/rstan-to-pystan__VTFHfiH/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/rstan-to-pystan__VTFHfiH/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T15:45:59.233789Z"
+          }
+        },
+        {
+          "trial_name": "sparql-university__wUekyTT",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/sparql-university__wUekyTT/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/sparql-university__wUekyTT/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/sparql-university__wUekyTT/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/sparql-university__wUekyTT/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T16:13:39.743992Z"
+          }
+        },
+        {
+          "trial_name": "train-fasttext__y946LP9",
+          "exception": {
+            "exception_type": "AgentTimeoutError",
+            "exception_message": "Agent execution timed out after 3600.0 seconds",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 179, in wrapper\n    return await fn(self, instruction, *args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/claude_code.py\", line 1891, in run\n    await self.exec_as_agent(\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 898, in exec_as_agent\n    return await self._exec(\n           ^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 849, in _exec\n    result = await environment.exec(\n             ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 1101, in exec\n    return await self._compose_exec(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 1178, in _compose_exec\n    return await self._run_docker_compose_command(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 649, in _run_docker_compose_command\n    result = await self._collect_buffered_output(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 679, in _collect_buffered_output\n    stdout_bytes, stderr_bytes = await process.communicate(input=stdin_data)\n                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/subprocess.py\", line 201, in communicate\n    stdin, stdout, stderr = await tasks.gather(stdin, stdout, stderr)\n                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/subprocess.py\", line 181, in _read_stream\n    output = await stream.read()\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/streams.py\", line 706, in read\n    block = await self.read(self._limit)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/streams.py\", line 713, in read\n    await self._wait_for_data('read')\n  File \"/usr/lib/python3.12/asyncio/streams.py\", line 545, in _wait_for_data\n    await self._waiter\nasyncio.exceptions.CancelledError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 545, in _run_agent_phase\n    await asyncio.wait_for(\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 519, in wait_for\n    async with timeouts.timeout(timeout):\n  File \"/usr/lib/python3.12/asyncio/timeouts.py\", line 115, in __aexit__\n    raise TimeoutError from exc_val\nTimeoutError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 77, in _run_agent\n    await self._run_agent_phase(\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 554, in _run_agent_phase\n    raise AgentTimeoutError(\nharbor.trial.errors.AgentTimeoutError: Agent execution timed out after 3600.0 seconds\n",
+            "occurred_at": "2026-09-06T17:01:36.340809Z"
+          }
+        },
+        {
+          "trial_name": "video-processing__ppKePyP",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/video-processing__ppKePyP/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/video-processing__ppKePyP/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/video-processing__ppKePyP/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-A/video-processing__ppKePyP/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T14:49:49.893234Z"
+          }
+        }
+      ],
+      "rewards": [],
+      "mean_reward": null,
+      "stdev_reward": 0.0,
+      "elapsed_seconds_per_trial": [
+        1345.715618,
+        278.129325,
+        121.595243,
+        171.020054,
+        1052.866271,
+        480.664205,
+        204.452733,
+        902.74856,
+        1902.560391,
+        201.023084,
+        145.903108,
+        135.501529,
+        298.284779,
+        355.180678,
+        159.384875,
+        129.671748,
+        758.50863,
+        258.061468,
+        307.630964,
+        362.379704,
+        148.74265,
+        615.997261,
+        230.764174,
+        3742.841404,
+        187.546055
+      ],
+      "cost_usd_total": null
+    },
+    "B": {
+      "agent": "scripts.tb_delta_agent:EmageCodeClaudeCode",
+      "job_dir": "/home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B",
+      "job_summary_stats": {
+        "n_completed_trials": 25,
+        "n_errored_trials": 25,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+          "emage-code-claude-code__claude-haiku-4-5-20251001__terminal-bench/terminal-bench-2": {
+            "n_trials": 0,
+            "n_errors": 25,
+            "metrics": [
+              {
+                "mean": 0.0
+              }
+            ],
+            "pass_at_k": {},
+            "reward_stats": {},
+            "exception_stats": {
+              "RewardFileNotFoundError": [
+                "make-mips-interpreter__RcK4eLy",
+                "overfull-hbox__xmMVbZA",
+                "video-processing__JdZzJZZ",
+                "protein-assembly__GmmM9XG",
+                "dna-assembly__xmfWHjy",
+                "caffe-cifar-10__UBUPRB7",
+                "install-windows-3-11__WBi7cgF",
+                "log-summary-date-ranges__5Cy9MFv",
+                "crack-7z-hash__XUECcJk",
+                "rstan-to-pystan__pmggK7c",
+                "git-leak-recovery__TDVRHpV",
+                "db-wal-recovery__pdtWciU",
+                "constraints-scheduling__WQv2rVB",
+                "custom-memory-heap-crash__ShEFxPK",
+                "chess-best-move__XiT25QD",
+                "gcode-to-text__VjnHmuT",
+                "kv-store-grpc__V4cRojk",
+                "train-fasttext__tFsviSG",
+                "pypi-server__n5r5krP",
+                "hf-model-inference__f7nhHWx",
+                "sparql-university__bypQF3N",
+                "fix-code-vulnerability__pWR4Ge8",
+                "portfolio-optimization__3kZf9W7",
+                "configure-git-webserver__6DASqJY"
+              ],
+              "AgentTimeoutError": [
+                "feal-linear-cryptanalysis__bZLpTEm"
+              ]
+            }
+          }
+        },
+        "n_input_tokens": null,
+        "n_cache_tokens": null,
+        "n_output_tokens": null,
+        "cost_usd": null
+      },
+      "n_trials": 25,
+      "n_trials_with_reward": 0,
+      "errored_trials": [
+        {
+          "trial_name": "caffe-cifar-10__UBUPRB7",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/caffe-cifar-10__UBUPRB7/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/caffe-cifar-10__UBUPRB7/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/caffe-cifar-10__UBUPRB7/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/caffe-cifar-10__UBUPRB7/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T17:50:22.080719Z"
+          }
+        },
+        {
+          "trial_name": "chess-best-move__XiT25QD",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/chess-best-move__XiT25QD/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/chess-best-move__XiT25QD/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/chess-best-move__XiT25QD/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/chess-best-move__XiT25QD/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T18:24:06.129173Z"
+          }
+        },
+        {
+          "trial_name": "configure-git-webserver__6DASqJY",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/configure-git-webserver__6DASqJY/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/configure-git-webserver__6DASqJY/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/configure-git-webserver__6DASqJY/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/configure-git-webserver__6DASqJY/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T18:53:13.563465Z"
+          }
+        },
+        {
+          "trial_name": "constraints-scheduling__WQv2rVB",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/constraints-scheduling__WQv2rVB/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/constraints-scheduling__WQv2rVB/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/constraints-scheduling__WQv2rVB/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/constraints-scheduling__WQv2rVB/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T18:16:32.075904Z"
+          }
+        },
+        {
+          "trial_name": "crack-7z-hash__XUECcJk",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/crack-7z-hash__XUECcJk/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/crack-7z-hash__XUECcJk/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/crack-7z-hash__XUECcJk/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/crack-7z-hash__XUECcJk/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T17:46:12.659773Z"
+          }
+        },
+        {
+          "trial_name": "custom-memory-heap-crash__ShEFxPK",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/custom-memory-heap-crash__ShEFxPK/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/custom-memory-heap-crash__ShEFxPK/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/custom-memory-heap-crash__ShEFxPK/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/custom-memory-heap-crash__ShEFxPK/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T18:26:23.079333Z"
+          }
+        },
+        {
+          "trial_name": "db-wal-recovery__pdtWciU",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/db-wal-recovery__pdtWciU/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/db-wal-recovery__pdtWciU/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/db-wal-recovery__pdtWciU/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/db-wal-recovery__pdtWciU/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T18:14:00.591784Z"
+          }
+        },
+        {
+          "trial_name": "dna-assembly__xmfWHjy",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/dna-assembly__xmfWHjy/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/dna-assembly__xmfWHjy/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/dna-assembly__xmfWHjy/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/dna-assembly__xmfWHjy/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T17:31:29.857291Z"
+          }
+        },
+        {
+          "trial_name": "feal-linear-cryptanalysis__bZLpTEm",
+          "exception": {
+            "exception_type": "AgentTimeoutError",
+            "exception_message": "Agent execution timed out after 1800.0 seconds",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 179, in wrapper\n    return await fn(self, instruction, *args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/claude_code.py\", line 1891, in run\n    await self.exec_as_agent(\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 898, in exec_as_agent\n    return await self._exec(\n           ^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 849, in _exec\n    result = await environment.exec(\n             ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 1101, in exec\n    return await self._compose_exec(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 1178, in _compose_exec\n    return await self._run_docker_compose_command(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 649, in _run_docker_compose_command\n    result = await self._collect_buffered_output(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 679, in _collect_buffered_output\n    stdout_bytes, stderr_bytes = await process.communicate(input=stdin_data)\n                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/subprocess.py\", line 201, in communicate\n    stdin, stdout, stderr = await tasks.gather(stdin, stdout, stderr)\n                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/subprocess.py\", line 181, in _read_stream\n    output = await stream.read()\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/streams.py\", line 706, in read\n    block = await self.read(self._limit)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/streams.py\", line 713, in read\n    await self._wait_for_data('read')\n  File \"/usr/lib/python3.12/asyncio/streams.py\", line 545, in _wait_for_data\n    await self._waiter\nasyncio.exceptions.CancelledError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 545, in _run_agent_phase\n    await asyncio.wait_for(\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 519, in wait_for\n    async with timeouts.timeout(timeout):\n  File \"/usr/lib/python3.12/asyncio/timeouts.py\", line 115, in __aexit__\n    raise TimeoutError from exc_val\nTimeoutError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 77, in _run_agent\n    await self._run_agent_phase(\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 554, in _run_agent_phase\n    raise AgentTimeoutError(\nharbor.trial.errors.AgentTimeoutError: Agent execution timed out after 1800.0 seconds\n",
+            "occurred_at": "2026-09-06T18:17:38.920591Z"
+          }
+        },
+        {
+          "trial_name": "fix-code-vulnerability__pWR4Ge8",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/fix-code-vulnerability__pWR4Ge8/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/fix-code-vulnerability__pWR4Ge8/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/fix-code-vulnerability__pWR4Ge8/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/fix-code-vulnerability__pWR4Ge8/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T18:46:04.829075Z"
+          }
+        },
+        {
+          "trial_name": "gcode-to-text__VjnHmuT",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/gcode-to-text__VjnHmuT/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/gcode-to-text__VjnHmuT/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/gcode-to-text__VjnHmuT/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/gcode-to-text__VjnHmuT/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T18:26:10.358337Z"
+          }
+        },
+        {
+          "trial_name": "git-leak-recovery__TDVRHpV",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/git-leak-recovery__TDVRHpV/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/git-leak-recovery__TDVRHpV/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/git-leak-recovery__TDVRHpV/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/git-leak-recovery__TDVRHpV/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T18:09:55.087271Z"
+          }
+        },
+        {
+          "trial_name": "hf-model-inference__f7nhHWx",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/hf-model-inference__f7nhHWx/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/hf-model-inference__f7nhHWx/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/hf-model-inference__f7nhHWx/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/hf-model-inference__f7nhHWx/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T18:38:19.490518Z"
+          }
+        },
+        {
+          "trial_name": "install-windows-3-11__WBi7cgF",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/install-windows-3-11__WBi7cgF/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/install-windows-3-11__WBi7cgF/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/install-windows-3-11__WBi7cgF/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/install-windows-3-11__WBi7cgF/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T17:41:29.677445Z"
+          }
+        },
+        {
+          "trial_name": "kv-store-grpc__V4cRojk",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/kv-store-grpc__V4cRojk/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/kv-store-grpc__V4cRojk/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/kv-store-grpc__V4cRojk/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/kv-store-grpc__V4cRojk/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T18:29:14.057551Z"
+          }
+        },
+        {
+          "trial_name": "log-summary-date-ranges__5Cy9MFv",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/log-summary-date-ranges__5Cy9MFv/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/log-summary-date-ranges__5Cy9MFv/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/log-summary-date-ranges__5Cy9MFv/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/log-summary-date-ranges__5Cy9MFv/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T17:43:54.676820Z"
+          }
+        },
+        {
+          "trial_name": "make-mips-interpreter__RcK4eLy",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/make-mips-interpreter__RcK4eLy/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/make-mips-interpreter__RcK4eLy/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/make-mips-interpreter__RcK4eLy/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/make-mips-interpreter__RcK4eLy/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T17:22:16.606056Z"
+          }
+        },
+        {
+          "trial_name": "overfull-hbox__xmMVbZA",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/overfull-hbox__xmMVbZA/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/overfull-hbox__xmMVbZA/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/overfull-hbox__xmMVbZA/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/overfull-hbox__xmMVbZA/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T17:07:38.673053Z"
+          }
+        },
+        {
+          "trial_name": "portfolio-optimization__3kZf9W7",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/portfolio-optimization__3kZf9W7/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/portfolio-optimization__3kZf9W7/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/portfolio-optimization__3kZf9W7/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/portfolio-optimization__3kZf9W7/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T18:50:47.090361Z"
+          }
+        },
+        {
+          "trial_name": "protein-assembly__GmmM9XG",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/protein-assembly__GmmM9XG/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/protein-assembly__GmmM9XG/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/protein-assembly__GmmM9XG/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/protein-assembly__GmmM9XG/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T17:29:47.570013Z"
+          }
+        },
+        {
+          "trial_name": "pypi-server__n5r5krP",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/pypi-server__n5r5krP/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/pypi-server__n5r5krP/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/pypi-server__n5r5krP/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/pypi-server__n5r5krP/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T18:32:12.693855Z"
+          }
+        },
+        {
+          "trial_name": "rstan-to-pystan__pmggK7c",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/rstan-to-pystan__pmggK7c/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/rstan-to-pystan__pmggK7c/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/rstan-to-pystan__pmggK7c/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/rstan-to-pystan__pmggK7c/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T18:07:07.723773Z"
+          }
+        },
+        {
+          "trial_name": "sparql-university__bypQF3N",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/sparql-university__bypQF3N/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/sparql-university__bypQF3N/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/sparql-university__bypQF3N/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/sparql-university__bypQF3N/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T18:42:35.989514Z"
+          }
+        },
+        {
+          "trial_name": "train-fasttext__tFsviSG",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/train-fasttext__tFsviSG/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/train-fasttext__tFsviSG/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/train-fasttext__tFsviSG/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/train-fasttext__tFsviSG/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T19:20:15.976677Z"
+          }
+        },
+        {
+          "trial_name": "video-processing__JdZzJZZ",
+          "exception": {
+            "exception_type": "RewardFileNotFoundError",
+            "exception_message": "No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/video-processing__JdZzJZZ/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/video-processing__JdZzJZZ/verifier/reward.json",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 409, in run\n    await self._run()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 52, in _run\n    await self._run_verifier()\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 106, in _run_verifier\n    self.result.verifier_result = await self._run_shared_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 670, in _run_shared_verifier\n    return await asyncio.wait_for(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/home/emage/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/verifier/verifier.py\", line 232, in verify\n    raise RewardFileNotFoundError(\nharbor.verifier.verifier.RewardFileNotFoundError: No reward file found at /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/video-processing__JdZzJZZ/verifier/reward.txt or /home/emage/Code/emage/worktrees/t407-tb-delta/jobs/tb-delta-20260906T142221Z-arm-B/video-processing__JdZzJZZ/verifier/reward.json\n",
+            "occurred_at": "2026-09-06T17:14:09.070662Z"
+          }
+        }
+      ],
+      "rewards": [],
+      "mean_reward": null,
+      "stdev_reward": 0.0,
+      "elapsed_seconds_per_trial": [
+        1236.105995,
+        375.348964,
+        143.410282,
+        151.104592,
+        137.856117,
+        591.790378,
+        244.668311,
+        553.512164,
+        1897.648165,
+        207.293852,
+        123.102696,
+        166.239569,
+        363.254772,
+        599.766078,
+        183.785631,
+        143.331565,
+        1189.071541,
+        311.144688,
+        281.630523,
+        938.579111,
+        178.526897,
+        1003.634722,
+        252.546755,
+        3232.249566,
+        389.920509
+      ],
+      "cost_usd_total": null
+    }
+  },
+  "delta": {
+    "mean_reward_b_minus_a": null,
+    "note": "score(B) - score(A) per plan-035 \u00a72.2.1. Positive = the emage.code projection improved outcomes on this run; negative = regressed; null/near-zero = no measurable effect at this k. See plan-035 \u00a72.4 Phase 1's registered null-delta interpretation block for how a null/negative result at full k>=3 scale (T407, not this task) should be read -- not applicable at this smoke test's k."
+  },
+  "spread": {
+    "arm_a_stdev": 0.0,
+    "arm_b_stdev": 0.0,
+    "note": "Population stdev of per-trial rewards within each arm. At k=1 (this smoke test) stdev is trivially 0.0 by definition, NOT a meaningful measurement of variance -- k>=3 per arm is required before a spread value should be treated as signal, per plan-035 \u00a72.2.1 discipline 1 ('Variance')."
+  },
+  "max_budget_seconds": 129600,
+  "run_artifacts_dir": "/home/emage/Code/emage/worktrees/t407-tb-delta/docs/benchmarks/scorecards/.runs/20260906T142221Z"
+}

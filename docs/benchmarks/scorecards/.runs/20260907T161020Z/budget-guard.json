@@ -1,0 +1,9 @@
+{
+  "probe_elapsed_seconds": 122,
+  "probe_task": "git-leak-recovery",
+  "total_trials_planned": 4,
+  "remaining_trials_after_probe": 3,
+  "projected_total_seconds": 488,
+  "max_budget_seconds": 5400,
+  "aborted": false
+}

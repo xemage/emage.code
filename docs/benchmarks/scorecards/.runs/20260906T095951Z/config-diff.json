@@ -1,0 +1,14 @@
+{
+  "clean": true,
+  "all_diffs": [
+    {
+      "field": "agents[0].name",
+      "arm_a": "claude-code",
+      "arm_b": "scripts.tb_delta_agent:EmageCodeClaudeCode"
+    }
+  ],
+  "unexpected_diffs": [],
+  "expected_field": "agents[0].name",
+  "arm_a_agent": "claude-code",
+  "arm_b_agent": "scripts.tb_delta_agent:EmageCodeClaudeCode"
+}

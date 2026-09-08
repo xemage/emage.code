@@ -1,0 +1,9 @@
+{
+  "probe_elapsed_seconds": 1212,
+  "probe_task": "make-mips-interpreter",
+  "total_trials_planned": 50,
+  "remaining_trials_after_probe": 49,
+  "projected_total_seconds": 60600,
+  "max_budget_seconds": 129600,
+  "aborted": false
+}
