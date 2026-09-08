@@ -2,7 +2,32 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T420 | Define per-platform MCP contract doc | solution-architect | pending | P1 | — | 2026-09-08 |
+| T421 | Re-verify/close `.claude`/`.github` MCP config gap | backend-developer | pending | P1 | T420 | 2026-09-08 |
+| T422 | `tests/functional/test_mcp_platform_conformance.py` | qa-engineer | pending | P1 | T420, T421 | 2026-09-08 |
+| T423 | Verify/close manual runtime-verification checklist | technical-writer | pending | P2 | T420 | 2026-09-08 |
 
+> **Phase 2 (MCP Conformance, T420-T423) dispatched 2026-09-08**, per `plan-037-phase2-phase5-
+> sequencing.md` (merged to `develop` via MR !218, commit `a710e4a`) — approved by the user as the
+> next phase, sequenced before Phase 5. Reuses `plan-035` §2.4 Phase 2's task table verbatim (owners,
+> scope) plus plan-037's execution sequencing (T420 first; T421/T423 in parallel off T420; T422 after
+> T421). **Orchestrator pre-dispatch correction to plan-037's own kickoff finding:** plan-037 claimed
+> `.vscode/mcp.json` over-includes `brave`/`context7` as `extended`-tagged servers leaking into the
+> `github` platform. This was independently re-checked directly against the repo before dispatch (not
+> trusted as-is) and found to be **incorrect** — `implementation/knowledge/mcp/servers.yaml` tags both
+> `brave` and `context7` as `[core]` (matching `AGENTS.md`'s own "Core servers (always available)"
+> table, which lists both explicitly), `implementation/platforms/github.json`'s own manifest scopes
+> `mcp.tags` to `["core"]` only (correctly excluding `extended`), and a live
+> `node scripts/sync.mjs --check` run (both `--platform=github` alone and unscoped, all 7 platforms)
+> reports **zero drift across 557 files**, right now, on `develop`. The `cwso` entry present in
+> `.vscode/mcp.json` (not in `servers.yaml` at all) is also not a defect — `scripts/merge-mcp-json.py`
+> (ADR-002) explicitly documents preserving hand-added, non-generator dest-only keys exactly like
+> `cwso` by design, and its docstring cites "a locally-added MCP server entry" as the literal use case.
+> Full detail and the corrected scope are in `task-T420.md` and `task-T421.md`. T421 is not cancelled
+> — plan-035 already anticipated re-scoping could shrink Phase 2's real scope at kickoff, and T421's
+> assignee still owns confirming this finding independently (not just trusting the orchestrator's
+> pre-dispatch check either) across all 7 platforms, not only `github`, before formally closing.
+>
 > **T409 closed, Gate G1 closed, 2026-09-08.** T409 ("Extend the T415 failure taxonomy to ingest
 > Harbor trajectories") is the task record of plan-035 §2.4 Phase 1's acceptance-criteria checklist
 > (immediately before "Gate G1 closes here") having one bullet unmet — "Terminal-Bench and golden
