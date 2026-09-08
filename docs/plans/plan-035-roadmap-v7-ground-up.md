@@ -468,6 +468,83 @@ further Phase 1 work; a negative delta blocks G1.
 
 ---
 
+**Successor block (2026-09-08): Inconclusive result treated as Null-equivalent for
+guardrail purposes.** This block supersedes nothing in the frozen block above — it is the
+dated successor the frozen block's own header requires ("may not be edited after the
+first T41A run — only superseded by a dated successor block that states what changed and
+why"). T41A (`T407`) has now run. Nothing above this line is edited or deleted.
+
+**What actually happened.** T407's Design A (3 independent full-subset passes, `-k 1 -l
+25`) classified as **Inconclusive**, not Null: Arm A's cross-pass spread is exactly
+8.0pp, landing on the frozen rule's own `≥ 8pp` Inconclusive threshold (inclusive of
+equality). Aggregate delta (B−A) was −1.33pp. Full numbers, methodology, and independent
+re-verification are published in `docs/benchmarks/tb-delta-v6.12.0.md` §§6-7 — not
+reproduced here; this block states the decision that follows from that published result,
+not the result itself.
+
+**Decision: Inconclusive is treated identically to the pre-committed Null consequences
+above.** The frozen block registers explicit consequences for a Null outcome but is
+silent on Inconclusive specifically. That gap is closed here, not by editing the frozen
+Null text, but by extending its consequences to this case:
+
+- Terminal-Bench is demoted from *improvement signal* to *no-harm guardrail*, exactly as
+  the Null branch specifies: subsequent releases must not show a delta below **−4pp**
+  (reusing the Null block's own threshold language verbatim, not a new number).
+- The golden suite (`tests/golden/`, `scripts/scorecard.py`) remains the sole
+  load-bearing progress signal for this project, unchanged from the Null branch's framing.
+- Phase 6's improvement loop (T460-T466, not yet built) optimises against the golden
+  suite only, with the Terminal-Bench guardrail above as a merge precondition — same
+  structure the Null branch pre-committed to, now explicitly extended to cover this
+  Inconclusive result.
+- The subset (`tb-subset.json`, frozen at T418) is **not** re-cut, re-stratified, or
+  extended in response to this classification, matching the Null branch's own
+  anti-rationalization intent.
+- Leaderboard submission (§2.7) stays deferred permanently, unchanged.
+
+**No further Design A/B re-run is authorized at this time.** A higher-`k` re-run
+("Design B," ~450 trials) could plausibly produce a cleaner classification, but is not
+dispatched, for three reasons already discussed and agreed with the user before this
+block was written:
+
+1. This plan's own prediction, registered before any T407 measurement existed (see
+   "Prediction registered in advance" above), was "small positive, plausibly under the
+   resolution floor" — the plan's authors already anticipated Terminal-Bench might not be
+   sensitive enough to resolve emage.code's effect, since the projection targets
+   multi-agent planning discipline, not lone-terminal-task completion. An 8.0pp spread
+   and a −1.33pp aggregate delta is consistent with exactly that prediction, not a
+   surprise this decision is working around.
+2. Gate G1 closes on T407/T408/T409's acceptance criteria being *met* — harness works,
+   delta + spread + cost published (§2.4 Phase 1 acceptance criteria and "Gate G1 closes
+   here," above) — not on any particular classification outcome. The frozen block
+   separately states a null delta "does not relax G1... is not grounds for promoting any
+   component out of beta." Even the best realistic outcome (a clean Null) would not have
+   required anything further of G1. Inconclusive requires no more.
+3. A real re-run costs real additional money — T407's total across all attempts already
+   reached ≈$100 (see `tb-delta-v6.12.0.md` §7.2), and a higher-`k` redesign would likely
+   cost materially more — plus 13+ additional hours of wall-clock, to sharpen an
+   instrument this plan's own authors already flagged as plausibly under-resolution. Poor
+   expected value against the golden suite, which is already frozen and is the
+   load-bearing signal under G1 as actually defined.
+
+**Guardrails, mirrored from the frozen block for consistency:** this decision does
+**not** relax G1. It does **not** license reducing `k` for any future independent
+Terminal-Bench measurement, should one ever be separately authorized. It is **not**
+grounds for promoting any component out of beta.
+
+**Free follow-up recorded, not acted on.** Per the Null branch's own "check the
+`predicted_effect: positive` tasks in isolation... record this, but do not act on it in
+this release cycle" instruction, applied here to the Inconclusive result: an
+observational `predicted_effect` split of Design A's existing raw trial data is recorded
+in `docs/benchmarks/tb-delta-v6.12.0.md` (new section, cross-referenced from this block).
+It is disclosed as context only — not used to reopen this classification, re-cut the
+subset, or authorize further trials.
+
+**Decided by:** the user and the orchestrator, 2026-09-08. See
+`docs/decisions/ADR-004-tb-inconclusive-guardrail-demotion.md` for the formal decision
+record, and `docs/tasks/completed-tasks.md`'s T407 row for the full measurement history.
+
+---
+
 #### Phase 2 — MCP Conformance (v6.12.0, parallel with Phase 1)
 
 **Status: proposed — not approved for task-brief authoring or execution.**
