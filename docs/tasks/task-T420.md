@@ -1,11 +1,12 @@
 # Task T420 — Define the per-platform MCP contract
 
 **ID:** T420
-**Owner:** solution-architect
-**Status:** pending
+**Owner:** solution-architect, orchestrator
+**Status:** done
 **Priority:** P1
 **Depends on:** — (G1 closed; Phase 2 dispatched)
 **Created:** 2026-09-08
+**Completed:** 2026-09-08
 **Based on:** `docs/plans/plan-035-roadmap-v7-ground-up.md` §2.4 Phase 2 (task table, unchanged);
 `docs/plans/plan-037-phase2-phase5-sequencing.md` (execution sequencing: T420 first, gates T421/
 T422/T423); `docs/checkpoints/checkpoint-021-phase1-complete-gate-g1-closed.md` (Gate G1 closure,

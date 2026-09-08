@@ -2,11 +2,38 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T420 | Define per-platform MCP contract doc | solution-architect | pending | P1 | — | 2026-09-08 |
-| T421 | Re-verify/close `.claude`/`.github` MCP config gap | backend-developer | pending | P1 | T420 | 2026-09-08 |
-| T422 | `tests/functional/test_mcp_platform_conformance.py` | qa-engineer | pending | P1 | T420, T421 | 2026-09-08 |
-| T423 | Verify/close manual runtime-verification checklist | technical-writer | pending | P2 | T420 | 2026-09-08 |
+| T421 | Re-verify/close `.claude`/`.github` MCP config gap | backend-developer | in_progress | P1 | T420 (done) | 2026-09-08 |
+| T422 | `tests/functional/test_mcp_platform_conformance.py` | qa-engineer | pending | P1 | T420 (done), T421 | 2026-09-08 |
+| T423 | Verify/close manual runtime-verification checklist | technical-writer | in_progress | P2 | T420 (done) | 2026-09-08 |
 
+> **T420 closed 2026-09-08.** `docs/artifacts/mcp-platform-contract-v1.md` published (MR !220,
+> squash-merged `89b1ba3`). Confirms, from primary sources (`servers.yaml`, all 7
+> `implementation/platforms/*.json`, `sync.mjs`, `merge-mcp-json.py`), the per-platform MCP
+> contract, and independently re-adjudicates (a third, independent confirmation, after the
+> orchestrator's own pre-dispatch check) that plan-037's `brave`/`context7`/`cwso` kickoff finding
+> is false — both are `core`-tagged, `github.json` scopes to `core`-only, live
+> `node scripts/sync.mjs --check` reports zero drift across all 7 platforms (557 files), confirmed
+> independently by the orchestrator on this document's own branch before merge, not just accepted
+> from the agent's report. Surfaced one new, real, narrow, unrelated finding: `.vscode/
+> mcp.json.provenance.json` is untracked by git (caught by `.gitignore`'s `.vscode/*` rule, no
+> negation entry, unlike its 6 sibling provenance sidecars) — content is correct and matches
+> generator output, but the file does not survive a fresh clone/worktree. Root-caused by the
+> orchestrator (`git check-ignore -v`, `git ls-files` comparison across all 7 platforms) and handed
+> to T421 as its concrete, real fix — see `task-T421.md` §"Context" and the contract doc's own §7.
+> **Tool-grant note, not a new finding:** the dispatched `solution-architect` again had no Bash
+> grant (same pattern as T410's ledger entry) and could not run the brief's required
+> `sync.mjs --check` itself; it disclosed this as a blocker and substituted a disclosed manual
+> byte-level trace rather than fabricating a command transcript. Orchestrator ran the real command
+> independently, confirmed the agent's manual trace was accurate, root-caused the provenance-sidecar
+> finding the agent could not fully resolve without shell access, appended both as a new §7 to the
+> document, then committed/pushed/opened the MR on the agent's behalf (mirroring T410's established
+> resolution exactly). Per T410's own precedent and `security-guidelines.md`'s "Architect —
+> read-only for implementation code" classification, this is by design, not a bug — `solution-
+> architect`'s tool grant is intentionally left unchanged again. Task briefs should not instruct
+> `solution-architect` to run shell verification commands going forward; route that instruction to
+> the orchestrator or to a Bash-capable agent instead. See `docs/tasks/completed-tasks.md` for
+> T420's full closure record.
+>
 > **Phase 2 (MCP Conformance, T420-T423) dispatched 2026-09-08**, per `plan-037-phase2-phase5-
 > sequencing.md` (merged to `develop` via MR !218, commit `a710e4a`) — approved by the user as the
 > next phase, sequenced before Phase 5. Reuses `plan-035` §2.4 Phase 2's task table verbatim (owners,
