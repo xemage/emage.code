@@ -2,7 +2,23 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T409 | Extend the T415 failure taxonomy to ingest Harbor trajectories (one taxonomy, two sources) | devops-engineer | pending | P0 | T415 (done), T407 (done) | 2026-09-08 |
 
+> **G1 determination, 2026-09-08.** Re-read plan-035 §2.4 Phase 1's acceptance-criteria checklist
+> (immediately before "Gate G1 closes here") against real evidence for every bullet. Nine of ten
+> bullets are independently verified met. The tenth — "Terminal-Bench and golden failures appear
+> in one taxonomy" — is T409's own literal deliverable and is **not yet met**:
+> `docs/artifacts/failure-taxonomy-v1.md` §7 ("Reuse notes for T409") explicitly names T409 as the
+> task that extends the scheme to Harbor trajectories, and no such extension has happened — the
+> document currently classifies only the 9 golden-suite `known_failing` cases. **Gate G1 is
+> therefore not yet closed.** ADR-004 (T407's Inconclusive → guardrail-demotion decision) already
+> states this precisely: "T409 (Harbor-trajectory taxonomy ingestion) is unaffected — it depends
+> on T407 genuinely completing, not on classification outcome, and remains a separate dispatch
+> decision not made by this ADR." T409 is now dispatched (row above, `task-T409.md`) specifically
+> to close this gap. This is local analysis/tooling work over Harbor trajectory data that already
+> exists on disk (T407's own runs) — no new Terminal-Bench trials, no new paid API calls — so it
+> does not require the real-external-cost confirmation gate T407's trial dispatches needed.
+>
 > T416 closed 2026-08-14 (see "Owner corrections and closure history" below and
 > `completed-tasks.md`). **Phase 1 Layer 1 (T410-T416) is now fully done and merged to `develop`.**
 > T407 dispatched 2026-08-14 per explicit user authorization ("launch now, conservative
@@ -99,13 +115,8 @@ all done and genuinely merged to `develop`, MR !203 — see "Owner corrections a
 below):
 - T407 — closed 2026-09-08, see `completed-tasks.md` and `task-T407.md` (Inconclusive
   classification; not a Null/Positive/Negative result — see the closure note above)
-- T409 (plan-035: `T41C`) — Extend T415 taxonomy to ingest Harbor trajectories — `devops-engineer`
-  — depends on T415 (done), T407 (**done**, genuinely completed 2026-09-08 — this dependency is
-  on T407 producing real Harbor trajectory data, not on any specific classification outcome, so
-  T407's Inconclusive result does not itself block T409). **T409 is now unblocked.** No brief
-  exists yet (per this file's own `C7` discipline, a table row cannot be added until
-  `task-T409.md` is authored); authoring that brief and dispatching real implementation work are
-  both explicitly deferred to a separate, later decision — not part of T407's closeout.
+- T409 — now dispatched, see table above and the "G1 determination" note above (row +
+  `task-T409.md` brief on disk). This is the last open item gating G1's closure.
 
 ## Task-brief authoring note
 
