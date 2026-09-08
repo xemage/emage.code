@@ -1,0 +1,309 @@
+{
+  "schema_version": "tb-delta-scorecard-v1",
+  "schema_note": "Self-documented interim schema (T419/T408), defined ahead of scripts/scorecard.py (T413, Layer 1, not yet built at authoring time). A reconciliation pass against T413's shape is expected once it lands -- flagged as type: dependency, severity: minor in T419's completion report, not silently absorbed. Fields: per-arm results (arms.A / arms.B), k, model, dataset subset reference (subset_ref + subset_frozen_at), delta, spread, cost/time (elapsed_seconds_per_trial / cost_usd_total per arm), timestamp (generated_at).",
+  "generated_at": "2026-09-07T20:34:48.367235+00:00",
+  "runner": "scripts/tb-delta.sh",
+  "dataset": "terminal-bench/terminal-bench-2",
+  "subset_ref": "docs/benchmarks/tb-subset.json",
+  "subset_frozen_at": "2026-08-13",
+  "k": 1,
+  "model": {
+    "name": "claude-haiku-4-5-20251001",
+    "tier": "economy"
+  },
+  "arms": {
+    "A": {
+      "agent": "claude-code",
+      "job_dir": "/root/emage-code-t407/jobs/tb-delta-20260907T162617Z-arm-A",
+      "job_summary_stats": {
+        "n_completed_trials": 25,
+        "n_errored_trials": 1,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+          "claude-code__claude-haiku-4-5-20251001__terminal-bench/terminal-bench-2": {
+            "n_trials": 25,
+            "n_errors": 1,
+            "metrics": [
+              {
+                "mean": 0.36
+              }
+            ],
+            "pass_at_k": {},
+            "reward_stats": {
+              "reward": {
+                "0.0": [
+                  "make-mips-interpreter__9wkW8RQ",
+                  "overfull-hbox__RbNSGLe",
+                  "video-processing__g7PRKLj",
+                  "protein-assembly__dA8sY8L",
+                  "dna-assembly__ES5SGqL",
+                  "caffe-cifar-10__Wq8EjvK",
+                  "install-windows-3-11__9Btn9hR",
+                  "feal-linear-cryptanalysis__mjz4bpk",
+                  "db-wal-recovery__nxU9K7A",
+                  "custom-memory-heap-crash__kYz3evQ",
+                  "chess-best-move__wWhmrLo",
+                  "gcode-to-text__FaNsmRn",
+                  "kv-store-grpc__EvvCkrT",
+                  "train-fasttext__Nbs8JvF",
+                  "hf-model-inference__9oTQcnw",
+                  "configure-git-webserver__TU7YKTo"
+                ],
+                "1.0": [
+                  "log-summary-date-ranges__qFZxtxH",
+                  "crack-7z-hash__gJziyiF",
+                  "rstan-to-pystan__42rHpHN",
+                  "git-leak-recovery__yViNLX2",
+                  "constraints-scheduling__YwiGXSs",
+                  "pypi-server__t4XCXk8",
+                  "sparql-university__5EKeR6p",
+                  "fix-code-vulnerability__7Yv32YA",
+                  "portfolio-optimization__L9Yqaw6"
+                ]
+              }
+            },
+            "exception_stats": {
+              "AgentTimeoutError": [
+                "train-fasttext__Nbs8JvF"
+              ]
+            }
+          }
+        },
+        "n_input_tokens": 26885621,
+        "n_cache_tokens": 25986961,
+        "n_output_tokens": 417521,
+        "cost_usd": 7.6844578499999985
+      },
+      "n_trials": 25,
+      "n_trials_with_reward": 25,
+      "errored_trials": [
+        {
+          "trial_name": "train-fasttext__Nbs8JvF",
+          "exception": {
+            "exception_type": "AgentTimeoutError",
+            "exception_message": "Agent execution timed out after 3600.0 seconds",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 175, in wrapper\n    return await fn(self, instruction, *args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/claude_code.py\", line 1771, in run\n    await self.exec_as_agent(\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 884, in exec_as_agent\n    return await self._exec(\n           ^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 835, in _exec\n    result = await environment.exec(\n             ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 1096, in exec\n    return await self._compose_exec(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 1173, in _compose_exec\n    return await self._run_docker_compose_command(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 649, in _run_docker_compose_command\n    result = await self._collect_buffered_output(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 679, in _collect_buffered_output\n    stdout_bytes, stderr_bytes = await process.communicate(input=stdin_data)\n                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/subprocess.py\", line 201, in communicate\n    stdin, stdout, stderr = await tasks.gather(stdin, stdout, stderr)\n                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/subprocess.py\", line 181, in _read_stream\n    output = await stream.read()\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/streams.py\", line 706, in read\n    block = await self.read(self._limit)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/streams.py\", line 713, in read\n    await self._wait_for_data('read')\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/streams.py\", line 545, in _wait_for_data\n    await self._waiter\nasyncio.exceptions.CancelledError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 480, in _run_agent_phase\n    await asyncio.wait_for(\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/tasks.py\", line 519, in wait_for\n    async with timeouts.timeout(timeout):\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/timeouts.py\", line 115, in __aexit__\n    raise TimeoutError from exc_val\nTimeoutError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 77, in _run_agent\n    await self._run_agent_phase(\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 489, in _run_agent_phase\n    raise AgentTimeoutError(\nharbor.trial.errors.AgentTimeoutError: Agent execution timed out after 3600.0 seconds\n",
+            "occurred_at": "2026-09-07T18:55:00.993509Z"
+          }
+        }
+      ],
+      "rewards": [
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "mean_reward": 0.36,
+      "stdev_reward": 0.48,
+      "elapsed_seconds_per_trial": [
+        909.972064,
+        210.347385,
+        123.279875,
+        176.19754,
+        419.275604,
+        470.033892,
+        384.867616,
+        314.173542,
+        1043.491594,
+        210.590458,
+        273.053574,
+        143.9486,
+        273.082377,
+        474.483583,
+        147.362933,
+        126.543969,
+        648.370424,
+        585.969294,
+        273.275065,
+        1249.036011,
+        146.88403,
+        946.032237,
+        214.864697,
+        3838.938584,
+        355.429067
+      ],
+      "cost_usd_total": 7.6844578499999985
+    },
+    "B": {
+      "agent": "scripts.tb_delta_agent:EmageCodeClaudeCode",
+      "job_dir": "/root/emage-code-t407/jobs/tb-delta-20260907T162617Z-arm-B",
+      "job_summary_stats": {
+        "n_completed_trials": 25,
+        "n_errored_trials": 2,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+          "emage-code-claude-code__claude-haiku-4-5-20251001__terminal-bench/terminal-bench-2": {
+            "n_trials": 25,
+            "n_errors": 2,
+            "metrics": [
+              {
+                "mean": 0.32
+              }
+            ],
+            "pass_at_k": {},
+            "reward_stats": {
+              "reward": {
+                "0.0": [
+                  "make-mips-interpreter__wBfHZx4",
+                  "overfull-hbox__xocuzGd",
+                  "video-processing__naz2wfT",
+                  "protein-assembly__K6xWebs",
+                  "dna-assembly__chidq7D",
+                  "caffe-cifar-10__NnFM5m3",
+                  "install-windows-3-11__4CCg6j7",
+                  "crack-7z-hash__mfC8bFf",
+                  "feal-linear-cryptanalysis__uBzT7ar",
+                  "db-wal-recovery__SczbJzd",
+                  "chess-best-move__LFnaat2",
+                  "gcode-to-text__7YQa7TC",
+                  "kv-store-grpc__Wuq9qSA",
+                  "train-fasttext__omH7FVB",
+                  "hf-model-inference__4FXMVGj",
+                  "sparql-university__59TKPxt",
+                  "configure-git-webserver__dmqGn3o"
+                ],
+                "1.0": [
+                  "log-summary-date-ranges__b4i5D9Y",
+                  "rstan-to-pystan__5BXBxQA",
+                  "git-leak-recovery__77ETQMi",
+                  "constraints-scheduling__hvgMK58",
+                  "custom-memory-heap-crash__N22qhPb",
+                  "pypi-server__647hHS9",
+                  "fix-code-vulnerability__MdSc6Fz",
+                  "portfolio-optimization__ZKZD2aH"
+                ]
+              }
+            },
+            "exception_stats": {
+              "AgentTimeoutError": [
+                "caffe-cifar-10__NnFM5m3",
+                "feal-linear-cryptanalysis__uBzT7ar"
+              ]
+            }
+          }
+        },
+        "n_input_tokens": 28670403,
+        "n_cache_tokens": 27737133,
+        "n_output_tokens": 340259,
+        "cost_usd": 6.3107025499999985
+      },
+      "n_trials": 25,
+      "n_trials_with_reward": 25,
+      "errored_trials": [
+        {
+          "trial_name": "caffe-cifar-10__NnFM5m3",
+          "exception": {
+            "exception_type": "AgentTimeoutError",
+            "exception_message": "Agent execution timed out after 1200.0 seconds",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 175, in wrapper\n    return await fn(self, instruction, *args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/claude_code.py\", line 1771, in run\n    await self.exec_as_agent(\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 884, in exec_as_agent\n    return await self._exec(\n           ^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 835, in _exec\n    result = await environment.exec(\n             ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 1096, in exec\n    return await self._compose_exec(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 1173, in _compose_exec\n    return await self._run_docker_compose_command(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 649, in _run_docker_compose_command\n    result = await self._collect_buffered_output(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 679, in _collect_buffered_output\n    stdout_bytes, stderr_bytes = await process.communicate(input=stdin_data)\n                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/subprocess.py\", line 201, in communicate\n    stdin, stdout, stderr = await tasks.gather(stdin, stdout, stderr)\n                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/subprocess.py\", line 181, in _read_stream\n    output = await stream.read()\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/streams.py\", line 706, in read\n    block = await self.read(self._limit)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/streams.py\", line 713, in read\n    await self._wait_for_data('read')\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/streams.py\", line 545, in _wait_for_data\n    await self._waiter\nasyncio.exceptions.CancelledError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 480, in _run_agent_phase\n    await asyncio.wait_for(\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/tasks.py\", line 519, in wait_for\n    async with timeouts.timeout(timeout):\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/timeouts.py\", line 115, in __aexit__\n    raise TimeoutError from exc_val\nTimeoutError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 77, in _run_agent\n    await self._run_agent_phase(\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 489, in _run_agent_phase\n    raise AgentTimeoutError(\nharbor.trial.errors.AgentTimeoutError: Agent execution timed out after 1200.0 seconds\n",
+            "occurred_at": "2026-09-07T19:45:25.860359Z"
+          }
+        },
+        {
+          "trial_name": "feal-linear-cryptanalysis__uBzT7ar",
+          "exception": {
+            "exception_type": "AgentTimeoutError",
+            "exception_message": "Agent execution timed out after 1800.0 seconds",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 175, in wrapper\n    return await fn(self, instruction, *args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/claude_code.py\", line 1771, in run\n    await self.exec_as_agent(\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 884, in exec_as_agent\n    return await self._exec(\n           ^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 835, in _exec\n    result = await environment.exec(\n             ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 1096, in exec\n    return await self._compose_exec(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 1173, in _compose_exec\n    return await self._run_docker_compose_command(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 649, in _run_docker_compose_command\n    result = await self._collect_buffered_output(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 679, in _collect_buffered_output\n    stdout_bytes, stderr_bytes = await process.communicate(input=stdin_data)\n                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/subprocess.py\", line 201, in communicate\n    stdin, stdout, stderr = await tasks.gather(stdin, stdout, stderr)\n                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/subprocess.py\", line 181, in _read_stream\n    output = await stream.read()\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/streams.py\", line 706, in read\n    block = await self.read(self._limit)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/streams.py\", line 713, in read\n    await self._wait_for_data('read')\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/streams.py\", line 545, in _wait_for_data\n    await self._waiter\nasyncio.exceptions.CancelledError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 480, in _run_agent_phase\n    await asyncio.wait_for(\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/tasks.py\", line 519, in wait_for\n    async with timeouts.timeout(timeout):\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/timeouts.py\", line 115, in __aexit__\n    raise TimeoutError from exc_val\nTimeoutError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 77, in _run_agent\n    await self._run_agent_phase(\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 489, in _run_agent_phase\n    raise AgentTimeoutError(\nharbor.trial.errors.AgentTimeoutError: Agent execution timed out after 1800.0 seconds\n",
+            "occurred_at": "2026-09-07T20:13:10.029080Z"
+          }
+        }
+      ],
+      "rewards": [
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mean_reward": 0.32,
+      "stdev_reward": 0.466476151587624,
+      "elapsed_seconds_per_trial": [
+        1297.23715,
+        243.248008,
+        127.370102,
+        203.128502,
+        154.294319,
+        274.987398,
+        255.918005,
+        376.102552,
+        1942.907681,
+        206.996761,
+        117.030248,
+        173.66817,
+        285.888132,
+        563.539923,
+        177.402268,
+        130.372853,
+        1818.519099,
+        557.596337,
+        265.785329,
+        346.000087,
+        194.162351,
+        629.81043,
+        225.2935,
+        694.081649,
+        319.701652
+      ],
+      "cost_usd_total": 6.310702549999999
+    }
+  },
+  "delta": {
+    "mean_reward_b_minus_a": -0.03999999999999998,
+    "note": "score(B) - score(A) per plan-035 \u00a72.2.1. Positive = the emage.code projection improved outcomes on this run; negative = regressed; null/near-zero = no measurable effect at this k. See plan-035 \u00a72.4 Phase 1's registered null-delta interpretation block for how a null/negative result at full k>=3 scale (T407, not this task) should be read -- not applicable at this smoke test's k."
+  },
+  "spread": {
+    "arm_a_stdev": 0.48,
+    "arm_b_stdev": 0.466476151587624,
+    "note": "Population stdev of per-trial rewards within each arm. At k=1 (this smoke test) stdev is trivially 0.0 by definition, NOT a meaningful measurement of variance -- k>=3 per arm is required before a spread value should be treated as signal, per plan-035 \u00a72.2.1 discipline 1 ('Variance')."
+  },
+  "max_budget_seconds": 129600,
+  "run_artifacts_dir": "/root/emage-code-t407/docs/benchmarks/scorecards/.runs/20260907T162617Z"
+}

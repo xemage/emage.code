@@ -1,0 +1,391 @@
+{
+  "schema_version": "tb-delta-scorecard-v1",
+  "schema_note": "Self-documented interim schema (T419/T408), defined ahead of scripts/scorecard.py (T413, Layer 1, not yet built at authoring time). A reconciliation pass against T413's shape is expected once it lands -- flagged as type: dependency, severity: minor in T419's completion report, not silently absorbed. Fields: per-arm results (arms.A / arms.B), k, model, dataset subset reference (subset_ref + subset_frozen_at), delta, spread, cost/time (elapsed_seconds_per_trial / cost_usd_total per arm), timestamp (generated_at).",
+  "generated_at": "2026-09-08T05:10:48.784856+00:00",
+  "runner": "scripts/tb-delta.sh",
+  "dataset": "terminal-bench/terminal-bench-2",
+  "subset_ref": "docs/benchmarks/tb-subset.json",
+  "subset_frozen_at": "2026-08-13",
+  "k": 1,
+  "model": {
+    "name": "claude-haiku-4-5-20251001",
+    "tier": "economy"
+  },
+  "arms": {
+    "A": {
+      "agent": "claude-code",
+      "job_dir": "/root/emage-code-t407/jobs/tb-delta-20260908T001726Z-arm-A",
+      "job_summary_stats": {
+        "n_completed_trials": 25,
+        "n_errored_trials": 3,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+          "claude-code__claude-haiku-4-5-20251001__terminal-bench/terminal-bench-2": {
+            "n_trials": 25,
+            "n_errors": 3,
+            "metrics": [
+              {
+                "mean": 0.28
+              }
+            ],
+            "pass_at_k": {},
+            "reward_stats": {
+              "reward": {
+                "0.0": [
+                  "make-mips-interpreter__aMQThWx",
+                  "overfull-hbox__Sg7wiHk",
+                  "video-processing__rcpmXVc",
+                  "protein-assembly__CghGBMD",
+                  "dna-assembly__gtBZ6Ls",
+                  "caffe-cifar-10__F8DEHZ5",
+                  "install-windows-3-11__BHQF6wU",
+                  "log-summary-date-ranges__nLizqQR",
+                  "crack-7z-hash__AUBpmwX",
+                  "feal-linear-cryptanalysis__kNbyxLs",
+                  "rstan-to-pystan__CUh3EMW",
+                  "db-wal-recovery__pnokaMA",
+                  "chess-best-move__J4w8bv9",
+                  "gcode-to-text__wcukjtg",
+                  "kv-store-grpc__EJHaeo7",
+                  "train-fasttext__UKRXPtU",
+                  "sparql-university__krWfWbW",
+                  "configure-git-webserver__fWP893p"
+                ],
+                "1.0": [
+                  "git-leak-recovery__JT6ttnk",
+                  "constraints-scheduling__P9jdUoz",
+                  "custom-memory-heap-crash__vvRDjTg",
+                  "pypi-server__MtQLd5t",
+                  "hf-model-inference__rSNoFnZ",
+                  "fix-code-vulnerability__3vquXnV",
+                  "portfolio-optimization__onjAmKe"
+                ]
+              }
+            },
+            "exception_stats": {
+              "AgentTimeoutError": [
+                "caffe-cifar-10__F8DEHZ5",
+                "feal-linear-cryptanalysis__kNbyxLs",
+                "rstan-to-pystan__CUh3EMW"
+              ]
+            }
+          }
+        },
+        "n_input_tokens": 45337899,
+        "n_cache_tokens": 44206571,
+        "n_output_tokens": 472060,
+        "cost_usd": 9.940022850000002
+      },
+      "n_trials": 25,
+      "n_trials_with_reward": 25,
+      "errored_trials": [
+        {
+          "trial_name": "caffe-cifar-10__F8DEHZ5",
+          "exception": {
+            "exception_type": "AgentTimeoutError",
+            "exception_message": "Agent execution timed out after 1200.0 seconds",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 175, in wrapper\n    return await fn(self, instruction, *args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/claude_code.py\", line 1771, in run\n    await self.exec_as_agent(\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 884, in exec_as_agent\n    return await self._exec(\n           ^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 835, in _exec\n    result = await environment.exec(\n             ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 1096, in exec\n    return await self._compose_exec(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 1173, in _compose_exec\n    return await self._run_docker_compose_command(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 649, in _run_docker_compose_command\n    result = await self._collect_buffered_output(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 679, in _collect_buffered_output\n    stdout_bytes, stderr_bytes = await process.communicate(input=stdin_data)\n                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/subprocess.py\", line 201, in communicate\n    stdin, stdout, stderr = await tasks.gather(stdin, stdout, stderr)\n                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/subprocess.py\", line 181, in _read_stream\n    output = await stream.read()\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/streams.py\", line 706, in read\n    block = await self.read(self._limit)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/streams.py\", line 713, in read\n    await self._wait_for_data('read')\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/streams.py\", line 545, in _wait_for_data\n    await self._waiter\nasyncio.exceptions.CancelledError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 480, in _run_agent_phase\n    await asyncio.wait_for(\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/tasks.py\", line 519, in wait_for\n    async with timeouts.timeout(timeout):\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/timeouts.py\", line 115, in __aexit__\n    raise TimeoutError from exc_val\nTimeoutError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 77, in _run_agent\n    await self._run_agent_phase(\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 489, in _run_agent_phase\n    raise AgentTimeoutError(\nharbor.trial.errors.AgentTimeoutError: Agent execution timed out after 1200.0 seconds\n",
+            "occurred_at": "2026-09-08T01:13:01.938305Z"
+          }
+        },
+        {
+          "trial_name": "feal-linear-cryptanalysis__kNbyxLs",
+          "exception": {
+            "exception_type": "AgentTimeoutError",
+            "exception_message": "Agent execution timed out after 1800.0 seconds",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 175, in wrapper\n    return await fn(self, instruction, *args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/claude_code.py\", line 1771, in run\n    await self.exec_as_agent(\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 884, in exec_as_agent\n    return await self._exec(\n           ^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 835, in _exec\n    result = await environment.exec(\n             ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 1096, in exec\n    return await self._compose_exec(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 1173, in _compose_exec\n    return await self._run_docker_compose_command(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 649, in _run_docker_compose_command\n    result = await self._collect_buffered_output(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 679, in _collect_buffered_output\n    stdout_bytes, stderr_bytes = await process.communicate(input=stdin_data)\n                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/subprocess.py\", line 201, in communicate\n    stdin, stdout, stderr = await tasks.gather(stdin, stdout, stderr)\n                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/subprocess.py\", line 181, in _read_stream\n    output = await stream.read()\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/streams.py\", line 706, in read\n    block = await self.read(self._limit)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/streams.py\", line 713, in read\n    await self._wait_for_data('read')\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/streams.py\", line 545, in _wait_for_data\n    await self._waiter\nasyncio.exceptions.CancelledError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 480, in _run_agent_phase\n    await asyncio.wait_for(\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/tasks.py\", line 519, in wait_for\n    async with timeouts.timeout(timeout):\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/timeouts.py\", line 115, in __aexit__\n    raise TimeoutError from exc_val\nTimeoutError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 77, in _run_agent\n    await self._run_agent_phase(\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 489, in _run_agent_phase\n    raise AgentTimeoutError(\nharbor.trial.errors.AgentTimeoutError: Agent execution timed out after 1800.0 seconds\n",
+            "occurred_at": "2026-09-08T01:44:29.685644Z"
+          }
+        },
+        {
+          "trial_name": "rstan-to-pystan__CUh3EMW",
+          "exception": {
+            "exception_type": "AgentTimeoutError",
+            "exception_message": "Agent execution timed out after 1800.0 seconds",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 175, in wrapper\n    return await fn(self, instruction, *args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/claude_code.py\", line 1771, in run\n    await self.exec_as_agent(\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 884, in exec_as_agent\n    return await self._exec(\n           ^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 835, in _exec\n    result = await environment.exec(\n             ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 1096, in exec\n    return await self._compose_exec(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 1173, in _compose_exec\n    return await self._run_docker_compose_command(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 649, in _run_docker_compose_command\n    result = await self._collect_buffered_output(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 679, in _collect_buffered_output\n    stdout_bytes, stderr_bytes = await process.communicate(input=stdin_data)\n                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/subprocess.py\", line 201, in communicate\n    stdin, stdout, stderr = await tasks.gather(stdin, stdout, stderr)\n                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/subprocess.py\", line 181, in _read_stream\n    output = await stream.read()\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/streams.py\", line 706, in read\n    block = await self.read(self._limit)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/streams.py\", line 713, in read\n    await self._wait_for_data('read')\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/streams.py\", line 545, in _wait_for_data\n    await self._waiter\nasyncio.exceptions.CancelledError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 480, in _run_agent_phase\n    await asyncio.wait_for(\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/tasks.py\", line 519, in wait_for\n    async with timeouts.timeout(timeout):\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/timeouts.py\", line 115, in __aexit__\n    raise TimeoutError from exc_val\nTimeoutError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 77, in _run_agent\n    await self._run_agent_phase(\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 489, in _run_agent_phase\n    raise AgentTimeoutError(\nharbor.trial.errors.AgentTimeoutError: Agent execution timed out after 1800.0 seconds\n",
+            "occurred_at": "2026-09-08T01:46:09.980207Z"
+          }
+        }
+      ],
+      "rewards": [
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mean_reward": 0.28,
+      "stdev_reward": 0.44899888641287294,
+      "elapsed_seconds_per_trial": [
+        1290.267825,
+        318.451231,
+        116.411724,
+        113.374194,
+        610.170395,
+        1126.712643,
+        233.432663,
+        511.403995,
+        1878.893557,
+        149.117888,
+        106.75504,
+        136.020961,
+        168.484041,
+        337.800943,
+        158.600736,
+        115.473236,
+        650.89795,
+        584.987629,
+        266.990239,
+        950.767275,
+        158.697859,
+        1897.119877,
+        210.359755,
+        3545.095253,
+        183.707195
+      ],
+      "cost_usd_total": 9.94002285
+    },
+    "B": {
+      "agent": "scripts.tb_delta_agent:EmageCodeClaudeCode",
+      "job_dir": "/root/emage-code-t407/jobs/tb-delta-20260908T001726Z-arm-B",
+      "job_summary_stats": {
+        "n_completed_trials": 25,
+        "n_errored_trials": 8,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+          "emage-code-claude-code__claude-haiku-4-5-20251001__terminal-bench/terminal-bench-2": {
+            "n_trials": 25,
+            "n_errors": 8,
+            "metrics": [
+              {
+                "mean": 0.28
+              }
+            ],
+            "pass_at_k": {},
+            "reward_stats": {
+              "reward": {
+                "0.0": [
+                  "make-mips-interpreter__HzE3Ckf",
+                  "overfull-hbox__niKLzdd",
+                  "video-processing__yocRAaY",
+                  "protein-assembly__yAw9oYL",
+                  "dna-assembly__2XETtid",
+                  "caffe-cifar-10__wHSY4Qo",
+                  "install-windows-3-11__EFv9NuC",
+                  "log-summary-date-ranges__3tvk8Hu",
+                  "crack-7z-hash__6MiR5Kg",
+                  "feal-linear-cryptanalysis__HYu6Wpo",
+                  "rstan-to-pystan__df5taYA",
+                  "db-wal-recovery__jwi4hCy",
+                  "chess-best-move__Fr9BAg3",
+                  "gcode-to-text__mTjGHtj",
+                  "kv-store-grpc__UrZ5KEX",
+                  "train-fasttext__Fr8DY4X",
+                  "hf-model-inference__2WcWgVo",
+                  "configure-git-webserver__CDfUdSf"
+                ],
+                "1.0": [
+                  "git-leak-recovery__2uQbD2b",
+                  "constraints-scheduling__9PVucwB",
+                  "custom-memory-heap-crash__TzZTmHh",
+                  "pypi-server__2BDcyh2",
+                  "sparql-university__ZNpYEUM",
+                  "fix-code-vulnerability__KWkKMCo",
+                  "portfolio-optimization__vXtcsz6"
+                ]
+              }
+            },
+            "exception_stats": {
+              "ApiUsageLimitError": [
+                "protein-assembly__yAw9oYL",
+                "dna-assembly__2XETtid",
+                "caffe-cifar-10__wHSY4Qo",
+                "install-windows-3-11__EFv9NuC",
+                "log-summary-date-ranges__3tvk8Hu",
+                "crack-7z-hash__6MiR5Kg"
+              ],
+              "AgentTimeoutError": [
+                "rstan-to-pystan__df5taYA",
+                "train-fasttext__Fr8DY4X"
+              ]
+            }
+          }
+        },
+        "n_input_tokens": 37027176,
+        "n_cache_tokens": 36133905,
+        "n_output_tokens": 317969,
+        "cost_usd": 6.828246750000003
+      },
+      "n_trials": 25,
+      "n_trials_with_reward": 25,
+      "errored_trials": [
+        {
+          "trial_name": "caffe-cifar-10__wHSY4Qo",
+          "exception": {
+            "exception_type": "ApiUsageLimitError",
+            "exception_message": "Command failed (exit 1): export PATH=\"$HOME/.local/bin:$PATH\"; harbor_claude_code_instruction_5e25d1065ef347ff84522c2a04c3962c=\"$HARBOR_CLAUDE_CODE_INSTRUCTION_5E25D1065EF347FF84522C2A04C3962C\"; unset HARBOR_CLAUDE_CODE_INSTRUCTION_5E25D1065EF347FF84522C2A04C3962C; printf \"%s\" \"$harbor_claude_code_instruction_5e25d1065ef347ff84522c2a04c3962c\" | claude --verbose --output-format=stream-json --permission-mode=bypassPermissions --print 2>&1 | tee /logs/agent/claude-code.txt\nstdout: Ignoring 36 permissions.allow entries from .claude/settings.json: this workspace has not been trusted. Run Claude Code interactively here once and accept the trust dialog, or set projects[\"/app\"].hasTrustDialogAccepted: true in /logs/agent/sessions/. ... [6167 chars truncated] ... \"standard\"},\"modelUsage\":{},\"permission_denials\":[],\"terminal_reason\":\"api_error\",\"fast_mode_state\":\"off\",\"fast_mode_disabled_reason\":\"sdk_opt_in_required\",\"subagent_stats\":{\"spawned\":0,\"requested\":{\"background\":0,\"foreground\":0,\"unset\":0},\"started_in_background\":0,\"max_depth\":0,\"spawned_by_subagents\":0,\"completed\":0,\"failed\":0,\"killed\":{\"parent\":0,\"user\":0,\"system\":0},\"refused\":{\"depth_limit\":0,\"concurrency_limit\":0,\"budget\":0},\"by_type\":{}},\"is_error\":true,\"num_turns\":1,\"subtype\":\"success\",\"api_error_status\":400,\"result\":\"API Error: 400 You have reached your specified API usage limits. You will regain access on 2026-10-01 at 00:00 UTC.\",\"type\":\"result\",\"duration_ms\":688,\"uuid\":\"b2f7d246-30b1-48b0-adca-8c87d346d78e\",\"queued_turn_count\":0}\n\nstderr: None",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 77, in _run_agent\n    await self._run_agent_phase(\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 480, in _run_agent_phase\n    await asyncio.wait_for(\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 175, in wrapper\n    return await fn(self, instruction, *args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/claude_code.py\", line 1771, in run\n    await self.exec_as_agent(\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 884, in exec_as_agent\n    return await self._exec(\n           ^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 851, in _exec\n    raise self._classify_exec_error(command, result)\nharbor.agents.installed.base.ApiUsageLimitError: Command failed (exit 1): export PATH=\"$HOME/.local/bin:$PATH\"; harbor_claude_code_instruction_5e25d1065ef347ff84522c2a04c3962c=\"$HARBOR_CLAUDE_CODE_INSTRUCTION_5E25D1065EF347FF84522C2A04C3962C\"; unset HARBOR_CLAUDE_CODE_INSTRUCTION_5E25D1065EF347FF84522C2A04C3962C; printf \"%s\" \"$harbor_claude_code_instruction_5e25d1065ef347ff84522c2a04c3962c\" | claude --verbose --output-format=stream-json --permission-mode=bypassPermissions --print 2>&1 | tee /logs/agent/claude-code.txt\nstdout: Ignoring 36 permissions.allow entries from .claude/settings.json: this workspace has not been trusted. Run Claude Code interactively here once and accept the trust dialog, or set projects[\"/app\"].hasTrustDialogAccepted: true in /logs/agent/sessions/. ... [6167 chars truncated] ... \"standard\"},\"modelUsage\":{},\"permission_denials\":[],\"terminal_reason\":\"api_error\",\"fast_mode_state\":\"off\",\"fast_mode_disabled_reason\":\"sdk_opt_in_required\",\"subagent_stats\":{\"spawned\":0,\"requested\":{\"background\":0,\"foreground\":0,\"unset\":0},\"started_in_background\":0,\"max_depth\":0,\"spawned_by_subagents\":0,\"completed\":0,\"failed\":0,\"killed\":{\"parent\":0,\"user\":0,\"system\":0},\"refused\":{\"depth_limit\":0,\"concurrency_limit\":0,\"budget\":0},\"by_type\":{}},\"is_error\":true,\"num_turns\":1,\"subtype\":\"success\",\"api_error_status\":400,\"result\":\"API Error: 400 You have reached your specified API usage limits. You will regain access on 2026-10-01 at 00:00 UTC.\",\"type\":\"result\",\"duration_ms\":688,\"uuid\":\"b2f7d246-30b1-48b0-adca-8c87d346d78e\",\"queued_turn_count\":0}\n\nstderr: None\n",
+            "occurred_at": "2026-09-08T03:13:48.065167Z"
+          }
+        },
+        {
+          "trial_name": "crack-7z-hash__6MiR5Kg",
+          "exception": {
+            "exception_type": "ApiUsageLimitError",
+            "exception_message": "Command failed (exit 1): export PATH=\"$HOME/.local/bin:$PATH\"; harbor_claude_code_instruction_ae0661e6c2bb409f82f4849765a49131=\"$HARBOR_CLAUDE_CODE_INSTRUCTION_AE0661E6C2BB409F82F4849765A49131\"; unset HARBOR_CLAUDE_CODE_INSTRUCTION_AE0661E6C2BB409F82F4849765A49131; printf \"%s\" \"$harbor_claude_code_instruction_ae0661e6c2bb409f82f4849765a49131\" | claude --verbose --output-format=stream-json --permission-mode=bypassPermissions --print 2>&1 | tee /logs/agent/claude-code.txt\nstdout: Ignoring 36 permissions.allow entries from .claude/settings.json: this workspace has not been trusted. Run Claude Code interactively here once and accept the trust dialog, or set projects[\"/app\"].hasTrustDialogAccepted: true in /logs/agent/sessions/. ... [6167 chars truncated] ... \"standard\"},\"modelUsage\":{},\"permission_denials\":[],\"terminal_reason\":\"api_error\",\"fast_mode_state\":\"off\",\"fast_mode_disabled_reason\":\"sdk_opt_in_required\",\"subagent_stats\":{\"spawned\":0,\"requested\":{\"background\":0,\"foreground\":0,\"unset\":0},\"started_in_background\":0,\"max_depth\":0,\"spawned_by_subagents\":0,\"completed\":0,\"failed\":0,\"killed\":{\"parent\":0,\"user\":0,\"system\":0},\"refused\":{\"depth_limit\":0,\"concurrency_limit\":0,\"budget\":0},\"by_type\":{}},\"is_error\":true,\"num_turns\":1,\"subtype\":\"success\",\"api_error_status\":400,\"result\":\"API Error: 400 You have reached your specified API usage limits. You will regain access on 2026-10-01 at 00:00 UTC.\",\"type\":\"result\",\"duration_ms\":806,\"uuid\":\"a817c632-d76d-4846-a2ed-871e3ec7a9df\",\"queued_turn_count\":0}\n\nstderr: None",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 77, in _run_agent\n    await self._run_agent_phase(\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 480, in _run_agent_phase\n    await asyncio.wait_for(\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 175, in wrapper\n    return await fn(self, instruction, *args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/claude_code.py\", line 1771, in run\n    await self.exec_as_agent(\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 884, in exec_as_agent\n    return await self._exec(\n           ^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 851, in _exec\n    raise self._classify_exec_error(command, result)\nharbor.agents.installed.base.ApiUsageLimitError: Command failed (exit 1): export PATH=\"$HOME/.local/bin:$PATH\"; harbor_claude_code_instruction_ae0661e6c2bb409f82f4849765a49131=\"$HARBOR_CLAUDE_CODE_INSTRUCTION_AE0661E6C2BB409F82F4849765A49131\"; unset HARBOR_CLAUDE_CODE_INSTRUCTION_AE0661E6C2BB409F82F4849765A49131; printf \"%s\" \"$harbor_claude_code_instruction_ae0661e6c2bb409f82f4849765a49131\" | claude --verbose --output-format=stream-json --permission-mode=bypassPermissions --print 2>&1 | tee /logs/agent/claude-code.txt\nstdout: Ignoring 36 permissions.allow entries from .claude/settings.json: this workspace has not been trusted. Run Claude Code interactively here once and accept the trust dialog, or set projects[\"/app\"].hasTrustDialogAccepted: true in /logs/agent/sessions/. ... [6167 chars truncated] ... \"standard\"},\"modelUsage\":{},\"permission_denials\":[],\"terminal_reason\":\"api_error\",\"fast_mode_state\":\"off\",\"fast_mode_disabled_reason\":\"sdk_opt_in_required\",\"subagent_stats\":{\"spawned\":0,\"requested\":{\"background\":0,\"foreground\":0,\"unset\":0},\"started_in_background\":0,\"max_depth\":0,\"spawned_by_subagents\":0,\"completed\":0,\"failed\":0,\"killed\":{\"parent\":0,\"user\":0,\"system\":0},\"refused\":{\"depth_limit\":0,\"concurrency_limit\":0,\"budget\":0},\"by_type\":{}},\"is_error\":true,\"num_turns\":1,\"subtype\":\"success\",\"api_error_status\":400,\"result\":\"API Error: 400 You have reached your specified API usage limits. You will regain access on 2026-10-01 at 00:00 UTC.\",\"type\":\"result\",\"duration_ms\":806,\"uuid\":\"a817c632-d76d-4846-a2ed-871e3ec7a9df\",\"queued_turn_count\":0}\n\nstderr: None\n",
+            "occurred_at": "2026-09-08T03:16:33.280781Z"
+          }
+        },
+        {
+          "trial_name": "dna-assembly__2XETtid",
+          "exception": {
+            "exception_type": "ApiUsageLimitError",
+            "exception_message": "Command failed (exit 1): export PATH=\"$HOME/.local/bin:$PATH\"; harbor_claude_code_instruction_9d7e48efa729400d910e50fab2b3eec4=\"$HARBOR_CLAUDE_CODE_INSTRUCTION_9D7E48EFA729400D910E50FAB2B3EEC4\"; unset HARBOR_CLAUDE_CODE_INSTRUCTION_9D7E48EFA729400D910E50FAB2B3EEC4; printf \"%s\" \"$harbor_claude_code_instruction_9d7e48efa729400d910e50fab2b3eec4\" | claude --verbose --output-format=stream-json --permission-mode=bypassPermissions --print 2>&1 | tee /logs/agent/claude-code.txt\nstdout: Ignoring 36 permissions.allow entries from .claude/settings.json: this workspace has not been trusted. Run Claude Code interactively here once and accept the trust dialog, or set projects[\"/app\"].hasTrustDialogAccepted: true in /logs/agent/sessions/. ... [6167 chars truncated] ... \"standard\"},\"modelUsage\":{},\"permission_denials\":[],\"terminal_reason\":\"api_error\",\"fast_mode_state\":\"off\",\"fast_mode_disabled_reason\":\"sdk_opt_in_required\",\"subagent_stats\":{\"spawned\":0,\"requested\":{\"background\":0,\"foreground\":0,\"unset\":0},\"started_in_background\":0,\"max_depth\":0,\"spawned_by_subagents\":0,\"completed\":0,\"failed\":0,\"killed\":{\"parent\":0,\"user\":0,\"system\":0},\"refused\":{\"depth_limit\":0,\"concurrency_limit\":0,\"budget\":0},\"by_type\":{}},\"is_error\":true,\"num_turns\":1,\"subtype\":\"success\",\"api_error_status\":400,\"result\":\"API Error: 400 You have reached your specified API usage limits. You will regain access on 2026-10-01 at 00:00 UTC.\",\"type\":\"result\",\"duration_ms\":800,\"uuid\":\"c4e497e5-5025-4eba-ba8f-35a60be42324\",\"queued_turn_count\":0}\n\nstderr: None",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 77, in _run_agent\n    await self._run_agent_phase(\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 480, in _run_agent_phase\n    await asyncio.wait_for(\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 175, in wrapper\n    return await fn(self, instruction, *args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/claude_code.py\", line 1771, in run\n    await self.exec_as_agent(\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 884, in exec_as_agent\n    return await self._exec(\n           ^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 851, in _exec\n    raise self._classify_exec_error(command, result)\nharbor.agents.installed.base.ApiUsageLimitError: Command failed (exit 1): export PATH=\"$HOME/.local/bin:$PATH\"; harbor_claude_code_instruction_9d7e48efa729400d910e50fab2b3eec4=\"$HARBOR_CLAUDE_CODE_INSTRUCTION_9D7E48EFA729400D910E50FAB2B3EEC4\"; unset HARBOR_CLAUDE_CODE_INSTRUCTION_9D7E48EFA729400D910E50FAB2B3EEC4; printf \"%s\" \"$harbor_claude_code_instruction_9d7e48efa729400d910e50fab2b3eec4\" | claude --verbose --output-format=stream-json --permission-mode=bypassPermissions --print 2>&1 | tee /logs/agent/claude-code.txt\nstdout: Ignoring 36 permissions.allow entries from .claude/settings.json: this workspace has not been trusted. Run Claude Code interactively here once and accept the trust dialog, or set projects[\"/app\"].hasTrustDialogAccepted: true in /logs/agent/sessions/. ... [6167 chars truncated] ... \"standard\"},\"modelUsage\":{},\"permission_denials\":[],\"terminal_reason\":\"api_error\",\"fast_mode_state\":\"off\",\"fast_mode_disabled_reason\":\"sdk_opt_in_required\",\"subagent_stats\":{\"spawned\":0,\"requested\":{\"background\":0,\"foreground\":0,\"unset\":0},\"started_in_background\":0,\"max_depth\":0,\"spawned_by_subagents\":0,\"completed\":0,\"failed\":0,\"killed\":{\"parent\":0,\"user\":0,\"system\":0},\"refused\":{\"depth_limit\":0,\"concurrency_limit\":0,\"budget\":0},\"by_type\":{}},\"is_error\":true,\"num_turns\":1,\"subtype\":\"success\",\"api_error_status\":400,\"result\":\"API Error: 400 You have reached your specified API usage limits. You will regain access on 2026-10-01 at 00:00 UTC.\",\"type\":\"result\",\"duration_ms\":800,\"uuid\":\"c4e497e5-5025-4eba-ba8f-35a60be42324\",\"queued_turn_count\":0}\n\nstderr: None\n",
+            "occurred_at": "2026-09-08T03:12:51.210903Z"
+          }
+        },
+        {
+          "trial_name": "install-windows-3-11__EFv9NuC",
+          "exception": {
+            "exception_type": "ApiUsageLimitError",
+            "exception_message": "Command failed (exit 1): export PATH=\"$HOME/.local/bin:$PATH\"; harbor_claude_code_instruction_f14d9e05580a43008045b11beb49519d=\"$HARBOR_CLAUDE_CODE_INSTRUCTION_F14D9E05580A43008045B11BEB49519D\"; unset HARBOR_CLAUDE_CODE_INSTRUCTION_F14D9E05580A43008045B11BEB49519D; printf \"%s\" \"$harbor_claude_code_instruction_f14d9e05580a43008045b11beb49519d\" | claude --verbose --output-format=stream-json --permission-mode=bypassPermissions --print 2>&1 | tee /logs/agent/claude-code.txt\nstdout: Ignoring 36 permissions.allow entries from .claude/settings.json: this workspace has not been trusted. Run Claude Code interactively here once and accept the trust dialog, or set projects[\"/app\"].hasTrustDialogAccepted: true in /logs/agent/sessions/. ... [6167 chars truncated] ... \"standard\"},\"modelUsage\":{},\"permission_denials\":[],\"terminal_reason\":\"api_error\",\"fast_mode_state\":\"off\",\"fast_mode_disabled_reason\":\"sdk_opt_in_required\",\"subagent_stats\":{\"spawned\":0,\"requested\":{\"background\":0,\"foreground\":0,\"unset\":0},\"started_in_background\":0,\"max_depth\":0,\"spawned_by_subagents\":0,\"completed\":0,\"failed\":0,\"killed\":{\"parent\":0,\"user\":0,\"system\":0},\"refused\":{\"depth_limit\":0,\"concurrency_limit\":0,\"budget\":0},\"by_type\":{}},\"is_error\":true,\"num_turns\":1,\"subtype\":\"success\",\"api_error_status\":400,\"result\":\"API Error: 400 You have reached your specified API usage limits. You will regain access on 2026-10-01 at 00:00 UTC.\",\"type\":\"result\",\"duration_ms\":428,\"uuid\":\"1dadc0b7-3477-44d9-892e-3008370f54ba\",\"queued_turn_count\":0}\n\nstderr: None",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 77, in _run_agent\n    await self._run_agent_phase(\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 480, in _run_agent_phase\n    await asyncio.wait_for(\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 175, in wrapper\n    return await fn(self, instruction, *args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/claude_code.py\", line 1771, in run\n    await self.exec_as_agent(\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 884, in exec_as_agent\n    return await self._exec(\n           ^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 851, in _exec\n    raise self._classify_exec_error(command, result)\nharbor.agents.installed.base.ApiUsageLimitError: Command failed (exit 1): export PATH=\"$HOME/.local/bin:$PATH\"; harbor_claude_code_instruction_f14d9e05580a43008045b11beb49519d=\"$HARBOR_CLAUDE_CODE_INSTRUCTION_F14D9E05580A43008045B11BEB49519D\"; unset HARBOR_CLAUDE_CODE_INSTRUCTION_F14D9E05580A43008045B11BEB49519D; printf \"%s\" \"$harbor_claude_code_instruction_f14d9e05580a43008045b11beb49519d\" | claude --verbose --output-format=stream-json --permission-mode=bypassPermissions --print 2>&1 | tee /logs/agent/claude-code.txt\nstdout: Ignoring 36 permissions.allow entries from .claude/settings.json: this workspace has not been trusted. Run Claude Code interactively here once and accept the trust dialog, or set projects[\"/app\"].hasTrustDialogAccepted: true in /logs/agent/sessions/. ... [6167 chars truncated] ... \"standard\"},\"modelUsage\":{},\"permission_denials\":[],\"terminal_reason\":\"api_error\",\"fast_mode_state\":\"off\",\"fast_mode_disabled_reason\":\"sdk_opt_in_required\",\"subagent_stats\":{\"spawned\":0,\"requested\":{\"background\":0,\"foreground\":0,\"unset\":0},\"started_in_background\":0,\"max_depth\":0,\"spawned_by_subagents\":0,\"completed\":0,\"failed\":0,\"killed\":{\"parent\":0,\"user\":0,\"system\":0},\"refused\":{\"depth_limit\":0,\"concurrency_limit\":0,\"budget\":0},\"by_type\":{}},\"is_error\":true,\"num_turns\":1,\"subtype\":\"success\",\"api_error_status\":400,\"result\":\"API Error: 400 You have reached your specified API usage limits. You will regain access on 2026-10-01 at 00:00 UTC.\",\"type\":\"result\",\"duration_ms\":428,\"uuid\":\"1dadc0b7-3477-44d9-892e-3008370f54ba\",\"queued_turn_count\":0}\n\nstderr: None\n",
+            "occurred_at": "2026-09-08T03:14:41.734196Z"
+          }
+        },
+        {
+          "trial_name": "log-summary-date-ranges__3tvk8Hu",
+          "exception": {
+            "exception_type": "ApiUsageLimitError",
+            "exception_message": "Command failed (exit 1): export PATH=\"$HOME/.local/bin:$PATH\"; harbor_claude_code_instruction_85e73c0d9ad94f2f8f5c5960c9179307=\"$HARBOR_CLAUDE_CODE_INSTRUCTION_85E73C0D9AD94F2F8F5C5960C9179307\"; unset HARBOR_CLAUDE_CODE_INSTRUCTION_85E73C0D9AD94F2F8F5C5960C9179307; printf \"%s\" \"$harbor_claude_code_instruction_85e73c0d9ad94f2f8f5c5960c9179307\" | claude --verbose --output-format=stream-json --permission-mode=bypassPermissions --print 2>&1 | tee /logs/agent/claude-code.txt\nstdout: Ignoring 36 permissions.allow entries from .claude/settings.json: this workspace has not been trusted. Run Claude Code interactively here once and accept the trust dialog, or set projects[\"/app\"].hasTrustDialogAccepted: true in /logs/agent/sessions/. ... [6167 chars truncated] ... \"standard\"},\"modelUsage\":{},\"permission_denials\":[],\"terminal_reason\":\"api_error\",\"fast_mode_state\":\"off\",\"fast_mode_disabled_reason\":\"sdk_opt_in_required\",\"subagent_stats\":{\"spawned\":0,\"requested\":{\"background\":0,\"foreground\":0,\"unset\":0},\"started_in_background\":0,\"max_depth\":0,\"spawned_by_subagents\":0,\"completed\":0,\"failed\":0,\"killed\":{\"parent\":0,\"user\":0,\"system\":0},\"refused\":{\"depth_limit\":0,\"concurrency_limit\":0,\"budget\":0},\"by_type\":{}},\"is_error\":true,\"num_turns\":1,\"subtype\":\"success\",\"api_error_status\":400,\"result\":\"API Error: 400 You have reached your specified API usage limits. You will regain access on 2026-10-01 at 00:00 UTC.\",\"type\":\"result\",\"duration_ms\":805,\"uuid\":\"902a7e38-fbf0-4453-8155-b9a1b8e730b4\",\"queued_turn_count\":0}\n\nstderr: None",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 77, in _run_agent\n    await self._run_agent_phase(\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 480, in _run_agent_phase\n    await asyncio.wait_for(\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 175, in wrapper\n    return await fn(self, instruction, *args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/claude_code.py\", line 1771, in run\n    await self.exec_as_agent(\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 884, in exec_as_agent\n    return await self._exec(\n           ^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 851, in _exec\n    raise self._classify_exec_error(command, result)\nharbor.agents.installed.base.ApiUsageLimitError: Command failed (exit 1): export PATH=\"$HOME/.local/bin:$PATH\"; harbor_claude_code_instruction_85e73c0d9ad94f2f8f5c5960c9179307=\"$HARBOR_CLAUDE_CODE_INSTRUCTION_85E73C0D9AD94F2F8F5C5960C9179307\"; unset HARBOR_CLAUDE_CODE_INSTRUCTION_85E73C0D9AD94F2F8F5C5960C9179307; printf \"%s\" \"$harbor_claude_code_instruction_85e73c0d9ad94f2f8f5c5960c9179307\" | claude --verbose --output-format=stream-json --permission-mode=bypassPermissions --print 2>&1 | tee /logs/agent/claude-code.txt\nstdout: Ignoring 36 permissions.allow entries from .claude/settings.json: this workspace has not been trusted. Run Claude Code interactively here once and accept the trust dialog, or set projects[\"/app\"].hasTrustDialogAccepted: true in /logs/agent/sessions/. ... [6167 chars truncated] ... \"standard\"},\"modelUsage\":{},\"permission_denials\":[],\"terminal_reason\":\"api_error\",\"fast_mode_state\":\"off\",\"fast_mode_disabled_reason\":\"sdk_opt_in_required\",\"subagent_stats\":{\"spawned\":0,\"requested\":{\"background\":0,\"foreground\":0,\"unset\":0},\"started_in_background\":0,\"max_depth\":0,\"spawned_by_subagents\":0,\"completed\":0,\"failed\":0,\"killed\":{\"parent\":0,\"user\":0,\"system\":0},\"refused\":{\"depth_limit\":0,\"concurrency_limit\":0,\"budget\":0},\"by_type\":{}},\"is_error\":true,\"num_turns\":1,\"subtype\":\"success\",\"api_error_status\":400,\"result\":\"API Error: 400 You have reached your specified API usage limits. You will regain access on 2026-10-01 at 00:00 UTC.\",\"type\":\"result\",\"duration_ms\":805,\"uuid\":\"902a7e38-fbf0-4453-8155-b9a1b8e730b4\",\"queued_turn_count\":0}\n\nstderr: None\n",
+            "occurred_at": "2026-09-08T03:15:36.084809Z"
+          }
+        },
+        {
+          "trial_name": "protein-assembly__yAw9oYL",
+          "exception": {
+            "exception_type": "ApiUsageLimitError",
+            "exception_message": "Command failed (exit 1): export PATH=\"$HOME/.local/bin:$PATH\"; harbor_claude_code_instruction_20147844740b4876b82dca5cc65adfbe=\"$HARBOR_CLAUDE_CODE_INSTRUCTION_20147844740B4876B82DCA5CC65ADFBE\"; unset HARBOR_CLAUDE_CODE_INSTRUCTION_20147844740B4876B82DCA5CC65ADFBE; printf \"%s\" \"$harbor_claude_code_instruction_20147844740b4876b82dca5cc65adfbe\" | claude --verbose --output-format=stream-json --permission-mode=bypassPermissions --print 2>&1 | tee /logs/agent/claude-code.txt\nstdout: Ignoring 36 permissions.allow entries from .claude/settings.json: this workspace has not been trusted. Run Claude Code interactively here once and accept the trust dialog, or set projects[\"/app\"].hasTrustDialogAccepted: true in /logs/agent/sessions/. ... [140516 chars truncated] ... st\"}},\"permission_denials\":[],\"terminal_reason\":\"api_error\",\"fast_mode_state\":\"off\",\"fast_mode_disabled_reason\":\"sdk_opt_in_required\",\"subagent_stats\":{\"spawned\":2,\"requested\":{\"background\":0,\"foreground\":2,\"unset\":0},\"started_in_background\":0,\"max_depth\":1,\"spawned_by_subagents\":0,\"completed\":1,\"failed\":1,\"killed\":{\"parent\":0,\"user\":0,\"system\":0},\"refused\":{\"depth_limit\":0,\"concurrency_limit\":0,\"budget\":0},\"by_type\":{\"general-purpose\":2}},\"is_error\":true,\"num_turns\":6,\"subtype\":\"success\",\"api_error_status\":400,\"result\":\"API Error: 400 You have reached your specified API usage limits. You will regain access on 2026-10-01 at 00:00 UTC.\",\"type\":\"result\",\"duration_ms\":129881,\"uuid\":\"8db1ffa9-d258-4ba9-b1fe-1aa22ea12aee\",\"queued_turn_count\":0}\n\nstderr: None",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 77, in _run_agent\n    await self._run_agent_phase(\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 480, in _run_agent_phase\n    await asyncio.wait_for(\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 175, in wrapper\n    return await fn(self, instruction, *args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/claude_code.py\", line 1771, in run\n    await self.exec_as_agent(\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 884, in exec_as_agent\n    return await self._exec(\n           ^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 851, in _exec\n    raise self._classify_exec_error(command, result)\nharbor.agents.installed.base.ApiUsageLimitError: Command failed (exit 1): export PATH=\"$HOME/.local/bin:$PATH\"; harbor_claude_code_instruction_20147844740b4876b82dca5cc65adfbe=\"$HARBOR_CLAUDE_CODE_INSTRUCTION_20147844740B4876B82DCA5CC65ADFBE\"; unset HARBOR_CLAUDE_CODE_INSTRUCTION_20147844740B4876B82DCA5CC65ADFBE; printf \"%s\" \"$harbor_claude_code_instruction_20147844740b4876b82dca5cc65adfbe\" | claude --verbose --output-format=stream-json --permission-mode=bypassPermissions --print 2>&1 | tee /logs/agent/claude-code.txt\nstdout: Ignoring 36 permissions.allow entries from .claude/settings.json: this workspace has not been trusted. Run Claude Code interactively here once and accept the trust dialog, or set projects[\"/app\"].hasTrustDialogAccepted: true in /logs/agent/sessions/. ... [140516 chars truncated] ... st\"}},\"permission_denials\":[],\"terminal_reason\":\"api_error\",\"fast_mode_state\":\"off\",\"fast_mode_disabled_reason\":\"sdk_opt_in_required\",\"subagent_stats\":{\"spawned\":2,\"requested\":{\"background\":0,\"foreground\":2,\"unset\":0},\"started_in_background\":0,\"max_depth\":1,\"spawned_by_subagents\":0,\"completed\":1,\"failed\":1,\"killed\":{\"parent\":0,\"user\":0,\"system\":0},\"refused\":{\"depth_limit\":0,\"concurrency_limit\":0,\"budget\":0},\"by_type\":{\"general-purpose\":2}},\"is_error\":true,\"num_turns\":6,\"subtype\":\"success\",\"api_error_status\":400,\"result\":\"API Error: 400 You have reached your specified API usage limits. You will regain access on 2026-10-01 at 00:00 UTC.\",\"type\":\"result\",\"duration_ms\":129881,\"uuid\":\"8db1ffa9-d258-4ba9-b1fe-1aa22ea12aee\",\"queued_turn_count\":0}\n\nstderr: None\n",
+            "occurred_at": "2026-09-08T03:12:09.165707Z"
+          }
+        },
+        {
+          "trial_name": "rstan-to-pystan__df5taYA",
+          "exception": {
+            "exception_type": "AgentTimeoutError",
+            "exception_message": "Agent execution timed out after 1800.0 seconds",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 175, in wrapper\n    return await fn(self, instruction, *args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/claude_code.py\", line 1771, in run\n    await self.exec_as_agent(\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 884, in exec_as_agent\n    return await self._exec(\n           ^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 835, in _exec\n    result = await environment.exec(\n             ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 1096, in exec\n    return await self._compose_exec(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 1173, in _compose_exec\n    return await self._run_docker_compose_command(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 649, in _run_docker_compose_command\n    result = await self._collect_buffered_output(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 679, in _collect_buffered_output\n    stdout_bytes, stderr_bytes = await process.communicate(input=stdin_data)\n                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/subprocess.py\", line 201, in communicate\n    stdin, stdout, stderr = await tasks.gather(stdin, stdout, stderr)\n                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/subprocess.py\", line 181, in _read_stream\n    output = await stream.read()\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/streams.py\", line 706, in read\n    block = await self.read(self._limit)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/streams.py\", line 713, in read\n    await self._wait_for_data('read')\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/streams.py\", line 545, in _wait_for_data\n    await self._waiter\nasyncio.exceptions.CancelledError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 480, in _run_agent_phase\n    await asyncio.wait_for(\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/tasks.py\", line 519, in wait_for\n    async with timeouts.timeout(timeout):\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/timeouts.py\", line 115, in __aexit__\n    raise TimeoutError from exc_val\nTimeoutError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 77, in _run_agent\n    await self._run_agent_phase(\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 489, in _run_agent_phase\n    raise AgentTimeoutError(\nharbor.trial.errors.AgentTimeoutError: Agent execution timed out after 1800.0 seconds\n",
+            "occurred_at": "2026-09-08T03:48:16.395133Z"
+          }
+        },
+        {
+          "trial_name": "train-fasttext__Fr8DY4X",
+          "exception": {
+            "exception_type": "AgentTimeoutError",
+            "exception_message": "Agent execution timed out after 3600.0 seconds",
+            "exception_traceback": "Traceback (most recent call last):\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 175, in wrapper\n    return await fn(self, instruction, *args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/claude_code.py\", line 1771, in run\n    await self.exec_as_agent(\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 884, in exec_as_agent\n    return await self._exec(\n           ^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/agents/installed/base.py\", line 835, in _exec\n    result = await environment.exec(\n             ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 1096, in exec\n    return await self._compose_exec(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 1173, in _compose_exec\n    return await self._run_docker_compose_command(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 649, in _run_docker_compose_command\n    result = await self._collect_buffered_output(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/environments/docker/docker.py\", line 679, in _collect_buffered_output\n    stdout_bytes, stderr_bytes = await process.communicate(input=stdin_data)\n                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/subprocess.py\", line 201, in communicate\n    stdin, stdout, stderr = await tasks.gather(stdin, stdout, stderr)\n                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/subprocess.py\", line 181, in _read_stream\n    output = await stream.read()\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/streams.py\", line 706, in read\n    block = await self.read(self._limit)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/streams.py\", line 713, in read\n    await self._wait_for_data('read')\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/streams.py\", line 545, in _wait_for_data\n    await self._waiter\nasyncio.exceptions.CancelledError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 480, in _run_agent_phase\n    await asyncio.wait_for(\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/tasks.py\", line 519, in wait_for\n    async with timeouts.timeout(timeout):\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/timeouts.py\", line 115, in __aexit__\n    raise TimeoutError from exc_val\nTimeoutError\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/single_step.py\", line 77, in _run_agent\n    await self._run_agent_phase(\n  File \"/root/.venvs/harbor-t407/lib/python3.12/site-packages/harbor/trial/trial.py\", line 489, in _run_agent_phase\n    raise AgentTimeoutError(\nharbor.trial.errors.AgentTimeoutError: Agent execution timed out after 3600.0 seconds\n",
+            "occurred_at": "2026-09-08T05:01:23.182457Z"
+          }
+        }
+      ],
+      "rewards": [
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "mean_reward": 0.28,
+      "stdev_reward": 0.44899888641287294,
+      "elapsed_seconds_per_trial": [
+        102.829631,
+        211.859753,
+        127.996713,
+        169.797161,
+        98.632519,
+        529.363357,
+        241.095346,
+        108.263655,
+        1711.252449,
+        195.472171,
+        115.597336,
+        155.602857,
+        394.678027,
+        121.508066,
+        205.051408,
+        104.606474,
+        719.459746,
+        364.614801,
+        280.505106,
+        230.39848,
+        184.605788,
+        1909.697465,
+        242.026466,
+        4251.692811,
+        185.161939
+      ],
+      "cost_usd_total": 6.828246750000001
+    }
+  },
+  "delta": {
+    "mean_reward_b_minus_a": 0.0,
+    "note": "score(B) - score(A) per plan-035 \u00a72.2.1. Positive = the emage.code projection improved outcomes on this run; negative = regressed; null/near-zero = no measurable effect at this k. See plan-035 \u00a72.4 Phase 1's registered null-delta interpretation block for how a null/negative result at full k>=3 scale (T407, not this task) should be read -- not applicable at this smoke test's k."
+  },
+  "spread": {
+    "arm_a_stdev": 0.44899888641287294,
+    "arm_b_stdev": 0.44899888641287294,
+    "note": "Population stdev of per-trial rewards within each arm. At k=1 (this smoke test) stdev is trivially 0.0 by definition, NOT a meaningful measurement of variance -- k>=3 per arm is required before a spread value should be treated as signal, per plan-035 \u00a72.2.1 discipline 1 ('Variance')."
+  },
+  "max_budget_seconds": 129600,
+  "run_artifacts_dir": "/root/emage-code-t407/docs/benchmarks/scorecards/.runs/20260908T001726Z"
+}
