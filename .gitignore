@@ -53,6 +53,7 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.example.json
+!.vscode/mcp.json.provenance.json
 .history/
 
 # Claude Code CLI runtime settings at repo root (session/local tool state,
