@@ -484,18 +484,57 @@ closeout:
 
 ### 7.2 Total real cost, T407 in full
 
-| Component | Cost |
-|---|---|
-| Original k=3 single-pass run (2026-08-14, §2) | $34.13 |
-| Design A, 2 failed bind-mount attempts (2026-09-05/06) | $0.00 (100% infrastructure failure before any billable model completion was captured — confirmed via each failed scorecard/result.json's `cost_usd: null`) |
-| Design A smoke test on `.11` (2026-09-07, 4 trials) | $0.32 |
-| Design A, 3 successful independent passes (2026-09-07/08, §6.2) | $43.96 |
-| **Grand total, entire T407 effort** | **≈ $78.41** |
+**Correction (2026-09-08, post-merge):** the table and total originally published in this section
+misread `cost_usd: null` on the two failed Design A attempts as "$0 spent" and reported a grand
+total of "≈$78.41". That reading was wrong — see below for the corrected accounting.
 
-This is real money spent across this task's full history — stated plainly per the dispatching
-brief's instruction, not folded quietly into a single "total cost" line that would understate
-the two failed attempts' wall-clock cost (they cost $0 in API spend but consumed real host time
-across two separate multi-hour launches) or the smoke test's small but real spend.
+| Component | Cost | Status |
+|---|---|---|
+| Original k=3 single-pass run (2026-08-14, §2) | $34.13 | Recorded (sum of `agent_result.cost_usd` across 130/150 trial `result.json` files; the other 20 trials errored before an agent session ran and have no cost either way) |
+| Design A smoke test on `.11` (2026-09-07, 4 trials) | $0.32 | Recorded |
+| Design A, 3 successful independent passes (2026-09-07/08, §6.2) | $43.96 | Recorded |
+| **Subtotal — Harbor-recorded cost** | **$78.41** | Exact, not an estimate |
+| Design A, 2 failed bind-mount attempts (2026-09-05/06, 181 real trial-attempts across arms A/B) | not recorded by Harbor | `agent_result.cost_usd` is `null` in all 181 of these trials' `result.json` files (independently confirmed by direct inspection of every file); see "Why no cost data" below |
+| Rate-based estimate of the unrecorded portion | ≈$22 | Not a measurement — see methodology below |
+| **Honest total estimate, entire T407 effort** | **≈$100** | $78.41 recorded + ≈$22 estimated, rounded because the unrecorded portion is an approximation |
+
+**Why the two failed attempts show no cost data — this is not "$0 spent," it is "$0 recorded":**
+both failed attempts hit the same Docker-bind-mount misconfiguration identified as the root cause
+of their trial failures (§6.0) — bind mounts resolved against the daemon's filesystem
+(`10.10.160.11`) rather than the client's (`10.10.160.12`). The same per-trial result-writing path
+that this bug broke for reward files also carries Harbor's cost bookkeeping; when that path fails,
+`agent_result.cost_usd` is left `null` rather than backfilled with `0`. Real Claude Code agent
+sessions ran against real tasks in all 181 of these trial-attempts before the trials failed, and
+real tokens were consumed in the process — the absence of a recorded cost reflects a recording
+gap, not zero billing.
+
+**Rate-based estimate, methodology:** Harbor recorded both cost and precise per-trial
+`started_at`/`finished_at` timestamps for the one dataset with fully reliable cost data — the
+original k=3 run (150 trials, $34.13 recorded, 163,516s of summed real per-trial elapsed time) —
+giving a rate of **$34.13 / 163,516s ≈ $0.000209/s**. Applying that rate to the failed attempts'
+own real elapsed time (181 trials, 104,254s of summed elapsed time, computed the same way from
+each trial's own `started_at`/`finished_at`) gives **104,254s × $0.000209/s ≈ $21.76**, rounded to
+**≈$22** above.
+
+**Caveat on precision — do not over-read this estimate:** this is a rate extrapolation from one
+dataset onto another, not a measurement, and the result is sensitive to a real methodological
+choice: which per-trial time window is used as the cost-driving basis. The figure above uses each
+trial's full wall-clock span (`started_at`/`finished_at` at the trial level — container setup
+through verification). Using instead the narrower `agent_execution.started_at`/`finished_at`
+window (agent activity alone, excluding setup/verification overhead — arguably a better
+mechanistic proxy for token-driven cost, since setup and verification consume no LLM tokens) gives
+a meaningfully different figure: $34.13 / 59,706s ≈ $0.000572/s applied to the failed attempts'
+77,412s of agent-execution-only time ≈ **$44**, which would put the honest total nearer **≈$123**
+instead of ≈$100. Both bases are defensible; neither is exact. This roughly 2x spread between two
+reasonable methodologies is itself evidence that the unrecorded portion cannot be pinned down from
+Harbor's artifacts alone.
+
+**Recommendation:** treat **≈$100** (with a plausible range extending toward ≈$120+ depending on
+methodology) as a rough planning figure only, not a final number. For the authoritative
+ground-truth figure, check the Anthropic Console / usage dashboard directly for the account and
+date range covering T407's Design A work (2026-09-05 through 2026-09-08) — neither Harbor's
+scorecards nor this repository's artifacts can produce an exact number for the unrecorded portion;
+only the billing system that actually metered the API calls can.
 
 ---
 
@@ -506,3 +545,13 @@ match on every figure checked). Committed to `feature/T407-tb-delta-v6.12.0`; se
 `docs/tasks/task-T407.md`'s closing addendum and `docs/tasks/completed-tasks.md` for T407's full
 closeout record. T409's unblock status is assessed separately in the orchestrator's final report
 — not dispatched by this document.*
+
+*§7.2 corrected 2026-09-08 (docs/t407-cost-correction branch): the merged version of this
+document understated total real cost by reading `cost_usd: null` on 181 failed-attempt trials as
+"$0 spent" instead of "$0 recorded." Corrected independently by re-deriving cost, `cost_usd`
+nullness, and per-trial elapsed time directly from every `result.json` under
+`jobs/tb-delta-20260905T224623Z-arm-{A,B}/` and `jobs/tb-delta-20260906T{061146,095951,142221}Z-
+arm-{A,B}/` (181 trials, confirmed 181/181 `cost_usd: null`) and the original k=3 run's own
+`result.json` files (confirmed $34.1334 recorded across 130/150 trials). See the corrected §7.2
+table and its methodology/caveat notes for the honest ≈$100 total estimate and the recommendation
+to check the Anthropic Console for ground truth.*
