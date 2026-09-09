@@ -2,9 +2,31 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T430 | Maturity levels in implementation/registry/schema.json | backend-developer | in_progress | P1 | None | 2026-09-09 |
 | T456 | Downstream measurement (ship gate) | evaluation-agent | blocked | P0 | T454 (done), T455 (done), T458 (pending) | 2026-09-09 |
 | T457 | Scoped, non-`Bash` execution/read primitive for `@security-engineer` and `@context-retriever` | solution-architect | pending | P1 | None | 2026-09-09 |
 | T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-09 |
+
+> **T430 dispatched 2026-09-09 — Phase 3 (`plan-041`, approved/merged MR !252) begins.** Brief at
+> `docs/tasks/task-T430.md`. **Reassigned from `plan-041`/`plan-035`'s nominal `solution-architect`
+> to `backend-developer`** — `solution-architect`'s real tool grant (`[read, search, edit, web,
+> todo, mcp__sequential-thinking, mcp__fetch]`) has no `execute`; this task needs to run
+> `generate-registry.py` and the test suite. Fourth confirmed instance of this repo's own
+> tool-grant-check discipline (T410/T420/T451 precedent), same disposition (reassign, leave the
+> nominal agent's grant unchanged). **Pre-dispatch finding corrects `plan-041`'s own Finding 2**:
+> grepped all 84 `implementation/knowledge/**/*.md` files for an explicit `maturity:`/`stability:`
+> frontmatter field — zero matches anywhere; read `generate-registry.py` directly and confirmed its
+> `_maturity()` function returns the hardcoded fallback `"beta"` for every component because the
+> field is absent, not because any component was actually classified; `check.py` has zero
+> references to `maturity`, so nothing validates it today either. **The uniform "beta" `plan-041`
+> read from `summary.md` is a generator default, not real per-component classification data** —
+> `task-T430.md`'s own "Corrected premise" section carries this forward in full, with three
+> decisions (final enum names, whether the field becomes mandatory, the honest baseline value for
+> unpromoted components) explicitly delegated to the dispatched agent per `plan-041`'s own existing
+> delegation of the naming question, not silently resolved here. Not treated as needing a fresh
+> user check-in — matches this repo's established pattern of delegating implementation-level design
+> decisions (T450's ADR precedent) with independent verification after the fact, rather than
+> escalating every such decision.
 
 > **T456 BLOCKED 2026-09-09 — genuine infrastructure gap, user-approved disposition, not a
 > fabricated pass, not silently dropped.** Full record at `docs/tasks/task-T456.md`. Re-confirming
