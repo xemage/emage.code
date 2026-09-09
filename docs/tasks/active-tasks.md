@@ -2,21 +2,37 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T451 | Three enforced memory scopes (general/project/shared) | solution-architect | pending | P0 | T450 | 2026-09-09 |
 
+> **T451 closed 2026-09-09 — `docs/artifacts/memory-scope-model-v1.md` published (MR !235,
+> squash-merged), moved to `completed-tasks.md`.** All 6 acceptance criteria independently
+> verified met by the orchestrator before merge, including three factual corrections the
+> Bash-less `solution-architect` could not self-check (misattributed ADR-005 citation; a
+> fabricated `xemage` org slug across every example, corrected to the real `em-age/*` remotes;
+> a platform list that assumed `codex` was already live on `develop`). See
+> `completed-tasks.md`'s T451 row and `task-T451.md`'s completion addendum for full detail,
+> including the tool-grant disposition (left unchanged, third confirmed instance of the same
+> T420-established pattern) and the separate small ADR-005 Approval-section follow-up (MR !234,
+> already merged, fixing a staleness the header flip alone didn't reach).
+>
+> **T452 (indexing pipeline) is next in `plan-038`'s dependency graph — both its dependencies
+> (T450, T451) are now done — but is not dispatched in this session yet.**
+>
 > **ADR-005 accepted 2026-09-09** — the user approved all three of ADR-005's decisions this
 > session (git-versioned Markdown/frontmatter store + locally-rebuilt vector index; local/open-
 > source embeddings, zero cost; read-only-by-default for the canonical store and
 > `@context-retriever`). Status field flipped `proposed` → `Accepted` in a small, standalone
 > docs commit/MR (`docs/adr-005-accept`, MR !232, merged `develop`) — ADR body, Alternatives,
-> Consequences, and Approval sections left untouched per the user's explicit instruction to
-> change only the Status field, not rewrite the ADR's content.
+> Consequences, and Approval sections left untouched in that MR per the user's explicit
+> instruction to change only the Status field, not rewrite the ADR's content. A separate,
+> narrow follow-up (MR !234, merged) later fixed the ADR's own `## Approval` section, which
+> still read "proposed, not accepted" with unchecked boxes after the header-only flip — same
+> standalone-MR discipline, nothing else in the ADR touched.
 >
 > **T451 dispatched 2026-09-09**, per `plan-038-phase5-detailed-planning.md`'s own sequencing
 > (T450 → T451 → T452 → T453 → T454 → {T455, T456}), now that ADR-005's approval gate is
-> cleared. See `task-T451.md` for the full brief. T452 remains undispatched — its own gate
+> cleared. T452 remained undispatched pending T451's actual completion — its own gate
 > (T451's scope model must land first, per `plan-038`'s explicit dependency reasoning: "a later
-> task cannot conform to a contract that does not exist yet") is not yet satisfied, independent
+> task cannot conform to a contract that does not exist yet") is now satisfied, independent
 > of ADR-005's money-gate already resolving negative (local/zero-cost embeddings, no
 > cost-authorization step required per ADR-005 Decision 2).
 
