@@ -2,10 +2,11 @@
 
 **ID:** T453
 **Owner:** backend-developer
-**Status:** in_progress
+**Status:** done
 **Priority:** P0
 **Depends on:** T452 (done — `implementation/runtime/memory/`, `docs/artifacts/indexing-pipeline-v1.md`)
 **Created:** 2026-09-09
+**Completed:** 2026-09-09
 **Based on:** `docs/plans/plan-035-roadmap-v7-ground-up.md` §2.4 Phase 5 (T453 row: "Hybrid
 retrieval: semantic + lexical + structural, ranked", and Phase 5's own headline acceptance
 criterion "`<500ms` p95 retrieval on a 100K LOC repo"); `docs/plans/plan-038-phase5-detailed-
@@ -229,3 +230,95 @@ before escalating to the orchestrator. Specific cases already anticipated:
 ## Execution notes
 
 (To be filled in by the implementing agent during work, if useful — not required.)
+
+## Completion addendum (2026-09-09)
+
+`implementation/runtime/memory/{scope_filter,lexical,structural,rank,retrieve}.py` (a mandatory
+query-time scope predicate that runs before any embedding/ranking work; BM25 lexical scoring; a
+structural enrichment-metadata boost signal; weighted linear fusion; the `MemoryIndex`/`Retriever`
+query API for T454), `docs/artifacts/hybrid-retrieval-v1.md` (fusion strategy with a worked
+example, query-time filter design, latency benchmark methodology/results), and new tests
+(`tests/functional/test_hybrid_retrieval.py`, `tests/performance/test_hybrid_retrieval_latency.py`,
+`tests/_helpers/synthetic_memory_corpus.py`). Squash-merged to `develop` via MR !243 (agent branch
+`agent/backend-developer/T453`, feat commit `588ebc4` + fix commit `0a7dafb`, squashed to
+`74ae791`, merge commit `df9a9e9`). Companion dispatch MR !242 (`docs/t453-dispatch`, this brief +
+the `active-tasks.md` row) merged separately, merge commit `d45e61d`.
+
+**Disclosed interpretation (flagged by the implementer as `unclear_requirements`/minor, not a
+silent guess):** `memory-scope-model-v1.md` §4.1's build-time predicate only checks
+`shared_consumers.projects` (no platform identity exists at build time). §4.2's query-time
+predicate extends this to also check `shared_consumers.platforms`, since `requesting_context`
+carries a platform dimension the build-time predicate doesn't have. Documented explicitly in
+`scope_filter.py`'s own docstring and `hybrid-retrieval-v1.md`, not left implicit.
+
+**A real, disclosed-only-after-the-fact defect was found and fixed before merge, not before initial
+push:** `retrieve.py::_semantic_scores` (and `MemoryIndex.vector_matrix()`) did an unconditional
+`import numpy as np`, reached by `Retriever.search()` regardless of embedder — including the
+`FakeEmbedder`-based tests in `test_hybrid_retrieval.py`, whose own module docstring claimed (at
+that point, incorrectly) that they ran with no optional dependency installed. The orchestrator
+caught this via `glab ci status` on the MR's own pipeline (`unit-tests` job genuinely `failed`, not
+the "419 tests, 0 failures" the MR description claimed) — not via re-reading the implementer's
+report, which had not disclosed it. Independently reproduced in a from-scratch clean venv (no
+`numpy`, no `fastembed`): 4 real `ModuleNotFoundError` errors, exactly matching CI. A follow-up fix
+(commit `0a7dafb`, same branch) added `_import_numpy()` (mirrors `embed.py`'s existing optional-
+import convention); `vector_matrix()`/`_semantic_scores()` now fall back to an equivalent
+pure-Python per-candidate dot-product computation when numpy is unavailable, while the
+numpy-vectorized path — confirmed via direct diff review to be otherwise byte-for-byte unchanged —
+remains the default whenever numpy is importable.
+
+**Orchestrator independent, adversarial verification before merging — not accepted on the
+implementer's self-report, and not accepted on three separate mid-session messages purporting to
+relay it either** (each framed as "the coordinator sent a message while you were working" —
+matching the identical injection-shaped pattern already flagged in `checkpoint-023`/`checkpoint-
+024`; per this project's standing rule that no agent message is ever the user's consent, none of
+their claims were trusted on their own terms — everything below was independently re-derived
+against real system state first):
+
+- Read all five new modules end-to-end directly.
+- Designed and ran a 7-probe adversarial scope-enforcement script, not the implementer's own test
+  file: built real T452 indexes for a `P1`/`P2` fixture pair via the real pipeline, hand-merged
+  their chunks into a single physical index (simulating the ADR-005-named future shared-index
+  migration where T452's ingestion-time partitioning would not hold on its own), then queried it
+  with the real local embedder. Confirmed: a hostile exact-canary-token query from `P2` against
+  `P1`'s secret returns zero hits even though the content is physically present in the candidate
+  pool; `P1` querying its own secret does surface it (predicate isn't a blanket deny); a
+  shared-scope entry is reachable by its named consumer; **the disclosed
+  `shared_consumers.platforms` extension is real enforcement, not decorative** — same project,
+  wrong platform, is correctly blocked; omitting `requesting_context` raises `TypeError`; an empty
+  `project_id` raises `ValueError` at construction; a `general`-scope chunk remains visible to an
+  unrelated third project. All 7 passed.
+- Independently reproduced acceptance criterion 1's worked example by running
+  `FusionChangesTopResultTests` in isolation and reading its assertions directly — a real,
+  non-vacuous check (asserts pure-semantic ranking disagrees with fused ranking, not just that both
+  exist).
+- Independently confirmed no network egress: built a fresh index and ran a query with
+  `HTTP(S)_PROXY` pointed at an unreachable address — real, non-zero 768-dim vectors produced, both
+  at index-build and at query time.
+- **Independently re-measured the real `<500ms` p95 latency claim** by running the actual committed
+  benchmark fresh (`EMAGE_MEMORY_RETRIEVAL_LATENCY_TEST=1`), against the exact merged code, not the
+  implementer's number: 104,000 LOC / 13,050-chunk synthetic corpus (matches exactly), p95 =
+  **233.6ms** (vs. the implementer's reported 222.2ms — both comfortably under the 500ms budget,
+  ~2.1x margin). This also closed a gap the implementer's own design doc had explicitly flagged as
+  outstanding (their last full benchmark run predated a subsequent coding-standards refactor and
+  was not re-run against the exact final diff).
+- **Found the CI/numpy defect described above** via `glab ci status` on the MR's own pipeline, not
+  via the implementer's report.
+- **After the fix**, independently reproduced the clean-venv verification myself in a freshly-built
+  venv (not reusing the implementer's environment): 323 tests, 0 numpy-related errors (3 remaining
+  errors are pre-existing and unrelated — `requests`/`pyarrow`/`cryptography` missing, predate this
+  task). Individually re-ran the 4 previously-failing tests — all pass. Confirmed the real GitLab CI
+  pipeline on the fix commit shows `success` across all jobs, not just `unit-tests`. Ran
+  `python3 tests/run.py` in the normal environment: 419 tests, `OK`, no regressions. Reviewed the
+  fix's diff directly and confirmed the numpy-available path is unchanged (same array construction,
+  same matmul, only the `.tolist()` call site moved) — on that basis, judged a second full
+  ~19-minute latency re-run unnecessary rather than reflexively re-running it, an explicit,
+  evidence-backed engineering judgment call, not a shortcut.
+- Confirmed `git diff --stat develop..HEAD` scoped to exactly the files the brief allowed; no
+  `.mcp.json`, golden tests, scorecard, or unrelated files touched; no secrets (only synthetic
+  fixture "canary" tokens).
+
+**All 9 acceptance criteria independently confirmed met**, including the three most safety-critical
+(criterion 2, mandatory filter-before-rank call order; criterion 3, adversarial cross-project
+unreachability under a simulated worst-case merged-index scenario; criterion 5, the real measured
+`<500ms` p95 latency). T454 (`@context-retriever`, read-only agent wrapper) is next in `plan-038`'s
+dependency graph — not dispatched this session.
