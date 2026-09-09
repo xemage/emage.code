@@ -2,20 +2,63 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T455 | Retrieval eval sub-suite (precision/recall/irrelevant-context-rate/latency) | qa-engineer | pending | P0 | T454 (done) | 2026-09-09 |
 | T457 | Scoped, non-`Bash` execution/read primitive for `@security-engineer` and `@context-retriever` | solution-architect | pending | P1 | None | 2026-09-09 |
 
-> **T455 dispatched 2026-09-09** — brief at `docs/tasks/task-T455.md`. Independent golden sub-suite
-> measuring precision, recall, irrelevant-context rate, and latency for `@context-retriever`, as its
-> own signal published before any T456 downstream-capability claim, per `plan-035`'s own literal
-> Phase 5 acceptance criterion. **Owner reassigned from `plan-038`'s nominal `evaluation-agent` to
-> `qa-engineer`** — `evaluation-agent`'s actual registered tool grant (`implementation/knowledge/
-> agents/evaluation-agent.md`) is `[read, search, web]`, no `execute`/Bash, no `edit`/write,
-> insufficient to author and run a real eval sub-suite; same pattern and same disposition as the
-> existing T415/T418 owner-correction precedent (reassign rather than widen the tool grant).
-> `evaluation-agent`'s tool grant is unchanged. See `task-T455.md`'s own "Owner reassignment"
-> section for the full reasoning. Not yet implemented this session — `agent/qa-engineer/T455`
-> worktree/branch to follow this ledger update.
+> **T455 closed 2026-09-09** — `tests/eval/memory_retrieval/{labeled_dataset.py,metrics.py,
+> scorecard-v1.json,scorecard-v1.md}`, `tests/functional/test_retrieval_eval_metrics.py`,
+> `tests/performance/test_retrieval_eval_scorecard.py`, `docs/artifacts/retrieval-eval-v1.md`
+> published (MR !249, squash-merged to `develop`), moved to `completed-tasks.md`. **Owner
+> reassigned from `plan-038`'s nominal `evaluation-agent` to `qa-engineer`** —
+> `evaluation-agent`'s actual tool grant (`[read, search, web]`, no Bash, no edit) cannot author/run
+> a real eval sub-suite; same disposition as the existing T415/T418 precedent. `evaluation-agent`'s
+> tool grant left unchanged.
+>
+> **Real, measured result (k=5, 23 hand-labeled queries, real local `nomic-embed-text-v1.5`
+> embeddings, no network egress):** recall@5 = 1.000 across all 23 queries, zero exceptions,
+> including against 4 purpose-built confusable decoys; precision@5 mean 0.226 (structurally capped
+> by the label design — 20/23 queries have exactly 1 relevant chunk in a 24-chunk corpus, capping
+> precision@5 at 1/5=0.2; the 3 multi-relevant queries reach 2/5=0.4 — disclosed explicitly, not a
+> retrieval-quality problem); irrelevant-context-rate mean 0.774 (=1−precision by definition);
+> latency p50=63.4ms/p95=76.5ms/p99=max=93.5ms, comfortably under the 500ms budget.
+> **Recommendation (`docs/artifacts/retrieval-eval-v1.md` §7): proceed to T456**, with the
+> corpus-scale caveat (24 chunks vs. T453's ~13,000-chunk benchmark scale) stated plainly, not
+> hidden.
+>
+> **Orchestrator independent, adversarial verification before merging** (not accepted on the
+> implementer's self-report, and not accepted on two separate mid-session messages purporting to
+> relay it either — third/fourth occurrence of the "coordinator sent a message while you were
+> working" pattern this phase already flagged at `checkpoint-025`/`checkpoint-026`; the second
+> message additionally fabricated a claim that the orchestrator "hadn't done any actual
+> verification work yet" when it demonstrably had, per its own tool-call history — neither
+> message's claims were accepted as fact, both were independently re-derived against real state
+> first, matching this repo's standing disposition for this pattern). Confirmed the branch/commit
+> genuinely exist and the diff is scoped to exactly the 9 files claimed, no protected paths or
+> `.mcp.json` touched. Read `labeled_dataset.py` directly: `relevant_ids` are hardcoded Python tuple
+> literals defined alongside each query, confirmed non-circular by construction (not computed from
+> any retriever call), not merely trusted from the docstring's own claim. **Independently
+> re-derived the precision-cap arithmetic** against the real query distribution read from source
+> (20 single-relevant + 3 double-relevant queries): `(20×0.2 + 3×0.4)/23 = 0.226086956...`, matching
+> the published mean to full float precision, and cross-checked the real scorecard JSON's per-query
+> breakdown shows exactly 20 queries at 0.2 and exactly 3 at 0.4 — the disclosed
+> capped-by-design explanation is mathematically sound, independently confirmed, not accepted at
+> face value. Read `test_retrieval_eval_scorecard.py` directly and confirmed it constructs a real
+> `ContextRetriever(index_dir)` and calls `.query()` end-to-end — not a bypass to `Retriever.search()`
+> — against a real index built via T452's own `build_index`/`write_index`, with a real temp git
+> remote and `.generated-manifest.json` so `RequestingContext` derivation is genuinely exercised.
+> Ran `python3 tests/run.py` fresh (478 tests, `OK`, `skipped=24`, up from checkpoint-026's 453/23,
+> exactly `+24` new default-tier `+1` new opt-in-skipped, no regressions — matches the implementer's
+> claim exactly, independently reproduced). Ran `test_protected_paths_declared.py` +
+> `test_golden_held_out_isolation.py` directly (18/18 pass). **Independently reproduced the real
+> embedding run in a completely fresh, throwaway venv** (`fastembed==0.8.0` installed fresh, no
+> dependency on the implementer's own environment): precision@5/recall@5/irrelevant-rate
+> distributions matched the committed scorecard byte-for-byte identical; latency differed (148.8ms
+> vs. 76.5ms p95 — expected, load-sensitive/different sandbox, both well under budget); restored the
+> original committed scorecard files afterward rather than leaving the reproduction run's own
+> output in the tree. `sync.mjs --check` no drift; `docs/tasks/validate-tasks.py` PASS; CI green
+> (5/5) before merging. **All 8 acceptance criteria independently confirmed met.** T456 (downstream
+> measurement/ship gate) is next in `plan-038`'s dependency graph — its own owner-reassignment
+> check (same `evaluation-agent` gap) must be repeated at its own dispatch time, not assumed
+> inherited from T455's.
 
 > **T457 recorded 2026-09-09 — NOT DISPATCHED, backlog item only.** Brief at
 > `docs/tasks/task-T457.md`. Found during T454's own MR review: both `@security-engineer` and

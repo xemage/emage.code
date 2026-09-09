@@ -3,12 +3,13 @@
 **ID:** T455
 **Owner:** qa-engineer (reassigned from `plan-038`'s nominal `evaluation-agent` — see "Owner
 reassignment" below)
-**Status:** pending
+**Status:** done
 **Priority:** P0
 **Depends on:** T454 (done — `implementation/knowledge/agents/context-retriever.md`,
 `implementation/runtime/memory/context_retriever.py`, `docs/artifacts/context-retriever-v1.md`)
 **Created:** 2026-09-09
-**Completed:** —
+**Completed:** 2026-09-09 (MR !249, squash-merged to `develop`; recall@5=1.000, recommendation to
+proceed to T456 — see `completed-tasks.md`'s T455 row for the full independently-verified record)
 **Based on:** `docs/plans/plan-035-roadmap-v7-ground-up.md` §2.4 Phase 5 (T455's own literal
 acceptance criterion: "Precision/recall measured and published *before* any claim of improved
 downstream capability"); `docs/plans/plan-038-phase5-detailed-planning.md` T455 per-task summary
