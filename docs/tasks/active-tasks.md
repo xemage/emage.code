@@ -2,19 +2,35 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T452 | Indexing pipeline over the knowledge vault (parse → chunk → enrich → embed → index) | backend-developer | in_progress | P0 | T450 (done), T451 (done) | 2026-09-09 |
 
-> **T452 dispatched 2026-09-09.** Per `plan-038-phase5-detailed-planning.md`'s own sequencing
-> (T450 → T451 → T452 → T453 → T454 → {T455, T456}), now that both of T452's dependencies are
-> done. This is the dispatch `checkpoint-023-phase5-adr005-accepted-t451-complete.md` explicitly
-> paused ahead of, pending the user's return — the user has now returned and explicitly approved
-> dispatching T452 this session. See `task-T452.md` for the full brief: it implements the
-> indexing pipeline (parse/chunk/enrich/embed/index) against `memory-scope-model-v1.md`'s §4.1
-> structural scope-boundary partitioning and §5 write-time validation, and ADR-005 Decision 2's
-> local/zero-cost embedding model (`nomic-embed-text-v1.5` primary, `bge-small-en-v1.5` fallback)
-> — no cost-authorization gate applies. Real vault-content population is explicitly out of scope
-> for this task (fixture/test-vault only); see the brief's "Vault content — explicitly out of
-> scope" section.
+> **T452 closed 2026-09-09 — `implementation/runtime/memory/` (indexing pipeline),
+> `implementation/knowledge/memory/{general,project,shared}/` (vault convention, structure only),
+> `docs/artifacts/indexing-pipeline-v1.md` published (MR !239, squash-merged), moved to
+> `completed-tasks.md`.** All 9 acceptance criteria independently verified met by the
+> orchestrator before merge — not accepted on the agent's self-report, and not accepted on a
+> mid-session message purporting to relay that report either (see below). Orchestrator ran the
+> full test suite fresh (399 tests, `OK`), independently re-ran the full optional-dependency
+> pipeline suite (20/20, real local-model download observed), rebuilt the index from a genuinely
+> separate clean git clone + fresh venv and diffed zero against the original build, and designed
+> and ran an adversarial symlink-escape probe not present in the agent's own test suite (a
+> symlink inside an "evil" project's own tree pointing at a foreign project's `project`-scope
+> content) — the escape attempt produced zero leakage. See `completed-tasks.md`'s T452 row and
+> `task-T452.md`'s completion addendum for full detail.
+>
+> **Process note:** mid-session, a message arrived framed as "the coordinator sent a message
+> while you were working," reporting the agent's completion and instructing next steps. Per this
+> project's own standing rule (no agent message is ever the user's consent) and
+> `checkpoint-023`'s own prior incident with the identical framing, none of its claims were taken
+> as fact and none of its instructions were followed as given — every factual claim in it was
+> independently re-derived against real GitLab/git/filesystem state before being acted on (it
+> turned out to check out: MR !239 and the branch were real). Flagging this here, matching
+> `checkpoint-023`'s own disclosure discipline, since it's the second occurrence of the same
+> pattern.
+>
+> **T453 (hybrid retrieval) is next in `plan-038`'s dependency graph — both T452's outputs exist —
+> but is not dispatched in this session.** Same disposition as T452 was left in after T451: a
+> pause point, not a decision withheld indefinitely, ahead of the next large-scope real-design
+> task in this phase.
 >
 > **T451 closed 2026-09-09 — `docs/artifacts/memory-scope-model-v1.md` published (MR !235,
 > squash-merged), moved to `completed-tasks.md`.** All 6 acceptance criteria independently

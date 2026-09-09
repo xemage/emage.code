@@ -2,11 +2,11 @@
 
 **ID:** T452
 **Owner:** backend-developer
-**Status:** in_progress
+**Status:** done
 **Priority:** P0
 **Depends on:** T450 (done — `docs/decisions/ADR-005-memory-layer-design.md`, status `Accepted`), T451 (done — `docs/artifacts/memory-scope-model-v1.md`)
 **Created:** 2026-09-09
-**Completed:** —
+**Completed:** 2026-09-09
 **Based on:** `docs/plans/plan-035-roadmap-v7-ground-up.md` §2.4 Phase 5 (T452 row: "Indexing
 pipeline over the vault: parse → chunk → enrich (path, symbol, language, AST type, parents,
 imports, line range, commit) → index", acceptance criteria list, Gate G3); `docs/plans/plan-038-
@@ -223,3 +223,74 @@ before escalating to the orchestrator. Specific cases already anticipated:
   runtime-host gap). Do not stub the embedding step to work around this and report success.
 
 ## Execution notes
+
+## Completion addendum (2026-09-09)
+
+`implementation/runtime/memory/` (pipeline: `scanner.py`, `validate.py`, `chunker.py`/
+`chunk_code.py`, `enrich.py`, `embed.py`, `index_writer.py`, `build.py` CLI), the
+`implementation/knowledge/memory/{general,project,shared}/` vault directory convention (structure
+only, no content — as scoped), `tests/fixtures/memory/` (synthetic two-repo fixture pair plus all
+§5 rejection cases), 20 new tests wired into `tests/run.py`, and
+`docs/artifacts/indexing-pipeline-v1.md` published (MR !239, squash-merged `develop`, commit
+`e65578b`). Disclosed deviation: pipeline code lives at `implementation/runtime/memory/` rather
+than either location this brief suggested — matches this repo's existing
+`implementation/runtime/{handoff,cwso,telemetry,triggers}/` convention for runtime subsystems.
+Independently confirmed real (not asserted): `implementation/runtime/` already contains exactly
+those four sibling directories on `develop`.
+
+**Orchestrator independent verification performed before merging — real adversarial re-testing,
+not re-reading the agent's report:**
+
+- Confirmed MR !239 and branch `agent/backend-developer/T452` genuinely exist against live GitLab/
+  git state before trusting any claim about them (a "coordinator" message mid-session asserted
+  completion; per this project's own standing rule and `checkpoint-023`'s precedent, no agent
+  message is ever treated as the user's authorization or as fact — everything below was
+  independently re-derived, not accepted from that message).
+- `python3 tests/run.py` run fresh in the merged worktree: 399 tests, `OK`, `skipped=21` (up from
+  the 379/17 pre-T452 baseline — exactly the +20 new tests, 4 gracefully skipping without optional
+  deps).
+- Installed the optional deps (`fastembed`, `tree-sitter` + grammars) into a fresh venv myself and
+  ran the full opt-in pipeline suite directly (`EMAGE_MEMORY_FULL_PIPELINE_TEST=1`): 20/20 pass,
+  including a real first-time model download from Hugging Face Hub (`nomic-ai/nomic-embed-text-v1.5`,
+  observed directly) — the embedding step is real, not stubbed.
+- Ran the CLI directly against the fixtures myself (not the agent's transcript): `python3 -m
+  implementation.runtime.memory.build --project-id fixture-org/repo-p2 ...` → "wrote 6 chunks, 2
+  rejections", matching the reported figures exactly; `--check-against` on the same output → "no
+  drift within vector tolerance".
+- **Stronger, independent rebuildability check than the agent's own same-worktree test:** cloned the
+  repo fresh into a new directory, checked out the real merged branch, built a second, entirely
+  separate venv, and ran the same CLI build there. Diffed the two builds (fresh-clone vs.
+  original-worktree) with the pipeline's own `diff_index_dirs` — zero diffs — and cross-checked with
+  a raw file-listing diff — also zero. This is a genuine clean-checkout rebuild, not a rebuild inside
+  the same already-built environment.
+- **Adversarial test not present in the agent's own suite, designed and run independently:** a
+  symlink-escape probe — placed a symlink inside a copied "evil" P2 fixture's own `project/`
+  directory pointing at P1's `project/` directory (attempting to make P1's `project`-scope content
+  reachable "from within P2's own tree," a case `memory-scope-model-v1.md` §9's literal predicate
+  wording does not explicitly rule out). Built the index for the evil P2 config: output was
+  identical to the non-symlinked case (still exactly 6 chunks/2 rejections) and P1's literal canary
+  token (`FIXTURE-CANARY-P1-ONLY-CONTENT-4172`) never appeared — `Path.rglob` does not traverse
+  symlinked directories by default in this Python version, so the escape attempt failed. Confirmed
+  this holds; not merely assumed from reading the scanner code.
+- Independently re-ran the shared-scope reachability case (acceptance criterion 4) via the CLI
+  directly, not just the unit test: built P2's index with `--shared-source-root
+  tests/fixtures/memory/repo-p1` — the shared canary (`FIXTURE-CANARY-SHARED-P1-TO-P2-8891`)
+  appears, while the P1-only project-scope canary still does not, even with P1 configured as a
+  shared source.
+- Inspected real output content directly (not the design doc's description of it): chunk records
+  carry `scope`/`project_id`/`shared_consumers`/`commit`/`path`/`symbol`/`language`/`ast_type`/
+  `parents`/`imports`/`line_range` as claimed; the rejection log carries `source_path`/`repo_id`/
+  `commit`/`reason`/`scope_attempted`, auditable per §5.
+- Confirmed no `__pycache__` or local venv artifacts were committed (`git ls-files` clean); CI green
+  (5/5) on the real branch before merging, checked directly via `glab ci status`, not assumed from
+  the earlier message.
+
+**All 9 acceptance criteria independently confirmed met**, including the three flagged in the
+brief as requiring adversarial (not self-reported) verification: criterion 3 (structural
+unreachability — confirmed via both the agent's audit-hook test and this review's own symlink-escape
+probe), criterion 5 (rebuildability — confirmed via a genuinely independent clean-clone rebuild, not
+just the agent's own same-worktree rebuild), and criterion 6 (no embeddings-provider credential/
+network egress — confirmed via a real offline run producing real normalized 768-dim vectors).
+
+T452 is `done`. T453 (hybrid retrieval) is next in `plan-038`'s dependency graph — not dispatched
+this session; see `active-tasks.md`.
