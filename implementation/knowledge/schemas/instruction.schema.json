@@ -2,10 +2,11 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "emage.code instruction",
   "type": "object",
-  "required": ["description"],
+  "required": ["description", "maturity"],
   "properties": {
     "description": { "type": "string", "minLength": 10 },
-    "applyTo": { "type": "string" }
+    "applyTo": { "type": "string" },
+    "maturity": { "type": "string", "enum": ["experimental", "beta", "stable", "deprecated"] }
   },
   "additionalProperties": false
 }

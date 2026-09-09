@@ -3,6 +3,7 @@ name: "Scrum Master"
 description: "Use when planning sprints, tracking progress, managing milestones, facilitating agile ceremonies, breaking down epics into tasks, creating GitLab issues and milestones, or resolving team impediments."
 tools: [read, search, todo, web, mcp__gitlab]
 user-invocable: false
+maturity: experimental
 ---
 
 # Scrum Master

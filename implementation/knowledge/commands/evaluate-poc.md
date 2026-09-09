@@ -2,6 +2,7 @@
 description: "Evaluate whether the current PoC validates the hypothesis."
 agent: "poc-orchestrator"
 argument-hint: "Describe what has been built and what hypothesis should be evaluated..."
+maturity: experimental
 ---
 
 Evaluate the current PoC and determine whether it validates the stated hypothesis.

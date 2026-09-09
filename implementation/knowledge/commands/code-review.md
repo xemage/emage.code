@@ -2,6 +2,7 @@
 description: "Request a thorough code review of specified files or the current changes, following the code review skill checklist."
 agent: "tech-lead"
 argument-hint: "Specify files or describe what to review..."
+maturity: experimental
 ---
 
 Please perform a thorough code review on the following:

@@ -1,6 +1,7 @@
 ---
 description: "Use when implementing authentication, authorization, input validation, cryptography, session management, or any security-sensitive code. Covers OWASP Top 10 prevention patterns, agent permission classification, and immutable security constraints."
 applyTo: "**"
+maturity: experimental
 ---
 
 # Security Guidelines

@@ -1,6 +1,7 @@
 ---
 description: "Create a structured bug report with reproduction steps, expected vs actual behavior, and severity assessment."
 argument-hint: "Describe the bug you found..."
+maturity: experimental
 ---
 
 Create a structured bug report for the following issue:

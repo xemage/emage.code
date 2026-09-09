@@ -1,6 +1,7 @@
 ---
 description: "Use for proof-of-concept workstreams where speed and hypothesis validation are primary goals. Enforces mandatory debt tracking, hypothesis-first validation, and debt scorecards."
 applyTo: "**"
+maturity: experimental
 ---
 
 # PoC Guidelines

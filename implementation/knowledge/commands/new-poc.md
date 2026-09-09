@@ -2,6 +2,7 @@
 description: "Start a proof-of-concept project focused on hypothesis validation and rapid delivery."
 agent: "poc-orchestrator"
 argument-hint: "Describe the hypothesis and what you need to prove..."
+maturity: experimental
 ---
 
 I want to start a proof-of-concept project.

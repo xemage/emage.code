@@ -2,6 +2,7 @@
 description: "Start a new software project from an idea. Triggers the full orchestration workflow: planning, architecture, setup, development, testing, and deployment."
 agent: "orchestrator"
 argument-hint: "Describe your project idea in detail..."
+maturity: experimental
 ---
 
 I have a new project idea. Please orchestrate the full team to turn this into a real software product:

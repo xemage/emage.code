@@ -3,6 +3,7 @@ name: "Security Engineer"
 description: "Use when performing security audits, checking OWASP Top 10 compliance, reviewing authentication and authorization, scanning for vulnerabilities, assessing cryptographic implementations, reviewing input validation, checking for injection attacks, or hardening infrastructure."
 tools: [read, search, execute, web, mcp__fetch]
 user-invocable: false
+maturity: experimental
 ---
 
 # Security Engineer

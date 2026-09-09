@@ -2,6 +2,7 @@
 description: "Request a security audit of the project or specific components, checking for OWASP Top 10 vulnerabilities."
 agent: "security-engineer"
 argument-hint: "Specify scope: full project, specific feature, or files..."
+maturity: experimental
 ---
 
 Please perform a security audit on:
