@@ -2,16 +2,57 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T450 | Memory-layer ADR (storage/format + embeddings-provider decision) | solution-architect | in_progress | P0 | none (G0 closed) | 2026-09-09 |
 
-> **Phase 5 (Persistent Memory/RAG, T450-T456) dispatch begins 2026-09-09.** Per
-> `plan-038-phase5-detailed-planning.md` (merged to `develop` via MR !228), approved by the user as
-> the next phase to execute. T450 dispatched first per the plan's own dependency graph — T451-T456
-> all depend on T450's ADR either directly or transitively. **Money-gate reminder, carried forward
-> from `plan-038`:** if T450's ADR concludes emage.code needs a paid embeddings API, T452's brief
-> must not be authored or dispatched until the user has explicitly authorized that recurring cost
-> (mirroring T407's authorization pattern) — this is not a default either way, and is the
-> orchestrator's responsibility to check before writing `task-T452.md`, not T450's own concern.
+> **T450 closed 2026-09-09 — `docs/decisions/ADR-005-memory-layer-design.md` published (MR !230,
+> squash-merged `da865ed`/`cec4735`), status `proposed`.** Resolves all three items T450's brief
+> required: (1) storage/format substrate — a git-versioned Markdown/frontmatter knowledge store as
+> canonical source of truth (written only via reviewed MRs, never live agent writes) with a
+> separately-built, read-only, rebuildable vector index derived from it at T452 index time; SoloMD's
+> own single-device substrate (confirmed real and free/MIT at `https://solomd.app/`, fetched
+> directly) was explicitly rejected as the primary design — its single point of direct alignment
+> (read-only-by-default MCP exposure) was adopted on its own independent merits (this repo's T416
+> protected-paths precedent), not by unexamined imitation — and a server-side vector-DB alternative
+> (Chroma/Qdrant/pgvector) was named, compared, and deferred as a documented upgrade path, not
+> silently dismissed; (2) embeddings provider — **local/open-source, zero cost, not paid**
+> (`nomic-embed-text-v1.5` primary, `bge-small-en-v1.5` fallback, final pick deferred to T455's
+> empirical eval); (3) read-only-by-default principle for T454's `@context-retriever`
+> (three-place `ALLOW_WRITE=false` assertion, mirroring T416).
+>
+> **Money-gate: NOT triggered.** Per `plan-038-phase5-detailed-planning.md`'s own gate wording
+> ("if T450 instead recommends a local/open-source model, no such gate applies and T452 can proceed
+> under Phase 5's normal token budget alone"), no user cost-authorization step is required before
+> T452/T453 — the ADR's Decision 2 concludes zero cost, one-off or recurring. **This does not by
+> itself authorize T452's dispatch in this session** — the user's own explicit instruction dispatching
+> T450 separately named T452 as a hard stop pending their return regardless of the ADR's cost
+> conclusion; T452 remains undispatched for that reason, not because a cost gate applies to it.
+>
+> **Independent verification performed by the orchestrator before merging** (not accepted on the
+> agent's self-report): fetched `https://solomd.app/` directly and confirmed every specific claim
+> the ADR makes about it (MIT license, fully local/on-device embeddings with zero network calls,
+> "$0 forever" pricing, 8-tool MCP server read-only by default with an explicit `--allow-write` opt
+> in, 14 named BYOK providers, no built-in multi-user sync) — exact match, no discrepancy;
+> independently searched and confirmed `nomic-embed-text-v1.5`'s MTEB score (~62.28-62.39, multiple
+> independent sources) sits at genuine parity with OpenAI `text-embedding-3-small` (~62.26-62.3),
+> supporting the ADR's central "quality gap does not exist" claim; independently confirmed OpenAI
+> `text-embedding-3-small` pricing at exactly $0.02/M input tokens as the ADR states; independently
+> confirmed `bge-small-en-v1.5`'s 33.4M-parameter figure exactly (retrieval NDCG@10 figure found by
+> the orchestrator's own search, 58.9 on a different domain-specific benchmark, is in the same
+> ballpark as the ADR's cited 53.9 general-MTEB-retrieval figure — different benchmark subsets, not
+> a contradiction). Also independently read the full ADR text end-to-end and confirmed it does the
+> required reasoning work rather than a superficial "SoloMD does X so we do X" copy: it names a
+> second alternative (server-side vector DB) beyond SoloMD, and its dedicated "why emage.code's
+> multi-agent/shared-memory requirements do not favor SoloMD's design" section concretely ties the
+> rejection to SoloMD's lack of any scope concept and lack of a multi-consumer/write-back mechanism,
+> against `plan-035`'s own Phase 5 acceptance criterion that a `project`-scoped entry be provably
+> unreachable from a different project's session while `shared`-scoped entries remain reachable.
+> `python3 tests/run.py` run fresh in the agent's own worktree before commit (clean, full pass); CI
+> pipelines green on both this task's MRs (`docs/phase5-t450-dispatch` !229,
+> `agent/solution-architect/T450` !230) before either was merged.
+>
+> ADR-005 status is `proposed`, not `accepted` — per the ADR's own explicit "Approval" section and
+> `plan-038`'s own instruction, it does not self-authorize dispatch of T451-T454 as final designs.
+> **T451 is next in the dependency graph but is not dispatched in this session** — pending the
+> user's review/approval of ADR-005's three decisions.
 >
 > **T422 closed 2026-09-08 — closes Phase 2 (T420-T423, MCP Conformance) in full.**
 > `tests/functional/test_mcp_platform_conformance.py` (2 new tests) proves plan-035 §2.4 Phase 2's
