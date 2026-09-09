@@ -305,17 +305,17 @@ scoped to Phase 5 tasks in `plan-035`/`plan-038`, not new work invented by this 
 
 ## Approval
 
-This ADR's status is **`proposed`**, not `accepted`. Per `plan-035`'s own T450 scoping and this
-task's brief, it does not self-authorize dispatch of T451–T456 or any other downstream task.
-Advancing to `accepted` requires explicit human (user) approval of:
+This ADR's status is **`accepted`**, approved 2026-09-09 by the user. Per `plan-035`'s own T450
+scoping and this task's brief, dispatch of downstream tasks was gated on explicit human (user)
+approval of:
 
-- [ ] Decision 1 — git-versioned knowledge store + locally-rebuilt vector index as the storage/
+- [x] Decision 1 — git-versioned knowledge store + locally-rebuilt vector index as the storage/
       format substrate (rejecting SoloMD's single-device design and deferring the server-side
       vector-DB alternative)
-- [ ] Decision 2 — local/open-source embeddings (`nomic-embed-text-v1.5` primary,
+- [x] Decision 2 — local/open-source embeddings (`nomic-embed-text-v1.5` primary,
       `bge-small-en-v1.5` fallback), zero cost profile, no paid-API cost-authorization gate applies
-- [ ] Decision 3 — read-only-by-default for the canonical knowledge base and for `@context-retriever`
+- [x] Decision 3 — read-only-by-default for the canonical knowledge base and for `@context-retriever`
       (T454), enforced via the three-place `ALLOW_WRITE=false` assertion
 
-Until approved, T451–T454 briefs may be drafted with reference to this ADR's conclusions but should
-not be dispatched as final designs.
+All three decisions are approved. T451 has been dispatched as a final design on this basis;
+T452–T456 may proceed per `plan-038`'s own sequencing and gating.
