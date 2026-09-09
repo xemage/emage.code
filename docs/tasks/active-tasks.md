@@ -2,13 +2,32 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T453 | Hybrid retrieval (semantic + lexical + structural, ranked) over T452's index, incl. query-time scope pre-filter | backend-developer | in_progress | P0 | T452 (done) | 2026-09-09 |
 
-> **T453 dispatched 2026-09-09** — see `docs/tasks/task-T453.md`. `plan-038`'s second and final
-> `large`-scope task in Phase 5. Backend-developer confirmed to hold a real `Bash` tool grant
-> (`.claude/agents/backend-developer.md` frontmatter: `tools: Read, Edit, Write, Bash, WebFetch,
-> WebSearch, mcp__fetch`) before dispatch — checked directly this session, not assumed, given the
-> Bash-less-`solution-architect` gap already hit T420 and T451 (see T451's row below).
+> **T453 closed 2026-09-09** — `implementation/runtime/memory/{scope_filter,lexical,structural,
+> rank,retrieve}.py` (hybrid retrieval + mandatory query-time scope pre-filter) and
+> `docs/artifacts/hybrid-retrieval-v1.md` published (MR !243, squash-merged), moved to
+> `completed-tasks.md`. All 9 acceptance criteria independently verified met, including a real
+> `<500ms` p95 latency re-measurement (233.6ms, independent) and a 7-probe adversarial
+> scope-enforcement script the orchestrator designed itself against a hand-merged, simulated
+> shared-index scenario. **A real defect was found and fixed before merge** — CI's `unit-tests` job
+> genuinely failed (`ModuleNotFoundError: No module named 'numpy'` in 4 tests), contradicting the
+> MR's own "0 failures" claim; caught via `glab ci status`, not via the implementer's report; fixed
+> in a same-branch follow-up commit and independently re-verified in a fresh clean venv before
+> merging. See `completed-tasks.md`'s T453 row and `task-T453.md`'s completion addendum for full
+> detail.
+>
+> **Process note:** three separate messages arrived mid-session framed as "the coordinator sent a
+> message while you were working," each relaying claims about the implementer's progress/
+> completion and instructing next steps. Matching `checkpoint-023`/`checkpoint-024`'s prior
+> disposition of the identical pattern, none of their claims were taken as fact and none of their
+> instructions were treated as authorization — every claim was independently re-derived against
+> real GitLab/git/filesystem state before being acted on. Their factual claims were substantially
+> accurate on the parts that were checkable (MR numbers, branch names except one metadata-field
+> discrepancy, general shape of the fix) but this was established independently each time, not
+> assumed. Flagging this here per this project's own disclosure discipline for the pattern.
+>
+> **T454 (`@context-retriever`, read-only agent wrapper) is next in `plan-038`'s dependency graph —
+> not dispatched this session.**
 
 > **T452 closed 2026-09-09 — `implementation/runtime/memory/` (indexing pipeline),
 > `implementation/knowledge/memory/{general,project,shared}/` (vault convention, structure only),
