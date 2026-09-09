@@ -2,7 +2,17 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T450 | Memory-layer ADR (storage/format + embeddings-provider decision) | solution-architect | in_progress | P0 | none (G0 closed) | 2026-09-09 |
 
+> **Phase 5 (Persistent Memory/RAG, T450-T456) dispatch begins 2026-09-09.** Per
+> `plan-038-phase5-detailed-planning.md` (merged to `develop` via MR !228), approved by the user as
+> the next phase to execute. T450 dispatched first per the plan's own dependency graph — T451-T456
+> all depend on T450's ADR either directly or transitively. **Money-gate reminder, carried forward
+> from `plan-038`:** if T450's ADR concludes emage.code needs a paid embeddings API, T452's brief
+> must not be authored or dispatched until the user has explicitly authorized that recurring cost
+> (mirroring T407's authorization pattern) — this is not a default either way, and is the
+> orchestrator's responsibility to check before writing `task-T452.md`, not T450's own concern.
+>
 > **T422 closed 2026-09-08 — closes Phase 2 (T420-T423, MCP Conformance) in full.**
 > `tests/functional/test_mcp_platform_conformance.py` (2 new tests) proves plan-035 §2.4 Phase 2's
 > three acceptance criteria live: (1) adding a `core` server to `servers.yaml` and running
