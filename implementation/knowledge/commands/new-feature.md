@@ -2,6 +2,7 @@
 description: "Plan and create a new feature including user story, tasks, and implementation plan."
 agent: "orchestrator"
 argument-hint: "Describe the feature you want to add..."
+maturity: experimental
 ---
 
 I want to add a new feature to the project. Please:

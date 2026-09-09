@@ -2,6 +2,7 @@
 description: "Validate the multi-agent workflow using scenario-based tests, handoff checks, and command regression checks."
 agent: "orchestrator"
 argument-hint: "Optional scope override (small|medium|complex|all)"
+maturity: experimental
 ---
 
 Run a workflow validation pass for the AI development team configuration.

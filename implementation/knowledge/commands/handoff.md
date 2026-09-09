@@ -2,6 +2,7 @@
 description: "Create a structured session handoff for the next agent or human. Captures state, blockers, and next actions using the handoff schema."
 agent: "orchestrator"
 argument-hint: "Optional: focus task ID or session summary..."
+maturity: experimental
 ---
 
 You are in **Session Handoff** mode. Produce a resumable handoff artifact for the next session.

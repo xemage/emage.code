@@ -2,6 +2,7 @@
 description: "Plan-only mode: produce a task decomposition, dependency graph, and plan document without executing. Use this to review and refine a plan before committing to execution."
 agent: "orchestrator"
 argument-hint: "Describe what you want to plan..."
+maturity: experimental
 ---
 
 You are in **Plan-Only mode**. Execute ONLY the **Plan** phase of the Plan-Approve-Execute workflow. Do NOT proceed to execution.

@@ -1,6 +1,7 @@
 ---
 description: "Use when working with Git: committing, branching, merging, creating merge requests, managing release branches, or working with agent worktrees. Covers GitFlow branching strategy, conventional commits, and worktree lifecycle."
 applyTo: "**"
+maturity: experimental
 ---
 
 # Git Workflow

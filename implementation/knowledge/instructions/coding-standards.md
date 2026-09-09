@@ -1,6 +1,7 @@
 ---
 description: "Use when writing code in any language. Covers naming conventions, function design, error handling, general clean code principles, and artifact versioning."
 applyTo: "**/*.{ts,js,py,java,cs,go,rs,rb,php,swift,kt}"
+maturity: experimental
 ---
 
 # Coding Standards

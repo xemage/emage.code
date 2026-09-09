@@ -2,6 +2,7 @@
 description: "Prepare a new release with version bump, changelog generation, and release checklist."
 agent: "orchestrator"
 argument-hint: "Specify version type: major, minor, or patch..."
+maturity: experimental
 ---
 
 Please prepare a new release:

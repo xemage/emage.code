@@ -2,6 +2,7 @@
 description: "Capture the current workflow or a recurring pattern as a reusable skill file (.github/skills/). Use when you discover a useful workflow that should be documented for reuse."
 agent: "orchestrator"
 argument-hint: "Describe the workflow to capture as a skill..."
+maturity: experimental
 ---
 
 You are in **Skillify mode**. Capture a workflow or recurring pattern as a reusable skill file.

@@ -20,7 +20,7 @@ def _repo_root(implementation_root: Path) -> Path:
             return candidate
     return root.parent
 
-FRONTMATTER_RE = re.compile(r"^---\\s*\\n(.*?\\n)---\\s*\\n", re.DOTALL)
+FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?\n)---\s*\n", re.DOTALL)
 SEMVER = "3.0.0"
 CATEGORY_DIRS = {
     "agent": "agents",
@@ -28,6 +28,7 @@ CATEGORY_DIRS = {
     "instruction": "instructions",
     "skill": "skills",
 }
+MATURITY_LEVELS = ("experimental", "beta", "stable", "deprecated")
 
 
 def parse_args() -> argparse.Namespace:
@@ -51,10 +52,24 @@ def _parse_frontmatter(path: Path) -> tuple[dict, str]:
     return frontmatter, text
 
 
-def _maturity(frontmatter: dict) -> str:
-    raw = str(frontmatter.get("maturity") or frontmatter.get("stability") or "beta").lower()
-    mapping = {"experimental": "draft", "stable": "ga", "deprecated": "deprecated", "draft": "draft", "beta": "beta", "ga": "ga"}
-    return mapping.get(raw, "beta")
+def _maturity(frontmatter: dict, path: Path) -> str:
+    """Read the mandatory, explicit maturity classification for a component.
+
+    No silent default: a missing or invalid value is a hard error so every
+    registry entry always reflects a real, declared classification (T430).
+    """
+    raw = frontmatter.get("maturity")
+    if raw is None or str(raw).strip() == "":
+        raise ValueError(
+            f"{path}: missing required 'maturity' frontmatter field "
+            f"(expected one of {MATURITY_LEVELS})"
+        )
+    value = str(raw).strip().lower()
+    if value not in MATURITY_LEVELS:
+        raise ValueError(
+            f"{path}: invalid maturity {value!r} (expected one of {MATURITY_LEVELS})"
+        )
+    return value
 
 
 def _checksum(text: str) -> str:
@@ -73,7 +88,7 @@ def _entry_from_file(category: str, path: Path, source_root: Path, platforms: li
         "name": name,
         "path": rel_path,
         "checksum": _checksum(text),
-        "maturity": _maturity(frontmatter),
+        "maturity": _maturity(frontmatter, path),
         "compatibility": {
             "supportedPlatforms": platforms,
             "projectionStatus": {platform: "pass" for platform in platforms},

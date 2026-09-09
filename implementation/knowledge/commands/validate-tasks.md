@@ -1,6 +1,7 @@
 ---
 description: "Validate task ledger integrity. Run before every checkpoint, before every release, and after every install --update."
 agent: "orchestrator"
+maturity: experimental
 ---
 
 Run `python3 docs/tasks/validate-tasks.py` from the project root.
