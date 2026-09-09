@@ -2,12 +2,13 @@
 
 **ID:** T454
 **Owner:** backend-developer
-**Status:** pending
+**Status:** done
 **Priority:** P0
 **Depends on:** T453 (done — `implementation/runtime/memory/{scope_filter,lexical,structural,rank,
 retrieve}.py`, `docs/artifacts/hybrid-retrieval-v1.md`)
 **Created:** 2026-09-09
-**Completed:** —
+**Completed:** 2026-09-09 (MR !246, squash-merged to `develop`; acceptance criterion 1 honestly
+downgraded — see the Completion addendum below)
 **Based on:** `docs/plans/plan-035-roadmap-v7-ground-up.md` §2.4 Phase 5 (T454 row: "`@context-
 retriever` agent — read-only. `ALLOW_WRITE=false` asserted in the agent definition, the server
 config, and the deployment manifest."); `docs/plans/plan-038-phase5-detailed-planning.md`
