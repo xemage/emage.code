@@ -1,0 +1,170 @@
+{
+  "k": 5,
+  "aggregate": {
+    "num_queries": 23,
+    "precision_at_k": {
+      "mean": 0.22608695652173913,
+      "median": 0.2,
+      "min": 0.2,
+      "max": 0.4
+    },
+    "recall_at_k": {
+      "mean": 1.0,
+      "median": 1.0,
+      "min": 1.0,
+      "max": 1.0
+    },
+    "irrelevant_rate_at_k": {
+      "mean": 0.773913043478261,
+      "median": 0.8,
+      "min": 0.6,
+      "max": 0.8
+    }
+  },
+  "latency_ms": {
+    "p50": 63.3699051104486,
+    "p95": 76.52915501967072,
+    "p99": 93.51113392040133,
+    "max": 93.51113392040133
+  },
+  "per_query": [
+    {
+      "query_text": "why does reusing a small set of already-open database connections help performance instead of opening a new one for every request",
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "irrelevant_rate_at_k": 0.8
+    },
+    {
+      "query_text": "how do I stop one client from overwhelming my API with too many calls per minute",
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "irrelevant_rate_at_k": 0.8
+    },
+    {
+      "query_text": "what's the benefit of emitting logs as JSON with consistent fields instead of plain text lines",
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "irrelevant_rate_at_k": 0.8
+    },
+    {
+      "query_text": "what's the right way to store user passwords so a database leak doesn't expose them",
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "irrelevant_rate_at_k": 0.8
+    },
+    {
+      "query_text": "how should a login session token be handled so a stolen cookie stops working after logout",
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "irrelevant_rate_at_k": 0.8
+    },
+    {
+      "query_text": "how long should a cached value be kept before recomputing it",
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "irrelevant_rate_at_k": 0.8
+    },
+    {
+      "query_text": "what's a safe way to retry a failed downstream call without making an overloaded service worse",
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "irrelevant_rate_at_k": 0.8
+    },
+    {
+      "query_text": "how can I stop sending requests to a dependency that is already failing instead of piling up timeouts",
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "irrelevant_rate_at_k": 0.8
+    },
+    {
+      "query_text": "how can I ship code to production before turning the new behavior on for everyone",
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "irrelevant_rate_at_k": 0.8
+    },
+    {
+      "query_text": "how do I release a new version with an instant rollback path if something breaks",
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "irrelevant_rate_at_k": 0.8
+    },
+    {
+      "query_text": "how do I keep every environment's database schema in sync using versioned scripts",
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "irrelevant_rate_at_k": 0.8
+    },
+    {
+      "query_text": "why isn't checking form input in the browser enough to consider it validated",
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "irrelevant_rate_at_k": 0.8
+    },
+    {
+      "query_text": "which cross-origin request headers control which websites can read my API's response",
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "irrelevant_rate_at_k": 0.8
+    },
+    {
+      "query_text": "how do I confirm an incoming webhook really came from the expected sender and wasn't replayed",
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "irrelevant_rate_at_k": 0.8
+    },
+    {
+      "query_text": "why does offset-based pagination break when rows are inserted between page loads",
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "irrelevant_rate_at_k": 0.8
+    },
+    {
+      "query_text": "how do I reconstruct the full path of one request across several microservices",
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "irrelevant_rate_at_k": 0.8
+    },
+    {
+      "query_text": "what should a service do with in-flight requests when it receives a termination signal",
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "irrelevant_rate_at_k": 0.8
+    },
+    {
+      "query_text": "how do I make sure a retried payment request isn't charged twice",
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "irrelevant_rate_at_k": 0.8
+    },
+    {
+      "query_text": "how often should API keys and database passwords be replaced",
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "irrelevant_rate_at_k": 0.8
+    },
+    {
+      "query_text": "how does a load balancer decide which backend instance gets the next request",
+      "precision_at_k": 0.2,
+      "recall_at_k": 1.0,
+      "irrelevant_rate_at_k": 0.8
+    },
+    {
+      "query_text": "what patterns help an API stay resilient when a downstream dependency is slow or failing",
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "irrelevant_rate_at_k": 0.6
+    },
+    {
+      "query_text": "what should I check before trusting data that comes from outside my system, like a web form or an incoming webhook",
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "irrelevant_rate_at_k": 0.6
+    },
+    {
+      "query_text": "what deployment techniques let a team release changes with minimal risk to users",
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "irrelevant_rate_at_k": 0.6
+    }
+  ]
+}
