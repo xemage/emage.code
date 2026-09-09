@@ -2,7 +2,20 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T455 | Retrieval eval sub-suite (precision/recall/irrelevant-context-rate/latency) | qa-engineer | pending | P0 | T454 (done) | 2026-09-09 |
 | T457 | Scoped, non-`Bash` execution/read primitive for `@security-engineer` and `@context-retriever` | solution-architect | pending | P1 | None | 2026-09-09 |
+
+> **T455 dispatched 2026-09-09** — brief at `docs/tasks/task-T455.md`. Independent golden sub-suite
+> measuring precision, recall, irrelevant-context rate, and latency for `@context-retriever`, as its
+> own signal published before any T456 downstream-capability claim, per `plan-035`'s own literal
+> Phase 5 acceptance criterion. **Owner reassigned from `plan-038`'s nominal `evaluation-agent` to
+> `qa-engineer`** — `evaluation-agent`'s actual registered tool grant (`implementation/knowledge/
+> agents/evaluation-agent.md`) is `[read, search, web]`, no `execute`/Bash, no `edit`/write,
+> insufficient to author and run a real eval sub-suite; same pattern and same disposition as the
+> existing T415/T418 owner-correction precedent (reassign rather than widen the tool grant).
+> `evaluation-agent`'s tool grant is unchanged. See `task-T455.md`'s own "Owner reassignment"
+> section for the full reasoning. Not yet implemented this session — `agent/qa-engineer/T455`
+> worktree/branch to follow this ledger update.
 
 > **T457 recorded 2026-09-09 — NOT DISPATCHED, backlog item only.** Brief at
 > `docs/tasks/task-T457.md`. Found during T454's own MR review: both `@security-engineer` and
