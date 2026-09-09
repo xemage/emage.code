@@ -1,0 +1,25 @@
+# Optional runtime dependencies for the T452 knowledge-vault indexing
+# pipeline (implementation/runtime/memory/). NOT part of this repo's core
+# `tests/run.py` dependency set (PyYAML + jsonschema, stdlib `unittest`) —
+# these are only needed to actually run the pipeline (build.py) or exercise
+# the heavier pipeline tests, which skip gracefully when these aren't
+# installed (see tests/functional/test_memory_indexing_pipeline.py).
+#
+# Install into a virtualenv (this environment's Python is externally
+# managed):
+#
+#   python3 -m venv .venv-memory
+#   source .venv-memory/bin/activate
+#   pip install -r implementation/runtime/memory/requirements.txt
+#
+# All three packages are pure Apache-2.0/MIT, install without a C/C++
+# toolchain (prebuilt wheels), and pull in no `torch` dependency — see
+# docs/artifacts/indexing-pipeline-v1.md "Embedding runtime" for why
+# `fastembed` (ONNX Runtime CPU backend) was chosen over
+# `sentence-transformers` (which would pull in torch).
+
+fastembed==0.8.0
+tree-sitter==0.26.0
+tree-sitter-python==0.25.0
+tree-sitter-javascript==0.25.0
+tree-sitter-bash==0.25.1
