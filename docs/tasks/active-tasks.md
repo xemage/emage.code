@@ -2,6 +2,23 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T451 | Three enforced memory scopes (general/project/shared) | solution-architect | pending | P0 | T450 | 2026-09-09 |
+
+> **ADR-005 accepted 2026-09-09** — the user approved all three of ADR-005's decisions this
+> session (git-versioned Markdown/frontmatter store + locally-rebuilt vector index; local/open-
+> source embeddings, zero cost; read-only-by-default for the canonical store and
+> `@context-retriever`). Status field flipped `proposed` → `Accepted` in a small, standalone
+> docs commit/MR (`docs/adr-005-accept`, MR !232, merged `develop`) — ADR body, Alternatives,
+> Consequences, and Approval sections left untouched per the user's explicit instruction to
+> change only the Status field, not rewrite the ADR's content.
+>
+> **T451 dispatched 2026-09-09**, per `plan-038-phase5-detailed-planning.md`'s own sequencing
+> (T450 → T451 → T452 → T453 → T454 → {T455, T456}), now that ADR-005's approval gate is
+> cleared. See `task-T451.md` for the full brief. T452 remains undispatched — its own gate
+> (T451's scope model must land first, per `plan-038`'s explicit dependency reasoning: "a later
+> task cannot conform to a contract that does not exist yet") is not yet satisfied, independent
+> of ADR-005's money-gate already resolving negative (local/zero-cost embeddings, no
+> cost-authorization step required per ADR-005 Decision 2).
 
 > **T450 closed 2026-09-09 — `docs/decisions/ADR-005-memory-layer-design.md` published (MR !230,
 > squash-merged `da865ed`/`cec4735`), status `proposed`.** Resolves all three items T450's brief
