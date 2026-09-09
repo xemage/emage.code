@@ -2,6 +2,13 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T453 | Hybrid retrieval (semantic + lexical + structural, ranked) over T452's index, incl. query-time scope pre-filter | backend-developer | in_progress | P0 | T452 (done) | 2026-09-09 |
+
+> **T453 dispatched 2026-09-09** — see `docs/tasks/task-T453.md`. `plan-038`'s second and final
+> `large`-scope task in Phase 5. Backend-developer confirmed to hold a real `Bash` tool grant
+> (`.claude/agents/backend-developer.md` frontmatter: `tools: Read, Edit, Write, Bash, WebFetch,
+> WebSearch, mcp__fetch`) before dispatch — checked directly this session, not assumed, given the
+> Bash-less-`solution-architect` gap already hit T420 and T451 (see T451's row below).
 
 > **T452 closed 2026-09-09 — `implementation/runtime/memory/` (indexing pipeline),
 > `implementation/knowledge/memory/{general,project,shared}/` (vault convention, structure only),
