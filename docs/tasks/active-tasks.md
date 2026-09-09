@@ -2,7 +2,6 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T454 | `@context-retriever` read-only agent wrapper around T453's retrieval interface | backend-developer | pending | P0 | T453 (done) | 2026-09-09 |
 | T457 | Scoped, non-`Bash` execution/read primitive for `@security-engineer` and `@context-retriever` | solution-architect | pending | P1 | None | 2026-09-09 |
 
 > **T457 recorded 2026-09-09 — NOT DISPATCHED, backlog item only.** Brief at
@@ -21,11 +20,49 @@
 > **Confirmed not to block T455/T456** — see `task-T457.md`'s own "Does this block T455/T456?"
 > section, checked against plan-038's actual acceptance criteria for both, not assumed.
 
-> **T454 dispatched 2026-09-09** — brief at `docs/tasks/task-T454.md`. Wraps T453's `Retriever`
-> API into a read-only `@context-retriever` agent surface, with `ALLOW_WRITE=false` asserted in
-> three independent places (agent definition, server config, deployment manifest) per `plan-035`'s
-> own explicit redundancy requirement and ADR-005 Decision 3. Not yet implemented this session —
-> `agent/backend-developer/T454` worktree/branch to follow this ledger update.
+> **T454 closed 2026-09-09** — `implementation/knowledge/agents/context-retriever.md` (28th agent,
+> read-only wrapper), `implementation/runtime/memory/context_retriever.py`, `deploy/docker-compose-
+> context-retriever.yml`, `tests/functional/test_context_retriever.py`, and `docs/artifacts/
+> context-retriever-v1.md` published (MR !246, squash-merged to `develop`), moved to
+> `completed-tasks.md`. All 9 acceptance criteria functionally met — see `completed-tasks.md`'s T454
+> row for the full closure record, including one genuine, honestly-recorded downgrade.
+>
+> **Acceptance criterion 1 ("no write path from any agent into the canonical knowledge base") does
+> not hold in full, and was corrected rather than silently accepted, before this MR merged.** MR
+> review (this session) found the implementation's own design doc originally overclaimed layer 1
+> ("agent definition tools grant") as a technical restriction — it is prose-only: the generated
+> Claude Code projection grants `tools: Read, Bash` (`execute` → `Bash` via `implementation/
+> platforms/claude-code.json`'s `toolMap`), so a `@context-retriever` session genuinely has
+> unrestricted shell access, and layer 3 (deployment manifest) does not protect the real,
+> non-containerized deployment this component actually runs as. Only layer 2 (the server module's
+> absent write API) is a genuine technical control today, and even it only constrains callers going
+> through that module. **User-decided disposition:** accept prose-only enforcement for now (matching
+> the pre-existing, previously-un-flagged `security-engineer.md` "read-only mode" precedent already
+> in this repo — not a new or weaker standard), correct every overclaiming document rather than
+> leave the false stronger claim standing, and open T457 (see the note above the table) to track the
+> real fix. Corrected: `docs/artifacts/context-retriever-v1.md` §2/§2.1 (new)/§4;
+> `context-retriever.md`'s own prose (source + all 7 regenerated platform projections + registry);
+> `docs/tasks/task-T454.md`'s completion addendum (acceptance criterion 1's honest downgrade);
+> `docs/decisions/ADR-005-memory-layer-design.md`'s Validation-section dated addendum (mirrors
+> ADR-004's dated-successor-block pattern for a gap found after acceptance).
+>
+> **Orchestrator independently re-verified the corrections before merging** (not accepted on
+> self-report of its own edits): re-read every corrected section end-to-end after editing and found
+> one remaining internal inconsistency the first correction pass missed (agent-definition prose
+> still claimed "you have no tool capable of doing it" immediately above the new honest
+> §2.1-referencing paragraph) — fixed before pushing, not left for a second review pass to catch.
+> Confirmed `.mcp.json` untouched throughout (`git diff --stat -- .mcp.json`, both before and after
+> the correction commit). Ran `python3 tests/run.py` fresh after the corrections (453 tests, `OK`,
+> `skipped=23` — includes fixing a real, self-caused registry-drift failure from the source-file
+> edit, resolved by re-running `generate-registry.py`, and a real plan-coverage guardrail failure
+> from opening T457 without a backing plan, resolved by writing `docs/plans/plan-039-t457-tool-
+> scoping-followup.md`); `docs/tasks/validate-tasks.py` PASS; `sync.mjs --check` no drift across 563
+> files; `check.py` full gate set (251 checks, 0 errors); CI green (5/5) before merging.
+>
+> **T455 (retrieval eval sub-suite) is next in `plan-038`'s dependency graph — confirmed unblocked**
+> (depends only on T454, now done) and **confirmed not blocked by T457** (T457 has no dependency
+> relationship to T455/T456 either direction, per `task-T457.md`'s own check against plan-038's
+> actual acceptance criteria for both).
 
 > **T453 closed 2026-09-09** — `implementation/runtime/memory/{scope_filter,lexical,structural,
 > rank,retrieve}.py` (hybrid retrieval + mandatory query-time scope pre-filter) and
