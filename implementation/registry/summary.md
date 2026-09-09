@@ -4,7 +4,7 @@ Generated from: implementation/knowledge
 
 ## Counts
 
-- agents: 27
+- agents: 28
 - commands: 19
 - instructions: 4
 - skills: 26
@@ -14,6 +14,7 @@ Generated from: implementation/knowledge
 | ID | Category | Maturity | Path |
 |---|---|---|---|
 | backend-developer | agent | beta | agents/backend-developer.md |
+| context-retriever | agent | beta | agents/context-retriever.md |
 | data-mockup-agent | agent | beta | agents/data-mockup-agent.md |
 | database-engineer | agent | beta | agents/database-engineer.md |
 | demo-agent | agent | beta | agents/demo-agent.md |

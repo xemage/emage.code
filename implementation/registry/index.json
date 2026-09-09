@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-08-14T09:24:28+00:00",
+  "generatedAt": "2026-09-09T18:08:56+02:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -18,6 +18,34 @@
       "name": "backend-developer",
       "path": "agents/backend-developer.md",
       "checksum": "e8ca5cfc0a2b37381bef0f64c0a95b8ff0a766c9f745cc6d310a44d5e234a566",
+      "maturity": "beta",
+      "compatibility": {
+        "supportedPlatforms": [
+          "claude-code",
+          "cline",
+          "cursor",
+          "gemini",
+          "github",
+          "opencode",
+          "pi"
+        ],
+        "projectionStatus": {
+          "claude-code": "pass",
+          "cline": "pass",
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass",
+          "pi": "pass"
+        }
+      }
+    },
+    {
+      "id": "context-retriever",
+      "category": "agent",
+      "name": "context-retriever",
+      "path": "agents/context-retriever.md",
+      "checksum": "525cc429fe0ab3e74fe496f752000a54b9f35278984ac578eee4ef829d84bc1e",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -269,7 +297,7 @@
       "category": "agent",
       "name": "orchestrator",
       "path": "agents/orchestrator.md",
-      "checksum": "9779a1a20504d332ed5331ad2f91ac7b28934159081cbaa49c32016d1d3492c5",
+      "checksum": "7c3b5ce26a67708d93c20f3946c5436ca48abe8aba5dedd16540cf36410f9dd2",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [

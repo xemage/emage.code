@@ -6,6 +6,7 @@
     "../.mcp.json",
     "../.mcp.json.provenance.json",
     "agents/backend-developer.md",
+    "agents/context-retriever.md",
     "agents/data-mockup-agent.md",
     "agents/database-engineer.md",
     "agents/demo-agent.md",

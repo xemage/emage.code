@@ -4,6 +4,7 @@
   "generatedAt": "<deterministic>",
   "files": [
     "agents/backend-developer.mdc",
+    "agents/context-retriever.mdc",
     "agents/data-mockup-agent.mdc",
     "agents/database-engineer.mdc",
     "agents/demo-agent.mdc",

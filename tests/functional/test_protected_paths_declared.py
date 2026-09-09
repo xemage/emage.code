@@ -161,10 +161,14 @@ class TestRealRepoTreeIsCompliant(unittest.TestCase):
             f"({POLICY_DOC_TOKEN}):\n  " + "\n  ".join(missing),
         )
 
-    def test_agent_source_directory_has_the_expected_27_agents(self):
+    def test_agent_source_directory_has_the_expected_28_agents(self):
         # Sanity check the scan target isn't accidentally empty or truncated -- a guard
         # that trivially passes because there's nothing to find would be worthless.
-        self.assertEqual(len(list_agents()), 27)
+        # Was 27 through T453; T454 added the 28th (`context-retriever.md`) -- this
+        # count is expected to be bumped by any future agent addition too, per this
+        # file's own module docstring ("if a 28th agent is added later without the
+        # pointer, this check fails loudly").
+        self.assertEqual(len(list_agents()), 28)
 
     def test_both_protected_paths_exist_on_disk(self):
         golden_ok, scorecard_ok = protected_paths_exist(repo_root())
