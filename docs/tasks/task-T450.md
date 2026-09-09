@@ -2,10 +2,11 @@
 
 **ID:** T450
 **Owner:** solution-architect
-**Status:** in_progress
+**Status:** done
 **Priority:** P0
 **Depends on:** none (Phase 5's only precondition is Gate G0, already closed — `plan-035` §2.3)
 **Created:** 2026-09-09
+**Completed:** 2026-09-09
 **Based on:** `docs/plans/plan-035-roadmap-v7-ground-up.md` §2.4 Phase 5 (T450 row, design summary
 "tree-sitter → chunk → embed → hybrid retrieve, <500ms on 100K LOC, `@context-retriever`");
 `docs/plans/plan-038-phase5-detailed-planning.md` (approved, MR !228, merged to `develop`) —
@@ -136,3 +137,53 @@ Per `plan-038`'s own gate: if this ADR concludes emage.code needs a paid embeddi
 the user has explicitly authorized that recurring cost, mirroring T407's authorization pattern.
 The orchestrator enforces this after reviewing this ADR; this task's job is only to produce a
 well-reasoned, well-sourced answer to the question, not to pre-empt the gate either way.
+
+## Completion addendum (2026-09-09)
+
+`docs/decisions/ADR-005-memory-layer-design.md` published, status `proposed`. All 7 acceptance
+criteria met:
+
+1. Embeddings-provider decision stated explicitly: **local/open-source, zero cost** (not paid,
+   not hedged) — `nomic-embed-text-v1.5` primary, `bge-small-en-v1.5` fallback.
+2. SoloMD (confirmed real at `https://solomd.app/`) compared against a second named alternative
+   (server-side vector DB — Chroma/Qdrant/pgvector), plus the chosen third option (git-versioned
+   store + locally-rebuilt index) — all three compared on storage format, embeddings locality,
+   multi-user/scope support, and write-back capability in the ADR's Alternatives table.
+3. A dedicated "Reasoning: why emage.code's multi-agent/shared-memory requirements do not favor
+   SoloMD's design" section is present and does concrete reasoning (SoloMD's lack of any scope
+   concept vs. `plan-035`'s own provably-isolated-scope acceptance criterion), not a superficial
+   "SoloMD does X so we do X" copy.
+4. Read-only-by-default principle stated as Decision 3, three-place `ALLOW_WRITE=false` assertion
+   specified for T454, mirroring the T416 protected-paths precedent.
+5. Status is `proposed`; the ADR's own "Approval" section explicitly states it does not
+   self-authorize downstream dispatch.
+6. N/A — paid API was not the conclusion.
+7. Models named (`nomic-embed-text-v1.5`, `bge-small-en-v1.5`) with MTEB-quality and latency
+   reasoning against the `<500ms` p95 target; final model pick deferred to T455's empirical eval
+   rather than asserted here as "good enough" without basis.
+
+**Money-gate: not triggered.** Per `plan-038`'s own gate wording, a local/OSS conclusion means no
+separate cost-authorization step is required before T452/T453. T452 itself remains undispatched in
+this session regardless — the user's own dispatch instruction named it as a hard stop pending their
+return, independent of this ADR's cost conclusion.
+
+**Orchestrator independent verification** (not accepted on the dispatched agent's self-report
+alone): fetched `https://solomd.app/` directly and confirmed every specific SoloMD claim in the ADR
+(MIT license, fully on-device embeddings/zero network calls, "$0 forever," 8-tool read-only-default
+MCP server with `--allow-write` opt-in, 14 named BYOK providers, no built-in multi-user sync) —
+exact match, no discrepancy found. Independently searched and confirmed `nomic-embed-text-v1.5`'s
+MTEB score (~62.28-62.39 across sources) sits at genuine parity with OpenAI
+`text-embedding-3-small` (~62.26-62.3) — the central fact the embeddings decision rests on.
+Independently confirmed OpenAI `text-embedding-3-small` pricing at exactly $0.02/M input tokens.
+Independently confirmed `bge-small-en-v1.5`'s 33.4M-parameter figure exactly; its cited retrieval
+NDCG@10 (53.9, general MTEB) is consistent with — not contradicted by — a different domain-specific
+NDCG@10 figure (58.9) found independently on a clinical-QA benchmark, different task subsets. Ran
+`python3 tests/run.py` fresh in the agent's own worktree before commit (clean, full pass). CI green
+on both this task's MRs (`docs/phase5-t450-dispatch` !229 — task brief + ledger row;
+`agent/solution-architect/T450` !230 — the ADR itself) before either was merged. Squash-merged to
+`develop`: MR !229 (commit `0f24e4b`, merge commit `3b41971`), MR !230 (commit `da865ed`, merge
+commit `cec4735`).
+
+T451 is the next task in `plan-038`'s dependency graph but is **not dispatched** in this session —
+the ADR's own Approval section requires human review/approval of its three decisions before
+downstream tasks are dispatched as final designs.
