@@ -287,3 +287,46 @@ before escalating to the orchestrator. Specific cases already anticipated:
 ## Execution notes
 
 (To be filled in by the implementing agent during work, if useful — not required.)
+
+## Completion addendum — acceptance criterion 1 honest downgrade (found during MR !246 review, 2026-09-09)
+
+Acceptance criterion 1 above reads: **"No write path from any agent into the canonical knowledge
+base... demonstrated by the end-to-end adversarial probe (Expected Output #4d), not merely
+asserted."** Independent review of the merged implementation (`docs/artifacts/context-retriever-v1.md`
+§2/§2.1, corrected in this same closeout) found this criterion, as originally worded and as the
+implementation's own MR description claimed it satisfied, does **not** hold in this repo's actual,
+current (non-containerized) deployment. Recorded plainly, not silently narrowed:
+
+- **What genuinely holds:** the declarative layer (agent definition `tools:` grant contains no
+  `edit`/`write` source token) and the server-module layer (`context_retriever.py`'s public API has
+  no write/mutate function at all) — plus, as a hypothetical/future property, the deployment-manifest
+  layer (`deploy/docker-compose-context-retriever.yml`), **if** this component is ever actually
+  deployed as a containerized service matching that manifest, which it is not today.
+- **What does not hold:** in the real deployment — a direct in-process Python call from an agent's
+  Bash-backed `execute` tool grant, not the containerized deployment the manifest describes — a
+  `@context-retriever` session has genuine, unrestricted `Bash` access (confirmed live:
+  `implementation/.claude/agents/context-retriever.md` grants `tools: Read, Bash`, via
+  `implementation/platforms/claude-code.json`'s own `execute` → `Bash` `toolMap`). Nothing technical
+  stops such a session from writing to the canonical knowledge base or derived index directly via
+  shell commands that never call `context_retriever.py` at all. The end-to-end adversarial probe
+  (Expected Output #4d) tested writes attempted *through* `ContextRetriever`'s own attribute surface,
+  CLI, and `.query()` method — it did not, and structurally could not, test the session's independent
+  Bash access outside that surface.
+- **Corrected criterion 1, stated honestly:** "No write path from `@context-retriever` into the
+  canonical knowledge base *through this component's own module/CLI surface, or through the agent
+  definition's declarative tool-scoping and a future containerized deployment matching the
+  deployment manifest*" — holds, and is demonstrated by the adversarial probe as written. The
+  broader, unqualified claim in the criterion's original wording — no write path from the agent at
+  all, in the real deployment — does not hold, and should not have been asserted as met.
+- This is the same declarative-enforcement trust model this repo's `security-engineer.md` "read-only
+  mode" claim already relies on for a Bash-granted agent elsewhere in this repo — not a new or
+  unusually weak posture introduced by T454, but it was inaccurately described as a stronger,
+  technically-enforced guarantee in this task's own artifact and this brief's own acceptance
+  criterion before this correction.
+- **Not fixed in this closeout** — recorded honestly and tracked as follow-up task **T457**
+  (`docs/tasks/task-T457.md`): give both `@security-engineer` and `@context-retriever` a genuinely
+  scoped, non-`Bash` execution/read primitive. The likely real fix (a dedicated MCP server or
+  equivalent scoped-tool mechanism) would need to touch `.mcp.json` in some form, out of scope for
+  immediate dispatch given this session's standing constraint on that file.
+- See `docs/artifacts/context-retriever-v1.md` §2.1 and `docs/decisions/ADR-005-memory-layer-
+  design.md`'s Validation section addendum (same date) for the full accounting.

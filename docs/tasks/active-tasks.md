@@ -3,6 +3,23 @@
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
 | T454 | `@context-retriever` read-only agent wrapper around T453's retrieval interface | backend-developer | pending | P0 | T453 (done) | 2026-09-09 |
+| T457 | Scoped, non-`Bash` execution/read primitive for `@security-engineer` and `@context-retriever` | solution-architect | pending | P1 | None | 2026-09-09 |
+
+> **T457 recorded 2026-09-09 — NOT DISPATCHED, backlog item only.** Brief at
+> `docs/tasks/task-T457.md`. Found during T454's own MR review: both `@security-engineer` and
+> `@context-retriever`'s `tools:` grants include `execute`, which the Claude Code platform's own
+> `toolMap` (`implementation/platforms/claude-code.json`) maps to unrestricted `Bash` — neither
+> agent's "read-only"/"no write path" claim is backed by a technical tool-scoping restriction on
+> this platform, only by the agent definition's own prose instruction. User-decided disposition:
+> accept prose-only enforcement for now (matching the pre-existing, previously-un-flagged
+> `security-engineer.md` precedent), correct the overclaiming documentation this same session
+> (`docs/artifacts/context-retriever-v1.md` §2/§2.1, `docs/tasks/task-T454.md`'s completion
+> addendum, `ADR-005-memory-layer-design.md`'s Validation addendum — all dated 2026-09-09), and
+> open this task to track the real fix properly rather than leave it undocumented. The likely real
+> fix (a dedicated MCP server or equivalent scoped-tool mechanism) would need to touch `.mcp.json`
+> in some form — out of scope for dispatch under this session's standing constraint on that file.
+> **Confirmed not to block T455/T456** — see `task-T457.md`'s own "Does this block T455/T456?"
+> section, checked against plan-038's actual acceptance criteria for both, not assumed.
 
 > **T454 dispatched 2026-09-09** — brief at `docs/tasks/task-T454.md`. Wraps T453's `Retriever`
 > API into a read-only `@context-retriever` agent surface, with `ALLOW_WRITE=false` asserted in

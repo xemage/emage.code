@@ -303,6 +303,39 @@ scoped to Phase 5 tasks in `plan-035`/`plan-038`, not new work invented by this 
   ADR's substrate and provider choices were the right ones, independent of any individual metric
   above.
 
+### Addendum — 2026-09-09, found during T454 implementation/MR review
+
+This section's "Read-only enforcement (T454)" bullet above states the three-place
+`ALLOW_WRITE=false` assertion "is live-tested... and confirm[ed] rejected at all three layers." MR
+review of T454's implementation (`docs/artifacts/context-retriever-v1.md`) found this bullet's
+implied completeness does not hold in this repo's actual, current (non-containerized) deployment
+model, and corrects it here rather than leaving it silently asserted:
+
+- The agent-definition layer is declarative/prose-only, not a technical tool-scoping restriction —
+  the Claude Code platform's own `toolMap` (`implementation/platforms/claude-code.json`) maps the
+  source `execute` tool grant to unrestricted `Bash`, confirmed live in the generated
+  `implementation/.claude/agents/context-retriever.md` (`tools: Read, Bash`). A `@context-retriever`
+  session genuinely has a tool call capable of writing a file; only the agent definition's own prose
+  instruction, not a structural restriction, stops it. This is the same declarative-enforcement trust
+  model this repo's existing `implementation/knowledge/agents/security-engineer.md` "read-only mode"
+  claim already relies on — not a new or weaker standard introduced by T454.
+- The deployment-manifest layer does not protect the real, current deployment either: this component
+  runs today as a direct in-process Python call from an agent's own Bash-backed tool grant, not
+  inside the containerized deployment `deploy/docker-compose-context-retriever.yml` describes.
+- Only the server-module layer (`context_retriever.py` has no write/mutate function in its public
+  API) is a genuine technical control in the current deployment, and even it only constrains callers
+  that go through that module — it cannot stop a Bash-capable session from writing to the knowledge
+  vault or derived index directly, bypassing the module entirely.
+- This does **not** reopen Decision 3 itself — the declarative/git-review/audit posture for the
+  canonical knowledge base remains this repo's intended design, and the server-module layer's
+  technical property is real. It corrects this Validation section's implied completeness claim about
+  what the T454 live test actually proved, per this repo's supersession discipline for gaps found
+  after acceptance (mirroring `ADR-004`'s dated-successor-block pattern for its own frozen-rule
+  gap). Tracked as follow-up task **T457** (`docs/tasks/task-T457.md`, not dispatched this session):
+  give both `@security-engineer` and `@context-retriever` a genuinely scoped, non-`Bash`
+  execution/read primitive. Full accounting: `docs/artifacts/context-retriever-v1.md` §2.1;
+  `docs/tasks/task-T454.md`'s own completion addendum (same date).
+
 ## Approval
 
 This ADR's status is **`accepted`**, approved 2026-09-09 by the user. Per `plan-035`'s own T450

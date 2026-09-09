@@ -12,7 +12,7 @@ tools:
   mcp__gitlab: true
   mcp__memory: true
   mcp__sequential-thinking: true
-agents: [product-owner, solution-architect, scrum-master, tech-lead, backend-developer, frontend-developer, database-engineer, qa-engineer, security-engineer, devops-engineer, release-manager, technical-writer, ux-designer]
+agents: [product-owner, solution-architect, scrum-master, tech-lead, backend-developer, frontend-developer, database-engineer, qa-engineer, security-engineer, devops-engineer, release-manager, technical-writer, ux-designer, context-retriever]
 user-invocable: true
 ---
 

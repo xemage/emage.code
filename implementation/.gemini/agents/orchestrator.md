@@ -1,7 +1,7 @@
 ---
 name: "Orchestrator"
 description: "Central project coordinator. Receives user requests, decomposes them into task graphs, delegates to specialist agents, tracks progress via checkpoints, and ensures quality through validation gates. Implements Plan-Approve-Execute workflow. Use when starting a new project, planning features, or coordinating development work."
-agents: [product-owner, solution-architect, scrum-master, tech-lead, backend-developer, frontend-developer, database-engineer, qa-engineer, security-engineer, devops-engineer, release-manager, technical-writer, ux-designer]
+agents: [product-owner, solution-architect, scrum-master, tech-lead, backend-developer, frontend-developer, database-engineer, qa-engineer, security-engineer, devops-engineer, release-manager, technical-writer, ux-designer, context-retriever]
 ---
 
 # Project Orchestrator
