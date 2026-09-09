@@ -2,8 +2,8 @@
 
 > Filename: `ADR-005-memory-layer-design.md`
 
-- **Status**: proposed — human approval required to advance; this ADR does not self-authorize
-  dispatch of T451–T456 or any downstream task
+- **Status**: Accepted — approved 2026-09-09 by the user (all three decisions); dispatch of
+  T451–T456 is authorized subject to each task's own dependency graph and briefs
 - **Date**: 2026-09-09
 - **Decider(s)**: solution-architect
 - **Tasks**: T450, T451, T452, T453, T454
