@@ -2,7 +2,52 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T456 | Downstream measurement (ship gate) | evaluation-agent | blocked | P0 | T454 (done), T455 (done), T458 (pending) | 2026-09-09 |
 | T457 | Scoped, non-`Bash` execution/read primitive for `@security-engineer` and `@context-retriever` | solution-architect | pending | P1 | None | 2026-09-09 |
+| T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-09 |
+
+> **T456 BLOCKED 2026-09-09 — genuine infrastructure gap, user-approved disposition, not a
+> fabricated pass, not silently dropped.** Full record at `docs/tasks/task-T456.md`. Re-confirming
+> T456's actual mechanism (not paraphrase) before dispatch found: the golden suite was deliberately
+> designed, as a Phase 1 architectural decision, to never invoke a live agent/model completion in
+> its automated run path — `docs/artifacts/golden-suite-format-v1.md` §2.2 ("Each case's `expect.py`
+> ... never itself invokes a live, sampling model completion"), §4.2 ("make no network calls and
+> invoke no live/sampling model completion"), and `scripts/scorecard.py`'s own docstring ("No
+> subprocess, no shelling out") — all read directly, not quoted from memory. **Consequence:** no
+> "retrieval enabled/disabled" configuration can change `scripts/scorecard.py`'s output on the
+> existing 20 golden cases, because nothing in that pipeline is sensitive to `@context-retriever`'s
+> existence at all — running the scorecard tool twice in any two configurations produces
+> byte-identical results. No separate live-agent-execution mechanism for golden cases exists
+> anywhere else in this repo either (confirmed by search). Presented four options to the user
+> (build the harness now under T456's own mismatched scope; a bounded pilot; declare the gate
+> honestly unmeasurable and open a properly-scoped follow-up; redefine "improve"); **user approved
+> option (C)** — T456 is `blocked`, not `done`/`cancelled`, per this repo's own task-lifecycle
+> convention (`blocked` triggered by "dependency or blocker encountered," not terminal, stays in
+> this ledger); **T458 opened** (below) as the real follow-up. **`golden-suite-format-v1.md` and
+> `scripts/scorecard.py` were read directly to ground this finding — never edited**, per this
+> task's own Constraints and `protected-paths-v1.md`.
+>
+> **What this does and does not mean for Phase 5:** T450-T455 (6 of 7 tasks) are genuinely done and
+> independently verified — the memory layer (storage substrate, enforced scopes, indexing pipeline,
+> hybrid retrieval, the read-only `@context-retriever` agent, and its own independently-verified
+> retrieval-quality eval) exists, works, and is usable by any agent today. **Phase 5's formal ship
+> gate has not been cleared** — per `plan-035`'s own literal rule, the RAG feature does not formally
+> ship until T456 actually runs (using T458's harness) and passes its pre-registered improvement
+> threshold. **Gate G3 remains open** for the same reason — this is the direct, honest consequence
+> of T456 being blocked, not a new finding beyond it.
+
+> **T458 recorded 2026-09-09 — scoped, NOT DISPATCHED this session.** Brief at
+> `docs/tasks/task-T458.md`, backed by `docs/plans/plan-040-t458-golden-live-harness-followup.md`.
+> Builds a real, two-arm (control/treatment) live-execution harness for the golden suite — reusing
+> each case's existing `brief.md` as a live-agent prompt and each case's existing, unmodified
+> `expect.py` as the pass/fail check — comparable in shape (not mechanics) to what Terminal-Bench's
+> own Layer 2 harness (T417-T419) needed, explicitly scoped as real infrastructure, not a quick
+> task. Owner `devops-engineer`, matching this repo's own precedent that harness-building work goes
+> to `devops-engineer`, not `evaluation-agent` (T417/T418/T419/T407/T408/T409 precedent). Priority
+> P1 — blocks Phase 5's formal ship decision and Gate G3's closure, does **not** block the memory
+> layer itself, which is already usable. Not dispatched this session because it is real,
+> substantial new infrastructure deserving its own dedicated dispatch/planning attention, and
+> nothing currently depends on it being resolved immediately.
 
 > **T455 closed 2026-09-09** — `tests/eval/memory_retrieval/{labeled_dataset.py,metrics.py,
 > scorecard-v1.json,scorecard-v1.md}`, `tests/functional/test_retrieval_eval_metrics.py`,
