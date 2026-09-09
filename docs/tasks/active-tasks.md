@@ -2,6 +2,13 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T454 | `@context-retriever` read-only agent wrapper around T453's retrieval interface | backend-developer | pending | P0 | T453 (done) | 2026-09-09 |
+
+> **T454 dispatched 2026-09-09** — brief at `docs/tasks/task-T454.md`. Wraps T453's `Retriever`
+> API into a read-only `@context-retriever` agent surface, with `ALLOW_WRITE=false` asserted in
+> three independent places (agent definition, server config, deployment manifest) per `plan-035`'s
+> own explicit redundancy requirement and ADR-005 Decision 3. Not yet implemented this session —
+> `agent/backend-developer/T454` worktree/branch to follow this ledger update.
 
 > **T453 closed 2026-09-09** — `implementation/runtime/memory/{scope_filter,lexical,structural,
 > rank,retrieve}.py` (hybrid retrieval + mandatory query-time scope pre-filter) and
