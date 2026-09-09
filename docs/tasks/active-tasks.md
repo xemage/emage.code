@@ -2,7 +2,20 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T452 | Indexing pipeline over the knowledge vault (parse → chunk → enrich → embed → index) | backend-developer | in_progress | P0 | T450 (done), T451 (done) | 2026-09-09 |
 
+> **T452 dispatched 2026-09-09.** Per `plan-038-phase5-detailed-planning.md`'s own sequencing
+> (T450 → T451 → T452 → T453 → T454 → {T455, T456}), now that both of T452's dependencies are
+> done. This is the dispatch `checkpoint-023-phase5-adr005-accepted-t451-complete.md` explicitly
+> paused ahead of, pending the user's return — the user has now returned and explicitly approved
+> dispatching T452 this session. See `task-T452.md` for the full brief: it implements the
+> indexing pipeline (parse/chunk/enrich/embed/index) against `memory-scope-model-v1.md`'s §4.1
+> structural scope-boundary partitioning and §5 write-time validation, and ADR-005 Decision 2's
+> local/zero-cost embedding model (`nomic-embed-text-v1.5` primary, `bge-small-en-v1.5` fallback)
+> — no cost-authorization gate applies. Real vault-content population is explicitly out of scope
+> for this task (fixture/test-vault only); see the brief's "Vault content — explicitly out of
+> scope" section.
+>
 > **T451 closed 2026-09-09 — `docs/artifacts/memory-scope-model-v1.md` published (MR !235,
 > squash-merged), moved to `completed-tasks.md`.** All 6 acceptance criteria independently
 > verified met by the orchestrator before merge, including three factual corrections the
@@ -14,8 +27,9 @@
 > T420-established pattern) and the separate small ADR-005 Approval-section follow-up (MR !234,
 > already merged, fixing a staleness the header flip alone didn't reach).
 >
-> **T452 (indexing pipeline) is next in `plan-038`'s dependency graph — both its dependencies
-> (T450, T451) are now done — but is not dispatched in this session yet.**
+> **T452 (indexing pipeline) was next in `plan-038`'s dependency graph — both its dependencies
+> (T450, T451) were done. It has now been dispatched (2026-09-09); see the note at the top of
+> this file above the active-tasks table.**
 >
 > **ADR-005 accepted 2026-09-09** — the user approved all three of ADR-005's decisions this
 > session (git-versioned Markdown/frontmatter store + locally-rebuilt vector index; local/open-
