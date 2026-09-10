@@ -4,13 +4,13 @@
 **Owner:** tech-lead (matches `plan-035`/`plan-041`'s own assignment; tool grant checked before
 dispatch — `implementation/knowledge/agents/tech-lead.md`'s registered grant is `[read, search,
 edit, execute, web, mcp__fetch]`, has `execute`)
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Depends on:** T433 (done — Wave 1; re-confirmed from `plan-041`'s own task graph that T434's only
 dependency is T433, no other precondition)
 **Blocks:** T436 (needs both T434 and T435's actual outcomes)
 **Created:** 2026-09-10
-**Completed:** —
+**Completed:** 2026-09-10
 **Based on:** `docs/plans/plan-041-phase3-maturity-ladder-detailed-planning.md` (approved, merged
 MR !252) — specifically its T434 row; `docs/plans/plan-035-roadmap-v7-ground-up.md` §2.4 Phase 3;
 `docs/artifacts/maturity-promotion-criteria-v1.md` (T431 — real per-category `beta→stable`
@@ -155,3 +155,12 @@ satisfied as worded (report, don't force).
 ## Execution notes
 
 (To be filled in by the implementing agent during work, if useful — not required.)
+
+## Completion addendum (2026-09-10)
+
+19/23 agents and 0/17 commands (14/17 blocked solely on a well-defined golden-case gap) genuinely
+evidence-complete, with T434's own row still open — the self-referential mechanism from T433 did
+not reproduce here, independently confirmed by the orchestrator. Full record in `completed-tasks.md`'s
+T434 row and `docs/artifacts/phase3-wave2-promotion-v1.md`. Implemented on MR !267
+(`agent/tech-lead/T434` → `develop`, merge commit `ce616c1`); this brief itself was dispatched via
+MR !266 (merge commit `ef708ca`).

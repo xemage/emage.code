@@ -2,11 +2,46 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T434 | Wave 2 promotion (remaining agents/commands) to `stable` | tech-lead | in_progress | P1 | T433 (done) | 2026-09-10 |
-| T435 | Wave 3 promotion (skills/instructions) to `stable` | tech-lead | in_progress | P1 | T433 (done) | 2026-09-10 |
 | T456 | Downstream measurement (ship gate) | evaluation-agent | blocked | P0 | T454 (done), T455 (done), T458 (pending) | 2026-09-09 |
 | T457 | Scoped, non-`Bash` execution/read primitive for `@security-engineer` and `@context-retriever` | solution-architect | pending | P1 | None | 2026-09-09 |
 | T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-09 |
+
+> **T434/T435 closed 2026-09-10 — real evidence-authorship complete and independently verified for
+> both; 28 components genuinely evidence-complete and ready for immediate flip, 0 flipped in these
+> closures by design.** `docs/artifacts/phase3-wave2-promotion-v1.md` (T434, MR !267, squash-merged
+> `develop` `ce616c1`) and `phase3-wave3-promotion-v1.md` (T435, MR !268, squash-merged `develop`
+> `4c88cc7`, after a real, anticipated, purely mechanical rebase conflict in `implementation/
+> registry/index.json` against T434's own registry regeneration — resolved by regenerating fresh
+> post-rebase, not hand-editing JSON, independently confirmed clean before merging). **T434's own
+> finding, independently reproduced by the orchestrator, not accepted on self-report: T433's
+> self-referential ledger-defect blocker does NOT reproduce for T434/T435**, because both briefs
+> were deliberately drafted to never name any in-scope component by id (the lesson from the
+> dispatch-time regression recorded in the prior note). Verified directly — grepped `task-T434.md`
+> against the real 40 in-scope ids (23 agents + 17 commands, computed fresh against `index.json`,
+> not the 5-agent/2-command set T433 already covered): zero hits; same for `task-T435.md` against
+> its 28. **Practical effect: 19 of T434's 23 agents and 9 of T435's 10 evidence-complete components
+> (all 4 instructions + 5 skills; the 10th, one task-tracking skill, is evidence-complete but
+> blocked by real, independent, pre-existing `T456`) already report a clean `PASS` today, with both
+> tasks' rows still open — not merely "would pass once archived" the way Wave 1's 3 clean candidates
+> were.** Spot-checked 12 of the 28 claimed-clean components directly (not trusted from the
+> artifacts' own counts): `data-mockup-agent`, `poc-orchestrator`, `product-owner`, `scrum-master`,
+> `technical-writer` (agents), all 4 instructions, `checkpoint-protocol`, `systematic-debugging`,
+> `testing-strategy` (skills) — all 12 genuinely pass `stable` when simulated; also spot-checked 2
+> claimed-blocked components (`devops-engineer` → real `T457` defect; the blocked skill → real
+> `T456` defect) and one claimed-blocked command (`bug-report` → genuinely fails only on the
+> golden-case criterion) — all matched their claims exactly. Confirmed `bug-report.md`'s missing
+> `agent:` frontmatter fix (`agent: "orchestrator"`) against the real repo convention: 14 of 18
+> other commands with an `agent:` field already use `orchestrator` for the same class of generic,
+> ledger-writing utility command — correct, in-scope, not scope creep. `git diff --name-only`
+> grepped for every protected path on both MRs — zero hits both times; `python3 tests/run.py` fresh
+> on both (505, then 514 tests, `OK`, `skipped=24`, no regressions); `generate-registry.py --check`
+> and `sync.mjs --check` clean on both; real GitLab CI green (5/5) on all three MRs (!267, !268,
+> and the rebase force-push) independently polled before merging. **14 of T434's 17 commands remain
+> blocked solely on a real, well-defined golden-case coverage gap** (a protected-path exception not
+> requested this round, per the brief's own instruction); **18 of T435's 24 skills remain genuinely
+> untouched**, with 4 of those flagged as having real, pre-existing content defects found
+> incidentally (not fixed here, out of scope for a promotion task). Neither new-golden-case
+> authorship nor the flagged skill-content defects are dispatched this round.
 
 > **T434/T435 dispatched 2026-09-10 — re-confirmed from `plan-041`'s own task graph directly, not
 > assumed from last round's claim.** `plan-041`'s per-task table shows both depend only on T433
