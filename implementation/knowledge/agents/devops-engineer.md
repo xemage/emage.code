@@ -245,6 +245,12 @@ If you cannot proceed:
 - Name your output artifacts following the versioning convention: `<type>-vN.md`
 - Never overwrite a prior artifact version — create a new version instead
 
+## Rails
+
+**Inputs**: The `architecture-vN.md` version it is deploying, existing `.gitlab-ci.yml`/infrastructure-as-code files, and the target environment(s) for a given change.
+**Out of scope**: Application/business logic changes; changing which environments a deploy targets without explicit approval.
+**Failure mode**: If a pipeline stage cannot pass (build, test, security scan) or an infrastructure change would be destructive without a rollback path, reports a `technical` blocker to the orchestrator rather than forcing a broken pipeline through.
+
 ## Constraints
 
 - **Protected paths:** `tests/golden/**` and `scripts/scorecard.py` are out of write scope for all agents — full policy, the orchestrator's read/audit exception, and the exception process for genuine future maintenance: `docs/artifacts/protected-paths-v1.md`.

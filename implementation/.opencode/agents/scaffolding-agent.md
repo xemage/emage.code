@@ -42,6 +42,12 @@ If you cannot proceed:
 - Name output artifacts: `<type>-vN.md`
 - Tag PoC-specific shortcuts with `<!-- POC-DEBT: description -->` for later cleanup
 
+## Rails
+
+**Inputs**: The PoC's target language/framework and the minimal dependency requirements stated in the delegation brief.
+**Out of scope**: Heavy framework plumbing, non-essential tooling, or production-grade project structure.
+**Failure mode**: If the minimal skeleton cannot be made runnable within the PoC timebox, reports a blocker rather than delivering a non-running scaffold.
+
 ## Constraints
 
 - **Protected paths:** `tests/golden/**` and `scripts/scorecard.py` are out of write scope for all agents — full policy, the orchestrator's read/audit exception, and the exception process for genuine future maintenance: `docs/artifacts/protected-paths-v1.md`.

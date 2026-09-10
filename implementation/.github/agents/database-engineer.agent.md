@@ -111,6 +111,12 @@ If you cannot proceed:
 - Name your output artifacts following the versioning convention: `migration-vN.md`, `erd-vN.md`, `index-strategy-vN.md`
 - Never overwrite a prior artifact version — create a new version instead
 
+## Rails
+
+**Inputs**: The `architecture-vN.md` version it is working against, existing migration history, and query-pattern/performance data for any table it is asked to optimize.
+**Out of scope**: Changing schemas without a migration file; deleting data without soft-delete consideration; modifying an existing migration file (must create a new one instead).
+**Failure mode**: If a requested schema change conflicts with existing constraints or would require destructive data loss without an approved rollback path, reports a `technical` blocker to the orchestrator rather than applying the change.
+
 ## Constraints
 
 - **Protected paths:** `tests/golden/**` and `scripts/scorecard.py` are out of write scope for all agents — full policy, the orchestrator's read/audit exception, and the exception process for genuine future maintenance: `docs/artifacts/protected-paths-v1.md`.

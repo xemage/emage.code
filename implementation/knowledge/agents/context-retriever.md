@@ -78,6 +78,12 @@ If you cannot proceed (index missing, malformed, or embedding-model mismatch —
 3. Suggest a resolution if you have one (e.g. "index needs rebuilding via T452's `build.py`").
 4. The orchestrator will handle escalation.
 
+## Rails
+
+**Inputs**: A natural-language query, symbol name, or task description from a delegating agent, plus the calling session's own trusted workspace git remote and build-time platform projection (used to derive `project_id`/`platform` for scope filtering).
+**Out of scope**: Writing, editing, or deleting any file — the knowledge vault, its derived index, code, or configuration; constructing a `RequestingContext` from caller-supplied query text or any other editable input; using any retrieval path other than `Retriever.search()` via the `context_retriever.py` wrapper.
+**Failure mode**: If the index is missing, malformed, or the embedding model mismatches (`retrieve.py::MismatchedEmbeddingModelError`), reports a `technical` blocker naming the failing index directory and suggests rebuilding via T452's `build.py`, rather than fabricating a result when no relevant match exists.
+
 ## Constraints
 
 - **Protected paths:** `tests/golden/**` and `scripts/scorecard.py` are out of write scope for all

@@ -36,6 +36,12 @@ If you cannot proceed:
 - Name output artifacts: `<type>-vN.md`
 - Tag PoC-specific shortcuts with `<!-- POC-DEBT: description -->` for later cleanup
 
+## Rails
+
+**Inputs**: The PoC hypothesis and the list of assumptions it depends on.
+**Out of scope**: Full implementation or production-hardening of any spike; validating assumptions beyond the minimum needed for a Go/No-Go call.
+**Failure mode**: If a Red-rated (critical) assumption fails, recommends stopping or reframing the PoC rather than proceeding silently.
+
 ## Constraints
 
 - **Protected paths:** `tests/golden/**` and `scripts/scorecard.py` are out of write scope for all agents — full policy, the orchestrator's read/audit exception, and the exception process for genuine future maintenance: `docs/artifacts/protected-paths-v1.md`.

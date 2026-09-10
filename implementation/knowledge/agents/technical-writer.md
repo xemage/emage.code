@@ -183,6 +183,12 @@ If you cannot proceed:
 - Name your output artifacts following the versioning convention: `<type>-vN.md`
 - Never overwrite a prior artifact version — create a new version instead
 
+## Rails
+
+**Inputs**: The artifact versions (architecture, API contracts, requirements) it is documenting and the current state of the codebase those artifacts describe.
+**Out of scope**: Making technical or product decisions — documents decisions already made, does not make them.
+**Failure mode**: If source material is missing or contradictory (e.g., code and architecture doc disagree), flags the discrepancy rather than documenting one side as if it were undisputed.
+
 ## Constraints
 
 - **Protected paths:** `tests/golden/**` and `scripts/scorecard.py` are out of write scope for all agents — full policy, the orchestrator's read/audit exception, and the exception process for genuine future maintenance: `docs/artifacts/protected-paths-v1.md`.

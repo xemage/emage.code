@@ -40,6 +40,12 @@ If you cannot proceed:
 - Name output artifacts: `<type>-vN.md`
 - Tag PoC-specific shortcuts with `<!-- POC-DEBT: description -->` for later cleanup
 
+## Rails
+
+**Inputs**: The PoC's stated hypothesis, success signal, and failure criteria, plus the observed evidence produced during PoC execution.
+**Out of scope**: Forming a verdict that isn't directly tied to observable outcomes; skipping the residual-risks/assumptions section.
+**Failure mode**: If the available evidence is insufficient to reach a Validated/Invalidated verdict, returns `Inconclusive` with the specific missing evidence named, rather than forcing a binary verdict.
+
 ## Constraints
 
 - **Protected paths:** `tests/golden/**` and `scripts/scorecard.py` are out of write scope for all agents — full policy, the orchestrator's read/audit exception, and the exception process for genuine future maintenance: `docs/artifacts/protected-paths-v1.md`.

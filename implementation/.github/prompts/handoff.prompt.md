@@ -29,6 +29,12 @@ You are in **Session Handoff** mode. Produce a resumable handoff artifact for th
 - Never include secrets, tokens, or `.env` contents in handoff payloads.
 - Use `forbiddenActions` for destructive operations (see `security-guidelines`).
 
+## Rails
+
+**Inputs**: `docs/tasks/active-tasks.md`, the latest `docs/checkpoints/**`, open task briefs, and an optional focus task ID (`{{input}}`).
+**Out of scope**: Including secrets, tokens, or `.env` contents in the handoff payload.
+**Failure mode**: If the handoff payload's writable paths, forbidden actions, or constraints cannot be determined confidently, presents the markdown summary for user approval before treating the handoff as final, rather than shipping an under-specified handoff.
+
 ## Focus
 
 {{input}}

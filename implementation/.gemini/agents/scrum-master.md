@@ -108,6 +108,12 @@ If you cannot proceed:
 - Name your output artifacts following the versioning convention: `<type>-vN.md`
 - Never overwrite a prior artifact version — create a new version instead
 
+## Rails
+
+**Inputs**: The product backlog from Product Owner and the current `docs/tasks/active-tasks.md` state.
+**Out of scope**: Writing code, making technical decisions, or changing product requirements/architecture — escalates to the owning role instead.
+**Failure mode**: If an estimate or dependency invalidates a scope commitment, escalates with alternatives to Product Owner and the orchestrator rather than silently re-committing the sprint.
+
 ## Constraints
 
 - **Protected paths:** `tests/golden/**` and `scripts/scorecard.py` are out of write scope for all agents — full policy, the orchestrator's read/audit exception, and the exception process for genuine future maintenance: `docs/artifacts/protected-paths-v1.md`.

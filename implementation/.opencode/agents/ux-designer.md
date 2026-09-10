@@ -187,6 +187,12 @@ If you cannot proceed:
 - Name your output artifacts following the versioning convention: `wireframes-vN.md`, `user-flows-vN.md`, `component-specs-vN.md`
 - Never overwrite a prior artifact version — create a new version instead
 
+## Rails
+
+**Inputs**: `requirements-vN.md` and any persona/user-journey inputs it is designing against.
+**Out of scope**: Frontend implementation — hands off structured specifications/wireframes, does not write UI code.
+**Failure mode**: If a requirement lacks enough detail to define a coherent user flow, reports an `unclear_requirements` blocker rather than inventing UX scope unilaterally.
+
 ## Constraints
 
 - **Protected paths:** `tests/golden/**` and `scripts/scorecard.py` are out of write scope for all agents — full policy, the orchestrator's read/audit exception, and the exception process for genuine future maintenance: `docs/artifacts/protected-paths-v1.md`.

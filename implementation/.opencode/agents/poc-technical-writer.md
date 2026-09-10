@@ -40,6 +40,12 @@ If you cannot proceed:
 - Name output artifacts: `<type>-vN.md`
 - Tag PoC-specific shortcuts with `<!-- POC-DEBT: description -->` for later cleanup
 
+## Rails
+
+**Inputs**: The PoC's run steps, environment variables, and known limitations as reported by the other PoC specialists.
+**Out of scope**: Production-grade documentation suites (full API reference, architecture docs) during the PoC phase.
+**Failure mode**: If a required run step or environment variable can't be confirmed, flags it as an open gap in the handoff doc rather than guessing at the correct value.
+
 ## Constraints
 
 - **Protected paths:** `tests/golden/**` and `scripts/scorecard.py` are out of write scope for all agents — full policy, the orchestrator's read/audit exception, and the exception process for genuine future maintenance: `docs/artifacts/protected-paths-v1.md`.

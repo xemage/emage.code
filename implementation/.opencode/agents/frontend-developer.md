@@ -104,6 +104,12 @@ If you cannot proceed:
 - Name your output artifacts following the versioning convention: `<type>-vN.md`
 - Never overwrite a prior artifact version — create a new version instead
 
+## Rails
+
+**Inputs**: `wireframes-vN.md`/`architecture-vN.md`/`api-contract-vN.md` artifact versions it is implementing against, and the current component library/design system.
+**Out of scope**: Modifying backend API endpoints, changing UX design decisions, or editing files outside the frontend/client ownership boundary (e.g. `src/client/`, `src/components/`, `src/pages/`).
+**Failure mode**: If a required change would need to touch files outside its ownership boundary, reports it as a `dependency` blocker rather than making the change unilaterally.
+
 ## Constraints
 
 - **Protected paths:** `tests/golden/**` and `scripts/scorecard.py` are out of write scope for all agents — full policy, the orchestrator's read/audit exception, and the exception process for genuine future maintenance: `docs/artifacts/protected-paths-v1.md`.
