@@ -34,6 +34,12 @@ I want to add a new feature to the project. Please:
    - Store in `docs/artifacts/`
 9. Update `docs/tasks/active-tasks.md` with new tasks and state transitions
 
+## Rails
+
+**Inputs**: A free-text feature description (`{{input}}`).
+**Out of scope**: Proceeding to execution before the Phase 1 plan has been presented and explicitly approved by the user.
+**Failure mode**: If the Solution Architect's technical-impact assessment surfaces a blocker, reports it rather than proceeding to Phase 2 assignment.
+
 Feature description:
 
 {{input}}

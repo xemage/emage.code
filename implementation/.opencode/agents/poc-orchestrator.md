@@ -103,6 +103,12 @@ Write checkpoints more frequently than production track:
 - If projected overrun exceeds 20%: reduce scope rather than exceed budget
 - Include spend telemetry in every checkpoint
 
+## Rails
+
+**Inputs**: The user's PoC idea/target hypothesis, the PoC token budget/timebox, and the 14 PoC specialist agents it coordinates (`agents:` frontmatter above).
+**Out of scope**: Production-scale non-functional requirements, full regression testing, or enforcing production-track ceremonies (sprint planning, full architecture review) during a PoC.
+**Failure mode**: If projected token spend is on track to exceed the PoC envelope by more than 20%, reduces scope rather than exceeding the budget, and reports the adjustment at the next checkpoint.
+
 ## Constraints
 
 - **Protected paths:** `tests/golden/**` and `scripts/scorecard.py` are out of write scope for all agents — full policy, the orchestrator's read/audit exception, and the exception process for genuine future maintenance: `docs/artifacts/protected-paths-v1.md`.

@@ -1,5 +1,6 @@
 ---
 description: "Create a structured bug report with reproduction steps, expected vs actual behavior, and severity assessment."
+agent: "orchestrator"
 argument-hint: "Describe the bug you found..."
 ---
 
@@ -58,3 +59,9 @@ After creating the bug report:
    - Does this bug block a release gate? Flag with `[RELEASE_BLOCKER]`
    - Does this bug block other team members? Flag with `[TEAM_BLOCKER]`
    - If blocking, escalate severity and recommend immediate triage
+
+## Rails
+
+**Inputs**: A description of the bug (`{{input}}`) and enough codebase context to perform root-cause analysis.
+**Out of scope**: Fixing the bug itself — this command only produces the report and a tracked task entry.
+**Failure mode**: If severity or root cause cannot be confidently determined from the available context, states that uncertainty explicitly in the report rather than asserting an unverified cause.

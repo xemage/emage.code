@@ -64,3 +64,9 @@ Please perform a security audit on:
 
 Provide a structured security report with findings, severity levels, and remediation steps.
 If any CRITICAL findings exist, the verdict MUST be FAIL.
+
+## Rails
+
+**Inputs**: The scope to audit (`{{input}}`: full project, a feature, or specific files).
+**Out of scope**: Fixing any finding directly — this command only produces findings, severity, and remediation recommendations.
+**Failure mode**: If any CRITICAL finding exists, the verdict MUST be FAIL — the command cannot return PASS/CONDITIONAL_PASS while a CRITICAL finding is unresolved.

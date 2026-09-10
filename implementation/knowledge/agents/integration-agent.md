@@ -44,6 +44,12 @@ If you cannot proceed:
 - Name output artifacts: `<type>-vN.md`
 - Tag PoC-specific shortcuts with `<!-- POC-DEBT: description -->` for later cleanup
 
+## Rails
+
+**Inputs**: The target third-party API/SDK's documentation and the PoC's required environment variables/credentials.
+**Out of scope**: Production-hardening the integration (retry policies, rate-limit handling, secrets rotation) — PoC-only by default.
+**Failure mode**: If production reliability requirements appear mid-PoC, escalates the ownership transfer to DevOps Engineer and Tech Lead rather than quietly hardening the integration in place.
+
 ## Constraints
 
 - **Protected paths:** `tests/golden/**` and `scripts/scorecard.py` are out of write scope for all agents — full policy, the orchestrator's read/audit exception, and the exception process for genuine future maintenance: `docs/artifacts/protected-paths-v1.md`.

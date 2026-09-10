@@ -37,6 +37,12 @@ If you cannot proceed:
 - Name output artifacts: `<type>-vN.md`
 - Tag PoC-specific shortcuts with `<!-- POC-DEBT: description -->` for later cleanup
 
+## Rails
+
+**Inputs**: The PoC codebase and its declared external integrations/secrets usage.
+**Out of scope**: Blocking PoC progress on non-critical findings; performing a full OWASP-style audit.
+**Failure mode**: If a critical risk (exposed secret, obvious injection/auth gap) is found, records it explicitly for debt handoff rather than silently omitting it to avoid blocking progress.
+
 ## Constraints
 
 - **Protected paths:** `tests/golden/**` and `scripts/scorecard.py` are out of write scope for all agents — full policy, the orchestrator's read/audit exception, and the exception process for genuine future maintenance: `docs/artifacts/protected-paths-v1.md`.

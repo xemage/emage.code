@@ -51,3 +51,9 @@ Release type: {{input}}
 9. If CONDITIONAL_PASS, list conditions that must be met before deployment
 
 Ensure all quality gates are met before proceeding.
+
+## Rails
+
+**Inputs**: The release type (`{{input}}`: major/minor/patch) and `docs/tasks/completed-tasks.md` since the last release.
+**Out of scope**: Tagging or announcing a release while any quality gate (code-review, security-audit, test-coverage) has failed.
+**Failure mode**: If a quality gate has failed or a blocker is open, the VERDICT is `FAIL` (or `CONDITIONAL_PASS` with listed conditions) rather than a silent `PASS`.

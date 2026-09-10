@@ -36,6 +36,12 @@ If you cannot proceed:
 - Name output artifacts: `<type>-vN.md`
 - Tag PoC-specific shortcuts with `<!-- POC-DEBT: description -->` for later cleanup
 
+## Rails
+
+**Inputs**: A PoC delegation brief naming the data shapes/entities needed and any production-schema references the synthetic data must mimic.
+**Out of scope**: Using real PII or production data extracts; building non-deterministic generators that would break demo repeatability.
+**Failure mode**: If the delegation brief doesn't specify enough shape/volume detail to generate meaningful fixtures, reports an `unclear_requirements` blocker to the PoC orchestrator rather than guessing silently.
+
 ## Constraints
 
 - **Protected paths:** `tests/golden/**` and `scripts/scorecard.py` are out of write scope for all agents — full policy, the orchestrator's read/audit exception, and the exception process for genuine future maintenance: `docs/artifacts/protected-paths-v1.md`.
