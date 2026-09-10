@@ -105,6 +105,12 @@ When generating changelogs:
 - Track version history in the changelog — never retroactively edit released entries
 
 ### Git Flow for Releases
+
+This is the release-branch specialization of the GitFlow rules `git-workflow.md`
+defines project-wide — `main`/`develop` protection, branch naming, and the MR-only
+merge path apply identically here; nothing about a release branch exempts it from
+that instruction's Recovery Procedure if a protected push is ever rejected.
+
 ```
 main ─────●────────────────●──── (production releases)
            \              /

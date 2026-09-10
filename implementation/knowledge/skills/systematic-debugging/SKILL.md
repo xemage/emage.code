@@ -6,6 +6,23 @@ maturity: experimental
 
 # Systematic Debugging
 
+## Rails
+**Inputs**: A test failure, flaky test, production/CI bug, unexpected agent
+or build behavior, performance regression, or cross-component integration
+failure — per `AGENTS.md`'s mandatory Skill Workflow table, "any bug, test
+failure, unexpected behavior" requires this skill before a fix is proposed.
+
+**Out of scope**: Does not cover feature implementation or code review
+response (see skill `receiving-code-review` for the latter) — this skill is
+specifically the root-cause investigation that precedes a fix, not the fix's
+implementation discipline itself, which Phase 4 only briefly closes out.
+
+**Failure mode**: Proposing or applying a fix before completing Phase 1-3 is
+the exact anti-pattern the Iron Rule forbids ("NO FIXES WITHOUT ROOT CAUSE
+INVESTIGATION FIRST"). If root cause remains unclear after two structured
+cycles, this skill mandates escalation as a `technical`/`major` blocker with
+attached evidence, not a third unstructured attempt.
+
 ## Purpose
 
 Prevent symptom-chasing and rework. Find root cause with evidence before changing code.

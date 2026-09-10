@@ -318,6 +318,13 @@ class TestPlatformProjections(unittest.TestCase):
             opencode_config["mcp"].get("context7"),
             {"type": "remote", "url": context7_url},
         )
+        # maturity-evidence: instruction/coding-standards
+        # maturity-evidence: instruction/git-workflow
+        # maturity-evidence: instruction/security-guidelines
+        # maturity-evidence: instruction/poc-guidelines
+        # This assertion genuinely exercises all four instructions: it fails if any
+        # one of them is dropped from, reordered in, or renamed within the opencode
+        # projection's `instructions` list.
         self.assertEqual(
             opencode_config.get("instructions"),
             [

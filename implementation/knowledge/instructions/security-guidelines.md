@@ -6,6 +6,25 @@ maturity: experimental
 
 # Security Guidelines
 
+## Rails
+**Inputs**: Triggers on `**` — applies whenever any agent implements
+authentication, authorization, input validation, cryptography, session
+management, or other security-sensitive code, per this instruction's own
+frontmatter `description`.
+
+**Out of scope**: Does not replace a dedicated threat model or penetration
+test — see the Security Review Workflow for how OWASP findings feed into
+merge decisions. Does not grant any agent authority to disable a security
+control "temporarily," even in PoC or development mode — the Immutable
+Security Constraints section forbids that outright, superseding any
+speed-over-completeness pressure from `poc-guidelines.md`.
+
+**Failure mode**: `SECURITY:CRITICAL`/`SECURITY:HIGH` findings block merge
+per the Security Review Workflow until resolved; `SECURITY:MEDIUM` findings
+require a documented remediation plan before merge; a permission-boundary
+violation (an agent exceeding its classified read-only/write-capable scope)
+must be logged and the task rejected per the Permission Enforcement Rules.
+
 ## Input Validation
 - Validate ALL user input on the server side (client-side is UX, not security)
 - Use allowlists over denylists

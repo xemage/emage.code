@@ -6,6 +6,23 @@ maturity: experimental
 
 # Verification Before Completion
 
+## Rails
+**Inputs**: An imminent `done` status transition, commit, push, MR creation,
+validation-gate `PASS` verdict, or a claim that a bug fix/refactor is
+complete — per `AGENTS.md`'s mandatory Skill Workflow table, "marking work
+done, commit, MR, release" requires this skill before the claim is made.
+
+**Out of scope**: Does not define what the underlying task's acceptance
+criteria are (those come from the task brief or `maturity-promotion-
+criteria-v1.md`-style artifacts) — this skill only governs how a completion
+claim about them must be evidenced, not what the criteria themselves say.
+
+**Failure mode**: A completion claim made without a fresh command's exit
+code and output is a violation of the Iron Rule ("NO COMPLETION CLAIMS
+WITHOUT FRESH VERIFICATION EVIDENCE"); per Orchestrator Enforcement, the
+orchestrator must reject the `done` transition when the task brief's
+verification steps lack recorded evidence in the checkpoint or task comment.
+
 ## Purpose
 
 Prevent false completion claims. Every status assertion must cite fresh command output.

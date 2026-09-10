@@ -6,6 +6,25 @@ maturity: experimental
 
 # Task Management
 
+## Rails
+**Inputs**: Creating a new task, updating task status, querying active tasks,
+building or updating a dependency graph, or archiving a completed/cancelled
+task — any lifecycle event touching `docs/tasks/active-tasks.md` or
+`docs/tasks/completed-tasks.md`, per the "When to Use" list below.
+
+**Out of scope**: Does not decide *whether* a task is complete — that
+judgment belongs to skill `verification-before-completion` (invoked as
+step 1 of "Complete a Task" below) and, for a defined acceptance bar, the
+task brief itself. This skill only governs the mechanical ledger
+create/read/update/transition/archive operations once that judgment is made.
+
+**Failure mode**: Writing `done`/`cancelled` into `active-tasks.md` instead
+of archiving to `completed-tasks.md` in the same edit is a protocol
+violation per the file's own INVARIANT. An agent other than the orchestrator
+performing the archive (moving a row, not merely reporting completion), or
+completing a task out of the mandated 4-step atomic order, breaks the audit
+trail this skill exists to preserve.
+
 ## Purpose
 
 Manage the full lifecycle of project tasks — creation, status tracking, dependency management, and archival — using structured markdown tables in `docs/tasks/`.

@@ -5,6 +5,26 @@ description: "Write, compress, and manage project checkpoints for context preser
 
 # Checkpoint Protocol
 
+## Rails
+**Inputs**: A phase boundary, 3-5 completed tasks since the last checkpoint,
+an imminent sub-agent delegation, anticipated context-window exhaustion, or
+an explicit request from the orchestrator/user — any of these triggers
+"Write a Checkpoint" per the Procedures section below.
+
+**Out of scope**: Does not itself decide phase or validation-gate transitions
+(see skill `validation-gates` for that) — a checkpoint records state, it does
+not gate progression. Does not replace the task ledger in `docs/tasks/**` as
+the source of truth for task status; a checkpoint's "Completed Tasks"/"Active
+Tasks" tables are a point-in-time summary derived from that ledger, not an
+independent record.
+
+**Failure mode**: Skipping a checkpoint at a mandatory trigger (phase
+boundary, imminent context exhaustion) risks unrecoverable context loss on
+the next session — per the Guidelines, "if unsure whether to checkpoint,
+checkpoint." Compression is irreversible, so compressing before the latest 2
+full checkpoints are safely preserved is a protocol violation, not a
+recoverable mistake.
+
 ## Purpose
 
 Preserve project context across sessions and context window boundaries. Checkpoints capture progress, decisions, and state so that work can resume without loss after context resets or agent handoffs.
@@ -20,10 +40,14 @@ Preserve project context across sessions and context window boundaries. Checkpoi
 ## File Location
 
 ```
-docs/checkpoints/checkpoint-<N>.md
+docs/checkpoints/checkpoint-<SEQ>-<phase>.md
 ```
 
-Where `<N>` is a sequential integer starting from `001`.
+Where `<SEQ>` is a sequential integer (zero-padded, e.g. `001`, `029`) and
+`<phase>` is a short, kebab-case description of the phase or event the
+checkpoint covers (e.g. `checkpoint-029-phase3-t433-gate-g2-closed.md`).
+This matches `AGENTS.md`'s Checkpoint Protocol section verbatim — see that
+section for the canonical filename convention this skill implements.
 
 ## Checkpoint Format
 

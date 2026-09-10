@@ -81,6 +81,7 @@ The release pipeline blocks publication if this verification fails.
 | `contributing-workflow.md` | `contributing-workflow` |
 | `implementation-guide.md` | `implementation-guide` |
 | `commands-and-skills-overview.md` | `commands-and-skills-overview` |
+| `instructions-overview.md` | `instructions-overview` |
 
 > Wiki pages use the same Markdown flavour as the main repo. Internal wiki
 > links use the slug (no `.md` extension), e.g. `[Quick Start](quick-start)`.
