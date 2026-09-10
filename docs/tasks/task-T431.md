@@ -4,14 +4,14 @@
 **Owner:** tech-lead (matches `plan-041`'s own reasoning — this repo's existing pattern of
 `tech-lead` owning standards/criteria work; tool grant checked before dispatch, see below, no
 reassignment needed)
-**Status:** pending
+**Status:** done
 **Priority:** P1 (blocks T432, which cannot be written until these criteria are concrete and
 machine-checkable)
 **Depends on:** T430 (done — `docs/artifacts/maturity-levels-v1.md`, `implementation/registry/
 schema.json`'s reconciled enum)
 **Blocks:** T432
 **Created:** 2026-09-10
-**Completed:** —
+**Completed:** 2026-09-10
 **Based on:** `docs/plans/plan-041-phase3-maturity-ladder-detailed-planning.md` (approved, merged
 MR !252) — specifically its T431 row; `docs/plans/plan-035-roadmap-v7-ground-up.md` §2.4 Phase 3
 (T431's original nominal scope, the five proposed promotion-criteria bullets); `docs/artifacts/
@@ -109,3 +109,18 @@ replaces it — do not silently drop it without a substitute and without flaggin
 ## Execution notes
 
 (To be filled in by the implementing agent during work, if useful — not required.)
+
+## Completion addendum (2026-09-10)
+
+All acceptance criteria met, but not on the first delivered draft without correction — see below.
+Full record in `docs/artifacts/maturity-promotion-criteria-v1.md` and `completed-tasks.md`'s T431
+row. **One real factual error was found during the orchestrator's independent pre-merge review and
+corrected before merging:** the first version claimed "zero existing tests reference any of the 26
+skill ids by name," load-bearing for the `skill` category's design — false, per direct evidence
+(`tests/functional/test_check_version_consistency.py:341` genuinely references `implementation/
+knowledge/skills/release-workflow/SKILL.md`). Corrected by the same implementing agent (continued
+on the same branch) to the real count (1/26, not 0/26), with the `instruction` comparison
+cross-checked for consistency (4/4). The underlying design conclusion was unaffected — only its
+stated grounding was. Implemented on MR !257 (`agent/tech-lead/T431` → `develop`, feat commit
+`cfd89c1`, correction commit `f583230`, squashed commit `62a13f7`, merge commit `8cf217c`); this
+brief itself was dispatched via MR !256 (merge commit `9886a39`).
