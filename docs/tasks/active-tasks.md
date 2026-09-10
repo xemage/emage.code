@@ -2,9 +2,50 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T434 | Wave 2 promotion (remaining agents/commands) to `stable` | tech-lead | in_progress | P1 | T433 (done) | 2026-09-10 |
+| T435 | Wave 3 promotion (skills/instructions) to `stable` | tech-lead | in_progress | P1 | T433 (done) | 2026-09-10 |
 | T456 | Downstream measurement (ship gate) | evaluation-agent | blocked | P0 | T454 (done), T455 (done), T458 (pending) | 2026-09-09 |
 | T457 | Scoped, non-`Bash` execution/read primitive for `@security-engineer` and `@context-retriever` | solution-architect | pending | P1 | None | 2026-09-09 |
 | T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-09 |
+
+> **T434/T435 dispatched 2026-09-10 — re-confirmed from `plan-041`'s own task graph directly, not
+> assumed from last round's claim.** `plan-041`'s per-task table shows both depend only on T433
+> (done) and explicitly states they "can run in parallel... target disjoint component categories...
+> flag this parallelization explicitly in each task's brief so it is not accidentally serialized at
+> dispatch" — text re-read fresh, unchanged since last round, dispatched together accordingly.
+> Briefs at `docs/tasks/task-T434.md`/`task-T435.md`. **Owner tool grant re-checked before dispatch**
+> — `tech-lead`'s real grant (`[read, search, edit, execute, web, mcp__fetch]`) has `execute`.
+> **Real scope computed fresh this session** (`plan-041` had left both as "TBD"/nominal counts):
+> T434 = 23 agents + 17 commands = 40 components (excluding the 5 agents + 2 commands T433 already
+> produced evidence for, most still blocked on real disclosed defects, not re-done here); T435 = 24
+> skills + 4 instructions = 28 components (2 skills already `stable` from T433, confirmed directly
+> against `implementation/registry/index.json`, not assumed from `plan-041`'s original 26-skill
+> count). Both are 3-5x T433's own scope — both briefs explicitly instruct against forcing full
+> completion in one dispatch, mirroring T433's own successful "honest partial delivery, expected
+> re-scoping" resolution, and both proactively carry forward T433's self-referential ledger-defect
+> finding (a promotion task's own open row blocks its own claimed promotions) rather than requiring
+> each implementer to rediscover it. Both briefs flag a known shared-file collision risk
+> (`implementation/registry/*`, `docs/wiki/commands-and-skills-overview.md`) from running in
+> parallel, with instructions to rebase rather than force a conflict through.
+>
+> **A second, distinct variant of T433's self-referential ledger-defect mechanism was found and
+> fixed before dispatch, not merely theorized.** The first drafts of both briefs' own "Real scope"
+> sections named the 3 components T433 already promoted to `stable` (as context — "here's what's
+> already done, don't redo it"), which is a different act from *promoting* them, but the shared
+> defect-check's whole-word text match doesn't distinguish the two: naming an already-`stable`
+> component by id anywhere in any open P0/P1 task's brief regresses that component's own claimed
+> `stable` status, independent of what the task actually does. Caught directly, not assumed:
+> `python3 tests/run.py` was run before dispatch (a discipline this session applies to every ledger
+> edit, not only code changes) and genuinely went red — `test_check_maturity.py`'s and
+> `test_validation_gate.py`'s real-repo baseline tests failed, correctly reporting all 3 previously-
+> `stable` components as newly `FAIL`ing, each naming the correct culprit task (`T434` or `T435`).
+> Fixed by removing the literal identifier mentions from both briefs and pointing to
+> `phase3-wave1-promotion-v1.md` instead; both briefs' own text now explicitly warns the
+> implementer not to reintroduce the same pattern in their own closure artifacts. Re-ran
+> `python3 tests/run.py` clean (499 tests, `OK`, `skipped=24`) before this commit. **Resolved the
+> same principled way as T433's own finding — by not naming things unnecessarily in open task
+> prose, not by weakening `check-maturity.py`'s check itself**, which remains exactly as strict as
+> T431/T432 designed it.
 
 > **T433 closed 2026-09-10 — real evidence-authorship complete and independently verified; 0 of 9
 > candidates flipped to `stable` in this closure, by design, for a structural reason explained
