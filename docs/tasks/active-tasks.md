@@ -2,10 +2,49 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T431 | Promotion criteria per category | tech-lead | in_progress | P1 | T430 (done) | 2026-09-10 |
+| T432 | scripts/check-maturity.py (CI-enforced) | devops-engineer | pending | P1 | T431 (done) | 2026-09-10 |
 | T456 | Downstream measurement (ship gate) | evaluation-agent | blocked | P0 | T454 (done), T455 (done), T458 (pending) | 2026-09-09 |
 | T457 | Scoped, non-`Bash` execution/read primitive for `@security-engineer` and `@context-retriever` | solution-architect | pending | P1 | None | 2026-09-09 |
 | T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-09 |
+
+> **T432 — re-confirmed as the next task in `plan-041`'s sequence 2026-09-10, recorded as `pending`,
+> NOT dispatched this round.** `plan-041`'s per-task table shows T432's only dependency is T431
+> (now done); `owner` `devops-engineer` has `execute` in its real tool grant (checked), no
+> reassignment anticipated. Not dispatched in the same turn as T431's closeout, deliberately — a
+> real factual error was found and corrected in T431's own delivered artifact during independent
+> review (see the T431 closure note below), which is reported to the user as its own checkpoint-
+> worthy event before further cascading dispatch, rather than auto-chaining straight through.
+
+> **T431 closed 2026-09-10** — `docs/artifacts/maturity-promotion-criteria-v1.md` published (MR
+> !257, squash-merged `develop` `8cf217c`; brief MR — see `docs/t430-closeout-t431-dispatch`
+> closure commit `cc12f54`, merged via MR !256), moved to `completed-tasks.md`. Defines concrete,
+> per-category (`agent`/`command`/`instruction`/`skill`), per-transition
+> (`experimental→beta`/`beta→stable`/any→`deprecated`) promotion criteria, resolving `plan-035`'s
+> five proposed `stable`-tier bullets where they didn't transfer cleanly across categories (per
+> `task-T431.md`'s own explicit instruction not to force a uniform rule). **A real factual error
+> was found during the orchestrator's independent, adversarial pre-merge review and corrected
+> before merging, not glossed over:** the artifact's first delivered version claimed "zero existing
+> tests reference any of the 26 skill ids by name," used as load-bearing justification for
+> `skill`'s promotion-criteria design — direct evidence check found this false:
+> `tests/functional/test_check_version_consistency.py:341` genuinely, deliberately references
+> `implementation/knowledge/skills/release-workflow/SKILL.md` by literal path inside a real
+> functional test, not a golden-suite fixture. Sent back to the same implementing agent (continued
+> session, not a fresh dispatch) with the exact evidence; agent re-verified repo-wide across all
+> real test code (`tests/functional/**`, `tests/unit/**`, `tests/performance/**`, `tests/eval/**`,
+> `tests/_helpers/**`, excluding `tests/golden/**`/`tests/fixtures/**` as simulated content) and
+> corrected the claim to the real count (1/26 `release-workflow`, not 0/26), cross-checking
+> `instruction`'s parallel claim for consistency (genuinely 4/4) — the underlying design conclusion
+> ("skill promotion needs a harder bootstrap than instruction") held, now correctly grounded rather
+> than resting on a false premise. **Orchestrator independently re-verified the correction itself**
+> (not accepted on the correction's own self-report either): re-ran the same grep methodology
+> myself for both the `release-workflow` hit and the `instruction` 4/4 cross-check, confirmed both
+> counts match exactly; confirmed no held-out golden case IDs leaked into the artifact (`grep`ped
+> the artifact against all 6 real held-out case IDs from `tests/golden/held-out/`, zero matches);
+> re-ran `tests/functional/test_golden_held_out_isolation.py` directly (8/8 pass); `git diff
+> --name-only` grepped for every protected path — zero hits; `python3 tests/run.py` fresh (478
+> tests, `OK`, `skipped=24`, both before and after the correction, no regressions); real GitLab CI
+> green (5/5) on both the original and corrected commits, independently polled, before merging.
+> T432 (`scripts/check-maturity.py`) is next in `plan-041`'s own task graph — see the note above.
 
 > **T431 dispatched 2026-09-10 — re-confirmed from `plan-041`'s own task graph/per-task table
 > directly, not assumed.** `plan-041`'s per-task summary shows exactly one task depending on T430:
