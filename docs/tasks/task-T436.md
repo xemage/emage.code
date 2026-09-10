@@ -26,14 +26,14 @@ decision calls for any component's `maturity:` field or content to actually chan
 implementation is a small, separate follow-up dispatched to a write-capable agent (the Tech Lead,
 matching Phase 3's established owner), executing this task's decision, not making a new one of its
 own.)
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Depends on:** T434 (done), T435 (done) — both required, per `plan-041`'s own note: "needs both
 waves' actual promotion outcomes first, since 'cannot reach `stable` in three waves' is only
 knowable once T434/T435 both report."
 **Blocks:** T437
 **Created:** 2026-09-10
-**Completed:** —
+**Completed:** 2026-09-10
 **Based on:** `docs/plans/plan-041-phase3-maturity-ladder-detailed-planning.md` (approved, merged
 MR !252) — specifically its T436 row; `docs/plans/plan-035-roadmap-v7-ground-up.md` §2.4 Phase 3
 (T436's original nominal scope: "Demote honestly: anything that cannot reach `stable` in three
@@ -132,3 +132,14 @@ evidence to decide, here's what's missing" is a valid, honest partial answer for
 ## Execution notes
 
 (To be filled in — not required for this dispatch shape.)
+
+## Completion addendum (2026-09-10)
+
+Decision: nothing among the 46 non-`stable` components currently warrants `deprecated` — every
+category's gap is a live, trackable, fixable item, not a genuine dead end. Full itemized reasoning
+in `docs/artifacts/phase3-maturity-demotion-decision-v1.md` and `completed-tasks.md`'s T436 row.
+First dispatch attempt correctly refused to fabricate a decision when its assumed `git show`
+fetch mechanism failed (no execute tool); redispatched with the real evidence embedded directly,
+which worked cleanly. Implemented via MR !272 (dispatch, merge commit `1e0c028`); this closure
+commit adds the decision artifact directly (no separate implementation MR, since the deliverable
+is a decision record, not code).

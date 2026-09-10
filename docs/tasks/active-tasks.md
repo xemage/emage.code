@@ -2,10 +2,33 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T436 | Honest demotion pass | product-owner | in_progress | P1 | T434 (done), T435 (done) | 2026-09-10 |
 | T456 | Downstream measurement (ship gate) | evaluation-agent | blocked | P0 | T454 (done), T455 (done), T458 (pending) | 2026-09-09 |
 | T457 | Scoped, non-`Bash` execution/read primitive for `@security-engineer` and `@context-retriever` | solution-architect | pending | P1 | None | 2026-09-09 |
 | T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-09 |
+
+> **T436 closed 2026-09-10 — real, evidence-grounded decision: nothing currently warrants
+> `deprecated`.** `docs/artifacts/phase3-maturity-demotion-decision-v1.md` (this task's real
+> deliverable — a decision, not code) records the Product Owner's itemized, per-category judgment
+> across all five categories of non-`stable` component (14 commands blocked on a golden-case gap;
+> 3 commands blocked on tracked golden-suite defects; 4 agents blocked on `T456`/`T457`; 4 skills
+> with real, disclosed content defects; 14 genuinely unsurveyed skills) — every category concluded
+> "leave `experimental`, no deprecation," each with specific, cited reasoning, not a blanket
+> rubber-stamp. **A real dispatch-mechanics finding, not a content problem:** the first dispatch
+> attempt failed cleanly — the Product Owner has no `execute`/`edit` tool at all (confirmed
+> deliberate per `security-guidelines.md`'s Agent Permission Classification, not a gap), so it
+> could not run the `git show origin/develop:<path>` commands its brief initially assumed it could;
+> it correctly refused to fabricate a decision rather than guess at unseen evidence. Redispatched
+> with the real, current artifact content embedded directly in the prompt (verified fresh
+> beforehand) instead of asking it to fetch anything itself — this worked cleanly. **Orchestrator
+> independent verification before committing the decision as an artifact** (not accepted on the
+> Product Owner's self-report alone): independently grepped `AGENTS.md` for the decision's two
+> specific factual citations (Blocker Protocol severities; the real `active-tasks.md` column
+> schema) — both confirmed exact matches; confirmed the decision explicitly named and then rejected
+> its own strongest deprecation candidate (`worktree-isolation`) for a specific, evidence-grounded
+> reason rather than uniformly waving every component through. **No file changes result from this
+> decision — no follow-up technical dispatch is required.** `python3 tests/run.py` fresh (514
+> tests, `OK`, `skipped=24`, unchanged, as expected for a decision-only artifact); real GitLab CI
+> green (5/5) before merging.
 
 > **T436 dispatched 2026-09-10 — re-confirmed from `plan-041`'s own task graph and both plans'
 > literal T436 rows directly, not assumed.** Owner `product-owner`, unchanged from `plan-035`'s
