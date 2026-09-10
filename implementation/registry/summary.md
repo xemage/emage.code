@@ -30,7 +30,7 @@ Generated from: implementation/knowledge
 | poc-security-engineer | agent | experimental | agents/poc-security-engineer.md |
 | poc-technical-writer | agent | experimental | agents/poc-technical-writer.md |
 | product-owner | agent | experimental | agents/product-owner.md |
-| qa-engineer | agent | experimental | agents/qa-engineer.md |
+| qa-engineer | agent | stable | agents/qa-engineer.md |
 | release-manager | agent | experimental | agents/release-manager.md |
 | scaffolding-agent | agent | experimental | agents/scaffolding-agent.md |
 | scrum-master | agent | experimental | agents/scrum-master.md |
@@ -68,7 +68,7 @@ Generated from: implementation/knowledge
 | blocker-escalation | skill | experimental | skills/blocker-escalation/SKILL.md |
 | checkpoint-protocol | skill | experimental | skills/checkpoint-protocol/SKILL.md |
 | ci-cd-pipeline | skill | experimental | skills/ci-cd-pipeline/SKILL.md |
-| code-review | skill | experimental | skills/code-review/SKILL.md |
+| code-review | skill | stable | skills/code-review/SKILL.md |
 | context-window-management | skill | experimental | skills/context-window-management/SKILL.md |
 | cost-token-governance | skill | experimental | skills/cost-token-governance/SKILL.md |
 | cwso-awareness | skill | experimental | skills/cwso-awareness/SKILL.md |
@@ -87,7 +87,7 @@ Generated from: implementation/knowledge
 | technical-debt-tracking | skill | experimental | skills/technical-debt-tracking/SKILL.md |
 | technology-scouting | skill | experimental | skills/technology-scouting/SKILL.md |
 | testing-strategy | skill | experimental | skills/testing-strategy/SKILL.md |
-| validation-gates | skill | experimental | skills/validation-gates/SKILL.md |
+| validation-gates | skill | stable | skills/validation-gates/SKILL.md |
 | verification-before-completion | skill | experimental | skills/verification-before-completion/SKILL.md |
 | worktree-isolation | skill | experimental | skills/worktree-isolation/SKILL.md |
 

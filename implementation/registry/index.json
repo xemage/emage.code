@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-09-10T14:48:26+00:00",
+  "generatedAt": "2026-09-10T15:16:08+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -493,8 +493,8 @@
       "category": "agent",
       "name": "QA Engineer",
       "path": "agents/qa-engineer.md",
-      "checksum": "0a56c6335b401afc74f71669586e56940ea364ec7c209c907bf780ab4b6dfb08",
-      "maturity": "experimental",
+      "checksum": "78d986fda7e71b670f2dc7b529562a006be4ea29afbfc93d7ceeebc6c8e47945",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1557,8 +1557,8 @@
       "category": "skill",
       "name": "code-review",
       "path": "skills/code-review/SKILL.md",
-      "checksum": "5eb2c68824d78b3c2d6c46c5d783346ffd6eb71c921f1b1b01dc24c429dd605b",
-      "maturity": "experimental",
+      "checksum": "a608def62ef6747ebc3d5d3b0a3b03ca20dd7869e2740bd464b141853865a4a7",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -2089,8 +2089,8 @@
       "category": "skill",
       "name": "validation-gates",
       "path": "skills/validation-gates/SKILL.md",
-      "checksum": "6e0b6ec61fe237d138fd73be875ef68bd880caa4c2973df6dd7d824081b4f2d6",
-      "maturity": "experimental",
+      "checksum": "cecf78f2e8e6d3b0eecd1a924bdc2fdd61dfc834f19e4a8b6921cc40a867839f",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
