@@ -2,9 +2,42 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T433 | Wave 1 promotion (8 highest-traffic components) to `stable` | tech-lead | in_progress | P0 | T432 (done) | 2026-09-10 |
 | T456 | Downstream measurement (ship gate) | evaluation-agent | blocked | P0 | T454 (done), T455 (done), T458 (pending) | 2026-09-09 |
 | T457 | Scoped, non-`Bash` execution/read primitive for `@security-engineer` and `@context-retriever` | solution-architect | pending | P1 | None | 2026-09-09 |
 | T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-09 |
+
+> **ADR-006 accepted 2026-09-10 — resolves Gate G2's "routing target classes" ambiguity
+> (`plan-041` Finding 1) on the infrastructure-precondition reading.** Three textually-defensible
+> readings were found on re-analysis (deepened beyond `plan-041`'s original two): (a) automatic/
+> inclusive — G2 closes on Wave 1 completion alone; (b) selective/forward-looking — T433 must name
+> a routing-candidate subset ahead of Phase 4's own tier schema; (c) precondition-only — G2's
+> gate-table text is a general principle, satisfied once real infrastructure (T430-T432 + genuine
+> `stable` promotions) demonstrates the "stable brief with rails and tests" precondition is
+> achievable, with actual routing-class identification deferred entirely to Phase 4's own planning
+> pass once its tier schema (T440) exists. **None had a textual tiebreaker within `plan-035`
+> itself — presented to the user as a genuine decision point, not picked unilaterally, matching
+> this project's standing practice for decisions of comparable weight** (`ADR-004`'s Inconclusive-
+> classification decision, `ADR-005`'s cost-gate decision, T456's four-option blocker
+> presentation). **User approved reading (c).** Full record, including the rejected alternatives
+> and reasoning, in `docs/decisions/ADR-006-gate-g2-routing-target-classes-interpretation.md`.
+
+> **T433 dispatched 2026-09-10 — re-confirmed from `plan-041`'s own task graph directly, not
+> assumed.** T433's only dependency is T432 (done). Brief at `docs/tasks/task-T433.md`, grounded in
+> `docs/artifacts/maturity-promotion-criteria-v1.md`'s real per-category `beta→stable` criteria
+> (not re-derived) and `ADR-006`'s disposition (no routing-target-class identification required or
+> permitted in this task). **Owner tool grant checked before dispatch** (sixth confirmed check this
+> phase) — `tech-lead`'s real grant (`[read, search, edit, execute, web, mcp__fetch]`) has
+> `execute`; no reassignment needed, second Phase 3 task not to hit the recurring gap. Per
+> `plan-041`'s own explicit flag, this is Phase 3's largest single task and the one most likely to
+> need T407/T417-T419/T458-style mid-task re-scoping — the brief states this expectation plainly
+> rather than assuming a single dispatch suffices. A real identifier ambiguity not previously
+> flagged by `plan-041` was found and carried into the brief rather than silently resolved: `code-
+> review` exists as both a `skill` id and a `command` id with no textual basis in `plan-035` to
+> prefer one — the implementer must resolve and disclose this, not pick silently.
+
+> **T433's previous "not recorded/dispatched" note (below) is superseded by the above — kept for
+> the historical record, not because the situation it describes still holds.**
 
 > **T433 — re-confirmed as the next task in `plan-041`'s sequence 2026-09-10, NOT recorded/dispatched
 > this round.** `plan-041`'s per-task table shows T433's only dependency is T432 (now done). Unlike
