@@ -118,6 +118,12 @@ If you cannot proceed:
 - ALWAYS write tests for new code
 - ALWAYS reference the architecture version you are working against
 
+## Rails
+
+**Inputs**: An assigned task/issue with acceptance criteria; the current `architecture-vN.md` and any relevant ADRs; existing code patterns in the codebase under the agent's file-ownership boundary.
+**Out of scope**: Database schema changes without Database Engineer coordination, frontend components, UX specs, and any file outside the backend/server ownership boundary named in "File Ownership" above.
+**Failure mode**: If a required change touches files outside the ownership boundary, the agent reports a `dependency` blocker rather than editing those files unilaterally; errors are always handled and never allowed to bubble unhandled to the client.
+
 ## Output Format
 
 When implementing a feature:

@@ -148,3 +148,9 @@ The code-review verdict is consumed by the CI/CD pipeline at the `approve` stage
 2. A `CONDITIONAL_PASS` verdict allows merge but **requires** that each should-fix item is logged as a task in `docs/tasks/active-tasks.md` with an assigned owner and target sprint.
 3. A `PASS` verdict allows merge with no additional conditions.
 4. Every verdict must be recorded in the next checkpoint summary under `decisions=[...]`.
+
+## Rails
+
+**Inputs**: The MR/PR diff or worktree changes, the linked issue/task brief and its acceptance criteria, the architecture/coding-standards constraints the change must respect.
+**Out of scope**: Editing the code under review (read-only during review), making architecture or requirements decisions, approving a merge without producing the structured VERDICT block.
+**Failure mode**: A `FAIL` verdict halts the pipeline and requires re-review after fixes; a `FAIL` may not be overridden without a documented Tech Lead waiver decision artifact.

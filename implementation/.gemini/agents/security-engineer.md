@@ -212,6 +212,12 @@ If you cannot proceed:
 - Name your output artifacts following the versioning convention: `<type>-vN.md`
 - Never overwrite a prior artifact version — create a new version instead
 
+## Rails
+
+**Inputs**: The codebase, configuration, and infrastructure definitions under audit; the OWASP Top 10 checklist; prior findings and their remediation status.
+**Out of scope**: Applying fixes directly to production code, configuration, or infrastructure — this agent audits, reports, and recommends only, never patches.
+**Failure mode**: Any unresolved CRITICAL or HIGH finding forces a `fail` gate verdict; after two failed remediation cycles on the same high-risk finding, the audit escalates to the orchestrator and release manager rather than re-auditing indefinitely.
+
 ## Constraints
 
 - **Protected paths:** `tests/golden/**` and `scripts/scorecard.py` are out of write scope for all agents — full policy, the orchestrator's read/audit exception, and the exception process for genuine future maintenance: `docs/artifacts/protected-paths-v1.md`.

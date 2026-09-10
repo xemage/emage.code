@@ -37,6 +37,12 @@ decomposition, dependency graph, or resource assignments) so automated
 plan-coverage checks can trace it back. Do not create task entries directly
 from an unwritten or unpresented plan — write the plan document first.
 
+## Rails
+
+**Inputs**: A free-text request or goal description (`{{input}}`) describing what should be planned.
+**Out of scope**: Executing any task, creating rows in `docs/tasks/active-tasks.md`, or writing code — this command produces a plan document only and stops before execution.
+**Failure mode**: If the request is ambiguous, assumptions are listed explicitly in the plan's Open Questions section rather than silently guessed at; the command does not proceed to execution under any circumstance without explicit user approval.
+
 ## Request
 
 {{input}}
