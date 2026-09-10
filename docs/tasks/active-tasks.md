@@ -2,10 +2,57 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T433 | Wave 1 promotion (8 highest-traffic components) to `stable` | tech-lead | in_progress | P0 | T432 (done) | 2026-09-10 |
 | T456 | Downstream measurement (ship gate) | evaluation-agent | blocked | P0 | T454 (done), T455 (done), T458 (pending) | 2026-09-09 |
 | T457 | Scoped, non-`Bash` execution/read primitive for `@security-engineer` and `@context-retriever` | solution-architect | pending | P1 | None | 2026-09-09 |
 | T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-09 |
+
+> **T433 closed 2026-09-10 — real evidence-authorship complete and independently verified; 0 of 9
+> candidates flipped to `stable` in this closure, by design, for a structural reason explained
+> below, not a shortfall.** `docs/artifacts/phase3-wave1-promotion-v1.md` (MR !262, squash-merged
+> `develop` `0766c58`) documents, per component, genuine `## Rails` content, real evidence (existing
+> golden-case ownership, `completed-tasks.md` MR references, or two newly-authored substantive
+> functional tests — `tests/functional/test_validation_gates_skill_contract.py`/
+> `test_code_review_skill_contract.py`, real cross-consistency assertions, not placeholders),
+> cross-references, and `docs/wiki/commands-and-skills-overview.md` (new) for real documentation.
+> **`code-review` identifier ambiguity (flagged in the brief, not previously flagged by `plan-041`)
+> resolved and disclosed**: both the `skill` id and the `command` id of that exact name were treated
+> as in scope (9 candidates from 8 named components), reasoned as the more conservative reading.
+>
+> **A genuine structural finding, independently reproduced by the orchestrator, not accepted on the
+> implementer's self-report:** `maturity-promotion-criteria-v1.md` §3.5's shared defect-check flags
+> any open P0/P1 ledger row that mentions a component's id anywhere in its brief — with no
+> distinction between "this task reports a defect in `<id>`" and "this task's own subject is
+> `<id>`." `task-T433.md` necessarily names all 9 candidates as its own subject matter, so **no
+> commit could make any of the 9 pass `check-maturity.py` while T433's own row remained open** —
+> verified directly by the orchestrator (`sed`-flipping `qa-engineer` to `stable` against the real,
+> unmodified repo state and re-running `check-maturity.py --verbose`: `FAIL ... open P0 task T433
+> names it in its brief`, exactly as claimed, then reverted). **Independently simulated the
+> implementer's own claimed resolution** (uncommitted, reverted after each check): with T433's row
+> removed from `active-tasks.md` and all 9 flipped to `stable`, exactly 3 (`qa-engineer`,
+> `validation-gates` skill, `code-review` skill) pass cleanly; the other 6 fail on **real,
+> independent, pre-existing defects** unrelated to T433 — confirmed directly, not estimated: golden
+> `known_failing`/`tracked_defect` cases for `/plan`, `/code-review` (held-out, case ID
+> deliberately not quoted, per `test_golden_held_out_isolation.py`'s own guard), and
+> `/security-audit`; open `T457` (security-engineer tool-scoping gap, a real, already-disclosed
+> defect, not a false positive); and one genuine false positive caught by the implementer's own
+> review (`backend-developer`'s `T457` mention is a forward-looking possible-assignee note, not a
+> defect report — does not resolve on its own). `git diff --name-only` grepped for every protected
+> path on the evidence-authorship MR — zero hits; `python3 tests/run.py` fresh (499 tests, `OK`,
+> `skipped=24`, matching the implementer's claim); `sync.mjs --check` no drift (563 files); the two
+> new test files run standalone (5/5 pass); real GitLab CI green (5/5) before merging.
+>
+> **This closure breaks the structural cycle deliberately** — `T433` archives now (a necessary,
+> orchestrator-only action per this repo's own "Archival is orchestrator-only" invariant) so that
+> the 3 genuinely evidence-complete components can actually be verified `PASS` in an immediate
+> follow-up, which the implementer's own artifact §4 anticipated and is consumed directly (see next
+> note). The other 6 components' real defects are **not** resolved by this closure — recorded as
+> follow-up candidates, not opened as new tasks this round: (a) `commands/plan.md` header-format
+> drift vs. real historical plan docs (tracked defect `plan-real-doc-header-drift`); (b)
+> `commands/code-review.md` verdict-format drift vs. real historical review docs (held-out tracked
+> defect, case ID withheld); (c) `T457`'s own resolution (security-engineer tool-scoping,
+> already tracked); (d) `security-audit-critical-not-fail`'s OWASP compensating-control handling (a
+> fourth real defect, not previously named in any open task, surfaced only once Blocker 1 was
+> simulated away). None dispatched this round — flagged for prioritization, not silently dropped.
 
 > **ADR-006 accepted 2026-09-10 — resolves Gate G2's "routing target classes" ambiguity
 > (`plan-041` Finding 1) on the infrastructure-precondition reading.** Three textually-defensible
