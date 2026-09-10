@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-09-10T16:35:01+00:00",
+  "generatedAt": "2026-09-10T19:05:28+02:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -297,7 +297,7 @@
       "category": "agent",
       "name": "Orchestrator",
       "path": "agents/orchestrator.md",
-      "checksum": "488f8144e86c11022771726812ba1105ff53c3d530107a55b9282b0ff9a75ae4",
+      "checksum": "8fcdd14123583d02965850dd7e150ded2270bdb0a8b149deb33bacbd71345dfc",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -353,7 +353,7 @@
       "category": "agent",
       "name": "PoC Orchestrator",
       "path": "agents/poc-orchestrator.md",
-      "checksum": "1708e4ec90a1e04acec956253294e9f90e2324aa90263bf943092be7707b8958",
+      "checksum": "4ee7fe609fc6443e7e0063d200304b746de5aa776c30b9c43bd717347d2cf9b1",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -521,7 +521,7 @@
       "category": "agent",
       "name": "Release Manager",
       "path": "agents/release-manager.md",
-      "checksum": "a3c825707d43b05cf659ac9613e2ef036747d8e195fe95fbf35b42884001d0bb",
+      "checksum": "f61daeed5206fb2f9a2c6e57f240f9e283f2bec45530f3d1d72c6bf899833c73",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1333,7 +1333,7 @@
       "category": "instruction",
       "name": "coding-standards",
       "path": "instructions/coding-standards.md",
-      "checksum": "275296e6ed927f4a0e584c54c081ce32be5273dfe49746f715830cce4acc22b6",
+      "checksum": "75945371cdbf038932bbb249620ca6f159c2709cf4a1aa2bb9269f055901af73",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1361,7 +1361,7 @@
       "category": "instruction",
       "name": "git-workflow",
       "path": "instructions/git-workflow.md",
-      "checksum": "0638762a21848837f4f574b302dfc9e1b2050ab69566747a9a12c8f293c438b4",
+      "checksum": "8ce18bbcfa5a1a190a709885cc7dbb2550cdbffc116fbe3e0d38202a92a4b005",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1389,7 +1389,7 @@
       "category": "instruction",
       "name": "poc-guidelines",
       "path": "instructions/poc-guidelines.md",
-      "checksum": "f40880ce5a2b9d81d57ddc52f8bd06c7098f82bea14c0c7e17400b42f8fecf81",
+      "checksum": "478a1a716f21143f9b1f291e7d63a235f927050b50960b00b40d9eb12b371542",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1417,7 +1417,7 @@
       "category": "instruction",
       "name": "security-guidelines",
       "path": "instructions/security-guidelines.md",
-      "checksum": "9f8452f74d1d402d05ac813a5944e2a6cf448a36a313ea988340ece7947c43c2",
+      "checksum": "f7a3942ed388d2b80cf6c64cacf2cf7c446570cf0fe0a7f18f7a0797d3148f2a",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1501,7 +1501,7 @@
       "category": "skill",
       "name": "checkpoint-protocol",
       "path": "skills/checkpoint-protocol/SKILL.md",
-      "checksum": "d5254ca903395f64a58801e29dd185384e42f38afc98799ed24eb41181eff153",
+      "checksum": "a5cd218724e7de84eb832b841a770bd24cf89287ca02b47ac086055fe82e022c",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1865,7 +1865,7 @@
       "category": "skill",
       "name": "receiving-code-review",
       "path": "skills/receiving-code-review/SKILL.md",
-      "checksum": "12a50fe237281dbd7d267a63781529fadfeabb7e6a4818ce5bf9e928c2a5de2e",
+      "checksum": "1f0b8589de13311bdcb26cc7ce5c836768e24454e5c7401a66fb00e10be56b32",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1949,7 +1949,7 @@
       "category": "skill",
       "name": "systematic-debugging",
       "path": "skills/systematic-debugging/SKILL.md",
-      "checksum": "8c4cbf199ea95e80eb22244c8a6feb9060b55c5493abee81d9a4933870ae72f5",
+      "checksum": "2b13c87c3cd00e9c690e24b856889fa7baa964b8223a52317d0974f7d7ec00af",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1977,7 +1977,7 @@
       "category": "skill",
       "name": "task-management",
       "path": "skills/task-management/SKILL.md",
-      "checksum": "31eff8645ed0604d0947e01cb48ef7351a10b8c260bdd8631f0736721ab37a6d",
+      "checksum": "38b12a819c2bc5b4da345dd0e948fee86675321cf4ce260c8858f04eae2af692",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -2061,7 +2061,7 @@
       "category": "skill",
       "name": "testing-strategy",
       "path": "skills/testing-strategy/SKILL.md",
-      "checksum": "00792dc2cf220c42aee718db0e71d46fbe0c258b525e93da410a1eccb12628e8",
+      "checksum": "b41eb6f15ee4428f7dbfc77258f9646a08bc6edcb8df9c62ee855abd33452c1a",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -2117,7 +2117,7 @@
       "category": "skill",
       "name": "verification-before-completion",
       "path": "skills/verification-before-completion/SKILL.md",
-      "checksum": "fc542cba5c6f09add2aa260f6b82baf972b67208b98e4e03ca63e25fb7c0e9cd",
+      "checksum": "3ed7003e4ab5718a51bf7d38bd261657cc068bef0697db0e14b980aa1a7a9a61",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [

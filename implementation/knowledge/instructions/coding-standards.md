@@ -6,6 +6,26 @@ maturity: experimental
 
 # Coding Standards
 
+## Rails
+**Inputs**: Triggers on any code file matching this instruction's `applyTo` glob
+(`**/*.{ts,js,py,java,cs,go,rs,rb,php,swift,kt}`); also invoked explicitly by
+`tech-lead.md`'s Code Standards responsibilities and by `AGENTS.md`'s "Code
+Standards" routing table when establishing or reviewing project conventions.
+
+**Out of scope**: Does not mandate a specific linter/formatter or CI enforcement
+mechanism — the Tech Lead configures project-specific tooling (Prettier, Black,
+`.editorconfig`, etc.) separately, per `tech-lead.md`'s "Code Standards"
+responsibilities. Does not cover language-specific idioms beyond the naming,
+function-design, error-handling, security, organization, and artifact-versioning
+rules stated below.
+
+**Failure mode**: Violations surface during code review as Must Fix/Should Fix
+items in the `code-review` skill's checklist; they do not automatically block a
+merge unless the Tech Lead's VERDICT marks them Critical. Artifact-versioning
+violations specifically (overwriting a prior `<type>-vN.md` file instead of
+creating a new version) are treated as a process defect requiring the offending
+change to be redone as a new version, not silently patched in place.
+
 ## Naming
 - **Variables/functions**: camelCase (JS/TS), snake_case (Python), PascalCase (C#)
 - **Classes/types**: PascalCase in all languages

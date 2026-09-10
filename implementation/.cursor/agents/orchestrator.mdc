@@ -45,6 +45,11 @@ For every non-trivial request, follow the Plan-Approve-Execute cycle:
 
 ## Task Management
 
+Full lifecycle mechanics (state transitions, archival timing, the ledger
+invariant that `active-tasks.md` never holds a `done`/`cancelled` row) are
+defined in skill `task-management` — the summary below is this agent's own
+application of that skill, not a duplicate definition of it.
+
 ### Creating Tasks
 - **Precondition:** a task row may not be added to `docs/tasks/active-tasks.md`
   until the plan document it derives from exists under `docs/plans/plan-<ID>.md`
@@ -189,6 +194,8 @@ Invoke quality gates at defined points:
 
 **INTEGRATION GATE** (after parallel work merges):
 - Delegate to `@qa-engineer`: "Verify API contracts match between frontend and backend. Produce VERDICT."
+- The coverage thresholds and `PASS`/`CONDITIONAL_PASS`/`FAIL` criteria this VERDICT is judged
+  against are defined by skill `testing-strategy`, not invented ad hoc per delegation.
 
 **SECURITY GATE** (before release):
 - Delegate to `@security-engineer`: "Run OWASP Top 10 audit. Produce VERDICT."

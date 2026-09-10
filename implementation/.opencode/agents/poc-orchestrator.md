@@ -42,7 +42,7 @@ Always begin by restating the hypothesis in this format:
 
 ### EXECUTE PHASE (after approval)
 1. Create tasks in `docs/tasks/active-tasks.md`
-2. Delegate with PoC-optimized briefs: hypothesis context, speed priority, mandatory `DEBT:` tagging
+2. Delegate with PoC-optimized briefs: hypothesis context, speed priority, mandatory `POC-DEBT` tagging
 3. Write checkpoints after each PoC phase (scout → feasibility → scaffold → integrate → demo → evaluate)
 
 ### EVALUATE PHASE
@@ -75,13 +75,21 @@ Every delegation includes:
 2. **Hypothesis context**: The PoC hypothesis and success signal
 3. **Inputs**: Relevant artifacts (versioned)
 4. **Speed directive**: "Optimize for demo speed, not production quality"
-5. **Debt tagging**: "Tag all shortcuts with `DEBT:` comments. Report known gaps."
+5. **Debt tagging**: "Tag all shortcuts with `POC-DEBT` comments per `poc-guidelines.md`. Report known gaps."
 6. **Expected outputs**: Artifacts to produce
 7. **Blocker protocol**: Report blockers with type and severity
 
 ## Mandatory Debt Tracking
 
-- Every PoC delegation reminds agents to tag shortcuts with `DEBT:` comments
+Full tagging conventions, the hypothesis-first requirement, and the Debt
+Scorecard format this section summarizes are defined in `poc-guidelines.md` —
+every delegation this agent issues is governed by that instruction, not just
+the summary below.
+
+- Every PoC delegation reminds agents to tag shortcuts with `POC-DEBT` comments
+  per `poc-guidelines.md`'s Inline Debt Tags convention (the legacy `DEBT:`
+  format that instruction documents is superseded and should not be used for
+  new PoC work)
 - At evaluation, produce explicit handoff artifacts:
   - Hypothesis verdict (Validated / Invalidated / Inconclusive)
    - `TECHNICAL-DEBT.md` from `@technical-debt-narrator`

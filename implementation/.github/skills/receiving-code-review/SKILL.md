@@ -5,6 +5,23 @@ description: "Respond to code review feedback with technical rigor. Use before i
 
 # Receiving Code Review
 
+## Rails
+**Inputs**: MR/PR review comments, `tech-lead`/`security-engineer` findings,
+or an orchestrator review-gate condition — any structured feedback an agent
+must act on before implementing suggested changes.
+
+**Out of scope**: Does not define the review format or VERDICT vocabulary
+itself (see skill `code-review` for the checklist a reviewer produces this
+skill's input from) — this skill governs the *implementer's* response, not
+the *reviewer's* output. Does not authorize silently skipping any item,
+regardless of perceived priority.
+
+**Failure mode**: Implementing a suggestion without the READ/UNDERSTAND/
+VERIFY/EVALUATE sequence, or marking a review thread resolved without
+verification evidence, is a Forbidden Pattern per this skill's own list. An
+unclear item must stop implementation and request clarification rather than
+proceed on a partial or guessed understanding.
+
 ## Purpose
 
 Turn review feedback into correct changes — not performative agreement or blind edits.
