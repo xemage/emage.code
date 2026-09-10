@@ -8,14 +8,14 @@ this task requires running `implementation/scripts/generate-registry.py` and the
 verify ~84 file edits, which needs Bash. Matches this repo's own established disposition
 (T415/T418/T421/T455 precedent: reassign the owner, leave the nominal agent's tool grant
 unchanged, do not widen it) — checked before dispatch, not discovered mid-task.)
-**Status:** pending
+**Status:** done
 **Priority:** P1 (first task in Phase 3's approved sequence; T431-T437 depend on it directly or
 transitively)
 **Depends on:** Phase 3 start condition (Gate G1 + Phase 2, both closed — see `plan-041`'s
 "Re-confirmed state")
 **Blocks:** T431
 **Created:** 2026-09-09
-**Completed:** —
+**Completed:** 2026-09-10
 **Based on:** `docs/plans/plan-041-phase3-maturity-ladder-detailed-planning.md` (approved, merged
 MR !252) — specifically its Finding 2 and the T430 row of its per-task summary table;
 `docs/plans/plan-035-roadmap-v7-ground-up.md` §2.4 Phase 3 (T430's original nominal scope);
@@ -142,3 +142,14 @@ recording the alternative you rejected and why.
 ## Execution notes
 
 (To be filled in by the implementing agent during work, if useful — not required.)
+
+## Completion addendum (2026-09-10)
+
+All acceptance criteria met. Full delivery record, including the three delegated decisions and
+their reasoning, is in `docs/artifacts/maturity-levels-v1.md`; the orchestrator's independent
+adversarial re-verification (diff scope, the pre-existing `FRONTMATTER_RE` regex bug read directly,
+fresh `python3 tests/run.py`/`generate-registry.py --check`/`sync.mjs --check`/`check.py` gate, CI)
+is recorded in `docs/checkpoints/checkpoint-028-phase3-t430-delivered.md` and `completed-tasks.md`'s
+T430 row. Implemented on MR !254 (`agent/backend-developer/T430` → `develop`, merge commit
+`e371ec8`); this brief itself was dispatched via MR !253 (merge commit `4edba90`). See
+`completed-tasks.md` for the complete closure record.

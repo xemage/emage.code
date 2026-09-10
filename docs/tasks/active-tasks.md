@@ -2,10 +2,39 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T430 | Maturity levels in implementation/registry/schema.json | backend-developer | in_progress | P1 | None | 2026-09-09 |
+| T431 | Promotion criteria per category | tech-lead | in_progress | P1 | T430 (done) | 2026-09-10 |
 | T456 | Downstream measurement (ship gate) | evaluation-agent | blocked | P0 | T454 (done), T455 (done), T458 (pending) | 2026-09-09 |
 | T457 | Scoped, non-`Bash` execution/read primitive for `@security-engineer` and `@context-retriever` | solution-architect | pending | P1 | None | 2026-09-09 |
 | T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-09 |
+
+> **T431 dispatched 2026-09-10 — re-confirmed from `plan-041`'s own task graph/per-task table
+> directly, not assumed.** `plan-041`'s per-task summary shows exactly one task depending on T430:
+> T431 (`T430 → T431` is T431's only listed dependency; T432 depends on `T431`, not `T430`, so it
+> remains blocked and is **not** dispatched alongside T431 despite being an "obvious next pair" at
+> a glance). Brief at `docs/tasks/task-T431.md`. **Owner tool grant checked before dispatch**
+> (fifth confirmed check this phase, following the T430/T410/T420/T451 pattern) — `tech-lead`'s
+> real grant (`implementation/knowledge/agents/tech-lead.md`: `[read, search, edit, execute, web,
+> mcp__fetch]`) has `execute`; **no reassignment needed this time**, first Phase 3 task so far that
+> doesn't hit the gap. Cites `docs/artifacts/maturity-levels-v1.md` (T430's design artifact) for
+> the final enum names (`experimental/beta/stable/deprecated`) and the mandatory-field policy,
+> rather than re-deriving them.
+
+> **T430 closed 2026-09-10** — `implementation/registry/schema.json` (enum reconciled),
+> `implementation/scripts/generate-registry.py` (mandatory-field enforcement + a genuine
+> pre-existing `FRONTMATTER_RE` regex fix), `implementation/knowledge/schemas/{agent,command,
+> instruction,skill}.schema.json` + `tests/functional/test_schemas.py` (companion fixes for the
+> new mandatory field), 77 `implementation/knowledge/**` component files (`+maturity: experimental`
+> baseline), `implementation/registry/{index.json,summary.md}` (regenerated), `docs/artifacts/
+> maturity-levels-v1.md` (design artifact) published (MR !254, squash-merged `develop`
+> `a765a23`/`e371ec8`; brief MR !253, `4edba90`; checkpoint MR !255, `09cc132`), moved to
+> `completed-tasks.md`. Full independent-verification record (diff scope, regex-bug fix read
+> directly, fresh `tests/run.py`/`generate-registry.py --check`/`sync.mjs --check`/`check.py`
+> gate, CI) in `docs/checkpoints/checkpoint-028-phase3-t430-delivered.md` — re-confirmed again this
+> session on fresh `origin/develop` before dispatching T431: `python3 docs/tasks/
+> validate-tasks.py` PASS; `python3 tests/run.py` fresh (478 tests, OK, skipped=24, matching both
+> the implementer's and the coordinator's claims independently); `implementation/knowledge/agents/
+> orchestrator.md` and `implementation/registry/summary.md` spot-checked directly for the real
+> `maturity: experimental` value (77/77), not an inflated or defaulted one.
 
 > **T430 dispatched 2026-09-09 — Phase 3 (`plan-041`, approved/merged MR !252) begins.** Brief at
 > `docs/tasks/task-T430.md`. **Reassigned from `plan-041`/`plan-035`'s nominal `solution-architect`
