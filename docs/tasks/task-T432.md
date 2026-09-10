@@ -6,17 +6,14 @@ CI/tooling scripts going to `devops-engineer`, T413/T419/T422; tool grant checke
 — `implementation/knowledge/agents/devops-engineer.md`'s registered grant is `[read, search, edit,
 execute, web, mcp__gitlab, mcp__fetch]`, has `execute` — re-confirm this is still accurate at
 actual dispatch time, do not assume it stays true indefinitely)
-**Status:** pending — recorded and scoped, **not dispatched this session** (T431, its only
-dependency, is done; recorded now to satisfy this repo's own "no ledger row without a backing
-brief" precondition, mirroring the `T457`/`T458` precedent of a full brief existing before
-dispatch)
+**Status:** done
 **Priority:** P1 (blocks T433, which needs a real, working `check-maturity.py` before Wave 1
 promotion claims can be mechanically verified — though `T433` also needs its own separate
 attention per `plan-041`'s own flag that it is Phase 3's largest single task)
 **Depends on:** T431 (done — `docs/artifacts/maturity-promotion-criteria-v1.md`)
 **Blocks:** T433
 **Created:** 2026-09-10
-**Completed:** —
+**Completed:** 2026-09-10
 **Based on:** `docs/plans/plan-041-phase3-maturity-ladder-detailed-planning.md` (approved, merged
 MR !252) — specifically its T432 row; `docs/plans/plan-035-roadmap-v7-ground-up.md` §2.4 Phase 3
 (T432's original nominal scope: "mechanically verify a claimed level; CI-enforced. A component may
@@ -150,3 +147,19 @@ Implemented by devops-engineer on branch `agent/devops-engineer/T432`, worktree
   brief names `devops-engineer` as Owner). Adding a well-formed `## Rails` section then reduced the
   failures to exactly the remaining two, as expected. `git status --short` confirmed a clean revert
   before committing real work.
+
+## Completion addendum (2026-09-10)
+
+All acceptance criteria met, but not on the first delivered draft without correction — see below.
+Full record in `completed-tasks.md`'s T432 row. **A real gaming vulnerability was found during the
+orchestrator's own independent adversarial review (not the implementer's own example) and corrected
+before merging:** `_documented_in_wiki()`'s raw ≥40-character check accepted a padded/repeated-
+character line as satisfying the "documented in docs/wiki/**" criterion with zero real content.
+Corrected by the same implementing agent (continued on the same branch) with a real-word-count +
+distinct-word-count heuristic layered on top, with its own honestly-disclosed residual limitation.
+The orchestrator's own first re-verification attempt against the fix appeared to fail, traced to
+the orchestrator's own test-design error (probed at the wrong maturity tier), not a real remaining
+gap — re-confirmed correctly isolated at the `stable` tier. Implemented on MR !259
+(`agent/devops-engineer/T432` → `develop`, feat commit `14d466b`, fix commit `609f5ec`, squashed
+commit `e8bd9cb`, merge commit `5803890`); this brief itself was dispatched via MR !258 (merge
+commit `76d9c6d`).
