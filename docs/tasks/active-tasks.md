@@ -2,9 +2,31 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T436 | Honest demotion pass | product-owner | in_progress | P1 | T434 (done), T435 (done) | 2026-09-10 |
 | T456 | Downstream measurement (ship gate) | evaluation-agent | blocked | P0 | T454 (done), T455 (done), T458 (pending) | 2026-09-09 |
 | T457 | Scoped, non-`Bash` execution/read primitive for `@security-engineer` and `@context-retriever` | solution-architect | pending | P1 | None | 2026-09-09 |
 | T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-09 |
+
+> **T436 dispatched 2026-09-10 — re-confirmed from `plan-041`'s own task graph and both plans'
+> literal T436 rows directly, not assumed.** Owner `product-owner`, unchanged from `plan-035`'s
+> original assignment (`plan-041` reaffirms it as "a product-priorities call... not a technical
+> one"). **Tool grant checked before dispatch and found to be a deliberate, documented security
+> boundary, not an oversight** — `product-owner`'s real grant (`[read, search, web, todo]`) has
+> neither `edit` nor `execute`, and `implementation/knowledge/instructions/
+> security-guidelines.md`'s own Agent Permission Classification explicitly lists it as "read-only at
+> all times." **Disposition differs from every prior Phase 3 tool-grant gap**: not a full
+> reassignment (which would lose the real product-judgment intent), but a two-phase split —
+> `product-owner` performs the actual decision (achievable with read-only tools), the orchestrator
+> transcribes its real reasoning into a committed artifact (since it cannot write one itself), and
+> any resulting mechanical changes (if the decision calls for `deprecated`) are a small, separate
+> follow-up to a write-capable agent executing that decision, not making a new one. **A framing
+> correction included in the brief**: `plan-035`'s original T436 description predates T432's
+> mechanical enforcement, which already prevents the false-promotion failure mode T436 was
+> originally worried about — every component's current label is already accurate; T436's real
+> remaining question is narrower, whether anything among the 46 non-`stable` components is a
+> genuine dead end (warranting `deprecated`) versus honestly `experimental` with a live path
+> forward, and "nothing currently qualifies" is stated explicitly as an acceptable, honest outcome,
+> not a failure to find something to demote.
 
 > **T434/T435 closed 2026-09-10 — real evidence-authorship complete and independently verified for
 > both; 28 components genuinely evidence-complete and ready for immediate flip, 0 flipped in these
