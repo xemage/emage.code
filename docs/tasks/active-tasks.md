@@ -2,12 +2,65 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T432 | scripts/check-maturity.py (CI-enforced) | devops-engineer | pending | P1 | T431 (done) | 2026-09-10 |
 | T456 | Downstream measurement (ship gate) | evaluation-agent | blocked | P0 | T454 (done), T455 (done), T458 (pending) | 2026-09-09 |
 | T457 | Scoped, non-`Bash` execution/read primitive for `@security-engineer` and `@context-retriever` | solution-architect | pending | P1 | None | 2026-09-09 |
 | T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-09 |
 
-> **T432 — re-confirmed as the next task in `plan-041`'s sequence 2026-09-10, recorded as `pending`,
+> **T433 — re-confirmed as the next task in `plan-041`'s sequence 2026-09-10, NOT recorded/dispatched
+> this round.** `plan-041`'s per-task table shows T433's only dependency is T432 (now done). Unlike
+> T430-T432, `plan-041` itself explicitly flags T433 as "Phase 3's largest single task and the one
+> most likely to need the same kind of mid-task re-scoping T407/T417-T419 needed" (8 components × 5
+> promotion criteria each) and requires it to resolve Finding 1's still-open "routing target
+> classes" question as a stated acceptance criterion, not left implicit. Deliberately not recorded
+> as a ledger row or dispatched in the same turn as T432's closeout — reported to the user first,
+> matching this repo's own precedent of pausing before a task flagged as needing dedicated,
+> non-cascading attention (mirrors the T458 disposition after Phase 5's own similarly-flagged
+> harness task).
+
+> **T432 closed 2026-09-10** — `implementation/scripts/check-maturity.py` (new, 744+ lines),
+> `implementation/scripts/check.py` (`--maturity` CI-gate wiring), `.gitlab-ci.yml`
+> (`validation-super-gate` job now runs `--maturity`), `README.md`/`CONTRIBUTING.md`/
+> `implementation/README.md`/`docs/wiki/implementation-guide.md` (doc-snippet updates),
+> `tests/functional/test_check_maturity.py` (new) + `tests/functional/test_validation_gate.py`
+> published (MR !259, squash-merged `develop` `5803890`), moved to `completed-tasks.md`. Mechanically
+> verifies a component's declared `maturity` against `docs/artifacts/maturity-promotion-criteria-
+> v1.md`'s real per-category/per-transition criteria (not just enum validity) — a claimed `stable`
+> with no qualifying evidence fails CI, naming the specific unmet criterion. Real current-state run:
+> 77/77 components pass at `experimental` (all still at the floor, as expected — no promotions
+> claimed yet). **Two genuine implementation bugs were found and fixed by the implementer while
+> writing their own tests** (both regex-greediness issues: an `\s*` crossing newlines let an empty
+> label silently borrow the next label's text; a `## Deprecation Notice` heading regex was missing
+> its own section-boundary helper's required capture group) — both now covered by regression tests.
+> **A real, more serious gaming vulnerability was found during the orchestrator's own independent
+> adversarial review — not accepted on the implementer's self-report of "77/77 pass, tried and
+> caught a false stable claim":** the orchestrator ran its own from-scratch adversarial probes (not
+> the implementer's own example) — three were correctly caught (a bare false `stable` claim; a junk
+> `## Rails` heading with no real labels; a `## Rails` section with correct labels but empty
+> values) — but a fourth succeeded: `_documented_in_wiki()`'s "≥40 non-whitespace characters on the
+> matching line" check accepted a single padded/repeated-character line (`<id>
+> xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`) as satisfying the "documented in docs/wiki/**"
+> criterion, with zero real content. Sent back to the same implementing agent (continued session,
+> same branch) with the exact reproduction; agent added `_looks_like_real_description()` layering a
+> minimum-real-word-count and minimum-distinct-word-count gate on top of the original character
+> floor, with the residual limitation (a sufficiently deliberate adversary could still hand-craft
+> several distinct vowel-bearing pseudo-words) explicitly disclosed in the function's own docstring
+> rather than claimed as a complete fix. **Orchestrator independently re-verified the fix itself —
+> including one further adversarial variation of its own, not just re-running the implementer's own
+> regression test:** first reproduction attempt against the fixed version appeared to still pass,
+> traced to the orchestrator's own test-design error (probed at the `beta` claim level, which per
+> `maturity-promotion-criteria-v1.md`'s own tiering does not invoke the `documented`-in-wiki
+> criterion at all — that criterion only applies at the `beta→stable` transition); re-ran correctly
+> isolated at the `stable` level with all other criteria genuinely satisfied and confirmed the
+> padding attack now correctly fails, naming criterion #6 specifically. Confirmed a genuinely
+> well-formed Rails section with real content is still accepted (not over-tightened into false
+> negatives, via the implementer's own added positive-case regression test, independently spot-read).
+> `git diff --name-only` grepped for every protected path on both the original and corrected commits
+> — zero hits either time; `python3 tests/run.py` run fresh before and after the fix (491, then 494
+> tests, `OK`, `skipped=24`, no regressions either time); real GitLab CI green (5/5) independently
+> polled on both commits before merging; all adversarial-probe file edits fully reverted
+> (`git status --short` clean) before each `python3 implementation/scripts/check-maturity.py`
+> re-baseline run. T433 (Wave 1 promotion, 8 named components) is next in `plan-041`'s own task
+> graph — see the note above.
 > NOT dispatched this round.** `plan-041`'s per-task table shows T432's only dependency is T431
 > (now done); `owner` `devops-engineer` has `execute` in its real tool grant (checked), no
 > reassignment anticipated. Not dispatched in the same turn as T431's closeout, deliberately — a
