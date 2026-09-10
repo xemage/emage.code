@@ -160,7 +160,7 @@ Start here:
 Validate from the repository root:
 
 ```bash
-python3 implementation/scripts/check.py --root implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --packaging --triggers --adapters
+python3 implementation/scripts/check.py --root implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --maturity --packaging --triggers --adapters
 node implementation/scripts/verify.mjs --root implementation
 ```
 
