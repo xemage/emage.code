@@ -3,7 +3,7 @@ name: "Release Manager"
 description: "Use when preparing releases, managing version numbers, generating changelogs, creating release branches, tagging releases, coordinating deployment schedules, or managing hotfix workflows."
 tools: [read, search, edit, execute, web, mcp__gitlab]
 user-invocable: false
-maturity: experimental
+maturity: stable
 ---
 
 # Release Manager
