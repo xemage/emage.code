@@ -4,14 +4,14 @@
 **Owner:** tech-lead (matches `plan-035`/`plan-041`'s own assignment; tool grant checked before
 dispatch — `implementation/knowledge/agents/tech-lead.md`'s registered grant is `[read, search,
 edit, execute, web, mcp__fetch]`, has `execute`)
-**Status:** pending
+**Status:** done
 **Priority:** P0 (closes Gate G2 per `ADR-006`; blocks T434/T435, which both depend on T433's
 outcome)
 **Depends on:** T432 (done — `implementation/scripts/check-maturity.py`, the real, CI-enforced
 verifier this task's promotions must actually pass, not just declare)
 **Blocks:** T434, T435
 **Created:** 2026-09-10
-**Completed:** —
+**Completed:** 2026-09-10
 **Based on:** `docs/plans/plan-041-phase3-maturity-ladder-detailed-planning.md` (approved, merged
 MR !252) — specifically its T433 row and Finding 1; `docs/plans/plan-035-roadmap-v7-ground-up.md`
 §2.4 Phase 3 (T433's original nominal scope, the 8 named components); `docs/decisions/
@@ -165,3 +165,18 @@ escalating to the orchestrator. Specifically anticipated:
 ## Execution notes
 
 (To be filled in by the implementing agent during work, if useful — not required.)
+
+## Completion addendum (2026-09-10)
+
+Real, substantive evidence produced for all 9 candidates (see `docs/artifacts/
+phase3-wave1-promotion-v1.md`); zero flipped to `stable` in the evidence-authorship MR itself, by
+design — a genuine structural finding (this task's own open ledger row necessarily makes every one
+of its own claimed promotions fail `check-maturity.py`'s defect check, since the check cannot
+distinguish "reports a defect in `<id>`" from "is a promotion task whose subject is `<id>`"),
+independently reproduced by the orchestrator before this closure, not accepted on the implementer's
+self-report. Full record in `completed-tasks.md`'s T433 row. This task is closed now specifically
+to break that structural cycle — the immediate next step (a small follow-up flipping the 3
+genuinely evidence-complete components, `qa-engineer`/`validation-gates`/`code-review` skill, to
+`stable`) is consumed directly from this task's own evidence, not a new design. Implemented on MR
+!262 (`agent/tech-lead/T433` → `develop`, feat commit `c0d1ebf`, squashed commit `c71ba9a`, merge
+commit `0766c58`); this brief itself was dispatched via MR !261 (merge commit `de2c832`).
