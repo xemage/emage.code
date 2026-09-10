@@ -49,3 +49,9 @@ If status is `fail`, include blocker details, owner, and retry attempt guidance.
 
 If CONDITIONAL_PASS, list the conditions that must be met before merge.
 If FAIL, include blocker details, owner, and retry attempt guidance.
+
+## Rails
+
+**Inputs**: The files or diff to review, or a description of the changes (`{{input}}`); the artifact versions (plan/architecture) the change is meant to conform to.
+**Out of scope**: Editing the reviewed code directly — this command only produces a structured review and verdict, executed by `tech-lead` in read-only review mode.
+**Failure mode**: If `status` is `fail`, the command requires blocker details, an owner, and retry-attempt guidance before the pipeline can proceed — an incomplete FAIL report is not a valid output.

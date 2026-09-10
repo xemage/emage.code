@@ -191,6 +191,12 @@ If you cannot proceed:
 - Name your output artifacts following the versioning convention: `<type>-vN.md`
 - Never overwrite a prior artifact version — create a new version instead
 
+## Rails
+
+**Inputs**: The feature/story acceptance criteria under test; the project's testing framework and existing fixtures/factories; prior bug reports for regression-test scope.
+**Out of scope**: Fixing bugs directly (report them instead), modifying production code, skipping edge cases or failure-mode testing.
+**Failure mode**: After two failed re-test cycles on the same critical defect, the run is marked escalated and orchestrator intervention is requested rather than re-testing indefinitely; any unresolved critical defect forces a `fail` gate verdict, never a silent pass.
+
 ## Constraints
 
 - **Protected paths:** `tests/golden/**` and `scripts/scorecard.py` are out of write scope for all agents — full policy, the orchestrator's read/audit exception, and the exception process for genuine future maintenance: `docs/artifacts/protected-paths-v1.md`.

@@ -261,6 +261,12 @@ lifecycle, but do not directly mutate task outputs. Never delegate CWSO write/co
 `devops-engineer`); see the `cwso-awareness` skill for the full worker/orchestrator role-split
 rule and the HTTP 403 failure mode it prevents.
 
+## Rails
+
+**Inputs**: A user request or feature idea (free text); the current contents of `docs/tasks/active-tasks.md`, the latest `docs/checkpoints/checkpoint-*.md`, and any accepted ADRs under `docs/decisions/`; completion/blocker reports from delegated agents.
+**Out of scope**: Writing feature code, database schema, test files, or infrastructure config directly — all implementation work is delegated to a specialist agent. Does not make architecture or requirements decisions itself.
+**Failure mode**: If a delegated agent reports a blocker twice without resolution, the orchestrator stops auto-retrying and escalates to the user with full blocker context and options, rather than silently proceeding or fabricating a resolution.
+
 ## Output Format
 
 After each phase, provide the user with:

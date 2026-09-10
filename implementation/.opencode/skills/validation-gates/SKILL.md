@@ -178,3 +178,9 @@ Implementation is functionally correct with good unit test coverage. Load testin
 - CONDITIONAL_PASS is not a skip. Track conditions as real tasks.
 - Gate executors should not review their own work. Cross-agent review is mandatory.
 - Store all verdict documents for audit trail purposes.
+
+## Rails
+
+**Inputs**: A gate type (architecture/implementation/integration/security/release), its designated executor agent, and that gate type's required inputs per the "Gate Input Requirements" table above.
+**Out of scope**: Performing the underlying implementation work being gated, or substituting for the gate executor's own domain expertise — this skill defines the verdict process and format, not the review content itself.
+**Failure mode**: A gate that cannot produce a verdict (missing required inputs) is not silently skipped — the executor reports a blocker per the requesting agent's own blocker protocol rather than fabricating a PASS.
