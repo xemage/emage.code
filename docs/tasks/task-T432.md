@@ -105,4 +105,48 @@ rather than silently inventing a looser check that doesn't actually verify what 
 
 ## Execution notes
 
-(To be filled in by the implementing agent during work, if useful — not required.)
+Implemented by devops-engineer on branch `agent/devops-engineer/T432`, worktree
+`/home/emage/Code/emage/worktrees/agent-devops-engineer-T432`.
+
+- **Location:** `implementation/scripts/check-maturity.py`, not top-level `scripts/`. It imports
+  `generate-registry.py`'s `_collect_entries`/`_determine_source`/`_detect_platforms` directly
+  (via `importlib`, since the filename has a hyphen) rather than re-walking
+  `implementation/knowledge/**` a second time, per the Inputs section's "compose with, not
+  duplicate or bypass" instruction.
+- **CI wiring:** new `--maturity` flag on `implementation/scripts/check.py` (`_check_maturity`),
+  following the same subprocess-invocation pattern as `_check_registry`. Added to the explicit gate
+  list in `.gitlab-ci.yml`'s `validation-super-gate` job (which enumerates flags rather than relying
+  on check.py's no-flags-means-all-gates default) and to the four "Validate from the repository
+  root" doc snippets (`README.md`, `CONTRIBUTING.md`, `implementation/README.md`,
+  `docs/wiki/implementation-guide.md`) so a human following the docs also runs it.
+- **Interpretation calls made (documented in the script's own module docstring too):**
+  1. A `stable` claim is checked against the *general form* of the `experimental→beta` bar (schema
+     validity of whatever the component currently declares, `## Rails` present, no open P0) rather
+     than literally re-requiring the string `maturity: beta` once a component has been promoted past
+     it — `maturity-promotion-criteria-v1.md`'s "ALL of the above, still holding" only makes sense
+     read this way for an already-`stable` component.
+  2. "Documented ... ≥40 non-whitespace chars, not an incidental substring match" (criterion d, all
+     four categories) is checked as: a `docs/wiki/**/*.md` line containing the id/name as a whole
+     word, with ≥40 non-whitespace chars remaining on that line once the match is stripped.
+  3. Agent criterion (a)(iii)'s "resolves to a real, existing file/MR reference" is checked without
+     any network call (script must run offline in CI): backtick-quoted paths are verified to exist
+     on disk; `!<digits>` MR references are accepted at face value.
+  4. `## Deprecation Notice`'s `**Replacement**:` value is resolved against the set of all 77 real
+     component ids across all four categories (T431's wording doesn't restrict it to the same
+     category).
+- **Two real bugs found and fixed while writing the accompanying tests** (both regex greediness
+  bugs, not spec-interpretation issues): `\s*` before a captured value crossed newlines, so an empty
+  `**Inputs**:` label would silently "borrow" the next label's text as its own content; and the
+  `## Deprecation Notice` heading regex lacked the capture group `_find_labeled_section` needs for
+  its own heading level, crashing on every deprecation-tier check. Both are covered by regression
+  tests in `tests/functional/test_check_maturity.py`.
+- Real registry run (`python3 implementation/scripts/check-maturity.py --root implementation`):
+  **77/77 components pass at `experimental`** (28 agents, 19 commands, 4 instructions, 26 skills) —
+  confirmed genuinely true, not assumed, per Acceptance Criterion 3.
+- Adversarial manual check performed and reverted (not committed): temporarily set
+  `implementation/knowledge/agents/devops-engineer.md`'s `maturity:` to `stable` with no other
+  change — the checker correctly failed with three named unmet criteria (`## Rails` missing,
+  not documented in `docs/wiki/**`, and an open P1 ledger defect: T432 itself, since this task's own
+  brief names `devops-engineer` as Owner). Adding a well-formed `## Rails` section then reduced the
+  failures to exactly the remaining two, as expected. `git status --short` confirmed a clean revert
+  before committing real work.
