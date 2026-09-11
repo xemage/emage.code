@@ -1,0 +1,158 @@
+---
+description: "Use when a `mechanical`-tier task fails at the economy model class. States the one-tier escalation rule, what an escalation record must capture, and when a repeated escalation pattern signals a defective tiering assignment rather than a model failure."
+applyTo: "docs/tasks/task-*.md"
+---
+
+# Mechanical-Tier Escalation Policy
+
+## Rails
+
+**Inputs**: A task brief carrying `tier: mechanical` (per `docs/artifacts/task-tier-schema-v1.md`)
+that was dispatched at the economy model class (per `model-routing-policy.md`'s static mapping) and
+failed its acceptance criteria at that model class. This policy also consumes a history of prior
+escalation records (see "The recording requirement" below) when evaluating whether the
+misclassification-defect rule applies.
+
+**Out of scope**: This policy states three rules in writing. It does not:
+
+- Implement any dispatch-time enforcement — no code, hook, or CI job that actually detects a
+  `mechanical`-tier failure and re-dispatches the task at a higher model class. Actually wiring any
+  agent, orchestrator, or CI job to read and enforce the mapping this policy describes is left to
+  future, separately scoped and separately authorized work, the same boundary
+  `model-routing-policy.md` states for its own mapping.
+- Implement a live recording mechanism. It states what a future recording mechanism must capture
+  (see below); it does not build a database, log format, or code path that actually writes an
+  escalation record anywhere.
+- Implement live, automatic defect-opening. No code that actually creates a task row, an issue, or
+  any other artifact when two escalations are detected. It states the rule; a human or a future,
+  separately authorized automation applies it.
+- Assign a `tier` value to any specific existing task brief, or retroactively evaluate any past task
+  against this rule.
+- Define escalation behavior for a `standard`-tier task that fails at the mid-tier model class. The
+  rule this document implements (quoted below) is specific to `mechanical`-tier failure; extending
+  an analogous rule to `standard`-tier failure is a separate, not-yet-authorized question.
+
+**Failure mode**: If an escalated task also fails at the model class it was escalated to, or if a
+third task instance sharing the same brief class (defined below) would also need escalation before
+a defect has been opened for that class, this is itself a signal that the misclassification-defect
+rule below has already been triggered (or exceeded) and the defect-opening step must not be skipped
+in favor of another silent re-route.
+
+## Source
+
+Quoted verbatim from `docs/plans/plan-035-roadmap-v7-ground-up.md` §2.4's Phase 4 task table (the
+T442 row), the rule this document states in full:
+
+> "Escalation: on `mechanical` failure, escalate one tier and record the escalation. Two escalations
+> on the same brief class = the brief is misclassified; open a defect against the brief, not the
+> model."
+
+This document states that rule explicitly, resolves the two terms it leaves implicit ("one tier"
+and "brief class"), and states what a compliant recording mechanism must capture. It is a direct,
+adjacent continuation of `model-routing-policy.md`, which explicitly named "escalation mechanics on
+`mechanical`-tier failure" as a separately scoped, separately authorized follow-on task and did not
+itself state this rule.
+
+## 1. The escalation rule
+
+When a task brief carrying `tier: mechanical` fails its acceptance criteria at the **economy**
+model class (the class `model-routing-policy.md` routes `mechanical` to), the correct response is
+to escalate **exactly one tier**, not to fail the task outright and not to skip straight to the
+top tier.
+
+"One tier" means: retry the task at the model class the **next** tier up routes to, per
+`model-routing-policy.md`'s own table:
+
+| Failed at (tier / model class) | Escalate to (tier / model class) |
+|---|---|
+| `mechanical` / economy | `standard` / **mid-tier** |
+
+Concretely: a `mechanical`-tier failure escalates to the model class `model-routing-policy.md`
+assigns to `standard` — **mid-tier** — not to the model class assigned to `judgment`
+(**frontier**). Skipping directly from economy to frontier is not "one tier" and is not what this
+rule describes; that would bypass the mid-tier class entirely and defeats the purpose of a graduated
+escalation ladder. If a task escalated to mid-tier fails again, this document does not define a
+second, further escalation step for that same task instance — see "Out of scope" above and the
+misclassification-defect rule below, which governs what happens when the *pattern* of failures
+recurs across multiple task instances rather than defining a second escalation hop for one task.
+
+## 2. The recording requirement
+
+Every escalation must be recorded. This document states the requirement — what a future recording
+mechanism must capture — it does not build that mechanism (see "Out of scope" above; building it is
+plausibly the next task in this roadmap phase, not this one).
+
+At minimum, an escalation record must capture:
+
+1. **Task id** — the identifier of the task brief that failed and was escalated (for example, its
+   `docs/tasks/task-<ID>.md` id).
+2. **Original tier** — the `tier` value the brief carried when it was first dispatched
+   (`mechanical`, per this document's scope).
+3. **Escalated-to model class** — the model class the task was retried at after escalation
+   (**mid-tier**, per the mapping in "The escalation rule" above).
+4. **Outcome after escalation** — whether the retried task passed or failed its acceptance criteria
+   at the escalated-to model class.
+
+A future consumer of this requirement needs at least these four fields to compute both per-task
+escalation history and the cross-task pattern the misclassification-defect rule (below) operates
+over. Additional fields (timestamps, cost deltas, the specific acceptance criteria that failed) are
+reasonable to add when a recording mechanism is actually built, but are not required by this policy
+statement.
+
+## 3. The misclassification-defect rule
+
+If the same **brief class** (defined below) escalates **twice** — that is, two independent task
+instances that share the same brief class each independently require escalation per rule 1 above —
+that is a signal that the **tiering assignment itself** was wrong for that class of task, not that
+the model failed twice by chance. Two failures scattered across unrelated brief classes are not this
+signal; the pattern must recur *within one brief class* to trigger this rule.
+
+The correct response, on the second escalation within a brief class, is to **open a defect against
+the brief/tiering-assignment process for that class**, using this project's own existing
+defect-representation mechanism: a tracked task row in `docs/tasks/active-tasks.md`, the same
+task-ledger representation `implementation/scripts/check-maturity.py`'s ledger-defect check already
+recognizes as this project's defect model. The defect names the brief class (owner + tier, per the
+definition below) as defective, not the model class the escalated tasks ran on.
+
+Explicitly, the response is **not** to silently re-route a third task instance in that same brief
+class again without opening this defect first. Continuing to escalate individual task instances in a
+brief class that has already shown the pattern twice treats a tiering-assignment problem as if it
+were a sequence of independent, unlucky per-task model failures, which it is not once the pattern has
+recurred. The defect-opening step is what breaks that cycle; skipping it in favor of another quiet
+escalation is the behavior this rule exists to prevent.
+
+### Defining "brief class"
+
+`plan-035`'s literal text ("two escalations on the same brief class") does not define "brief class"
+anywhere else in this repository. This document adopts the following concrete, checkable working
+definition:
+
+> **A brief class is the combination of a task brief's declared owning component (its `Owner:`
+> field) and its declared `tier` value at the time of tiering assignment.** Two task instances
+> belong to the same brief class if and only if they share both the same `Owner:` value and the same
+> `tier` value.
+
+For example: two separate `mechanical`-tier task briefs both owned by the same agent (the same
+`Owner:` value), each independently escalating per rule 1, belong to the same brief class and
+trigger this rule on the second occurrence.
+
+This definition is checkable directly from fields every task brief in this project already declares
+(`Owner:` and `Tier:` in the brief header) — it requires no new metadata. It is chosen over
+alternatives (for example, keying on task title text, or on the specific acceptance-criteria shape)
+because it maps "the brief is misclassified" onto a property of *how tasks for that owner are being
+tiered*, matching the rule's own stated diagnosis ("the brief is misclassified," not "this one task
+instance was unlucky" and not "the model that ran it is weak"). Keying on owner + tier specifically
+(rather than owner alone, or tier alone) keeps the signal precise: an owning component might
+legitimately have some tasks correctly tiered `mechanical` and others correctly tiered `standard`:
+collapsing all of that owner's tasks into one class regardless of tier would blur a real
+tiering-assignment defect together with normal, correct tier variation across an owner's work.
+
+## Relationship to other artifacts
+
+This document is a direct extension of `model-routing-policy.md`'s static tier-to-model-class
+mapping — it does not redefine or override that mapping, and it inherits that document's scope
+boundary against dispatch-time enforcement. It is a pure consumer of the tier vocabulary defined in
+`docs/artifacts/task-tier-schema-v1.md`; it does not redefine or narrow the tier definitions or the
+`mechanical`-tier gating rule described there. A future task (extending the project's scorecard) is
+expected to be the eventual consumer of the recording requirement stated in rule 2 above, but that
+work is not authorized or performed by this document.

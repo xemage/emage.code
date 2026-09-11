@@ -297,11 +297,11 @@ class TestCheckMaturityRealRepo(unittest.TestCase):
             text=True,
         )
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
-        self.assertIn("78 components checked, 0 failing", proc.stdout)
+        self.assertIn("79 components checked, 0 failing", proc.stdout)
         self.assertIn("agent/experimental: 8 pass, 0 fail", proc.stdout)
         self.assertIn("agent/stable: 20 pass, 0 fail", proc.stdout)
         self.assertIn("command/experimental: 19 pass, 0 fail", proc.stdout)
-        self.assertIn("instruction/experimental: 1 pass, 0 fail", proc.stdout)
+        self.assertIn("instruction/experimental: 2 pass, 0 fail", proc.stdout)
         self.assertIn("instruction/stable: 4 pass, 0 fail", proc.stdout)
         self.assertIn("skill/experimental: 19 pass, 0 fail", proc.stdout)
         self.assertIn("skill/stable: 7 pass, 0 fail", proc.stdout)

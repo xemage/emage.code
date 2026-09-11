@@ -7,6 +7,74 @@
 | T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-09 |
 | T483 | Register `hindsight` and `cwso` as managed MCP servers across all platforms | solution-architect | pending | P1 | None | 2026-09-11 |
 
+> **T442 closed 2026-09-12 — plan-043's Phase 4 third task, delivered and independently
+> verified.** `implementation/knowledge/instructions/mechanical-tier-escalation-policy.md` (new —
+> the one-tier escalation mapping, the recording requirement, and the misclassification-defect
+> rule with a documented "brief class" definition, all quoted/derived from `plan-035` §2.4's own
+> literal T442 row, correctly cross-referenced against `T440`'s tier schema and `T441`'s routing
+> policy without contradicting either). Explicit "Out of scope" disclosure: no dispatch-time
+> enforcement, no live recording mechanism, no live automatic defect-opening — mirroring
+> `model-routing-policy.md`'s own scope-boundary shape. One minimal, disclosed fix to a
+> pre-existing hardcoded component-count assertion in `tests/functional/test_check_maturity.py`
+> (78->79, one new `instruction/experimental` pass), required by the new legitimate component.
+> **Ledger-sequencing handled the same way as `T441`, deliberately**: the dispatch row/brief were
+> already committed directly onto the implementer's own branch (`agent/backend-developer/T442`)
+> at dispatch time, and this closure edit is a further commit on that same branch/MR rather than a
+> second MR — MR !286 carries the implementation and its own ledger closure atomically. **Orchestrator
+> independent verification before this row was written** (not accepted on the implementer's
+> self-report alone): re-checked out the pushed branch fresh, independently re-ran
+> `generate-registry.py --check` (up to date), a real `sync.mjs` run (577 files, clean diff after),
+> `check-maturity.py --verbose` (79 components, 0 failing, stable pool unchanged at 20/4/7, exactly
+> one new `instruction/experimental`), `validate-tasks.py` (PASS), `tests/run.py` (514 tests, `OK`,
+> `skipped=24`, unchanged) — all independently matched the implementer's self-report exactly;
+> `git diff --stat` against `origin/develop` confirmed scoped to exactly the claimed 20 files (2
+> from the dispatch commit, 18 from the implementation commit); protected paths (`tests/golden/**`,
+> `scripts/scorecard.py`, `docs/benchmarks/tb-subset.*`, `.mcp.json`) confirmed untouched; no
+> overlap with the separate, unmerged `feature/T475-codex-platform-integration` branch; real
+> GitLab CI independently polled on the actual pushed SHA — 5/5 jobs green, not assumed.
+> Self-referential ledger-defect sweep re-run independently against the new instruction file and
+> the isolated new ledger block, against the real 31-id stable list — zero hits. Left unmerged per
+> this session's standing no-self-merge instruction — MR !286 handed back to the top-level session
+> for merging. Phase 4's remaining task, `T443` (extend the scorecard to record model tier and
+> outcome per golden case), is next in `plan-035`'s sequence, not authorized or dispatched this
+> round.
+
+> **T442 dispatched 2026-09-11 — re-confirmed from `plan-035` §2.4's own literal T442 row and
+> `plan-043`'s per-task table/task-graph directly, not assumed.** Owner `backend-developer`,
+> unchanged from both plans' original assignment. **Tool grant re-checked directly against
+> `implementation/knowledge/agents/backend-developer.md` before dispatch** (not trusted from
+> `plan-043`'s prior note alone): real grant is `[read, search, edit, execute, web, mcp__fetch]` —
+> has both `edit` and `execute`, matching `plan-043`'s Finding 2 expectation, no reassignment
+> needed. **Location determination made explicitly, since neither plan pins it down**:
+> `plan-043`'s artifact-flow only names `implementation/knowledge/...` loosely for this task; the
+> dispatching orchestrator determined the deliverable belongs under `implementation/knowledge/
+> instructions/`, the same registry-governed directory `T441`'s routing policy already occupies,
+> on stated reasoning (policy-document character, direct continuation of `T441`'s own explicit
+> "escalation mechanics... a separately scoped task" deferral, and Finding 2's tool-grant check
+> already anticipating the same `generate-registry.py`/`sync.mjs` workflow `T441` needed) — recorded
+> in `task-T442.md`'s own "Location determination" section, with an explicit instruction to the
+> implementer to report an `unclear_requirements` blocker rather than silently overriding it if
+> evidence surfaces otherwise. **Scope held to a mechanism/policy-definition task, mirroring T441's
+> own boundary** — `task-T442.md`'s "Hard scope boundary" section explicitly rules out dispatch-time
+> enforcement, a live recording mechanism, and live automatic defect-opening, and explicitly
+> discloses this as an orchestrator scope determination (not a certainty) given `plan-035`'s Phase 4
+> acceptance criteria could be read to imply more — the implementer is instructed to report a
+> `dependency` blocker rather than silently building enforcement if they conclude otherwise. The
+> brief also identifies "brief class" (used in `plan-035`'s literal T442 wording but nowhere defined
+> in this repository) as a genuine open definitional call the implementer must make and document
+> explicitly, with a recommended starting definition offered but not mandated. **Self-referential
+> ledger-defect sweep performed on this brief and this row before dispatch**: grepped both against
+> the real, freshly re-derived 31-id top-maturity-tier list — zero hits; the brief itself restates
+> this discipline for the implementer. **Merge-order/self-merge discipline for this dispatch,
+> disclosed here in advance rather than resolved ad hoc later, mirroring T441's own precedent
+> exactly per this session's explicit repeated instruction**: no MR opened for this task will be
+> merged by the orchestrator this round. This row and this brief are committed directly onto the
+> implementer's own branch (`agent/backend-developer/T442`) rather than a separate ledger-only
+> branch — the ledger-closure edit (moving this row to `completed-tasks.md` and updating this
+> brief's status header) will be added as a further commit on that same branch, once the delivered
+> work is independently verified, so the two states (implementation, ledger) can only ever land on
+> `develop` atomically, in one merge, regardless of when the user chooses to merge it.
+
 > **T441 closed 2026-09-11 — plan-043's Phase 4 second task, delivered and independently
 > verified.** `implementation/knowledge/instructions/model-routing-policy.md` (new — static
 > `mechanical`->economy / `standard`->mid-tier / `judgment`->frontier mapping, explicit
