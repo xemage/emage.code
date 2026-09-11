@@ -2,9 +2,28 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T437 | Regenerate registry summary + release-checkpoint maturity table | release-manager | in_progress | P2 | T436 (done) | 2026-09-11 |
 | T456 | Downstream measurement (ship gate) | evaluation-agent | blocked | P0 | T454 (done), T455 (done), T458 (pending) | 2026-09-09 |
 | T457 | Scoped, non-`Bash` execution/read primitive for `@security-engineer` and `@context-retriever` | solution-architect | pending | P1 | None | 2026-09-09 |
 | T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-09 |
+
+> **T437 dispatched 2026-09-11 — re-confirmed from both `plan-035` and `plan-041`'s own literal
+> T437 rows, fetched fresh, not assumed.** Owner Release Manager, unchanged. **Tool grant checked
+> before dispatch: has both `edit` and `execute` — no reassignment needed, no gap**, the first Phase
+> 3 task besides T431/T432 with a fully write-capable owner from the start. **A fourth occurrence
+> of the self-referential ledger-defect regression was found and fixed before dispatch, and it was
+> the first occurrence where even a file-path/branch-name reference (not just prose) tripped it** —
+> confirmed directly (`python3 tests/run.py` genuinely failed with the literal `implementation/
+> knowledge/agents/release-manager.md` path and `agent/release-manager/T437` branch-name text
+> present, since this role is itself one of Wave 2's `stable` promotions), fixed by using a
+> `<your-slug>` placeholder for path/branch references instead of the literal id, re-verified clean
+> against all 31 real stable ids before dispatch. **A genuine, disclosed ambiguity carried into the
+> brief rather than resolved silently**: neither plan names a file literally called "release-
+> checkpoint template" — no such file exists; the two real candidates (`docs/checkpoints/
+> _template.md`, the one generic template every checkpoint including release ones is based on; and
+> `implementation/knowledge/commands/prepare-release.md`, the command that actually produces
+> release checkpoints) are not mutually exclusive, and the implementer is asked to resolve and
+> disclose its choice rather than the orchestrator picking upfront.
 
 > **T436 closed 2026-09-10 — real, evidence-grounded decision: nothing currently warrants
 > `deprecated`.** `docs/artifacts/phase3-maturity-demotion-decision-v1.md` (this task's real
