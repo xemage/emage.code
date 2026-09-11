@@ -2,10 +2,29 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T437 | Regenerate registry summary + release-checkpoint maturity table | release-manager | in_progress | P2 | T436 (done) | 2026-09-11 |
 | T456 | Downstream measurement (ship gate) | evaluation-agent | blocked | P0 | T454 (done), T455 (done), T458 (pending) | 2026-09-09 |
 | T457 | Scoped, non-`Bash` execution/read primitive for `@security-engineer` and `@context-retriever` | solution-architect | pending | P1 | None | 2026-09-09 |
 | T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-09 |
+
+> **T437 closed 2026-09-11 — Phase 3 (T430-T437) is now complete in full, all 8 tasks done.**
+> `docs/checkpoints/_template.md` (new `## Maturity distribution` reusable table) and
+> `implementation/knowledge/commands/prepare-release.md` (Version Management step now instructs
+> regenerating the registry and populating that table from it) both edited — the implementer
+> resolved the brief's own disclosed "which template file" ambiguity by doing both, reasoning that
+> neither alone closes the loop (a slot nobody is told to fill vs. an instruction with no concrete
+> structure to point at). `implementation/registry/summary.md` regenerated for real. **Orchestrator
+> independent verification before merging** (not accepted on the implementer's self-report):
+> independently counted the real distribution directly from the regenerated `summary.md` — 31
+> `stable` / 46 `experimental` / 0 `deprecated`, matching the claim exactly; `generate-registry.py
+> --check` ("up to date"), `check-maturity.py` (0 failing, same 31/46/0 split), `sync.mjs --check`
+> (no drift, 563 files), `python3 tests/run.py` fresh (514 tests, `OK`, `skipped=24`) all
+> independently re-run and matched; `git diff --name-only` grepped for every protected path — zero
+> hits; real GitLab CI green (5/5) before merging. Read the actual template/command diffs directly
+> — the new table is genuinely a reusable, empty template structure (illustrative category rows,
+> explicit populate-from-registry instructions), not a hardcoded snapshot of today's numbers, and
+> no real component id was used as an example anywhere. **This closes Gate G2 in the fullest sense
+> (per `ADR-006`, G2 was already closed on T433's completion; T437 is simply the reporting/
+> bookkeeping close of the phase that contains it) and completes Phase 3 in its entirety.**
 
 > **T437 dispatched 2026-09-11 — re-confirmed from both `plan-035` and `plan-041`'s own literal
 > T437 rows, fetched fresh, not assumed.** Owner Release Manager, unchanged. **Tool grant checked

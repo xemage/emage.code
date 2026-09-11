@@ -16,14 +16,14 @@ genuinely failed with the literal path/branch-name text present, before this rew
 grant checked before dispatch: the agent definition's registered grant is `[read, search, edit,
 execute, web, mcp__gitlab]` — has both `edit` and `execute`, no reassignment needed, no gap this
 time** (first Phase 3 task besides T431/T432 with a fully write-capable owner from the start).
-**Status:** pending
+**Status:** done
 **Priority:** P2 (small, closes Phase 3 — does not block anything else in this repo currently)
 **Depends on:** T436 (done — `docs/artifacts/phase3-maturity-demotion-decision-v1.md`, confirming
 no components changed as a result of the demotion pass, so the current registry state is final for
 Phase 3's purposes)
 **Blocks:** none (Phase 3's own closure, not a blocker for other work)
 **Created:** 2026-09-11
-**Completed:** —
+**Completed:** 2026-09-11
 **Based on:** `docs/plans/plan-041-phase3-maturity-ladder-detailed-planning.md` (approved, merged
 MR !252) — specifically its T437 row; `docs/plans/plan-035-roadmap-v7-ground-up.md` §2.4 Phase 3
 (T437's original nominal scope: "Regenerate `implementation/registry/summary.md`; add a maturity
@@ -128,3 +128,12 @@ forcing the edit through.
 ## Execution notes
 
 (To be filled in by the implementing agent during work, if useful — not required.)
+
+## Completion addendum (2026-09-11)
+
+Both candidate template files edited (resolving the disclosed ambiguity): `docs/checkpoints/
+_template.md` (new reusable `## Maturity distribution` table) and `implementation/knowledge/
+commands/prepare-release.md` (instructs populating it from the regenerated registry). Real,
+independently-confirmed current distribution: 31 `stable` / 46 `experimental` / 0 `deprecated`.
+This closes Phase 3 (T430-T437) in full. Implemented on MR !276 (`agent/release-manager/T437` →
+`develop`, merge commit `8ebf472`); this brief itself was dispatched via MR !275.
