@@ -5,6 +5,7 @@
 | T456 | Downstream measurement (ship gate) | evaluation-agent | blocked | P0 | T454 (done), T455 (done), T458 (pending) | 2026-09-09 |
 | T457 | Scoped, non-`Bash` execution/read primitive for `@security-engineer` and `@context-retriever` | solution-architect | pending | P1 | None | 2026-09-09 |
 | T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-09 |
+| T483 | Register `hindsight` and `cwso` as managed MCP servers across all platforms | solution-architect | pending | P1 | None | 2026-09-11 |
 
 > **T437 closed 2026-09-11 — Phase 3 (T430-T437) is now complete in full, all 8 tasks done.**
 > `docs/checkpoints/_template.md` (new `## Maturity distribution` reusable table) and
