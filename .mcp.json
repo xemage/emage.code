@@ -1,5 +1,17 @@
 {
   "mcpServers": {
+    "hindsight": {
+      "type": "http",
+      "url": "${env:HINDSIGHT_MCP_URL}"
+    },
+    "cwso": {
+      "type": "http",
+      "url": "${env:CWSO_MCP_URL}",
+      "headers": {
+        "Authorization": "Bearer ${env:CWSO_BEARER_TOKEN}",
+        "Origin": "${env:CWSO_ORIGIN}"
+      }
+    },
     "gitlab": {
       "command": "npx",
       "args": [
