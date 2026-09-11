@@ -5,6 +5,7 @@
   "files": [
     "../.clinerules/coding-standards.md",
     "../.clinerules/git-workflow.md",
+    "../.clinerules/model-routing-policy.md",
     "../.clinerules/poc-guidelines.md",
     "../.clinerules/security-guidelines.md",
     "mcp.json",

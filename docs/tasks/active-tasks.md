@@ -7,6 +7,54 @@
 | T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-09 |
 | T483 | Register `hindsight` and `cwso` as managed MCP servers across all platforms | solution-architect | pending | P1 | None | 2026-09-11 |
 
+> **T441 closed 2026-09-11 — plan-043's Phase 4 second task, delivered and independently
+> verified.** `implementation/knowledge/instructions/model-routing-policy.md` (new — static
+> `mechanical`->economy / `standard`->mid-tier / `judgment`->frontier mapping, explicit
+> "no historical-success-rate learning" boundary stated in the file's own text) published,
+> alongside a real `generate-registry.py`/`sync.mjs` regeneration (registry files + seven
+> platform-projection files) and one minimal, disclosed content fix to a pre-existing hardcoded
+> component-count assertion in `tests/functional/test_check_maturity.py` (a direct, necessary
+> consequence of the new component, not a defect). See the `T441` row in `docs/tasks/
+> completed-tasks.md` for the full independent-verification record (all six acceptance-criteria
+> verification commands independently re-run against the pushed branch in a fresh, detached-HEAD
+> worktree — not accepted on the implementer's self-report — and matched exactly; real GitLab CI
+> polled on the actual pushed SHA, 5/5 jobs green). **Left unmerged per this session's standing
+> no-self-merge instruction** — MR !285 (`agent/tech-lead/T441`) carries both the implementation
+> and this ledger closure atomically (committed on the same branch, not a separate ledger MR),
+> specifically to avoid recreating the pending-row-survives-after-merge ledger-sequencing gap
+> `T440`'s own dispatch hit — handed back to the top-level session for merging, with no valid
+> merge-order concern since there is only one MR to merge. `T442` (escalation on `mechanical`-tier
+> failure, owner `backend-developer`, depends on `T441`) is next in `plan-043`'s sequence — not
+> dispatched this round.**
+
+> **T441 dispatched 2026-09-11 — re-confirmed from `plan-035` §2.4's own literal T441 row and
+> `plan-043`'s Finding 2/per-task table directly, not assumed.** Owner `tech-lead`, unchanged from
+> both plans' original assignment. **Tool grant re-checked directly against `implementation/
+> knowledge/agents/tech-lead.md` before dispatch** (not trusted from `plan-043`'s prior note alone):
+> real grant is `[read, search, edit, execute, web, mcp__fetch]` — has both `edit` and `execute`, no
+> reassignment needed. **Scope held to the literal `plan-035` line** ("Static mapping only. No
+> historical-success-rate learning in v6.16") — `task-T441.md`'s own "Hard scope boundary" section
+> explicitly rules out adaptive/historical routing, escalation mechanics (that is `T442`'s separate
+> scope), and actually wiring the policy into any dispatch path, none of which this task authorizes.
+> **Confirmed before dispatch that this task's target directory is registry-governed, unlike its
+> immediate predecessor**: `implementation/knowledge/instructions/` is walked by both
+> `generate-registry.py` and `sync.mjs`; the brief states this explicitly and gives the exact CI
+> commands (`generate-registry.py --root implementation --check`, `sync.mjs --root implementation`,
+> the full `check.py` `validation-super-gate` invocation) so this is not discovered mid-task.
+> **Self-referential ledger-defect sweep performed on this brief and this row before dispatch**:
+> grepped both against the real, freshly re-derived top-maturity-tier id list — zero hits; the brief
+> itself restates this discipline for the implementer rather than assuming it transfers silently.
+> **Merge-order/self-merge discipline for this dispatch, disclosed here in advance rather than
+> resolved ad hoc later**: per standing instruction, no MR opened for this task will be merged by
+> the orchestrator this round, regardless of what the GitLab merge-permission check happens to
+> allow. To avoid recreating the exact ledger-sequencing gap `T440`'s own dispatch hit (a "pending"
+> ledger row surviving after its deliverable already existed on `develop`), this row and this brief
+> are committed directly onto the implementer's own branch (`agent/tech-lead/T441`) rather than a
+> separate ledger-only branch — the ledger-closure edit (moving this row to `completed-tasks.md` and
+> updating this brief's status header) will be added as a further commit on that same branch, once
+> the delivered work is independently verified, so the two states (implementation, ledger) can only
+> ever land on `develop` atomically, in one merge, regardless of when the user chooses to merge it.
+
 > **T440 closed 2026-09-11 — plan-043's Phase 4 first task, delivered and independently verified.**
 > `docs/artifacts/task-tier-schema-v1.md` (new — `mechanical`/`standard`/`judgment` vocabulary, the
 > three-gate `mechanical` eligibility rule quoted from `plan-035` §2.4, the real 31-component

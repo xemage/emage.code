@@ -54,6 +54,7 @@
     "commands/validate-workflow.md",
     "rules/coding-standards.md",
     "rules/git-workflow.md",
+    "rules/model-routing-policy.md",
     "rules/poc-guidelines.md",
     "rules/security-guidelines.md",
     "skills/api-design/SKILL.md",

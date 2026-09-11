@@ -52,6 +52,7 @@
     "commands/validate-workflow.md",
     "instructions/coding-standards.md",
     "instructions/git-workflow.md",
+    "instructions/model-routing-policy.md",
     "instructions/poc-guidelines.md",
     "instructions/security-guidelines.md",
     "opencode.json",

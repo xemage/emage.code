@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-09-11T03:46:11+00:00",
+  "generatedAt": "2026-09-11T23:32:21+02:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -1363,6 +1363,34 @@
       "path": "instructions/git-workflow.md",
       "checksum": "dbb921a329700f910b687c3bd55b0f43585b4d74862fb44bdbca8c63e9e15e3d",
       "maturity": "stable",
+      "compatibility": {
+        "supportedPlatforms": [
+          "claude-code",
+          "cline",
+          "cursor",
+          "gemini",
+          "github",
+          "opencode",
+          "pi"
+        ],
+        "projectionStatus": {
+          "claude-code": "pass",
+          "cline": "pass",
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass",
+          "pi": "pass"
+        }
+      }
+    },
+    {
+      "id": "model-routing-policy",
+      "category": "instruction",
+      "name": "model-routing-policy",
+      "path": "instructions/model-routing-policy.md",
+      "checksum": "d49669878f1271433e86913c56c6c86a6aa7b1cfe63c41b91767c7b7912414ae",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
