@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-09-10T17:16:46+00:00",
+  "generatedAt": "2026-09-11T03:46:11+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -1137,7 +1137,7 @@
       "category": "command",
       "name": "prepare-release",
       "path": "commands/prepare-release.md",
-      "checksum": "2f6c13298b71b8dc52a87acb6f0fa7081fc771e334a1c721b1188f2aa5b2d794",
+      "checksum": "6eeb430b64362ef40059f968094d9b8c04465c8961ad18ff3592690e559411fc",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
