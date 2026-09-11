@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-09-11T23:32:21+02:00",
+  "generatedAt": "2026-09-11T23:59:28+02:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -1363,6 +1363,34 @@
       "path": "instructions/git-workflow.md",
       "checksum": "dbb921a329700f910b687c3bd55b0f43585b4d74862fb44bdbca8c63e9e15e3d",
       "maturity": "stable",
+      "compatibility": {
+        "supportedPlatforms": [
+          "claude-code",
+          "cline",
+          "cursor",
+          "gemini",
+          "github",
+          "opencode",
+          "pi"
+        ],
+        "projectionStatus": {
+          "claude-code": "pass",
+          "cline": "pass",
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass",
+          "pi": "pass"
+        }
+      }
+    },
+    {
+      "id": "mechanical-tier-escalation-policy",
+      "category": "instruction",
+      "name": "mechanical-tier-escalation-policy",
+      "path": "instructions/mechanical-tier-escalation-policy.md",
+      "checksum": "9b3b42c9d8fa87d58e0ea771e2707b3e7c849aff165d8adf4e62435d76add3f6",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",

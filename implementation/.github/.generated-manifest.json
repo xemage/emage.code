@@ -36,6 +36,7 @@
     "hooks/post-edit-reminder.json",
     "instructions/coding-standards.instructions.md",
     "instructions/git-workflow.instructions.md",
+    "instructions/mechanical-tier-escalation-policy.instructions.md",
     "instructions/model-routing-policy.instructions.md",
     "instructions/poc-guidelines.instructions.md",
     "instructions/security-guidelines.instructions.md",
