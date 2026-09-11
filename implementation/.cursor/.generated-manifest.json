@@ -54,6 +54,7 @@
     "mcp.json.provenance.json",
     "rules/coding-standards.mdc",
     "rules/git-workflow.mdc",
+    "rules/model-routing-policy.mdc",
     "rules/poc-guidelines.mdc",
     "rules/security-guidelines.mdc",
     "skills/api-design/SKILL.md",

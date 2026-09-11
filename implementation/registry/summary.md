@@ -6,7 +6,7 @@ Generated from: implementation/knowledge
 
 - agents: 28
 - commands: 19
-- instructions: 4
+- instructions: 5
 - skills: 26
 
 ## Entries
@@ -62,6 +62,7 @@ Generated from: implementation/knowledge
 | validate-workflow | command | experimental | commands/validate-workflow.md |
 | coding-standards | instruction | stable | instructions/coding-standards.md |
 | git-workflow | instruction | stable | instructions/git-workflow.md |
+| model-routing-policy | instruction | experimental | instructions/model-routing-policy.md |
 | poc-guidelines | instruction | stable | instructions/poc-guidelines.md |
 | security-guidelines | instruction | stable | instructions/security-guidelines.md |
 | api-design | skill | experimental | skills/api-design/SKILL.md |
