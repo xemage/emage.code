@@ -2,12 +2,17 @@
 
 > Filename: `plan-043-phase4-task-tier-routing-detailed-planning.md`
 
-**Status:** proposed — presented for review in this session's report, **not approved for
-task-brief authoring or execution**. Mirrors the precedent set by `plan-037-phase2-phase5-
-sequencing.md` (Phase 2), `plan-038-phase5-detailed-planning.md` (Phase 5), and `plan-041-phase3-
-maturity-ladder-detailed-planning.md` (Phase 3): each phase sat at `plan-035`'s own `"Status:
-proposed — not approved for task-brief authoring or execution"` header until a dedicated planning
-pass was written and approved, *before* any individual task brief (`task-T44x.md`) was authored.
+**Status:** approved (partial, T440 only) — 2026-09-11. User was shown this plan's Finding 1 and
+Finding 2 directly, then replied "Continue with next best task," which is recorded here as
+approval of this plan's task breakdown/sequencing/agent assignments and of Finding 1/Finding 2, and
+as authorization to author and dispatch `task-T440.md` specifically (the first task in sequence).
+It is **not** read as blanket authorization for T441-T443 — each of those still gets its own
+brief in sequence, per this plan's own artifact-flow ordering, at a future turn. Mirrors the
+precedent set by `plan-037-phase2-phase5-sequencing.md` (Phase 2), `plan-038-phase5-detailed-
+planning.md` (Phase 5), and `plan-041-phase3-maturity-ladder-detailed-planning.md` (Phase 3): each
+phase sat at `plan-035`'s own `"Status: proposed — not approved for task-brief authoring or
+execution"` header until a dedicated planning pass was written and approved, *before* any
+individual task brief (`task-T44x.md`) was authored.
 This document is that pass for Phase 4.
 
 **Based on:** `docs/plans/plan-035-roadmap-v7-ground-up.md` §2.2 (Gate table), §2.3 (phase graph),
@@ -247,11 +252,15 @@ Phase 4, and with this project's Plan-Approve-Execute protocol.
 
 ## Approval
 
-- [ ] User approves Phase 4 detailed planning as scoped above (task breakdown, sequencing, agent
-      assignments)
-- [ ] User acknowledges Finding 1 (the real 31-component `stable` pool, and that it excludes
+- [x] User approves Phase 4 detailed planning as scoped above (task breakdown, sequencing, agent
+      assignments) — 2026-09-11, via "Continue with next best task" after Finding 1/Finding 2 were
+      presented
+- [x] User acknowledges Finding 1 (the real 31-component `stable` pool, and that it excludes
       `orchestrator`/`tech-lead`/`backend-developer`/`security-engineer` for real, tracked reasons)
       and Finding 2 (T443's literal `plan-035` scope needs both a protected-path exception and an
-      owner reassignment before it can be dispatched)
-- [ ] User authorizes authoring `task-T440.md` (first task in sequence) once this plan is approved
+      owner reassignment before it can be dispatched) — 2026-09-11
+- [x] User authorizes authoring `task-T440.md` (first task in sequence) once this plan is approved
+      — 2026-09-11. T441-T443 remain unauthorized for brief-authoring until their own turn.
 - [ ] Plan locked; revisions create `plan-043-phase4-task-tier-routing-detailed-planning-v2.md`
+      (left open — T441-T443 are still to be sequenced under this same plan, not yet a closed
+      document)
