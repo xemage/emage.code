@@ -7,6 +7,33 @@
 | T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-09 |
 | T483 | Register `hindsight` and `cwso` as managed MCP servers across all platforms | solution-architect | pending | P1 | None | 2026-09-11 |
 
+> **T487 closed 2026-09-12 — re-ran T484's exact walking-skeleton mechanism (one live control-arm
+> trial, one live treatment-arm trial of `/new-feature`'s literal template on `tests/golden/open/
+> new-feature-plan-doc-compliant`), executed directly by the orchestrator for the same
+> `devops-engineer`-lacks-the-`agent`-tool reason as T484. The one real difference from T484: the
+> treatment arm's `@context-retriever` call now had T486's real 11-entry/25-chunk index to query
+> against instead of failing on a missing index. Independently rebuilt the index fresh in its own
+> throwaway venv before dispatch and reproduced T486's exact `25 chunks, 0 rejections, entry_count
+> 11` manifest byte-for-byte before trusting it. Chose a real, non-rigged query by inspecting the
+> 11 real vault entries first, not by reverse-engineering a query to hit a specific one: "what
+> branch and merge request workflow applies when starting implementation of a new feature in this
+> repo." Both real `expect.py` booleans (loaded via `importlib.util.spec_from_file_location`,
+> both files' actual `## ` headers directly inspected before trusting the boolean): control =
+> `True`, treatment = `True`. Retrieval returned real, non-empty, relevant results (top hit
+> `protected-branch-no-direct-commit-policy.md`, score 0.806), independently re-run by the
+> orchestrator against its own index and confirmed to match the treatment arm's self-reported JSON
+> exactly. **A real, directly-inspected content difference was found**: the treatment arm's
+> Dependency Impact section contains one additional bullet, explicitly labeled by the treatment
+> arm itself as retrieval-derived, restating a specific detail present in the retrieved chunk's own
+> text (branch/MR policy applies equally to orchestrator-authored ledger edits) and absent from
+> both the control arm's plan doc and the literal template text either arm received; three
+> lower-relevance retrieval hits were correctly judged off-topic by the treatment arm and left out
+> of its plan doc. **Explicitly one trial per arm on one case — supports no statistical "retrieval
+> helps" or "retrieval doesn't help" claim, despite the observed influence in this one trial. Does
+> not close, advance, or scale T458 or T456; does not touch T457 or T483.** See `task-T487.md` for
+> the full account, including the real retrieval JSON and the direct diff of both arms' Dependency
+> Impact sections.
+
 > **T486 closed 2026-09-12 — first real population of the knowledge vault, dispatched to
 > `devops-engineer` with a literal, pre-written 11-entry brief (6 `project`-scope, 5
 > `general`-scope) sourced from already-merged repo content (ADR-005, `protected-paths-v1.md`,
