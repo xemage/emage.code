@@ -7,6 +7,30 @@
 | T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-09 |
 | T483 | Register `hindsight` and `cwso` as managed MCP servers across all platforms | solution-architect | pending | P1 | None | 2026-09-11 |
 
+> **T484 closed 2026-09-12 — T458 walking-skeleton, one golden case, one live trial per arm,
+> executed directly by the orchestrator per this session's user decision (in-process `Agent` tool,
+> the mechanism this whole session already uses for every dispatch; `devops-engineer` lacks the
+> `agent` tool grant per `plan-044-t458-first-slice.md` Finding 3 and remains T458's nominal owner
+> for the full harness task, unaffected by this slice). Both real booleans: control `True`,
+> treatment `True` — both nested `Orchestrator`-role live sessions, run via the literal
+> `/new-feature` template with `{{input}}` = the real `brief.md` text, in isolated plain scratch
+> directories, produced a structurally-compliant plan doc satisfying the case's real, unmodified
+> `expect.py` (loaded via `importlib.util.spec_from_file_location`, `scripts/scorecard.py`'s own
+> pattern). Two real findings surfaced and corrected in the open, not hidden: (1) plan-044's
+> documented `@context-retriever` CLI shape was inaccurate (positional args where the real
+> `argparse` parser requires named flags, missing required `--index-dir`) — corrected before
+> dispatch; (2) the treatment arm's live retrieval attempt hit `ModuleNotFoundError` because this
+> task's own dispatch prompt pointed it at `/home/emage/Code/emage/emage.code` (the main checkout,
+> currently on `feature/T475-codex-platform-integration`, which predates T450-T458's memory-layer
+> work and genuinely lacks `implementation/runtime/memory/` on disk) rather than a real
+> `origin/develop` checkout — self-caught and independently re-verified against this task's own
+> worktree, where the module imports fine but the corrected failure mode is `FileNotFoundError` on
+> a nonexistent index (`manifest.json`) — no memory index has ever been built anywhere in this
+> repo (T452's own build step, out of scope here). Neither finding changed the reported booleans.
+> **This does not close T458 or T456** — both remain exactly `pending`/`blocked` as before; a
+> single case, one trial per arm, supports no improvement claim. See `task-T484.md`'s Execution
+> notes for full detail.
+
 > **T443 closed 2026-09-12 — plan-035/plan-043 Phase 4's fourth and final task-table task,
 > delivered and independently verified.** Extended `scripts/scorecard.py` (owner reassigned
 > `evaluation-agent` -> `devops-engineer` per `plan-043` Finding 2) with two new nullable
