@@ -95,6 +95,38 @@ only `run_metadata.generated_at` differs.
 This mirrors the format spec's own resolution pattern (§2.3): don't avoid the
 tension, resolve it by construction — `content` is a pure function of `case_dir`
 bytes, exactly as `expect.py`'s own purity rules (§4.2) require of each case.
+
+## `model_tier` / `model_outcome` — nullable schema fields, no live producer yet (T443)
+
+Each per-case result dict carries two additional, optional keys: **`model_tier`**
+(allowed non-null values: `"mechanical"` / `"standard"` / `"judgment"`, per
+`docs/artifacts/task-tier-schema-v1.md`) and **`model_outcome`** (allowed non-null
+values: `"pass"` / `"fail"` / `"escalated"`). Both are hardcoded to `None` for every
+case emitted by this script today — there is no live-model-tier data source
+anywhere in this repository to populate them from. The golden suite was
+deliberately designed, as a Phase 1 architectural decision, to never invoke a live
+agent/model completion in its automated run path (`docs/artifacts/
+golden-suite-format-v1.md` §2.2, "`expect.py` ... never itself invokes a live,
+sampling model completion"; §4.2's purity rules; this script's own
+`load_expect_module()` docstring, "No subprocess, no shelling out."). The `T456`
+ship-gate task record (`docs/tasks/active-tasks.md`, `T456` row, currently
+`blocked`) independently re-confirms and cites the same architectural fact. This is
+schema/plumbing work only, added in advance of any producer: a future, separately
+scoped task — not this one, and not contingent on any particular live-execution
+harness landing first — is expected to be the actual producer that writes non-null
+values into these two fields.
+
+`model_outcome`'s `"escalated"` value is a deliberate expansion beyond
+`implementation/knowledge/instructions/mechanical-tier-escalation-policy.md`'s own
+"outcome after escalation" language, which only defines a binary passed/failed
+result for the *retried* task at its escalated-to model class. `"escalated"` as
+recorded here means something narrower and different: it marks that a case's
+recorded outcome *is itself* an escalation event — i.e., this row reflects a retry
+triggered by an earlier `mechanical`-tier failure — as opposed to a first-attempt
+`"pass"` or `"fail"`. A future producer populating this field needs to know which
+of the three states (`pass` / `fail` / `escalated`) applies to a given row, and
+`escalated` is not reducible to the escalation policy's own two-value language for
+the retried task's own result.
 """
 from __future__ import annotations
 
@@ -195,6 +227,8 @@ def run_case(case_dir: Path, root: Path) -> dict[str, Any]:
         "case_dir": case_dir.relative_to(root.parent).as_posix(),
         "status": status,
         "known_failing_category": known_failing_category,
+        "model_tier": None,
+        "model_outcome": None,
     }
 
     try:
