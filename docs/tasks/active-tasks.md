@@ -7,6 +7,43 @@
 | T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-09 |
 | T483 | Register `hindsight` and `cwso` as managed MCP servers across all platforms | solution-architect | pending | P1 | None | 2026-09-11 |
 
+> **T443 closed 2026-09-12 — plan-035/plan-043 Phase 4's fourth and final task-table task,
+> delivered and independently verified.** Extended `scripts/scorecard.py` (owner reassigned
+> `evaluation-agent` -> `devops-engineer` per `plan-043` Finding 2) with two new nullable
+> `model_tier`/`model_outcome` keys per case, both `None` today (no live-model-tier data source
+> exists anywhere in this repo yet), documented in a new module-docstring subsection. Correctly
+> invoked the `protected-paths-v1.md` §5 exception process for this edit to a declared protected
+> path. **Disclosed process gap, corrected at closure**: no `docs/tasks/task-T443.md` was committed
+> before/during dispatch (unlike `T440`-`T442`), even though the implementer's MR !287 description
+> claimed the exception was satisfied by that file — authored retroactively this closure commit,
+> matching the implementer's actual delivered scope. **Orchestrator independent verification
+> before this row was written** (not accepted on the implementer's self-report alone, mirroring
+> the T441/T442 discipline): re-checked out the pushed branch fresh (`66031b0`, zero drift);
+> `git diff --stat`/full diff against `origin/develop` read line-by-line — exactly `scripts/
+> scorecard.py`, 34 insertions, 0 deletions, nothing else; zero hits on every protected/adjacent
+> path swept (`tests/golden/**`, `docs/benchmarks/tb-subset.*`, `.mcp.json`, the ledger files,
+> `feature/T475-codex-platform-integration`). Ran `scorecard.py` fresh myself — output diff showed
+> only the two new null keys per case (40 lines across 20 cases) plus the expected `generated_at`
+> timestamp change, every other field byte-identical; worktree restored after. Re-ran
+> `test_protected_paths_declared.py`/`test_golden_held_out_isolation.py` fresh (18 passed, 10+8) —
+> read both files' real assertions and found `scorecard.py` is structurally exempt from the
+> held-out guard's own checks by design, so manually swept the new content against the real,
+> freshly re-derived 31-id `stable` list instead (zero hits). `tests/run.py` fresh: 514 tests,
+> `OK`, `skipped=24`, unchanged. Independently confirmed `T456`'s citation: genuinely `blocked`
+> in `active-tasks.md`, not `done`, matching the implementer's own self-corrected citation. Real
+> GitLab CI independently polled to completion (pipeline `2842771236`) — 5/5 jobs green. **Phase 4
+> does NOT close cleanly despite all four of T440-T443 now being `done`** — checked all four of
+> `plan-035` §2.4's Phase 4 acceptance-criteria bullets directly: (1) no `mechanical`-tier golden
+> case has ever run on an economy model — unmet; (2) no dispatch-time mechanism demonstrates an
+> actual escalation, `T442`'s own scope explicitly excludes this — unmet; (3) no `cost` field
+> exists anywhere in `scripts/scorecard.py` — unmet, verified via direct grep, zero hits; (4)
+> `T440`'s stable-component eligibility gate is stated but not mechanically enforced against any
+> real brief — unmet. T440-T443 delivered Phase 4's policy/schema scaffolding in full; its
+> substantive gates remain open, blocked on the same live-execution-harness gap already tracked at
+> `T458` (pending) / `T456` (blocked) elsewhere in this ledger. Full reasoning in `docs/tasks/
+> task-T443.md`'s Execution notes. Left unmerged per this session's standing no-self-merge
+> instruction — MR !287 handed back to the top-level session for merging.
+
 > **T442 closed 2026-09-12 — plan-043's Phase 4 third task, delivered and independently
 > verified.** `implementation/knowledge/instructions/mechanical-tier-escalation-policy.md` (new —
 > the one-tier escalation mapping, the recording requirement, and the misclassification-defect
