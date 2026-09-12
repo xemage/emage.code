@@ -7,6 +7,31 @@
 | T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-09 |
 | T483 | Register `hindsight` and `cwso` as managed MCP servers across all platforms | solution-architect | pending | P1 | None | 2026-09-11 |
 
+> **T485 closed 2026-09-12 — first-ever real memory index built against this repo, executed
+> directly by the orchestrator as a small, separate, user-approved prerequisite infrastructure
+> task (distinct from T458 itself), prompted by T484's own finding that no index has ever existed
+> anywhere in this repo. Confirmed `fastembed` genuinely not importable in this task's own
+> environment (`ModuleNotFoundError`), resolved via the exact precedent T455 already established
+> for the identical blocker: installed the already-repo-pinned `fastembed==0.8.0`
+> (`implementation/runtime/memory/requirements.txt`) into a throwaway venv outside the repo — no
+> repo dependency manifest touched, no silent workaround. Inspected the vault directly and found it
+> genuinely empty (`implementation/knowledge/memory/{project,general,shared}/` contain only
+> `.gitkeep` placeholders — zero `.md` entries anywhere, T452's own brief having explicitly scoped
+> real vault content out); ran T452's real, unmodified `build.py` CLI against it, producing a real,
+> honestly-empty index (`manifest.json`: `entry_count: 0, chunk_count: 0, rejection_count: 0`,
+> `embedding_model: nomic-ai/nomic-embed-text-v1.5`) rather than padding the vault with filler
+> content. Determined per ADR-005 Decision 1's literal "not the canonical store" / "rebuildable"
+> framing, plus T452's own clean-`git-ls-files` closing precedent, that the built index is a
+> locally-rebuilt, gitignored artifact, not git-versioned — added the missing
+> `implementation/runtime/memory/_index/` `.gitignore` entry (a real, previously-undocumented gap)
+> rather than committing the (trivially small, but not the point) built index files. Re-ran T484's
+> exact corrected `@context-retriever` CLI invocation against the new index: the old
+> `FileNotFoundError` is gone, replaced by a real exit-0 success returning `[]` (an honestly-empty
+> result set, matching the honestly-empty index — not a new failure). **Does not close, advance, or
+> scale T458 or T456**, and deliberately does not re-run T484's walking-skeleton trial — both
+> flagged in `task-T485.md` as the user's own next decision, not assumed here. See
+> `task-T485.md`'s Execution notes for full detail.
+
 > **T484 closed 2026-09-12 — T458 walking-skeleton, one golden case, one live trial per arm,
 > executed directly by the orchestrator per this session's user decision (in-process `Agent` tool,
 > the mechanism this whole session already uses for every dispatch; `devops-engineer` lacks the
