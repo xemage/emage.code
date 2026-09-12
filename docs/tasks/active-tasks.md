@@ -7,6 +7,47 @@
 | T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-09 |
 | T483 | Register `hindsight` and `cwso` as managed MCP servers across all platforms | solution-architect | pending | P1 | None | 2026-09-11 |
 
+> **T486 closed 2026-09-12 — first real population of the knowledge vault, dispatched to
+> `devops-engineer` with a literal, pre-written 11-entry brief (6 `project`-scope, 5
+> `general`-scope) sourced from already-merged repo content (ADR-005, `protected-paths-v1.md`,
+> `golden-suite-format-v1.md`, this project's own `AGENTS.md`/branch-protection conventions),
+> directly answering T485's own finding that the vault was structurally empty. **A real,
+> previously-undetected self-referential ledger-defect was found and fixed before dispatch, not
+> after**: the orchestrator's own draft brief text used two currently-top-tier component ids
+> (`git-workflow`, `validation-gates`) as bare tokens in a citation and two frontmatter `tags`
+> lists; running `check-maturity.py --verbose` against the drafted-but-undispatched brief showed
+> both regressing from `PASS (stable)` to `FAIL ... claims stable: open P1 task T486 names it in
+> its brief` — caught and fixed (generic phrasing, renamed tags) before the brief was ever handed
+> to an agent, re-confirmed at 31/31 stable, 0 fail before dispatch. Delivered work: real build
+> (`wrote 25 chunks, 0 rejections`, `entry_count: 11`) against the new content, independently
+> reproduced byte-for-byte by the orchestrator in a separate throwaway venv/index build, not
+> merely accepted from the implementer's self-report. Both required proof-of-retrieval queries
+> independently re-run by the orchestrator against its own freshly-built index and confirmed to
+> match the implementer's reported top hits and scores exactly (`protected-golden-suite-paths.md`
+> at `score: 0.924` for the protected-paths query; `memory-scope-enforcement-mechanism.md` at
+> `score: 0.875` for the scope-enforcement query) — real, non-empty, genuinely relevant results
+> against real vault content, for the first time in this repo's history. `test_memory_indexing_
+> pipeline.py` (18 pass/2 env-gated skip), `test_retrieval_eval_metrics.py` (24 pass),
+> rebuild-determinism `--check-against` ("no drift"), and a fresh `check-maturity.py` re-run
+> against the final committed state (31/31 stable, 0 fail) plus a held-out case-ID sweep (0 hits)
+> were all independently re-run by the orchestrator, not accepted from the implementer's report
+> alone. One real, disclosed, orchestrator-owned finding from the implementer's `tests/run.py`
+> run (514 tests, 1 failure): `test_every_active_task_has_a_plan` failed while this task's row
+> was still `in_progress` in this table with no backing `docs/plans/` entry — expected and
+> self-resolving once this closure removes the row from this table (mirrors T484/T485's own
+> precedent of never leaving a table row attached across a plan-coverage check); re-ran
+> `tests/run.py` after this closure edit and confirmed 514 tests, 0 failures, `skipped=24`,
+> restored to the pre-task baseline. `git diff --stat` against `origin/develop` on the pushed
+> branch confirmed scoped to exactly the 11 new vault files (269 insertions), nothing under
+> `tests/golden/**`, `scripts/scorecard.py`, `docs/benchmarks/tb-subset.*`, `.mcp.json`, or
+> `feature/T475-codex-platform-integration`. Real GitLab CI independently polled on the actual
+> pushed SHA (`9564fbc`, pipeline `2843462694`) — 5/5 jobs green, not assumed. Left unmerged per
+> this session's standing no-self-merge instruction — MR !291 handed back to the top-level
+> session. **Explicitly a small, illustrative first population (11 entries) — not comprehensive
+> coverage of this project's knowledge. Does not close, advance, or scale T458 or T456, and does
+> not re-run T484's walking-skeleton trial.** See `task-T486.md` for the full brief and
+> execution record.
+
 > **T485 closed 2026-09-12 — first-ever real memory index built against this repo, executed
 > directly by the orchestrator as a small, separate, user-approved prerequisite infrastructure
 > task (distinct from T458 itself), prompted by T484's own finding that no index has ever existed
