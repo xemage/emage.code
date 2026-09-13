@@ -7,6 +7,35 @@
 | T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-09 |
 | T483 | Register `hindsight` and `cwso` as managed MCP servers across all platforms | solution-architect | pending | P1 | None | 2026-09-11 |
 
+> **T488 closed 2026-09-13 — Tier 1 (5-case breadth expansion, k=1) complete, results honest and
+> reported exactly as measured.** Control pass rate 5/5, treatment pass rate 3/5 — the
+> non-regression floor (`plan-045` Finding 3) was **not met**. Both treatment shortfalls
+> (`code-review-fail-blocker-details`, `security-audit-coverage-consistency`) trace to per-trial
+> formatting choices (a table-header field vs. a literal bolded field; a merged verdict/status
+> line vs. the template's own two-field pattern), independently confirmed unrelated to retrieved
+> content — not explained away, reported as a real, unresolved statistical-resolution fragility at
+> `k=1`, exactly as `plan-045` Finding 3 predicted this scale could produce. One case
+> (`plan-required-sections-compliant`) showed a clear, traceable retrieval influence (three
+> distinct claims in a treatment-only section, each tracing to a distinct retrieved chunk); three
+> cases retrieved real, topically-relevant content with no content distinguishable from what the
+> un-retrieved control independently produced. Every query was agent-formulated, never hinted, and
+> independently re-run by the orchestrator against its own separately-built index before being
+> accepted as matching each trial's self-report. Vault confirmed unchanged at 11 entries — no
+> growth, per Finding 5. **This does not close or advance T458 or T456** — both remain exactly as
+> they were. Tier 2 (a 4-trial noise probe) remains a separate, undispatched next step.
+> **Authorization note**: this task was dispatched by the orchestrating session's direct,
+> this-turn instruction, not by `plan-045`'s own Approval checklist (which remains unchecked on
+> disk) — `plan-045` supplied only the technical specification for what "Tier 1" means. **A real
+> GitLab credential failure was found and independently resolved by the top-level session**: the
+> configured personal access token was rejected directly by GitLab's API (401, confirmed via raw
+> `curl`, not a CLI configuration issue) — MR !294 was created via `git push` with GitLab's native
+> `-o merge_request.create` push options instead, and CI was polled via the project's public,
+> unauthenticated API, bypassing the broken token entirely rather than blocking on it.
+> Independently re-verified before merging: `git diff --stat` scoped to exactly the two docs/plan
+> files this task and its own backing plan touch; `validate-tasks.py` PASS; `check-maturity.py`
+> 79 components, 0 failing, unchanged distribution; `tests/run.py` fresh (514 tests, `OK`,
+> `skipped=24`, unchanged); real GitLab CI green (5/5) before merging.
+
 > **T487 closed 2026-09-12 — re-ran T484's exact walking-skeleton mechanism (one live control-arm
 > trial, one live treatment-arm trial of `/new-feature`'s literal template on `tests/golden/open/
 > new-feature-plan-doc-compliant`), executed directly by the orchestrator for the same
