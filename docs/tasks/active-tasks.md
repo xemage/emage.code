@@ -5,7 +5,8 @@
 | T456 | Downstream measurement (ship gate) | evaluation-agent | blocked | P0 | T454 (done), T455 (done), T458 (pending) | 2026-09-09 |
 | T457 | Scoped, non-`Bash` execution/read primitive for `@security-engineer` and `@context-retriever` | solution-architect | pending | P1 | None | 2026-09-09 |
 | T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-09 |
-| T483 | Register `hindsight` and `cwso` as managed MCP servers across all platforms | solution-architect | pending | P1 | None | 2026-09-11 |
+| T491 | Implement `hindsight`/`cwso` MCP registration (servers.yaml + sync.mjs, per T483's ratified design) | backend-developer | in_progress | P1 | None | 2026-09-16 |
+| T492 | Extend `test_mcp_secret_guard.py` to cover `headers` blocks (per T483 design §7) | qa-engineer | blocked | P1 | T491 | 2026-09-16 |
 
 > **T488 closed 2026-09-13 — Tier 1 (5-case breadth expansion, k=1) complete, results honest and
 > reported exactly as measured.** Control pass rate 5/5, treatment pass rate 3/5 — the
