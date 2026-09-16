@@ -60,6 +60,19 @@ servers:
     transport: remote
     url: "https://mcp.context7.com/mcp"
 
+  hindsight:
+    tags: [core]
+    transport: remote
+    url: { fromEnv: HINDSIGHT_MCP_URL }
+
+  cwso:
+    tags: [extended]
+    transport: remote
+    url: { fromEnv: CWSO_MCP_URL }
+    headers:
+      Authorization: { fromEnv: CWSO_BEARER_TOKEN, secret: true, wrap: "Bearer {VAR}" }
+      Origin: { fromEnv: CWSO_ORIGIN }
+
   hf-mcp-server:
     tags: [extended]
     transport: remote

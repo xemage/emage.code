@@ -5,8 +5,63 @@
 | T456 | Downstream measurement (ship gate) | evaluation-agent | blocked | P0 | T454 (done), T455 (done), T458 (pending) | 2026-09-09 |
 | T457 | Scoped, non-`Bash` execution/read primitive for `@security-engineer` and `@context-retriever` | solution-architect | pending | P1 | None | 2026-09-09 |
 | T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-09 |
-| T491 | Implement `hindsight`/`cwso` MCP registration (servers.yaml + sync.mjs, per T483's ratified design) | backend-developer | in_progress | P1 | None | 2026-09-16 |
-| T492 | Extend `test_mcp_secret_guard.py` to cover `headers` blocks (per T483 design §7) | qa-engineer | blocked | P1 | T491 | 2026-09-16 |
+| T492 | Extend `test_mcp_secret_guard.py` to cover `headers` blocks (per T483 design §7) | qa-engineer | blocked | P1 | T491 (done) | 2026-09-16 |
+
+> **T491 closed 2026-09-16 — implements T483's ratified design (`docs/artifacts/
+> mcp-header-url-templating-design-v1.md`) exactly, bringing the two hand-added, hitherto
+> non-generator MCP servers `hindsight`/`cwso` into `servers.yaml`+`sync.mjs`'s declarative
+> pipeline with zero behavioral change to any existing server.** Extended `parseServersYaml()`
+> (generalized `envBlock` into a `BLOCK_KEYS = {env, headers}` open-block tracker, widened the
+> sub-key regex to allow hyphens, added an inline-object branch for scalar top-level keys like
+> `url: { fromEnv: ... }`); added `mapTemplatedValue()` and refactored `mapEnv()` into a thin
+> per-key wrapper around it (signature/~30 call sites unchanged); extended all 6 `emitMcp()` format
+> branches to template `url` and conditionally emit `headers`. Added `hindsight` (`core`, remote)
+> and `cwso` (`extended`, remote, `Authorization`/`Origin` headers) to `servers.yaml`; regenerated
+> all platform projections + provenance sidecars; updated `mcp-platform-contract-v1.md` (15→17
+> servers, 7→8 core, 8→9 extended). One disclosed, in-scope self-resolved fix to
+> `tests/functional/test_platform_projections.py`'s `_remote_server_urls()` helper, which assumed
+> every remote server's `url` was a plain literal — extended it (and added a new
+> `_remote_server_headers()` helper) to mirror `sync.mjs`'s own `mapTemplatedValue()`/`mapEnv()`
+> rendering rule; read directly and confirmed genuine and narrow (strengthens the assertion by also
+> checking `headers`, does not weaken any existing check), not a golden/protected-path file.
+> **Orchestrator independent verification before this row was written** (not accepted on the
+> implementer's self-report alone, mirroring the T440–T443 discipline): re-checked out the pushed
+> branch fresh into an isolated worktree tracking `origin/agent/backend-developer/T491` (confirmed
+> identical SHA `97a4611`, merge-base equals `origin/develop`'s tip, no staleness); `git diff --stat`
+> against `origin/develop` confirmed scoped to exactly the 18 claimed files (`sync.mjs`,
+> `servers.yaml`, `mcp-platform-contract-v1.md`, 6 platform projection files + provenance sidecars,
+> the one test-file fix) — zero hits on `tests/golden/**`, `scripts/scorecard.py`,
+> `docs/benchmarks/tb-subset.*`, root `.mcp.json`, and `feature/T475-codex-platform-integration`
+> (confirmed not an ancestor either direction). Read the full `sync.mjs` diff directly against
+> design doc `mcp-header-url-templating-design-v1.md` §5's exact specified code — genuine verbatim
+> match, not merely "something changed." Re-ran `node implementation/scripts/sync.mjs --root
+> implementation --check` fresh — "no drift across 577 files." Independently verified Acceptance
+> Criterion 3 directly (not the implementer's reported Python comparison) by diffing the real,
+> untouched, committed root `.mcp.json`'s `hindsight`/`cwso` keys against the regenerated
+> `implementation/.mcp.json`'s same keys on the actual T491-branch commit — byte-for-byte identical;
+> `git diff origin/develop origin/agent/backend-developer/T491 -- .mcp.json` empty, confirming zero
+> change to the real root file. **One false alarm self-caught and corrected during verification**:
+> an initial comparison mistakenly read the orchestrating session's own separate, unrelated,
+> locally-modified working-copy `.vscode/mcp.json` (a repo-root self-install artifact with a stray
+> uncommitted hardcoded-IP edit to `hindsight`, unrelated to this task) instead of the actual
+> `implementation/.vscode/mcp.json` target tree `sync.mjs --root implementation` generates —
+> corrected by re-checking the right file, which showed `hindsight` present with exactly the 8 core
+> keys the contract doc claims, no discrepancy. Re-ran the 3 named test files fresh
+> (`test_mcp_secret_guard.py`/`test_mcp_schema_validation.py`/`test_mcp_platform_conformance.py`):
+> 9 passed, matching the claim exactly. Re-ran full `python3 tests/run.py` fresh: 514 tests, `OK`,
+> `skipped=24`, unchanged from the pre-task baseline. Re-derived the current 31-id `stable`
+> component list fresh via `check-maturity.py --verbose` (79 components checked, 0 failing; 20
+> agents + 4 instructions + 7 skills = 31 stable, unchanged distribution) and swept every added
+> line in the diff against all 31 — zero hits, confirming this task does not repeat the
+> self-referential ledger-defect regression T492's own brief disclosed hitting today (T492's brief
+> deliberately avoids naming the stable `qa-engineer` id as its own literal `Owner:` line for
+> exactly this reason). Real GitLab CI independently polled to completion on the actual pushed SHA
+> (`97a4611`, pipeline `2855678637`) — 5/5 jobs green (`sync-no-diff`, `validation-super-gate`,
+> `verify-knowledge-drift`, `unit-tests`, `markdown-links`), not assumed. Left unmerged per this
+> session's standing no-self-merge instruction — MR !301 handed back to the top-level session for
+> merging. `T492` (extend `test_mcp_secret_guard.py` to cover `headers` blocks, depends on `T491`)
+> is next in `plan-035`'s sequence, unblocked at the ledger level now that `T491` shows `done` here
+> — still gated on the actual MR merging to `develop` before `T492` branches, per its own brief.
 
 > **T488 closed 2026-09-13 — Tier 1 (5-case breadth expansion, k=1) complete, results honest and
 > reported exactly as measured.** Control pass rate 5/5, treatment pass rate 3/5 — the

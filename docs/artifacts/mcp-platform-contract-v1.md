@@ -40,10 +40,12 @@ not the same evidentiary class as a command transcript and should not be represe
 
 ## 2. Server registry summary (`servers.yaml`)
 
-15 servers total: 7 tagged `core` (`gitlab`, `playwright`, `fetch`, `memory`,
-`sequential-thinking`, `brave`, `context7`), 8 tagged `extended` (`hf-mcp-server`, `filesystem`,
-`github`, `git`, `supabase`, `docker`, `postgresql`, `toolradar`). Two servers use
-`transport: remote` (`context7`, `hf-mcp-server`); the other 13 use `transport: stdio`.
+**Updated by T491 (see §8):** 17 servers total: 8 tagged `core` (`gitlab`, `playwright`, `fetch`,
+`memory`, `sequential-thinking`, `brave`, `context7`, `hindsight`), 9 tagged `extended`
+(`hf-mcp-server`, `filesystem`, `github`, `git`, `supabase`, `docker`, `postgresql`, `toolradar`,
+`cwso`). Four servers use `transport: remote` (`context7`, `hf-mcp-server`, `hindsight`, `cwso`);
+the other 13 use `transport: stdio`. (Superseded original count: 15 servers total, 7 core + 8
+extended, 2 remote — accurate as of T420, prior to T491.)
 
 **Note on `servers.yaml`'s own header comment (lines 3–7):** it lists only 4 of the 7 real
 projection targets (`.vscode/mcp.json`, `.gemini/settings.json`, `.opencode/opencode.json`,
@@ -57,15 +59,18 @@ All 7 output paths below are relative to the repo root and were confirmed agains
 `implementation/platforms/*.json`'s `mcp.outputFile` resolved against `mcp.outputDir`
 (`path.resolve(outRoot, manifest.mcp.outputFile)` in `sync.mjs`), not assumed from convention.
 
+**Updated by T491:** "Servers in scope" counts below reflect the post-T491 registry (17 total, 8
+core + 9 extended; see §2, §8).
+
 | Platform | Manifest file | Output path (repo-root-relative) | `mcp.format` | Tags included | Servers in scope |
 |---|---|---|---|---|---|
-| `claude-code` | `claude-code.json` | `.mcp.json` (via `outputDir: .claude`, `outputFile: ../.mcp.json`) | `claude-code` | `core` + `extended` | all 15 |
-| `cline` | `cline.json` | `.cline/mcp.json` | `cline` | `core` + `extended` | all 15 |
-| `cursor` | `cursor.json` | `.cursor/mcp.json` | `cursor` | `core` + `extended` | all 15 |
-| `gemini` | `gemini.json` | `.gemini/settings.json` | `gemini` | `core` + `extended` | all 15 |
-| `github` | `github.json` | `.vscode/mcp.json` (via `outputDir: .github`, `outputFile: ../.vscode/mcp.json`) | `vscode` | `core` **only** | 7 core servers |
-| `opencode` | `opencode.json` | `.opencode/opencode.json` | `opencode` | `core` + `extended` | all 15 |
-| `pi` | `pi.json` | `.pi/mcp.json` | `cursor` (pi's manifest literally declares `"format": "cursor"` — it reuses the Cursor wire shape verbatim, not a distinct `pi` format; confirmed by `pi.json` line 30 and by the fact `.pi/mcp.json` and `.cursor/mcp.json` are byte-identical in `mcpServers` shape) | `core` + `extended` | all 15 |
+| `claude-code` | `claude-code.json` | `.mcp.json` (via `outputDir: .claude`, `outputFile: ../.mcp.json`) | `claude-code` | `core` + `extended` | all 17 |
+| `cline` | `cline.json` | `.cline/mcp.json` | `cline` | `core` + `extended` | all 17 |
+| `cursor` | `cursor.json` | `.cursor/mcp.json` | `cursor` | `core` + `extended` | all 17 |
+| `gemini` | `gemini.json` | `.gemini/settings.json` | `gemini` | `core` + `extended` | all 17 |
+| `github` | `github.json` | `.vscode/mcp.json` (via `outputDir: .github`, `outputFile: ../.vscode/mcp.json`) | `vscode` | `core` **only** | 8 core servers |
+| `opencode` | `opencode.json` | `.opencode/opencode.json` | `opencode` | `core` + `extended` | all 17 |
+| `pi` | `pi.json` | `.pi/mcp.json` | `cursor` (pi's manifest literally declares `"format": "cursor"` — it reuses the Cursor wire shape verbatim, not a distinct `pi` format; confirmed by `pi.json` line 30 and by the fact `.pi/mcp.json` and `.cursor/mcp.json` are byte-identical in `mcpServers` shape) | `core` + `extended` | all 17 |
 
 ### 3.1 Wire-shape detail per format (from `emitMcp()`, `sync.mjs` lines ~293–378)
 
@@ -83,21 +88,34 @@ All 7 output paths below are relative to the repo root and were confirmed agains
 `mapEnv()` — never interpolated to a real secret value at generation time, consistent with
 `security-guidelines.md`.
 
+**Updated by T491:** every "Remote server shape" cell above now optionally gains a trailing
+`headers?` field (e.g. `{ type: "http", url, headers? }` for claude-code) when a server's
+`servers.yaml` entry declares a `headers:` block (today, only `cwso`). `url` itself may now be
+either a literal string (unchanged, e.g. `context7`, `hf-mcp-server`) or a templated-value spec
+(`{ fromEnv: VAR }`, optionally with `wrap`) rendered via the new `mapTemplatedValue()` helper,
+which `mapEnv()` is now a thin per-key wrapper around — see
+`docs/artifacts/mcp-header-url-templating-design-v1.md` (T483) §3–§5 for the full spec and
+per-platform `headers`-support evidence table (§5.3).
+
 ### 3.2 Explicit per-platform server enumeration
 
-**`core` + `extended` platforms** (`claude-code`, `cline`, `cursor`, `gemini`, `opencode`, `pi`) —
-all 15 servers appear: `gitlab`, `playwright`, `fetch`, `memory`, `sequential-thinking`, `brave`,
-`context7`, `hf-mcp-server`, `filesystem`, `github`, `git`, `supabase`, `docker`, `postgresql`,
-`toolradar`. Confirmed by direct read of `.mcp.json`, `.cline/mcp.json`, `.cursor/mcp.json`,
-`.gemini/settings.json`, `.opencode/opencode.json`, `.pi/mcp.json` — each lists exactly these 15
-top-level server keys, no more, no fewer.
+**Updated by T491.**
 
-**`core`-only platform** (`github`) — exactly 7 servers appear: `gitlab`, `playwright`, `fetch`,
-`memory`, `sequential-thinking`, `brave`, `context7`. Confirmed by direct read of
-`.vscode/mcp.json`'s `servers` object: it contains precisely these 7 keys plus one additional,
-non-generator key (`cwso`) addressed in §4. None of the 8 `extended`-tagged servers
-(`hf-mcp-server`, `filesystem`, `github`, `git`, `supabase`, `docker`, `postgresql`, `toolradar`)
-appear.
+**`core` + `extended` platforms** (`claude-code`, `cline`, `cursor`, `gemini`, `opencode`, `pi`) —
+all 17 servers appear: `gitlab`, `playwright`, `fetch`, `memory`, `sequential-thinking`, `brave`,
+`context7`, `hindsight`, `cwso`, `hf-mcp-server`, `filesystem`, `github`, `git`, `supabase`,
+`docker`, `postgresql`, `toolradar`. Confirmed by direct read of `.mcp.json`, `.cline/mcp.json`,
+`.cursor/mcp.json`, `.gemini/settings.json`, `.opencode/opencode.json`, `.pi/mcp.json` — each lists
+exactly these 17 top-level server keys, no more, no fewer, after `node scripts/sync.mjs --root
+implementation` regeneration (see §8).
+
+**`core`-only platform** (`github`) — exactly 8 servers appear: `gitlab`, `playwright`, `fetch`,
+`memory`, `sequential-thinking`, `brave`, `context7`, `hindsight`. Confirmed by direct read of
+`.vscode/mcp.json`'s `servers` object: it contains precisely these 8 keys plus one additional,
+non-generator key (`cwso`, still dest-only hand-added — `cwso` is tagged `extended`, so the
+`github` manifest's `core`-only tag filter never emits it; see §4 and §8) addressed in §4. None of
+the other 8 `extended`-tagged servers (`hf-mcp-server`, `filesystem`, `github`, `git`, `supabase`,
+`docker`, `postgresql`, `toolradar`) appear.
 
 ## 4. Known non-generator content (single-file merge targets)
 
@@ -117,9 +135,14 @@ prune) from a hand-added key (never pruned).
   should not flag `cwso` as a generator conformance gap** — it is intentional, documented
   (`merge-mcp-json.py` docstring + `prune_names_recursive`) non-generator content, consistent with
   the orchestrator's pre-dispatch finding.
-- `.mcp.json` (claude-code) currently has no dest-only content beyond the 15 generator-owned
-  keys — its `.mcp.json.provenance.json` sidecar's `generatorOwnedKeys` (15 entries, core +
-  extended) matches its live content exactly, with nothing extra.
+- `.mcp.json` (claude-code) currently has no dest-only content beyond the generator-owned
+  keys — its `.mcp.json.provenance.json` sidecar's `generatorOwnedKeys` matches its live content
+  exactly, with nothing extra. **Updated by T491:** as of T491, `hindsight` and `cwso` are
+  generator-owned keys too (17 total), and the root `.mcp.json`'s pre-existing, hand-added
+  `hindsight`/`cwso` entries were independently confirmed byte-identical to what the extended
+  generator now produces for those two keys (see §8) — so this file's dest-only-content status is
+  unchanged (still none) even though two of its keys' *provenance* (hand-added vs. generator-owned)
+  flipped.
 
 **A provenance-sidecar anomaly found independently, not part of the plan-037 claim, worth flagging
 for T421/T422:** `sync.mjs`'s `syncPlatform()` writes a `<outputFile>.provenance.json` sidecar
@@ -264,3 +287,70 @@ in content and narrow in scope — not a `sync.mjs` code defect, and not related
   reopen, §5's `brave`/`context7`/`cwso` adjudication.
 
 Both items in §6 are now closed. No further open items remain in this document as of this section.
+
+## 8. T491 update — `hindsight`/`cwso` registration (added post-authoring, 2026-09-16)
+
+This section documents the registry/contract changes made by T491, which implemented T483's
+ratified design (`docs/artifacts/mcp-header-url-templating-design-v1.md`) to bring `hindsight` and
+`cwso` — previously non-generator, hand-added content on `.mcp.json` and `.vscode/mcp.json` (§4
+above, as originally authored) — into `servers.yaml` and `sync.mjs`'s declarative pipeline.
+
+**Registry changes:**
+- `hindsight` added, `tags: [core]`, `transport: remote`, `url: { fromEnv: HINDSIGHT_MCP_URL }`.
+- `cwso` added, `tags: [extended]`, `transport: remote`, `url: { fromEnv: CWSO_MCP_URL }`, plus a
+  `headers:` block (`Authorization: { fromEnv: CWSO_BEARER_TOKEN, secret: true, wrap: "Bearer
+  {VAR}" }`, `Origin: { fromEnv: CWSO_ORIGIN }`).
+- New registry totals: 17 servers (8 core, 9 extended; 4 `remote`, 13 `stdio`) — see §2.
+
+**Generator changes (`sync.mjs`):** `parseServersYaml()` gained a `headers:` block-key (generalized
+from the previous `env`-only check) and an inline-object branch for scalar top-level keys (e.g.
+`url: { fromEnv: ... }`); a new `mapTemplatedValue()` helper renders a templated-value spec against
+a platform's placeholder pattern, and `mapEnv()` is now a thin per-key wrapper around it (unchanged
+signature/call sites). All 6 `emitMcp()` format branches now template `url` via
+`mapTemplatedValue()` and emit `headers` via `mapEnv()` when present. Full spec:
+`docs/artifacts/mcp-header-url-templating-design-v1.md` §5.
+
+**Verification performed this session (real command transcripts, not manual trace):**
+
+```
+$ node implementation/scripts/sync.mjs --root implementation
+[claude-code] wrote 89 files -> .claude
+[cline] wrote 42 files -> .cline
+[cursor] wrote 89 files -> .cursor
+[gemini] wrote 89 files -> .gemini
+[github] wrote 90 files -> .github
+[opencode] wrote 89 files -> .opencode
+[pi] wrote 89 files -> .pi
+
+Done - 577 files written.
+
+$ node implementation/scripts/sync.mjs --root implementation --check
+...
+OK - no drift across 577 files.
+```
+
+**Byte-for-byte acceptance check (root `.mcp.json` vs. regenerated `implementation/.mcp.json`,
+scoped to the `hindsight`/`cwso` keys only):** confirmed equal, both as parsed JSON objects and in
+per-key field order (`type`, `url`, `headers?`). Root `.mcp.json` itself shows **zero** `git diff`
+— this task's `sync.mjs --root implementation` regeneration only ever writes inside
+`implementation/`, so the repo-root `.mcp.json` (a separate, `install.sh --update`-merged file) was
+not touched at all, consistent with the design's "regeneration is a no-op for that file's content"
+prediction.
+
+**`github`/`.vscode/mcp.json` regression check:** confirmed `cwso` (tagged `extended`) does **not**
+appear in the regenerated `.vscode/mcp.json` (`github` manifest is `core`-only) — the pre-existing,
+dest-only, hand-added `cwso` entry there (with its VS Code `${input:cwso_jwt_token}` secure-prompt
+shape) remains untouched and is not at risk of being overwritten by a generic `${env:...}` shape on
+a future `--update`, per the design's §2(a) hard-constraint rationale. `hindsight` (tagged `core`)
+does now appear there, as expected.
+
+**Test suite:** `tests/functional/test_mcp_secret_guard.py`, `test_mcp_schema_validation.py`,
+`test_mcp_platform_conformance.py` (9 tests) pass unmodified. One pre-existing, unrelated test file
+— `tests/functional/test_platform_projections.py`'s `_remote_server_urls()` helper and
+`test_remote_mcp_transport_shape_for_previously_uncovered_platforms` — assumed every remote
+server's `url` was a plain literal (true before T491) and needed a small, in-scope update to render
+templated `url`/`headers` values the same way `sync.mjs` does, to stay accurate against the new
+schema; full `python3 tests/run.py` is green (514 tests, 0 failures, 24 skipped — matching the
+pre-task baseline) after that update. See T491's completion report for the exact diff.
+
+No open items remain from this update.

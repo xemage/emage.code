@@ -2,11 +2,11 @@
 
 **ID:** T491
 **Owner:** backend-developer
-**Status:** in_progress — dispatched this session
+**Status:** done
 **Priority:** P1
 **Depends on:** None (T483's design is `Final` and ratified; this task implements it)
 **Created:** 2026-09-16
-**Completed:** —
+**Completed:** 2026-09-16
 **Based on:** `docs/artifacts/mcp-header-url-templating-design-v1.md` (T483, status `Final`,
 independently spot-checked by the orchestrator this session against the real, current
 `implementation/scripts/sync.mjs`, `implementation/knowledge/mcp/servers.yaml`, root `.mcp.json`,
@@ -107,3 +107,44 @@ severity (`critical` | `major` | `minor`) per `AGENTS.md`. Max 2 retries before 
 orchestrator. If the design doc's specified code, once actually applied, does not in fact produce
 byte-identical `.mcp.json` output for `hindsight`/`cwso` (i.e. Acceptance Criterion 3 fails), that
 is a `technical`/`major` blocker — stop and report rather than hand-patching around the design.
+
+## Closure notes (orchestrator, 2026-09-16)
+
+Delivered per objective: `sync.mjs` extended exactly per design §5 (`parseServersYaml()`
+generalized to a `BLOCK_KEYS = {env, headers}` open-block tracker, widened sub-key regex,
+inline-object branch for scalar keys; `mapTemplatedValue()` added; `mapEnv()` refactored into a
+thin wrapper around it, signature/call sites unchanged; all 6 `emitMcp()` format branches
+extended); `hindsight`/`cwso` added to `servers.yaml` per design §6; all platform projections +
+provenance sidecars regenerated; `mcp-platform-contract-v1.md` updated (15→17 servers). One
+disclosed, in-scope, self-resolved fix to `tests/functional/test_platform_projections.py`'s
+`_remote_server_urls()` helper (added `_render_templated_value()`/`_remote_server_headers()` to
+mirror `sync.mjs`'s own rendering rule, since the helper previously assumed every remote `url` was
+a plain literal).
+
+**Independently verified by the orchestrator, not accepted on the implementer's self-report
+alone** (fresh isolated worktree tracking `origin/agent/backend-developer/T491`, SHA `97a4611`):
+`git diff --stat` against `origin/develop` scoped to exactly the 18 claimed files, zero hits on
+`tests/golden/**`, `scripts/scorecard.py`, `docs/benchmarks/tb-subset.*`, root `.mcp.json`, and
+`feature/T475-codex-platform-integration`; the full `sync.mjs` diff read directly against design
+§5's exact specified code — genuine verbatim match; `sync.mjs --root implementation --check`
+re-run fresh — no drift, 577 files; Acceptance Criterion 3 independently verified by diffing the
+real, untouched, committed root `.mcp.json`'s `hindsight`/`cwso` keys against the regenerated
+`implementation/.mcp.json`'s same keys on the actual branch commit — byte-for-byte identical,
+`git diff -- .mcp.json` confirmed empty on this branch. One false alarm was self-caught and
+corrected mid-verification: an initial check read the orchestrating session's own unrelated,
+locally-modified working-copy `.vscode/mcp.json` (a repo-root self-install artifact with a stray
+uncommitted hardcoded-IP `hindsight` edit) instead of the real `implementation/.vscode/mcp.json`
+target tree — corrected, and the correct file shows `hindsight` present with exactly the 8 core
+keys the contract doc claims. The 3 named test files re-run fresh: 9 passed; full `tests/run.py`
+fresh: 514 tests, `OK`, `skipped=24`, unchanged. Re-derived the current 31-id `stable` component
+list fresh (`check-maturity.py --verbose`: 79 components, 0 failing, 20/4/7 = 31 stable) and swept
+every added diff line against all 31 — zero hits, confirming this task does not repeat the
+self-referential ledger-defect regression `T492`'s own brief disclosed hitting today. Real GitLab
+CI independently polled to completion on the actual pushed SHA (`97a4611`, pipeline `2855678637`)
+— 5/5 jobs green.
+
+Left unmerged per this session's standing no-self-merge instruction — MR !301 handed back to the
+top-level session for merging. This status update and the corresponding `active-tasks.md` →
+`completed-tasks.md` row move are committed directly onto this same branch
+(`agent/backend-developer/T491`), as a further commit after the implementer's own commit, added
+only after the independent verification above passed.
