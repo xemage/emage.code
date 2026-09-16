@@ -5,7 +5,6 @@
 | T456 | Downstream measurement (ship gate) | evaluation-agent | blocked | P0 | T454 (done), T455 (done), T458 (pending) | 2026-09-09 |
 | T457 | Scoped, non-`Bash` execution/read primitive for `@security-engineer` and `@context-retriever` | solution-architect | pending | P1 | None | 2026-09-09 |
 | T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-09 |
-| T492 | Extend `test_mcp_secret_guard.py` to cover `headers` blocks (per T483 design §7) | qa-engineer | blocked | P1 | T491 (done) | 2026-09-16 |
 
 > **T491 closed 2026-09-16 — implements T483's ratified design (`docs/artifacts/
 > mcp-header-url-templating-design-v1.md`) exactly, bringing the two hand-added, hitherto
@@ -62,6 +61,54 @@
 > merging. `T492` (extend `test_mcp_secret_guard.py` to cover `headers` blocks, depends on `T491`)
 > is next in `plan-035`'s sequence, unblocked at the ledger level now that `T491` shows `done` here
 > — still gated on the actual MR merging to `develop` before `T492` branches, per its own brief.
+
+> **T492 closed 2026-09-16 — extends `find_literal_env_values()` to walk `headers` blocks per
+> T483 design §7, plus a real blocker correctly caught and resolved mid-task.** The dispatched
+> `qa-engineer` implemented the `headers`-scanning extension (`HEADER_PLACEHOLDER_TOKEN_RE`,
+> `is_allowed_header_value()`) exactly per §7, then correctly stopped and escalated rather than
+> guessing when it found the extension flagging root `.vscode/mcp.json`'s pre-existing `cwso`
+> entry — `Authorization: "Bearer ${input:cwso_jwt_token}"` (VS Code's own `${input:...}`
+> secure-prompt placeholder, distinct from the generator's `${env:VAR}` family) and
+> `Origin: "http://localhost"` (a non-secret literal), both already documented as deliberately
+> preserved by design doc T483 §2(a). Presented with three options (A: broaden accepted-placeholder
+> recognition to the `${input:VAR}` family, still needing a separate Origin carve-out; B: change
+> `.vscode/mcp.json` itself to the generator's `${env:VAR}` shape, dropping VS Code's
+> interactive-prompt security property; C: a scoped, explicit, documented allowlist exception for
+> this one known-good file+header combination), the user decided **Option C**, relayed via the
+> orchestrator. Implemented as `HEADER_VALUE_ALLOWLIST`, a `dict[(file_path, header_key),
+> expected_value]` matched by *exact value* (not merely by file+header key), consulted only when
+> `find_literal_env_values()` is given an explicit `rel_path` — the three existing fixture-driven
+> unit tests, which pass no `rel_path`, are structurally unaffected by the allowlist's existence.
+> No broadening of `HEADER_PLACEHOLDER_TOKEN_RE`'s accepted-placeholder-family logic, and no
+> general carve-out for non-`${env:VAR}` syntax anywhere else in the guard. Two new adversarial
+> regression tests added and independently re-run: a literal secret with the *same* header
+> key/value shape at a *different* file is still flagged (allowlist is not repo-wide); a
+> *tampered* value at the *same* allowlisted (file, header) key is still flagged (allowlist
+> matches by exact value, not just key); an unrelated header in the *same* allowlisted file
+> carrying a literal secret is still flagged (allowlist does not broaden to sibling headers). One
+> new positive test confirms the documented `.vscode/mcp.json` `cwso` entry now passes. **Orchestrator
+> independent verification before this row was written** (not accepted on the implementer's
+> self-report alone): re-ran `tests/functional/test_mcp_secret_guard.py` fresh in the actual pushed
+> worktree — 5/5 passed, including `test_no_literal_secrets_in_generated_mcp_output` across all 14
+> real on-disk generated files with zero failures (previously blocked on exactly this one entry);
+> re-ran the combined `test_mcp_secret_guard.py` + `test_mcp_schema_validation.py` +
+> `test_mcp_platform_conformance.py` set fresh — 11/11 passed; re-ran full `python3 tests/run.py`
+> fresh — 516 tests, `OK`, `skipped=24`, no regressions against the pre-task baseline. Re-derived
+> the current 31-id `stable` component list fresh via `check-maturity.py --verbose` (79 components
+> checked, 0 failing; 20 agents + 4 instructions + 7 skills = 31 stable, unchanged distribution) —
+> the diff's only file, `tests/functional/test_mcp_secret_guard.py`, is not among the 31, so zero
+> overlap; also re-ran `test_golden_held_out_isolation.py` + `test_protected_paths_declared.py`
+> fresh (18/18 passed, held-out set and protected paths untouched). `git status --porcelain` and
+> `git diff --stat` against `origin/develop` confirmed the change is scoped to exactly the one
+> claimed file — zero hits on `.vscode/mcp.json` itself, `tests/golden/**`, `scripts/scorecard.py`,
+> `docs/benchmarks/tb-subset.*`, and `feature/T475-codex-platform-integration` (untouched
+> throughout). Real GitLab CI independently polled to completion on the actual pushed SHA
+> (`77a5ea51`, pipeline confirmed via `glab api projects/:id/merge_requests/302/pipelines` to match
+> that exact SHA, not assumed) — 5/5 jobs green (`sync-no-diff`, `validation-super-gate`,
+> `verify-knowledge-drift`, `unit-tests`, `markdown-links`). Left unmerged per this session's
+> standing no-self-merge instruction — MR !302 handed back to the top-level session for merging.
+> Phase 1 Layer 2's MCP header/URL templating thread (T483 → T491 → T492) is now fully implemented
+> and test-covered, pending only the two MRs' (!301, !302) merges to `develop`.
 
 > **T488 closed 2026-09-13 — Tier 1 (5-case breadth expansion, k=1) complete, results honest and
 > reported exactly as measured.** Control pass rate 5/5, treatment pass rate 3/5 — the
