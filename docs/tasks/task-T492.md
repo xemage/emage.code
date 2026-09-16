@@ -6,11 +6,11 @@ already `stable`, and this project's own established convention avoids naming an
 component by its literal hyphenated registry id anywhere in an open task's brief, since doing so
 trips `check-maturity.py`'s self-referential ledger-defect check against that component for as long
 as this row stays open)
-**Status:** blocked — depends on T491 landing in `develop` first (see "Why sequential" below)
+**Status:** done
 **Priority:** P1
-**Depends on:** T491 (must be merged to `develop` before this task branches, not merely dispatched)
+**Depends on:** T491 (merged to `develop` before this task branched)
 **Created:** 2026-09-16
-**Completed:** —
+**Completed:** 2026-09-16
 **Based on:** `docs/artifacts/mcp-header-url-templating-design-v1.md` §7 (T483, `Final` — the exact
 guidance for this test extension, written precisely so this task should not need to ask follow-up
 design questions); `tests/functional/test_mcp_secret_guard.py` (current file, read in full before
