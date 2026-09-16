@@ -7,8 +7,15 @@ likely `backend-developer`, matching this repo's own T421 precedent for `sync.mj
 changes, with the QA Engineer role for the secret-guard/conformance test extensions, matching T422 —
 display name used deliberately here rather than the registry id, per this repo's own established
 self-referential-mention fix pattern, since that id is itself an already-`stable` component)
-**Status:** pending — recorded this session, **not dispatched this session** (see "Why this is
-recorded, not executed" below)
+**Status:** done
+
+Design phase closed 2026-09-16. The design doc this task called for
+(`docs/artifacts/mcp-header-url-templating-design-v1.md`) was authored, then independently
+ratified `Final` by the orchestrator in a separate re-verification pass (see that document's own
+"Ratification note"). Implementation and test-extension work are carried forward as two new,
+separately-owned tasks per this repo's T420/T421/T422 precedent, not under this task's own owner
+column: T491 (`backend-developer`) and T492 (`qa-engineer`, blocked on T491 merging). See
+`docs/tasks/completed-tasks.md`'s T483 row for the full closure rationale.
 **Priority:** P1 (real, disclosed gap — two live MCP servers bypass this repo's own declarative
 MCP-management pipeline entirely — but neither server being un-registered here blocks anything
 currently on a critical path; Claude Code already has working config for both via the just-merged

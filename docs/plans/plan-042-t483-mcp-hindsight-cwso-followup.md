@@ -61,3 +61,30 @@ regenerated platform projections + extended `tests/functional/test_mcp_secret_gu
 | Header/URL-templating schema design is deferred indefinitely because it isn't blocking anything today (Claude Code already has a working manual fix) | Medium | Low (the gap is disclosed, not hidden; only Claude Code needed the servers so far) | Recorded explicitly in `task-T483.md` with concrete acceptance criteria, not left as a vague backlog note |
 | `cwso`'s live auth (last known `AUTH_HEADER_REJECTED`, 403 per a prior session handoff) is still broken independent of config-shape work | Medium | Low for this task (registration and live auth are separate failure modes) | `task-T483.md` explicitly instructs the implementation owner to re-check live status rather than assume the syntax fix also fixed auth |
 | A future implementer copies `cwso`'s `headers` shape onto a platform whose real MCP client doesn't honor custom headers, silently breaking that platform's connection | Low | Medium | `task-T483.md` discloses the evidentiary gap (only 2 of 7 platforms have a citable official schema) and requires the design owner to state, per platform, whether `headers` is verified-supported or a disclosed unknown |
+
+## Addendum (2026-09-16) — design ratified, T483 closed, split into T491/T492
+
+`solution-architect`'s design pass landed as `docs/artifacts/mcp-header-url-templating-design-v1.md`
+and was independently re-verified and ratified `Final` by the orchestrator this session (every code
+citation and line number re-checked against the real, current `sync.mjs`/`servers.yaml`/`.mcp.json`/
+test files; one minor citation-only correction confirmed accurate). T483 is closed on that design
+artifact. Per this plan's own §"Agent assignment" (implementation owner "most likely
+`backend-developer`... plus the QA-focused test-authoring role... matching T422"), the implementation
+and test-extension work is dispatched as two new tasks rather than continued under T483's single
+owner column, mirroring the T420 (design) → T421 (`backend-developer` fix) → T422 (`qa-engineer`
+test) precedent this plan already anticipated:
+
+- **T491** (`backend-developer`) — implement the ratified design: `parseServersYaml()`/
+  `mapTemplatedValue()`/`mapEnv()`/`emitMcp()` changes in `sync.mjs`, the two new `servers.yaml`
+  entries, full platform regeneration, and the `mcp-platform-contract-v1.md` update. Dispatched this
+  session.
+- **T492** (`qa-engineer`) — extend `test_mcp_secret_guard.py`'s `find_literal_env_values()` to walk
+  `headers` blocks, per the design's own §7 guidance, with a genuine adversarial fixture case.
+  Recorded, blocked on T491 actually merging to `develop` first (a real dependency, not a scheduling
+  convenience — see `task-T492.md`'s "Why sequential").
+
+```mermaid
+graph TD
+    T483["T483 — design (closed, Final)"] --> T491["T491 — backend-developer<br/>servers.yaml + sync.mjs"]
+    T491 -->|merge to develop, then branch| T492["T492 — qa-engineer<br/>secret-guard headers coverage"]
+```
