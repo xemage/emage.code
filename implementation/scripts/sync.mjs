@@ -167,6 +167,10 @@ async function readServersYaml() {
   return parseServersYaml(raw);
 }
 
+// Block-typed (multi-line, nested) top-level server keys. `env` is the original;
+// `headers` (T491) reuses the identical block-parsing mechanism.
+const BLOCK_KEYS = new Set(['env', 'headers']);
+
 function parseServersYaml(raw) {
   const lines = raw.split(/\r?\n/);
   const servers = {};
@@ -174,7 +178,8 @@ function parseServersYaml(raw) {
   while (i < lines.length && !lines[i].trim().startsWith('servers:')) i++;
   i++;
   let current = null;
-  let envBlock = null;
+  let openBlock = null;
+  let openBlockKey = null;
 
   while (i < lines.length) {
     const ln = lines[i];
@@ -186,30 +191,35 @@ function parseServersYaml(raw) {
     if (m2) {
       current = m2[1];
       servers[current] = {};
-      envBlock = null;
+      openBlock = null;
+      openBlockKey = null;
       i++;
       continue;
     }
 
-    if (current && envBlock !== null) {
-      const me = ln.match(/^      ([A-Za-z0-9_]+):\s*(.*)$/);
+    if (current && openBlock !== null) {
+      const me = ln.match(/^      ([A-Za-z0-9_-]+):\s*(.*)$/);
       if (me) {
-        envBlock[me[1]] = parseInlineObject(me[2]);
+        servers[current][openBlockKey][me[1]] = parseInlineObject(me[2]);
         i++;
         continue;
       }
-      envBlock = null;
+      openBlock = null;
+      openBlockKey = null;
     }
 
     if (current) {
       const me2 = ln.match(/^    ([A-Za-z0-9_-]+):\s*(.*)$/);
       if (me2) {
         const [, key, rest] = me2;
-        if (key === 'env' && rest === '') {
-          envBlock = {};
-          servers[current].env = envBlock;
+        if (BLOCK_KEYS.has(key) && rest === '') {
+          openBlock = {};
+          openBlockKey = key;
+          servers[current][key] = openBlock;
         } else if (rest.startsWith('[') && rest.endsWith(']')) {
           servers[current][key] = rest.slice(1, -1).split(',').map((s) => stripQuotes(s.trim()));
+        } else if (rest.startsWith('{') && rest.endsWith('}')) {
+          servers[current][key] = parseInlineObject(rest);
         } else {
           servers[current][key] = parseScalar(stripQuotes(rest));
         }
@@ -300,7 +310,14 @@ function emitMcp(servers, tags, format) {
     const target = format === 'vscode' ? out.servers : out.mcpServers;
     for (const [name, s] of Object.entries(filtered)) {
       if (s.transport === 'remote') {
-        target[name] = format === 'vscode' ? { type: 'http', url: s.url } : { url: s.url };
+        const url = mapTemplatedValue(s.url, '${env:VAR}');
+        if (format === 'vscode') {
+          target[name] = { type: 'http', url };
+          if (s.headers) target[name].headers = mapEnv(s.headers, '${env:VAR}');
+        } else {
+          target[name] = { url };
+          if (s.headers) target[name].headers = mapEnv(s.headers, '${env:VAR}');
+        }
       } else {
         target[name] = { command: s.command, args: s.args || [] };
         if (s.env) target[name].env = mapEnv(s.env, '${env:VAR}');
@@ -312,8 +329,10 @@ function emitMcp(servers, tags, format) {
   if (format === 'gemini') {
     const mcpServers = {};
     for (const [name, s] of Object.entries(filtered)) {
-      if (s.transport === 'remote') mcpServers[name] = { httpUrl: s.url };
-      else {
+      if (s.transport === 'remote') {
+        mcpServers[name] = { httpUrl: mapTemplatedValue(s.url, '${env:VAR}') };
+        if (s.headers) mcpServers[name].headers = mapEnv(s.headers, '${env:VAR}');
+      } else {
         mcpServers[name] = { command: s.command, args: s.args || [] };
         if (s.env) mcpServers[name].env = mapEnv(s.env, '${env:VAR}');
       }
@@ -342,8 +361,10 @@ function emitMcp(servers, tags, format) {
   if (format === 'opencode') {
     const mcp = {};
     for (const [name, s] of Object.entries(filtered)) {
-      if (s.transport === 'remote') mcp[name] = { type: 'remote', url: s.url };
-      else {
+      if (s.transport === 'remote') {
+        mcp[name] = { type: 'remote', url: mapTemplatedValue(s.url, '{env:VAR}') };
+        if (s.headers) mcp[name].headers = mapEnv(s.headers, '{env:VAR}');
+      } else {
         mcp[name] = { type: 'local', command: [s.command, ...(s.args || [])] };
         if (s.env) mcp[name].environment = mapEnv(s.env, '{env:VAR}');
       }
@@ -354,8 +375,10 @@ function emitMcp(servers, tags, format) {
   if (format === 'claude-code') {
     const mcpServers = {};
     for (const [name, s] of Object.entries(filtered)) {
-      if (s.transport === 'remote') mcpServers[name] = { type: 'http', url: s.url };
-      else {
+      if (s.transport === 'remote') {
+        mcpServers[name] = { type: 'http', url: mapTemplatedValue(s.url, '${env:VAR}') };
+        if (s.headers) mcpServers[name].headers = mapEnv(s.headers, '${env:VAR}');
+      } else {
         mcpServers[name] = { command: s.command, args: s.args || [] };
         if (s.env) mcpServers[name].env = mapEnv(s.env, '${env:VAR}');
       }
@@ -366,8 +389,10 @@ function emitMcp(servers, tags, format) {
   if (format === 'cline') {
     const mcpServers = {};
     for (const [name, s] of Object.entries(filtered)) {
-      if (s.transport === 'remote') mcpServers[name] = { type: 'streamableHttp', url: s.url };
-      else {
+      if (s.transport === 'remote') {
+        mcpServers[name] = { type: 'streamableHttp', url: mapTemplatedValue(s.url, '${env:VAR}') };
+        if (s.headers) mcpServers[name].headers = mapEnv(s.headers, '${env:VAR}');
+      } else {
         mcpServers[name] = { command: s.command, args: s.args || [] };
         if (s.env) mcpServers[name].env = mapEnv(s.env, '${env:VAR}');
       }
@@ -378,12 +403,23 @@ function emitMcp(servers, tags, format) {
   throw new Error(`Unknown MCP format: ${format}`);
 }
 
+// Renders one templated-value spec (see design mcp-header-url-templating-design-v1.md §3/§4)
+// against a platform's own env-placeholder pattern.
+//   spec: a plain literal (string/number/bool) -> returned unchanged (String(spec))
+//         OR { fromEnv: VAR }                   -> template.replace('VAR', VAR)
+//         OR { fromEnv: VAR, wrap: "X{VAR}Y" }   -> wrap.replace('{VAR}', <rendered above>)
+//   template: the platform's own placeholder pattern, e.g. '${env:VAR}' or '{env:VAR}'
+function mapTemplatedValue(spec, template) {
+  if (spec && typeof spec === 'object' && spec.fromEnv) {
+    const rendered = template.replace('VAR', spec.fromEnv);
+    return spec.wrap ? spec.wrap.replace('{VAR}', rendered) : rendered;
+  }
+  return String(spec);
+}
+
 function mapEnv(envSpec, template) {
   const out = {};
-  for (const [k, v] of Object.entries(envSpec)) {
-    if (v && typeof v === 'object' && v.fromEnv) out[k] = template.replace('VAR', v.fromEnv);
-    else out[k] = String(v);
-  }
+  for (const [k, v] of Object.entries(envSpec)) out[k] = mapTemplatedValue(v, template);
   return out;
 }
 

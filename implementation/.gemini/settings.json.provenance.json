@@ -3,6 +3,7 @@
   "generatorOwnedKeys": [
     "brave",
     "context7",
+    "cwso",
     "docker",
     "fetch",
     "filesystem",
@@ -10,6 +11,7 @@
     "github",
     "gitlab",
     "hf-mcp-server",
+    "hindsight",
     "memory",
     "playwright",
     "postgresql",

@@ -66,6 +66,18 @@
       "type": "remote",
       "url": "https://mcp.context7.com/mcp"
     },
+    "hindsight": {
+      "type": "remote",
+      "url": "{env:HINDSIGHT_MCP_URL}"
+    },
+    "cwso": {
+      "type": "remote",
+      "url": "{env:CWSO_MCP_URL}",
+      "headers": {
+        "Authorization": "Bearer {env:CWSO_BEARER_TOKEN}",
+        "Origin": "{env:CWSO_ORIGIN}"
+      }
+    },
     "hf-mcp-server": {
       "type": "remote",
       "url": "https://huggingface.co/mcp?login"
