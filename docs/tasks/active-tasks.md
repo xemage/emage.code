@@ -2,16 +2,27 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T456 | Downstream measurement (ship gate) | orchestrator (executed directly) | in_progress | P0 | T454 (done), T455 (done), T458 (done) | 2026-09-17 |
 
-> **T456 re-dispatched 2026-09-17 (this session).** Re-opened from `blocked` now that T458 (its
-> blocking dependency) is `done`. Owner changed to "orchestrator (executed directly)" —
-> `evaluation-agent`'s tool grant (`[read, search, web]`) cannot run the harness or dispatch live
-> trials, the same structural gap T458 diagnosed for `devops-engineer`; this follows the repo's own
-> `T484`–`T494` precedent rather than repeating that dispatch mistake. Ship-gate threshold and run
-> scope pre-registered in `docs/tasks/task-T456.md` before any new trial was dispatched — see that
-> file's "Pre-registered ship-gate threshold" / "Pre-registered run scope" / "Execution log"
-> sections for the live measurement record.
+> **0 active rows.** `T456` closed 2026-09-17 — see `completed-tasks.md` for the full closure
+> record and `docs/benchmarks/baseline-v6.17.0-retrieval.md` for the full measurement.
+
+> **T456 re-dispatched, measured, and closed 2026-09-17 (this session).** Re-opened from `blocked`
+> now that T458 (its blocking dependency) was `done`. Owner changed to "orchestrator (executed
+> directly)" — `evaluation-agent`'s tool grant (`[read, search, web]`) cannot run the harness or
+> dispatch live trials, the same structural gap T458 diagnosed for `devops-engineer`; this followed
+> the repo's own `T484`–`T494` precedent rather than repeating that dispatch mistake. Ship-gate
+> threshold and run scope pre-registered in `docs/tasks/task-T456.md` before any new trial was
+> dispatched (see that file's "Pre-registered ship-gate threshold" / "Pre-registered run scope"
+> sections). **Measurement complete: aggregate control pass rate 20/29 (68.97%), treatment 19/31
+> (61.29%); `policy.floor_met()` = `False`. Verdict: NO-SHIP** against the literal pre-registered
+> threshold, reported exactly as measured. Root-cause analysis in the full report shows the entire
+> aggregate deficit traces to one already-diagnosed (pre-dating this session, `T493`), arm-agnostic
+> checker-brittleness bug in one case's `expect.py` (`security-audit-coverage-consistency`), not to
+> a diffuse or retrieval-caused effect — 18 of 19 measured cases show byte-identical control/
+> treatment results; that analysis is disclosed as context in the report, not used to override the
+> literal verdict. Phase 5's `plan-035` ship gate (Gate G3) remains open as a direct, honest
+> consequence — this should not be presented as cleared. See `docs/benchmarks/baseline-v6.17.0-
+> retrieval.md` for the full per-case results, methodology, and disclosed judgment calls.
 
 > **T458 closed 2026-09-17 — see `completed-tasks.md` for the full closure record.** All 8
 > acceptance criteria in `docs/tasks/task-T458.md` independently re-verified by the top-level

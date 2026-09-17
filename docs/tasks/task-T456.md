@@ -8,15 +8,19 @@ the exact same gap T458 diagnosed for `devops-engineer`. This repo's own establi
 this situation is `T484`–`T494`, all executed directly by the orchestrator via its in-process
 `Agent` tool; this task follows that precedent rather than dispatching to `evaluation-agent` and
 hitting the same wall a second time.)
-**Status:** in_progress (re-opened from `blocked` — T458, this task's own blocking dependency, is
-now `done`; the harness it needed exists and is being used below)
+**Status:** done
+**Closure note:** measurement complete, **verdict NO-SHIP** against the pre-registered threshold.
+This is a genuine, honestly-measured completion, not a fabricated pass and not left open — per
+this task's own explicit "a negative, honestly-measured verdict is a legitimate, valuable
+completion" instruction. See `docs/benchmarks/baseline-v6.17.0-retrieval.md` for the full
+measurement and "Execution log" below for the summary.
 **Priority:** P0 (unchanged from `plan-038` — this is Phase 5's literal ship gate)
 **Depends on:** T454 (done), T455 (done), T458 (done — unblocks this task's re-attempt)
 **Created:** 2026-09-09
 **Re-dispatched:** 2026-09-17 (this session, user-approved — see "Pre-registered ship-gate
 threshold" and "Pre-registered run scope" below, both committed before any new trial was
 dispatched)
-**Completed:** — (measurement in progress; see "Execution log" below for live status)
+**Completed:** 2026-09-17
 **Based on:** `docs/plans/plan-035-roadmap-v7-ground-up.md` §2.4 Phase 5 (T456's own literal row:
 "Downstream measurement: re-run the Phase 1 baseline with retrieval enabled. **If the golden suite
 does not improve, the feature does not ship.**"; Phase 5's acceptance-criteria checklist: "Golden
@@ -80,10 +84,15 @@ actual guard logic was read in full and empirically exercised (not assumed) agai
   before and after reading held-out `brief.md`/`expect.py` content into a live session.
 - **Committing a new file outside `tests/golden/` that names a held-out case ID literally does trip
   the guard (Check B).** Empirically confirmed: writing a scratch file under `docs/benchmarks/`
-  containing the literal string `code-review-verdict-compliant` was flagged by
-  `find_violations()` with `"mentions held-out case ID"` — this is not suffix-restricted to `.py`
-  (unlike Check A), so it would equally catch a committed trial-store JSONL file or this task's own
-  results report if either named a held-out case ID literally.
+  containing the literal string of one of the six real held-out case IDs (probed with an actual
+  held-out ID from this worktree's `tests/golden/held-out/` listing, not reproduced here — see
+  below for why) was flagged by `find_violations()` with `"mentions held-out case ID"` — this is
+  not suffix-restricted to `.py` (unlike Check A), so it would equally catch a committed
+  trial-store JSONL file or this task's own results report if either named a held-out case ID
+  literally. (This finding is deliberately described here without repeating the literal ID used in
+  the probe, since this file itself is outside `tests/golden/` and is exactly the kind of file
+  Check B is designed to scan — the probe's own result is the proof, not a reason to reproduce the
+  triggering string in the file that documents it.)
 - **Resolution (disclosed, not a blocker — this was mechanically verifiable, not genuinely
   ambiguous):** the local trial store used to record every new trial (including held-out ones) is
   kept **uncommitted**, consistent with this project's own established precedent that scratch trial
@@ -233,4 +242,37 @@ tool, never a `claude` CLI subprocess.
   store (`TrialRecord`s reconstructed from `task-T484.md`, `task-T487.md`–`task-T490.md`,
   `task-T493.md`, `task-T494.md`, and `plan-048`'s own category table — see this task's completion
   report for the full reconstruction and any judgment calls made in it).
-- (further entries appended as trial batches complete)
+- 2026-09-17: rebuilt the real memory index fresh (throwaway venv, `fastembed`/`tree-sitter`, no
+  paid API) — `25 chunks, 0 rejections, entry_count: 11`, exact byte-for-byte match to
+  `T486`/`T487`'s historical manifest. Verified `context_retriever.py`'s real CLI invocation shape
+  end-to-end against it before any live dispatch.
+- 2026-09-17: verified the held-out isolation guard empirically (not assumed) before dispatching
+  any held-out trial — live trial execution does not trip it; committing a file outside
+  `tests/golden/` that names a held-out case ID literally does. Resolution: local trial store kept
+  uncommitted; committed report/task-file text uses `HO-1`–`HO-6` aliases for the six held-out
+  cases. See "Held-out isolation guard" section above for the full finding.
+- 2026-09-17: dispatched and scored all 13 untried cases across 8 dispatch groups (16 live
+  sessions total — several cases share one live session's candidate output where they check an
+  identical underlying contract against different fixture paths, disclosed in the completion
+  report §3). One case (`plan-task-creation-precondition-real`) excluded from live trialing — its
+  `expect.py` is inherently tied to one specific historical artifact's literal identity (task ID
+  `T365`), not something a fresh live session could organically reproduce; disclosed, not silently
+  dropped.
+- 2026-09-17: **measurement complete.** Full per-case results, aggregate, pre-registered-threshold
+  application, root-cause analysis, and new checker-brittleness findings written to
+  `docs/benchmarks/baseline-v6.17.0-retrieval.md`. **Aggregate: control 20/29 (68.97%), treatment
+  19/31 (61.29%). `policy.floor_met()` = `False`.** Pre-registered threshold requires floor_met
+  AND no retrieval-attributable persistent effect; criterion (a) is literally `False` on the raw
+  aggregate, so **the threshold is not met — verdict: NO-SHIP**, reported exactly as measured
+  without adjusting the pre-registered criteria after seeing the result. Root-cause analysis in
+  the report shows the entire floor deficit is attributable to one already-diagnosed (pre-dating
+  this session, `T493`), arm-agnostic checker-brittleness bug in `security-audit-coverage-
+  consistency`'s `expect.py`, not to a diffuse or retrieval-caused effect — 18 of the 19 measured
+  cases show byte-identical control/treatment results. That analysis is disclosed as context, not
+  used to override the literal verdict. Three new, real, arm-symmetric checker-brittleness bugs
+  were also found and disclosed (§7 of the report) — none bias the verdict, all are candidate
+  follow-up fixes outside this task's protected-path scope.
+- **Task closed `done`** with this NO-SHIP outcome — the measurement itself is real and complete;
+  a negative, honestly-measured verdict is a legitimate, valuable completion of this task's
+  objective, not a reason to leave it open. Phase 5's `plan-035` ship gate (Gate G3) remains open
+  as a direct, honest consequence — this should not be presented as cleared.
