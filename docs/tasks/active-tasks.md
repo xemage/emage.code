@@ -3,7 +3,7 @@
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
 | T456 | Downstream measurement (ship gate) | evaluation-agent | blocked | P0 | T454 (done), T455 (done), T458 (pending) | 2026-09-09 |
-| T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-17 |
+| T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | in_progress | P1 | None | 2026-09-17 |
 
 > **T458 re-scoped 2026-09-17 — not dispatched, still `pending`.** `docs/tasks/task-T458.md`'s
 > original 2026-09-09 brief scoped this task as inventing a live-execution mechanism from scratch,
@@ -25,6 +25,16 @@
 > and T456's own ship/no-ship measurement, both left as separate future dispatches. See
 > `docs/tasks/task-T458.md` for the full revised brief; its original 2026-09-09 version is preserved
 > in git history, not deleted.
+
+> **T458 dispatched 2026-09-17 — now `in_progress`.** Per the re-scoped brief above:
+> `devops-engineer` dispatched into `agent/devops-engineer/T458` (from `develop`) to build Expected
+> Outputs 1, 2, and 4 (scratch-isolation helper, scoring module, trial-record schema/store,
+> `plan-048` policy functions, design artifact, and tests using recorded/synthetic data — no live
+> dispatch). The orchestrator retains Expected Output 3 / Objective item 5 / Acceptance Criterion 4
+> (running at least one live trial through the new code and comparing it against a historical
+> record) and will perform that once `devops-engineer`'s code is reviewed. Neither this row's status
+> change nor `devops-engineer`'s own work closes T458 — both remain open until both halves land and
+> are independently verified.
 
 > **T457 and T496 closed 2026-09-17 — the underlying gap both rows tracked (`@security-engineer`
 > and `@context-retriever`'s `tools:` grant mapping to unrestricted `execute`/`Bash` with no

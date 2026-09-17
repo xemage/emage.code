@@ -11,9 +11,16 @@
   this brief's own evidence base (`T484`, `T487`–`T490`, `T493`–`T494`). This is **not new scope**
   for the orchestrator — it is the status quo, now being formalized into reusable code instead of
   ad hoc invocation.
-**Status:** pending
+**Status:** in_progress
+**Dispatch note (2026-09-17):** dispatched this session. `devops-engineer` is working in
+`agent/devops-engineer/T458` (from `develop`) on Expected Outputs 1, 2, and 4 (harness code, design
+artifact, tests against recorded/synthetic data). The orchestrator retains Expected Output 3 /
+Objective item 5 / Acceptance Criterion 4 (the live-trial validation) and will perform it once
+`devops-engineer`'s code is reviewed. See "Re-scope note" below for the 2026-09-09 → 2026-09-17
+history; this brief's content is otherwise unchanged from that revision.
 **Re-scope note (2026-09-17):** this brief supersedes its original 2026-09-09 version (preserved in
-git history) — not yet dispatched either version. See "What changed since the original brief" below.
+git history) — not yet dispatched either version as of the re-scope; dispatched later the same
+session, see "Dispatch note" above. See "What changed since the original brief" below.
 **Priority:** P1 (blocks Phase 5's formal ship decision and Gate G3's closure; does **not** block
 `@context-retriever`/the memory layer from being genuinely usable today — those are already done
 and independently verified)
