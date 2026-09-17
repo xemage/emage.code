@@ -2,8 +2,30 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T498 | Fix four diagnosed golden-suite checker-brittleness bugs (protected-path exception) | backend-developer | in_progress | P1 | None structurally (motivated by T456/T493 findings) | 2026-09-17 |
 
-> **0 active rows.** `T456` closed 2026-09-17 — see `completed-tasks.md` for the full closure
+> **T498 dispatched 2026-09-17 — fixes exactly the four already-diagnosed, arm-agnostic
+> checker-brittleness bugs `baseline-v6.17.0-retrieval.md` §7/§9 (on the unmerged
+> `agent/orchestrator/T456` branch — that report has not yet merged to `develop`, disclosed as a
+> loose end, not silently treated as merged) and `task-T493.md` (bug 1's original diagnosis) found
+> in the golden suite's own `expect.py` checkers, spanning 5 files (`security-audit-coverage-
+> consistency`, `prepare-release-real-verdict-missing`, `security-audit-critical-not-fail`, and the
+> two held-out siblings referred to only as `HO-5`/`HO-6` per the held-out isolation guard's Check
+> B). Dispatched per `docs/plans/plan-052-t498-golden-checker-brittleness-fixes.md`, itself
+> authorized by the user's own explicit current-turn dispatch instruction rather than a separate
+> plan-approval reply (quoted in full in that plan's "Status" section) — this ledger commit and
+> `task-T498.md` were written and reviewed by the orchestrator, not invented unilaterally by an
+> agent, satisfying `protected-paths-v1.md` §5's exception process for the 5 named files, explicitly
+> invoked in the task brief. **Does not itself re-run T456's ship-gate measurement** — that stays a
+> separate, future follow-up task. Dispatched into `agent/backend-developer/T498`, branched from
+> `origin/develop`. This ledger row and the task brief are committed on a separate docs-only branch
+> (`docs/T498-checker-bugfix-dispatch`) first, per this session's "no direct commits to `develop`,
+> even for docs-only ledger edits" discipline (`.claude/rules/git-workflow.md` "Protected
+> Branches"). **Standing no-self-merge instruction restated, zero exceptions for content type** —
+> neither this ledger branch nor `T498`'s own implementation branch will be merged by the
+> orchestrator; both are handed back to the user for independent review and merge.
+
+> **0 other active rows.** `T456` closed 2026-09-17 — see `completed-tasks.md` for the full closure
 > record and `docs/benchmarks/baseline-v6.17.0-retrieval.md` for the full measurement.
 
 > **T456 re-dispatched, measured, and closed 2026-09-17 (this session).** Re-opened from `blocked`
