@@ -2,8 +2,18 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T456 | Downstream measurement (ship gate) | evaluation-agent | blocked | P0 | T454 (done), T455 (done), T458 (pending) | 2026-09-09 |
-| T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | in_progress | P1 | None | 2026-09-17 |
+| T456 | Downstream measurement (ship gate) | evaluation-agent | blocked | P0 | T454 (done), T455 (done), T458 (done) | 2026-09-17 |
+
+> **T458 closed 2026-09-17 — see `completed-tasks.md` for the full closure record.** All 8
+> acceptance criteria in `docs/tasks/task-T458.md` independently re-verified by the top-level
+> session before this closure, not accepted on either `devops-engineer`'s or the orchestrator's
+> self-report alone. `T456`'s `Depends on` column above is updated to `T458 (done)` — this does
+> **not** advance `T456` itself, which stays `blocked`: T458 built the reusable harness code and
+> proved it works end-to-end (one live trial, `True`/`True`, matching T484's historical result), but
+> deliberately did not itself run T456's actual ship/no-ship measurement (`plan-048` §6 items 3/4
+> — a harder vault-dependent case, scaling to 30-50 trials — remain separate, not-yet-dispatched
+> follow-ups). `T456` is now unblocked in principle (the harness it needed no longer needs to be
+> invented) but not yet re-attempted in practice.
 
 > **T458 re-scoped 2026-09-17 — not dispatched, still `pending`.** `docs/tasks/task-T458.md`'s
 > original 2026-09-09 brief scoped this task as inventing a live-execution mechanism from scratch,

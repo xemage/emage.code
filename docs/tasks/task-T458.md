@@ -11,12 +11,21 @@
   this brief's own evidence base (`T484`, `T487`–`T490`, `T493`–`T494`). This is **not new scope**
   for the orchestrator — it is the status quo, now being formalized into reusable code instead of
   ad hoc invocation.
-**Status:** in_progress
-**Dispatch note (2026-09-17):** dispatched this session. `devops-engineer` is working in
+**Status:** done
+**Closure note (2026-09-17):** both halves complete and independently re-verified by the top-level
+session (not accepted on either `devops-engineer`'s or the orchestrator's self-report alone).
+`devops-engineer` built Expected Outputs 1, 2, and 4 in `agent/devops-engineer/T458` (merged
+`b103005`, MR !315). The orchestrator then performed Expected Output 3 / Objective item 5 /
+Acceptance Criterion 4 itself, via its own in-process `Agent` tool: one real live control/treatment
+trial pair through the new code, re-confirming `T484`'s case — result `True`/`True`, matching
+`T484`'s historical record exactly, no divergence. See `docs/tasks/completed-tasks.md`'s `T458` row
+for the full closure record, including the independent verification steps and the one real
+regression caught and fixed along the way (a ledger dispatch-commit issue, not a code defect).
+**Dispatch note (2026-09-17, historical):** dispatched this session. `devops-engineer` worked in
 `agent/devops-engineer/T458` (from `develop`) on Expected Outputs 1, 2, and 4 (harness code, design
-artifact, tests against recorded/synthetic data). The orchestrator retains Expected Output 3 /
-Objective item 5 / Acceptance Criterion 4 (the live-trial validation) and will perform it once
-`devops-engineer`'s code is reviewed. See "Re-scope note" below for the 2026-09-09 → 2026-09-17
+artifact, tests against recorded/synthetic data). The orchestrator retained Expected Output 3 /
+Objective item 5 / Acceptance Criterion 4 (the live-trial validation) and performed it once
+`devops-engineer`'s code was reviewed. See "Re-scope note" below for the 2026-09-09 → 2026-09-17
 history; this brief's content is otherwise unchanged from that revision.
 **Re-scope note (2026-09-17):** this brief supersedes its original 2026-09-09 version (preserved in
 git history) — not yet dispatched either version as of the re-scope; dispatched later the same
@@ -29,7 +38,7 @@ golden suite's `expect.py`/case format it reuses is frozen/done from Phase 1; th
 formalizes — `k`/escalation/floor-tolerance policy — is already decided, see `plan-048`).
 **Blocks:** T456 (cannot be genuinely re-attempted without this task's output)
 **Created:** 2026-09-09
-**Completed:** —
+**Completed:** 2026-09-17
 **Based on:**
 - `docs/tasks/task-T456.md` — the blocker this task exists to resolve (golden suite has no
   live-agent execution path by deliberate Phase 1 design).
