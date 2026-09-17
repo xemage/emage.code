@@ -69,14 +69,28 @@ class TestCrossReferences(unittest.TestCase):
                 m = MCP_TOOL_RE.match(tool)
                 if not m:
                     continue
-                server = m.group(1).replace("_", "-")  # mcp__sequential_thinking → sequential-thinking
-                # also accept the literal underscore form
+                body = m.group(1)
+                # Two token shapes both currently in use: a bare server reference
+                # (`mcp__fetch`, `mcp__sequential_thinking` -> sequential-thinking) and,
+                # since T495, Claude Code's own exact-MCP-tool-name form
+                # (`mcp__<server>__<tool>`, e.g. `mcp__context-retriever__retrieve` --
+                # scoped-execution-primitive-v1.md §1.3/§1.4). Try the whole body as a
+                # server name first (bare form); if that doesn't resolve and the body
+                # contains "__", split off the trailing `__<tool>` segment and try the
+                # server-name prefix instead -- this only validates that the referenced
+                # *server* is declared, exactly as before, not that the server actually
+                # exposes that specific tool name.
+                candidates = {body, body.replace("_", "-")}
+                if "__" in body:
+                    server_part, _, _tool_part = body.rpartition("__")
+                    candidates.add(server_part)
+                    candidates.add(server_part.replace("_", "-"))
                 with self.subTest(agent=path.stem, tool=tool):
                     self.assertTrue(
-                        server in self.servers or m.group(1) in self.servers,
+                        any(c in self.servers for c in candidates),
                         msg=(
-                            f"{path.stem} requests tool '{tool}' but server "
-                            f"'{server}' is not declared in mcp/servers.yaml. "
+                            f"{path.stem} requests tool '{tool}' but no candidate server name "
+                            f"{sorted(candidates)} is declared in mcp/servers.yaml. "
                             f"Known: {sorted(self.servers)}"
                         ),
                     )

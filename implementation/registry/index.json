@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-09-11T23:59:28+02:00",
+  "generatedAt": "2026-09-17T10:42:54+02:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -45,7 +45,7 @@
       "category": "agent",
       "name": "Context Retriever",
       "path": "agents/context-retriever.md",
-      "checksum": "ee3df7b0afc8b86573a1ed35a6c90527edef8cc6f397ddffe7b0ac396aa812b4",
+      "checksum": "40e0236fd169e1935dff6912a0f8657f70c6b532c6c671e47629baad538e03e4",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [

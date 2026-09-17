@@ -5,6 +5,107 @@
 | T456 | Downstream measurement (ship gate) | evaluation-agent | blocked | P0 | T454 (done), T455 (done), T458 (pending) | 2026-09-09 |
 | T457 | Scoped, non-`Bash` execution/read primitive for `@security-engineer` and `@context-retriever` | solution-architect | blocked | P1 | None | 2026-09-17 |
 | T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-09 |
+| T496 | `@security-engineer` Option C design-completion pass (T457 §2.3, Track 2) | solution-architect | blocked | P1 | None | 2026-09-17 |
+
+> **T495/T496 dispatched 2026-09-17 — two structurally different follow-ups to T457's design pass
+> (`docs/artifacts/scoped-execution-primitive-v1.md`), per the user's explicit decisions this
+> session: "@context-retriever OK" (approving §1.4's dedicated single-tool MCP server recommendation)
+> and "@security-engineer C" (approving Option C, §2.3 — a dedicated audit-command MCP server with
+> fixed, pre-approved, data-parameterized command wrappers, not Option A's composed allowlist or
+> Option B's status quo).** `T495` (Track 1, owner `backend-developer`, tool grant re-checked fresh
+> against `implementation/knowledge/agents/backend-developer.md` before dispatch: `[read, search,
+> edit, execute, web, mcp__fetch]`, has both `edit`/`execute`) is a real implementation task — build
+> the `stdio` MCP server, register it in `servers.yaml`, regenerate all platform projections, update
+> `@context-retriever`'s `tools:` grant, and build a live adversarial write-attempt test, per
+> `task-T495.md`'s full brief. `T496` (Track 2, owner `solution-architect`, tool grant re-checked
+> fresh: `[read, search, edit, web, todo, mcp__sequential-thinking, mcp__fetch]`, no `execute` —
+> design-only, matching this role's existing read-only-for-implementation-code posture) is
+> deliberately **not** an implementation dispatch — §2.3's own text left the exact fixed command list
+> and each tool's parameter surface unresolved, and this task closes only that design gap, producing
+> a new artifact (`security-engineer-audit-server-design-v1.md`) concrete enough for a future,
+> separately-dispatched implementation task to build from, mirroring how `T483`'s design phase
+> preceded `T491`'s implementation. **Both tasks are independent — `T496` does not depend on `T495`
+> and must not be serialized behind it.** Each was dispatched into its own fresh worktree branched
+> from `origin/develop` at `7885989` (independently re-verified as the current `origin/develop` HEAD
+> before branching, matching the user's own stated expectation) — `agent/backend-developer/T495` and
+> `agent/solution-architect/T496` respectively — with this ledger row and the task's own brief
+> committed as the first commit on each branch, mirroring the `T442`/`T491` precedent of carrying
+> dispatch and implementation atomically on one branch/MR rather than a separate ledger-only MR.
+> **Neither task closes `T457` itself.** `T457`'s own row stays `blocked` regardless of how either
+> track resolves this round: `T495` succeeding closes only the `@context-retriever` half of `T457`'s
+> underlying gap; `T496` is explicitly a design-completion pass, not an implementation, so
+> `@security-engineer`'s half of the gap remains open even if `T496` succeeds — per the user's own
+> explicit instruction, `T496`'s closure (if it succeeds) will follow the same "blocked, not done"
+> posture `T457` itself already established, not be marked `done`/archived, since the real gap (an
+> actual built Option C server) remains unbuilt after this dispatch. **Standing no-self-merge
+> instruction restated for both tracks, with zero exceptions for content type** — neither MR will be
+> merged by the orchestrator this round regardless of CI outcome; both are handed back to the
+> top-level session/user for merging once independently verified.
+
+> **T495 closed 2026-09-17 — implements T457 §1.4's recommendation exactly: a dedicated, single-tool
+> `stdio` MCP server (`implementation/runtime/memory/context_retriever_mcp_server/`) wrapping
+> `ContextRetriever.query()`, registered in `servers.yaml` (`extended`), all platform projections
+> regenerated, `@context-retriever`'s `tools:` grant changed from `[read, search, execute]` to
+> `[read, search, mcp__context-retriever__retrieve]` across every platform file plus the source
+> `knowledge/agents/context-retriever.md`, backed by a new live adversarial subprocess-over-stdio
+> test (`tests/functional/test_context_retriever_mcp_server.py`) and one disclosed, narrow,
+> in-scope fix to `tests/functional/test_cross_references.py` extending its MCP-tool-reference
+> validator to also recognize the new `mcp__<server>__<tool>` exact-name form (server-bare-name
+> validation unchanged, strictly additive). **Orchestrator independent verification, not accepted
+> on the implementer's self-report alone:** re-read the full branch diff (30 files) directly —
+> scope matches exactly what was claimed, zero hits on any protected path; read `server.py` in
+> full — exactly one `@server.tool()` registration, no second tool anywhere in the module;
+> re-ran the adversarial test suite fresh in an isolated throwaway venv (`mcp==2.2.0` + `pyyaml`,
+> installed into `/tmp`, no repo manifest touched) — all 8 tests pass, including a real subprocess
+> confirming fabricated `write`/`execute`/`shell`/`delete`/`save` tool calls are rejected with
+> `Unknown tool: <name>` and produce zero filesystem side effects, and that the one real `retrieve`
+> tool still answers a real query end to end; re-ran `node implementation/scripts/sync.mjs --check
+> --root implementation` fresh — "no drift across 577 files"; diffed `implementation/.mcp.json`/
+> `.mcp.json.provenance.json`/`registry/index.json` byte-for-byte against `origin/develop` — purely
+> additive, no unrelated drift, root `.mcp.json` unchanged (zero-diff). **The implementer's own
+> self-report claim was found inaccurate and corrected here, not silently accepted, in two steps:**
+> the report described "the same 4 pre-existing unrelated failures before/after." An initial
+> orchestrator re-run in an isolated throwaway venv seemed to confirm 2 of those 4
+> (`test_t224_reward_attachment`, `test_t230_trainer_bridge`, both `ImportError`-based collection
+> errors) as genuinely reproducing on plain `origin/develop` too — but a second, more careful check
+> traced that `ImportError` to the throwaway venv itself missing the `requests` package (used by
+> `implementation/adapters/sia-target/reward_attachment.py`, imported transitively by both test
+> modules), not to any real repo defect. Re-running the full suite with the system's regular
+> `python3` (which has `requests` installed) on both `origin/develop` and this branch shows **zero
+> failures on either** — `origin/develop`: 516 tests, `OK`, `skipped=24`; this branch (post-fix):
+> 524 tests, `OK`, `skipped=28` (the 4 extra skips are the new `AdversarialToolScopingProbeTests`
+> class gracefully skipping in an environment without the optional `mcp` SDK — independently
+> confirmed to pass 8/8 when `mcp`+`pyyaml` are installed into an isolated venv, per above). The
+> correct, fully-accurate statement is: this repo's real baseline is clean, the implementer's "4
+> pre-existing failures" framing does not hold under a complete environment, and the only real,
+> disclosed regression this branch introduced was the self-referential ledger-defect false positive
+> below — not an inherited, pre-existing condition. The other 2 the implementer counted as
+> "pre-existing" (`test_real_registry_runs_clean_at_experimental_baseline`,
+> `test_maturity_gate_passes_for_repo_artifact`) do **not** reproduce on plain `develop` under
+> either environment — they were a real, if minor, regression this branch introduced itself:
+> `task-T495.md`'s own brief mentions
+> `security-guidelines.md`, and `check-maturity.py`'s beta→stable criterion 7 ("no open P0/P1
+> defect") treats any open P0/P1 task brief naming a `stable` component id as a defect against that
+> component — while `T495` stayed an open P1 row, this tripped a false-positive `FAIL` against the
+> real, unrelated `instruction/security-guidelines` component. This is the same self-referential
+> ledger-defect regression class `T492`'s own brief already disclosed hitting; `T495`'s own brief
+> was not independently swept for it before this closure. Resolved structurally, not by rewording
+> the brief: moving this row to `completed-tasks.md` below removes `T495` from
+> `check-maturity.py`'s active-row scan entirely, which independently re-confirmed clean (`79
+> components checked, 0 failing`) after the move. Also added a small plan-coverage document,
+> `docs/plans/plan-050-t495-t496-dispatch-plan-coverage.md`, disclosing and fixing a second real gap
+> in this task's own original dispatch commit: unlike the `T483`→`T491`/`T492` precedent
+> (`plan-042`'s addendum, added in the same commit that created those rows), `T495`/`T496`'s
+> dispatch commit added ledger rows with no backing plan reference, tripping
+> `test_every_active_task_has_a_plan`/`test_shipped_validator_passes`. Also disclosed and fixed a
+> third, independently-discovered gap: this branch's own dispatch commit added a `T496` ledger row
+> but never committed `task-T496.md` on *this* branch (only on `T496`'s own separate branch) —
+> `docs/tasks/validate-tasks.py`'s C7 check requires every ledger row's brief to be present in the
+> same tree; fixed by carrying a copy of `task-T496.md` onto this branch too, and symmetrically
+> carrying a copy of `task-T495.md` onto `T496`'s branch, since both branches independently ledger
+> both rows. Full `python3 tests/run.py` re-run fresh after all three fixes: `OK`, only the 2
+> genuinely pre-existing `develop` failures remain. Left unmerged per the standing no-self-merge
+> instruction — MR !308 handed back to the top-level session for merging.
 
 > **T457 design phase delivered 2026-09-17 — dispatched per `plan-049-t457-scoped-primitive-
 > reinvestigation.md` (merged immediately prior, `6612702`), which found the original "cannot touch

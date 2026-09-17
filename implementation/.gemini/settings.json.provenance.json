@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "generatorOwnedKeys": [
     "brave",
+    "context-retriever",
     "context7",
     "cwso",
     "docker",

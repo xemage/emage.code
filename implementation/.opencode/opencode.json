@@ -82,6 +82,20 @@
       "type": "remote",
       "url": "https://huggingface.co/mcp?login"
     },
+    "context-retriever": {
+      "type": "local",
+      "command": [
+        "python3",
+        "-m",
+        "implementation.runtime.memory.context_retriever_mcp_server",
+        "--index-dir",
+        "implementation/runtime/memory/_index/em-age-emage.code",
+        "--workspace-root",
+        ".",
+        "--platform-root",
+        ".claude"
+      ]
+    },
     "filesystem": {
       "type": "local",
       "command": [
