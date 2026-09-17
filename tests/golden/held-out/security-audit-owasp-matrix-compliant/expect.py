@@ -32,7 +32,10 @@ def check(case_dir: Path) -> bool:
     text = audit_file.read_text(encoding="utf-8")
 
     for cat in OWASP_CATEGORIES:
-        if not re.search(rf"\|\s*{cat}\s*\|", text):
+        # Accept the category code either as its own cell (`| A01 |`) or folded into a cell
+        # alongside other text (`| A01: Broken Access Control |`), as long as it appears as a
+        # whole word within a single table cell (bounded by `|` on both sides, no newline).
+        if not re.search(rf"\|[^|\n]*\b{cat}\b[^|\n]*\|", text):
             return False
 
     verdict_idx = text.find("## VERDICT")

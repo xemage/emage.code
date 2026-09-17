@@ -118,9 +118,8 @@ three, stated explicitly here, not left implicit:**
    may be proposed, it does not bypass review."** This change goes through the same
    branch/worktree/MR flow as any other change in this repo (this project's own Git Workflow
    instructions) — see "Git workflow" below. No self-merge by you or by the orchestrator; the
-   orchestrator will
-   independently review the diff before anything is left for the user, and the user makes the
-   final merge decision.
+   orchestrator will independently review the diff before anything is left for the user, and the
+   user makes the final merge decision.
 
 ## Constraints
 
