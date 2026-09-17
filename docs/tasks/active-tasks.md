@@ -3,7 +3,28 @@
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
 | T456 | Downstream measurement (ship gate) | evaluation-agent | blocked | P0 | T454 (done), T455 (done), T458 (pending) | 2026-09-09 |
-| T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-09 |
+| T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-17 |
+
+> **T458 re-scoped 2026-09-17 — not dispatched, still `pending`.** `docs/tasks/task-T458.md`'s
+> original 2026-09-09 brief scoped this task as inventing a live-execution mechanism from scratch,
+> with a single owner (`devops-engineer`) and no ownership-model gap yet identified. Since then, the
+> T458 investigative arc (`T484`–`T494`, all `done`) proved the mechanism works, built and populated
+> the first real memory-vault index, ran 28 live trials, and set a real, evidence-grounded `k`/
+> escalation/floor-tolerance policy (`plan-048`). None of that produced committed, reusable code —
+> every trial ran by hand. Separately, `plan-044`'s Finding 3 (unresolved across 5 successive plan
+> documents) established that `devops-engineer`'s own tool grant (`implementation/knowledge/agents/
+> devops-engineer.md`: `[read, search, edit, execute, web, mcp__gitlab, mcp__fetch]`, no `agent`
+> tool) structurally cannot dispatch live sessions the way the orchestrator's in-process `Agent`
+> tool does — and per this repo's own T415/T418/T455 precedent, the fix is to re-scope the task, not
+> widen the grant. This revision does both at once: ownership is explicitly split
+> (`devops-engineer` builds real, tested harness code — scratch isolation, `expect.py`-reuse
+> scoring, a trial-record schema, `plan-048`'s policy as callable functions; the orchestrator keeps
+> executing live dispatches through that code, exactly as it already has for all 28 trials so far —
+> not new scope, just formalized), and the objective is narrowed to match what's actually still
+> missing (reusable code), explicitly excluding evidence-base expansion (`plan-048` §6 items 3/4)
+> and T456's own ship/no-ship measurement, both left as separate future dispatches. See
+> `docs/tasks/task-T458.md` for the full revised brief; its original 2026-09-09 version is preserved
+> in git history, not deleted.
 
 > **T457 and T496 closed 2026-09-17 — the underlying gap both rows tracked (`@security-engineer`
 > and `@context-retriever`'s `tools:` grant mapping to unrestricted `execute`/`Bash` with no
