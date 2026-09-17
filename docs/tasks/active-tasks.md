@@ -2,7 +2,16 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T456 | Downstream measurement (ship gate) | evaluation-agent | blocked | P0 | T454 (done), T455 (done), T458 (done) | 2026-09-17 |
+| T456 | Downstream measurement (ship gate) | orchestrator (executed directly) | in_progress | P0 | T454 (done), T455 (done), T458 (done) | 2026-09-17 |
+
+> **T456 re-dispatched 2026-09-17 (this session).** Re-opened from `blocked` now that T458 (its
+> blocking dependency) is `done`. Owner changed to "orchestrator (executed directly)" —
+> `evaluation-agent`'s tool grant (`[read, search, web]`) cannot run the harness or dispatch live
+> trials, the same structural gap T458 diagnosed for `devops-engineer`; this follows the repo's own
+> `T484`–`T494` precedent rather than repeating that dispatch mistake. Ship-gate threshold and run
+> scope pre-registered in `docs/tasks/task-T456.md` before any new trial was dispatched — see that
+> file's "Pre-registered ship-gate threshold" / "Pre-registered run scope" / "Execution log"
+> sections for the live measurement record.
 
 > **T458 closed 2026-09-17 — see `completed-tasks.md` for the full closure record.** All 8
 > acceptance criteria in `docs/tasks/task-T458.md` independently re-verified by the top-level
