@@ -2,15 +2,18 @@
 
 **ID:** T496
 **Owner:** solution-architect
-**Status:** blocked — design-completion artifact delivered (`docs/artifacts/
-security-engineer-audit-server-design-v1.md`); real implementation gap remains open, mirroring
-T457's own "design delivered, row stays blocked" posture. Not `done`.
+**Status:** done
+**Closure note (2026-09-17):** design-completion artifact delivered (`docs/artifacts/
+security-engineer-audit-server-design-v1.md`, merged `9827d0c`) and the implementation gap it named
+is now closed by `T497` (`implementation/runtime/security/`, merged `358b4e7`), independently
+verified by the top-level session including a personally-re-run real injection-exploit adversarial
+test. See `docs/tasks/completed-tasks.md`'s `T496` row for the full closure record.
 **Priority:** P1
 **Depends on:** None structurally. Deepens `docs/artifacts/scoped-execution-primitive-v1.md` §2.3
 (Option C), which T457's design pass deliberately left with its exact scope open. Does **not**
 depend on Track 1 (`T495`) and must not be serialized behind it.
 **Created:** 2026-09-17
-**Completed:** —
+**Completed:** 2026-09-17
 **Based on:**
 - `docs/artifacts/scoped-execution-primitive-v1.md` — read in full; specifically §2 (`@security-
   engineer`'s three-option framing), §2.3 (Option C's own working-out) and §2.4 (the labeled,

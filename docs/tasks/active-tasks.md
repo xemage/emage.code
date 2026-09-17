@@ -3,9 +3,27 @@
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
 | T456 | Downstream measurement (ship gate) | evaluation-agent | blocked | P0 | T454 (done), T455 (done), T458 (pending) | 2026-09-09 |
-| T457 | Scoped, non-`Bash` execution/read primitive for `@security-engineer` and `@context-retriever` | solution-architect | blocked | P1 | None | 2026-09-17 |
 | T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-09 |
-| T496 | `@security-engineer` Option C design-completion pass (T457 §2.3, Track 2) | solution-architect | blocked | P1 | None | 2026-09-17 |
+
+> **T457 and T496 closed 2026-09-17 — the underlying gap both rows tracked (`@security-engineer`
+> and `@context-retriever`'s `tools:` grant mapping to unrestricted `execute`/`Bash` with no
+> narrower primitive to grant instead) is now genuinely, technically resolved for both agents, not
+> merely design-documented. `T495` (`@context-retriever`, Track 1) and `T497` (`@security-engineer`
+> Option C, Track 2) each replaced `execute` with exact-tool-name MCP grants
+> (`mcp__context-retriever__retrieve`; `mcp__security-audit__run_npm_audit`/`run_pip_audit`/
+> `run_dotnet_list_vulnerable`/`grep_content`), each backed by a real, independently-re-run
+> subprocess-over-stdio adversarial test suite proving fabricated write/execute/shell tool calls are
+> rejected with zero side effects. This closes T496's own previously-stated blocking condition
+> ("real implementation gap remains open") — false as of `T497` — and T457's own "design delivered,
+> real gap remains open" posture. See `completed-tasks.md` for the full closure record, including
+> the one genuine, disclosed limitation this closure does **not** paper over: T457's own Acceptance
+> Criterion 1 ("demonstrated per platform, not asserted for one and assumed for the rest") is met in
+> full only for Claude Code, the one platform whose `tools:` frontmatter is a real, verified
+> technical control — `scoped-execution-primitive-v1.md`'s own per-platform survey (unchanged by
+> this closure) already found this same field is either absent (`gemini`), present but not an
+> enforced technical control (`cursor`), or unconfirmed (`github`/`opencode`/`pi`) on every other
+> platform, which is a ceiling of those platforms' own tooling, not a residual gap this task chose
+> to leave open.
 
 > **T497 closed 2026-09-17 — see `completed-tasks.md` for the full closure record (implementation,
 > independent verification evidence, and the disclosed T496-closure-policy discrepancy). T496's
