@@ -93,6 +93,19 @@ servers:
     command: python3
     args: ["-m", "implementation.runtime.memory.context_retriever_mcp_server", "--index-dir", "implementation/runtime/memory/_index/em-age-emage.code", "--workspace-root", ".", "--platform-root", ".claude"]
 
+  security-audit:
+    # T497 -- fixed-command audit-command server for @security-engineer, per
+    # docs/artifacts/security-engineer-audit-server-design-v1.md (T496) §3. `extended`,
+    # not `core`: opt-in, role-specific infrastructure (only @security-engineer is ever
+    # granted its tools), same reasoning class as `filesystem`/`git`/`docker`. No `env:`
+    # block: every one of its four tools (run_npm_audit, run_pip_audit,
+    # run_dotnet_list_vulnerable, grep_content) is a local CLI subprocess call against the
+    # calling agent's own workspace -- no network call, no API key.
+    tags: [extended]
+    transport: stdio
+    command: python3
+    args: ["-m", "implementation.runtime.security.audit_server"]
+
   filesystem:
     tags: [extended]
     transport: stdio

@@ -92,6 +92,13 @@
         ".claude"
       ]
     },
+    "security-audit": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "implementation.runtime.security.audit_server"
+      ]
+    },
     "filesystem": {
       "command": "npx",
       "args": [

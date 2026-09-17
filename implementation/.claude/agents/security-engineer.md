@@ -1,7 +1,7 @@
 ---
 name: "Security Engineer"
 description: "Use when performing security audits, checking OWASP Top 10 compliance, reviewing authentication and authorization, scanning for vulnerabilities, assessing cryptographic implementations, reviewing input validation, checking for injection attacks, or hardening infrastructure."
-tools: Read, Bash, WebFetch, WebSearch, mcp__fetch
+tools: Read, mcp__security-audit__run_npm_audit, mcp__security-audit__run_pip_audit, mcp__security-audit__run_dotnet_list_vulnerable, mcp__security-audit__grep_content, WebFetch, WebSearch, mcp__fetch
 ---
 
 # Security Engineer
