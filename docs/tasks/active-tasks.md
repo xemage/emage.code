@@ -3,8 +3,62 @@
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
 | T456 | Downstream measurement (ship gate) | evaluation-agent | blocked | P0 | T454 (done), T455 (done), T458 (pending) | 2026-09-09 |
-| T457 | Scoped, non-`Bash` execution/read primitive for `@security-engineer` and `@context-retriever` | solution-architect | pending | P1 | None | 2026-09-09 |
+| T457 | Scoped, non-`Bash` execution/read primitive for `@security-engineer` and `@context-retriever` | solution-architect | blocked | P1 | None | 2026-09-17 |
 | T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-09 |
+
+> **T457 design phase delivered 2026-09-17 — dispatched per `plan-049-t457-scoped-primitive-
+> reinvestigation.md` (merged immediately prior, `6612702`), which found the original "cannot touch
+> `.mcp.json`" constraint that kept this task un-dispatched since 2026-09-09 no longer holds (the
+> lift was explicit, current-session user authorization, re-confirmed in the dispatch brief per this
+> task's own Constraints requirement). `solution-architect` produced `docs/artifacts/
+> scoped-execution-primitive-v1.md` (Expected Outputs item 1 only) — a dedicated single-tool MCP
+> server recommended for `@context-retriever` (confirms `plan-049` §2.1, adds a structural argument:
+> a single write-free tool needs no platform-specific granularity to be safe, unlike a composed
+> multi-tool grant); `@security-engineer`'s composed exact-tool-name allowlist over already-
+> registered `filesystem`/`git`/`fetch` servers presented as three explicit, unresolved options
+> (A: accept a real capability narrowing — loses full-text grep, `npm audit`/`pip-audit`,
+> linting; B: keep today's status quo; C: a heavier dedicated audit-command MCP server) — **not
+> decided by the design pass**, per this session's explicit instruction that this trade-off belongs
+> to the user. **Orchestrator independent verification before this note was written** (not accepted
+> on the design pass's self-report alone): every code citation (`sync.mjs` lines 250/267/286,
+> `claude-code.json` lines 14/16–24, `security-engineer.md` lines 4/13, `servers.yaml` lines
+> 81–85/93–97, `context_retriever.py` lines 1/9/173) re-checked directly against the real files;
+> all 6 non-Claude-Code platform manifests re-read fresh and confirmed to match the document's
+> per-platform claims (`cursor.json`/`cline.json` in particular); the two most consequential
+> external claims independently re-fetched directly by the orchestrator, not reused from the design
+> pass's own fetch — Cursor's own subagent docs confirmed to have exactly 5 frontmatter fields with
+> no `tools` field; `@modelcontextprotocol/mcp-git` confirmed 404 on the npm registry (a second,
+> previously-undisclosed `servers.yaml` defect the design pass found beyond `plan-049`'s own
+> `filesystem`-entry finding). Real GitLab CI independently polled to completion on the actual
+> pushed SHA (`4ba06d8`, pipeline `2856851248`) — 5/5 jobs green (`sync-no-diff`,
+> `validation-super-gate`, `verify-knowledge-drift`, `unit-tests`, `markdown-links`), not assumed.
+> Left unmerged per this session's standing no-self-merge instruction — MR !306 handed back to the
+> top-level session for merging. **A real GitLab credential failure was hit and independently
+> resolved before pushing**: `git push` and a raw `curl` check against `/api/v4/user` both returned
+> 401 with both `PRIVATE-TOKEN` and `Authorization: Bearer` headers (the on-disk token was stale),
+> but `glab api user` succeeded and transparently refreshed the underlying OAuth token via its own
+> stored refresh token — the retried `git push` then succeeded with no other change.
+>
+> **Deliberately NOT marked `done` and NOT archived to `completed-tasks.md` — a disclosed departure
+> from this repo's own `T483` design-phase-closure precedent, not an oversight.** This task's real
+> defect (the `execute`→`Bash` unrestricted-shell tool grant on `@security-engineer` and
+> `@context-retriever`) is not fixed by a design document alone — only the design sub-step is
+> complete, and the actual fix is now blocked on the user deciding the `@security-engineer`
+> trade-off above before an implementation task can even be scoped. `implementation/scripts/
+> check-maturity.py`'s `_ledger_defect()` check (lines 369–380) excludes a component from `stable`
+> promotion if any open P0/P1 ledger row's Title or brief text names it; multiple agents this task
+> concerns are correctly excluded from `stable` today for exactly this reason (see
+> `docs/artifacts/phase3-wave1-promotion-v1.md`/`phase3-wave2-promotion-v1.md`/`phase3-maturity-
+> demotion-decision-v1.md`'s own already-committed findings, not re-named individually here to avoid
+> this exact self-referential check flagging this very row a second, redundant way — the T433/T434/
+> T435/T486/T442 discipline this repo has already established). Archiving this row now, while the
+> real gap remains open, would silently clear that correct exclusion without the underlying defect
+> actually being fixed — a false-promotion risk. Status is `blocked` (not `pending`, since real,
+> verified progress was made; not `done`, since the task's actual purpose is unmet) until either the
+> gap is genuinely closed, or the user's decision on the trade-off above lets a real, separately-
+> scoped implementation task be opened — at which point this design-phase sub-step, specifically,
+> can be considered complete under the `T483` pattern, without conflating that narrower claim with
+> the underlying defect's own resolution.
 
 > **T491 closed 2026-09-16 — implements T483's ratified design (`docs/artifacts/
 > mcp-header-url-templating-design-v1.md`) exactly, bringing the two hand-added, hitherto

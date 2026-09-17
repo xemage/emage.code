@@ -4,10 +4,43 @@
 **Owner:** solution-architect (design first; implementation owner(s) — likely `devops-engineer`
 and/or `backend-developer` for the scoped-tool mechanism itself — to be assigned once the design
 lands and the `.mcp.json` question below is resolved)
-**Status:** pending — **NOT DISPATCHED.** Recorded as a properly-scoped backlog item per explicit
-user instruction during T454's closeout MR review (2026-09-09); do not dispatch without first
-re-confirming this session's (or the then-current session's) standing constraint on touching
-`.mcp.json` still applies, since that constraint gates this task's real fix.
+**Status:** blocked — **design phase complete, implementation blocked on an explicit, undecided
+user/orchestrator trade-off.** Dispatched 2026-09-17 per `docs/plans/plan-049-t457-scoped-primitive-
+reinvestigation.md` (merged `origin/develop` commit `6612702`), which found the original "cannot
+touch `.mcp.json`" constraint that kept this task un-dispatched since 2026-09-09 no longer holds.
+The design pass produced `docs/artifacts/scoped-execution-primitive-v1.md` (Expected Outputs item 1
+only — items 2–4 below remain undone), independently re-verified by the orchestrator (every code
+citation and the two most consequential external citations re-checked directly against the real
+source, not accepted on the design pass's self-report alone), committed on `agent/solution-
+architect/T457` (`4ba06d8`), real GitLab CI green (5/5: `sync-no-diff`, `validation-super-gate`,
+`verify-knowledge-drift`, `unit-tests`, `markdown-links`), MR !306 opened against `develop` and
+**left unmerged** per this session's standing no-self-merge instruction.
+
+The design surfaced one real, unresolved decision this task cannot proceed past without it: the
+document's §2 lays out three options (A: accept a real capability narrowing for `@security-engineer`
+via a composed exact-tool-name MCP allowlist; B: keep today's prose-only `execute`/`Bash` status quo;
+C: build a heavier dedicated audit-command MCP server) and explicitly does not pick one, per this
+session's own explicit instruction that this decision belongs to the user, not the design pass.
+**This task is intentionally NOT marked `done` and NOT archived to `completed-tasks.md`**, unlike
+this repo's superficially similar `T483` precedent (design-phase closure that spun off `T491`/`T492`
+as separately-owned implementation tasks) — a deliberate, disclosed deviation from that precedent,
+not an oversight: `implementation/scripts/check-maturity.py`'s `_ledger_defect()` check (lines
+369–380) flags a component as blocked from `stable` promotion if any currently-open P0/P1 ledger
+row's Title or task-brief text mentions its id; five agents (`@security-engineer`,
+`@context-retriever`, and — per `docs/artifacts/phase3-wave1-promotion-v1.md`/`phase3-wave2-
+promotion-v1.md`/`phase3-maturity-demotion-decision-v1.md`'s own already-committed findings — three
+more, this task's own `Based on` history and prior promotion-evidence artifacts name them, not
+repeated again here to avoid this exact defect-check regressing them a second, redundant way) are
+currently, *correctly* excluded from `stable` because this task is open and still real. This task's
+actual underlying defect — the `execute`→`Bash` unrestricted-shell tool grant on `@security-
+engineer`/`@context-retriever` — is **not fixed** by a design document alone; archiving this row
+would silently clear that correct exclusion while the real gap remains open, a false-promotion risk
+this session's own established self-referential-ledger-defect discipline (`T433`/`T434`/`T435`/
+`T486`/`T442` precedent) exists specifically to catch. This row stays open, with status `blocked`,
+until either (a) implementation actually closes the gap for both agents, or (b) the user/orchestrator
+decides §2's trade-off and a genuinely separate implementation task is opened and dispatched (at
+which point this design-phase sub-step can be considered complete, following the `T483` pattern for
+*that* narrower claim only, not for the underlying defect itself).
 **Priority:** P1 (real, disclosed security/tool-scoping gap on two already-shipped read-only agents
 — important, but does not block Phase 5's critical path; see "Does this block T455/T456?" below)
 **Depends on:** None structurally. Practically benefits from being scoped after any MCP-server
@@ -111,6 +144,11 @@ properly rather than leaving it undocumented. This task is that tracking record.
   a `solution-architect` design pass first, per this repo's own Architecture Gate discipline.
 
 ## Expected Outputs (once actually dispatched — not required to open this backlog record)
+
+> **Item 1 delivered 2026-09-17** — `docs/artifacts/scoped-execution-primitive-v1.md`, MR !306
+> (`agent/solution-architect/T457`, unmerged). Items 2–4 below remain undone and are explicitly
+> blocked on the user/orchestrator deciding this document's §2 `@security-engineer` trade-off (see
+> the Status field above) — no implementation task has been scoped or dispatched for them yet.
 
 1. A design artifact (e.g. `docs/artifacts/scoped-execution-primitive-v1.md`) evaluating at least:
    (a) a dedicated MCP server exposing a narrow, read-only, non-shell query/search primitive; (b) a
