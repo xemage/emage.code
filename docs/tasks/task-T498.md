@@ -2,13 +2,18 @@
 
 **ID:** T498
 **Owner:** backend-developer
-**Status:** in_progress
+**Status:** done
+**Closure note (2026-09-17):** all four bugs fixed across the five authorized files, independently
+re-verified by the top-level session (diff scope, per-fix mechanism, Phase-1 baseline parity, full
+test suite) before merge. See `docs/tasks/completed-tasks.md`'s `T498` row for the full closure
+record.
 **Priority:** P1
 **Depends on:** None structurally blocking (T456 and T493 are both `done`; this task is motivated
 by their findings but does not depend on any currently-blocked task).
 **Blocks:** Nothing structurally. **Does not itself re-run T456's ship-gate measurement** — that
 is a separate, future follow-up task, not created here and not in this task's scope.
 **Created:** 2026-09-17
+**Completed:** 2026-09-17
 **Based on:** `docs/plans/plan-052-t498-golden-checker-brittleness-fixes.md` (this task's backing
 plan — read it in full before starting, especially "Direct verification performed before writing
 this plan" and "Risks and mitigations"); `docs/benchmarks/baseline-v6.17.0-retrieval.md` §6/§7/§9

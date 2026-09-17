@@ -2,7 +2,21 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T498 | Fix four diagnosed golden-suite checker-brittleness bugs (protected-path exception) | backend-developer | in_progress | P1 | None structurally (motivated by T456/T493 findings) | 2026-09-17 |
+
+> **0 active rows.** `T498` closed 2026-09-17 — see `completed-tasks.md` for the full closure
+> record. All four diagnosed checker-brittleness bugs fixed across the five authorized files,
+> independently re-verified by the top-level session (not accepted on `backend-developer`'s
+> self-report alone): each fix read directly and confirmed minimal/targeted against the real
+> diagnosed mechanism; Phase-1 baseline parity independently re-confirmed via a fresh
+> `scripts/scorecard.py` run (only `run_metadata.generated_at` differed, `content` byte-identical,
+> then reverted); scope confirmed exactly the 5 authorized files via `git diff --stat`, nothing else
+> under `tests/golden/**`/`scripts/scorecard.py` touched. One real cross-branch issue caught and
+> fixed twice along the way (not a code defect): the implementation branch forked before MR !318's
+> self-referential-ledger-defect fix landed on `develop`, so it independently carried the same
+> `task-T498.md` text bug; fixed directly on the branch, then a trivial line-wrap merge conflict
+> (identical text, different wrapping) resolved when merging `develop` back in before the final
+> merge. **Does not itself re-run T456's ship-gate measurement or close Gate G3** — per this task's
+> own explicit scope boundary, that remains a separate, not-yet-dispatched follow-up.
 
 > **T498 dispatched 2026-09-17 — fixes exactly the four already-diagnosed, arm-agnostic
 > checker-brittleness bugs `baseline-v6.17.0-retrieval.md` §7/§9 (on the unmerged
@@ -24,6 +38,14 @@
 > Branches"). **Standing no-self-merge instruction restated, zero exceptions for content type** —
 > neither this ledger branch nor `T498`'s own implementation branch will be merged by the
 > orchestrator; both are handed back to the user for independent review and merge.
+
+> **Correction (2026-09-17, same day):** the dispatch note above says
+> `baseline-v6.17.0-retrieval.md` "has not yet merged to `develop`" — that was already false at
+> dispatch time; `T456`'s MR !317 had merged (commit `cc77974`) before `T498` was dispatched. A
+> real factual error in the dispatching orchestrator's own investigation (it checked a stale ref),
+> not a functional defect — the diagnosis it was citing (`task-T493.md`'s pre-existing root cause)
+> was accurate regardless, and this task's actual fixes were correct. Left uncorrected in the
+> original note per this repo's own convention of not rewriting history, disclosed here instead.
 
 > **0 other active rows.** `T456` closed 2026-09-17 — see `completed-tasks.md` for the full closure
 > record and `docs/benchmarks/baseline-v6.17.0-retrieval.md` for the full measurement.
