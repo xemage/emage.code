@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-09-17T10:42:54+02:00",
+  "generatedAt": "2026-09-17T13:43:48+02:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -605,7 +605,7 @@
       "category": "agent",
       "name": "Security Engineer",
       "path": "agents/security-engineer.md",
-      "checksum": "4ba07f47c6bd6d83f70f646d6e70ddc19c1d45d095fa7d4e104d38462c26ab90",
+      "checksum": "1a13052108df6a25261ed5e2724b6b546f45bc9a9be825b0beaa6f878137afdd",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [

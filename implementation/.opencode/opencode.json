@@ -96,6 +96,14 @@
         ".claude"
       ]
     },
+    "security-audit": {
+      "type": "local",
+      "command": [
+        "python3",
+        "-m",
+        "implementation.runtime.security.audit_server"
+      ]
+    },
     "filesystem": {
       "type": "local",
       "command": [

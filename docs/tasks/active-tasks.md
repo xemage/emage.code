@@ -7,6 +7,40 @@
 | T458 | Live-execution harness for the golden suite (unblocks T456) | devops-engineer | pending | P1 | None | 2026-09-09 |
 | T496 | `@security-engineer` Option C design-completion pass (T457 §2.3, Track 2) | solution-architect | blocked | P1 | None | 2026-09-17 |
 
+> **T497 closed 2026-09-17 — see `completed-tasks.md` for the full closure record (implementation,
+> independent verification evidence, and the disclosed T496-closure-policy discrepancy). T496's
+> own row above is unchanged (`blocked`) — the previous round's documented policy on `task-T496.md`
+> ("design delivered, row stays blocked... not `done`", mirroring `T457`'s own posture) was
+> preserved, not overridden, despite this dispatch's originating instructions asking for T496 to
+> close `done`. Flagged to the user for an explicit decision; not resolved unilaterally either way.**
+
+> **T497 dispatched 2026-09-17 — real implementation of Option C, per T496's delivered design
+> artifact (`docs/artifacts/security-engineer-audit-server-design-v1.md`, merged to `develop` at
+> `9827d0c`).** Owner `backend-developer`, tool grant re-checked fresh against
+> `implementation/knowledge/agents/backend-developer.md` before dispatch: `[read, search, edit,
+> execute, web, mcp__fetch]` — has both `edit`/`execute`, same as `T495`'s precedent. Dispatched
+> into a fresh worktree branched from `origin/develop` at `9827d0c` (independently re-verified as
+> current `origin/develop` HEAD before branching) — `agent/backend-developer/T497` — with this
+> ledger row, the task's own brief, and a minimal plan-coverage document
+> (`plan-051-t497-dispatch-plan-coverage.md`) committed as the first commit, mirroring the
+> `T442`/`T491`/`T495`/`T496` precedent. See `task-T497.md` for the full brief. **Standing
+> no-self-merge instruction restated, zero exceptions for content type** — this MR will not be
+> merged by the orchestrator regardless of CI outcome; handed back to the top-level session/user
+> for merging once independently verified.
+>
+> **Disclosed discrepancy between this dispatch's originating instructions and the ledger's own
+> documented policy — not silently resolved either way:** the dispatch instructions that produced
+> this task asked for `T496` to be closed `done` once this implementation "genuinely resolves the
+> gap it was tracking." Independently re-reading `task-T496.md`'s own Status field (written by the
+> prior round, same day) finds the opposite, explicit policy already on record: *"blocked —
+> design-completion artifact delivered... real implementation gap remains open, mirroring T457's
+> own 'design delivered, row stays blocked' posture. Not `done`."* This mirrors `T457` itself,
+> where `T495` succeeding did not close `T457`. Because this is a real, documented, reasoned
+> decision from the previous round — not an oversight — `T496`'s row is **not** being changed to
+> `done` by this dispatch commit. It stays `blocked`, unchanged. This is flagged to the user for an
+> explicit decision rather than either silently complying with the newer instruction or silently
+> keeping the old policy without disclosure.
+
 > **T495/T496 dispatched 2026-09-17 — two structurally different follow-ups to T457's design pass
 > (`docs/artifacts/scoped-execution-primitive-v1.md`), per the user's explicit decisions this
 > session: "@context-retriever OK" (approving §1.4's dedicated single-tool MCP server recommendation)

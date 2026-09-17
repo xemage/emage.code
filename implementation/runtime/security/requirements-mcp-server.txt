@@ -1,0 +1,23 @@
+# Dependency for `implementation/runtime/security/audit_server.py` (T497) -- the
+# `stdio` MCP server implementing `docs/artifacts/
+# security-engineer-audit-server-design-v1.md` (T496). NOT part of this repo's core
+# `tests/run.py` dependency set (PyYAML + jsonschema, stdlib `unittest`) -- same
+# convention as `implementation/runtime/memory/requirements-mcp-server.txt` (T495):
+# only needed to actually run the server process, or to exercise this package's own
+# live adversarial subprocess test (`tests/functional/test_audit_server.py`), which
+# skips gracefully when this isn't installed.
+#
+# Install into a virtualenv (this environment's Python is externally managed):
+#
+#   python3 -m venv .venv-security-audit-mcp
+#   source .venv-security-audit-mcp/bin/activate
+#   pip install -r implementation/runtime/security/requirements-mcp-server.txt
+#
+# `mcp` is the official Model Context Protocol Python SDK
+# (https://github.com/modelcontextprotocol/python-sdk), MIT-licensed, free, no
+# paid/metered API involved -- a local library install, not a live external service
+# call. Same version pin as `implementation/runtime/memory/requirements-mcp-server.txt`
+# (T495), which already verified `mcp==2.2.0`'s `mcp.server.mcpserver.MCPServer` API
+# surface this session; not independently re-verified against a different version here.
+
+mcp==2.2.0
