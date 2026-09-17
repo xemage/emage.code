@@ -4,50 +4,42 @@
 **Owner:** solution-architect (design first; implementation owner(s) — likely `devops-engineer`
 and/or `backend-developer` for the scoped-tool mechanism itself — to be assigned once the design
 lands and the `.mcp.json` question below is resolved)
-**Status:** blocked — **design phase complete, implementation blocked on an explicit, undecided
-user/orchestrator trade-off.** Dispatched 2026-09-17 per `docs/plans/plan-049-t457-scoped-primitive-
-reinvestigation.md` (merged `origin/develop` commit `6612702`), which found the original "cannot
-touch `.mcp.json`" constraint that kept this task un-dispatched since 2026-09-09 no longer holds.
-The design pass produced `docs/artifacts/scoped-execution-primitive-v1.md` (Expected Outputs item 1
-only — items 2–4 below remain undone), independently re-verified by the orchestrator (every code
-citation and the two most consequential external citations re-checked directly against the real
-source, not accepted on the design pass's self-report alone), committed on `agent/solution-
-architect/T457` (`4ba06d8`), real GitLab CI green (5/5: `sync-no-diff`, `validation-super-gate`,
-`verify-knowledge-drift`, `unit-tests`, `markdown-links`), MR !306 opened against `develop` and
-**left unmerged** per this session's standing no-self-merge instruction.
+**Status:** done
+**Closure note (2026-09-17):** **The condition this row's own text set for its closure is now
+met**: "(a) implementation actually closes the gap for both agents" — Track 1 (`T495`,
+`@context-retriever`, merged `e73d8f3`) and Track 2 (`T496` design → `T497` implementation,
+`@security-engineer`, merged `9827d0c`/`358b4e7`) both replaced `execute` with real, adversarially-
+tested exact-tool-name MCP grants, independently re-verified by the top-level session (not accepted
+on either track's self-report alone) — see `docs/tasks/completed-tasks.md`'s `T457` row for the full
+closure record, including the one genuine, disclosed limitation carried forward unchanged from this
+document's own design-phase deliverable: full per-platform technical enforcement (Acceptance
+Criterion 1) is confirmed only for Claude Code, not the other 6 projected platforms, which is a
+structural ceiling of those platforms' own tooling, not a gap this task left open through inaction.
 
-The design surfaced one real, unresolved decision this task cannot proceed past without it: the
-document's §2 lays out three options (A: accept a real capability narrowing for `@security-engineer`
-via a composed exact-tool-name MCP allowlist; B: keep today's prose-only `execute`/`Bash` status quo;
-C: build a heavier dedicated audit-command MCP server) and explicitly does not pick one, per this
-session's own explicit instruction that this decision belongs to the user, not the design pass.
-**This task is intentionally NOT marked `done` and NOT archived to `completed-tasks.md`**, unlike
-this repo's superficially similar `T483` precedent (design-phase closure that spun off `T491`/`T492`
-as separately-owned implementation tasks) — a deliberate, disclosed deviation from that precedent,
-not an oversight: `implementation/scripts/check-maturity.py`'s `_ledger_defect()` check (lines
-369–380) flags a component as blocked from `stable` promotion if any currently-open P0/P1 ledger
-row's Title or task-brief text mentions its id; five agents (`@security-engineer`,
-`@context-retriever`, and — per `docs/artifacts/phase3-wave1-promotion-v1.md`/`phase3-wave2-
-promotion-v1.md`/`phase3-maturity-demotion-decision-v1.md`'s own already-committed findings — three
-more, this task's own `Based on` history and prior promotion-evidence artifacts name them, not
-repeated again here to avoid this exact defect-check regressing them a second, redundant way) are
-currently, *correctly* excluded from `stable` because this task is open and still real. This task's
-actual underlying defect — the `execute`→`Bash` unrestricted-shell tool grant on `@security-
-engineer`/`@context-retriever` — is **not fixed** by a design document alone; archiving this row
-would silently clear that correct exclusion while the real gap remains open, a false-promotion risk
-this session's own established self-referential-ledger-defect discipline (`T433`/`T434`/`T435`/
-`T486`/`T442` precedent) exists specifically to catch. This row stays open, with status `blocked`,
-until either (a) implementation actually closes the gap for both agents, or (b) the user/orchestrator
-decides §2's trade-off and a genuinely separate implementation task is opened and dispatched (at
-which point this design-phase sub-step can be considered complete, following the `T483` pattern for
-*that* narrower claim only, not for the underlying defect itself).
+The paragraphs below are the historical record of this task's design phase and the trade-off it
+surfaced — preserved unedited for that history, superseded by the closure above.
+
+The design phase (`docs/artifacts/scoped-execution-primitive-v1.md`, merged `origin/develop` commit
+`6612702`'s follow-on work) surfaced one real, then-unresolved decision: the document's §2 laid out
+three options for `@security-engineer` (A: accept a real capability narrowing via a composed
+exact-tool-name MCP allowlist; B: keep the prose-only `execute`/`Bash` status quo; C: build a heavier
+dedicated audit-command MCP server) without picking one, per this session's own instruction that the
+decision belonged to the user. **The user decided Option C** ("@security-engineer C"), which `T496`
+(design-completion) and `T497` (implementation) then delivered. This task was deliberately kept
+`blocked` (not `done`) through that entire design-and-decide phase — a disclosed deviation from the
+superficially similar `T483` precedent — specifically so `implementation/scripts/check-maturity.py`'s
+`_ledger_defect()` check would keep correctly excluding `@security-engineer`/`@context-retriever` (and
+sibling components this task's `Based on` history names) from `stable` promotion while the real gap
+was still open, per this session's established self-referential-ledger-defect discipline
+(`T433`/`T434`/`T435`/`T486`/`T442` precedent). That discipline's job is now done: the gap it was
+guarding against is genuinely closed, not merely design-documented, so this row closes for real.
 **Priority:** P1 (real, disclosed security/tool-scoping gap on two already-shipped read-only agents
 — important, but does not block Phase 5's critical path; see "Does this block T455/T456?" below)
 **Depends on:** None structurally. Practically benefits from being scoped after any MCP-server
 design precedent Phase 3 (Maturity Ladder, not yet approved) or other in-flight MCP work might set,
 but is not blocked by either.
 **Created:** 2026-09-09
-**Completed:** —
+**Completed:** 2026-09-17
 **Based on:** `docs/artifacts/context-retriever-v1.md` §2/§2.1 (the honest accounting of what T454's
 three `ALLOW_WRITE=false` layers actually enforce in this repo's current, non-containerized
 deployment — corrected during this task's own creation, same session); `docs/tasks/task-T454.md`'s
