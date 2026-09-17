@@ -33,7 +33,21 @@ def _verdict_section(text: str) -> str | None:
     if idx == -1:
         return None
     rest = text[idx + len("## RELEASE VERDICT"):]
-    next_heading = re.search(r"\n#{1,2}\s", rest)
+
+    # Skip heading-boundary matches that fall inside a fenced code block -- a fence may
+    # legitimately reproduce a "## RELEASE VERDICT" heading (e.g. a template example) without
+    # that being the real section's end; only a heading outside any fence really ends it.
+    fence_spans = [m.span() for m in re.finditer(r"```.*?```", rest, re.DOTALL)]
+
+    def _in_fence(pos: int) -> bool:
+        return any(start <= pos < end for start, end in fence_spans)
+
+    next_heading = None
+    for m in re.finditer(r"\n#{1,2}\s", rest):
+        if not _in_fence(m.start()):
+            next_heading = m
+            break
+
     return rest[: next_heading.start()] if next_heading else rest
 
 
