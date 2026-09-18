@@ -2,7 +2,30 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T504 | Validation: proposal vs. failing case + open suite + held-out suite + baseline; promotion rule (`plan-035` nominal T463, `plan-055` `T463-equiv`) | backend-developer | in_progress | P0 | T458 (done), T503 (done) | 2026-09-18 |
+
+> **0 active rows.** `T504` closed 2026-09-18 — see `completed-tasks.md` for the full closure
+> record. All 10 acceptance criteria independently re-verified by the top-level session before
+> this closure (not accepted on the implementer's self-report alone). **A real bug was found and
+> fixed during that verification, not merely confirmed clean**: `evaluator_hash.py`'s
+> `compute_path_digest` used a naive filesystem walk (`rglob`) that picked up gitignored
+> `__pycache__`/`.pyc` bytecode cache under `tests/golden/**` — created as an ordinary side effect
+> of dynamically importing `expect.py` files — silently contaminating the digest and defeating the
+> entire point of a stable, reproducible known-good baseline. Caught because the originally-
+> bootstrapped hash failed to reproduce in a completely fresh verification worktree. Fixed to hash
+> only `git ls-files`-enumerated paths; independently confirmed the fix resolves the root cause via
+> a direct `__pycache__`-present/absent A/B comparison (identical digest both ways). The known-good
+> JSON and its design doc were updated to match; the test fixture that exercised this code was
+> updated to a real (scratch) git repo, and a new test added proving the actual fix intent directly
+> (an untracked addition is correctly not reported as drift). Beyond this fix, the top-level
+> session personally ran a full live end-to-end exercise: a real evaluator-hash check against the
+> real repo (no drift), a real `T503` proposal generated and applied to an isolated scratch copy
+> via `apply_proposal_to_scratch` (confirmed zero real-repo side effects), and two real promotion
+> decisions against synthetic `TrialRecord` data — one correctly promoting, one correctly rejecting
+> on a missed floor — both producing the right `reason` string. Held-out isolation guard re-run
+> fresh (8/8 pass); zero hits on `implementation/sia/`, `implementation/adapters/sia-target/`, or
+> `implementation/scripts/sia-executor.py`. Full verification bar re-run fresh: `tests/run.py` 685
+> tests `OK` (`skipped=37`, run twice for stability); `validate-tasks.py` PASS; `check-maturity.py`
+> 79 components, 0 failing; `sync.mjs --check` no drift across 577 files.
 
 > **1 active row.** T504 dispatched 2026-09-18 per `plan-055` §4's `T463-equiv` row — see
 > `task-T504.md` for the full brief. Two-piece split: `backend-developer` builds (1) a real
