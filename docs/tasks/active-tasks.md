@@ -2,8 +2,19 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T503 | `@meta-improver`: failure cluster → diff proposal, never an applied edit (`plan-035` nominal T462) | backend-developer | in_progress | P0 | T501 (done) | 2026-09-18 |
 
-> **0 active rows.** `T501` closed 2026-09-18 — see `completed-tasks.md` for the full closure
+> T503 dispatched 2026-09-18 per `plan-055` §4's `T462-equiv` row — see `task-T503.md` for the full
+> brief, including the "never an applied edit" architectural-incapability requirement, the
+> split-ownership plan (build: `backend-developer`; live end-to-end validation: orchestrator
+> directly, not a nested live dispatch), and the disclosed "Python module, not registered
+> subagent" scoping decision. Note: an initial `curl` probe of the raw `GITLAB_PERSONAL_ACCESS_TOKEN`
+> env var against `gitlab.com/api/v4/user` returned HTTP 401 under both `PRIVATE-TOKEN` and `Bearer`
+> auth, but `git push`/`glab mr create` (this branch's own MR !331) both succeeded immediately after
+> — the raw env var is not the credential `git`/`glab` actually use, so this was a false-positive
+> blocker, corrected before it affected dispatch.
+
+> `T501` closed 2026-09-18 — see `completed-tasks.md` for the full closure
 > record. All 6 acceptance criteria independently re-verified by the top-level session before this
 > closure (not accepted on the implementer's self-report alone): `implementation/runtime/
 > golden_harness/failure_taxonomy.py`'s `FailureTaxonomy.load()`/`all_records()`/`get()`/
