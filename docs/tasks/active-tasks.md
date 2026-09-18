@@ -2,7 +2,32 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T508 | Fix `plan-035`'s stale per-phase status headers | technical-writer | pending | P1 | none | 2026-09-18 |
+
+> **0 active rows. `T508` closed 2026-09-18 — see `completed-tasks.md` for the full closure
+> record.** This closes `plan-060`'s entire remaining task list (`T507`, `T508`) — both of the two
+> items that plan identified as necessary before `/prepare-release` can cut `v7.0.0`. The
+> implementer's own citation table (in this task's brief) had one real error, self-caught and
+> corrected rather than followed blindly: line 325 is Phase 1's status header, not Phase 2's, and
+> Phase 1's real closing checkpoint (`checkpoint-021`) wasn't named in the brief's table at all —
+> found independently by grepping every real `**Status**` header directly instead of trusting the
+> table. Also correctly preserved a real nuance the brief's own table glossed over: `checkpoint-022`
+> (Phase 2) explicitly states **"Gate G2 is therefore NOT closed by this checkpoint"** — the written
+> status text reflects that precisely rather than claiming G2 closure for Phase 2. Phase 6's new
+> status text does not round up to "complete" per the brief's explicit instruction — states
+> implementation (`T501`-`T506`) done, cites `T507`'s real outcome (AC1 satisfied via MR !346,
+> correctly closed unmerged; AC2/AC5 still open). **Independently re-verified by the top-level
+> session before this closure, not accepted on the implementer's self-report alone**: `git diff`
+> confirmed exactly 6 single-line hunks, nothing else touched; all 6 cited checkpoints
+> (`checkpoint-021/022/029/032/033/034`) read directly and confirmed to say what the new status
+> text claims; all 6 cited dates independently re-derived via `git log --follow` on each checkpoint
+> file, exact match. Full verification bar re-run fresh: `tests/run.py` 701 tests `OK`
+> (`skipped=37`); `validate-tasks.py` PASS; `check-maturity.py` 79 components, 0 failing;
+> `sync.mjs --check` no drift across 577 files. **One real, correctly-handled dispatch-environment
+> error along the way**: the implementer's first attempt correctly refused to guess rather than
+> fabricate checkpoint citations, after being pointed at the top-level session's own stale primary
+> checkout (still on an unrelated branch from earlier work, not `develop`) — a dispatch mistake by
+> the top-level session, not the implementer. Resumed the same agent into a fresh worktree branched
+> correctly from `origin/develop`, which then completed the task as described above.
 
 > **T508 dispatched 2026-09-18** per `docs/plans/plan-060-v7-release-readiness-and-closure.md` §6,
 > after `T507`'s real outcome (below) became known, per that plan's own §7 sequencing rationale.

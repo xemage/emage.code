@@ -322,7 +322,7 @@ from Phase 1 per §2.9's Week 1 guidance). Rows are tracked in `docs/tasks/activ
 
 #### Phase 1 — Trustworthy Signal (v6.12.0, ~3–4 weeks)
 
-**Status: proposed — not approved for task-brief authoring or execution.** Blocked on Gate G0
+**Status: APPROVED and executed. Gate G1 closed per checkpoint-021 (2026-09-08).** Blocked on Gate G0
 closing (Phase 0 above) **and** on the two open questions in "Open questions" below (Arm A
 selection; written interpretation of a null/negative delta) for the T417–T41C sub-track
 specifically. **T417 is the sole exception**: pulled forward and approved alongside Phase 0
@@ -561,7 +561,7 @@ record, and `docs/tasks/completed-tasks.md`'s T407 row for the full measurement 
 
 #### Phase 2 — MCP Conformance (v6.12.0, parallel with Phase 1)
 
-**Status: proposed — not approved for task-brief authoring or execution.**
+**Status: APPROVED and executed. Complete per checkpoint-022 (2026-09-08); does not itself close Gate G2 (G2 closes in Phase 3, per checkpoint-029/032).**
 **Formalization correction (2026-08-12):** the original draft below states `plan-033-mcp-
 settings-hardening.md` (T377–T388) "is already in flight." This is now false — verified against
 `docs/tasks/completed-tasks.md`: T377–T388 are all `done`, and its direct follow-up,
@@ -592,7 +592,7 @@ already closed part or all of this gap as a side effect of their work. This re-s
 
 #### Phase 3 — Maturity Ladder (v6.13.0 – v6.15.0, ~6–8 weeks)
 
-**Status: proposed — not approved for task-brief authoring or execution.**
+**Status: APPROVED and executed. Gate G2 closed per checkpoint-029 (2026-09-10); phase complete per checkpoint-032 (2026-09-11).**
 
 **Goal:** end the state where 76 of 76 components are beta. This is the highest-value
 phase in the plan and the one both source documents miss entirely.
@@ -620,7 +620,7 @@ phase in the plan and the one both source documents miss entirely.
 
 #### Phase 4 — Task-Tier Routing (v6.16.0, ~2–3 weeks)
 
-**Status: proposed — not approved for task-brief authoring or execution.**
+**Status: APPROVED and executed. Complete; documented (no dedicated checkpoint was written at completion time) per checkpoint-033 (2026-09-18).**
 
 **Goal:** cheap models on well-defined work — the owner TODO item, done safely.
 
@@ -645,7 +645,7 @@ gated on brief quality, with cost saving as a measured consequence rather than a
 
 #### Phase 5 — Persistent Memory / RAG (v6.17.0, ~4 weeks)
 
-**Status: proposed — not approved for task-brief authoring or execution.**
+**Status: APPROVED and executed. Gate G3 closed per checkpoint-033 (2026-09-18).**
 
 **Goal:** less forgetting; knowledge that crosses platforms. The one genuine gap the
 source roadmaps identify.
@@ -677,7 +677,7 @@ part that determines whether this helps or poisons.
 
 #### Phase 6 — Closed Loop (v7.0.0, ~4–6 weeks)
 
-**Status: proposed — not approved for task-brief authoring or execution.**
+**Status: Implementation (T501–T506) complete and merged per checkpoint-034 (2026-09-18) — NOT complete overall. A real end-to-end cycle has since run (T507, 2026-09-18): AC1 (one cycle runs end-to-end and produces a merge request) is satisfied — MR !346, correctly closed unmerged by the human gate. AC2 (held-out-suite improvement) and AC5 (lineage document for an accepted change) remain open.**
 
 **Goal:** connect the SIA infrastructure that already exists into a gated loop.
 

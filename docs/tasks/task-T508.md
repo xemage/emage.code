@@ -1,6 +1,9 @@
 # T508 — Fix `plan-035`'s stale per-phase status headers
 
-**Status:** pending
+**Status:** done
+
+**Closure note:** All six status lines fixed, checkpoint citations independently re-verified. See
+`docs/tasks/completed-tasks.md`'s T508 row for full detail.
 **Owner:** Technical Writer
 **Priority:** P1
 **Depends on:** none (docs-only correction)
