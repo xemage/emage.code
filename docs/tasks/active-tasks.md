@@ -2,15 +2,32 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T500 | Phase 6 (Closed Loop) SIA readiness audit and detailed planning pass — `plan-035` §2.4's own T460, expanded to also produce the phase's detailed-planning document, renumbered to this ledger's real next-free ID. Audit- and plan-authoring only; explicitly does not open or dispatch any Phase 6 implementation task. | solution-architect | in_progress | P0 | none (Phase 6 gate-reachable per `checkpoint-033`: G3 closed 2026-09-18, P3 done, G4's evaluator-protection precondition closed with G1) | 2026-09-18 |
 
-> Phase 6 ("Closed Loop", v7.0.0) is gate-reachable as of `T499`'s closure today (2026-09-18) —
-> see `docs/checkpoints/checkpoint-033-phase4-phase5-complete-gate-g3-closed.md`. Per that
-> checkpoint's own explicit note and this project's established precedent
-> (`plan-037`/`038`/`041`/`043`), Phase 6 has not been planned to execution-ready detail and no
-> implementation task brief may be authored until a dedicated planning pass exists and is
-> reviewed. `T500` is that first, mandatory step — `plan-035` §2.4 Phase 6's own text: "No new
-> module until this audit is complete."
+> **0 active rows.** `T500` closed 2026-09-18 — see `completed-tasks.md` for the full closure
+> record. Phase 6 ("Closed Loop", v7.0.0) is gate-reachable as of `T499`'s closure earlier the same
+> day (`checkpoint-033`: G3 closed, P3 done, G4's evaluator-protection precondition closed with G1)
+> — per this project's established precedent (`plan-037`/`038`/`041`/`043`), no Phase 6
+> implementation task brief may be authored until a dedicated planning pass exists and is reviewed.
+> `T500` delivered exactly that: `docs/artifacts/phase6-sia-readiness-audit-v1.md` (a rigorous,
+> evidence-based re-audit of the SIA infrastructure `plan-035`'s own Phase 6 prose cites as
+> "already exist[ing]") and `docs/plans/plan-055-phase6-closed-loop-rescoped-detailed-planning.md`
+> (the resulting detailed-planning pass). **Primary finding**: the SIA/CWSO components found real
+> in the audit (harness-invocation mechanism, reward attachment/shaping, trainer bridge, release
+> gate) belong to the Pattern B/C RL fine-tuning subsystem `docs/plans/plan-016-pattern-a-
+> hardening-and-phase23-poc-closure.md` already told the project to stop pursuing — but Phase 6's
+> own six-task table (`plan-035` §2.4) doesn't actually need any of it; none of those tasks involve
+> a reward signal, trajectory capture, or a fine-tuned model. `plan-055` re-routes Phase 6's real
+> dependency graph through the golden-harness/failure-taxonomy infrastructure (`T415`, `T458`)
+> instead, and pre-emptively applies this repo's own split-ownership pattern to the two tasks that
+> would otherwise repeat the tool-grant gap this project has now hit 9 times. Independently
+> re-verified by the top-level session before this closure (not accepted on the implementer's
+> self-report alone): the `mock_delay` dead-code claim re-checked directly against the real
+> 870-line `sia-executor.py`; the real `https://api.anthropic.com` call path in `sia/util.py`
+> confirmed directly; the `T221` dangling-citation finding (`run_agent_openhands` no longer exists)
+> confirmed directly; the Pattern A/B/C citation confirmed directly against `plan-016`; the
+> `protected-paths-v1.md` evaluator-hash-check citation confirmed directly. **Neither document
+> opens, dispatches, or authors a task brief for any Phase 6 implementation task** — that remains a
+> separate, future step requiring explicit user approval.
 
 > **Previously: 0 active rows.** `T499` closed 2026-09-18 — see `completed-tasks.md` for the full closure
 > record and `docs/benchmarks/baseline-v6.17.0-retrieval-v2.md` for the full re-measurement.
