@@ -2,7 +2,7 @@
 self-resume (`plan-035` nominal T466)
 
 **Owner:** devops-engineer
-**Status:** in_progress
+**Status:** in_review
 **Priority:** P0
 **Depends on:** none (this task is deliberately independent of T501 and of every other Phase 6
 task — see `plan-055` §4's sequencing note)
