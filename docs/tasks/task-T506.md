@@ -2,11 +2,10 @@
 scorecard (`plan-035` nominal `T465`)
 
 **Owner:** Technical Writer
-**Status:** in_review — document content complete (`_template.md`, `_example-illustrative.md`,
-`README.md` written; no real `harness-v1.md` produced since no real, disclosable T505 accepted
-change exists yet); commit/push/MR-open performed by the top-level session on Technical Writer's
-behalf, since this session had no `execute`/Bash tool access (consistent with T379/T380
-precedent).
+**Status:** done
+**Closure note (2026-09-18):** all 5 acceptance criteria independently re-verified by the
+top-level session before this closure (not accepted on the implementer's self-report alone). See
+`docs/tasks/completed-tasks.md`'s `T506` row for the full closure record.
 **Priority:** P1
 **Depends on:** none hard (per `plan-055` §4's own sequencing note: "T465-equiv can be authored in
 parallel with T464-equiv"). Soft, optional dependency: T505 (in progress — if its own live
