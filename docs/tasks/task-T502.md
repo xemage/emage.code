@@ -2,7 +2,11 @@
 self-resume (`plan-035` nominal T466)
 
 **Owner:** devops-engineer
-**Status:** in_review
+**Status:** done
+**Closure note (2026-09-18):** all 7 acceptance criteria independently re-verified by the
+top-level session before this closure (not accepted on the implementer's self-report alone),
+including the cross-process-boundary persistence requirement. See
+`docs/tasks/completed-tasks.md`'s `T502` row for the full closure record.
 **Priority:** P0
 **Depends on:** none (this task is deliberately independent of T501 and of every other Phase 6
 task — see `plan-055` §4's sequencing note)
