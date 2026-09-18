@@ -3,7 +3,19 @@
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
 | T501 | Wire weakness mining to the Phase 1 failure taxonomy (T415) — `plan-035` nominal T461, re-scoped per `plan-055` §4. First real increment only: make the 15 already-classified failure records genuinely queryable; explicitly defers "how new failures join the taxonomy over time" as a separate, not-yet-scoped future increment (a disclosed scoping decision, per the audit's §5 item 1 open question). | backend-developer | in_progress | P0 | none | 2026-09-18 |
-| T502 | Kill switch: one documented command halts the loop; a halted loop cannot self-resume — `plan-035` nominal T466, unchanged scope per `plan-055` §4. Builds the halt/check primitive standalone, with nothing else in Phase 6 built yet for it to wire into. | devops-engineer | in_progress | P0 | none | 2026-09-18 |
+
+> **T502 closed 2026-09-18 — see `completed-tasks.md` for the full closure record.** All 7
+> acceptance criteria independently re-verified by the top-level session before this closure (not
+> accepted on the implementer's self-report alone), including a genuine cross-process-boundary test
+> (`test_halt_command_sets_a_signal_a_fresh_process_can_detect`, two separate `subprocess.run`
+> invocations, not an in-process call). One real, correctly-handled staleness blocker along the way:
+> `devops-engineer`'s worktree forked before this row's own dispatch commit had merged, so
+> `docs/tasks/task-T502.md` genuinely didn't exist yet — the implementer correctly stopped and
+> reported this rather than proceeding on dispatch prose alone; the top-level session fast-forwarded
+> the worktree and resumed it directly. A second, genuine (not stale-diagnostic) `glab`/token
+> failure blocked MR creation from within the dispatched agent — verified for real this time (both
+> header schemes returned real `401`s against the actual token), but the top-level session's own
+> separately-configured credential was unaffected; opened and merged the MR directly.
 
 > **T501/T502 dispatched 2026-09-18 — the first two Phase 6 implementation tasks, per
 > `docs/plans/plan-055-phase6-closed-loop-rescoped-detailed-planning.md` §4's sequencing note:
