@@ -3,7 +3,28 @@
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
 
-> **0 active rows.** `T498` closed 2026-09-17 — see `completed-tasks.md` for the full closure
+> **0 active rows.** `T499` closed 2026-09-18 — see `completed-tasks.md` for the full closure
+> record and `docs/benchmarks/baseline-v6.17.0-retrieval-v2.md` for the full re-measurement.
+> Re-measured exactly the 5 golden cases `T498`'s checker fix could have affected (mechanically
+> confirmed via `git diff cc77974 origin/develop -- 'tests/golden/**/expect.py' --stat`: exactly
+> those 5 files changed, zero others); the other 14 cases' `baseline-v6.17.0-retrieval.md` results
+> carried forward unchanged, cited not re-derived. 4 of the 5 cases were re-scored against their
+> original T456 live-session candidate text (still recoverable on disk, same orchestrator session)
+> via `implementation/runtime/golden_harness/scoring.py`'s real `score_scratch_dir()` — isolates
+> the checker-fix's effect from any live-session non-determinism entirely; the 5th
+> (`security-audit-coverage-consistency`, one of T456's historical-evidence cases with no
+> recoverable candidate) got one fresh live k=1 control/treatment pair, correctly not escalated
+> per `policy.should_escalate()` (unanimous pass, no category-3 finding). All 5 cases flip to
+> passing in both arms under the fixed checkers. **New aggregate, computed via the real
+> `policy.pass_rate()`/`policy.floor_met()` functions: control 21/25 (84.00%), treatment 23/27
+> (85.19%). `policy.floor_met()` = `True`, and no case is classified `CONFIRMED_PERSISTENT_EFFECT`
+> at all in this new aggregate (the one case that held that classification pre-fix is now
+> unanimous at k=1, not escalated, therefore not eligible for that classification).** Both
+> pre-registered criteria (reused verbatim from `task-T456.md`) are met. **Verdict: SHIP. Phase 5's
+> `plan-035` ship gate (Gate G3) now closes.** Reported exactly as measured, per the same
+> "state the verdict either way" discipline `T456`'s own NO-SHIP report used.
+
+> **0 other active rows.** `T498` closed 2026-09-17 — see `completed-tasks.md` for the full closure
 > record. All four diagnosed checker-brittleness bugs fixed across the five authorized files,
 > independently re-verified by the top-level session (not accepted on `backend-developer`'s
 > self-report alone): each fix read directly and confirmed minimal/targeted against the real
