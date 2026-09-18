@@ -2,7 +2,34 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T505 | Human gate: proposals open an MR against `develop`; no auto-merge path (`plan-035` nominal T464) | release-manager | in_progress | P0 | T503 (done), T504 (done) | 2026-09-18 |
+
+> **0 active rows. `T505` closed 2026-09-18 — this closes Phase 6's original six-task table in
+> full (`T501`–`T506`, `plan-035` nominal `T461`–`T466`).** See `completed-tasks.md` for the full
+> closure record. All 9 acceptance criteria independently re-verified by the top-level session
+> before this closure (not accepted on the implementer's self-report alone) — including the
+> highest-stakes safety property built anywhere in Phase 6: `implementation/runtime/
+> golden_harness/mr_gate.py`'s "no auto-merge path" guarantee was independently exercised, not just
+> read. The top-level session personally ran the real AST scanner (`find_auto_merge_calls`) against
+> the real module source (zero violations) and against 8 hand-written adversarial snippets covering
+> every banned call shape (`glab mr merge`/`approve`, `git merge`, `git push --force`, `git push
+> develop`, a GitLab merge API endpoint, a named `*_merge_merge_request` call, a bare `.merge()`
+> method call) — every one caught. Separately confirmed the refusal gate makes genuinely zero
+> `subprocess` calls on a rejected `PromotionResult`, by mocking `subprocess.run` directly and
+> checking its call count. **Then personally performed the required live end-to-end validation**:
+> generated a real proposal from real T501 taxonomy data, built a disclosed, hand-constructed
+> `promote=True` result (explicitly labeled as a mechanism-validation exercise, not a claim of real
+> trial evidence), and called the real `open_promotion_mr` — which genuinely created a real branch,
+> commit, push, and MR (!341) against `develop`. Independently reviewed that MR's actual content
+> (a real, well-formed diff and description) and — per the brief's own explicit delegation of this
+> decision to the user, not to Release Manager or the orchestrator — closed it without merging,
+> since its specific content (a generic failure-pattern citation) wasn't a genuine improvement on
+> its own merits; the mechanism itself is what the exercise proved, and it worked. One real,
+> correctly-resolved merge conflict along the way: `release-manager`'s worktree had forked before
+> `T505`'s own self-referential-defect-fixed brief merged, so its own stale copy of
+> `task-T505.md` conflicted on merge — resolved by keeping `develop`'s already-correct version, not
+> reverting the fix. Full verification bar re-run fresh after that resolution: `tests/run.py` 701
+> tests `OK` (`skipped=37`); `validate-tasks.py` PASS; `check-maturity.py` 79 components, 0 failing;
+> `sync.mjs --check` no drift across 577 files; held-out isolation guard 8/8 pass.
 
 > **`T506` closed 2026-09-18 — see `completed-tasks.md` for the full closure record.** All 5
 > acceptance criteria independently re-verified by the top-level session before this closure (not

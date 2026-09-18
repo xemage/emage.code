@@ -3,7 +3,13 @@
 
 **Owner:** Release Manager (build phase); **orchestrator** (live end-to-end validation exercise —
 see "Orchestrator-owned live validation" below)
-**Status:** in_progress
+**Status:** done
+**Closure note (2026-09-18):** all 9 acceptance criteria independently re-verified by the
+top-level session before this closure (not accepted on the implementer's self-report alone),
+including personally re-running the AST scanner and adversarial tests and personally performing
+the live end-to-end validation (real MR !341, opened, reviewed, then closed without merging).
+This closes Phase 6's original six-task table in full. See `docs/tasks/completed-tasks.md`'s
+`T505` row for the full closure record.
 **Priority:** P0
 **Depends on:** T504 (done, merged `d405c4e` — `implementation/runtime/golden_harness/promotion.py`,
 `PromotionResult`/`evaluate_promotion`, this task's real, concrete required input); T503 (done,
