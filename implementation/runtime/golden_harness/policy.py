@@ -31,6 +31,12 @@ CONFIRMED_COIN_FLIP = "confirmed_coin_flip"
 CONFIRMED_PERSISTENT_EFFECT = "confirmed_persistent_effect"
 ELEVATED_BUT_HETEROGENEOUS = "elevated_but_heterogeneous"
 
+# T511 (T509 design, Option B): the improvement-side sibling of
+# CONFIRMED_COIN_FLIP -- a floor-met case additionally showing a real,
+# recurring (>=2 treatment trials) category-3 ("traceable positive
+# influence") finding, not just an absence-of-regression statistic.
+CONFIRMED_POSITIVE_EFFECT = "confirmed_positive_effect"
+
 
 class EscalationDecision(NamedTuple):
     escalate: bool
@@ -110,6 +116,66 @@ def classify_k_plus_outcome(trials: list[TrialRecord]) -> str:
     if is_floor_miss_actionable(occurrences):
         return CONFIRMED_PERSISTENT_EFFECT
     return ELEVATED_BUT_HETEROGENEOUS
+
+
+def count_category_occurrences(trials: list[TrialRecord], category: str) -> int:
+    """How many times `category` appears among `trials`' `TrialRecord.category`
+    values. Mirrors `count_cause_occurrences()`'s `Counter`-based shape
+    (T511, design decision 4), applied to `category` instead of
+    `diagnosed_cause` -- with one deliberate difference: unlike
+    `count_cause_occurrences`, this does not restrict to failing trials.
+    `category` is a qualitative characterization of a trial's own transcript
+    (plan-048 §5's rubric), populated independently of `result` -- a
+    category-3 ("traceable positive influence") finding is not defined only
+    for failing trials, so filtering on `result` here would silently drop
+    real evidence. Trials with `category is None` are excluded, same as
+    `count_cause_occurrences` excludes undiagnosed failures."""
+    categories = [t.category for t in trials if t.category is not None]
+    return Counter(categories).get(category, 0)
+
+
+def classify_k_plus_improvement_outcome(trials: list[TrialRecord]) -> str:
+    """T511 (T509 design §2 "Option B", §5 item 11): the improvement-side
+    sibling of `classify_k_plus_outcome()`, giving conjunct 1 ("improvement >
+    regression") the same architectural rigor conjunct 2 already has -- a
+    named, multi-outcome classification, not a bare "floor met" boolean. Four
+    possible outcomes for a k>=3 case:
+
+    1. If the non-regression floor is met AND category-3 ("traceable
+       positive influence") recurs across `>= 2` of the case's *treatment*
+       trials specifically, the case is a `confirmed_positive_effect` -- a
+       real, traceable, reproducible positive signal, not just "not
+       measurably worse."
+    2. If the floor is met but category-3 does not recur in treatment (zero
+       or one occurrence), the case is a `confirmed_coin_flip` -- the
+       existing outcome, reused rather than renamed (design decision 3):
+       floor-met alone, with no corroborating qualitative signal, is
+       indistinguishable from noise.
+    3. and 4. If the floor is missed, this function delegates to and returns
+       exactly `classify_k_plus_outcome()`'s own result verbatim
+       (`confirmed_persistent_effect` or `elevated_but_heterogeneous`) --
+       a floor-missed case is conjunct 2's concern, not reimplemented here
+       (design decision 3; this module's own docstring: "this module
+       implements an already-decided policy; it does not re-derive it").
+
+    Requires `MIN_ESCALATED_K` (>=3) trials per arm, same as
+    `classify_k_plus_outcome()` -- raises `ValueError` otherwise (design
+    decision 2). This precondition is guaranteed already-satisfied when
+    called from `promotion.evaluate_promotion()`'s real pipeline (T510's
+    `check_minimum_evidence()` is a hard, prior precondition there), but this
+    function enforces it directly regardless, since it is also independently
+    callable and testable on its own.
+    """
+    control = [t for t in trials if t.arm == ARM_CONTROL]
+    treatment = [t for t in trials if t.arm == ARM_TREATMENT]
+    _require_min_k(control, treatment)
+
+    if not floor_met(control, treatment):
+        return classify_k_plus_outcome(trials)
+
+    if count_category_occurrences(treatment, CATEGORY_TRACEABLE_POSITIVE_INFLUENCE) >= 2:
+        return CONFIRMED_POSITIVE_EFFECT
+    return CONFIRMED_COIN_FLIP
 
 
 def _require_min_k(control: list[TrialRecord], treatment: list[TrialRecord]) -> None:

@@ -2,7 +2,33 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T511 | Implement promotion hardening Option B: symmetric positive-effect classification | backend-developer | pending | P1 | T510 (done) | 2026-09-19 |
+
+> **0 active rows. `T511` closed 2026-09-19 — see `completed-tasks.md` for the full closure
+> record.** `promotion.py` now has six conjuncts. `policy.classify_k_plus_improvement_outcome()`
+> gives the improvement side of the decision the same architectural rigor the regression side
+> already had: a floor-met case must also show category-3 recurring across `>=2` treatment trials
+> to reach `CONFIRMED_POSITIVE_EFFECT`; a floor-missed case delegates to and returns
+> `classify_k_plus_outcome()`'s own result verbatim, reused not reimplemented. Wired in as a
+> required, conservative conjunct (a disclosed judgment call in this task's own brief, not the
+> original `T509` design, which left this open) — `evaluate_promotion()` now requires every
+> compared case to reach `CONFIRMED_POSITIVE_EFFECT` before `promote` can be `True`.
+> **Independently re-verified by the top-level session before this closure, not accepted on the
+> implementer's self-report alone**: full diff read directly (5 files, exactly as reported, no
+> protected path touched); both new `policy.py` functions and `promotion.py`'s wiring read in full
+> and confirmed to match the brief's design decisions exactly, including the one deliberate,
+> disclosed deviation from a literal "mirror `count_cause_occurrences()`" instruction — the new
+> `count_category_occurrences()` correctly does not restrict to failing trials, since `category` is
+> defined independent of `result`, unlike `diagnosed_cause`; all 77 tests across the three touched
+> test files re-run in isolation, fresh (0 failures), including a direct read of the real-`T507`-data
+> regression test confirming it honestly reconstructs T507's real "category never set" characteristic
+> at this function's own k=3 minimum (T507's actual data never escalated past k=1, so it cannot be
+> fed in literally — disclosed precisely as such, not overclaimed) and both the negative
+> (all-other-conjuncts-pass-but-unconfirmed rejects) and positive (promotion still reachable in
+> principle) end-to-end wiring tests. Held-out isolation guard re-run fresh (8/8 pass). Full
+> verification bar re-run fresh: `tests/run.py` 734 tests `OK` (`skipped=37`); `validate-tasks.py`
+> PASS; `check-maturity.py` 79 components, 0 failing; `sync.mjs --check` no drift across 577 files.
+> **This completes all three hardening options `T509` scoped after `T507`'s real finding** — Options
+> A, B, and C are now all built and merged.
 
 > **T511 dispatched 2026-09-19** per the user's explicit instruction ("Build B"), completing all
 > three hardening options `T509` scoped — `T510` already built and merged Options A (per-case

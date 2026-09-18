@@ -18,11 +18,14 @@ import unittest
 from implementation.runtime.golden_harness.policy import (
     CONFIRMED_COIN_FLIP,
     CONFIRMED_PERSISTENT_EFFECT,
+    CONFIRMED_POSITIVE_EFFECT,
     ELEVATED_BUT_HETEROGENEOUS,
     TRIGGER_DISAGREEMENT,
     TRIGGER_REPRODUCIBILITY_CHECK,
+    classify_k_plus_improvement_outcome,
     classify_k_plus_outcome,
     compute_base_rate,
+    count_category_occurrences,
     count_cause_occurrences,
     floor_met,
     is_floor_miss_actionable,
@@ -155,6 +158,116 @@ class TestClassifyKPlusOutcomeAgainstRealHistoricalCases(unittest.TestCase):
         trials = [_trial("c", "control", 1, True), _trial("c", "treatment", 1, True)]
         with self.assertRaises(ValueError):
             classify_k_plus_outcome(trials)
+
+
+class TestCountCategoryOccurrences(unittest.TestCase):
+    """T511 (T509 design, Option B): mirrors `TestCauseRecurrence`'s own
+    coverage of `count_cause_occurrences`, applied to `category` instead."""
+
+    def test_counts_matching_category_only(self):
+        trials = [
+            _trial("c", "treatment", 1, True, category="3"),
+            _trial("c", "treatment", 2, True, category="3"),
+            _trial("c", "treatment", 3, True, category="2"),
+            _trial("c", "treatment", 4, False),  # uncategorized -- excluded
+        ]
+        self.assertEqual(count_category_occurrences(trials, "3"), 2)
+
+    def test_does_not_restrict_to_failing_trials(self):
+        # Unlike count_cause_occurrences (failing trials only), category is
+        # counted regardless of result -- a category-3 finding is not
+        # defined only for failures. Both trials below pass, yet both count.
+        trials = [
+            _trial("c", "treatment", 1, True, category="3"),
+            _trial("c", "treatment", 2, True, category="3"),
+        ]
+        self.assertEqual(count_category_occurrences(trials, "3"), 2)
+
+    def test_absent_category_returns_zero(self):
+        trials = [_trial("c", "treatment", 1, True, category="2")]
+        self.assertEqual(count_category_occurrences(trials, "3"), 0)
+
+
+class TestClassifyKPlusImprovementOutcome(unittest.TestCase):
+    """T511 (T509 design §2 "Option B", §5 item 11): the improvement-side
+    sibling of `TestClassifyKPlusOutcomeAgainstRealHistoricalCases`."""
+
+    def test_floor_met_with_recurring_category_3_in_treatment_is_confirmed_positive_effect(self):
+        control = [_trial("c", "control", k, True) for k in (1, 2, 3)]
+        treatment = [
+            _trial("c", "treatment", 1, True, category="3"),
+            _trial("c", "treatment", 2, True, category="3"),
+            _trial("c", "treatment", 3, True),
+        ]
+        self.assertEqual(classify_k_plus_improvement_outcome(control + treatment), CONFIRMED_POSITIVE_EFFECT)
+
+    def test_floor_met_with_single_category_3_occurrence_is_confirmed_coin_flip(self):
+        # Category-3 present but does not recur (exactly one occurrence) --
+        # the existing CONFIRMED_COIN_FLIP outcome, reused not renamed.
+        control = [_trial("c", "control", k, True) for k in (1, 2, 3)]
+        treatment = [
+            _trial("c", "treatment", 1, True, category="3"),
+            _trial("c", "treatment", 2, True),
+            _trial("c", "treatment", 3, True),
+        ]
+        self.assertEqual(classify_k_plus_improvement_outcome(control + treatment), CONFIRMED_COIN_FLIP)
+
+    def test_t507_real_pattern_floor_met_with_no_category_ever_recorded_is_confirmed_coin_flip(self):
+        # `t507-closed-loop-cycle-v1.md` §3.3: none of T507's real treatment
+        # trials had a `category` recorded at all (unset/None throughout).
+        # T507's real cases never escalated past k=1 -- reconstructed here
+        # at k=3 (this function's own minimum) with the floor met and zero
+        # category-3 occurrences, preserving that same "never categorized"
+        # characteristic. This directly confirms this classification alone
+        # would independently have withheld CONFIRMED_POSITIVE_EFFECT from
+        # T507's real proposal -- a second, independent line of defense
+        # beyond T510's own two gates (`check_minimum_evidence` /
+        # `check_provenance_homogeneity`), which block T507's actual k=1
+        # data on different grounds entirely (see
+        # `test_golden_harness_promotion.py`'s `_t507_real_trials`).
+        control = [_trial("c", "control", k, True) for k in (1, 2, 3)]
+        treatment = [_trial("c", "treatment", k, True) for k in (1, 2, 3)]  # category never set, matching T507
+        self.assertEqual(classify_k_plus_improvement_outcome(control + treatment), CONFIRMED_COIN_FLIP)
+
+    def test_floor_missed_delegates_to_classify_k_plus_outcome_confirmed_persistent_effect(self):
+        # Same real task-T493.md k=5 table as
+        # TestClassifyKPlusOutcomeAgainstRealHistoricalCases's own
+        # confirmed_persistent_effect test -- confirms delegation returns
+        # classify_k_plus_outcome()'s result verbatim, not a reimplementation.
+        trials = [
+            _trial("security-audit-coverage-consistency", "control", 1, True),
+            _trial("security-audit-coverage-consistency", "control", 2, True),
+            _trial("security-audit-coverage-consistency", "control", 3, True),
+            _trial("security-audit-coverage-consistency", "control", 4, False, cause="matrix_self_consistency_slip"),
+            _trial("security-audit-coverage-consistency", "control", 5, True),
+            _trial("security-audit-coverage-consistency", "treatment", 1, False, cause="field_format_bolded_sentence"),
+            _trial("security-audit-coverage-consistency", "treatment", 2, False, cause="matrix_self_consistency_slip"),
+            _trial("security-audit-coverage-consistency", "treatment", 3, True),
+            _trial("security-audit-coverage-consistency", "treatment", 4, False, cause="matrix_self_consistency_slip"),
+            _trial("security-audit-coverage-consistency", "treatment", 5, False, cause="matrix_self_consistency_slip"),
+        ]
+        self.assertEqual(classify_k_plus_improvement_outcome(trials), CONFIRMED_PERSISTENT_EFFECT)
+        self.assertEqual(classify_k_plus_improvement_outcome(trials), classify_k_plus_outcome(trials))
+
+    def test_floor_missed_delegates_to_classify_k_plus_outcome_elevated_but_heterogeneous(self):
+        # Same real T490 k=3 snapshot as
+        # TestClassifyKPlusOutcomeAgainstRealHistoricalCases's own
+        # elevated_but_heterogeneous test.
+        trials = [
+            _trial("security-audit-coverage-consistency", "control", 1, True),
+            _trial("security-audit-coverage-consistency", "control", 2, True),
+            _trial("security-audit-coverage-consistency", "control", 3, True),
+            _trial("security-audit-coverage-consistency", "treatment", 1, False, cause="field_format_bolded_sentence"),
+            _trial("security-audit-coverage-consistency", "treatment", 2, False, cause="matrix_self_consistency_slip"),
+            _trial("security-audit-coverage-consistency", "treatment", 3, True),
+        ]
+        self.assertEqual(classify_k_plus_improvement_outcome(trials), ELEVATED_BUT_HETEROGENEOUS)
+        self.assertEqual(classify_k_plus_improvement_outcome(trials), classify_k_plus_outcome(trials))
+
+    def test_raises_below_the_minimum_k_per_arm(self):
+        trials = [_trial("c", "control", 1, True), _trial("c", "treatment", 1, True)]
+        with self.assertRaises(ValueError):
+            classify_k_plus_improvement_outcome(trials)
 
 
 class TestComputeBaseRate(unittest.TestCase):
