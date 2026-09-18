@@ -3,7 +3,21 @@
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
 | T505 | Human gate: proposals open an MR against `develop`; no auto-merge path (`plan-035` nominal T464) | release-manager | in_progress | P0 | T503 (done), T504 (done) | 2026-09-18 |
-| T506 | Harness lineage document: what changed, which failure motivated it, before/after scorecard (`plan-035` nominal T465) | technical-writer | in_progress | P1 | none (soft: T505) | 2026-09-18 |
+
+> **`T506` closed 2026-09-18 — see `completed-tasks.md` for the full closure record.** All 5
+> acceptance criteria independently re-verified by the top-level session before this closure (not
+> accepted on the implementer's self-report alone): `docs/harness-lineage/_template.md`'s 5 required
+> sections confirmed present; `_example-illustrative.md` read directly and confirmed clearly
+> disclosed as fictional (an unmissable banner, never named `harness-v1.md`/`harness-v<N>.md`); no
+> real `harness-v1.md` produced, correctly, since `T505`'s own live validation exercise has not yet
+> completed — no fabrication. Diff scope confirmed exactly 4 files (3 new under
+> `docs/harness-lineage/**`, this task's own `docs/tasks/task-T506.md` status field). `Technical
+> Writer`'s own dispatched session had no `execute`/Bash tool access (a known, disclosed friction
+> per `task-T379.md`/`task-T380.md`'s own precedent, budgeted for in this task's own brief) — the
+> top-level session performed the commit/push/MR-open steps on its behalf, with the document content
+> itself entirely the implementer's own unmodified work. `T505` (the sibling task, human MR gate)
+> remains `in_progress` — `release-manager` is still building it; that row is unchanged by this
+> commit.
 
 > **T505/T506 dispatched 2026-09-18 — the final two tasks of Phase 6's original six-task table,
 > per `plan-055` §4's `T464-equiv`/`T465-equiv` rows.** `T500`'s ID-renumbering gap is now closed
