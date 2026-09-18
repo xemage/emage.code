@@ -2,9 +2,45 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T501 | Wire weakness mining to the Phase 1 failure taxonomy (T415) — `plan-035` nominal T461, re-scoped per `plan-055` §4. First real increment only: make the 15 already-classified failure records genuinely queryable; explicitly defers "how new failures join the taxonomy over time" as a separate, not-yet-scoped future increment (a disclosed scoping decision, per the audit's §5 item 1 open question). | backend-developer | in_progress | P0 | none | 2026-09-18 |
+| T502 | Kill switch: one documented command halts the loop; a halted loop cannot self-resume — `plan-035` nominal T466, unchanged scope per `plan-055` §4. Builds the halt/check primitive standalone, with nothing else in Phase 6 built yet for it to wire into. | devops-engineer | in_progress | P0 | none | 2026-09-18 |
 
-> **0 active rows.** `T500` closed 2026-09-18 — see `completed-tasks.md` for the full closure
-> record. Phase 6 ("Closed Loop", v7.0.0) is gate-reachable as of `T499`'s closure earlier the same
+> **T501/T502 dispatched 2026-09-18 — the first two Phase 6 implementation tasks, per
+> `docs/plans/plan-055-phase6-closed-loop-rescoped-detailed-planning.md` §4's sequencing note:
+> "T461-equiv and T466-equiv have no dependency on each other or on T462/T463 and can run in
+> parallel once dispatched" — every other Phase 6 task (a future diff-proposal generator, its
+> validation/promotion step, the human MR gate, the lineage doc) depends on one of these two
+> finishing first, so only these two are dispatched this round.** `T500`'s ID-renumbering gap is
+> now closed for these two rows: `plan-035`'s nominal `T461`/`T466` become this ledger's real
+> `T501`/`T502` (`T500` was the last-used ID; 0 active rows existed before this dispatch, matching
+> `plan-055` §1's own expectation of how the orchestrator would resolve it). Both briefs cite
+> `plan-055` (not `plan-035` §2.4 alone) and the audit
+> (`docs/artifacts/phase6-sia-readiness-audit-v1.md`) as their `Based on:` — per `plan-055` §6's
+> own top-listed risk ("a future task brief is drafted from `plan-035`'s original Phase 6 prose
+> without this plan's §3 correction attached, and silently wires the loop through
+> `implementation/sia/`"), both briefs explicitly instruct their owner not to treat `plan-035`
+> §2.4's introductory prose as a scoping instruction. `T501`'s brief makes an explicit, disclosed
+> scoping decision on the audit's open design question (§5 item 1: how new failures join the
+> taxonomy over time) — narrowing this increment to "make the 15 already-classified records
+> queryable" and naming the ongoing-feed problem as a separate future increment, rather than
+> silently either solving both at once or leaving the question for the implementer to guess at.
+> `T502`'s brief scopes the kill switch as a standalone, generic primitive with no dependency on
+> `T501` or on any other not-yet-built Phase 6 component, per `plan-055` §4's own note that this
+> task has "no live-dispatch requirement" unlike `T462`/`T463` (not dispatched this round).
+> Dispatched into separate worktrees/branches off `develop`
+> (`agent/backend-developer/T501`, `agent/devops-engineer/T502`). Both briefs' own text was swept
+> against the current 31-id `stable` component list (20 agents + 4 instructions + 7 skills, per
+> the `T491`/`T492`/`T495` precedent of this exact self-referential-ledger-defect class recurring)
+> before this commit — zero hits on either brief. **Standing no-self-merge instruction restated
+> for both tracks, zero exceptions for content type** — neither MR will be merged by the
+> orchestrator; both are handed back to the top-level session/user for independent review and
+> merge. T462-T465 (the remaining four Phase 6 tasks) are explicitly **not** dispatched this
+> round — per the audit's own gap list (§5), their real preconditions (a defined taxonomy-feed
+> mechanism from `T501`, a drafted proposal schema from a future `T462`) do not exist yet.
+
+> **0 other active rows besides T501/T502 above.** `T500` closed 2026-09-18 — see
+> `completed-tasks.md` for the full closure record. Phase 6 ("Closed Loop", v7.0.0) is
+> gate-reachable as of `T499`'s closure earlier the same
 > day (`checkpoint-033`: G3 closed, P3 done, G4's evaluator-protection precondition closed with G1)
 > — per this project's established precedent (`plan-037`/`038`/`041`/`043`), no Phase 6
 > implementation task brief may be authored until a dedicated planning pass exists and is reviewed.
