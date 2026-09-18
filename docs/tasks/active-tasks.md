@@ -2,8 +2,20 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T507 | Run one real end-to-end closed-loop cycle over the golden_harness pipeline | orchestrator | pending | P0 | T501, T502, T503, T504, T505 | 2026-09-18 |
 
-> **0 active rows. `T505` closed 2026-09-18 — this closes Phase 6's original six-task table in
+> **T507 dispatched 2026-09-18** per `docs/plans/plan-060-v7-release-readiness-and-closure.md` §6
+> — closes Phase 6's three unmet acceptance criteria (real end-to-end cycle, held-out-suite
+> improvement measurement, real lineage document) now that `T501`-`T506` are merged. Owner is
+> `orchestrator`, not `evaluation-agent`, for the same structural reason as `T456`/`T499`:
+> `evaluation-agent`'s tool grant (`[read, search, web]`) cannot run the harness, apply a proposal
+> to a scratch copy, or dispatch live sessions — the orchestrator's own `Bash`/`Agent` access is
+> required to execute this directly. `T508` (fix `plan-035`'s stale per-phase status headers) is
+> intentionally not yet registered — per the plan's own §7 sequencing, it is dispatched only once
+> `T507`'s real outcome is known, so its update can cite that outcome rather than being rewritten
+> twice.
+>
+> **Previously: 0 active rows. `T505` closed 2026-09-18 — this closes Phase 6's original six-task table in
 > full (`T501`–`T506`, `plan-035` nominal `T461`–`T466`).** See `completed-tasks.md` for the full
 > closure record. All 9 acceptance criteria independently re-verified by the top-level session
 > before this closure (not accepted on the implementer's self-report alone) — including the
