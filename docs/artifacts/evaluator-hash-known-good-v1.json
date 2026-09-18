@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "algorithm": "sha256",
+  "digests": {
+    "tests_golden": "667d90752f2c6c7a26405ecaa3b15546b618b479d21f53d17d96ff974b030a99",
+    "scripts_scorecard": "e1a93fa51093ee8665a3ae5ad35b11cf8153653d9f1bed488cfe7d494ae23b20"
+  },
+  "computed_from_commit": "49415a3ac19e93ffb78595d6d515e6a96e93f60b",
+  "computed_at": "2026-09-18T15:00:00Z",
+  "protected_paths": {
+    "tests_golden": "tests/golden",
+    "scripts_scorecard": "scripts/scorecard.py"
+  },
+  "update_policy": "Manual only, never automatic. A future legitimate update goes through docs/artifacts/protected-paths-v1.md SS5's exception path and produces evaluator-hash-known-good-v2.json -- this file (v1) is never edited in place. See docs/artifacts/evaluator-hash-check-v1.md for the full policy."
+}
