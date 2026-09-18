@@ -1,6 +1,10 @@
 # T509 — Design pass: harden the closed loop's improvement detection
 
-**Status:** pending
+**Status:** done
+
+**Closure note:** Design artifact delivered (`docs/artifacts/promotion-improvement-hardening-design-v1.md`),
+independently re-verified. See `docs/tasks/completed-tasks.md`'s T509 row for full detail. No
+implementation task authored — option choice reserved for the user.
 **Owner:** solution-architect
 **Priority:** P1
 **Depends on:** none (design-only, no code dependency)

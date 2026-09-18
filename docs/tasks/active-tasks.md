@@ -2,7 +2,34 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T509 | Design pass: harden the closed loop's improvement detection | solution-architect | pending | P1 | none | 2026-09-18 |
+
+> **0 active rows. `T509` closed 2026-09-18 — see `completed-tasks.md` for the full closure
+> record.** Design-only, as scoped — no code touched, no option decided, per this task's own
+> explicit constraint. **The implementer independently verified every cited line of real source and
+> found two real refinements to the brief's own framing, not just restated it**: (1) conjunct 1
+> pools trials across every `case_id` in the comparison rather than grouping per-case, so `T507`'s
+> real 3-trial aggregate (one k=1 trial from each of three *different* cases) already satisfied a
+> naive pooled `len(trials) >= 3` reading without a single case ever reaching real replication — a
+> load-bearing correction to how any minimum-evidence fix must be built; (2) the regression
+> conjunct's own extra rigor only applies once a case is actually escalated to k>=3, and nothing in
+> the current code requires escalation before `promote=True` can fire, so the low-evidence gap the
+> brief attributed to conjunct 1 alone is real on **both** conjuncts. Three options presented
+> (per-case minimum-evidence gate; a symmetric `CONFIRMED_POSITIVE_EFFECT` classification reusing
+> the existing, already-real `category` rubric; a provenance-homogeneity pre-check), each
+> independently shown to have blocked `T507`'s real promotion on its own, with a labeled
+> recommendation (build the minimum-evidence gate and the provenance check together first;
+> defer the qualitative classification as a second increment) and an 11-item acceptance-criteria
+> sketch. **Independently re-verified by the top-level session before this closure, not accepted on
+> the implementer's self-report alone**: every cited line number in `policy.py`/`promotion.py`
+> re-read directly and confirmed exact, including the pooling claim (`evaluate_promotion()` calls
+> `policy.floor_met(control_trials, treatment_trials)` directly, no per-case grouping) and the
+> vacuous-pass claim (`check_no_critical_regression`'s own `# else: neither arm escalated ...
+> vacuously fine` comment); `schema.py`'s `TrialRecord` confirmed to have a real `category` field
+> and no `provenance` field; `plan-048` §5's "0 of 2" retest finding confirmed present at the cited
+> location. Full verification bar re-run fresh: `tests/run.py` 701 tests `OK` (`skipped=37`);
+> `validate-tasks.py` PASS; `check-maturity.py` 79 components, 0 failing; `sync.mjs --check` no
+> drift across 577 files. **No implementation task is authored or dispatched from this design** —
+> per its own explicit scope, the choice of which option(s) to build is left for the user.
 
 > **T509 dispatched 2026-09-18** per the user's explicit instruction ("Scope the promotion.py
 > hardening"), given directly in response to the top-level session's own report of `T507`'s real
