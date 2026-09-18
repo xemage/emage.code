@@ -2,7 +2,26 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T507 | Run one real end-to-end closed-loop cycle over the golden_harness pipeline | orchestrator | pending | P0 | T501, T502, T503, T504, T505 | 2026-09-18 |
+
+> **0 active rows. `T507` closed 2026-09-18 — see `completed-tasks.md` for the full closure
+> record.** A real, non-hand-built cycle ran end to end and produced a real MR (!346), satisfying
+> Phase 6's literal AC1. But the top-level session's independent review found two further, real
+> reasons that MR was correctly left unmerged, beyond the implementer's own disclosed causal
+> confound: (1) its diff edits the canonical knowledge source
+> (`implementation/knowledge/agents/security-engineer.md`) but `mr_gate.py` never regenerates the
+> per-platform projections, so the MR's own CI genuinely **fails** (`unit-tests` job, `verify.mjs`
+> drift across 5 platform files) — a real, previously-undiscovered gap in the closed-loop pipeline
+> itself, not a content judgment call; (2) the promotion's `floor_met()` conjunct is a non-strict
+> comparison, so a causally-inert proposal cleared it purely on reuse-vs-fresh trial-data asymmetry
+> — confirming, with a real measured instance, exactly the "benchmark noise mistaken for
+> improvement" risk `plan-035` §2.6 names as this roadmap's single most likely failure mode. MR
+> !346 closed without merging, with both reasons posted as an MR comment. MR !347 (this task's own
+> real artifact, `docs/artifacts/t507-closed-loop-cycle-v1.md`) independently re-verified and
+> merged. Neither Phase 6 AC2 (held-out improvement) nor AC5 (lineage doc) is satisfied by this
+> cycle — the measured "improvement" is not attributable to the proposal's content, and nothing was
+> actually accepted. See `completed-tasks.md` for full detail, including a flagged, not-yet-scoped
+> follow-up: hardening `promotion.py`'s `floor_met()` conjunct against this exact reuse-vs-fresh
+> asymmetry before the closed loop is trusted for a real merge decision.
 
 > **T507 dispatched 2026-09-18** per `docs/plans/plan-060-v7-release-readiness-and-closure.md` §6
 > — closes Phase 6's three unmet acceptance criteria (real end-to-end cycle, held-out-suite

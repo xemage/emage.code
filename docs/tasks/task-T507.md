@@ -1,6 +1,13 @@
 # T507 — Run one real end-to-end closed-loop cycle over the golden_harness pipeline
 
-**Status:** pending
+**Status:** done
+
+**Closure note:** Real cycle ran end to end (real cluster selection, real proposal via
+`generate_proposals()`, real scores, real `PromotionResult`, real MR !346). Left unmerged: the
+implementer's own disclosed causal confound plus a top-level-session-found CI failure (`mr_gate.py`
+never regenerates platform projections after editing the canonical knowledge source) are two
+independent, sufficient reasons. See `docs/tasks/completed-tasks.md`'s T507 row and
+`docs/artifacts/t507-closed-loop-cycle-v1.md` for full detail.
 **Owner:** orchestrator
 **Priority:** P0
 **Depends on:** T501, T502, T503, T504, T505 (all merged to `develop`)
