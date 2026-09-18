@@ -38,6 +38,25 @@ internal logic unchanged:
     per-conjunct), per the design's §3 recommendation that this check should
     protect both the improvement and the regression conjuncts.
 
+**T511 hardening (T509 design, Option B):** the third and final option T509
+scoped after `T507`. `T510` closed the evidence-thinness and provenance-
+confound gaps; this closes the third, independent gap: conjunct 1
+("improvement > regression") was purely `policy.floor_met()`, a bare
+"treatment pass rate not below control's" statistic with no qualitative
+corroboration at all.
+
+(f) `check_confirmed_positive_effect()` -- every `case_id` present must
+    reach `policy.CONFIRMED_POSITIVE_EFFECT` under
+    `policy.classify_k_plus_improvement_outcome()` (see that function's own
+    docstring for the full four-outcome mapping). Evaluated per-case
+    (mirroring `check_no_critical_regression`'s own per-case grouping and
+    its "only classify a case that actually reached k>=3 in both arms"
+    discipline), reported as a required, conservative sixth conjunct
+    (T511's own disclosed judgment call, not the design's -- see
+    `docs/tasks/task-T511.md` design decision 5), not merely an advisory
+    field: `evaluate_promotion()` requires every compared case to reach
+    `CONFIRMED_POSITIVE_EFFECT` before `promote` can be `True`.
+
 Also builds `apply_proposal_to_scratch` -- the apply-to-scratch helper that
 writes a `meta_improver.DiffProposal`'s `proposed_content` to an isolated
 scratch copy, never a git worktree, never the real tracked file, mirroring
@@ -286,7 +305,96 @@ def check_provenance_homogeneity(
 
 
 # ---------------------------------------------------------------------------
-# The combined five-conjunct promotion decision
+# T511 (T509 design, Option B): confirmed-positive-effect classification
+# ---------------------------------------------------------------------------
+
+
+class ImprovementClassificationResult(NamedTuple):
+    """Result of applying `policy.classify_k_plus_improvement_outcome()` to
+    every case present in the combined control/treatment trial set. Unlike
+    `EvidenceCheckResult`/`ProvenanceCheckResult` (whose own underlying check
+    is a simple per-case pass/fail), this conjunct's underlying result is
+    itself a multi-outcome classification -- so this reports every actually-
+    classified case's real outcome (`classifications`), not just an
+    aggregate boolean, per this module's "never just a bare boolean, always
+    name which case(s)" convention."""
+
+    all_confirmed_positive_effect: bool
+    classifications: dict[str, str]  # case_id -> policy classify_k_plus_improvement_outcome() result
+    unconfirmed_case_ids: tuple[str, ...]
+    classified_case_ids: tuple[str, ...]
+
+
+def check_confirmed_positive_effect(
+    control_trials: list[TrialRecord],
+    treatment_trials: list[TrialRecord],
+) -> ImprovementClassificationResult:
+    """T511 (T509 design §2 "Option B", §5 item 11): for every `case_id`
+    present in the combined control/treatment trial set (grouped via
+    `_group_by_case`, mirroring `check_no_critical_regression`'s own
+    per-case grouping):
+
+    - If **both** arms reach `policy.MIN_ESCALATED_K` (>=3) trials for that
+      case, the case was actually escalated -- call
+      `policy.classify_k_plus_improvement_outcome()` on its combined trials
+      and record the result in `classifications`. Any result other than
+      `policy.CONFIRMED_POSITIVE_EFFECT` is added to `unconfirmed_case_ids`.
+
+    - If **either** arm has fewer than `MIN_ESCALATED_K` trials for that case
+      (mismatched escalation, or the case never escalated past k=1/k=2), this
+      function does not call `classify_k_plus_improvement_outcome()` on it --
+      that call would raise `ValueError` on such an input, exactly mirroring
+      `check_no_critical_regression`'s own "only classify what actually
+      escalated" discipline. Such a case can never be
+      `CONFIRMED_POSITIVE_EFFECT` (that outcome itself requires k>=3), so it
+      is still added to `unconfirmed_case_ids` -- but it has no entry in
+      `classifications`, since none was computed. In `evaluate_promotion()`'s
+      real pipeline this branch is not expected to fire: `check_minimum_
+      evidence()` is already a required, prior precondition there, so every
+      compared case is guaranteed to have reached k>=3 in both arms by the
+      time this function is called. It remains here so this function is
+      still safe and correct when called standalone (e.g. from a test) on
+      data that has not first passed `check_minimum_evidence()`.
+
+    `all_confirmed_positive_effect` is `True` only if every case's
+    classification is exactly `policy.CONFIRMED_POSITIVE_EFFECT` --
+    the required, conservative gate T511's own brief calls for (design
+    decision 5): a `CONFIRMED_PERSISTENT_EFFECT`/`ELEVATED_BUT_HETEROGENEOUS`
+    result here does not itself mean "critical regression" (that judgment
+    belongs solely to `check_no_critical_regression`) -- it only means this
+    conjunct's own bar (a traceable, recurring positive signal) was not met.
+    """
+    all_trials = list(control_trials) + list(treatment_trials)
+    by_case = _group_by_case(all_trials)
+
+    classifications: dict[str, str] = {}
+    unconfirmed: list[str] = []
+    classified: list[str] = []
+
+    for case_id in sorted(by_case):
+        case_trials = by_case[case_id]
+        control_k = sum(1 for t in case_trials if t.arm == ARM_CONTROL)
+        treatment_k = sum(1 for t in case_trials if t.arm == ARM_TREATMENT)
+
+        if control_k >= policy.MIN_ESCALATED_K and treatment_k >= policy.MIN_ESCALATED_K:
+            outcome = policy.classify_k_plus_improvement_outcome(case_trials)
+            classifications[case_id] = outcome
+            classified.append(case_id)
+            if outcome != policy.CONFIRMED_POSITIVE_EFFECT:
+                unconfirmed.append(case_id)
+        else:
+            unconfirmed.append(case_id)
+
+    return ImprovementClassificationResult(
+        all_confirmed_positive_effect=not unconfirmed,
+        classifications=classifications,
+        unconfirmed_case_ids=tuple(unconfirmed),
+        classified_case_ids=tuple(classified),
+    )
+
+
+# ---------------------------------------------------------------------------
+# The combined six-conjunct promotion decision
 # ---------------------------------------------------------------------------
 
 
@@ -303,10 +411,13 @@ class PromotionResult(NamedTuple):
     evaluator_hash_unchanged: bool
     minimum_evidence_met: bool
     provenance_homogeneous: bool
+    confirmed_positive_effect_met: bool
     confirmed_regression_case_ids: tuple[str, ...]
     mismatched_escalation_case_ids: tuple[str, ...]
     insufficient_evidence_case_ids: tuple[str, ...]
     provenance_mismatched_case_ids: tuple[str, ...]
+    improvement_classifications: dict[str, str]
+    unconfirmed_positive_effect_case_ids: tuple[str, ...]
     evaluator_hash_check: evaluator_hash.DriftCheckResult
 
 
@@ -317,11 +428,19 @@ def _build_promotion_reason(
     hash_check: evaluator_hash.DriftCheckResult,
     evidence: EvidenceCheckResult,
     provenance: ProvenanceCheckResult,
+    improvement: ImprovementClassificationResult,
 ) -> str:
-    if floor_ok and regression.no_critical_regression and hash_ok and evidence.sufficient and provenance.homogeneous:
+    if (
+        floor_ok
+        and regression.no_critical_regression
+        and hash_ok
+        and evidence.sufficient
+        and provenance.homogeneous
+        and improvement.all_confirmed_positive_effect
+    ):
         return (
             "PROMOTE: all conjuncts satisfied (floor met, no critical regression, evaluator hash "
-            "unchanged, minimum evidence met, provenance homogeneous)."
+            "unchanged, minimum evidence met, provenance homogeneous, confirmed positive effect)."
         )
 
     failures: list[str] = []
@@ -348,6 +467,11 @@ def _build_promotion_reason(
         failures.append(
             "provenance mismatch (case(s) with non-uniform or unknown trial provenance across arms): "
             + ", ".join(provenance.mismatched_case_ids)
+        )
+    if not improvement.all_confirmed_positive_effect:
+        failures.append(
+            "no confirmed positive effect (case(s) that did not reach a traceable, recurring "
+            "category-3 finding at floor-met): " + ", ".join(improvement.unconfirmed_case_ids)
         )
 
     return "REJECT: " + "; ".join(failures)
@@ -389,8 +513,19 @@ def evaluate_promotion(
        improvement conjunct (1) and the regression conjunct (2) from a
        provenance-confounded comparison without duplicating the
        grouping/comparison logic.
+    6. **[T511, Option B]** "confirmed positive effect" ->
+       `check_confirmed_positive_effect(...)` reports
+       `all_confirmed_positive_effect=True` -- every `case_id` present
+       reaches `policy.CONFIRMED_POSITIVE_EFFECT` under
+       `policy.classify_k_plus_improvement_outcome()`. A required,
+       conservative sixth conjunct (T511's own disclosed judgment call, per
+       `docs/tasks/task-T511.md` design decision 5): gives conjunct 1 a real
+       qualitative, traceable, recurring-signal requirement, not just an
+       absence-of-regression statistic. If any compared case has not
+       reached `CONFIRMED_POSITIVE_EFFECT`, `promote` is `False` regardless
+       of what the other five conjuncts would otherwise return.
 
-    All five conjuncts AND together.
+    All six conjuncts AND together.
 
     `control_trials`/`treatment_trials` are plain `TrialRecord` lists --
     this function embeds no live-dispatch call of any kind. How those
@@ -415,6 +550,7 @@ def evaluate_promotion(
         treatment_trials,
         known_compatible_provenance_case_ids=known_compatible_provenance_case_ids,
     )
+    improvement = check_confirmed_positive_effect(control_trials, treatment_trials)
 
     promote = (
         floor_ok
@@ -422,8 +558,11 @@ def evaluate_promotion(
         and hash_ok
         and evidence.sufficient
         and provenance.homogeneous
+        and improvement.all_confirmed_positive_effect
     )
-    reason = _build_promotion_reason(floor_ok, regression, hash_ok, evaluator_hash_check, evidence, provenance)
+    reason = _build_promotion_reason(
+        floor_ok, regression, hash_ok, evaluator_hash_check, evidence, provenance, improvement
+    )
 
     return PromotionResult(
         promote=promote,
@@ -433,10 +572,13 @@ def evaluate_promotion(
         evaluator_hash_unchanged=hash_ok,
         minimum_evidence_met=evidence.sufficient,
         provenance_homogeneous=provenance.homogeneous,
+        confirmed_positive_effect_met=improvement.all_confirmed_positive_effect,
         confirmed_regression_case_ids=regression.confirmed_regression_case_ids,
         mismatched_escalation_case_ids=regression.mismatched_escalation_case_ids,
         insufficient_evidence_case_ids=evidence.insufficient_evidence_case_ids,
         provenance_mismatched_case_ids=provenance.mismatched_case_ids,
+        improvement_classifications=improvement.classifications,
+        unconfirmed_positive_effect_case_ids=improvement.unconfirmed_case_ids,
         evaluator_hash_check=evaluator_hash_check,
     )
 

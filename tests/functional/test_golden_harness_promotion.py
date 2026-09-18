@@ -40,8 +40,8 @@ from implementation.runtime.golden_harness.schema import PROVENANCE_FRESH, PROVE
 from tests._helpers.repo import repo_root
 
 
-def _trial(case_id, arm, k, result, cause=None, provenance=None) -> TrialRecord:
-    kwargs = dict(case_id=case_id, arm=arm, k_index=k, result=result, diagnosed_cause=cause)
+def _trial(case_id, arm, k, result, cause=None, provenance=None, category=None) -> TrialRecord:
+    kwargs = dict(case_id=case_id, arm=arm, k_index=k, result=result, diagnosed_cause=cause, category=category)
     if provenance is not None:
         kwargs["provenance"] = provenance
     return TrialRecord(**kwargs)
@@ -85,13 +85,23 @@ class TestEvaluatePromotionThreeConjuncts(unittest.TestCase):
         # the new minimum-evidence gate (Option A) requires both arms to
         # reach policy.MIN_ESCALATED_K=3, and the new provenance-homogeneity
         # gate (Option C) fails closed on the schema default ("unknown")
-        # that every other pre-existing trial in this file still uses. Every
+        # that every other pre-existing trial in this file still uses.
+        #
+        # T511 note: further updated to also give two of the three
+        # treatment trials a category-3 ("traceable positive influence")
+        # classification -- the new confirmed-positive-effect gate (Option
+        # B) requires category-3 to recur >=2 times in the treatment arm
+        # before it reports CONFIRMED_POSITIVE_EFFECT for this case. Every
         # test below that reuses this helper only asserts fields/reason
-        # substrings unaffected by these two new gates *except*
+        # substrings unaffected by these three new gates *except*
         # `test_all_three_conjuncts_satisfied_promotes`, which requires
-        # promote=True and so requires both new gates to actually pass.
+        # promote=True and so requires all three new gates to actually pass.
         control = [_trial("case-a", "control", k, True, provenance=PROVENANCE_FRESH) for k in (1, 2, 3)]
-        treatment = [_trial("case-a", "treatment", k, True, provenance=PROVENANCE_FRESH) for k in (1, 2, 3)]
+        treatment = [
+            _trial("case-a", "treatment", 1, True, provenance=PROVENANCE_FRESH, category="3"),
+            _trial("case-a", "treatment", 2, True, provenance=PROVENANCE_FRESH, category="3"),
+            _trial("case-a", "treatment", 3, True, provenance=PROVENANCE_FRESH),
+        ]
         return control, treatment
 
     def test_all_three_conjuncts_satisfied_promotes(self):
@@ -103,8 +113,11 @@ class TestEvaluatePromotionThreeConjuncts(unittest.TestCase):
         self.assertTrue(result.evaluator_hash_unchanged)
         self.assertTrue(result.minimum_evidence_met)
         self.assertTrue(result.provenance_homogeneous)
+        self.assertTrue(result.confirmed_positive_effect_met)
         self.assertEqual(result.insufficient_evidence_case_ids, ())
         self.assertEqual(result.provenance_mismatched_case_ids, ())
+        self.assertEqual(result.improvement_classifications, {"case-a": policy.CONFIRMED_POSITIVE_EFFECT})
+        self.assertEqual(result.unconfirmed_positive_effect_case_ids, ())
         self.assertTrue(result.reason.startswith("PROMOTE"))
 
     def test_floor_not_met_alone_rejects(self):
@@ -462,6 +475,111 @@ class TestCheckProvenanceHomogeneity(unittest.TestCase):
         self.assertEqual(result.mismatched_case_ids, (_T507_CASE_PREPARE_RELEASE,))
 
 
+# ---------------------------------------------------------------------------
+# T511 (T509 design, Option B): confirmed-positive-effect classification
+# ---------------------------------------------------------------------------
+
+
+class TestCheckConfirmedPositiveEffect(unittest.TestCase):
+    """T511 Option B: the per-case confirmed-positive-effect gate."""
+
+    def test_recurring_category_3_in_treatment_confirms_positive_effect(self):
+        control = [_trial("case-a", "control", k, True) for k in (1, 2, 3)]
+        treatment = [
+            _trial("case-a", "treatment", 1, True, category="3"),
+            _trial("case-a", "treatment", 2, True, category="3"),
+            _trial("case-a", "treatment", 3, True),
+        ]
+        result = promotion.check_confirmed_positive_effect(control, treatment)
+        self.assertTrue(result.all_confirmed_positive_effect)
+        self.assertEqual(result.classifications, {"case-a": policy.CONFIRMED_POSITIVE_EFFECT})
+        self.assertEqual(result.unconfirmed_case_ids, ())
+        self.assertEqual(result.classified_case_ids, ("case-a",))
+
+    def test_t507_real_numbers_never_escalated_are_unconfirmed_without_raising(self):
+        # T507's real cases never reached k=3 in any case
+        # (`t507-closed-loop-cycle-v1.md` §3.3) -- classify_k_plus_
+        # improvement_outcome() would raise ValueError on such input, so
+        # check_confirmed_positive_effect must not call it here. Each case
+        # is still correctly reported as unconfirmed (blocking promotion),
+        # with no classification computed for any of them.
+        control, treatment = _t507_real_trials(with_provenance=False)
+        result = promotion.check_confirmed_positive_effect(control, treatment)
+        self.assertFalse(result.all_confirmed_positive_effect)
+        self.assertEqual(result.classifications, {})
+        self.assertEqual(
+            set(result.unconfirmed_case_ids),
+            {_T507_CASE_CODE_REVIEW, _T507_CASE_PREPARE_RELEASE, _T507_CASE_HELD_OUT},
+        )
+        self.assertEqual(result.classified_case_ids, ())
+
+    def test_floor_met_without_recurring_category_3_is_unconfirmed(self):
+        control = [_trial("case-a", "control", k, True) for k in (1, 2, 3)]
+        treatment = [_trial("case-a", "treatment", k, True) for k in (1, 2, 3)]  # category never set
+        result = promotion.check_confirmed_positive_effect(control, treatment)
+        self.assertFalse(result.all_confirmed_positive_effect)
+        self.assertEqual(result.classifications, {"case-a": policy.CONFIRMED_COIN_FLIP})
+        self.assertEqual(result.unconfirmed_case_ids, ("case-a",))
+
+    def test_multiple_cases_evaluated_independently(self):
+        control = [_trial("case-good", "control", k, True) for k in (1, 2, 3)] + [
+            _trial("case-bad", "control", k, True) for k in (1, 2, 3)
+        ]
+        treatment = [
+            _trial("case-good", "treatment", 1, True, category="3"),
+            _trial("case-good", "treatment", 2, True, category="3"),
+            _trial("case-good", "treatment", 3, True),
+        ] + [_trial("case-bad", "treatment", k, True) for k in (1, 2, 3)]
+
+        result = promotion.check_confirmed_positive_effect(control, treatment)
+        self.assertFalse(result.all_confirmed_positive_effect)
+        self.assertEqual(
+            result.classifications,
+            {"case-bad": policy.CONFIRMED_COIN_FLIP, "case-good": policy.CONFIRMED_POSITIVE_EFFECT},
+        )
+        self.assertEqual(result.unconfirmed_case_ids, ("case-bad",))
+        self.assertEqual(set(result.classified_case_ids), {"case-good", "case-bad"})
+
+
+class TestEvaluatePromotionT511EndToEnd(unittest.TestCase):
+    """T511's own wiring test (brief's final two bullets): every other
+    conjunct (including T510's two gates) satisfied but no case reaches
+    CONFIRMED_POSITIVE_EFFECT -> promote=False; and the positive-path proof
+    that promote=True is still reachable in principle when a case genuinely
+    does reach it."""
+
+    def test_all_other_conjuncts_pass_but_no_confirmed_positive_effect_rejects(self):
+        control = [_trial("case-a", "control", k, True, provenance=PROVENANCE_FRESH) for k in (1, 2, 3)]
+        treatment = [_trial("case-a", "treatment", k, True, provenance=PROVENANCE_FRESH) for k in (1, 2, 3)]
+        result = promotion.evaluate_promotion(control, treatment, _no_drift_hash_check())
+
+        self.assertTrue(result.floor_met)
+        self.assertTrue(result.no_critical_regression)
+        self.assertTrue(result.evaluator_hash_unchanged)
+        self.assertTrue(result.minimum_evidence_met)
+        self.assertTrue(result.provenance_homogeneous)
+        self.assertFalse(result.confirmed_positive_effect_met)
+        self.assertFalse(result.promote)
+        self.assertEqual(result.improvement_classifications, {"case-a": policy.CONFIRMED_COIN_FLIP})
+        self.assertEqual(result.unconfirmed_positive_effect_case_ids, ("case-a",))
+        self.assertIn("no confirmed positive effect", result.reason)
+        self.assertIn("case-a", result.reason)
+        self.assertTrue(result.reason.startswith("REJECT"))
+
+    def test_all_six_conjuncts_satisfied_promotes(self):
+        control = [_trial("case-a", "control", k, True, provenance=PROVENANCE_FRESH) for k in (1, 2, 3)]
+        treatment = [
+            _trial("case-a", "treatment", 1, True, provenance=PROVENANCE_FRESH, category="3"),
+            _trial("case-a", "treatment", 2, True, provenance=PROVENANCE_FRESH, category="3"),
+            _trial("case-a", "treatment", 3, True, provenance=PROVENANCE_FRESH),
+        ]
+        result = promotion.evaluate_promotion(control, treatment, _no_drift_hash_check())
+        self.assertTrue(result.promote)
+        self.assertTrue(result.confirmed_positive_effect_met)
+        self.assertEqual(result.improvement_classifications, {"case-a": policy.CONFIRMED_POSITIVE_EFFECT})
+        self.assertTrue(result.reason.startswith("PROMOTE"))
+
+
 class TestEvaluatePromotionT510EndToEnd(unittest.TestCase):
     """The brief's item 11: both new preconditions combined against T507's
     full real dataset, literal `TrialRecord` fixtures, confirming
@@ -486,9 +604,14 @@ class TestEvaluatePromotionT510EndToEnd(unittest.TestCase):
         self.assertTrue(result.floor_met)
         self.assertTrue(result.no_critical_regression)
         self.assertTrue(result.evaluator_hash_unchanged)
-        # The two new T510 gates are what now block this real promotion.
+        # The two T510 gates are what block this real promotion, per T510's
+        # own reconstruction -- and T511's own new gate independently
+        # agrees: none of T507's real treatment trials were ever
+        # qualitatively categorized, so it could not have confirmed a
+        # positive effect either, a third, independent line of defense.
         self.assertFalse(result.minimum_evidence_met)
         self.assertFalse(result.provenance_homogeneous)
+        self.assertFalse(result.confirmed_positive_effect_met)
         self.assertEqual(
             set(result.insufficient_evidence_case_ids),
             {_T507_CASE_CODE_REVIEW, _T507_CASE_PREPARE_RELEASE, _T507_CASE_HELD_OUT},
@@ -496,8 +619,13 @@ class TestEvaluatePromotionT510EndToEnd(unittest.TestCase):
         self.assertEqual(
             result.provenance_mismatched_case_ids, (_T507_CASE_CODE_REVIEW, _T507_CASE_PREPARE_RELEASE)
         )
+        self.assertEqual(
+            set(result.unconfirmed_positive_effect_case_ids),
+            {_T507_CASE_CODE_REVIEW, _T507_CASE_PREPARE_RELEASE, _T507_CASE_HELD_OUT},
+        )
         self.assertIn("insufficient evidence", result.reason)
         self.assertIn("provenance mismatch", result.reason)
+        self.assertIn("no confirmed positive effect", result.reason)
         self.assertTrue(result.reason.startswith("REJECT"))
 
 

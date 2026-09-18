@@ -1,6 +1,11 @@
 # T511 — Implement promotion hardening Option B: symmetric positive-effect classification
 
-**Status:** pending
+**Status:** done
+
+**Closure note:** Built and independently re-verified, including a fresh re-run of the
+real-T507-data regression test and both end-to-end wiring tests. See
+`docs/tasks/completed-tasks.md`'s T511 row for full detail. Completes all three hardening options
+(A, B, C) from `T509`'s design.
 **Owner:** backend-developer
 **Priority:** P1
 **Depends on:** T510 (done — the minimum-evidence gate this task's own required precondition builds on)

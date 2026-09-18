@@ -68,27 +68,32 @@ def _make_drift_check(*, any_drift: bool = False) -> DriftCheckResult:
 
 def _make_promotion_result(*, promote: bool) -> PromotionResult:
     # T510 note: PromotionResult gained four new fields (minimum-evidence and
-    # provenance-homogeneity gate results). This helper is not exercising
-    # either gate -- both are held satisfied (True / empty case-id tuples)
-    # here so these fixtures keep isolating mr_gate.py's own `promote`-flag
-    # refusal behavior, unrelated to T510's hardening.
+    # provenance-homogeneity gate results). T511 note: gained three more
+    # (confirmed-positive-effect gate results). This helper is not
+    # exercising any of these gates -- all are held satisfied (True / empty
+    # case-id tuples / empty classifications dict) here so these fixtures
+    # keep isolating mr_gate.py's own `promote`-flag refusal behavior,
+    # unrelated to T510's or T511's hardening.
     drift_check = _make_drift_check(any_drift=False)
     if promote:
         return PromotionResult(
             promote=True,
             reason=(
                 "PROMOTE: all conjuncts satisfied (floor met, no critical regression, evaluator hash "
-                "unchanged, minimum evidence met, provenance homogeneous)."
+                "unchanged, minimum evidence met, provenance homogeneous, confirmed positive effect)."
             ),
             floor_met=True,
             no_critical_regression=True,
             evaluator_hash_unchanged=True,
             minimum_evidence_met=True,
             provenance_homogeneous=True,
+            confirmed_positive_effect_met=True,
             confirmed_regression_case_ids=(),
             mismatched_escalation_case_ids=(),
             insufficient_evidence_case_ids=(),
             provenance_mismatched_case_ids=(),
+            improvement_classifications={},
+            unconfirmed_positive_effect_case_ids=(),
             evaluator_hash_check=drift_check,
         )
     return PromotionResult(
@@ -99,10 +104,13 @@ def _make_promotion_result(*, promote: bool) -> PromotionResult:
         evaluator_hash_unchanged=True,
         minimum_evidence_met=True,
         provenance_homogeneous=True,
+        confirmed_positive_effect_met=True,
         confirmed_regression_case_ids=(),
         mismatched_escalation_case_ids=(),
         insufficient_evidence_case_ids=(),
         provenance_mismatched_case_ids=(),
+        improvement_classifications={},
+        unconfirmed_positive_effect_case_ids=(),
         evaluator_hash_check=drift_check,
     )
 
@@ -144,10 +152,13 @@ class TestRefusalGate(unittest.TestCase):
             evaluator_hash_unchanged=False,
             minimum_evidence_met=True,
             provenance_homogeneous=True,
+            confirmed_positive_effect_met=True,
             confirmed_regression_case_ids=(),
             mismatched_escalation_case_ids=(),
             insufficient_evidence_case_ids=(),
             provenance_mismatched_case_ids=(),
+            improvement_classifications={},
+            unconfirmed_positive_effect_case_ids=(),
             evaluator_hash_check=drift_check,
         )
         with self.assertRaises(mr_gate.PromotionNotApproved):
