@@ -2,6 +2,16 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T510 | Implement promotion hardening: minimum-evidence gate + provenance check (Options A+C) | backend-developer | pending | P1 | T509 (done) | 2026-09-19 |
+
+> **T510 dispatched 2026-09-19** per the user's explicit instruction ("build A + C first"),
+> implementing `T509`'s design (`docs/artifacts/promotion-improvement-hardening-design-v1.md`).
+> Unlike every other Phase 6 task, this one modifies real, already-shipped harness code
+> (`promotion.py`, `schema.py`) rather than only adding new modules — the brief requires full
+> backward compatibility for existing persisted `TrialRecord` data. Option B (the symmetric
+> positive-effect classification) is explicitly deferred, per the user's own instruction and the
+> design's own recommendation. See `docs/tasks/task-T510.md` for the full brief and
+> `docs/plans/plan-062-t510-dispatch-plan-coverage.md` for plan coverage.
 
 > **0 active rows. `T509` closed 2026-09-18 — see `completed-tasks.md` for the full closure
 > record.** Design-only, as scoped — no code touched, no option decided, per this task's own
