@@ -2,8 +2,25 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T504 | Validation: proposal vs. failing case + open suite + held-out suite + baseline; promotion rule (`plan-035` nominal T463, `plan-055` `T463-equiv`) | backend-developer | in_progress | P0 | T458 (done), T503 (done) | 2026-09-18 |
 
-> **0 active rows.** `T503` closed 2026-09-18 — see `completed-tasks.md` for the full closure
+> **1 active row.** T504 dispatched 2026-09-18 per `plan-055` §4's `T463-equiv` row — see
+> `task-T504.md` for the full brief. Two-piece split: `backend-developer` builds (1) a real
+> evaluator-hash tamper-evidence check over the two `protected-paths-v1.md` paths
+> (`tests/golden/**`, `scripts/scorecard.py`), the literal control §2 item 2 of that document names
+> as "not yet built"; (2) a promotion-rule function combining that check with
+> `golden_harness.policy`'s already-real `floor_met()`/`classify_k_plus_outcome()` functions, per a
+> three-conjunct mapping reused verbatim from `task-T456.md`/`task-T499.md`'s own ship-gate
+> precedent. Investigated and resolved this dispatch's own open design question: no historical
+> `TrialRecord`/`trial_store.py`-shaped trial data exists anywhere in this repo (the 28 historical
+> trials live only as prose in `task-T484.md`–`task-T494.md`/`T456`/`T499`), so at least one real
+> validation cycle requires genuine live re-measurement — confirming, not merely anticipating, the
+> split-ownership case `plan-055` pre-scoped. The orchestrator (not `backend-developer`, not
+> `evaluation-agent` — re-confirmed `[read, search, web]`, no `execute`, no `agent` tool) will
+> perform that live cycle directly once the code exists, mirroring `task-T499.md`'s own in-process
+> `Agent`-tool methodology exactly.
+
+> `T503` closed 2026-09-18 — see `completed-tasks.md` for the full closure
 > record. All 9 acceptance criteria independently re-verified by the top-level session before this
 > closure (not accepted on the implementer's self-report alone): `implementation/runtime/
 > meta_improver.py` read in full directly — confirmed genuinely zero filesystem-mutating calls
