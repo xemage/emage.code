@@ -3,7 +3,13 @@ promotion rule (`plan-035` nominal `T463`)
 
 **Owner:** backend-developer (build phase — evaluator-hash check + promotion-rule glue code);
 **orchestrator** (live end-to-end validation phase — see "Split ownership" below)
-**Status:** in_progress
+**Status:** done
+**Closure note (2026-09-18):** all 10 acceptance criteria independently re-verified by the
+top-level session before this closure (not accepted on the implementer's self-report alone). One
+real, load-bearing bug was found and fixed during that verification (the evaluator-hash check's
+digest was contaminated by gitignored `__pycache__` files, defeating baseline reproducibility) —
+not merely confirmed clean. See `docs/tasks/completed-tasks.md`'s `T504` row for the full closure
+record.
 **Priority:** P0
 **Depends on:** T458 (done — `implementation/runtime/golden_harness/{scoring,policy,schema,
 trial_store}.py`, the real primitives this task's promotion-rule glue code reuses directly); T503
