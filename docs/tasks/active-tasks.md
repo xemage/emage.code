@@ -2,8 +2,34 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T505 | Human gate: proposals open an MR against `develop`; no auto-merge path (`plan-035` nominal T464) | release-manager | in_progress | P0 | T503 (done), T504 (done) | 2026-09-18 |
+| T506 | Harness lineage document: what changed, which failure motivated it, before/after scorecard (`plan-035` nominal T465) | technical-writer | in_progress | P1 | none (soft: T505) | 2026-09-18 |
 
-> **0 active rows.** `T504` closed 2026-09-18 — see `completed-tasks.md` for the full closure
+> **T505/T506 dispatched 2026-09-18 — the final two tasks of Phase 6's original six-task table,
+> per `plan-055` §4's `T464-equiv`/`T465-equiv` rows.** `T500`'s ID-renumbering gap is now closed
+> for both remaining rows: `plan-035`'s nominal `T464`/`T465` become this ledger's real `T505`/
+> `T506`. **T505 is the first point in the entire closed-loop pipeline where a proposal's content
+> is ever allowed to touch a real, tracked repository file** — everything built so far (`T503`'s
+> generator, `T504`'s validator) was deliberately, architecturally incapable of writing to the real
+> tree. `T505`'s brief requires the same two-independent-proofs discipline `T503` applied to its
+> own "never writes" guarantee (AST scan + adversarial synthetic-violation tests), applied here to
+> a "no call anywhere in this module's source merges, approves, or auto-accepts an MR" guarantee —
+> plus a required, explicit `PromotionResult.promote is True` gate before any git/GitLab call. Per
+> this dispatch's own standing instruction, once `T505`'s code is independently reviewed, **the
+> orchestrator personally performs one real live validation cycle** (a real proposal, a real
+> `PromotionResult`, run through the real mechanism, confirming a real branch and MR against
+> `develop`) and **leaves the resulting MR open and unmerged for the user's own independent
+> review** — not self-merged or self-closed. `T506` builds the `docs/harness-lineage/` template and,
+> if `T505`'s live validation produces a real, disclosable worked example by the time `T506` needs
+> one, may cite it (explicitly disclosed as real, not fabricated); otherwise `T506` uses a
+> clearly-labeled illustrative example instead. Dispatched into two separate worktrees/branches off
+> `develop` (`agent/release-manager/T505`, `agent/technical-writer/T506`), independent, parallel.
+> Both briefs' own text was swept for any lingering `plan-035` §2.4 introductory-prose reference to
+> `implementation/sia/`/`sia-executor.py` before dispatch and confirmed clean. No self-merge, no
+> exceptions for content type — every MR this round (both build-phase MRs and the live-validation
+> MR) is left open for the user's own independent review and merge decision, not the orchestrator's.
+
+> **0 other active rows besides T505/T506 above.** `T504` closed 2026-09-18 — see `completed-tasks.md` for the full closure
 > record. All 10 acceptance criteria independently re-verified by the top-level session before
 > this closure (not accepted on the implementer's self-report alone). **A real bug was found and
 > fixed during that verification, not merely confirmed clean**: `evaluator_hash.py`'s
