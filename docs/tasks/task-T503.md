@@ -3,7 +3,11 @@
 
 **Owner:** backend-developer (build phase); **orchestrator** (live end-to-end validation phase —
 see "Split ownership" below)
-**Status:** in_progress
+**Status:** done
+**Closure note (2026-09-18):** all 9 acceptance criteria independently re-verified by the
+top-level session before this closure (not accepted on the implementer's self-report alone),
+including personally re-running the real end-to-end pipeline and confirming zero filesystem
+changes. See `docs/tasks/completed-tasks.md`'s `T503` row for the full closure record.
 **Priority:** P0
 **Depends on:** T501 (done — `implementation/runtime/golden_harness/failure_taxonomy.py`, the real
 taxonomy-query module this task consumes)
