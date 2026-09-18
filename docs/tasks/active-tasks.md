@@ -2,8 +2,17 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T500 | Phase 6 (Closed Loop) SIA readiness audit and detailed planning pass — `plan-035` §2.4's own T460, expanded to also produce the phase's detailed-planning document, renumbered to this ledger's real next-free ID. Audit- and plan-authoring only; explicitly does not open or dispatch any Phase 6 implementation task. | solution-architect | in_progress | P0 | none (Phase 6 gate-reachable per `checkpoint-033`: G3 closed 2026-09-18, P3 done, G4's evaluator-protection precondition closed with G1) | 2026-09-18 |
 
-> **0 active rows.** `T499` closed 2026-09-18 — see `completed-tasks.md` for the full closure
+> Phase 6 ("Closed Loop", v7.0.0) is gate-reachable as of `T499`'s closure today (2026-09-18) —
+> see `docs/checkpoints/checkpoint-033-phase4-phase5-complete-gate-g3-closed.md`. Per that
+> checkpoint's own explicit note and this project's established precedent
+> (`plan-037`/`038`/`041`/`043`), Phase 6 has not been planned to execution-ready detail and no
+> implementation task brief may be authored until a dedicated planning pass exists and is
+> reviewed. `T500` is that first, mandatory step — `plan-035` §2.4 Phase 6's own text: "No new
+> module until this audit is complete."
+
+> **Previously: 0 active rows.** `T499` closed 2026-09-18 — see `completed-tasks.md` for the full closure
 > record and `docs/benchmarks/baseline-v6.17.0-retrieval-v2.md` for the full re-measurement.
 > Re-measured exactly the 5 golden cases `T498`'s checker fix could have affected (mechanically
 > confirmed via `git diff cc77974 origin/develop -- 'tests/golden/**/expect.py' --stat`: exactly
