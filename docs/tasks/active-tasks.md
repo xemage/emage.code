@@ -2,7 +2,31 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T510 | Implement promotion hardening: minimum-evidence gate + provenance check (Options A+C) | backend-developer | pending | P1 | T509 (done) | 2026-09-19 |
+
+> **0 active rows. `T510` closed 2026-09-19 — see `completed-tasks.md` for the full closure
+> record.** `promotion.py` now has five conjuncts, not three: the original floor/regression/hash
+> checks are unchanged internally, and two new promotion-level preconditions
+> (`check_minimum_evidence()`, per-`case_id`, not pooled; `check_provenance_homogeneity()`,
+> fail-closed on `"unknown"`, implemented once and consumed by the overall decision) now gate
+> `promote` directly. `schema.py`'s `TrialRecord` gained a `provenance` field defaulting to
+> `"unknown"` on deserialization, preserving every already-persisted record. **Independently
+> re-verified by the top-level session before this closure, not accepted on the implementer's
+> self-report alone**: full diff read directly (5 files, exactly as reported, no protected path
+> touched); the real-`T507`-numbers regression test re-run in isolation and confirmed to
+> reconstruct `t507-closed-loop-cycle-v1.md` §3.3's exact values (`[True, False, True]` control /
+> `[True, True, True]` treatment, reused-control/fresh-treatment on the two open cases, fresh/fresh
+> on the held-out case) and to now correctly produce `promote=False` on both new gates while every
+> original conjunct's own result (`floor_met=True`, `no_critical_regression=True`,
+> `evaluator_hash_unchanged=True`) stays exactly as `T507` actually reported it, proving the
+> original three-conjunct logic is genuinely unchanged, not just re-labeled; the per-case-not-pooled
+> proof test independently re-run and confirmed to construct exactly the failure mode
+> (`T509`'s §1.2 finding) a naive pooled-count implementation would have missed. All 63 tests across
+> the three touched test files re-run in isolation, fresh (0 failures); held-out isolation guard
+> re-run fresh (8/8 pass, `HO-2` alias only, no real identity leaked). Full verification bar re-run
+> fresh: `tests/run.py` 719 tests `OK` (`skipped=37`); `validate-tasks.py` PASS; `check-maturity.py`
+> 79 components, 0 failing; `sync.mjs --check` no drift across 577 files. Option B (the symmetric
+> positive-effect classification) remains explicitly deferred, per the user's own instruction — not
+> built, not scoped further by this closure.
 
 > **T510 dispatched 2026-09-19** per the user's explicit instruction ("build A + C first"),
 > implementing `T509`'s design (`docs/artifacts/promotion-improvement-hardening-design-v1.md`).

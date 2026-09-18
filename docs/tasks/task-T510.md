@@ -1,6 +1,10 @@
 # T510 — Implement promotion hardening: per-case minimum-evidence gate + provenance-homogeneity check (Options A + C)
 
-**Status:** pending
+**Status:** done
+
+**Closure note:** Both gates built and independently re-verified, including a fresh re-run of the
+real-T507-numbers regression test and the per-case-not-pooled proof test. See
+`docs/tasks/completed-tasks.md`'s T510 row for full detail. Option B remains deferred.
 **Owner:** backend-developer
 **Priority:** P1
 **Depends on:** T509 (done — design artifact this brief implements)
