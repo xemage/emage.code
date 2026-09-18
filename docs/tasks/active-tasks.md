@@ -2,7 +2,30 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T501 | Wire weakness mining to the Phase 1 failure taxonomy (T415) — `plan-035` nominal T461, re-scoped per `plan-055` §4. First real increment only: make the 15 already-classified failure records genuinely queryable; explicitly defers "how new failures join the taxonomy over time" as a separate, not-yet-scoped future increment (a disclosed scoping decision, per the audit's §5 item 1 open question). | backend-developer | in_progress | P0 | none | 2026-09-18 |
+
+> **0 active rows.** `T501` closed 2026-09-18 — see `completed-tasks.md` for the full closure
+> record. All 6 acceptance criteria independently re-verified by the top-level session before this
+> closure (not accepted on the implementer's self-report alone): `implementation/runtime/
+> golden_harness/failure_taxonomy.py`'s `FailureTaxonomy.load()`/`all_records()`/`get()`/
+> `filter_by()` read in full directly; the 17-test suite's specific real-value assertions read
+> directly (exact axis values for named golden-suite and Terminal-Bench cases, a cross-source
+> `filter_by` query, a held-out case correctly flagged via `is_held_out` with its real identity
+> never exposed); `tests/functional/test_golden_held_out_isolation.py` re-run fresh (8/8 pass);
+> diff scope confirmed exactly the 2 claimed files (`failure_taxonomy.py` + its test file), zero
+> protected-path hits, `docs/benchmarks/failures/**` and `docs/artifacts/failure-taxonomy-v1.md`
+> themselves untouched (read-only dependency, not re-authored); full `tests/run.py` re-run fresh —
+> 613 tests, `OK`, `skipped=38` (a real, disclosed, environment-dependent +1 skip vs. the dispatch's
+> assumed 37-skip baseline, independently confirmed by the implementer via a controlled before/
+> after file-removal comparison to be unrelated to this task's own change, not investigated further
+> here since it does not affect pass/fail). One real, correctly-handled process gap along the way:
+> the implementer's worktree forked before this row's own dispatch-commit ledger row had merged,
+> so `docs/tasks/task-T501.md` genuinely didn't exist in that worktree yet — rather than stall or
+> guess, the implementer recovered the real brief's content directly via `git show` against the
+> still-open dispatch branch, confirmed it matched the dispatch message's own summary, and
+> proceeded against it; it deliberately did not commit a local copy of `task-T501.md` into its own
+> branch (that would have violated ledger-consistency check C6 without the paired `active-tasks.md`
+> row, reproduced and reverted before its final commit) — a disclosed, sound judgment call, not a
+> silent workaround.
 
 > **T502 closed 2026-09-18 — see `completed-tasks.md` for the full closure record.** All 7
 > acceptance criteria independently re-verified by the top-level session before this closure (not

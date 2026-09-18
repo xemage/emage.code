@@ -1,7 +1,10 @@
 # Task T501 — Wire weakness mining to the Phase 1 failure taxonomy (`plan-035` nominal T461)
 
 **Owner:** backend-developer
-**Status:** in_progress
+**Status:** done
+**Closure note (2026-09-18):** all 6 acceptance criteria independently re-verified by the
+top-level session before this closure (not accepted on the implementer's self-report alone). See
+`docs/tasks/completed-tasks.md`'s `T501` row for the full closure record.
 **Priority:** P0
 **Depends on:** none (T415/T409 taxonomy artifacts are already `done` and merged)
 **Created:** 2026-09-18
