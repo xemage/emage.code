@@ -2,6 +2,17 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T511 | Implement promotion hardening Option B: symmetric positive-effect classification | backend-developer | pending | P1 | T510 (done) | 2026-09-19 |
+
+> **T511 dispatched 2026-09-19** per the user's explicit instruction ("Build B"), completing all
+> three hardening options `T509` scoped — `T510` already built and merged Options A (per-case
+> minimum-evidence gate) and C (provenance-homogeneity check). This brief makes several disclosed
+> design decisions the `T509` design itself left open for a future implementation task (placement,
+> the four-outcome delegation shape, which arm's `category` field recurrence counts, and — most
+> consequentially — wiring the new classification in as a required, conservative sixth conjunct
+> rather than a report-only field), each with its reasoning stated explicitly rather than left
+> implicit. See `docs/tasks/task-T511.md` for the full brief and
+> `docs/plans/plan-063-t511-dispatch-plan-coverage.md` for plan coverage.
 
 > **0 active rows. `T510` closed 2026-09-19 — see `completed-tasks.md` for the full closure
 > record.** `promotion.py` now has five conjuncts, not three: the original floor/regression/hash
