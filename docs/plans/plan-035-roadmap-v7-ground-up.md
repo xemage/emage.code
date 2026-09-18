@@ -47,6 +47,20 @@
   explicit that the same holds for T41A and T410–T416 once their gating resolves: no task brief is
   authored and `docs/tasks/active-tasks.md` is not modified for any of T410–T416, T418, T419,
   T41A, T41B, or T41C as a result of these updates.
+  **ID-renumbering note (2026-09-18, Phase 6 audit dispatch):** this document's own `T400`–`T474`
+  reserved range (see "Task ID range" below) is stale — by the time Phase 5 (T450–T499) closed and
+  Phase 6 became gate-reachable (`docs/checkpoints/checkpoint-033-phase4-phase5-complete-gate-g3-
+  closed.md`), the real task ledger had already consumed every ID through `T499` across Phases
+  0–5 and the parallel Codex-platform work, leaving §2.4 Phase 6's own `T460`–`T466` placeholders
+  long since collided-with-in-practice (those numbers were consumed by unrelated Phase 3/5 tasks
+  before Phase 6 was ever reached). Per this repo's own established renumbering discipline (the
+  `T41A`/`T41B`/`T41C` correction above is the precedent), `T460` (Phase 6's audit task, "No new
+  module until this audit is complete") is **renamed for all ledger/task-brief purposes to `T500`**
+  — the real next-free ID confirmed at dispatch time. See `docs/tasks/task-T500.md` and
+  `docs/tasks/active-tasks.md`. §2.4 Phase 6's own prose below is left as originally written
+  (still says `T460`–`T466`) — this note is the authoritative translation for `T460`; `T461`–
+  `T466` are not yet renumbered because no planning pass or task brief has been authored for them
+  yet (see `T500`'s own brief and its resulting planning-pass document for that future step).
 - **Author:** synthesis review of two external roadmap documents + live repo audit (orchestrator)
 - **Repo audited:** `github.com/xemage/emage.code` @ `develop` (`f317261`)
 - **Supersedes:** nothing. Complements `docs/plans/plan-033-mcp-settings-hardening.md`.
