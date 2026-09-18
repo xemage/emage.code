@@ -2,6 +2,15 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T509 | Design pass: harden the closed loop's improvement detection | solution-architect | pending | P1 | none | 2026-09-18 |
+
+> **T509 dispatched 2026-09-18** per the user's explicit instruction ("Scope the promotion.py
+> hardening"), given directly in response to the top-level session's own report of `T507`'s real
+> finding: `evaluate_promotion()`'s `promote=True` on a proposal its own generating task judged was
+> very likely not a genuine improvement. Design-only, mirroring `T496`'s own precedent — presents
+> options with tradeoffs and a labeled recommendation, does not itself decide or implement a fix.
+> See `docs/tasks/task-T509.md` for the full brief and `docs/plans/plan-061-t509-dispatch-plan-
+> coverage.md` for plan coverage.
 
 > **0 active rows. `T508` closed 2026-09-18 — see `completed-tasks.md` for the full closure
 > record.** This closes `plan-060`'s entire remaining task list (`T507`, `T508`) — both of the two
