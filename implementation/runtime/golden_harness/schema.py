@@ -23,6 +23,16 @@ mapping to `plan-048` §7):
   failing trials whose cause was never diagnosed.
 - `command`: the case's own command surface (e.g. `"/new-feature"`), carried
   for readability/filtering -- informational only, no policy function reads it.
+- `provenance` (T510): how this trial's data was produced --
+  `"fresh"` (a live dispatch performed for this comparison), `"reused"` (an
+  older, already-persisted trial cited from a prior measurement, e.g. a
+  `baseline-v*.md` table), or `"unknown"` (not recorded). Defaults to
+  `"unknown"` on both construction and deserialization so every
+  already-persisted `TrialRecord` predating this field (T507's own cited
+  `baseline-v6.17.0-retrieval.md` records included) still deserializes
+  without error and without being silently mis-tagged as `"fresh"` or
+  `"reused"`. Consumed by `promotion.check_provenance_homogeneity()`, which
+  fails closed on `"unknown"` (T509 design, Option C).
 """
 from __future__ import annotations
 
@@ -38,6 +48,15 @@ ALLOWED_ARMS = frozenset({ARM_CONTROL, ARM_TREATMENT})
 # restate the prose definitions -- it only validates that a recorded category
 # is one of the five real values the rubric defines.
 ALLOWED_CATEGORIES = frozenset({"1", "2", "3", "4", "5"})
+
+# T510 (T509 design, Option C): a trial's data provenance. "unknown" is the
+# safe default for any record that predates this field or that a caller never
+# tagged -- `promotion.check_provenance_homogeneity()` treats "unknown" as
+# fail-closed (mismatched), never as silently compatible.
+PROVENANCE_FRESH = "fresh"
+PROVENANCE_REUSED = "reused"
+PROVENANCE_UNKNOWN = "unknown"
+ALLOWED_PROVENANCES = frozenset({PROVENANCE_FRESH, PROVENANCE_REUSED, PROVENANCE_UNKNOWN})
 
 
 def _utc_now_iso() -> str:
@@ -55,6 +74,7 @@ class TrialRecord:
     category: str | None = None
     diagnosed_cause: str | None = None
     command: str | None = None
+    provenance: str = PROVENANCE_UNKNOWN
     recorded_at: str = field(default_factory=_utc_now_iso)
 
     def trial_id(self) -> str:
@@ -71,11 +91,16 @@ class TrialRecord:
             "category": self.category,
             "diagnosed_cause": self.diagnosed_cause,
             "command": self.command,
+            "provenance": self.provenance,
             "recorded_at": self.recorded_at,
         }
 
     @staticmethod
     def from_dict(data: dict) -> "TrialRecord":
+        # T510: `provenance` postdates this field's introduction -- any
+        # already-persisted record lacking the key (or storing an explicit
+        # `None`/empty value) must default to PROVENANCE_UNKNOWN, never be
+        # silently mis-tagged as "fresh" or "reused".
         return TrialRecord(
             case_id=data["case_id"],
             arm=data["arm"],
@@ -84,6 +109,7 @@ class TrialRecord:
             category=data.get("category"),
             diagnosed_cause=data.get("diagnosed_cause"),
             command=data.get("command"),
+            provenance=data.get("provenance") or PROVENANCE_UNKNOWN,
             recorded_at=data.get("recorded_at", _utc_now_iso()),
         )
 
@@ -100,4 +126,6 @@ def validate_trial_record(record: TrialRecord) -> list[str]:
         errors.append(f"k_index must be >= 1, got {record.k_index}")
     if record.category is not None and record.category not in ALLOWED_CATEGORIES:
         errors.append(f"category must be one of {sorted(ALLOWED_CATEGORIES)} or None, got {record.category!r}")
+    if record.provenance not in ALLOWED_PROVENANCES:
+        errors.append(f"provenance must be one of {sorted(ALLOWED_PROVENANCES)}, got {record.provenance!r}")
     return errors

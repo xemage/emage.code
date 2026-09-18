@@ -18,6 +18,26 @@ resolution for "arm-agnostic checker-brittleness bug" vs. "treatment-specific
 regression," and the mismatched-escalation fail-safe behavior; this
 docstring states the load-bearing properties only.
 
+**T510 hardening (T509 design, Options A + C):** `T507` ran this loop for
+real and got `promote=True` on a proposal that was almost certainly not a
+genuine improvement, for two independent, disclosed reasons (see
+`docs/artifacts/t507-closed-loop-cycle-v1.md` and
+`docs/artifacts/promotion-improvement-hardening-design-v1.md`). Two new,
+promotion-level preconditions close both gaps -- evaluated once, ahead of
+(not nested inside) the original three conjuncts, which keep their own
+internal logic unchanged:
+
+(d) `check_minimum_evidence()` -- every `case_id` present in the compared
+    trial set must reach `policy.MIN_ESCALATED_K` in *both* arms, evaluated
+    per-case (never as a raw pooled trial count -- see that function's own
+    docstring for why a pooled count would not have caught `T507`).
+(e) `check_provenance_homogeneity()` -- every `case_id`'s trials must share a
+    single, known (`"fresh"` or `"reused"`) provenance across both arms;
+    `"unknown"` or a mixed provenance fails closed. Implemented once here,
+    consumed by `evaluate_promotion()`'s overall decision (not duplicated
+    per-conjunct), per the design's §3 recommendation that this check should
+    protect both the improvement and the regression conjuncts.
+
 Also builds `apply_proposal_to_scratch` -- the apply-to-scratch helper that
 writes a `meta_improver.DiffProposal`'s `proposed_content` to an isolated
 scratch copy, never a git worktree, never the real tracked file, mirroring
@@ -33,7 +53,15 @@ from typing import NamedTuple
 
 from implementation.runtime import meta_improver
 from implementation.runtime.golden_harness import evaluator_hash, policy
-from implementation.runtime.golden_harness.schema import ARM_CONTROL, ARM_TREATMENT, TrialRecord
+from implementation.runtime.golden_harness.schema import (
+    ARM_CONTROL,
+    ARM_TREATMENT,
+    PROVENANCE_FRESH,
+    PROVENANCE_REUSED,
+    TrialRecord,
+)
+
+_KNOWN_PROVENANCES = frozenset({PROVENANCE_FRESH, PROVENANCE_REUSED})
 
 # implementation/runtime/golden_harness/promotion.py -> golden_harness ->
 # runtime -> implementation -> repo root. Mirrors evaluator_hash.py's own
@@ -147,7 +175,118 @@ def check_no_critical_regression(
 
 
 # ---------------------------------------------------------------------------
-# The combined three-conjunct promotion decision
+# T510 (T509 design, Option A): per-case minimum-evidence gate
+# ---------------------------------------------------------------------------
+
+
+class EvidenceCheckResult(NamedTuple):
+    """Result of the per-case minimum-evidence gate. Never a bare boolean --
+    reports exactly which case(s), if any, have not reached
+    `policy.MIN_ESCALATED_K` in both arms."""
+
+    sufficient: bool
+    insufficient_evidence_case_ids: tuple[str, ...]
+
+
+def check_minimum_evidence(
+    control_trials: list[TrialRecord],
+    treatment_trials: list[TrialRecord],
+) -> EvidenceCheckResult:
+    """T509 design §5 item 1-2 (Option A): every `case_id` present in the
+    combined control/treatment trial set must reach `policy.MIN_ESCALATED_K`
+    trials in *both* arms before a promotion decision can be trusted.
+
+    **Evaluated per-`case_id`, deliberately not as a raw pooled trial
+    count.** This is the design's own §1.2 load-bearing correction: `T507`'s
+    real pooled arrays were exactly 3 trials per arm -- satisfying a naive
+    `len(control_trials) >= policy.MIN_ESCALATED_K` check -- but those 3
+    trials came from 3 different cases at k=1 each, zero real replication in
+    any single case. Grouping by `case_id` first (mirroring
+    `check_no_critical_regression`'s own `_group_by_case` step) is what
+    makes this gate actually catch that failure mode; a pooled-count
+    shortcut would not have.
+    """
+    all_trials = list(control_trials) + list(treatment_trials)
+    by_case = _group_by_case(all_trials)
+
+    insufficient: list[str] = []
+    for case_id in sorted(by_case):
+        case_trials = by_case[case_id]
+        control_k = sum(1 for t in case_trials if t.arm == ARM_CONTROL)
+        treatment_k = sum(1 for t in case_trials if t.arm == ARM_TREATMENT)
+        if control_k < policy.MIN_ESCALATED_K or treatment_k < policy.MIN_ESCALATED_K:
+            insufficient.append(case_id)
+
+    return EvidenceCheckResult(
+        sufficient=not insufficient,
+        insufficient_evidence_case_ids=tuple(insufficient),
+    )
+
+
+# ---------------------------------------------------------------------------
+# T510 (T509 design, Option C): provenance-homogeneity pre-check
+# ---------------------------------------------------------------------------
+
+
+class ProvenanceCheckResult(NamedTuple):
+    """Result of the provenance-homogeneity pre-check. Never a bare boolean
+    -- reports exactly which case(s), if any, mix or lack known provenance
+    across their control/treatment trials."""
+
+    homogeneous: bool
+    mismatched_case_ids: tuple[str, ...]
+
+
+def check_provenance_homogeneity(
+    control_trials: list[TrialRecord],
+    treatment_trials: list[TrialRecord],
+    *,
+    known_compatible_provenance_case_ids: frozenset[str] = frozenset(),
+) -> ProvenanceCheckResult:
+    """T509 design §5 items 5-6 (Option C): every `case_id` present in the
+    combined control/treatment trial set must have a single, known
+    (`"fresh"` or `"reused"`) `TrialRecord.provenance` value shared across
+    *all* of its trials, in both arms.
+
+    **Fails closed.** A case is "provenance-mismatched" if its trials show
+    more than one distinct provenance value, or if any trial's provenance is
+    `"unknown"` (including every already-persisted record that predates this
+    field, per `schema.TrialRecord.from_dict`'s default). `"unknown"` is
+    never treated as compatible-by-default -- doing so would silently reopen
+    the exact gap this check exists to close (T507 §3.5: two of its three
+    cases mixed reused-historical control data against freshly-dispatched
+    treatment data, a prompt-fidelity confound unrelated to the proposal's
+    content).
+
+    `known_compatible_provenance_case_ids` mirrors
+    `check_no_critical_regression`'s `known_arm_agnostic_case_ids` exactly in
+    spirit: an explicit, human-attested, caller-supplied override for a case
+    a reviewer has already judged to be provenance-compatible despite this
+    check's own default classification -- never inferred by this function.
+
+    Implemented once, here -- both `evaluate_promotion()`'s improvement
+    conjunct and its regression conjunct are gated by this single result
+    (see `evaluate_promotion()`'s docstring), not by two separate
+    grouping/comparison implementations.
+    """
+    all_trials = list(control_trials) + list(treatment_trials)
+    by_case = _group_by_case(all_trials)
+
+    mismatched: list[str] = []
+    for case_id in sorted(by_case):
+        provenances = {t.provenance for t in by_case[case_id]}
+        is_uniform_and_known = len(provenances) == 1 and provenances <= _KNOWN_PROVENANCES
+        if not is_uniform_and_known and case_id not in known_compatible_provenance_case_ids:
+            mismatched.append(case_id)
+
+    return ProvenanceCheckResult(
+        homogeneous=not mismatched,
+        mismatched_case_ids=tuple(mismatched),
+    )
+
+
+# ---------------------------------------------------------------------------
+# The combined five-conjunct promotion decision
 # ---------------------------------------------------------------------------
 
 
@@ -162,8 +301,12 @@ class PromotionResult(NamedTuple):
     floor_met: bool
     no_critical_regression: bool
     evaluator_hash_unchanged: bool
+    minimum_evidence_met: bool
+    provenance_homogeneous: bool
     confirmed_regression_case_ids: tuple[str, ...]
     mismatched_escalation_case_ids: tuple[str, ...]
+    insufficient_evidence_case_ids: tuple[str, ...]
+    provenance_mismatched_case_ids: tuple[str, ...]
     evaluator_hash_check: evaluator_hash.DriftCheckResult
 
 
@@ -172,9 +315,14 @@ def _build_promotion_reason(
     regression: RegressionCheckResult,
     hash_ok: bool,
     hash_check: evaluator_hash.DriftCheckResult,
+    evidence: EvidenceCheckResult,
+    provenance: ProvenanceCheckResult,
 ) -> str:
-    if floor_ok and regression.no_critical_regression and hash_ok:
-        return "PROMOTE: all three conjuncts satisfied (floor met, no critical regression, evaluator hash unchanged)."
+    if floor_ok and regression.no_critical_regression and hash_ok and evidence.sufficient and provenance.homogeneous:
+        return (
+            "PROMOTE: all conjuncts satisfied (floor met, no critical regression, evaluator hash "
+            "unchanged, minimum evidence met, provenance homogeneous)."
+        )
 
     failures: list[str] = []
     if not floor_ok:
@@ -191,6 +339,16 @@ def _build_promotion_reason(
             )
     if not hash_ok:
         failures.append("evaluator hash drifted: " + hash_check.reason)
+    if not evidence.sufficient:
+        failures.append(
+            f"insufficient evidence (case(s) below k={policy.MIN_ESCALATED_K} in at least one arm): "
+            + ", ".join(evidence.insufficient_evidence_case_ids)
+        )
+    if not provenance.homogeneous:
+        failures.append(
+            "provenance mismatch (case(s) with non-uniform or unknown trial provenance across arms): "
+            + ", ".join(provenance.mismatched_case_ids)
+        )
 
     return "REJECT: " + "; ".join(failures)
 
@@ -201,9 +359,11 @@ def evaluate_promotion(
     evaluator_hash_check: evaluator_hash.DriftCheckResult,
     *,
     known_arm_agnostic_case_ids: frozenset[str] = frozenset(),
+    known_compatible_provenance_case_ids: frozenset[str] = frozenset(),
 ) -> PromotionResult:
-    """Combine all three of `plan-035`'s promotion-rule conjuncts into one
-    promote/reject decision:
+    """Combine `plan-035`'s three original promotion-rule conjuncts, plus
+    `T510`'s two hardening preconditions (T509 design, Options A + C), into
+    one promote/reject decision:
 
     1. "improvement > regression" -> `policy.floor_met(control_trials,
        treatment_trials)` is `True`.
@@ -213,8 +373,24 @@ def evaluate_promotion(
        and mismatched-escalation resolutions).
     3. "evaluator hash unchanged" -> `evaluator_hash_check.any_drift` is
        `False`.
+    4. **[T510, Option A]** "minimum evidence met" ->
+       `check_minimum_evidence(...)` reports `sufficient=True` -- every
+       `case_id` present reached `policy.MIN_ESCALATED_K` in both arms.
+       Evaluated as its own precondition, not nested inside `floor_met` or
+       `check_no_critical_regression` (both of which keep their own
+       internal logic unchanged): if any case has insufficient evidence,
+       `promote` is `False` regardless of what the other four conjuncts
+       would otherwise return.
+    5. **[T510, Option C]** "provenance homogeneous" ->
+       `check_provenance_homogeneity(...)` reports `homogeneous=True` --
+       every `case_id` present has a single, known provenance shared across
+       both arms. Implemented once (`check_provenance_homogeneity`) and its
+       result gates this overall decision directly, protecting both the
+       improvement conjunct (1) and the regression conjunct (2) from a
+       provenance-confounded comparison without duplicating the
+       grouping/comparison logic.
 
-    All three conjuncts AND together.
+    All five conjuncts AND together.
 
     `control_trials`/`treatment_trials` are plain `TrialRecord` lists --
     this function embeds no live-dispatch call of any kind. How those
@@ -233,9 +409,21 @@ def evaluate_promotion(
         control_trials, treatment_trials, known_arm_agnostic_case_ids=known_arm_agnostic_case_ids
     )
     hash_ok = not evaluator_hash_check.any_drift
+    evidence = check_minimum_evidence(control_trials, treatment_trials)
+    provenance = check_provenance_homogeneity(
+        control_trials,
+        treatment_trials,
+        known_compatible_provenance_case_ids=known_compatible_provenance_case_ids,
+    )
 
-    promote = floor_ok and regression.no_critical_regression and hash_ok
-    reason = _build_promotion_reason(floor_ok, regression, hash_ok, evaluator_hash_check)
+    promote = (
+        floor_ok
+        and regression.no_critical_regression
+        and hash_ok
+        and evidence.sufficient
+        and provenance.homogeneous
+    )
+    reason = _build_promotion_reason(floor_ok, regression, hash_ok, evaluator_hash_check, evidence, provenance)
 
     return PromotionResult(
         promote=promote,
@@ -243,8 +431,12 @@ def evaluate_promotion(
         floor_met=floor_ok,
         no_critical_regression=regression.no_critical_regression,
         evaluator_hash_unchanged=hash_ok,
+        minimum_evidence_met=evidence.sufficient,
+        provenance_homogeneous=provenance.homogeneous,
         confirmed_regression_case_ids=regression.confirmed_regression_case_ids,
         mismatched_escalation_case_ids=regression.mismatched_escalation_case_ids,
+        insufficient_evidence_case_ids=evidence.insufficient_evidence_case_ids,
+        provenance_mismatched_case_ids=provenance.mismatched_case_ids,
         evaluator_hash_check=evaluator_hash_check,
     )
 

@@ -1,18 +1,27 @@
 """Tests for `implementation/runtime/golden_harness/promotion.py` (T504,
-Piece 2) -- the promotion-rule glue code and the `apply_proposal_to_scratch`
-helper.
+Piece 2; hardened by T510) -- the promotion-rule glue code and the
+`apply_proposal_to_scratch` helper.
 
-Three required categories per `docs/tasks/task-T504.md`'s "Expected
-outputs" #6:
+Categories per `docs/tasks/task-T504.md`'s "Expected outputs" #6, plus
+`docs/tasks/task-T510.md`'s hardening additions:
 
 1. `TestEvaluatePromotionThreeConjuncts` -- a real promotion-rule test using
-   constructed `TrialRecord`s exercising all three conjuncts independently
-   (each one failing alone rejects; all three passing promotes).
+   constructed `TrialRecord`s exercising the original three conjuncts
+   independently (each one failing alone rejects; all three passing, with
+   the T510 gates also satisfied, promotes).
 2. `TestCheckNoCriticalRegression` -- exercises conjunct 2's own per-case
    mapping directly, including the documented judgment-call override and the
    mismatched-escalation fail-safe case.
 3. `TestApplyProposalToScratch` -- a real, behavioral before/after-snapshot
    test proving the helper never writes to the real tracked target file.
+4. `TestCheckMinimumEvidence` -- T510 Option A, the per-case minimum-evidence
+   gate, including the T507-real-numbers regression test and the
+   per-case-not-pooled proof test.
+5. `TestCheckProvenanceHomogeneity` -- T510 Option C, the shared
+   provenance-homogeneity pre-check, including the T507-real-pattern
+   regression test.
+6. `TestEvaluatePromotionT510EndToEnd` -- both new preconditions combined
+   against T507's full real dataset.
 
 No live agent session is invoked anywhere in this file.
 """
@@ -27,12 +36,15 @@ from pathlib import Path
 from implementation.runtime import meta_improver as mi
 from implementation.runtime.golden_harness import evaluator_hash as eh
 from implementation.runtime.golden_harness import policy, promotion
-from implementation.runtime.golden_harness.schema import TrialRecord
+from implementation.runtime.golden_harness.schema import PROVENANCE_FRESH, PROVENANCE_REUSED, TrialRecord
 from tests._helpers.repo import repo_root
 
 
-def _trial(case_id, arm, k, result, cause=None) -> TrialRecord:
-    return TrialRecord(case_id=case_id, arm=arm, k_index=k, result=result, diagnosed_cause=cause)
+def _trial(case_id, arm, k, result, cause=None, provenance=None) -> TrialRecord:
+    kwargs = dict(case_id=case_id, arm=arm, k_index=k, result=result, diagnosed_cause=cause)
+    if provenance is not None:
+        kwargs["provenance"] = provenance
+    return TrialRecord(**kwargs)
 
 
 def _no_drift_hash_check() -> eh.DriftCheckResult:
@@ -67,8 +79,19 @@ class TestEvaluatePromotionThreeConjuncts(unittest.TestCase):
     failure reflected in both the structured result and the reason string."""
 
     def _floor_met_trials(self):
-        control = [_trial("case-a", "control", k, True) for k in (1, 2)]
-        treatment = [_trial("case-a", "treatment", k, True) for k in (1, 2)]
+        # T510 note: bumped from k=(1,2) to k=(1,2,3) with an explicit,
+        # homogeneous "fresh" provenance on every trial. This is the one
+        # pre-existing fixture in this file that genuinely needed updating:
+        # the new minimum-evidence gate (Option A) requires both arms to
+        # reach policy.MIN_ESCALATED_K=3, and the new provenance-homogeneity
+        # gate (Option C) fails closed on the schema default ("unknown")
+        # that every other pre-existing trial in this file still uses. Every
+        # test below that reuses this helper only asserts fields/reason
+        # substrings unaffected by these two new gates *except*
+        # `test_all_three_conjuncts_satisfied_promotes`, which requires
+        # promote=True and so requires both new gates to actually pass.
+        control = [_trial("case-a", "control", k, True, provenance=PROVENANCE_FRESH) for k in (1, 2, 3)]
+        treatment = [_trial("case-a", "treatment", k, True, provenance=PROVENANCE_FRESH) for k in (1, 2, 3)]
         return control, treatment
 
     def test_all_three_conjuncts_satisfied_promotes(self):
@@ -78,6 +101,10 @@ class TestEvaluatePromotionThreeConjuncts(unittest.TestCase):
         self.assertTrue(result.floor_met)
         self.assertTrue(result.no_critical_regression)
         self.assertTrue(result.evaluator_hash_unchanged)
+        self.assertTrue(result.minimum_evidence_met)
+        self.assertTrue(result.provenance_homogeneous)
+        self.assertEqual(result.insufficient_evidence_case_ids, ())
+        self.assertEqual(result.provenance_mismatched_case_ids, ())
         self.assertTrue(result.reason.startswith("PROMOTE"))
 
     def test_floor_not_met_alone_rejects(self):
@@ -235,6 +262,243 @@ class TestCheckNoCriticalRegression(unittest.TestCase):
         self.assertFalse(result.no_critical_regression)
         self.assertEqual(result.confirmed_regression_case_ids, ("case-bad",))
         self.assertEqual(set(result.classified_case_ids), {"case-ok", "case-bad"})
+
+
+# ---------------------------------------------------------------------------
+# T510 (T509 design, Options A + C): promotion hardening
+# ---------------------------------------------------------------------------
+
+# T507's real 3 cases (`t507-closed-loop-cycle-v1.md` §3.3): the two open
+# golden-suite cases plus the aliased held-out case actually used
+# (`HO-2` -- `HO-1` was substituted out per §3.4's disclosed structural
+# exclusion, unrelated to this task).
+_T507_CASE_CODE_REVIEW = "code-review-conditional-pass-conditions-gap"
+_T507_CASE_PREPARE_RELEASE = "prepare-release-conditional-pass-conditions-gap"
+_T507_CASE_HELD_OUT = "HO-2"
+
+
+def _t507_real_trials(*, with_provenance: bool):
+    """T507's real, disclosed trial data (`t507-closed-loop-cycle-v1.md`
+    §3.3's table), transcribed as literal `TrialRecord`s -- not paraphrased,
+    not synthetic. All three cases are k=1 per arm (no case ever escalated).
+
+    §3.3 / §2 step 3's real reuse-vs-fresh disclosure: the two open cases'
+    **control** trials are reused from `baseline-v6.17.0-retrieval.md`
+    (unaffected by T498's checker fix); every other trial (both open cases'
+    treatment, and both of HO-2's arms) is a fresh live dispatch from that
+    same session. When `with_provenance` is False, no `provenance` is set on
+    any trial (schema default "unknown"), isolating the evidence gate alone.
+    """
+    def control(case_id, result, provenance):
+        return _trial(case_id, "control", 1, result, provenance=provenance if with_provenance else None)
+
+    def treatment(case_id, result, provenance):
+        return _trial(case_id, "treatment", 1, result, provenance=provenance if with_provenance else None)
+
+    control_trials = [
+        control(_T507_CASE_CODE_REVIEW, True, PROVENANCE_REUSED),
+        control(_T507_CASE_PREPARE_RELEASE, False, PROVENANCE_REUSED),
+        control(_T507_CASE_HELD_OUT, True, PROVENANCE_FRESH),
+    ]
+    treatment_trials = [
+        treatment(_T507_CASE_CODE_REVIEW, True, PROVENANCE_FRESH),
+        treatment(_T507_CASE_PREPARE_RELEASE, True, PROVENANCE_FRESH),
+        treatment(_T507_CASE_HELD_OUT, True, PROVENANCE_FRESH),
+    ]
+    return control_trials, treatment_trials
+
+
+class TestCheckMinimumEvidence(unittest.TestCase):
+    """T510 Option A: the per-case minimum-evidence gate."""
+
+    def test_t507_real_numbers_are_insufficient_evidence_on_every_case(self):
+        # `t507-closed-loop-cycle-v1.md` §3.3: 3 cases, k=1 per arm each --
+        # control pooled [True, False, True] (2/3), treatment pooled
+        # [True, True, True] (3/3). Reconstructed exactly, provenance
+        # deliberately unset here to isolate the evidence gate alone.
+        control, treatment = _t507_real_trials(with_provenance=False)
+        self.assertEqual([t.result for t in control], [True, False, True])
+        self.assertEqual([t.result for t in treatment], [True, True, True])
+
+        result = promotion.check_minimum_evidence(control, treatment)
+        self.assertFalse(result.sufficient)
+        # Sorted case-id order (matching check_minimum_evidence's own
+        # `sorted(by_case)` iteration): "HO-2" sorts before the two
+        # lowercase-leading case ids under plain ASCII/str ordering.
+        self.assertEqual(
+            result.insufficient_evidence_case_ids,
+            (_T507_CASE_HELD_OUT, _T507_CASE_CODE_REVIEW, _T507_CASE_PREPARE_RELEASE),
+        )
+
+    def test_t507_real_numbers_reject_promotion_via_evaluate_promotion(self):
+        # The brief's item 8: assert evaluate_promotion() itself now returns
+        # promote=False with a reason naming the insufficient-evidence
+        # cases, not just the standalone check function.
+        control, treatment = _t507_real_trials(with_provenance=False)
+        result = promotion.evaluate_promotion(control, treatment, _no_drift_hash_check())
+        self.assertFalse(result.promote)
+        self.assertFalse(result.minimum_evidence_met)
+        self.assertEqual(
+            set(result.insufficient_evidence_case_ids),
+            {_T507_CASE_CODE_REVIEW, _T507_CASE_PREPARE_RELEASE, _T507_CASE_HELD_OUT},
+        )
+        self.assertIn("insufficient evidence", result.reason)
+        for case_id in (_T507_CASE_CODE_REVIEW, _T507_CASE_PREPARE_RELEASE, _T507_CASE_HELD_OUT):
+            self.assertIn(case_id, result.reason)
+
+    def test_gate_is_per_case_not_a_pooled_trial_count(self):
+        # Directly encodes the design's §1.2 finding: a synthetic case set
+        # with exactly 3 pooled trials per arm, spread across 3 *different*
+        # cases at k=1 each, satisfies a naive `len(trials) >=
+        # MIN_ESCALATED_K` pooled check -- but every individual case has
+        # zero replication, so the real, per-case gate must still report
+        # sufficient=False. A future refactor that silently regresses to
+        # the pooled form would fail this test.
+        control = [
+            _trial("synth-case-1", "control", 1, True),
+            _trial("synth-case-2", "control", 1, True),
+            _trial("synth-case-3", "control", 1, False),
+        ]
+        treatment = [
+            _trial("synth-case-1", "treatment", 1, True),
+            _trial("synth-case-2", "treatment", 1, True),
+            _trial("synth-case-3", "treatment", 1, True),
+        ]
+        # The naive, pooled-count implementation this test guards against:
+        self.assertEqual(len(control), policy.MIN_ESCALATED_K)
+        self.assertEqual(len(treatment), policy.MIN_ESCALATED_K)
+        self.assertTrue(len(control) >= policy.MIN_ESCALATED_K and len(treatment) >= policy.MIN_ESCALATED_K)
+
+        result = promotion.check_minimum_evidence(control, treatment)
+        self.assertFalse(result.sufficient)
+        self.assertEqual(
+            result.insufficient_evidence_case_ids, ("synth-case-1", "synth-case-2", "synth-case-3")
+        )
+
+    def test_case_with_both_arms_at_min_k_is_sufficient(self):
+        control = [_trial("case-a", "control", k, True) for k in (1, 2, 3)]
+        treatment = [_trial("case-a", "treatment", k, True) for k in (1, 2, 3)]
+        result = promotion.check_minimum_evidence(control, treatment)
+        self.assertTrue(result.sufficient)
+        self.assertEqual(result.insufficient_evidence_case_ids, ())
+
+    def test_case_with_only_one_arm_at_min_k_is_insufficient(self):
+        control = [_trial("case-a", "control", k, True) for k in (1, 2, 3)]
+        treatment = [_trial("case-a", "treatment", 1, True)]
+        result = promotion.check_minimum_evidence(control, treatment)
+        self.assertFalse(result.sufficient)
+        self.assertEqual(result.insufficient_evidence_case_ids, ("case-a",))
+
+    def test_multiple_cases_mixed_sufficiency_reported_independently(self):
+        control = (
+            [_trial("case-ok", "control", k, True) for k in (1, 2, 3)]
+            + [_trial("case-thin", "control", 1, True)]
+        )
+        treatment = (
+            [_trial("case-ok", "treatment", k, True) for k in (1, 2, 3)]
+            + [_trial("case-thin", "treatment", 1, True)]
+        )
+        result = promotion.check_minimum_evidence(control, treatment)
+        self.assertFalse(result.sufficient)
+        self.assertEqual(result.insufficient_evidence_case_ids, ("case-thin",))
+
+
+class TestCheckProvenanceHomogeneity(unittest.TestCase):
+    """T510 Option C: the shared provenance-homogeneity pre-check."""
+
+    def test_t507_real_provenance_pattern_flags_exactly_the_two_mixed_cases(self):
+        # `t507-closed-loop-cycle-v1.md` §3.3 / §2 step 3: the two open
+        # cases (code-review, prepare-release) mix reused control / fresh
+        # treatment; the held-out case (HO-2) is fresh/fresh throughout.
+        control, treatment = _t507_real_trials(with_provenance=True)
+        result = promotion.check_provenance_homogeneity(control, treatment)
+        self.assertFalse(result.homogeneous)
+        self.assertEqual(
+            result.mismatched_case_ids, (_T507_CASE_CODE_REVIEW, _T507_CASE_PREPARE_RELEASE)
+        )
+        self.assertNotIn(_T507_CASE_HELD_OUT, result.mismatched_case_ids)
+
+    def test_uniform_known_provenance_across_arms_is_homogeneous(self):
+        control = [_trial("case-a", "control", 1, True, provenance=PROVENANCE_FRESH)]
+        treatment = [_trial("case-a", "treatment", 1, True, provenance=PROVENANCE_FRESH)]
+        result = promotion.check_provenance_homogeneity(control, treatment)
+        self.assertTrue(result.homogeneous)
+        self.assertEqual(result.mismatched_case_ids, ())
+
+    def test_uniform_reused_provenance_across_arms_is_also_homogeneous(self):
+        control = [_trial("case-a", "control", 1, True, provenance=PROVENANCE_REUSED)]
+        treatment = [_trial("case-a", "treatment", 1, True, provenance=PROVENANCE_REUSED)]
+        result = promotion.check_provenance_homogeneity(control, treatment)
+        self.assertTrue(result.homogeneous)
+
+    def test_unset_provenance_fails_closed_as_unknown(self):
+        # Neither trial sets provenance -- the schema default "unknown"
+        # applies to both. Fail-closed: "unknown" is never compatible, even
+        # when both arms agree on it.
+        control = [_trial("case-a", "control", 1, True)]
+        treatment = [_trial("case-a", "treatment", 1, True)]
+        result = promotion.check_provenance_homogeneity(control, treatment)
+        self.assertFalse(result.homogeneous)
+        self.assertEqual(result.mismatched_case_ids, ("case-a",))
+
+    def test_known_compatible_override_excuses_the_case(self):
+        control, treatment = _t507_real_trials(with_provenance=True)
+        result = promotion.check_provenance_homogeneity(
+            control,
+            treatment,
+            known_compatible_provenance_case_ids=frozenset(
+                {_T507_CASE_CODE_REVIEW, _T507_CASE_PREPARE_RELEASE}
+            ),
+        )
+        self.assertTrue(result.homogeneous)
+        self.assertEqual(result.mismatched_case_ids, ())
+
+    def test_override_is_per_case_not_global(self):
+        control, treatment = _t507_real_trials(with_provenance=True)
+        result = promotion.check_provenance_homogeneity(
+            control, treatment, known_compatible_provenance_case_ids=frozenset({_T507_CASE_CODE_REVIEW})
+        )
+        self.assertFalse(result.homogeneous)
+        self.assertEqual(result.mismatched_case_ids, (_T507_CASE_PREPARE_RELEASE,))
+
+
+class TestEvaluatePromotionT510EndToEnd(unittest.TestCase):
+    """The brief's item 11: both new preconditions combined against T507's
+    full real dataset, literal `TrialRecord` fixtures, confirming
+    `evaluate_promotion()` now returns `promote=False` with both the
+    insufficient-evidence and provenance-mismatch reasons present."""
+
+    def test_t507_full_real_dataset_now_rejects_on_both_new_gates(self):
+        control, treatment = _t507_real_trials(with_provenance=True)
+
+        # Sanity check this really is T507's real, reported aggregate
+        # (`t507-closed-loop-cycle-v1.md` §3.6: "control 2/3 (66.7%),
+        # treatment 3/3 (100%)") before asserting the hardened outcome.
+        self.assertAlmostEqual(policy.pass_rate(control), 2 / 3)
+        self.assertAlmostEqual(policy.pass_rate(treatment), 1.0)
+        self.assertTrue(policy.floor_met(control, treatment))
+
+        result = promotion.evaluate_promotion(control, treatment, _no_drift_hash_check())
+
+        self.assertFalse(result.promote)
+        # The original three conjuncts are exactly as T507 actually reported
+        # them (§3.6) -- this hardening does not change their own logic.
+        self.assertTrue(result.floor_met)
+        self.assertTrue(result.no_critical_regression)
+        self.assertTrue(result.evaluator_hash_unchanged)
+        # The two new T510 gates are what now block this real promotion.
+        self.assertFalse(result.minimum_evidence_met)
+        self.assertFalse(result.provenance_homogeneous)
+        self.assertEqual(
+            set(result.insufficient_evidence_case_ids),
+            {_T507_CASE_CODE_REVIEW, _T507_CASE_PREPARE_RELEASE, _T507_CASE_HELD_OUT},
+        )
+        self.assertEqual(
+            result.provenance_mismatched_case_ids, (_T507_CASE_CODE_REVIEW, _T507_CASE_PREPARE_RELEASE)
+        )
+        self.assertIn("insufficient evidence", result.reason)
+        self.assertIn("provenance mismatch", result.reason)
+        self.assertTrue(result.reason.startswith("REJECT"))
 
 
 class TestApplyProposalToScratch(unittest.TestCase):

@@ -45,6 +45,53 @@ class TestTrialRecordSchema(unittest.TestCase):
         record = TrialRecord(case_id="case-a", arm="control", k_index=1, result=True)
         self.assertEqual(validate_trial_record(record), [])
 
+    def test_provenance_defaults_to_unknown_on_construction(self):
+        record = TrialRecord(case_id="case-a", arm="control", k_index=1, result=True)
+        self.assertEqual(record.provenance, "unknown")
+        self.assertEqual(validate_trial_record(record), [])
+
+    def test_from_dict_defaults_provenance_to_unknown_when_key_absent(self):
+        # T510 backward-compatibility hard requirement: every already-
+        # persisted TrialRecord predates the `provenance` field entirely --
+        # its serialized dict simply has no "provenance" key at all. Must
+        # deserialize without error, and must not be silently mis-tagged as
+        # "fresh" or "reused".
+        legacy_dict = {
+            "trial_id": "case-a:control:1",
+            "case_id": "case-a",
+            "arm": "control",
+            "k_index": 1,
+            "result": True,
+            "category": None,
+            "diagnosed_cause": None,
+            "command": None,
+            "recorded_at": "2026-01-01T00:00:00Z",
+        }
+        self.assertNotIn("provenance", legacy_dict)
+        restored = TrialRecord.from_dict(legacy_dict)
+        self.assertEqual(restored.provenance, "unknown")
+
+    def test_from_dict_defaults_provenance_to_unknown_when_value_is_none(self):
+        legacy_dict = {
+            "case_id": "case-a", "arm": "control", "k_index": 1, "result": True, "provenance": None,
+        }
+        restored = TrialRecord.from_dict(legacy_dict)
+        self.assertEqual(restored.provenance, "unknown")
+
+    def test_round_trips_a_record_with_explicit_provenance(self):
+        record = TrialRecord(
+            case_id="case-a", arm="treatment", k_index=1, result=True,
+            provenance="fresh", recorded_at="2026-09-19T00:00:00Z",
+        )
+        restored = TrialRecord.from_dict(record.to_dict())
+        self.assertEqual(record, restored)
+        self.assertEqual(restored.provenance, "fresh")
+
+    def test_validate_rejects_unknown_provenance_value(self):
+        record = TrialRecord(case_id="case-a", arm="control", k_index=1, result=True, provenance="stale")
+        errors = validate_trial_record(record)
+        self.assertTrue(any("provenance" in e for e in errors))
+
 
 class TestTrialStore(unittest.TestCase):
     def setUp(self):
