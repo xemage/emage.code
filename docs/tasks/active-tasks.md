@@ -2,8 +2,15 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T508 | Fix `plan-035`'s stale per-phase status headers | technical-writer | pending | P1 | none | 2026-09-18 |
 
-> **0 active rows. `T507` closed 2026-09-18 — see `completed-tasks.md` for the full closure
+> **T508 dispatched 2026-09-18** per `docs/plans/plan-060-v7-release-readiness-and-closure.md` §6,
+> after `T507`'s real outcome (below) became known, per that plan's own §7 sequencing rationale.
+> Owner `Technical Writer` has no `execute`/Bash tool access (the same known friction as `T506`'s
+> own dispatch) — the top-level session performs the commit/push/MR-open steps on its behalf once
+> the document content is independently reviewed.
+
+> **0 active rows besides T508 above. `T507` closed 2026-09-18 — see `completed-tasks.md` for the full closure
 > record.** A real, non-hand-built cycle ran end to end and produced a real MR (!346), satisfying
 > Phase 6's literal AC1. But the top-level session's independent review found two further, real
 > reasons that MR was correctly left unmerged, beyond the implementer's own disclosed causal
