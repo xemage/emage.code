@@ -24,7 +24,11 @@ Release type: {{input}}
 6. **Manage version artifacts**:
    - Update version in all relevant config files
    - Tag all current artifacts with release version
-   - Create a release checkpoint: `docs/checkpoints/checkpoint-release-v<version>.md`
+   - Create a release checkpoint: `docs/checkpoints/checkpoint-release-v<version>.md`, based on
+     `docs/checkpoints/_template.md` (including its `## Maturity distribution` section — regenerate
+     `implementation/registry/summary.md` via `implementation/scripts/generate-registry.py --root
+     implementation` first if stale, then populate the table's category × maturity-level counts
+     from the regenerated registry, not from a prior release's numbers)
    - Archive completed tasks from `active-tasks.md` to `completed-tasks.md`
 
 ## Release Gate Verdict
@@ -51,3 +55,9 @@ Release type: {{input}}
 9. If CONDITIONAL_PASS, list conditions that must be met before deployment
 
 Ensure all quality gates are met before proceeding.
+
+## Rails
+
+**Inputs**: The release type (`{{input}}`: major/minor/patch) and `docs/tasks/completed-tasks.md` since the last release.
+**Out of scope**: Tagging or announcing a release while any quality gate (code-review, security-audit, test-coverage) has failed.
+**Failure mode**: If a quality gate has failed or a blocker is open, the VERDICT is `FAIL` (or `CONDITIONAL_PASS` with listed conditions) rather than a silent `PASS`.

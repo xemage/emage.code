@@ -5,6 +5,22 @@ description: "Define test strategies, create test plans, select testing framewor
 
 # Testing Strategy
 
+## Rails
+**Inputs**: A new project's testing approach to define, a test framework to
+select/configure, a feature or release test plan to create, or coverage
+targets/quality gates to establish — per the "When to Use" list below.
+
+**Out of scope**: Does not execute tests or produce the QA gate verdict
+itself — the agent executing the QA gate runs the strategy this skill
+defines and emits the actual `PASS`/`CONDITIONAL_PASS`/`FAIL` verdict
+against it. This skill defines the plan and thresholds a gate is judged
+against, not the judgment.
+
+**Failure mode**: A QA gate `FAIL` per the Coverage Thresholds table halts
+the pipeline until defects are fixed and tests re-run; a threshold override
+made without a recorded Tech Lead decision artifact is not a valid override
+per this skill's own "Important" note.
+
 Skill for creating comprehensive testing strategies and test plans for software projects.
 
 ## When to Use
