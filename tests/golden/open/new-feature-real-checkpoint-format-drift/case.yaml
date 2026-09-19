@@ -1,0 +1,13 @@
+id: new-feature-real-checkpoint-format-drift
+command: /new-feature
+status: known_failing
+known_failing_category: tracked_defect
+known_failing_reason: >-
+  new-feature.md Phase 3 step 7 requires a "[CHECKPOINT] id=feature-<slug> | done=[...] |
+  in_flight=[...] | blocked=[...] | artifact_refs=[...] | next=[...]" line. Real fixture
+  docs/checkpoints/checkpoint-017-t417-harbor-oracle-smoke-complete.md (this repo's most recent
+  checkpoint at authoring time) uses the full-markdown checkpoint convention (## Summary,
+  ## Completed tasks, ## Token usage, etc.) with no such single-line marker anywhere. Corpus
+  survey: grep -rn "^\[CHECKPOINT\] id=" docs/checkpoints/*.md returns zero matches across every
+  real checkpoint in this repo.
+tags: [new-feature, checkpoint, real-artifact, format-drift]

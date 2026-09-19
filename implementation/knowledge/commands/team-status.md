@@ -2,6 +2,7 @@
 description: "Report team-wide status across active streams with blockers, workload, and next actions."
 agent: "orchestrator"
 argument-hint: "Optional scope: project-id, stream, or portfolio"
+maturity: experimental
 ---
 
 Generate a `team-status` report.
@@ -106,6 +107,12 @@ Output format:
 ### Portfolio Dependencies
 - [shared dependency] [impacted streams] [priority]
 ```
+
+## Rails
+
+**Inputs**: `docs/tasks/active-tasks.md`/`completed-tasks.md`, checkpoint history, and an optional scope (project/stream/portfolio) (`{{input}}`).
+**Out of scope**: Modifying any task, checkpoint, or blocker record — reporting only.
+**Failure mode**: If `TEAM_STATUS_V1_ENABLED` is not enabled, returns rollout state and enablement steps only, rather than a partial or fabricated status report.
 
 Scope:
 {{input}}

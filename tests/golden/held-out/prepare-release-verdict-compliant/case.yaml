@@ -1,0 +1,4 @@
+id: prepare-release-verdict-compliant
+command: /prepare-release
+status: expected_pass
+tags: [prepare-release, verdict, hand-authored]

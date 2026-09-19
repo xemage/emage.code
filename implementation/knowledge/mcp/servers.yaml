@@ -60,10 +60,51 @@ servers:
     transport: remote
     url: "https://mcp.context7.com/mcp"
 
+  hindsight:
+    tags: [core]
+    transport: remote
+    url: { fromEnv: HINDSIGHT_MCP_URL }
+
+  cwso:
+    tags: [extended]
+    transport: remote
+    url: { fromEnv: CWSO_MCP_URL }
+    headers:
+      Authorization: { fromEnv: CWSO_BEARER_TOKEN, secret: true, wrap: "Bearer {VAR}" }
+      Origin: { fromEnv: CWSO_ORIGIN }
+
   hf-mcp-server:
     tags: [extended]
     transport: remote
     url: "https://huggingface.co/mcp?login"
+
+  context-retriever:
+    # T495 -- dedicated single-tool server wrapping ContextRetriever.query(), per
+    # docs/artifacts/scoped-execution-primitive-v1.md §1.4. `extended`, not `core`: this is
+    # narrowly-scoped infrastructure for one specific subagent (@context-retriever), not a
+    # general-purpose server every platform profile needs unconditionally -- disclosed and
+    # reasoned in the T495 MR description, mirroring how `hindsight`'s memory-layer access
+    # is scoped similarly narrow in intent even though it happens to be tagged `core` today.
+    # `--platform-root .claude` is a disclosed, Claude-Code-specific default today (per
+    # scoped-execution-primitive-v1.md §4's own honest per-platform scoping) -- other
+    # platforms' `.generated-manifest.json` resolution is not solved by this entry.
+    tags: [extended]
+    transport: stdio
+    command: python3
+    args: ["-m", "implementation.runtime.memory.context_retriever_mcp_server", "--index-dir", "implementation/runtime/memory/_index/em-age-emage.code", "--workspace-root", ".", "--platform-root", ".claude"]
+
+  security-audit:
+    # T497 -- fixed-command audit-command server for @security-engineer, per
+    # docs/artifacts/security-engineer-audit-server-design-v1.md (T496) §3. `extended`,
+    # not `core`: opt-in, role-specific infrastructure (only @security-engineer is ever
+    # granted its tools), same reasoning class as `filesystem`/`git`/`docker`. No `env:`
+    # block: every one of its four tools (run_npm_audit, run_pip_audit,
+    # run_dotnet_list_vulnerable, grep_content) is a local CLI subprocess call against the
+    # calling agent's own workspace -- no network call, no API key.
+    tags: [extended]
+    transport: stdio
+    command: python3
+    args: ["-m", "implementation.runtime.security.audit_server"]
 
   filesystem:
     tags: [extended]

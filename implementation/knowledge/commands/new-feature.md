@@ -2,6 +2,7 @@
 description: "Plan and create a new feature including user story, tasks, and implementation plan."
 agent: "orchestrator"
 argument-hint: "Describe the feature you want to add..."
+maturity: experimental
 ---
 
 I want to add a new feature to the project. Please:
@@ -32,6 +33,12 @@ I want to add a new feature to the project. Please:
    - Format: `<artifact-name>-v<major>.<minor>.md`
    - Store in `docs/artifacts/`
 9. Update `docs/tasks/active-tasks.md` with new tasks and state transitions
+
+## Rails
+
+**Inputs**: A free-text feature description (`{{input}}`).
+**Out of scope**: Proceeding to execution before the Phase 1 plan has been presented and explicitly approved by the user.
+**Failure mode**: If the Solution Architect's technical-impact assessment surfaces a blocker, reports it rather than proceeding to Phase 2 assignment.
 
 Feature description:
 

@@ -2,6 +2,7 @@
 description: "Review MCP Memory entries, prune stale items, and promote valuable items to AGENTS.md or project docs. Use periodically to keep memory clean and relevant."
 agent: "orchestrator"
 argument-hint: "Optional: focus area or category to consolidate..."
+maturity: experimental
 ---
 
 You are in **Memory Consolidation mode**. Review, organize, and clean up MCP Memory entries to keep the project knowledge base accurate and lean.
@@ -30,6 +31,12 @@ You are in **Memory Consolidation mode**. Review, organize, and clean up MCP Mem
 - Never delete a memory entry without explicit user approval.
 - When promoting to `AGENTS.md`, place the content in the most relevant section and format it consistently with existing entries.
 - If you find contradictory memories, flag them for user resolution rather than choosing one silently.
+
+## Rails
+
+**Inputs**: The current MCP Memory entries and an optional focus area/category (`{{input}}`).
+**Out of scope**: Deleting or promoting any memory entry without explicit user approval of the presented recommendation table.
+**Failure mode**: If two memories contradict each other, flags them for user resolution rather than silently choosing one.
 
 ## Focus Area
 

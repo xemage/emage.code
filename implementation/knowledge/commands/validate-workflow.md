@@ -2,6 +2,7 @@
 description: "Validate the multi-agent workflow using scenario-based tests, handoff checks, and command regression checks."
 agent: "orchestrator"
 argument-hint: "Optional scope override (small|medium|complex|all)"
+maturity: experimental
 ---
 
 Run a workflow validation pass for the AI development team configuration.
@@ -64,6 +65,12 @@ If FAIL, the remediation backlog must include:
 - Owner
 - Estimated fix effort
 - Blocked workflows
+
+## Rails
+
+**Inputs**: The scenario scope (`small`/`medium`/`complex`/`all`, from `{{input}}`) and the current agent/command/handoff configuration.
+**Out of scope**: Modifying any agent, command, or handoff file — this command only reports pass/conditional_pass/fail per scenario.
+**Failure mode**: If any gate is unreachable, doesn't produce a VERDICT, doesn't block on FAIL, or lacks an escalation path, the overall VERDICT is FAIL with that gate named in the remediation backlog.
 
 Scope override:
 {{input}}

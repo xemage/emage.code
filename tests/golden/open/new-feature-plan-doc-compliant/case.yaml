@@ -1,0 +1,4 @@
+id: new-feature-plan-doc-compliant
+command: /new-feature
+status: expected_pass
+tags: [new-feature, plan-doc, hand-authored]

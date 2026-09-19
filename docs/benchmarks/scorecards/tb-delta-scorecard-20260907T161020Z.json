@@ -1,0 +1,133 @@
+{
+  "schema_version": "tb-delta-scorecard-v1",
+  "schema_note": "Self-documented interim schema (T419/T408), defined ahead of scripts/scorecard.py (T413, Layer 1, not yet built at authoring time). A reconciliation pass against T413's shape is expected once it lands -- flagged as type: dependency, severity: minor in T419's completion report, not silently absorbed. Fields: per-arm results (arms.A / arms.B), k, model, dataset subset reference (subset_ref + subset_frozen_at), delta, spread, cost/time (elapsed_seconds_per_trial / cost_usd_total per arm), timestamp (generated_at).",
+  "generated_at": "2026-09-07T16:24:55.563565+00:00",
+  "runner": "scripts/tb-delta.sh",
+  "dataset": "terminal-bench/terminal-bench-2",
+  "subset_ref": "docs/benchmarks/tb-subset.json",
+  "subset_frozen_at": "2026-08-13",
+  "k": 1,
+  "model": {
+    "name": "claude-haiku-4-5-20251001",
+    "tier": "economy"
+  },
+  "arms": {
+    "A": {
+      "agent": "claude-code",
+      "job_dir": "/root/emage-code-t407/jobs/tb-delta-20260907T161020Z-arm-A",
+      "job_summary_stats": {
+        "n_completed_trials": 2,
+        "n_errored_trials": 0,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+          "claude-code__claude-haiku-4-5-20251001__terminal-bench/terminal-bench-2": {
+            "n_trials": 2,
+            "n_errors": 0,
+            "metrics": [
+              {
+                "mean": 0.5
+              }
+            ],
+            "pass_at_k": {},
+            "reward_stats": {
+              "reward": {
+                "1.0": [
+                  "git-leak-recovery__TnSUxcM"
+                ],
+                "0.0": [
+                  "chess-best-move__HdC8vbn"
+                ]
+              }
+            },
+            "exception_stats": {}
+          }
+        },
+        "n_input_tokens": 186791,
+        "n_cache_tokens": 164039,
+        "n_output_tokens": 18920,
+        "cost_usd": 0.13942690000000002
+      },
+      "n_trials": 2,
+      "n_trials_with_reward": 2,
+      "errored_trials": [],
+      "rewards": [
+        0.0,
+        1.0
+      ],
+      "mean_reward": 0.5,
+      "stdev_reward": 0.5,
+      "elapsed_seconds_per_trial": [
+        271.681506,
+        111.131628
+      ],
+      "cost_usd_total": 0.13942690000000002
+    },
+    "B": {
+      "agent": "scripts.tb_delta_agent:EmageCodeClaudeCode",
+      "job_dir": "/root/emage-code-t407/jobs/tb-delta-20260907T161020Z-arm-B",
+      "job_summary_stats": {
+        "n_completed_trials": 2,
+        "n_errored_trials": 0,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+          "emage-code-claude-code__claude-haiku-4-5-20251001__terminal-bench/terminal-bench-2": {
+            "n_trials": 2,
+            "n_errors": 0,
+            "metrics": [
+              {
+                "mean": 0.5
+              }
+            ],
+            "pass_at_k": {},
+            "reward_stats": {
+              "reward": {
+                "1.0": [
+                  "git-leak-recovery__DjHPsp5"
+                ],
+                "0.0": [
+                  "chess-best-move__FGwPb7H"
+                ]
+              }
+            },
+            "exception_stats": {}
+          }
+        },
+        "n_input_tokens": 344622,
+        "n_cache_tokens": 301701,
+        "n_output_tokens": 18390,
+        "cost_usd": 0.17574835
+      },
+      "n_trials": 2,
+      "n_trials_with_reward": 2,
+      "errored_trials": [],
+      "rewards": [
+        0.0,
+        1.0
+      ],
+      "mean_reward": 0.5,
+      "stdev_reward": 0.5,
+      "elapsed_seconds_per_trial": [
+        207.528774,
+        147.184537
+      ],
+      "cost_usd_total": 0.17574835
+    }
+  },
+  "delta": {
+    "mean_reward_b_minus_a": 0.0,
+    "note": "score(B) - score(A) per plan-035 \u00a72.2.1. Positive = the emage.code projection improved outcomes on this run; negative = regressed; null/near-zero = no measurable effect at this k. See plan-035 \u00a72.4 Phase 1's registered null-delta interpretation block for how a null/negative result at full k>=3 scale (T407, not this task) should be read -- not applicable at this smoke test's k."
+  },
+  "spread": {
+    "arm_a_stdev": 0.5,
+    "arm_b_stdev": 0.5,
+    "note": "Population stdev of per-trial rewards within each arm. At k=1 (this smoke test) stdev is trivially 0.0 by definition, NOT a meaningful measurement of variance -- k>=3 per arm is required before a spread value should be treated as signal, per plan-035 \u00a72.2.1 discipline 1 ('Variance')."
+  },
+  "max_budget_seconds": 5400,
+  "run_artifacts_dir": "/root/emage-code-t407/docs/benchmarks/scorecards/.runs/20260907T161020Z"
+}

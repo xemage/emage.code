@@ -17,8 +17,8 @@ The implementation stream keeps the same roster while providing a schema-first r
 |-------|-------------|------|
 | `@backend-developer` | write | API endpoints, business logic, services |
 | `@frontend-developer` | write | UI components, pages, client-side logic |
-| `@database-engineer` | write | Schema, migrations, complex queries |
-| `@devops-engineer` | write | CI/CD, Docker, infra-as-code |
+| `@database-engineer` | write | Designs schemas, writes reversible migrations, and optimizes slow queries using EXPLAIN/ANALYZE and index strategy documents. |
+| `@devops-engineer` | write | Builds GitLab CI/CD pipelines, Dockerfiles, and infrastructure-as-code, and owns deployment automation from staging through production. |
 | `@solution-architect` | write (architecture only) | Architecture, ADRs, design docs |
 | `@tech-lead` | read-only during review | Code review, technical guidance |
 
@@ -43,18 +43,24 @@ The implementation stream keeps the same roster while providing a schema-first r
 
 | Agent | Role |
 |-------|------|
-| `@feasibility-agent` | Quick feasibility studies |
+| `@feasibility-agent` | Stress-tests critical assumptions early and produces a Red/Yellow/Green risk rating with a Go/No-Go recommendation before implementation effort is spent. |
 | `@technology-scout` | Evaluate APIs, SDKs, platforms |
-| `@integration-agent` | External system integration |
-| `@scaffolding-agent` | Project bootstrap |
-| `@data-mockup-agent` | Synthetic test data |
-| `@evaluation-agent` | PoC outcome assessment |
+| `@integration-agent` | Wires third-party APIs and SDKs into a PoC quickly, documenting required environment variables and failure-mode notes for each integration. |
+| `@scaffolding-agent` | Creates a minimal, runnable project skeleton with basic dependency setup, avoiding overengineering and non-essential tooling for a PoC timeline. |
+| `@data-mockup-agent` | Generates realistic, deterministic synthetic demo data (seed scripts, fixtures, example payloads) when real production data is unavailable or inappropriate. |
+| `@evaluation-agent` | Determines whether a PoC actually validated its hypothesis, tying its Validated/Invalidated/Inconclusive verdict directly to observable evidence. |
 | `@demo-agent` | Demo preparation & walkthroughs |
-| `@technical-debt-narrator` | Debt scorecards |
-| `@poc-devops-engineer` | PoC infra (lighter than production) |
-| `@poc-qa-engineer` | PoC happy-path testing |
-| `@poc-security-engineer` | PoC threat modelling |
-| `@poc-technical-writer` | PoC documentation |
+| `@technical-debt-narrator` | Documents every PoC shortcut in a Technical Debt Scorecard with severity, remediation effort, and ownership, so production teams inherit an explicit backlog. |
+| `@poc-devops-engineer` | Sets up the minimal local-first run loop (clone, configure, run within minutes) for a PoC, adding containerization only if it speeds up adoption. |
+| `@poc-qa-engineer` | Validates only the happy-path demo flow and core hypothesis checks for a PoC, explicitly skipping full regression suites and performance certification. |
+| `@poc-security-engineer` | Performs a pragmatic PoC security scan that flags obvious secrets exposure and injection/auth risks without blocking rapid hypothesis validation. |
+| `@poc-technical-writer` | Writes lean PoC documentation covering how to run the build, required environment variables, and known limitations for rapid handoff. |
+
+## Platform / Infrastructure
+
+| Agent | Role |
+|-------|------|
+| `@context-retriever` | Read-only knowledge-retrieval subagent that answers "find prior knowledge relevant to `<query>`" requests against the persistent memory vault's hybrid semantic+lexical+structural index, scoped to the calling session's own project and platform. |
 
 ## Permission boundaries
 

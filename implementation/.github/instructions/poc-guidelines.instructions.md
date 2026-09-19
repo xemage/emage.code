@@ -5,6 +5,24 @@ applyTo: "**"
 
 # PoC Guidelines
 
+## Rails
+**Inputs**: Triggers on `**` — applies whenever `poc-orchestrator` or a PoC
+specialist agent begins hypothesis-driven exploratory work, per
+`poc-orchestrator.md`'s Plan Phase, which restates the hypothesis before any
+task is created.
+
+**Out of scope**: Does not apply to production-track work — see
+`git-workflow.md` and `coding-standards.md` for that track's rules instead.
+Does not waive the Immutable Security Constraints in `security-guidelines.md`
+(no exposed secrets, no real PII in demos) merely because a workstream is
+time-boxed.
+
+**Failure mode**: A PoC that starts implementation without a documented
+hypothesis, or that is closed without a finalized Debt Scorecard, violates
+this instruction's own "Not Allowed" list; per the Debt Scorecard Rules, "No
+PoC task may be marked complete without a finalized scorecard" — an
+incomplete scorecard blocks the PoC's own completion, not merely a warning.
+
 ## Primary Goal
 Validate the target hypothesis quickly and clearly.
 

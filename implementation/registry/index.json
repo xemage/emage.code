@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-08-09T09:43:14+02:00",
+  "generatedAt": "2026-09-17T13:43:48+02:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -15,10 +15,38 @@
     {
       "id": "backend-developer",
       "category": "agent",
-      "name": "backend-developer",
+      "name": "Backend Developer",
       "path": "agents/backend-developer.md",
-      "checksum": "3ac52d2bd748a1678ab9ff789c56619670b00e5e85815b355fe2cc51813fbbba",
-      "maturity": "beta",
+      "checksum": "25ea7871a7937258a3bee73858ce963ea7c885b4c5beb46e6b812a669e8c9dfe",
+      "maturity": "experimental",
+      "compatibility": {
+        "supportedPlatforms": [
+          "claude-code",
+          "cline",
+          "cursor",
+          "gemini",
+          "github",
+          "opencode",
+          "pi"
+        ],
+        "projectionStatus": {
+          "claude-code": "pass",
+          "cline": "pass",
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass",
+          "pi": "pass"
+        }
+      }
+    },
+    {
+      "id": "context-retriever",
+      "category": "agent",
+      "name": "Context Retriever",
+      "path": "agents/context-retriever.md",
+      "checksum": "40e0236fd169e1935dff6912a0f8657f70c6b532c6c671e47629baad538e03e4",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -43,10 +71,10 @@
     {
       "id": "data-mockup-agent",
       "category": "agent",
-      "name": "data-mockup-agent",
+      "name": "Data Mockup Agent",
       "path": "agents/data-mockup-agent.md",
-      "checksum": "91ddd7462228dcac61db6a8f0d8bcfa1d367bf61f739cf1cf6fdb49c97780e11",
-      "maturity": "beta",
+      "checksum": "256c7cd6aa522e4ff97687eb87cf204a067a165688947d79c1f1e0dc5aa012e2",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -71,10 +99,10 @@
     {
       "id": "database-engineer",
       "category": "agent",
-      "name": "database-engineer",
+      "name": "Database Engineer",
       "path": "agents/database-engineer.md",
-      "checksum": "840189d996b55f9625f4678869a957e5086577dc3e0d43633f03551c26907e26",
-      "maturity": "beta",
+      "checksum": "996b540ded0413634bfd14bd6151e033da017699981a876349864b69c710702e",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -99,10 +127,10 @@
     {
       "id": "demo-agent",
       "category": "agent",
-      "name": "demo-agent",
+      "name": "Demo Agent",
       "path": "agents/demo-agent.md",
-      "checksum": "6e231363517f6c2b001472c324bbcb77ff917bbf106759e2fa9d9b193fcf8e91",
-      "maturity": "beta",
+      "checksum": "24ca67facb72e0a6b76f3cf7cf3405e6b1f8826eafb1658d873ba108714e5378",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -127,10 +155,10 @@
     {
       "id": "devops-engineer",
       "category": "agent",
-      "name": "devops-engineer",
+      "name": "DevOps Engineer",
       "path": "agents/devops-engineer.md",
-      "checksum": "4f0f1ade122288bbc73c5908d9847ec0e90f04a58c5afd10b937413a1571bdae",
-      "maturity": "beta",
+      "checksum": "ea46b25db3a9f334b7403191bb85c7ff0a62111ef6d899206850f640fb1b6b4e",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -155,10 +183,10 @@
     {
       "id": "evaluation-agent",
       "category": "agent",
-      "name": "evaluation-agent",
+      "name": "Evaluation Agent",
       "path": "agents/evaluation-agent.md",
-      "checksum": "6cb3557519c829d4702ef863f351c6317cec3fe8dc40403d658afef0c6cb29a3",
-      "maturity": "beta",
+      "checksum": "15a02737f66631bea2c75999e2e428b845fade8965e068ef30974a50e5ccbf23",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -183,10 +211,10 @@
     {
       "id": "feasibility-agent",
       "category": "agent",
-      "name": "feasibility-agent",
+      "name": "Feasibility Agent",
       "path": "agents/feasibility-agent.md",
-      "checksum": "64376d1ab2da65f79677719eb5dc6af30e76ea5598728536e4e9f08f6c4ffe4c",
-      "maturity": "beta",
+      "checksum": "00935c9ebe2a312ae92573b6983e52374cff6c97680430ba051612ef413aa8c3",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -211,10 +239,10 @@
     {
       "id": "frontend-developer",
       "category": "agent",
-      "name": "frontend-developer",
+      "name": "Frontend Developer",
       "path": "agents/frontend-developer.md",
-      "checksum": "4ca290fdf93f1247f410740bdc9279c731ada2f9c02b7e0843aa161e6fe599e9",
-      "maturity": "beta",
+      "checksum": "ff37b9aac83d8284d12052270a9f442674875b18d014b8da08448c56fd31a547",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -239,10 +267,10 @@
     {
       "id": "integration-agent",
       "category": "agent",
-      "name": "integration-agent",
+      "name": "Integration Agent",
       "path": "agents/integration-agent.md",
-      "checksum": "c2c9a02c25025e5f036466d227f8a2381f86cff0c13eaa4cdeec20979df0dfaa",
-      "maturity": "beta",
+      "checksum": "7187aa4557aa564e757b984c1882801ff8b18d777f866addd21edd0c57621beb",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -267,10 +295,10 @@
     {
       "id": "orchestrator",
       "category": "agent",
-      "name": "orchestrator",
+      "name": "Orchestrator",
       "path": "agents/orchestrator.md",
-      "checksum": "6ea8d684738b497dca832bb1557f8ed57057c3224a48eaf392c475f5af62ed16",
-      "maturity": "beta",
+      "checksum": "8fcdd14123583d02965850dd7e150ded2270bdb0a8b149deb33bacbd71345dfc",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -295,10 +323,10 @@
     {
       "id": "poc-devops-engineer",
       "category": "agent",
-      "name": "poc-devops-engineer",
+      "name": "PoC DevOps Engineer",
       "path": "agents/poc-devops-engineer.md",
-      "checksum": "4a06349701891ec65bb5752e17e6f3f33114210f04ae405cd6f6095ea1348d6a",
-      "maturity": "beta",
+      "checksum": "7eccf33b58ce9cc324fd0990334040085919bf8946f7eaf83e52316d34e7c479",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -323,10 +351,10 @@
     {
       "id": "poc-orchestrator",
       "category": "agent",
-      "name": "poc-orchestrator",
+      "name": "PoC Orchestrator",
       "path": "agents/poc-orchestrator.md",
-      "checksum": "9743007fc3a9ec3a0f36d5a6148150818e2078f45641675f2d056256bed4a8fe",
-      "maturity": "beta",
+      "checksum": "80e9dea233d0b14fffd3d7c0c563c6d77ed563e57e42e49b37e6f5aa694ccfaa",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -351,10 +379,10 @@
     {
       "id": "poc-qa-engineer",
       "category": "agent",
-      "name": "poc-qa-engineer",
+      "name": "PoC QA Engineer",
       "path": "agents/poc-qa-engineer.md",
-      "checksum": "a20b4e4c1ea6446e5c17b6595e68c6cf751132c81f65b31288db5a6ddccbc0d6",
-      "maturity": "beta",
+      "checksum": "20cd6bc85236a849207ea5b95f5f0c1dcd7611339777a330e6882f2170b96950",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -379,10 +407,10 @@
     {
       "id": "poc-security-engineer",
       "category": "agent",
-      "name": "poc-security-engineer",
+      "name": "PoC Security Engineer",
       "path": "agents/poc-security-engineer.md",
-      "checksum": "7e45b24777470f8d76160938929e9464265f7f775de721392e990eab00d91158",
-      "maturity": "beta",
+      "checksum": "14a1ee5f7efd81a9d8d4b4cd0618e3c0a63df88b0a50d018355275b1294a421d",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -407,10 +435,10 @@
     {
       "id": "poc-technical-writer",
       "category": "agent",
-      "name": "poc-technical-writer",
+      "name": "PoC Technical Writer",
       "path": "agents/poc-technical-writer.md",
-      "checksum": "8d6041c2d69145f261c1b6a28f697122ae2e6ab88d441681d1291ee0e3bc57a9",
-      "maturity": "beta",
+      "checksum": "71359dfa0d898b34234b40bb359f299612160d03bbba731513ccb3a1c332c6e0",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -435,10 +463,10 @@
     {
       "id": "product-owner",
       "category": "agent",
-      "name": "product-owner",
+      "name": "Product Owner",
       "path": "agents/product-owner.md",
-      "checksum": "179bc6e1e3b9d1dd8e17ab3a79f37ad3a76df9e52e26577a807f476feebe954f",
-      "maturity": "beta",
+      "checksum": "000607112df0cc67b2f270b91090db534038c6daea2f27b55cad8424e6b00302",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -463,10 +491,10 @@
     {
       "id": "qa-engineer",
       "category": "agent",
-      "name": "qa-engineer",
+      "name": "QA Engineer",
       "path": "agents/qa-engineer.md",
-      "checksum": "f0a2a269de5d61d7042a187f79f6fbe5de74d915fc1259da4ef27c2ff4fcdbe5",
-      "maturity": "beta",
+      "checksum": "78d986fda7e71b670f2dc7b529562a006be4ea29afbfc93d7ceeebc6c8e47945",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -491,10 +519,10 @@
     {
       "id": "release-manager",
       "category": "agent",
-      "name": "release-manager",
+      "name": "Release Manager",
       "path": "agents/release-manager.md",
-      "checksum": "6f31fcf760bdc6033223f927db0b52a9869ee11e3f0a36462dd5b8a402dc3572",
-      "maturity": "beta",
+      "checksum": "43775ac78a776674913c32ee8f4df2ee50772283f8d25a3e027b9932b57208e7",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -519,10 +547,10 @@
     {
       "id": "scaffolding-agent",
       "category": "agent",
-      "name": "scaffolding-agent",
+      "name": "Scaffolding Agent",
       "path": "agents/scaffolding-agent.md",
-      "checksum": "85ce4749b57a73e38525a1eb7037b711059b53125f8eb296e11d8e0c14759ff4",
-      "maturity": "beta",
+      "checksum": "8ea270b69b3219cacc799112eafa5df458686014706ac716bd4114058395543f",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -547,10 +575,10 @@
     {
       "id": "scrum-master",
       "category": "agent",
-      "name": "scrum-master",
+      "name": "Scrum Master",
       "path": "agents/scrum-master.md",
-      "checksum": "60b9820ab7028f3865b9ceb46335725111a84bda812dd9b79164304d607cbd6f",
-      "maturity": "beta",
+      "checksum": "941aaa9d413ebd0b9012f53df5c60ceb3615178a3076d41474ad16f483d60361",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -575,10 +603,10 @@
     {
       "id": "security-engineer",
       "category": "agent",
-      "name": "security-engineer",
+      "name": "Security Engineer",
       "path": "agents/security-engineer.md",
-      "checksum": "c09a4d351c0449dd0089b7e8621605c236071d1288405b8b70537c14c1e60eab",
-      "maturity": "beta",
+      "checksum": "1a13052108df6a25261ed5e2724b6b546f45bc9a9be825b0beaa6f878137afdd",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -603,10 +631,10 @@
     {
       "id": "solution-architect",
       "category": "agent",
-      "name": "solution-architect",
+      "name": "Solution Architect",
       "path": "agents/solution-architect.md",
-      "checksum": "c7ced0e34f56b3b0c4ea3bd02feb9abdb26dc7bfcc62aa71afd748cbff484664",
-      "maturity": "beta",
+      "checksum": "ee7d3556f6a19effeb16140c60f34138b0e5177d547019aee95116481041a7cf",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -631,10 +659,10 @@
     {
       "id": "tech-lead",
       "category": "agent",
-      "name": "tech-lead",
+      "name": "Tech Lead",
       "path": "agents/tech-lead.md",
-      "checksum": "8c30fcc0cf2fb73623aaf005077471c033d0ee81288fb84057f8cf4ffedb2a9a",
-      "maturity": "beta",
+      "checksum": "6b3203adef25b93e93955971e68b6d5b3460951d7b0158960345c0b0cec95228",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -659,10 +687,10 @@
     {
       "id": "technical-debt-narrator",
       "category": "agent",
-      "name": "technical-debt-narrator",
+      "name": "Technical Debt Narrator",
       "path": "agents/technical-debt-narrator.md",
-      "checksum": "9c62524f9155acaff3854f4ab10521aefdea528fef478a357de8a51a3554fc48",
-      "maturity": "beta",
+      "checksum": "78c3e212f168c79a0507a92f12e2eabe3a035f5b301585313ebb0d25931ccf7e",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -687,10 +715,10 @@
     {
       "id": "technical-writer",
       "category": "agent",
-      "name": "technical-writer",
+      "name": "Technical Writer",
       "path": "agents/technical-writer.md",
-      "checksum": "faf437287cc22a6220ef4c98a8f566ad03bca3899c4eff5007ab40adb2b09507",
-      "maturity": "beta",
+      "checksum": "cba61a53877ed679e01b5911d9fc5860ab67959f55577c96acb8faebceafb1ba",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -715,10 +743,10 @@
     {
       "id": "technology-scout",
       "category": "agent",
-      "name": "technology-scout",
+      "name": "Technology Scout",
       "path": "agents/technology-scout.md",
-      "checksum": "0e1c0f3809a7db615ef2d5679dceabdc6a273ca732a6d950903780a74558a340",
-      "maturity": "beta",
+      "checksum": "804285a2d2c665120784abc5bc73eaf376c4f4dc5f919e5d8f9647fecfd1a21e",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -743,10 +771,10 @@
     {
       "id": "ux-designer",
       "category": "agent",
-      "name": "ux-designer",
+      "name": "UX Designer",
       "path": "agents/ux-designer.md",
-      "checksum": "87cf09cbca0344c27292a27597a5805838986c906909d262b2b1513b876d65f1",
-      "maturity": "beta",
+      "checksum": "b56bb0853d1e00ac047a4d2be1c4cae55d4390e4dfef7173df510bc2956afd06",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -773,8 +801,8 @@
       "category": "command",
       "name": "batch",
       "path": "commands/batch.md",
-      "checksum": "e096b88e4ac79356140b8436b885a1acb242ec5cf8effd323cf1a3bc652758bc",
-      "maturity": "beta",
+      "checksum": "868de5bcba47b4f3b27c37ee63ff2f2b7a36d5219730234c62045fa0b2f40a04",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -801,8 +829,8 @@
       "category": "command",
       "name": "bug-report",
       "path": "commands/bug-report.md",
-      "checksum": "9cf16777182f50effd84be3136d0833f3ff10342bd462fffb07f133b124b24c8",
-      "maturity": "beta",
+      "checksum": "160b5faef5ab2239bfe624ca6b45eb1628dc5ccf9e5747cc56e7babff5269183",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -829,8 +857,8 @@
       "category": "command",
       "name": "code-review",
       "path": "commands/code-review.md",
-      "checksum": "50757a400e4f3abc72d4e70eb3b9547a79b3186713f67a8658ac11f3f45c9a67",
-      "maturity": "beta",
+      "checksum": "d0a3740e9472c2f26c86109b27f4076646a27df5c938f9c3e82525ada4e1e0c5",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -857,8 +885,8 @@
       "category": "command",
       "name": "consolidate-memory",
       "path": "commands/consolidate-memory.md",
-      "checksum": "ef63b2b6dcac9f627a5148ffdff637386faf0d9d91e71ca914154e8868dfc454",
-      "maturity": "beta",
+      "checksum": "f68da8a8c87bc476cf93731ecfd9a9f49d97571e61b09e32d33b48990965327b",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -885,8 +913,8 @@
       "category": "command",
       "name": "discover-skills",
       "path": "commands/discover-skills.md",
-      "checksum": "0ec93e3f877cb29065552d8cce28a5d1a87ce4d21efecac1ecc52341180550ec",
-      "maturity": "beta",
+      "checksum": "e5144ea364ab8c281547ef734160cc4df2f2e59525ea0d98fae42002e2026f80",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -913,8 +941,8 @@
       "category": "command",
       "name": "evaluate-poc",
       "path": "commands/evaluate-poc.md",
-      "checksum": "18a37a98f34065829a23407812d8a13c9bcc0f491fa2d60926d444ead06dea42",
-      "maturity": "beta",
+      "checksum": "697d2f7faf65321385a4f757084dd5d4c8c7961277e2912d125c9157e6e0f1a6",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -941,8 +969,8 @@
       "category": "command",
       "name": "handoff",
       "path": "commands/handoff.md",
-      "checksum": "e88ed8f516458b0532297f743e49dddde83a218bcf9a06e6f69d53190379e563",
-      "maturity": "beta",
+      "checksum": "816fb97e97cd5005cfe5fcddaeca62f63f7d0f2949f56efff86896a1db0a710d",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -969,8 +997,8 @@
       "category": "command",
       "name": "new-feature",
       "path": "commands/new-feature.md",
-      "checksum": "9a1874bd80722dfebe0b6c98740cd0107bcd1b85de31ae981c227f5447e89f07",
-      "maturity": "beta",
+      "checksum": "b74c5713540a34254dbef833ddadb129facb01dcc88c5032f40948158992dd19",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -997,8 +1025,8 @@
       "category": "command",
       "name": "new-poc",
       "path": "commands/new-poc.md",
-      "checksum": "d92852ee7e92f04d2b5da9cdd71f3b0a7b0137799bd1b0c25ad8d181db2241b5",
-      "maturity": "beta",
+      "checksum": "8e1d3ed922881d0292b575721090c8cd221ae6e723f4a067d211faceb5affaba",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1025,8 +1053,8 @@
       "category": "command",
       "name": "new-project",
       "path": "commands/new-project.md",
-      "checksum": "8cac0306f692ff03742f8e1ff003023655eec1890a79d28166514ae87668030b",
-      "maturity": "beta",
+      "checksum": "1b66a3033d53386db4576ed2ea5294ce37741c2891d5e07f88eeccc7906190dc",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1053,8 +1081,8 @@
       "category": "command",
       "name": "plan",
       "path": "commands/plan.md",
-      "checksum": "b0ba59ecefb7a122c6e721e4410025afea75d17c39f98d8c08ff866e54cc37e1",
-      "maturity": "beta",
+      "checksum": "8dd828a91b42cc1f32fc343cd7ed309635dbbc998d455edf7513d1dca7e87a50",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1081,8 +1109,8 @@
       "category": "command",
       "name": "poc-demo",
       "path": "commands/poc-demo.md",
-      "checksum": "5591d2f98e32895224ab8a9d8b18a21049e38852abfbc48fe8804034b6c2e60e",
-      "maturity": "beta",
+      "checksum": "7b68688fb4172ce56d3821bc35c8ac4a2e17ca7c6d884602eec227d89d915d90",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1109,8 +1137,8 @@
       "category": "command",
       "name": "prepare-release",
       "path": "commands/prepare-release.md",
-      "checksum": "ceea2a446942db2d6c60f27b50ea1d5db1dea29d8b681a70ae86a275a1e15df8",
-      "maturity": "beta",
+      "checksum": "6eeb430b64362ef40059f968094d9b8c04465c8961ad18ff3592690e559411fc",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1137,8 +1165,8 @@
       "category": "command",
       "name": "security-audit",
       "path": "commands/security-audit.md",
-      "checksum": "59fd385c3f6282663772db4dbc4ca184febbb7bad3d64a32900dfaaf83a43e4f",
-      "maturity": "beta",
+      "checksum": "097e984ab8b0213804d06d8e5c94a80caf6146547640ba392d5d4b45e3316b87",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1165,8 +1193,8 @@
       "category": "command",
       "name": "skillify",
       "path": "commands/skillify.md",
-      "checksum": "2578237b4642ff3af236146c54b631a4b890b6974d48883436ec672951c08997",
-      "maturity": "beta",
+      "checksum": "c36d2e6c76dc254417746b5712ba0a1d44a3f6e4d252a96648f27213c5478777",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1193,8 +1221,8 @@
       "category": "command",
       "name": "sprint-status",
       "path": "commands/sprint-status.md",
-      "checksum": "4f810373f964fd632357de54b38712f488cfa92a0a55b4202fd35c9674dbd11e",
-      "maturity": "beta",
+      "checksum": "1041562fa10ecd9067c6dec400fe8c4b1815277a2e630499ae59d4795a0bdb16",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1221,8 +1249,8 @@
       "category": "command",
       "name": "team-status",
       "path": "commands/team-status.md",
-      "checksum": "b4f768e201c212ee7602c4c5f60f5d1a2897015de274f30a16275db37afda9d2",
-      "maturity": "beta",
+      "checksum": "c327767e3973e70ede5d0d5f607132c0b7c3dd32b7b192c15b6498406820e917",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1249,8 +1277,8 @@
       "category": "command",
       "name": "validate-tasks",
       "path": "commands/validate-tasks.md",
-      "checksum": "d6c2dfc8d2fc8b87db140154a952935a81299924313ac126a195c3395c538ef6",
-      "maturity": "beta",
+      "checksum": "914b6b05facd5169a6f4395100d784f3295d5d6b17dddd3c8540e1af96a71e5d",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1277,8 +1305,8 @@
       "category": "command",
       "name": "validate-workflow",
       "path": "commands/validate-workflow.md",
-      "checksum": "82f9afba80981b762a7019526b33dcc95c5b03aa808abe0f17b7f0549feb6892",
-      "maturity": "beta",
+      "checksum": "10843106297b66e92873e43af74f8c46f1c2afc592f07a79c5bb1cf4cac4328c",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1305,8 +1333,8 @@
       "category": "instruction",
       "name": "coding-standards",
       "path": "instructions/coding-standards.md",
-      "checksum": "68a2e3f0564c2170ccda8f9e10b8cc72512b742612419f151ccd027f288519d3",
-      "maturity": "beta",
+      "checksum": "85d9e25f7e1e5d22ec5e8216b3408ce845834d0761ce728ce10cf4e47fd15cdf",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1333,8 +1361,64 @@
       "category": "instruction",
       "name": "git-workflow",
       "path": "instructions/git-workflow.md",
-      "checksum": "57080647a17f86304c686252d5d7800dee908e3ea5e885d6faa2e9a61f3a92ef",
-      "maturity": "beta",
+      "checksum": "dbb921a329700f910b687c3bd55b0f43585b4d74862fb44bdbca8c63e9e15e3d",
+      "maturity": "stable",
+      "compatibility": {
+        "supportedPlatforms": [
+          "claude-code",
+          "cline",
+          "cursor",
+          "gemini",
+          "github",
+          "opencode",
+          "pi"
+        ],
+        "projectionStatus": {
+          "claude-code": "pass",
+          "cline": "pass",
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass",
+          "pi": "pass"
+        }
+      }
+    },
+    {
+      "id": "mechanical-tier-escalation-policy",
+      "category": "instruction",
+      "name": "mechanical-tier-escalation-policy",
+      "path": "instructions/mechanical-tier-escalation-policy.md",
+      "checksum": "9b3b42c9d8fa87d58e0ea771e2707b3e7c849aff165d8adf4e62435d76add3f6",
+      "maturity": "experimental",
+      "compatibility": {
+        "supportedPlatforms": [
+          "claude-code",
+          "cline",
+          "cursor",
+          "gemini",
+          "github",
+          "opencode",
+          "pi"
+        ],
+        "projectionStatus": {
+          "claude-code": "pass",
+          "cline": "pass",
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass",
+          "pi": "pass"
+        }
+      }
+    },
+    {
+      "id": "model-routing-policy",
+      "category": "instruction",
+      "name": "model-routing-policy",
+      "path": "instructions/model-routing-policy.md",
+      "checksum": "d49669878f1271433e86913c56c6c86a6aa7b1cfe63c41b91767c7b7912414ae",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1361,8 +1445,8 @@
       "category": "instruction",
       "name": "poc-guidelines",
       "path": "instructions/poc-guidelines.md",
-      "checksum": "40410099752d276a28ef4d94c390c5453aef5b20df247bc60104722640c23a6e",
-      "maturity": "beta",
+      "checksum": "a2b77d6cccf85b012a2d890ad210985baef572d97990d7f5d2f5b0b96019a550",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1389,8 +1473,8 @@
       "category": "instruction",
       "name": "security-guidelines",
       "path": "instructions/security-guidelines.md",
-      "checksum": "e6230578d5d7a0a292ce31cf4b700818973ae829a5b6e858c3ebef2a55aea890",
-      "maturity": "beta",
+      "checksum": "8db64490a473170577102e9052a663e5d23f605a7317f83b4d3c9079e487a983",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1417,8 +1501,8 @@
       "category": "skill",
       "name": "api-design",
       "path": "skills/api-design/SKILL.md",
-      "checksum": "2e995b09e91d053dea840fce283dfabdfcb87ca539a74503c893550c2cceb2fa",
-      "maturity": "beta",
+      "checksum": "b8018735273372c20e3a43f3165ae12026ddbe3ebf9916e800620340aea98d02",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1445,8 +1529,8 @@
       "category": "skill",
       "name": "blocker-escalation",
       "path": "skills/blocker-escalation/SKILL.md",
-      "checksum": "b77854ad3506dba4b891e6bdd19933fd760b40b046c9997f619f2005ca494ed0",
-      "maturity": "beta",
+      "checksum": "cb836a89f4117c7ddc3f9e9bee3e854071270ecd8af4796211eeea6bebd01b0d",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1473,8 +1557,8 @@
       "category": "skill",
       "name": "checkpoint-protocol",
       "path": "skills/checkpoint-protocol/SKILL.md",
-      "checksum": "4c9996882efe7d1044cbc3b33bd4cf11095ae8ef2c5b11c1a86291ad62217ad7",
-      "maturity": "beta",
+      "checksum": "a78b81b18a2657a1061ad3b48b032d860b3dbcbe65faa156daf094be019539e7",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1501,8 +1585,8 @@
       "category": "skill",
       "name": "ci-cd-pipeline",
       "path": "skills/ci-cd-pipeline/SKILL.md",
-      "checksum": "326e080b2624ce4b113a1f42da60e6992eaa414d0b35691717776032211c5ebd",
-      "maturity": "beta",
+      "checksum": "385a722e67dfbaea701b7c680e3f28080d6eb10e55ba8e93bf2987630171de06",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1529,8 +1613,8 @@
       "category": "skill",
       "name": "code-review",
       "path": "skills/code-review/SKILL.md",
-      "checksum": "2603843ee804b1855dcc1aad1ff61eec4228b65f998879eb88e108f807267435",
-      "maturity": "beta",
+      "checksum": "a608def62ef6747ebc3d5d3b0a3b03ca20dd7869e2740bd464b141853865a4a7",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1557,8 +1641,8 @@
       "category": "skill",
       "name": "context-window-management",
       "path": "skills/context-window-management/SKILL.md",
-      "checksum": "480970c0f92fefa6d8edb4b25e7af3249c03b7a557b6196bb99254080ed90a04",
-      "maturity": "beta",
+      "checksum": "76558f387669b677bcf985a93caaa6d281739f71279d297a4c521bfd2df48280",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1585,8 +1669,8 @@
       "category": "skill",
       "name": "cost-token-governance",
       "path": "skills/cost-token-governance/SKILL.md",
-      "checksum": "38f98583341aed1783183842a4db24de6460f5b71c048e03149635313c844427",
-      "maturity": "beta",
+      "checksum": "59e6b20bdba62a1a632bb5ef970f54af24f33f435e0d319c1d8c13f29e33ee2d",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1613,8 +1697,8 @@
       "category": "skill",
       "name": "cwso-awareness",
       "path": "skills/cwso-awareness/SKILL.md",
-      "checksum": "ea42b3ee6450fc2e75a1556dd45ffd459da011c8b813a4341ce40c5c100b0f58",
-      "maturity": "beta",
+      "checksum": "ebaac47644d725243e6800767b31dfd74ded8266a9b97c29d0674464f263002a",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1641,8 +1725,8 @@
       "category": "skill",
       "name": "dependency-graphing",
       "path": "skills/dependency-graphing/SKILL.md",
-      "checksum": "18340ad209d5f98e21e1ab953f858a41b4a9fa8b3dca2ebe7b1c8e79138f067e",
-      "maturity": "beta",
+      "checksum": "e4632d0965c6987863dd88385c99e0331d290304d7448500ebac8e915d46d478",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1669,8 +1753,8 @@
       "category": "skill",
       "name": "gitlab-management",
       "path": "skills/gitlab-management/SKILL.md",
-      "checksum": "403b31bb8c71f5ac6fc469618742b2c8f7cbcae1c14883d5bd9f1194be855ef5",
-      "maturity": "beta",
+      "checksum": "8ef4fc5f97e0b0a40e4f3ca127ce56638961e61aee54f3561b403beaa9eae5eb",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1697,8 +1781,8 @@
       "category": "skill",
       "name": "memory-management",
       "path": "skills/memory-management/SKILL.md",
-      "checksum": "fcfd04deb581ccdfaaf001e67ed91eadd8d85080095d4fa6df7c76ba1d56ca95",
-      "maturity": "beta",
+      "checksum": "f964649b21e54c670e8bb30104717af9aec389c1fd06603f032861898060bee2",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1725,8 +1809,8 @@
       "category": "skill",
       "name": "plan-approve-execute",
       "path": "skills/plan-approve-execute/SKILL.md",
-      "checksum": "821f320cafb973b430a9da27af59bf31901fc790a80d9d7baf14c479eeab5ca3",
-      "maturity": "beta",
+      "checksum": "927f8370266e623682163324497796aa2bf7d126c76080f62c00d92cf0ae94b1",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1753,8 +1837,8 @@
       "category": "skill",
       "name": "poc-evaluation",
       "path": "skills/poc-evaluation/SKILL.md",
-      "checksum": "75cd38ec7583a407f79fe55c56a44f86f2cf4709b1968408b84702909af21943",
-      "maturity": "beta",
+      "checksum": "444d89c87585c5ac2f13256a4c06876bf49e67a030293897c25ba02296a07559",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1781,8 +1865,8 @@
       "category": "skill",
       "name": "project-planning",
       "path": "skills/project-planning/SKILL.md",
-      "checksum": "b615f8889d6297f28591a2d35edba11a2ad18c2332d4b751a987c109b5e5cfac",
-      "maturity": "beta",
+      "checksum": "25540da72e39cf7a77515797459a8fc07f89402e1e7ad9a5bb54d1ccb90160a5",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1809,8 +1893,8 @@
       "category": "skill",
       "name": "rapid-prototyping",
       "path": "skills/rapid-prototyping/SKILL.md",
-      "checksum": "62908f26c43ee282361fd45cfe95a48ef32542a24da0d75f636684521f2b2525",
-      "maturity": "beta",
+      "checksum": "879ce443a84cbaefff183aad5a657f9e3577973ac12d23e2e15b796bc8203d69",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1837,8 +1921,8 @@
       "category": "skill",
       "name": "receiving-code-review",
       "path": "skills/receiving-code-review/SKILL.md",
-      "checksum": "f13d39dda83fe4f2705ce4cd3d2373ea57a8611ab8b9c8a4743a130ac585ef2e",
-      "maturity": "beta",
+      "checksum": "d92cb4fe8211d35eb079fdd66e5e0c8b8c52555c48f097d0487d0d5cd9898f7e",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1865,8 +1949,8 @@
       "category": "skill",
       "name": "release-workflow",
       "path": "skills/release-workflow/SKILL.md",
-      "checksum": "5155f9575654ac71ae52ab299e4411ff705be9b0c1ed0d93dcb4edc47bd7c4db",
-      "maturity": "beta",
+      "checksum": "eaeed012239b78af9cc37b8400ab62e3fec1008b4459b14271dbf8104e4b4462",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1893,8 +1977,8 @@
       "category": "skill",
       "name": "skillify",
       "path": "skills/skillify/SKILL.md",
-      "checksum": "16c16c6393bf44b35b91b90258ac89f9c44c15071faf7e6143afd0336a3b0b01",
-      "maturity": "beta",
+      "checksum": "a0aedc58f9d9aabe31f1a4dfff02a5b88e950e54af5b06dbb2eaab6e966cdc3e",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1921,8 +2005,8 @@
       "category": "skill",
       "name": "systematic-debugging",
       "path": "skills/systematic-debugging/SKILL.md",
-      "checksum": "ec6e14fd4253fa89b11b3770819f190d26001f69f2161f9b3166ce9294e3e5ac",
-      "maturity": "beta",
+      "checksum": "cd6bff22109bab7def142248d03ba3e7e40912397faa232c0032926cbf73fac0",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1949,8 +2033,8 @@
       "category": "skill",
       "name": "task-management",
       "path": "skills/task-management/SKILL.md",
-      "checksum": "24cab38aeb1a65c6c8b045bf885bdff5edc7d904e515753a57fa0ef5a5933221",
-      "maturity": "beta",
+      "checksum": "38b12a819c2bc5b4da345dd0e948fee86675321cf4ce260c8858f04eae2af692",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1977,8 +2061,8 @@
       "category": "skill",
       "name": "technical-debt-tracking",
       "path": "skills/technical-debt-tracking/SKILL.md",
-      "checksum": "0010fe3550f98d6180c7e9d84400705a3054215100d34aca32002857a714f138",
-      "maturity": "beta",
+      "checksum": "74baf7d563fe451d61862be4b455f1d53e10e611df2d2e581a85988ba9963068",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -2005,8 +2089,8 @@
       "category": "skill",
       "name": "technology-scouting",
       "path": "skills/technology-scouting/SKILL.md",
-      "checksum": "af7ab9bbacbca4f379343951791021a0ce0677b675533f11df4d4d340cd98a14",
-      "maturity": "beta",
+      "checksum": "7148e755d6547c63eb6f41b4d67315dac2ca69078545f7584bdcfbf034e00d3c",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -2033,8 +2117,8 @@
       "category": "skill",
       "name": "testing-strategy",
       "path": "skills/testing-strategy/SKILL.md",
-      "checksum": "6bdfaa03cf16365f2a40eb40c0527bf08697f0c03418cf5f84dc92ab79412bdf",
-      "maturity": "beta",
+      "checksum": "05cbc48f2d15749595cdbd5ff2db28f832e5b4ff3ddef7dcdcc24188f1fed657",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -2061,8 +2145,8 @@
       "category": "skill",
       "name": "validation-gates",
       "path": "skills/validation-gates/SKILL.md",
-      "checksum": "4e2051068f806ac855e8d4a7d6efb1b06753e5875376f894057198ed8c9a64c0",
-      "maturity": "beta",
+      "checksum": "cecf78f2e8e6d3b0eecd1a924bdc2fdd61dfc834f19e4a8b6921cc40a867839f",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -2089,8 +2173,8 @@
       "category": "skill",
       "name": "verification-before-completion",
       "path": "skills/verification-before-completion/SKILL.md",
-      "checksum": "6c3c2573c788036d6ccc40aa4beec7b8c70e8c17453a868d345fd7b4699a0487",
-      "maturity": "beta",
+      "checksum": "f26b591b43f7a453b7b1b6f39048ba2e50de69d02010f8229fa077787ed2c02c",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -2117,8 +2201,8 @@
       "category": "skill",
       "name": "worktree-isolation",
       "path": "skills/worktree-isolation/SKILL.md",
-      "checksum": "b22b90d7c4b80f200cd486cc346603c3411740fc489aa8f616d9989d8d70837a",
-      "maturity": "beta",
+      "checksum": "4a6fb1424f18a03df6917bec9cce14581f269485337fc346100b0d0221417870",
+      "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",

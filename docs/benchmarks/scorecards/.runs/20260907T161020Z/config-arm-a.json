@@ -1,0 +1,21 @@
+{
+  "agent_setup_timeout_multiplier": 3.0,
+  "n_concurrent_trials": 1,
+  "agents": [
+    {
+      "name": "claude-code",
+      "model_name": "claude-haiku-4-5-20251001"
+    }
+  ],
+  "datasets": [
+    {
+      "name": "terminal-bench/terminal-bench-2",
+      "ref": "latest",
+      "task_names": [
+        "*git-leak-recovery",
+        "*chess-best-move"
+      ],
+      "n_tasks": 2
+    }
+  ]
+}

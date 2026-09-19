@@ -1,0 +1,10 @@
+id: code-review-conditional-pass-conditions-gap
+command: /code-review
+status: known_failing
+known_failing_category: capability_gap
+known_failing_reason: >-
+  code-review.md requires "if CONDITIONAL_PASS, list the conditions that must be met before
+  merge" but defines no structured field/section convention for it. A CONDITIONAL_PASS review
+  with conditions only alluded to in prose has no checkable "**Conditions**:" field or
+  "## Conditions" section to verify against -- a contract gap, not a reviewer mistake.
+tags: [code-review, conditional-pass, conditions, hand-authored, capability-gap]

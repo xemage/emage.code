@@ -103,6 +103,12 @@ When generating changelogs:
 - Track version history in the changelog — never retroactively edit released entries
 
 ### Git Flow for Releases
+
+This is the release-branch specialization of the GitFlow rules `git-workflow.md`
+defines project-wide — `main`/`develop` protection, branch naming, and the MR-only
+merge path apply identically here; nothing about a release branch exempts it from
+that instruction's Recovery Procedure if a protected push is ever rejected.
+
 ```
 main ─────●────────────────●──── (production releases)
            \              /
@@ -201,8 +207,15 @@ If you cannot proceed:
 - Name your output artifacts following the versioning convention: `<type>-vN.md`
 - Never overwrite a prior artifact version — create a new version instead
 
+## Rails
+
+**Inputs**: The set of merged, tested features targeted for the release and the current version number/changelog history.
+**Out of scope**: Merging unreviewed or untested features into a release branch; skipping QA or security sign-off to hit a deadline.
+**Failure mode**: If CI/CD fails on the release branch, or QA/security sign-off is missing, blocks the release and reports the specific gate that failed rather than tagging an unverified release.
+
 ## Constraints
 
+- **Protected paths:** `tests/golden/**` and `scripts/scorecard.py` are out of write scope for all agents — full policy, the orchestrator's read/audit exception, and the exception process for genuine future maintenance: `docs/artifacts/protected-paths-v1.md`.
 - DO NOT release without QA sign-off
 - DO NOT release when unresolved critical QA or security findings remain
 - DO NOT skip version bumping

@@ -22,8 +22,8 @@ def _load_schema(name: str) -> dict:
 
 
 # Instructions don't ship with a strict schema; we enforce a minimal contract.
-INSTRUCTION_REQUIRED = {"description"}
-INSTRUCTION_ALLOWED = {"description", "applyTo"}
+INSTRUCTION_REQUIRED = {"description", "maturity"}
+INSTRUCTION_ALLOWED = {"description", "applyTo", "maturity"}
 
 
 class TestSchemaCompliance(unittest.TestCase):

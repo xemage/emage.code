@@ -1,0 +1,11 @@
+id: prepare-release-conditional-pass-conditions-gap
+command: /prepare-release
+status: known_failing
+known_failing_category: capability_gap
+known_failing_reason: >-
+  prepare-release.md step 9 requires "If CONDITIONAL_PASS, list conditions that must be met
+  before deployment" but the declared "## RELEASE VERDICT" template (step 7) has no
+  "**Conditions**:" field or equivalent structured slot for them. A CONDITIONAL_PASS release
+  with conditions only alluded to in prose has no checkable "**Conditions**:" field or
+  "## Conditions" section to verify against -- a contract gap, not a release-manager mistake.
+tags: [prepare-release, conditional-pass, conditions, hand-authored, capability-gap]

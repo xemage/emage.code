@@ -54,6 +54,12 @@ I have a new project idea. Please orchestrate the full team to turn this into a 
     - The state is spelled `in_review`, NOT `review`.
     - Write active tasks to `docs/tasks/active-tasks.md`
 
+## Rails
+
+**Inputs**: A free-text project idea (`{{input}}`).
+**Out of scope**: Proceeding to execution before the Phase 1 plan is presented and explicitly approved (`APPROVED`/`APPROVED_WITH_CHANGES`/`REJECTED`).
+**Failure mode**: If validation gates fail at any phase transition, blocks progression to the next phase rather than continuing silently.
+
 Here's my idea:
 
 {{input}}

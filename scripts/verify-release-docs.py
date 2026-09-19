@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -132,6 +133,45 @@ def check_links(file_path: Path, errors: list[str]) -> None:
             errors.append(f"broken link in {rel}: {raw_target}")
 
 
+def check_version_consistency(errors: list[str]) -> None:
+    """Run scripts/check-version-consistency.py (T400, Gate G0) as a subprocess and
+    fold any failure into `errors`, so a release tag cannot be cut while any
+    non-archived doc still references a stale release.
+
+    Fails loudly (appends to `errors`) rather than silently skipping if the script
+    is missing or cannot be executed at all — an environment where T400 hasn't
+    landed should not be treated as a passing version-consistency check.
+    """
+    script = ROOT / "scripts" / "check-version-consistency.py"
+    if not script.is_file():
+        errors.append(
+            f"cannot run version-consistency check: missing {script.relative_to(ROOT)}"
+        )
+        return
+
+    try:
+        result = subprocess.run(
+            [sys.executable, str(script)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+    except OSError as exc:
+        errors.append(f"cannot run version-consistency check: {exc}")
+        return
+
+    if result.returncode == 0:
+        return
+
+    errors.append(
+        "version-consistency check failed "
+        f"(scripts/check-version-consistency.py exited {result.returncode}):"
+    )
+    for line in (result.stdout + result.stderr).splitlines():
+        if line.strip():
+            errors.append(f"  {line}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--tag", required=True, help="Release tag, e.g. v1.0.1")
@@ -171,6 +211,8 @@ def main() -> int:
 
     for relative in required_for_tag:
         check_links(ROOT / relative, errors)
+
+    check_version_consistency(errors)
 
     if errors:
         for error in errors:

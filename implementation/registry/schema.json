@@ -33,7 +33,7 @@
           "category": {"type": "string", "enum": ["agent", "command", "instruction", "skill"]},
           "name": {"type": "string", "minLength": 1},
           "path": {"type": "string", "minLength": 1},
-          "maturity": {"type": "string", "enum": ["draft", "beta", "ga", "deprecated"]},
+          "maturity": {"type": "string", "enum": ["experimental", "beta", "stable", "deprecated"]},
           "compatibility": {
             "type": "object",
             "additionalProperties": false,

@@ -1,0 +1,11 @@
+id: new-feature-real-artifact-versioning-drift
+command: /new-feature
+status: known_failing
+known_failing_category: tracked_defect
+known_failing_reason: >-
+  new-feature.md Phase 3 step 8 declares artifact filenames must follow
+  "<artifact-name>-v<major>.<minor>.md". Real fixtures docs/artifacts/adapter-evaluation-v1.md
+  and docs/artifacts/benchmark-report-v1.md (copied verbatim) use single-integer "-v1.md"
+  naming, not "-v<major>.<minor>.md". Corpus survey: zero of this repo's 43 real
+  docs/artifacts/*-v<N>.md files use a two-part major.minor version in the filename.
+tags: [new-feature, artifact-versioning, real-artifact, format-drift]

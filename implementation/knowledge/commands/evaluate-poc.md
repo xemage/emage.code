@@ -2,6 +2,7 @@
 description: "Evaluate whether the current PoC validates the hypothesis."
 agent: "poc-orchestrator"
 argument-hint: "Describe what has been built and what hypothesis should be evaluated..."
+maturity: experimental
 ---
 
 Evaluate the current PoC and determine whether it validates the stated hypothesis.
@@ -55,6 +56,12 @@ Please return:
 | # | Debt Item | Severity | Effort | Risk | Owner | Production Impact |
 |---|-----------|----------|--------|------|-------|-------------------|
 | 1 | ... | CRITICAL/HIGH/MEDIUM/LOW | S/M/L/XL | ... | ... | blocks/degrades/cosmetic |
+
+## Rails
+
+**Inputs**: A description of what was built and the hypothesis to evaluate (`{{input}}`), plus the PoC's debt/shortcut record.
+**Out of scope**: Fixing or removing any debt item — only evaluates and scores it for the handoff package.
+**Failure mode**: If evidence strength is weak or the hypothesis wasn't actually tested, returns `INCONCLUSIVE` rather than forcing a Validated/Invalidated call.
 
 Context:
 

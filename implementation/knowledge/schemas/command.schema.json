@@ -2,11 +2,12 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "emage.code command",
   "type": "object",
-  "required": ["description"],
+  "required": ["description", "maturity"],
   "properties": {
     "description": { "type": "string", "minLength": 10 },
     "agent": { "type": "string" },
-    "argument-hint": { "type": "string" }
+    "argument-hint": { "type": "string" },
+    "maturity": { "type": "string", "enum": ["experimental", "beta", "stable", "deprecated"] }
   },
   "additionalProperties": false
 }

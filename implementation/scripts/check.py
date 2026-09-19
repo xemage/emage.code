@@ -559,6 +559,23 @@ def _check_registry(root: Path, result: GateResult) -> None:
         result.err(f"registry: generation drift detected\n{output}")
 
 
+def _check_maturity(root: Path, result: GateResult) -> None:
+    script_path = root / "scripts" / "check-maturity.py"
+    result.checked += 1
+    if not script_path.is_file():
+        result.err(f"maturity: missing checker script {script_path}")
+        return
+
+    proc = subprocess.run(
+        ["python3", str(script_path), "--root", str(root)],
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode != 0:
+        output = (proc.stdout + proc.stderr).strip()
+        result.err(f"maturity: unearned promotion claim(s) detected\n{output}")
+
+
 def _check_packaging(root: Path, result: GateResult) -> None:
     repo = _repo_root(root)
     commands_dir = root / "commands"
@@ -840,6 +857,11 @@ def parse_args() -> argparse.Namespace:
         help="check registry artifacts and generator drift",
     )
     parser.add_argument(
+        "--maturity",
+        action="store_true",
+        help="check that every component's declared maturity satisfies its promotion criteria",
+    )
+    parser.add_argument(
         "--packaging",
         action="store_true",
         help="check package install/update/uninstall workflow assets",
@@ -881,6 +903,7 @@ def main() -> int:
         "telemetry": args.telemetry,
         "benchmarks": args.benchmarks,
         "registry": args.registry,
+        "maturity": args.maturity,
         "packaging": args.packaging,
         "triggers": args.triggers,
         "adapters": args.adapters,
@@ -918,6 +941,9 @@ def main() -> int:
 
     if run_all or selected["registry"]:
         _check_registry(root, result)
+
+    if run_all or selected["maturity"]:
+        _check_maturity(root, result)
 
     if run_all or selected["packaging"]:
         _check_packaging(root, result)

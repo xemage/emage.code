@@ -2,6 +2,7 @@
 description: "Start a proof-of-concept project focused on hypothesis validation and rapid delivery."
 agent: "poc-orchestrator"
 argument-hint: "Describe the hypothesis and what you need to prove..."
+maturity: experimental
 ---
 
 I want to start a proof-of-concept project.
@@ -44,6 +45,12 @@ Please coordinate the PoC team and focus on:
 	- Write checkpoint to `docs/checkpoints/checkpoint-poc-<gate>.md`
 15. Apply strict PoC token envelope and model routing by risk/complexity
 16. Include spend telemetry (`used`, `remaining`, `projected_total`) in each PoC checkpoint
+
+## Rails
+
+**Inputs**: A free-text hypothesis/PoC request (`{{input}}`).
+**Out of scope**: Proceeding past Phase 0 (lightweight plan) before the user approves it; production-scale build-out.
+**Failure mode**: If the feasibility check (Phase 1, step 4) finds a critical assumption fails, stops or reframes rather than continuing to build.
 
 PoC request:
 

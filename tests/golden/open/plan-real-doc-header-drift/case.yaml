@@ -1,0 +1,12 @@
+id: plan-real-doc-header-drift
+command: /plan
+status: known_failing
+known_failing_category: tracked_defect
+known_failing_reason: >-
+  Real plan doc docs/plans/plan-030-mcp-remote-transport-alignment.md uses "## Objective",
+  "## Task Breakdown", "## Agent Assignments", "## Risks & Mitigations" instead of the
+  command's declared "## Goal", "## Task Decomposition", "## Resource Assignments",
+  "## Risk Assessment" headers (implementation/knowledge/commands/plan.md step 5). Corpus-wide:
+  zero of this repo's 34 real docs/plans/*.md files use "Task Decomposition" or "Resource
+  Assignments" verbatim.
+tags: [plan, structure, real-artifact, header-drift]

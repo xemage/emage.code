@@ -52,6 +52,10 @@
     "context7": {
       "type": "http",
       "url": "https://mcp.context7.com/mcp"
+    },
+    "hindsight": {
+      "type": "http",
+      "url": "${env:HINDSIGHT_MCP_URL}"
     }
   }
 }

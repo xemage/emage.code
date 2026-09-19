@@ -2,6 +2,7 @@
 description: "Start a new software project from an idea. Triggers the full orchestration workflow: planning, architecture, setup, development, testing, and deployment."
 agent: "orchestrator"
 argument-hint: "Describe your project idea in detail..."
+maturity: experimental
 ---
 
 I have a new project idea. Please orchestrate the full team to turn this into a real software product:
@@ -53,6 +54,12 @@ I have a new project idea. Please orchestrate the full team to turn this into a 
     - Track states: `pending → in_progress → blocked → in_review → done | cancelled`
     - The state is spelled `in_review`, NOT `review`.
     - Write active tasks to `docs/tasks/active-tasks.md`
+
+## Rails
+
+**Inputs**: A free-text project idea (`{{input}}`).
+**Out of scope**: Proceeding to execution before the Phase 1 plan is presented and explicitly approved (`APPROVED`/`APPROVED_WITH_CHANGES`/`REJECTED`).
+**Failure mode**: If validation gates fail at any phase transition, blocks progression to the next phase rather than continuing silently.
 
 Here's my idea:
 

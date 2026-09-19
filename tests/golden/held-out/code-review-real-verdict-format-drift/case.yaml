@@ -1,0 +1,11 @@
+id: code-review-real-verdict-format-drift
+command: /code-review
+status: known_failing
+known_failing_category: tracked_defect
+known_failing_reason: >-
+  Real verdict docs/tasks/task-T365.md uses "## VERDICT: PASS" + "### Justification" prose,
+  not the command's declared "## VERDICT" block with Status/Reviewed artifacts/Must Fix
+  count/Should Fix count/Nice to Have count/Blocker IDs/Reviewer/Timestamp fields
+  (implementation/knowledge/commands/code-review.md). Same pattern in task-T346.md, task-T336.md
+  and this repo's own validation-gate templates.
+tags: [code-review, verdict, real-artifact, format-drift]

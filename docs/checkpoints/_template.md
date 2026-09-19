@@ -17,6 +17,20 @@ One paragraph: what phase produced, whether it met its acceptance criteria.
 ## Key decisions
 - ADR-001 — … (see `docs/decisions/ADR-001-*.md`)
 
+## Maturity distribution
+> Populate from `implementation/registry/summary.md` (regenerate first via
+> `python3 implementation/scripts/generate-registry.py --root implementation` if stale — confirm
+> with `--check`). Category rows are illustrative; add/remove rows to match the registry's actual
+> categories at checkpoint time.
+
+| Category | Stable | Experimental | Deprecated | Total |
+|----------|-------:|-------------:|-----------:|------:|
+| Agents |  |  |  |  |
+| Commands |  |  |  |  |
+| Instructions |  |  |  |  |
+| Skills |  |  |  |  |
+| **Total** |  |  |  |  |
+
 ## Artifacts produced
 - `requirements-v1.md`
 - `architecture-v1.md`

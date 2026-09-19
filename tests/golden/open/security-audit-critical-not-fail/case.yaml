@@ -1,0 +1,10 @@
+id: security-audit-critical-not-fail
+command: /security-audit
+status: known_failing
+known_failing_category: tracked_defect
+known_failing_reason: >-
+  security-audit.md states unconditionally "If any CRITICAL findings exist, the verdict MUST
+  be FAIL." Fixture has CRITICAL findings: 1 and Status: CONDITIONAL_PASS (auditor reasoned a
+  compensating network-level control mitigates it) -- a direct violation of the stated rule,
+  which has no compensating-control exception clause.
+tags: [security-audit, verdict, critical, rule-violation, hand-authored]

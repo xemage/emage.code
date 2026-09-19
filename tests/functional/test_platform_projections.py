@@ -65,19 +65,59 @@ def _expected_generated_relpaths(platform: str) -> set[str]:
     return relpaths
 
 
-def _remote_server_urls() -> dict[str, str]:
-    """Canonical `url` per remote-transport MCP server, from servers.yaml.
+def _render_templated_value(spec, template: str) -> str:
+    """Mirror sync.mjs's `mapTemplatedValue()` rendering rule (see T491,
+    docs/artifacts/mcp-header-url-templating-design-v1.md §3/§4): a plain
+    literal value is returned unchanged; a `{fromEnv: VAR[, wrap: "X{VAR}Y"]}`
+    spec is rendered against the platform's own env-placeholder `template`
+    (e.g. '${env:VAR}').
+    """
+    if isinstance(spec, dict) and spec.get("fromEnv"):
+        rendered = template.replace("VAR", spec["fromEnv"])
+        wrap = spec.get("wrap")
+        return wrap.replace("{VAR}", rendered) if wrap else rendered
+    return str(spec)
+
+
+def _remote_server_urls(template: str = "${env:VAR}") -> dict[str, str]:
+    """Canonical, rendered `url` per remote-transport MCP server, from servers.yaml.
 
     Sourcing the expected URL from the registry (rather than hardcoding it
     per test) keeps transport-shape assertions in sync if the URL ever
     changes, while still asserting the full per-platform field shape below.
+    Since T491, `url` may be a literal string or a templated-value spec
+    (`{fromEnv: VAR}`); `_render_templated_value()` renders either uniformly.
+    All current call sites in this file target platforms that share the
+    `${env:VAR}` placeholder family (cursor/pi/cline/claude-code/gemini), so
+    that is the default template; pass a different one (e.g. '{env:VAR}' for
+    opencode) if a future call site needs it.
     """
     raw = yaml.safe_load((knowledge_root() / "mcp" / "servers.yaml").read_text(encoding="utf-8"))
     return {
-        name: cfg["url"]
+        name: _render_templated_value(cfg["url"], template)
         for name, cfg in raw["servers"].items()
         if cfg.get("transport") == "remote"
     }
+
+
+def _remote_server_headers(template: str = "${env:VAR}") -> dict[str, dict[str, str] | None]:
+    """Canonical, rendered `headers` per remote-transport MCP server, from
+    servers.yaml (T491). Mirrors sync.mjs's `mapEnv()`, which is a thin
+    per-key wrapper around `mapTemplatedValue()` applied to a server's
+    `headers` block. Servers without a `headers` block map to `None`.
+    """
+    raw = yaml.safe_load((knowledge_root() / "mcp" / "servers.yaml").read_text(encoding="utf-8"))
+    out: dict[str, dict[str, str] | None] = {}
+    for name, cfg in raw["servers"].items():
+        if cfg.get("transport") != "remote":
+            continue
+        headers = cfg.get("headers")
+        out[name] = (
+            {key: _render_templated_value(value, template) for key, value in headers.items()}
+            if headers
+            else None
+        )
+    return out
 
 
 def _expected_frontmatter_keys(platform: str, kind: str, slug: str) -> set[str]:
@@ -318,6 +358,13 @@ class TestPlatformProjections(unittest.TestCase):
             opencode_config["mcp"].get("context7"),
             {"type": "remote", "url": context7_url},
         )
+        # maturity-evidence: instruction/coding-standards
+        # maturity-evidence: instruction/git-workflow
+        # maturity-evidence: instruction/security-guidelines
+        # maturity-evidence: instruction/poc-guidelines
+        # This assertion genuinely exercises all four instructions: it fails if any
+        # one of them is dropped from, reordered in, or renamed within the opencode
+        # projection's `instructions` list.
         self.assertEqual(
             opencode_config.get("instructions"),
             [
@@ -350,6 +397,7 @@ class TestPlatformProjections(unittest.TestCase):
         every remaining platform, not only cline.
         """
         urls = _remote_server_urls()
+        headers_by_server = _remote_server_headers()
         shape_by_format = {
             "cursor": lambda url: {"url": url},
             "cline": lambda url: {"type": "streamableHttp", "url": url},
@@ -369,7 +417,12 @@ class TestPlatformProjections(unittest.TestCase):
             expected_shape = shape_by_format[format_by_platform[platform]]
             for name, url in urls.items():
                 with self.subTest(platform=platform, server=name):
-                    self.assertEqual(servers.get(name), expected_shape(url))
+                    expected = expected_shape(url)
+                    # T491: servers with a `headers` block (e.g. cwso) emit it
+                    # after `type`/`url`, via mapEnv() -- see sync.mjs emitMcp().
+                    if headers_by_server.get(name):
+                        expected["headers"] = headers_by_server[name]
+                    self.assertEqual(servers.get(name), expected)
 
 
 if __name__ == "__main__":

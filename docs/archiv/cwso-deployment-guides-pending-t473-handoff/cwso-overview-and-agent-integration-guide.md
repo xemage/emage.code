@@ -73,7 +73,7 @@ Once CWSO is deployed, agent code talks to it through `implementation/runtime/cw
 brief orientation; the canonical, current, and only source you should follow for actual usage patterns
 is:
 
-**[`implementation/runtime/cwso/README.md`](../../implementation/runtime/cwso/README.md)** (task T319)
+**[`implementation/runtime/cwso/README.md`](../../../implementation/runtime/cwso/README.md)** (task T319)
 
 That README documents `CwsoClient` (JWT minting, all 11 tools), `AstConflictChecker`,
 `ConcurrentMergeOrchestrator`, a full worked three-agent Scenario 1 example, and a known
@@ -87,7 +87,7 @@ create workspaces, write, commit, query AST, and drop workspaces, but is blocked
 fails with an HTTP 403. Every emage.code agent role maps to exactly one of these tiers (plus a `read`
 tier for review-only roles); the full agent-to-tier mapping is not repeated here — see
 `implementation/knowledge/skills/cwso-awareness/SKILL.md` (§4 below) or the source artifact
-[`docs/artifacts/role-mapping-cwso-v1.md`](../artifacts/role-mapping-cwso-v1.md) (task T211) for the
+[`docs/artifacts/role-mapping-cwso-v1.md`](../../artifacts/role-mapping-cwso-v1.md) (task T211) for the
 complete table and rationale.
 
 ---
@@ -103,18 +103,18 @@ Two things were added:
    to use it, dispatching workers, writing CWSO client code, or reviewing a CWSO-related task — has a
    single place that explains what CWSO is, the mandatory worker/orchestrator role split, and the
    approved agent-to-tier mapping before it ever calls a tool:
-   [`implementation/knowledge/skills/cwso-awareness/SKILL.md`](../../implementation/knowledge/skills/cwso-awareness/SKILL.md)
+   [`implementation/knowledge/skills/cwso-awareness/SKILL.md`](../../../implementation/knowledge/skills/cwso-awareness/SKILL.md)
 
 2. **A new "CWSO Awareness" section added to the three agent role files** whose CWSO tier is
    operationally relevant (orchestrator-tier coordination, or worker-tier write/commit access), each
    stating that agent's specific CWSO permission tier and pointing back to the skill for the full rule:
-   - [`implementation/knowledge/agents/orchestrator.md`](../../implementation/knowledge/agents/orchestrator.md)
+   - [`implementation/knowledge/agents/orchestrator.md`](../../../implementation/knowledge/agents/orchestrator.md)
      — CWSO tier `orchestrator` (coordinates dispatch and workspace lifecycle; never delegates
      write/commit calls to an orchestrator-tier client)
-   - [`implementation/knowledge/agents/backend-developer.md`](../../implementation/knowledge/agents/backend-developer.md)
+   - [`implementation/knowledge/agents/backend-developer.md`](../../../implementation/knowledge/agents/backend-developer.md)
      — CWSO tier `worker` (produces and commits code in shadow workspaces; blocked from
      `merge_concurrent_results`)
-   - [`implementation/knowledge/agents/devops-engineer.md`](../../implementation/knowledge/agents/devops-engineer.md)
+   - [`implementation/knowledge/agents/devops-engineer.md`](../../../implementation/knowledge/agents/devops-engineer.md)
      — CWSO tier `worker` (writes CI/CD and infra artifacts requiring workspace mutation; blocked from
      `merge_concurrent_results`)
 
@@ -155,5 +155,5 @@ not an aspirational one:
 |---|---|---|
 | What is CWSO and why does emage.code use it? | Concurrent multi-agent code editing (Pattern A) via AST-semantic shadow-workspace merges | §1 above |
 | How do I deploy it locally? | `docs/deployment/local-docker-desktop-guide.md` (validated) | [local-docker-desktop-guide.md](local-docker-desktop-guide.md) |
-| How does agent code call it? | `CwsoClient` with role-scoped (`worker`/`orchestrator`) JWTs; role split is mandatory | [`implementation/runtime/cwso/README.md`](../../implementation/runtime/cwso/README.md) |
-| Did agent knowledge/skills need updating? | Yes, and it was already done in T327 | [`cwso-awareness` skill](../../implementation/knowledge/skills/cwso-awareness/SKILL.md), three agent files above |
+| How does agent code call it? | `CwsoClient` with role-scoped (`worker`/`orchestrator`) JWTs; role split is mandatory | [`implementation/runtime/cwso/README.md`](../../../implementation/runtime/cwso/README.md) |
+| Did agent knowledge/skills need updating? | Yes, and it was already done in T327 | [`cwso-awareness` skill](../../../implementation/knowledge/skills/cwso-awareness/SKILL.md), three agent files above |

@@ -1,0 +1,57 @@
+# T454 `@context-retriever` deployment manifest — layer 3 of ADR-005 Decision 3's three-place
+# `ALLOW_WRITE=false` assertion (see docs/decisions/ADR-005-memory-layer-design.md Decision 3 and
+# docs/artifacts/context-retriever-v1.md §2 for why this layer is independent of the other two:
+# layer 1 is the agent definition's `tools:` grant — an LLM-facing, declarative control; layer 2 is
+# `implementation/runtime/memory/context_retriever.py`'s own public API surface, which has no
+# write/mutate function at all. This layer is the infrastructure-level control: it holds even if
+# both of the other two were somehow bypassed or misconfigured, because it is enforced by the
+# container/filesystem permission model, not by anything either of the other two layers execute.
+#
+# Usage (declarative today — this repo's actual invocation of @context-retriever is a direct
+# in-process Python call from an agent's `execute`/Bash tool grant, not a standalone container; this
+# manifest follows the repo's existing deploy/docker-compose-t226*.yml convention to state,
+# concretely and checkably, what a containerized/isolated deployment of this component's runtime
+# permissions must be — the same "declarative + auditable" trust model this repo's protected-paths
+# control already uses, docs/artifacts/protected-paths-v1.md §4):
+#   docker compose -f deploy/docker-compose-context-retriever.yml config   # validate, no start needed
+
+name: context-retriever-t454
+
+services:
+  context-retriever:
+    image: python:3.12-slim
+    container_name: context-retriever
+    working_dir: /workspace
+    environment:
+      PYTHONPATH: "/workspace"
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      # Read-only mount of the canonical knowledge vault — @context-retriever never needs write
+      # access to the git-versioned source of truth (ADR-005 Decision 1's write path is the normal
+      # git workflow, never a live agent call).
+      - "../implementation/knowledge/memory:/workspace/implementation/knowledge/memory:ro"
+      # Read-only mount of T452's derived, rebuildable index — the only artifact this component
+      # actually queries at runtime. Rebuilding it is T452's explicit, auditable step
+      # (ADR-005 Decision 3), never something this component does or could do from inside this
+      # container.
+      - "../implementation/runtime/memory/_index:/workspace/implementation/runtime/memory/_index:ro"
+      # Read-only mount of the wrapper module itself and its T453 dependencies — this service runs
+      # code, it does not modify it.
+      - "../implementation/runtime/memory:/workspace/implementation/runtime/memory:ro"
+    # No git credentials, no SSH key, no GitLab token, and no `secrets:` block of any kind are
+    # declared for this service — @context-retriever has no write credential to the canonical git
+    # remote, structurally, not merely by omission of a `git push` call. Compare to
+    # deploy/docker-compose-t226.yml's `rollout` service, which explicitly documents
+    # `read_only: false` because it genuinely needs to persist Parquet output — no analogous
+    # justification exists here, so this service carries none of that service's write posture.
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      # Query-time scratch space only (argparse/JSON stdlib usage) — never a location any indexed
+      # or canonical content is written back through.
+      - /tmp:size=32m
+    # No `ports:` — this is a locally-invoked CLI/library surface (Bash/`execute` tool grant from
+    # the calling agent's own session), not a network-exposed service; no inbound write API exists
+    # to expose in the first place.

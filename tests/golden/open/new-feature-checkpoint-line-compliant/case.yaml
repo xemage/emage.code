@@ -1,0 +1,4 @@
+id: new-feature-checkpoint-line-compliant
+command: /new-feature
+status: expected_pass
+tags: [new-feature, checkpoint, hand-authored]

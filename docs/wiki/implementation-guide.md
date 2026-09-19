@@ -2,7 +2,7 @@
 
 emage.code uses an `implementation/` tree at the repository root. It provides
 schema-first canonical knowledge, managed cookbooks, trigger workflows, packaging,
-and validation super-gates (current release: v6.0.2).
+and validation super-gates (current release: v7.0.0).
 
 ## What to use it for
 
@@ -30,7 +30,7 @@ scripts/install.sh --target <your-project> --platform cursor --update
 
 Task ledgers in `docs/tasks/` keep their rows on `--update`; only format headers/footers refresh.
 
-Or see [Quick Start](quick-start) and [`docs/releases/v6.0.2.md`](https://gitlab.com/em-age/emage.code/-/blob/main/docs/releases/v6.0.2.md).
+Or see [Quick Start](quick-start) and [`docs/releases/v7.0.0.md`](https://gitlab.com/em-age/emage.code/-/blob/main/docs/releases/v7.0.0.md).
 
 Supported projections: GitHub Copilot, Gemini CLI, Opencode, Cursor, Pi.
 
@@ -39,7 +39,7 @@ Supported projections: GitHub Copilot, Gemini CLI, Opencode, Cursor, Pi.
 From the repository root:
 
 ```bash
-python3 implementation/scripts/check.py --root implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --packaging --triggers --adapters
+python3 implementation/scripts/check.py --root implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --maturity --packaging --triggers --adapters
 node implementation/scripts/verify.mjs --root implementation
 ```
 

@@ -1,0 +1,44 @@
+{
+  "agent_setup_timeout_multiplier": 3.0,
+  "n_concurrent_trials": 2,
+  "agents": [
+    {
+      "name": "claude-code",
+      "model_name": "claude-haiku-4-5-20251001"
+    }
+  ],
+  "datasets": [
+    {
+      "name": "terminal-bench/terminal-bench-2",
+      "ref": "latest",
+      "task_names": [
+        "*make-mips-interpreter",
+        "*git-leak-recovery",
+        "*kv-store-grpc",
+        "*pypi-server",
+        "*install-windows-3-11",
+        "*configure-git-webserver",
+        "*crack-7z-hash",
+        "*fix-code-vulnerability",
+        "*dna-assembly",
+        "*protein-assembly",
+        "*rstan-to-pystan",
+        "*hf-model-inference",
+        "*db-wal-recovery",
+        "*gcode-to-text",
+        "*custom-memory-heap-crash",
+        "*overfull-hbox",
+        "*train-fasttext",
+        "*feal-linear-cryptanalysis",
+        "*log-summary-date-ranges",
+        "*caffe-cifar-10",
+        "*video-processing",
+        "*constraints-scheduling",
+        "*portfolio-optimization",
+        "*chess-best-move",
+        "*sparql-university"
+      ],
+      "n_tasks": 25
+    }
+  ]
+}

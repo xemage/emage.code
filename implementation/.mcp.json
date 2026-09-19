@@ -53,9 +53,41 @@
       "type": "http",
       "url": "https://mcp.context7.com/mcp"
     },
+    "hindsight": {
+      "type": "http",
+      "url": "${env:HINDSIGHT_MCP_URL}"
+    },
+    "cwso": {
+      "type": "http",
+      "url": "${env:CWSO_MCP_URL}",
+      "headers": {
+        "Authorization": "Bearer ${env:CWSO_BEARER_TOKEN}",
+        "Origin": "${env:CWSO_ORIGIN}"
+      }
+    },
     "hf-mcp-server": {
       "type": "http",
       "url": "https://huggingface.co/mcp?login"
+    },
+    "context-retriever": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "implementation.runtime.memory.context_retriever_mcp_server",
+        "--index-dir",
+        "implementation/runtime/memory/_index/em-age-emage.code",
+        "--workspace-root",
+        ".",
+        "--platform-root",
+        ".claude"
+      ]
+    },
+    "security-audit": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "implementation.runtime.security.audit_server"
+      ]
     },
     "filesystem": {
       "command": "npx",

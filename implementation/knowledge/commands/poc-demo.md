@@ -2,6 +2,7 @@
 description: "Package the current PoC into a stakeholder-ready demo flow."
 agent: "poc-orchestrator"
 argument-hint: "Describe the audience and what outcome the demo should prove..."
+maturity: experimental
 ---
 
 Prepare a polished PoC demo package for stakeholder review.
@@ -40,6 +41,12 @@ Please provide:
 
 9. Highlight which parts of the demo directly validate the hypothesis
 10. Call out any demo elements that are mocked/simulated vs. real implementation
+
+## Rails
+
+**Inputs**: The current PoC build/output, its plan/checkpoint artifacts, and the target audience/outcome (`{{input}}`).
+**Out of scope**: Presenting mocked/simulated elements as real implementation without explicitly calling them out.
+**Failure mode**: If the demo cannot show evidence for the stated hypothesis, reports the evidence gap explicitly in the Hypothesis Status block rather than omitting it.
 
 Context:
 

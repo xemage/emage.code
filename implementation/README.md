@@ -1,9 +1,9 @@
 # emage.code implementation
 
 Canonical knowledge and platform projections for the current release stream
-(**v6.0.1**).
+(**v7.0.0**).
 
-Latest release: v6.0.5
+Latest release: v7.0.0
 
 ## Install
 
@@ -28,14 +28,14 @@ cp    implementation/AGENTS.md         <your-project>/
 cp -r implementation/docs            <your-project>/docs/
 ```
 
-Per-release notes: [`docs/releases/v6.0.1.md`](../docs/releases/v6.0.1.md).
+Per-release notes: [`docs/releases/v7.0.0.md`](../docs/releases/v7.0.0.md).
 
 ## Validation commands
 
 From repository root:
 
 ```bash
-python3 implementation/scripts/check.py --root implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --packaging --triggers --adapters
+python3 implementation/scripts/check.py --root implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --maturity --packaging --triggers --adapters
 node implementation/scripts/verify.mjs --root implementation
 ```
 

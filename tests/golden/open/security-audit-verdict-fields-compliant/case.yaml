@@ -1,0 +1,4 @@
+id: security-audit-verdict-fields-compliant
+command: /security-audit
+status: expected_pass
+tags: [security-audit, verdict, fields, iso8601, hand-authored]

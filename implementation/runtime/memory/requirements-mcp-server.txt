@@ -1,0 +1,27 @@
+# Dependency for `context_retriever_mcp_server/` (T495) -- the dedicated `stdio` MCP
+# server wrapping `ContextRetriever.query()` per `docs/artifacts/
+# scoped-execution-primitive-v1.md` Section 1.4. NOT part of this repo's core
+# `tests/run.py` dependency set (PyYAML + jsonschema, stdlib `unittest`) -- same
+# convention as this directory's own `requirements.txt` (T452's indexing pipeline):
+# only needed to actually run the server process, or to exercise this server's own
+# live adversarial subprocess test
+# (`tests/functional/test_context_retriever_mcp_server.py`), which skips gracefully
+# when this isn't installed.
+#
+# Install into a virtualenv (this environment's Python is externally managed):
+#
+#   python3 -m venv .venv-context-retriever-mcp
+#   source .venv-context-retriever-mcp/bin/activate
+#   pip install -r implementation/runtime/memory/requirements-mcp-server.txt
+#
+# `mcp` is the official Model Context Protocol Python SDK
+# (https://github.com/modelcontextprotocol/python-sdk), MIT-licensed, free, no paid/metered
+# API involved -- a local library install, not a live external service call. Verified this
+# session against the current PyPI release (2.2.0): the convenience server class in the v2
+# SDK line is `mcp.server.mcpserver.MCPServer` (the v1-era `FastMCP` name was renamed
+# upstream; `server.py`'s own module docstring records this and the exact API surface this
+# module actually exercises). No upper pin is applied -- there is nothing in this repo's own
+# server code that depends on a v1-vs-v2 API shape once written against the v2 names, and
+# pinning an old major version here would mean deliberately keeping a known-superseded API.
+
+mcp==2.2.0
