@@ -2,7 +2,9 @@
   "schemaVersion": 1,
   "generatorOwnedKeys": [
     "brave",
+    "context-retriever",
     "context7",
+    "cwso",
     "docker",
     "fetch",
     "filesystem",
@@ -10,9 +12,11 @@
     "github",
     "gitlab",
     "hf-mcp-server",
+    "hindsight",
     "memory",
     "playwright",
     "postgresql",
+    "security-audit",
     "sequential-thinking",
     "supabase",
     "toolradar"

@@ -30,6 +30,12 @@ You are in **Batch Processing mode**. Decompose a large change into independent 
 - If a unit turns out to have a dependency on another unit, flag it immediately and re-plan.
 - Present the decomposition plan for user approval before creating worktrees.
 
+## Rails
+
+**Inputs**: A free-text description of the sweeping change to decompose (`{{input}}`).
+**Out of scope**: Modifying the main branch directly — all work happens in worktree branches; merging units without user-approved PR review.
+**Failure mode**: If a unit turns out to depend on another unit after decomposition, flags it immediately and re-plans rather than continuing with a broken parallel split.
+
 ## Change Description
 
 {{input}}

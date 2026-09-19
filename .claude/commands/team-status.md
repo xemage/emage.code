@@ -106,5 +106,11 @@ Output format:
 - [shared dependency] [impacted streams] [priority]
 ```
 
+## Rails
+
+**Inputs**: `docs/tasks/active-tasks.md`/`completed-tasks.md`, checkpoint history, and an optional scope (project/stream/portfolio) (`{{input}}`).
+**Out of scope**: Modifying any task, checkpoint, or blocker record — reporting only.
+**Failure mode**: If `TEAM_STATUS_V1_ENABLED` is not enabled, returns rollout state and enablement steps only, rather than a partial or fabricated status report.
+
 Scope:
 {{input}}

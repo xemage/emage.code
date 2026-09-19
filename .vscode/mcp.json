@@ -60,6 +60,10 @@
         "Origin": "http://localhost"
       },
       "type": "http"
+    },
+    "hindsight": {
+      "type": "http",
+      "url": "${env:HINDSIGHT_MCP_URL}"
     }
   },
   "inputs": [

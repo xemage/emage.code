@@ -5,6 +5,25 @@ globs: "**"
 
 # Git Workflow
 
+## Rails
+**Inputs**: Triggers on `**` (every Git operation) — branching, committing,
+merging, opening merge requests, or managing agent worktrees, by any agent or
+the orchestrator's own primary checkout, per this instruction's `applyTo`
+frontmatter.
+
+**Out of scope**: Does not define release versioning semantics (see
+`README.md`'s versioning convention, consumed by `coding-standards.md`'s
+Artifact Versioning section instead) or CI pipeline configuration. Does not
+grant any agent, including the orchestrator, authority to bypass branch
+protection for any reason, including docs-only or ledger-only changes.
+
+**Failure mode**: A direct push to a protected branch (`main`/`develop`) is
+rejected by GitLab with "You are not allowed to push code to protected
+branches on this project." The Recovery Procedure section defines the
+required, non-destructive fix (branch off the local commit, reset the local
+protected branch to match `origin`, open a normal MR); force-pushing or
+discarding the commit is explicitly disallowed as a response.
+
 ## Branching Strategy (GitFlow)
 
 ```
