@@ -37,3 +37,9 @@ You are in **Skill Discovery** mode. Match the user's intent to canonical skills
 ### Next command
 `/...` or read `skills/<name>/SKILL.md`
 ```
+
+## Rails
+
+**Inputs**: `implementation/registry/index.json`/`registry/summary.md` and the user's task intent (`{{input}}` or the active task brief).
+**Out of scope**: Modifying any skill or registry file — this command only recommends and points to existing skill files/commands.
+**Failure mode**: If no skill matches the stated intent well, says so explicitly rather than recommending a poorly-fitting skill just to return a non-empty table.

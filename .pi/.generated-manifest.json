@@ -4,6 +4,7 @@
   "generatedAt": "<deterministic>",
   "files": [
     "agents/backend-developer.md",
+    "agents/context-retriever.md",
     "agents/data-mockup-agent.md",
     "agents/database-engineer.md",
     "agents/demo-agent.md",
@@ -32,6 +33,8 @@
     "agents/ux-designer.md",
     "instructions/coding-standards.md",
     "instructions/git-workflow.md",
+    "instructions/mechanical-tier-escalation-policy.md",
+    "instructions/model-routing-policy.md",
     "instructions/poc-guidelines.md",
     "instructions/security-guidelines.md",
     "mcp.json",

@@ -56,3 +56,9 @@ graph TD
     - Per-phase breakdown if available
 
 Provide actionable recommendations for any issues found.
+
+## Rails
+
+**Inputs**: `docs/tasks/active-tasks.md`, `docs/tasks/completed-tasks.md`, and checkpoint history for the current sprint.
+**Out of scope**: Modifying any task or checkpoint file — this command only reports on current state.
+**Failure mode**: If dependency edges for `done` nodes can't be reconstructed from the active rows' `Depends on` cells, omits that edge rather than inventing an unverified dependency.

@@ -120,6 +120,36 @@
       "env": {
         "TOOLRADAR_API_KEY": "${env:TOOLRADAR_API_KEY}"
       }
+    },
+    "hindsight": {
+      "httpUrl": "${env:HINDSIGHT_MCP_URL}"
+    },
+    "cwso": {
+      "httpUrl": "${env:CWSO_MCP_URL}",
+      "headers": {
+        "Authorization": "Bearer ${env:CWSO_BEARER_TOKEN}",
+        "Origin": "${env:CWSO_ORIGIN}"
+      }
+    },
+    "context-retriever": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "implementation.runtime.memory.context_retriever_mcp_server",
+        "--index-dir",
+        "implementation/runtime/memory/_index/em-age-emage.code",
+        "--workspace-root",
+        ".",
+        "--platform-root",
+        ".claude"
+      ]
+    },
+    "security-audit": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "implementation.runtime.security.audit_server"
+      ]
     }
   }
 }

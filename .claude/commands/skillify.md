@@ -50,6 +50,12 @@ After the 4-round interview, generate `.github/skills/<name>/SKILL.md` with this
 
 Show the generated skill file to the user. Apply changes only after explicit approval.
 
+## Rails
+
+**Inputs**: A description of the workflow or recurring pattern to capture (`{{input}}`), refined through the 4-round interview.
+**Out of scope**: Applying the generated skill file without explicit user approval of the draft.
+**Failure mode**: If the user's answers in any interview round are too vague to produce a concrete trigger/steps/success-criteria, asks a follow-up rather than fabricating plausible-sounding but ungrounded content.
+
 ## Workflow to Capture
 
 {{input}}
