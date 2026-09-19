@@ -1,9 +1,9 @@
 # emage.code implementation
 
 Canonical knowledge and platform projections for the current release stream
-(**v7.0.0**).
+(**v7.0.1**).
 
-Latest release: v7.0.0
+Latest release: v7.0.1
 
 ## Install
 
@@ -28,7 +28,7 @@ cp    implementation/AGENTS.md         <your-project>/
 cp -r implementation/docs            <your-project>/docs/
 ```
 
-Per-release notes: [`docs/releases/v7.0.0.md`](../docs/releases/v7.0.0.md).
+Per-release notes: [`docs/releases/v7.0.1.md`](../docs/releases/v7.0.1.md).
 
 ## Validation commands
 
