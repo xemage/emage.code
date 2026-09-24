@@ -3,8 +3,9 @@
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
 | T515 | Decide contract authority for the six tracked-defect golden cases | solution-architect | pending | P1 | — | 2026-09-24 |
+| T516 | Narrow the §3.5 defect-check from free-text scan to a declared field | backend-developer | pending | P2 | — | 2026-09-24 |
 
-> **1 active row (`T515`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **2 active rows (`T515`, `T516`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
@@ -18,6 +19,20 @@
 > one of the eight it evaluated) was actively controlled, not assumed away: the top-level session
 > independently flipped `tech-lead` itself and confirmed the predicted `FAIL`; the implementer had
 > reported its own failure honestly.
+
+> **T516 scoped 2026-09-24** — fixes a defect in the promotion gate itself, found while drafting
+> `T515`'s brief. `_ledger_defect()` regex-scans the whole body of every active `P0`/`P1` brief for
+> component ids, so a brief that spells out its mandated branch name (`agent/<slug>/<id>`) or cites
+> an instruction by filename (`.claude/rules/*.md`) **indicts the component it merely mentions**.
+> Both failures were hit on `T515`'s first draft and confirmed by running the script, not by reading
+> the regex. Latent until `T514` took the `stable` population to 25 agents + 4 instructions +
+> 7 skills — false matches only bite components that have a claim to fail. Fix is a declared
+> `Affects:` field, **mandatory on `P0`/`P1` briefs with a missing field failing loudly**: the
+> tempting "absent field means affects nothing" fallback would turn a loud false positive into a
+> silent false negative, which is worse than the bug. `P2` is honest — the defect makes the gate
+> over-strict, never under-strict, so nothing is mis-promoted. Migration surface is **one brief**
+> today and grows with every future `P0`/`P1` row. See `docs/tasks/task-T516.md` and
+> `docs/plans/plan-067-t516-defect-check-declared-field.md`.
 
 > **T515 dispatched 2026-09-24** — `plan-064` Phase 9, first task. Decides which side of six
 > command-contract-vs-corpus conflicts is authoritative; these six `tracked_defect` golden cases are
