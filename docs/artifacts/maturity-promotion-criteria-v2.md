@@ -1,22 +1,34 @@
-# Artifact: maturity-promotion-criteria-v1.md
+# Artifact: maturity-promotion-criteria-v2.md
 
-> Filename: `maturity-promotion-criteria-v1.md`. Immutable once produced; revisions bump `<N>`.
-
-> **Superseded by `docs/artifacts/maturity-promotion-criteria-v2.md` (T516, 2026-09-24).** Only
-> §3.5's ledger half changed — it now reads a brief's declared `**Affects:**` field instead of
-> free-text scanning brief bodies and ledger titles for component ids. Everything else in v2 is
-> this document verbatim. This file is left unmodified apart from this supersession link, per
-> `AGENTS.md`'s artifact-versioning rule.
+> Filename: `maturity-promotion-criteria-v2.md`. Immutable once produced; revisions bump `<N>`.
 
 ## Metadata
-- **Producer agent**: tech-lead
-- **Task**: T431
-- **Created**: 2026-09-10
-- **Based on**: `docs/tasks/task-T431.md`; `docs/plans/plan-041-phase3-maturity-ladder-detailed-planning.md`
-  (T431 row); `docs/plans/plan-035-roadmap-v7-ground-up.md` §2.4 Phase 3 (T431's original nominal
-  scope, its proposed five `stable` criteria); `docs/artifacts/maturity-levels-v1.md` (T430 — final
-  enum names, mandatory-field policy — cited below, not re-derived).
-- **Supersedes**: none (first version)
+- **Producer agent**: backend-developer
+- **Task**: T516
+- **Created**: 2026-09-24
+- **Based on**: `docs/artifacts/maturity-promotion-criteria-v1.md` (T431 — carried forward verbatim
+  except for §3.5 and this metadata block); `docs/tasks/task-T516.md`;
+  `docs/plans/plan-067-t516-defect-check-declared-field.md`. v1's own basis is unchanged and still
+  applies: `docs/tasks/task-T431.md`; `docs/plans/plan-041-phase3-maturity-ladder-detailed-planning.md`
+  (T431 row); `docs/plans/plan-035-roadmap-v7-ground-up.md` §2.4 Phase 3;
+  `docs/artifacts/maturity-levels-v1.md` (T430).
+- **Supersedes**: `maturity-promotion-criteria-v1.md`
+
+## Changes from v1 (the only substantive change is §3.5's first bullet)
+
+T516 found that §3.5's ledger half, as implemented, could not tell a *reference* from an
+*accusation*: `check-maturity.py` scanned the whole free text of every active `P0`/`P1` brief for
+component ids, so a brief that spelled out its own mandated branch name (`agent/<slug>/<id>`) or
+cited an instruction by filename (`.claude/rules/git-workflow.md`) indicted the component it merely
+mentioned. §3.5 now names an explicitly declared `**Affects:**` field in the brief, and the ledger
+`Title` is no longer scanned at all.
+
+**This is a correction of the implementation, not a change of policy.** v1's wording — a brief that
+"explicitly names `<id>`" — always meant indictment; only the implementation over-read "names" as
+"contains the characters of". The bar for what counts as an open defect is unchanged: the same
+`P0`/`P1`, same active-ledger scope, same golden-case half. What changed is that the brief must now
+*say* which components it indicts instead of being guessed at by a regex. Everything outside §3.5,
+including the golden-case half of §3.5 itself, is carried forward verbatim from v1.
 
 ## Body
 
@@ -255,16 +267,58 @@ bar (the component honestly describes itself and hasn't broken anything), while 
 #### 3.5 Shared defect-check definition (used by all four categories' criterion `e`)
 
 "Open `P0`/`P1` defect against component `<category>/<id>`" means **either**:
-- a row in `docs/tasks/active-tasks.md` with `Priority` ∈ {`P0`, `P1`} whose `Title` or linked
-  `docs/tasks/task-<ID>.md` body explicitly names `<id>`, and whose `Status` is not `done` or
-  `cancelled` (i.e., it is still on the active ledger — `active-tasks.md`'s own invariant per
-  `AGENTS.md` guarantees terminal rows never linger there); **or**
+- a row in `docs/tasks/active-tasks.md` with `Priority` ∈ {`P0`, `P1`} whose `Status` is not `done`
+  or `cancelled` (i.e., it is still on the active ledger — `active-tasks.md`'s own invariant per
+  `AGENTS.md` guarantees terminal rows never linger there), **and whose linked
+  `docs/tasks/task-<ID>.md` declares `<category>/<id>` in its `**Affects:**` field**; **or**
 - (for `command`, and transitively for the 4 command-owning agents) a `tests/golden/**/case.yaml`
   with `status: known_failing` and `known_failing_category: tracked_defect` whose `command:` value
   names this command (or a command owned by this agent), unresolved.
 `P2` and untracked/anecdotal concerns do not block either tier — consistent with `AGENTS.md`'s own
 task-priority vocabulary (`P0` critical path, `P1`, `P2`), reused here rather than inventing a
 parallel severity scale.
+
+##### 3.5.1 The `**Affects:**` field
+
+A task brief declares, in its header block, the components it asserts are **defective**:
+
+```
+**Affects:** <category>/<id>, … | —
+```
+
+- `<category>` ∈ {`agent`, `command`, `instruction`, `skill`}; `<id>` is a real registry id. An
+  entry naming a component that does not exist is **rejected**, not ignored — a typo would
+  otherwise silently protect the very component it was meant to indict.
+- `—` is a valid and common value: "this task indicts no component." Documentation, tooling and
+  process tasks legitimately affect nothing.
+- The field is an accusation, not a reading list. A brief may cite any file, branch name, component
+  document or instruction it needs in its body without that citation blocking anything; only what
+  it declares here counts.
+
+##### 3.5.2 The field is mandatory at `P0`/`P1`, and a missing field is a hard error
+
+An active `P0`/`P1` row whose brief carries no `**Affects:**` field is a **failure**, never a pass:
+
+- `docs/tasks/validate-tasks.py` check **C11** fails the ledger, naming the brief.
+- `implementation/scripts/check-maturity.py` aborts the whole run with a non-zero exit and prints
+  no component report at all, rather than adjudicating claims against a ledger it cannot read.
+
+The tempting alternative — "if there is no declared field, assume the task affects nothing" — is
+rejected deliberately. It would convert a **loud false positive** (a component wrongly blocked;
+visible, annoying, self-correcting) into a **silent false negative** (a component with a real open
+defect promoted to `stable`), which is exactly what criterion `e` exists to prevent. A gate that
+fails open is worse than no gate, because it still prints a reassuring `PASS`. `P2` briefs need not
+declare the field; if they do, the value is still validated for shape and for id existence.
+
+##### 3.5.3 The ledger `Title` is no longer scanned
+
+v1 scanned the ledger row's `Title` as well as the brief body. That scan is dropped, for two
+reasons. It is now **redundant**: any genuine indictment must appear in the brief's `**Affects:**`
+field, so a title scan can add a hit only where the brief did not declare one — i.e. only false
+positives. And it is the **worst-placed** of the two scans: a `Title` is one table cell, shared
+with the ledger's own formatting, so an author who trips it has nowhere to rephrase to, whereas a
+brief body at least allowed the workaround this revision removes. Detection power is unchanged;
+only a false-positive source is removed.
 
 ### 4. `deprecated` — any tier → `deprecated`
 
@@ -315,3 +369,7 @@ adaptation, not the exit path.
   sit at zero coverage (documented above per category, not glossed over).
 - **T436** (honest demotion pass) — uses §4's `## Deprecation Notice` requirement as the mechanical
   gate distinguishing an honest `experimental` label from an actual `deprecated` decision.
+- **T516** (this revision) — narrowed §3.5's ledger half to the declared `**Affects:**` field,
+  added check **C11** to `docs/tasks/validate-tasks.py`, and added the field to
+  `docs/tasks/_template.md`. §3.5.2's mandatory-field rule is the reason `check-maturity.py` can
+  exit non-zero without checking a single component.

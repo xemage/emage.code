@@ -6,6 +6,7 @@
 **Priority:** P2
 **Tier:** standard
 **Depends on:** —
+**Affects:** —
 **Created:** 2026-09-24
 **Completed:** —
 **Based on:** docs/plans/plan-067-t516-defect-check-declared-field.md
