@@ -2,8 +2,9 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T515 | Decide contract authority for the six tracked-defect golden cases | solution-architect | pending | P1 | — | 2026-09-24 |
 
-> **0 active rows. `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **1 active row (`T515`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
@@ -17,6 +18,20 @@
 > one of the eight it evaluated) was actively controlled, not assumed away: the top-level session
 > independently flipped `tech-lead` itself and confirmed the predicted `FAIL`; the implementer had
 > reported its own failure honestly.
+
+> **T515 dispatched 2026-09-24** — `plan-064` Phase 9, first task. Decides which side of six
+> command-contract-vs-corpus conflicts is authoritative; these six `tracked_defect` golden cases are
+> the entire remaining distance from 25/3 to **28/0** in the agent category, and they also block
+> their own commands. **Deliberately read-only and deliberately not an implementation task**:
+> scoping found each defect case is one half of a *zero-sum pair* — every affected command also has
+> a sibling `expected_pass` case whose `expect.py` encodes the same contract against an opposite
+> fixture, so amending a contract to match the real corpus relocates the failure instead of removing
+> it. That is judgment, not code, so it is settled first, on its own, without touching the protected
+> `tests/golden/**` tree. Owner is **Solution Architect** because it owns zero commands, while three
+> of the four agents owning the affected commands are the same agents a favourable resolution would
+> promote. `P1` is honest (this blocks Phase 9); the §3.5 self-reference trap is handled by
+> display-name phrasing verified against `check-maturity.py`, not by priority-gaming. See
+> `docs/tasks/task-T515.md` and `docs/plans/plan-066-t515-command-contract-authority.md`.
 
 > **T514 dispatched 2026-09-24** — `plan-064` Phase 10, approved by the user for task-brief
 > authoring. Re-runs promotion readiness for all 8 agents at `maturity: experimental`; `plan-064`
