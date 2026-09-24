@@ -206,56 +206,7 @@ class TestCheckMaturitySyntheticRegistry(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp_str:
             tmp = Path(tmp_str)
             impl = _scaffold(tmp)
-
-            _write(
-                impl / "knowledge" / "commands" / "demo-command.md",
-                "---\ndescription: \"Runs the demo workflow end to end.\"\n"
-                "agent: \"demo-agent\"\nmaturity: stable\n---\n"
-                + RAILS_BLOCK
-                + "\nSee instruction `demo-instruction` for the routing rule.\n",
-            )
-            _write(
-                impl / "knowledge" / "agents" / "demo-agent.md",
-                "---\nname: \"Demo Agent\"\ndescription: \"Owns the demo command end to end.\"\n"
-                "maturity: stable\n---\n"
-                + RAILS_BLOCK,
-            )
-            _write(
-                impl / "knowledge" / "instructions" / "demo-instruction.md",
-                "---\ndescription: \"Rules for demo routing behaviour.\"\nmaturity: stable\n---\n"
-                + RAILS_BLOCK,
-            )
-            _write(
-                impl / "knowledge" / "skills" / "demo-skill" / "SKILL.md",
-                "---\nname: \"demo-skill\"\ndescription: \"How to run the demo procedure.\"\n"
-                "maturity: stable\n---\n"
-                + RAILS_BLOCK,
-            )
-            repo_root_tmp = tmp
-            _write(
-                repo_root_tmp / "tests" / "golden" / "open" / "demo-case" / "case.yaml",
-                "id: demo-case\ncommand: /demo-command\nstatus: expected_pass\ntags: []\n",
-            )
-            _write(
-                repo_root_tmp / "tests" / "functional" / "test_demo_evidence.py",
-                "# maturity-evidence: instruction/demo-instruction\n"
-                "# maturity-evidence: skill/demo-skill\n",
-            )
-            _write(
-                repo_root_tmp / "docs" / "tasks" / "completed-tasks.md",
-                "# Completed Tasks\n\n| ID | Title | Owner | Done on | Outcome / artifact |\n"
-                "|---|---|---|---|---|\n"
-                "| T900 | Demo shipped work | demo-agent | 2026-09-10 | `docs/artifacts/demo-artifact.md` |\n",
-            )
-            _write(repo_root_tmp / "docs" / "artifacts" / "demo-artifact.md", "# Demo Artifact\n")
-            _write(
-                repo_root_tmp / "docs" / "wiki" / "overview.md",
-                "# Overview\n\n"
-                "- demo-agent owns the full demo workflow end to end for this fixture.\n"
-                "- demo-command runs the demo workflow end to end for this fixture repo.\n"
-                "- demo-instruction governs demo routing rules used across this fixture repo.\n"
-                "- demo-skill documents how the demo procedure runs across this fixture repo.\n",
-            )
+            _write_passing_components(tmp, impl)
 
             mod = _load_module()
             ctx = mod.build_context(impl)
@@ -286,6 +237,282 @@ class TestCheckMaturitySyntheticRegistry(unittest.TestCase):
             self.assertEqual(mod.check_component(components["good-bye"], ctx), [])
             failures = mod.check_component(components["no-notice"], ctx)
             self.assertTrue(any("Deprecation Notice" in f for f in failures))
+
+
+def _write_passing_components(tmp: Path, impl: Path) -> None:
+    """Populate the scaffold with one `stable` component per category that
+    satisfies every criterion, so a test can vary exactly one thing (for the
+    ledger tests below: the task ledger) and attribute any resulting failure
+    to that variation alone.
+    """
+    _write(
+        impl / "knowledge" / "commands" / "demo-command.md",
+        "---\ndescription: \"Runs the demo workflow end to end.\"\n"
+        "agent: \"demo-agent\"\nmaturity: stable\n---\n"
+        + RAILS_BLOCK
+        + "\nSee instruction `demo-instruction` for the routing rule.\n",
+    )
+    _write(
+        impl / "knowledge" / "agents" / "demo-agent.md",
+        "---\nname: \"Demo Agent\"\ndescription: \"Owns the demo command end to end.\"\n"
+        "maturity: stable\n---\n"
+        + RAILS_BLOCK,
+    )
+    _write(
+        impl / "knowledge" / "instructions" / "demo-instruction.md",
+        "---\ndescription: \"Rules for demo routing behaviour.\"\nmaturity: stable\n---\n"
+        + RAILS_BLOCK,
+    )
+    _write(
+        impl / "knowledge" / "skills" / "demo-skill" / "SKILL.md",
+        "---\nname: \"demo-skill\"\ndescription: \"How to run the demo procedure.\"\n"
+        "maturity: stable\n---\n"
+        + RAILS_BLOCK,
+    )
+    repo_root_tmp = tmp
+    _write(
+        repo_root_tmp / "tests" / "golden" / "open" / "demo-case" / "case.yaml",
+        "id: demo-case\ncommand: /demo-command\nstatus: expected_pass\ntags: []\n",
+    )
+    _write(
+        repo_root_tmp / "tests" / "functional" / "test_demo_evidence.py",
+        "# maturity-evidence: instruction/demo-instruction\n"
+        "# maturity-evidence: skill/demo-skill\n",
+    )
+    _write(
+        repo_root_tmp / "docs" / "tasks" / "completed-tasks.md",
+        "# Completed Tasks\n\n| ID | Title | Owner | Done on | Outcome / artifact |\n"
+        "|---|---|---|---|---|\n"
+        "| T900 | Demo shipped work | demo-agent | 2026-09-10 | `docs/artifacts/demo-artifact.md` |\n",
+    )
+    _write(repo_root_tmp / "docs" / "artifacts" / "demo-artifact.md", "# Demo Artifact\n")
+    _write(
+        repo_root_tmp / "docs" / "wiki" / "overview.md",
+        "# Overview\n\n"
+        "- demo-agent owns the full demo workflow end to end for this fixture.\n"
+        "- demo-command runs the demo workflow end to end for this fixture repo.\n"
+        "- demo-instruction governs demo routing rules used across this fixture repo.\n"
+        "- demo-skill documents how the demo procedure runs across this fixture repo.\n",
+    )
+
+
+def _write_ledger(tmp: Path, rows: str) -> None:
+    """Replace the scaffold's empty active-tasks.md with the given table rows."""
+    _write(
+        tmp / "docs" / "tasks" / "active-tasks.md",
+        "# Active Tasks\n\n"
+        "| ID | Title | Owner | Status | Priority | Depends on | Last update |\n"
+        "|---|---|---|---|---|---|---|\n" + rows,
+    )
+
+
+# A brief that *references* components the way the repo's own conventions force
+# it to: the mandated agent-worktree branch name spells out an agent id between
+# slashes, and instructions are cited by filename. Neither `/` nor `.` is a word
+# character, so the pre-T516 free-text scan read both as accusations.
+CITING_BRIEF = """# T901 — Decide something that cites its inputs
+
+**Status:** pending
+**Owner:** Demo Agent
+**Priority:** P1
+**Depends on:** —
+**Affects:** {affects}
+
+## Working agreement
+
+Branch from `develop` in a worktree named `agent/demo-agent/T901`, per the Git Workflow rules.
+
+## Inputs
+
+- `.claude/rules/demo-instruction.md` — the routing rules this decision must respect.
+- `/demo-command`'s declared contract.
+- `.claude/skills/demo-skill/SKILL.md` — the procedure to follow.
+"""
+
+
+class TestLedgerDefectDeclaredField(unittest.TestCase):
+    """Section 3.5's ledger half reads a declared `**Affects:**` field (T516)."""
+
+    def _fixture(self, tmp: Path, rows: str, briefs: dict) -> Path:
+        impl = _scaffold(tmp)
+        _write_passing_components(tmp, impl)
+        _write_ledger(tmp, rows)
+        for task_id, text in briefs.items():
+            _write(tmp / "docs" / "tasks" / f"task-{task_id}.md", text)
+        return impl
+
+    def _results(self, impl: Path) -> dict:
+        mod = _load_module()
+        ctx = mod.build_context(impl)
+        components = [mod._build_component(e, ctx.source_root) for e in ctx.entries]
+        return {c.id: mod.check_component(c, ctx) for c in components}
+
+    def test_citing_a_branch_name_or_instruction_filename_does_not_demote(self):
+        """Regression, task-T516 section 2: an open P1 brief that spells out its
+        own mandated branch name and cites an instruction by filename must not
+        block the components it merely names. Fails against the pre-T516
+        free-text scan, which flagged demo-agent, demo-instruction, demo-command
+        and demo-skill on this exact fixture.
+        """
+        with tempfile.TemporaryDirectory() as tmp_str:
+            tmp = Path(tmp_str)
+            impl = self._fixture(
+                tmp,
+                "| T901 | Decide something that cites its inputs | demo-agent | pending | P1 | — | 2026-09-24 |\n",
+                {"T901": CITING_BRIEF.format(affects="—")},
+            )
+            for ident, failures in self._results(impl).items():
+                self.assertEqual(failures, [], f"{ident} blocked by a mere citation: {failures}")
+
+    def test_title_mentioning_a_component_does_not_demote(self):
+        """The ledger `Title` scan is dropped (task-T516 section 5.3): a title is
+        one table cell with no room to rephrase, and it can no longer add a hit
+        the brief did not declare. Fails against the pre-T516 Title scan.
+        """
+        with tempfile.TemporaryDirectory() as tmp_str:
+            tmp = Path(tmp_str)
+            impl = self._fixture(
+                tmp,
+                "| T901 | Write docs for demo-agent and demo-skill | demo-agent | pending | P1 | — | 2026-09-24 |\n",
+                {"T901": CITING_BRIEF.format(affects="—")},
+            )
+            for ident, failures in self._results(impl).items():
+                self.assertEqual(failures, [], f"{ident} blocked by a ledger title: {failures}")
+
+    def test_declared_component_is_still_blocked(self):
+        """A genuine indictment must still block -- and only what is declared."""
+        with tempfile.TemporaryDirectory() as tmp_str:
+            tmp = Path(tmp_str)
+            impl = self._fixture(
+                tmp,
+                "| T901 | Decide something that cites its inputs | demo-agent | pending | P1 | — | 2026-09-24 |\n",
+                {"T901": CITING_BRIEF.format(affects="agent/demo-agent, instruction/demo-instruction")},
+            )
+            results = self._results(impl)
+            for ident in ("demo-agent", "demo-instruction"):
+                joined = "\n".join(results[ident])
+                self.assertIn("T901", joined, f"{ident} should be blocked by its declaration")
+                self.assertIn("`**Affects:**`", joined)
+            self.assertEqual(results["demo-skill"], [], "an undeclared component must not be blocked")
+            self.assertEqual(results["demo-command"], [], "an undeclared component must not be blocked")
+
+    def test_missing_field_on_p1_brief_fails_loudly(self):
+        """The one hard constraint (task-T516 section 5.1/5.2): a P0/P1 brief with
+        no declaration must abort the run naming the brief, never pass quietly.
+        """
+        with tempfile.TemporaryDirectory() as tmp_str:
+            tmp = Path(tmp_str)
+            brief = CITING_BRIEF.format(affects="—").replace("**Affects:** —\n", "")
+            impl = self._fixture(
+                tmp,
+                "| T901 | Decide something that cites its inputs | demo-agent | pending | P1 | — | 2026-09-24 |\n",
+                {"T901": brief},
+            )
+            mod = _load_module()
+            with self.assertRaises(mod.LedgerDeclarationError) as caught:
+                mod.build_context(impl)
+            message = str(caught.exception)
+            self.assertIn("task-T901.md", message)
+            self.assertIn("mandatory", message)
+
+    def test_missing_field_makes_the_cli_exit_non_zero_with_no_report(self):
+        with tempfile.TemporaryDirectory() as tmp_str:
+            tmp = Path(tmp_str)
+            brief = CITING_BRIEF.format(affects="—").replace("**Affects:** —\n", "")
+            impl = self._fixture(
+                tmp,
+                "| T901 | Decide something that cites its inputs | demo-agent | pending | P1 | — | 2026-09-24 |\n",
+                {"T901": brief},
+            )
+            script = repo_root() / "implementation" / "scripts" / "check-maturity.py"
+            proc = subprocess.run(
+                ["python3", str(script), "--root", str(impl)],
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(proc.returncode, 2, proc.stdout + proc.stderr)
+            self.assertIn("task-T901.md", proc.stderr)
+            self.assertNotIn("components checked", proc.stdout)
+
+    def test_p2_brief_need_not_declare_and_never_blocks(self):
+        with tempfile.TemporaryDirectory() as tmp_str:
+            tmp = Path(tmp_str)
+            brief = CITING_BRIEF.format(affects="—").replace("**Affects:** —\n", "")
+            brief = brief.replace("**Priority:** P1", "**Priority:** P2")
+            impl = self._fixture(
+                tmp,
+                "| T901 | Decide something that cites its inputs | demo-agent | pending | P2 | — | 2026-09-24 |\n",
+                {"T901": brief},
+            )
+            for ident, failures in self._results(impl).items():
+                self.assertEqual(failures, [], f"{ident} blocked by a P2 row: {failures}")
+
+    def test_unknown_component_id_is_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp_str:
+            tmp = Path(tmp_str)
+            impl = self._fixture(
+                tmp,
+                "| T901 | Decide something that cites its inputs | demo-agent | pending | P1 | — | 2026-09-24 |\n",
+                {"T901": CITING_BRIEF.format(affects="agent/demo-agnet")},
+            )
+            mod = _load_module()
+            with self.assertRaises(mod.LedgerDeclarationError) as caught:
+                mod.build_context(impl)
+            self.assertIn("names no existing component", str(caught.exception))
+
+    def test_malformed_entry_is_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp_str:
+            tmp = Path(tmp_str)
+            impl = self._fixture(
+                tmp,
+                "| T901 | Decide something that cites its inputs | demo-agent | pending | P1 | — | 2026-09-24 |\n",
+                {"T901": CITING_BRIEF.format(affects="demo-agent")},
+            )
+            mod = _load_module()
+            with self.assertRaises(mod.LedgerDeclarationError) as caught:
+                mod.build_context(impl)
+            self.assertIn("malformed entry", str(caught.exception))
+
+
+class TestAffectsParsing(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load_module()
+        cls.known = {"agent/demo-agent", "command/demo-command", "skill/demo-skill"}
+
+    def test_em_dash_means_no_component_affected(self):
+        self.assertEqual(self.mod._parse_affects("—", self.known), (set(), []))
+
+    def test_plain_hyphen_is_also_accepted_as_none(self):
+        self.assertEqual(self.mod._parse_affects("-", self.known), (set(), []))
+
+    def test_multiple_entries_parse(self):
+        declared, errors = self.mod._parse_affects(
+            "agent/demo-agent, `command/demo-command`", self.known
+        )
+        self.assertEqual(errors, [])
+        self.assertEqual(declared, {"agent/demo-agent", "command/demo-command"})
+
+    def test_empty_value_is_an_error(self):
+        _, errors = self.mod._parse_affects("", self.known)
+        self.assertTrue(errors)
+
+    def test_dash_cannot_be_combined_with_entries(self):
+        _, errors = self.mod._parse_affects("—, agent/demo-agent", self.known)
+        self.assertTrue(any("cannot be combined" in e for e in errors))
+
+    def test_unknown_category_is_rejected(self):
+        _, errors = self.mod._parse_affects("widget/demo-agent", self.known)
+        self.assertTrue(any("malformed entry" in e for e in errors))
+
+    def test_mentions_helper_is_unchanged(self):
+        """`_mentions()` must keep matching ids inside paths -- criterion (d)'s
+        `_referenced_in_agents_or_commands()` depends on exactly that. T516
+        fixed the caller, not the shared helper.
+        """
+        self.assertTrue(self.mod._mentions("branch agent/demo-agent/T901", "demo-agent"))
+        self.assertTrue(self.mod._mentions("see `.claude/rules/git-workflow.md`", "git-workflow"))
+        self.assertFalse(self.mod._mentions("see demo-agentic things", "demo-agent"))
 
 
 class TestCheckMaturityRealRepo(unittest.TestCase):

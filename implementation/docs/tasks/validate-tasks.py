@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import json
 import re
 import sys
 from collections import Counter
@@ -15,6 +16,27 @@ EXACT_BRIEF_RE = re.compile(r"^task-(T\d{3,})\.md$")
 ANY_BRIEF_RE = re.compile(r"^task-(T\d{3,}).*\.md$")
 STATUS_LINE_RE = re.compile(r"^\*\*Status:\*\*\s*([A-Za-z_]+)\s*$", re.MULTILINE)
 ALT_STATUS_LINE_RE = re.compile(r"^\*\*Status\*\*:\s*([A-Za-z_]+)\s*$", re.MULTILINE)
+
+# C11 -- declared `**Affects:**` field (T516).
+#
+# `maturity-promotion-criteria-v2.md` section 3.5 decides whether a component
+# has an open defect by reading this field, and nothing else. It is mandatory
+# on every active P0/P1 brief: an absent field must never be read as "this
+# task affects nothing", because that turns a loud false positive (a component
+# wrongly blocked) into a silent false negative (a component with a real open
+# defect promoted while the gate still prints PASS).
+#
+# Kept deliberately in sync with, but independent of, the same parsing in
+# implementation/scripts/check-maturity.py -- this validator ships standalone
+# into target repos that have no copy of that script.
+AFFECTS_LINE_RE = re.compile(r"^\*\*Affects:\*\*[ \t]*(.*)$", re.MULTILINE)
+ALT_AFFECTS_LINE_RE = re.compile(r"^\*\*Affects\*\*:[ \t]*(.*)$", re.MULTILINE)
+AFFECTS_NONE_TOKENS = {"—", "–", "-", "--"}
+AFFECTS_CATEGORIES = ("agent", "command", "instruction", "skill")
+AFFECTS_ENTRY_RE = re.compile(
+    r"^(" + "|".join(AFFECTS_CATEGORIES) + r")/([A-Za-z0-9][A-Za-z0-9._-]*)$"
+)
+AFFECTS_REQUIRED_PRIORITIES = {"P0", "P1"}
 
 
 class Row:
@@ -81,6 +103,69 @@ def get_brief_status(path: Path) -> str | None:
 
 
 
+def get_brief_affects(path: Path) -> str | None:
+    """Return the raw right-hand side of a brief's `**Affects:**` line."""
+    text = path.read_text(encoding="utf-8")
+    m = AFFECTS_LINE_RE.search(text) or ALT_AFFECTS_LINE_RE.search(text)
+    return m.group(1).strip() if m else None
+
+
+def known_component_keys(base: Path) -> set[str]:
+    """`{"<category>/<id>", ...}` from the registry index, when one is present.
+
+    Best effort on purpose: this validator also ships into target repos that
+    carry no registry. When the set comes back empty, C11 still enforces the
+    field's presence and shape; `check-maturity.py` remains authoritative for
+    rejecting entries that name a component which does not exist.
+    """
+    for candidate in (base, *base.parents):
+        index = candidate / "implementation" / "registry" / "index.json"
+        if not index.is_file():
+            continue
+        try:
+            data = json.loads(index.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return set()
+        keys = set()
+        for entry in data.get("entries", []):
+            category, ident = entry.get("category"), entry.get("id")
+            if category and ident:
+                keys.add(f"{category}/{ident}")
+        return keys
+    return set()
+
+
+def affects_errors(raw: str, known: set[str]) -> list[str]:
+    """Validate one `**Affects:**` value; returns a list of human-readable errors."""
+    if not raw:
+        return ["`**Affects:**` is present but empty (use `—` for 'no component')"]
+    if raw in AFFECTS_NONE_TOKENS:
+        return []
+
+    errors: list[str] = []
+    declared = 0
+    for part in raw.split(","):
+        entry = part.strip().strip("`")
+        if not entry:
+            continue
+        if entry in AFFECTS_NONE_TOKENS:
+            errors.append("`—` cannot be combined with other entries")
+            continue
+        if not AFFECTS_ENTRY_RE.match(entry):
+            errors.append(
+                f"malformed `**Affects:**` entry '{entry}' (expected `<category>/<id>` with "
+                f"category one of {'/'.join(AFFECTS_CATEGORIES)}, or `—`)"
+            )
+            continue
+        if known and entry not in known:
+            errors.append(f"`**Affects:**` entry '{entry}' names no existing component")
+            continue
+        declared += 1
+    if not declared and not errors:
+        errors.append(f"`**Affects:**` value '{raw}' declares nothing (use `—` for 'no component')")
+    return errors
+
+
 def add_fail(fails: list[tuple[str, str]], code: str, msg: str) -> None:
     fails.append((code, msg))
 
@@ -103,6 +188,7 @@ def main() -> int:
 
     active_ids: list[str] = []
     completed_ids: list[str] = []
+    active_priorities: list[tuple[int, str, str]] = []
 
     # C1, C2, C3, C4, C10 for active
     for row in active_rows:
@@ -116,6 +202,7 @@ def main() -> int:
 
         task_id, _, _, status, priority, _, last_update = row.cells
         active_ids.append(task_id)
+        active_priorities.append((row.line_no, task_id, priority))
 
         if status in {"done", "cancelled"}:
             add_fail(
@@ -230,6 +317,32 @@ def main() -> int:
                 "C8",
                 f"completed ID {task_id} has brief status '{status}' (expected done or cancelled)",
             )
+
+    # C11 every active P0/P1 brief declares a well-formed `**Affects:**` field
+    known = known_component_keys(base)
+    for line_no, task_id, priority in active_priorities:
+        brief = base / f"task-{task_id}.md"
+        if not brief.is_file():
+            if priority in AFFECTS_REQUIRED_PRIORITIES:
+                add_fail(
+                    fails,
+                    "C11",
+                    f"active-tasks.md:{line_no} {task_id} is {priority} but task-{task_id}.md "
+                    "is missing, so its `**Affects:**` field cannot be read",
+                )
+            continue
+        raw = get_brief_affects(brief)
+        if raw is None:
+            if priority in AFFECTS_REQUIRED_PRIORITIES:
+                add_fail(
+                    fails,
+                    "C11",
+                    f"task-{task_id}.md has no `**Affects:**` field; it is mandatory for "
+                    f"{priority} briefs (declare `—` if the task indicts no component)",
+                )
+            continue
+        for err in affects_errors(raw, known):
+            add_fail(fails, "C11", f"task-{task_id}.md: {err}")
 
     # C9 completed done_on non-decreasing
     prev_date: dt.date | None = None

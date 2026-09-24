@@ -4,6 +4,7 @@
 **Owner:** Solution Architect
 **Priority:** P1
 **Depends on:** —
+**Affects:** command/plan, command/new-feature, command/prepare-release
 **Plan:** `docs/plans/plan-066-t515-command-contract-authority.md` (`plan-064` Phase 9)
 
 ## 1. Objective
@@ -117,11 +118,13 @@ rules under `.claude/rules/`, i.e. `agent/<your-agent-slug>/<task-id>`, using th
 work in the primary checkout. Conventional Commits. Do not merge your own branch and do not push to
 `develop` or `main` — hand the branch back and the orchestrator opens the MR.
 
-The literal branch name is deliberately not spelled out above. This brief is `P1`, and the §3.5
-defect check scans brief bodies for component ids, so spelling your own slug in the conventional
-branch form would make this task block your own promotion claim — a matcher defect recorded in
-`docs/plans/plan-066-t515-command-contract-authority.md` §6, not something you need to work around
-yourself beyond using the convention as stated.
+Use the convention as stated — spelling out your own branch name is fine. An earlier version of
+this brief avoided doing so, because the §3.5 defect check used to free-text-scan brief bodies for
+component ids and would have read the slug in `agent/<slug>/<id>` as an indictment, blocking the
+owner's own promotion claim. `T516` fixed that: defects are now declared in the `**Affects:**` field
+above, and a mention is no longer an accusation. Background in
+`docs/plans/plan-066-t515-command-contract-authority.md` §6 and
+`docs/plans/plan-067-t516-defect-check-declared-field.md`.
 
 ## 9. Blocker protocol
 

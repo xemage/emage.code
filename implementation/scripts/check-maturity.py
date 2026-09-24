@@ -13,8 +13,9 @@ is registry/knowledge-pipeline-adjacent, so it follows `generate-registry.py`'s
 convention, not `scripts/`'s.
 
 For every category/transition criterion, see `docs/artifacts/
-maturity-promotion-criteria-v1.md` (T431) -- this file implements each one as a
-real, non-subjective check, not a re-derivation of the criteria themselves.
+maturity-promotion-criteria-v2.md` (T431, section 3.5 revised by T516) -- this
+file implements each one as a real, non-subjective check, not a re-derivation
+of the criteria themselves.
 
 Interpretation notes (T431 leaves these as "your call" per its own text):
 - A component claiming `stable` must still satisfy the `experimental->beta`
@@ -41,6 +42,13 @@ Interpretation notes (T431 leaves these as "your call" per its own text):
 - Deprecation Notice's `**Replacement**:` value is resolved against the set
   of all 77 real component ids (any category), since T431's wording ("id of
   the component that replaces it") does not restrict it to the same category.
+- The ledger half of section 3.5's defect check reads each active P0/P1
+  brief's declared `**Affects:** <category>/<id>, ... | —` field rather than
+  free-text scanning the brief body and ledger Title for component ids (T516).
+  The field is mandatory at P0/P1: a missing or malformed declaration aborts
+  the whole run with a non-zero exit (see `LedgerDeclarationError`), because
+  reading "no declaration" as "affects nothing" would turn a loud false
+  positive into a silent false negative.
 
 Usage (from repository root):
     python3 implementation/scripts/check-maturity.py --root implementation
@@ -53,7 +61,7 @@ import importlib.util
 import json
 import re
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import jsonschema
@@ -131,6 +139,10 @@ class Context:
     other_command_files: dict
     functional_test_files: list
     golden_expect_files: list
+    # `<task id>` -> `{"<category>/<id>", ...}` declared by that brief's
+    # `**Affects:**` field. Defaults to `{}` so hand-built Contexts stay valid;
+    # `_ledger_defect()` refuses to read a missing entry as "affects nothing".
+    ledger_affects: dict = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -364,19 +376,144 @@ def _schema_check(category: str, frontmatter: dict, schemas_dir: Path) -> str | 
 
 # ---------------------------------------------------------------------------
 # Shared defect-check definition (section 3.5)
+#
+# The ledger half of section 3.5 reads an *explicitly declared* `**Affects:**`
+# field in each active P0/P1 brief (T516). It deliberately no longer free-text
+# scans brief bodies (or ledger Titles) for component ids: neither `/` nor `.`
+# is a word character, so the old `_mentions()`-based scan read a brief's own
+# mandated branch name (`agent/<slug>/<id>`) or a cited instruction filename
+# (`.claude/rules/git-workflow.md`) as an accusation against the component it
+# merely referenced. `_mentions()` itself is unchanged -- it still backs
+# `_referenced_in_agents_or_commands()`, where matching a mention *is* the
+# intent.
+#
+# The field is mandatory at P0/P1 and a missing or malformed declaration is a
+# hard error (`LedgerDeclarationError`), never a quiet pass. "No declaration
+# means nothing is affected" would convert a loud false positive into a silent
+# false negative -- a component with a real open defect promoted to `stable`
+# while the gate still printed a reassuring PASS. See task-T516 section 5.
 # ---------------------------------------------------------------------------
 
-def _ledger_defect(ident: str, priorities: set, ctx: Context) -> str | None:
+class LedgerDeclarationError(Exception):
+    """An active P0/P1 brief does not carry a usable `**Affects:**` field.
+
+    Raised rather than swallowed so the whole run stops with a non-zero exit
+    and a message naming the brief, instead of adjudicating maturity claims
+    against a ledger it cannot read.
+    """
+
+
+AFFECTS_RE = re.compile(r"^\*\*Affects:\*\*[ \t]*(.*)$", re.MULTILINE)
+ALT_AFFECTS_RE = re.compile(r"^\*\*Affects\*\*:[ \t]*(.*)$", re.MULTILINE)
+AFFECTS_NONE_TOKENS = frozenset({"—", "–", "-", "--"})
+AFFECTS_CATEGORIES = ("agent", "command", "instruction", "skill")
+AFFECTS_ENTRY_RE = re.compile(
+    r"^(" + "|".join(AFFECTS_CATEGORIES) + r")/([A-Za-z0-9][A-Za-z0-9._-]*)$"
+)
+DECLARED_PRIORITIES = frozenset({"P0", "P1"})
+
+
+def _raw_affects_value(text: str) -> str | None:
+    """Return the raw right-hand side of a brief's `**Affects:**` line."""
+    match = AFFECTS_RE.search(text) or ALT_AFFECTS_RE.search(text)
+    return match.group(1).strip() if match else None
+
+
+def _parse_affects(raw: str, known: set) -> tuple[set, list]:
+    """Parse one `**Affects:**` value into `{"<category>/<id>", ...}` + errors.
+
+    `known` is the set of real `<category>/<id>` keys; an entry naming a
+    component that does not exist is rejected rather than silently protecting
+    the component the typo was meant to indict (task-T516 section 5.5).
+    """
+    if not raw:
+        return set(), ["`**Affects:**` is present but empty (use `—` for 'no component')"]
+    if raw in AFFECTS_NONE_TOKENS:
+        return set(), []
+
+    declared: set = set()
+    errors: list = []
+    for part in raw.split(","):
+        entry = part.strip().strip("`")
+        if not entry:
+            continue
+        if entry in AFFECTS_NONE_TOKENS:
+            errors.append(f"`—` cannot be combined with other entries (in {raw!r})")
+            continue
+        match = AFFECTS_ENTRY_RE.match(entry)
+        if not match:
+            errors.append(
+                f"malformed entry {entry!r} (expected `<category>/<id>` with category one of "
+                + "/".join(AFFECTS_CATEGORIES)
+                + ", or `—`)"
+            )
+            continue
+        if known and entry not in known:
+            errors.append(f"entry {entry!r} names no existing component")
+            continue
+        declared.add(entry)
+    if not declared and not errors:
+        errors.append(
+            f"`**Affects:**` value {raw!r} declares nothing (use `—` for 'no component')"
+        )
+    return declared, errors
+
+
+def _collect_ledger_declarations(active_rows: list, repo_root: Path, known: set) -> dict:
+    """Map every open task id to the components its brief declares it affects.
+
+    Raises `LedgerDeclarationError`, naming every offending brief, if an active
+    P0/P1 row is missing the field, or if any row (at any priority) declares a
+    malformed or unknown entry.
+    """
+    declarations: dict = {}
+    problems: list = []
+    for row in active_rows:
+        if row["status"] in ("done", "cancelled"):
+            continue
+        brief = repo_root / "docs" / "tasks" / f"task-{row['id']}.md"
+        required = row["priority"] in DECLARED_PRIORITIES
+        if not brief.is_file():
+            if required:
+                problems.append(
+                    f"task-{row['id']}.md: brief file not found (required at {row['priority']})"
+                )
+            continue
+        raw = _raw_affects_value(brief.read_text(encoding="utf-8"))
+        if raw is None:
+            if required:
+                problems.append(
+                    f"task-{row['id']}.md: no `**Affects:**` field; it is mandatory for "
+                    f"{row['priority']} briefs (declare `—` if the task indicts no component)"
+                )
+            continue
+        entries, errors = _parse_affects(raw, known)
+        problems.extend(f"task-{row['id']}.md: {err}" for err in errors)
+        declarations[row["id"]] = entries
+    if problems:
+        raise LedgerDeclarationError(
+            "task-ledger `**Affects:**` declarations are unusable, so no maturity claim can be "
+            "adjudicated:\n" + "\n".join(f"  - {problem}" for problem in problems)
+        )
+    return declarations
+
+
+def _ledger_defect(category: str, ident: str, priorities: set, ctx: Context) -> str | None:
+    key = f"{category}/{ident}"
     for row in ctx.active_rows:
         if row["priority"] not in priorities:
             continue
         if row["status"] in ("done", "cancelled"):
             continue
-        if _mentions(row["title"], ident):
-            return f"open {row['priority']} task {row['id']} names it in its Title"
-        brief = ctx.repo_root / "docs" / "tasks" / f"task-{row['id']}.md"
-        if brief.is_file() and _mentions(brief.read_text(encoding="utf-8"), ident):
-            return f"open {row['priority']} task {row['id']} names it in its brief"
+        if row["id"] not in ctx.ledger_affects:
+            raise LedgerDeclarationError(
+                f"task-{row['id']}.md: no usable `**Affects:**` declaration for open "
+                f"{row['priority']} task {row['id']}; refusing to read that as 'affects nothing'"
+            )
+        if key in ctx.ledger_affects[row["id"]]:
+            return (
+                f"open {row['priority']} task {row['id']} declares it in its `**Affects:**` field"
+            )
     return None
 
 
@@ -394,7 +531,7 @@ def _golden_tracked_defect(owned_commands: list, ctx: Context) -> str | None:
 
 def _open_defect(category: str, ident: str, ctx: Context, include_p1: bool) -> str | None:
     priorities = {"P0", "P1"} if include_p1 else {"P0"}
-    ledger_hit = _ledger_defect(ident, priorities, ctx)
+    ledger_hit = _ledger_defect(category, ident, priorities, ctx)
     if ledger_hit:
         return ledger_hit
     owned_commands: list = []
@@ -735,6 +872,8 @@ def build_context(root: Path) -> Context:
     platforms = reg._detect_platforms(repo_root)
     entries = reg._collect_entries(source_root, platforms)
     command_agent, agent_commands = _collect_command_ownership(entries, source_root)
+    active_rows = _load_active_tasks(repo_root)
+    known_component_keys = {f"{e['category']}/{e['id']}" for e in entries}
     return Context(
         repo_root=repo_root,
         source_root=source_root,
@@ -746,7 +885,7 @@ def build_context(root: Path) -> Context:
         command_ids={e["id"] for e in entries if e["category"] == "command"},
         all_ids={e["id"] for e in entries},
         golden_cases=_collect_golden_cases(repo_root),
-        active_rows=_load_active_tasks(repo_root),
+        active_rows=active_rows,
         completed_rows=_load_completed_tasks(repo_root),
         wiki_files=sorted((repo_root / "docs" / "wiki").rglob("*.md")),
         agents_md_text=(repo_root / "AGENTS.md").read_text(encoding="utf-8"),
@@ -754,6 +893,7 @@ def build_context(root: Path) -> Context:
         other_command_files={e["id"]: source_root / e["path"] for e in entries if e["category"] == "command"},
         functional_test_files=sorted((repo_root / "tests" / "functional").rglob("*.py")),
         golden_expect_files=sorted((repo_root / "tests" / "golden").glob("*/*/expect.py")),
+        ledger_affects=_collect_ledger_declarations(active_rows, repo_root, known_component_keys),
     )
 
 
@@ -808,7 +948,13 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     root = Path(args.root).resolve()
-    ctx = build_context(root)
+    try:
+        ctx = build_context(root)
+    except LedgerDeclarationError as exc:
+        # Loud on purpose: no component report at all, and a non-zero exit.
+        # A half-readable ledger must not produce a reassuring PASS.
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
     components = [_build_component(entry, ctx.source_root) for entry in ctx.entries]
     results = [(component, check_component(component, ctx)) for component in components]
     report, ok = _format_report(results, args.verbose)
