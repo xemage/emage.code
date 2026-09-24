@@ -1,6 +1,11 @@
 # T514 — Agent promotion re-run: re-evaluate all 8 experimental agents
 
-**Status:** pending
+**Status:** done
+
+**Closure note:** 5 of 8 promoted; 3 correctly held at `experimental` on criteria 3+7. plan-064
+§1.3 confirmed, count corrected 4 → 5. Independently re-verified by the top-level session,
+including the promised `tech-lead` conflict-of-interest control. See `docs/tasks/completed-tasks.md`
+T514 row.
 **Owner:** Tech Lead
 **Priority:** P2
 **Depends on:** none

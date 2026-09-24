@@ -13,13 +13,13 @@ Generated from: implementation/knowledge
 
 | ID | Category | Maturity | Path |
 |---|---|---|---|
-| backend-developer | agent | experimental | agents/backend-developer.md |
-| context-retriever | agent | experimental | agents/context-retriever.md |
+| backend-developer | agent | stable | agents/backend-developer.md |
+| context-retriever | agent | stable | agents/context-retriever.md |
 | data-mockup-agent | agent | stable | agents/data-mockup-agent.md |
 | database-engineer | agent | stable | agents/database-engineer.md |
 | demo-agent | agent | stable | agents/demo-agent.md |
-| devops-engineer | agent | experimental | agents/devops-engineer.md |
-| evaluation-agent | agent | experimental | agents/evaluation-agent.md |
+| devops-engineer | agent | stable | agents/devops-engineer.md |
+| evaluation-agent | agent | stable | agents/evaluation-agent.md |
 | feasibility-agent | agent | stable | agents/feasibility-agent.md |
 | frontend-developer | agent | stable | agents/frontend-developer.md |
 | integration-agent | agent | stable | agents/integration-agent.md |
@@ -35,7 +35,7 @@ Generated from: implementation/knowledge
 | scaffolding-agent | agent | stable | agents/scaffolding-agent.md |
 | scrum-master | agent | stable | agents/scrum-master.md |
 | security-engineer | agent | experimental | agents/security-engineer.md |
-| solution-architect | agent | experimental | agents/solution-architect.md |
+| solution-architect | agent | stable | agents/solution-architect.md |
 | tech-lead | agent | experimental | agents/tech-lead.md |
 | technical-debt-narrator | agent | stable | agents/technical-debt-narrator.md |
 | technical-writer | agent | stable | agents/technical-writer.md |
