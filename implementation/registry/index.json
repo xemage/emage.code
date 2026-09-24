@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-09-17T13:43:48+02:00",
+  "generatedAt": "2026-09-24T03:15:39+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -17,8 +17,8 @@
       "category": "agent",
       "name": "Backend Developer",
       "path": "agents/backend-developer.md",
-      "checksum": "25ea7871a7937258a3bee73858ce963ea7c885b4c5beb46e6b812a669e8c9dfe",
-      "maturity": "experimental",
+      "checksum": "12977bfe93b857978a3a098a3df28e39921fa86c706516f568dd521b4871fa9f",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -45,8 +45,8 @@
       "category": "agent",
       "name": "Context Retriever",
       "path": "agents/context-retriever.md",
-      "checksum": "40e0236fd169e1935dff6912a0f8657f70c6b532c6c671e47629baad538e03e4",
-      "maturity": "experimental",
+      "checksum": "19afb05d1865b2d3aa25d2dbfef005947b47fd9f526efe339f0167a33cbf093d",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -157,8 +157,8 @@
       "category": "agent",
       "name": "DevOps Engineer",
       "path": "agents/devops-engineer.md",
-      "checksum": "ea46b25db3a9f334b7403191bb85c7ff0a62111ef6d899206850f640fb1b6b4e",
-      "maturity": "experimental",
+      "checksum": "bff0b2f29837a85f3347d8a571960a83a7a6f512bd8aea7bd911fec874320423",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -185,8 +185,8 @@
       "category": "agent",
       "name": "Evaluation Agent",
       "path": "agents/evaluation-agent.md",
-      "checksum": "15a02737f66631bea2c75999e2e428b845fade8965e068ef30974a50e5ccbf23",
-      "maturity": "experimental",
+      "checksum": "b426a0f4f69fdf8d4ada2f257cc12b8359480039f93e575a36c707dc97bf1c76",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -633,8 +633,8 @@
       "category": "agent",
       "name": "Solution Architect",
       "path": "agents/solution-architect.md",
-      "checksum": "ee7d3556f6a19effeb16140c60f34138b0e5177d547019aee95116481041a7cf",
-      "maturity": "experimental",
+      "checksum": "3fca56ddf64bf8a3faa8e6bf1362bb2ea2e723b6075476b4665c519905ec5c54",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
