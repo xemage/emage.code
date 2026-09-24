@@ -2,6 +2,20 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T514 | Agent promotion re-run: re-evaluate all 8 experimental agents | tech-lead | pending | P2 | none | 2026-09-24 |
+
+> **T514 dispatched 2026-09-24** — `plan-064` Phase 10, approved by the user for task-brief
+> authoring. Re-runs promotion readiness for all 8 agents at `maturity: experimental`; `plan-064`
+> §1.3's hypothesis is that four of them (`context-retriever`, `devops-engineer`,
+> `evaluation-agent`, `solution-architect`) were blocked *solely* by `T456`/`T457`, both closed
+> 2026-09-17. The brief treats that as a hypothesis to test, not a target to hit. **P2 is
+> deliberate and disclosed**: the work genuinely is nice-to-have (it collects already-earned value
+> and blocks nothing), and P2 also keeps this row out of criterion 7's open-defect scan — which at
+> P0/P1 would block the very promotions the task exists to perform, the self-referential trap this
+> repo has hit repeatedly. `check-maturity.py`'s own P2 filter was verified against the
+> implementation before dispatch, not taken from the criteria document. See `docs/tasks/task-T514.md`
+> and `docs/plans/plan-065-t514-dispatch-plan-coverage.md`.
+
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
 > Owners are agent names from `knowledge/agents/`.
