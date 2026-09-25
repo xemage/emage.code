@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -150,9 +151,17 @@ class TestInstallScript(unittest.TestCase):
             active = (tasks / "active-tasks.md").read_text(encoding="utf-8")
             self.assertIn("| T042 | CI gates |", completed)
             self.assertIn("| T099 | Open item |", active)
-            self.assertIn("Append-only log. Entries move here", completed)
-            self.assertIn("Per-task briefs live alongside", active)
-            self.assertNotIn("> Keep this note.", active)
+            self.assertIn("Append-only log.", completed)
+            # T518: these two assertions previously read
+            #     assertIn("Per-task briefs live alongside", active)
+            #     assertNotIn("> Keep this note.", active)
+            # i.e. they asserted that the template's prose replaced the target's
+            # own note. That encoded the bug: --update was substituting
+            # fresh-install guidance ("this ledger starts EMPTY", "the first real
+            # task is T001") for a project's actual record.
+            self.assertIn("> Keep this note.", active)
+            self.assertNotIn("Per-task briefs live alongside", active)
+            self.assertNotIn("ledger starts EMPTY", active)
 
     def test_claude_code_install_places_root_files(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -946,6 +955,277 @@ class TestInstallScript(unittest.TestCase):
                 dest2_after,
                 "an errored --force-prune-keys invocation must not write anything to --dest",
             )
+
+
+class TestInstallPreservesProjectLocalFiles(unittest.TestCase):
+    """T518: `--update` must not delete files the harness never ships.
+
+    `sync_tree_into()` runs `rsync -a --delete`, so any file present in the
+    target but absent from `implementation/` was swept on every update. Two real
+    cases: `.claude/settings.json` (a host's Bash-permission allowlist, recorded
+    in T512 and hit again verbatim in T517) and `.github/workflows/` (the target
+    project's own CI). Every test here fails against the pre-T518 script.
+    """
+
+    SETTINGS = '{\n  "permissions": {\n    "allow": ["Bash(git status:*)"]\n  }\n}\n'
+    SETTINGS_LOCAL = '{\n  "permissions": {\n    "allow": ["Bash(ls:*)"]\n  }\n}\n'
+    WORKFLOW = "name: ci\non: [push]\njobs:\n  t:\n    runs-on: ubuntu-latest\n"
+
+    @classmethod
+    def setUpClass(cls):
+        cls.bash = shutil.which("bash")
+        if not cls.bash:
+            raise unittest.SkipTest("bash not available on PATH")
+
+    @staticmethod
+    def _path_without_rsync(tmp: Path) -> str:
+        """A PATH identical to the current one minus rsync.
+
+        CI's `python:3.12-alpine` image has no rsync at all, so install.sh's
+        hand-rolled fallback runs there and nowhere else -- which is exactly how
+        the T513 `set -e` bug reached production. Shadowing rsync with a stub
+        would not do: install.sh dispatches on `command -v rsync`, which a stub
+        still satisfies. The binary has to be genuinely absent from PATH.
+        """
+        farm = tmp / "norsync-bin"
+        farm.mkdir(parents=True, exist_ok=True)
+        for entry in os.environ.get("PATH", "").split(os.pathsep):
+            if not entry or not os.path.isdir(entry):
+                continue
+            for name in os.listdir(entry):
+                if name == "rsync":
+                    continue
+                link = farm / name
+                if link.exists() or link.is_symlink():
+                    continue
+                try:
+                    link.symlink_to(os.path.join(entry, name))
+                except OSError:
+                    pass
+        return str(farm)
+
+    def _run_install(
+        self,
+        target: Path,
+        platform: str = "all",
+        update: bool = False,
+        path_override: str | None = None,
+    ) -> subprocess.CompletedProcess[str]:
+        args = [
+            self.bash,
+            str(repo_root() / "scripts" / "install.sh"),
+            "--target",
+            str(target),
+            "--platform",
+            platform,
+        ]
+        if update:
+            args.append("--update")
+        env = dict(os.environ)
+        if path_override is not None:
+            env["PATH"] = path_override
+        return subprocess.run(
+            args, cwd=repo_root(), capture_output=True, text=True, check=False, env=env
+        )
+
+    def _seed(self, target: Path) -> None:
+        """A target that already looks like a real project."""
+        target.mkdir(parents=True, exist_ok=True)
+        (target / "AGENTS.md").write_text("# existing", encoding="utf-8")
+        claude = target / ".claude"
+        claude.mkdir(exist_ok=True)
+        (claude / "settings.json").write_text(self.SETTINGS, encoding="utf-8")
+        (claude / "settings.local.json").write_text(self.SETTINGS_LOCAL, encoding="utf-8")
+        gh = target / ".github"
+        (gh / "workflows").mkdir(parents=True, exist_ok=True)
+        (gh / "ISSUE_TEMPLATE").mkdir(parents=True, exist_ok=True)
+        (gh / "workflows" / "ci.yml").write_text(self.WORKFLOW, encoding="utf-8")
+        (gh / "ISSUE_TEMPLATE" / "bug.md").write_text("name: Bug\n", encoding="utf-8")
+        (gh / "CODEOWNERS").write_text("* @org/maintainers\n", encoding="utf-8")
+        (gh / "dependabot.yml").write_text("version: 2\n", encoding="utf-8")
+
+    def _assert_all_survived(self, target: Path) -> None:
+        self.assertEqual(
+            (target / ".claude" / "settings.json").read_text(encoding="utf-8"),
+            self.SETTINGS,
+            ".claude/settings.json is project-local state with no implementation/ "
+            "counterpart; --update must not delete or rewrite it",
+        )
+        self.assertEqual(
+            (target / ".claude" / "settings.local.json").read_text(encoding="utf-8"),
+            self.SETTINGS_LOCAL,
+            ".claude/settings.local.json is the same class of file as settings.json",
+        )
+        gh = target / ".github"
+        self.assertEqual((gh / "workflows" / "ci.yml").read_text(encoding="utf-8"), self.WORKFLOW)
+        self.assertEqual((gh / "ISSUE_TEMPLATE" / "bug.md").read_text(encoding="utf-8"), "name: Bug\n")
+        self.assertEqual((gh / "CODEOWNERS").read_text(encoding="utf-8"), "* @org/maintainers\n")
+        self.assertEqual((gh / "dependabot.yml").read_text(encoding="utf-8"), "version: 2\n")
+
+    def test_update_preserves_project_local_files_with_rsync(self):
+        if not shutil.which("rsync"):
+            self.skipTest("rsync not available; the fallback variant covers this host")
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "project"
+            self._seed(target)
+            proc = self._run_install(target, update=True)
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            self._assert_all_survived(target)
+
+    def test_update_preserves_project_local_files_without_rsync(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "project"
+            self._seed(target)
+            proc = self._run_install(
+                target, update=True, path_override=self._path_without_rsync(Path(tmp))
+            )
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            self._assert_all_survived(target)
+
+    def test_update_still_deletes_stale_harness_files_in_protected_trees(self):
+        """The protection must be scoped to named project-local paths, not a
+        blanket disable of stale-cleaning in .claude/ and .github/."""
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "project"
+            self._seed(target)
+            stale_claude = target / ".claude" / "stale-agent.md"
+            stale_github = target / ".github" / "agents" / "stale-agent.agent.md"
+            stale_claude.write_text("remove me", encoding="utf-8")
+            stale_github.parent.mkdir(parents=True, exist_ok=True)
+            stale_github.write_text("remove me", encoding="utf-8")
+
+            proc = self._run_install(target, update=True)
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            self.assertFalse(stale_claude.exists(), "--update must still prune stale .claude/ files")
+            self.assertFalse(stale_github.exists(), "--update must still prune stale .github/ files")
+            self._assert_all_survived(target)
+
+    def test_fresh_install_does_not_delete_pre_existing_project_local_files(self):
+        """The no-rsync fallback in copy_tree_into() used to `rm -rf dest/<excl>`
+        unconditionally, deleting pre-existing *target* content that was never in
+        the source -- the opposite of what rsync --exclude does."""
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "project"
+            self._seed(target)
+            proc = self._run_install(
+                target, update=False, path_override=self._path_without_rsync(Path(tmp))
+            )
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            self._assert_all_survived(target)
+
+    def test_update_help_text_states_the_actual_contract(self):
+        proc = subprocess.run(
+            [self.bash, str(repo_root() / "scripts" / "install.sh"), "--help"],
+            cwd=repo_root(), capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertIn(".claude/settings.json", proc.stdout)
+        self.assertIn("workflows", proc.stdout)
+        self.assertIn("rewritten beyond its task rows", proc.stdout)
+        self.assertIn("project's own record, not the template's", proc.stdout)
+        self.assertNotIn("preserves task rows in docs/tasks/*.md", proc.stdout)
+
+
+class TestInstallPreservesLedgerProse(unittest.TestCase):
+    """T518 Defect B, end to end through install.sh.
+
+    Worst precisely when the ledger is healthy: with zero active rows there was
+    nothing to preserve, so the template won outright and wrote "This ledger
+    starts EMPTY [...] The first real task is `T001`" into a project with
+    hundreds of completed tasks. Fails against the pre-T518 script.
+    """
+
+    ACTIVE = """# Active Tasks
+
+| ID | Title | Owner | Status | Priority | Depends on | Last update |
+|----|-------|-------|--------|----------|-----------|-------------|
+
+> **0 active rows.** This is not a fresh project -- 316 real tasks have already
+> run to completion; see `completed-tasks.md`. Do not treat an empty table as
+> "no history exists" -- it means no task is currently in flight.
+
+> Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done`
+
+Per-task briefs live alongside this file as `task-T001.md`, `task-T002.md`, …
+"""
+
+    COMPLETED = """# Completed Tasks
+
+Append-only log. Entries move here after the orchestrator marks a task `done`.
+
+| ID | Title | Owner | Done on | Outcome / artifact |
+|----|-------|-------|---------|--------------------|
+| T042 | CI gates | devops-engineer | 2026-05-24 | .gitlab-ci.yml |
+"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.bash = shutil.which("bash")
+        if not cls.bash:
+            raise unittest.SkipTest("bash not available on PATH")
+
+    def _update(self, target: Path, path_override: str | None = None):
+        env = dict(os.environ)
+        if path_override is not None:
+            env["PATH"] = path_override
+        return subprocess.run(
+            [
+                self.bash, str(repo_root() / "scripts" / "install.sh"),
+                "--target", str(target), "--platform", "pi", "--update",
+            ],
+            cwd=repo_root(), capture_output=True, text=True, check=False, env=env,
+        )
+
+    def _seed(self, target: Path) -> Path:
+        target.mkdir(parents=True, exist_ok=True)
+        (target / "AGENTS.md").write_text("# existing", encoding="utf-8")
+        tasks = target / "docs" / "tasks"
+        tasks.mkdir(parents=True, exist_ok=True)
+        (tasks / "active-tasks.md").write_text(self.ACTIVE, encoding="utf-8")
+        (tasks / "completed-tasks.md").write_text(self.COMPLETED, encoding="utf-8")
+        return tasks
+
+    def _assert_preserved(self, tasks: Path) -> None:
+        active = (tasks / "active-tasks.md").read_text(encoding="utf-8")
+        completed = (tasks / "completed-tasks.md").read_text(encoding="utf-8")
+        self.assertEqual(active, self.ACTIVE, "a zero-row ledger must survive byte-identical")
+        self.assertEqual(completed, self.COMPLETED, "completed-tasks.md must not regress")
+        self.assertNotIn("ledger starts EMPTY", active)
+        self.assertIn("| T042 | CI gates |", completed)
+
+    def test_update_preserves_zero_row_ledger_prose(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "project"
+            tasks = self._seed(target)
+            proc = self._update(target)
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            self._assert_preserved(tasks)
+
+    def test_update_is_idempotent_on_a_populated_ledger(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "project"
+            tasks = self._seed(target)
+            for _ in range(3):
+                proc = self._update(target)
+                self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            self._assert_preserved(tasks)
+
+    def test_update_still_seeds_a_missing_ledger_from_the_template(self):
+        """Fresh-install guidance must still reach a target that has no ledger."""
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "project"
+            target.mkdir(parents=True)
+            (target / "AGENTS.md").write_text("# existing", encoding="utf-8")
+            proc = self._update(target)
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            seeded = (target / "docs" / "tasks" / "active-tasks.md").read_text(encoding="utf-8")
+            self.assertEqual(
+                seeded,
+                (repo_root() / "implementation" / "docs" / "tasks" / "active-tasks.md").read_text(
+                    encoding="utf-8"
+                ),
+            )
+            self.assertIn("ledger starts EMPTY", seeded)
 
 
 if __name__ == "__main__":

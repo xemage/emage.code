@@ -14,7 +14,14 @@ Install emage.code into an existing or new project directory.
 Options:
   --target <dir>       Destination project root (created if missing)
   --platform <name>    cursor | github | gemini | opencode | pi | claude-code | cline | all (default: all)
-  -u, --update         Update an existing install (replaces platform trees; preserves task rows in docs/tasks/*.md)
+  -u, --update         Update an existing install. Replaces the platform trees, EXCEPT
+                       project-local files the harness never ships and therefore does not
+                       own: each platform's MCP/settings config, .claude/settings.json and
+                       .claude/settings.local.json, and .github's workflows, issue/PR
+                       templates, CODEOWNERS, dependabot.yml, FUNDING.yml and
+                       copilot-instructions.md. In docs/tasks/, an existing ledger is never
+                       rewritten beyond its task rows — its surrounding prose is the
+                       project's own record, not the template's. Missing files are seeded.
   -n, --dry-run        Print actions without copying
   -h, --help           Show this help
 
@@ -95,20 +102,26 @@ run() {
 
 # Merge source tree into dest without nesting when dest already exists.
 # `cp -r src dest` creates dest/srcname when dest is present; this copies contents.
-# $3/$4 (optional, relative to dest): paths never copied from src, even if
-# present there — for a source dir that may carry the installer's own local,
-# gitignored build artifacts (e.g. implementation/runtime/memory/_index/,
-# per-project generated content that must never leak into a fresh target).
+# $3.. (optional, relative to dest, variadic): protected paths. The installer
+# neither writes nor deletes these, for two distinct reasons that share one
+# mechanism:
+#   1. Source-side build artifacts that must not leak into a target (e.g.
+#      implementation/runtime/memory/_index/, __pycache__/).
+#   2. Target-side project-local state the harness does not ship and therefore
+#      does not own (e.g. .claude/settings.json, .github/workflows/). These have
+#      no counterpart in $IMPLEMENTATION by design — see sync_tree_into, where
+#      omitting them made `rsync --delete` destroy them on every --update.
 copy_tree_into() {
   local src="$1"
   local dest="$2"
-  local exclude_rel="${3:-}"
-  local exclude_rel_2="${4:-}"
+  local excludes=("${@:3}")
   run mkdir -p "$dest"
   if command -v rsync >/dev/null 2>&1; then
     local rsync_args=(-a)
-    if [[ -n "$exclude_rel" ]]; then rsync_args+=(--exclude="$exclude_rel"); fi
-    if [[ -n "$exclude_rel_2" ]]; then rsync_args+=(--exclude="$exclude_rel_2"); fi
+    local e
+    for e in ${excludes[@]+"${excludes[@]}"}; do
+      if [[ -n "$e" ]]; then rsync_args+=(--exclude="$e"); fi
+    done
     if [[ "$DRY_RUN" -eq 1 ]]; then
       run rsync "${rsync_args[@]}" --dry-run "$src/" "$dest/"
     else
@@ -120,69 +133,84 @@ copy_tree_into() {
     # make the *function's* exit status that of the failed `[[ ]]` test
     # whenever cond is false (a real bug hit and fixed here, not a
     # hypothetical: it silently killed every install.sh run under `set -e`
-    # on any host without rsync, since $exclude_rel/$exclude_rel_2 are empty
-    # for most callers) — real `if` blocks instead, so a false condition
-    # never becomes this function's own return code.
-    if [[ -n "$exclude_rel" ]]; then run rm -rf "$dest/$exclude_rel"; fi
-    if [[ -n "$exclude_rel_2" ]]; then run rm -rf "$dest/$exclude_rel_2"; fi
+    # on any host without rsync, since the exclude list is empty for most
+    # callers) — real `if` blocks instead, so a false condition never becomes
+    # this function's own return code.
+    #
+    # The `-e "$src/$e"` guard makes this fallback match rsync --exclude
+    # exactly: undo only what the copy above actually placed. Without it the
+    # fallback deleted pre-existing *dest* content that was never in src —
+    # which is the whole point of an exclude like settings.json or _index/.
+    local e
+    for e in ${excludes[@]+"${excludes[@]}"}; do
+      if [[ -n "$e" && -e "$src/$e" ]]; then run rm -rf "$dest/$e"; fi
+    done
   fi
 }
 
 # Replace dest with source, removing files that no longer exist upstream.
-# If $3 (a path relative to dest) is given, that one file is left untouched
-# by this whole-tree replace — neither deleted nor overwritten — so a
-# separate merge step (merge_or_copy_mcp_json) can update it afterward
-# without losing any hand-added content it may hold. If $4 (also relative to
-# dest) is given, that second file — the MCP file's provenance sidecar — gets
-# the same untouched treatment, for the identical reason.
+# Every path in $3.. (relative to dest, variadic) is left untouched by this
+# whole-tree replace — neither deleted nor overwritten. Two kinds of path need
+# that, for two different reasons:
+#   - Config files that a later merge step owns (merge_or_copy_mcp_json and its
+#     provenance sidecar), so hand-added content in them is not lost.
+#   - Project-local state the harness never ships, so it has no counterpart in
+#     $IMPLEMENTATION and `rsync --delete` would sweep it: .claude/settings.json
+#     (a host's Bash-permission allowlist) and .github/workflows/ (the target
+#     project's own CI) are the two real cases. This is not hypothetical — it
+#     destroyed .claude/settings.json on every --update until T518.
+# rsync --exclude already protects an excluded path from --delete (we never pass
+# --delete-excluded); the no-rsync fallback below reproduces that by hand.
 sync_tree_into() {
   local src="$1"
   local dest="$2"
-  local exclude_rel="${3:-}"
-  local exclude_rel_2="${4:-}"
+  local excludes=("${@:3}")
+  local e
   if command -v rsync >/dev/null 2>&1; then
     run mkdir -p "$dest"
     local rsync_args=(-a --delete)
-    if [[ -n "$exclude_rel" ]]; then
-      rsync_args+=(--exclude="$exclude_rel")
-    fi
-    if [[ -n "$exclude_rel_2" ]]; then
-      rsync_args+=(--exclude="$exclude_rel_2")
-    fi
+    for e in ${excludes[@]+"${excludes[@]}"}; do
+      if [[ -n "$e" ]]; then
+        rsync_args+=(--exclude="$e")
+      fi
+    done
     if [[ "$DRY_RUN" -eq 1 ]]; then
       run rsync "${rsync_args[@]}" --dry-run "$src/" "$dest/"
     else
       run rsync "${rsync_args[@]}" "$src/" "$dest/"
     fi
   else
-    local backup=""
-    local backup_2=""
-    # -r here (not plain cp) so $exclude_rel/$exclude_rel_2 may name either a
-    # file (the original mcp.json/provenance use case) or a directory (e.g.
-    # a per-target-project generated index dir) without a separate code path.
-    if [[ -n "$exclude_rel" && -e "$dest/$exclude_rel" ]]; then
-      backup="$(mktemp -d)"
-      cp -r "$dest/$exclude_rel" "$backup/payload"
-    fi
-    if [[ -n "$exclude_rel_2" && -e "$dest/$exclude_rel_2" ]]; then
-      backup_2="$(mktemp -d)"
-      cp -r "$dest/$exclude_rel_2" "$backup_2/payload"
-    fi
+    # Parallel arrays, one entry per protected path that actually exists in
+    # dest: backup_paths[i] is the relative path, backup_dirs[i] the mktemp -d
+    # holding its saved copy. Paths absent from dest are simply not recorded.
+    local backup_paths=()
+    local backup_dirs=()
+    # -r here (not plain cp) so an excluded path may name either a file (the
+    # original mcp.json/provenance use case) or a directory (a generated index
+    # dir, .github/workflows/) without a separate code path.
+    for e in ${excludes[@]+"${excludes[@]}"}; do
+      if [[ -n "$e" && -e "$dest/$e" ]]; then
+        local backup_dir
+        backup_dir="$(mktemp -d)"
+        cp -r "$dest/$e" "$backup_dir/payload"
+        backup_paths+=("$e")
+        backup_dirs+=("$backup_dir")
+      fi
+    done
     run rm -rf "$dest"
     run mkdir -p "$dest"
     run cp -r "$src/." "$dest/"
-    if [[ -n "$backup" ]]; then
-      run mkdir -p "$(dirname "$dest/$exclude_rel")"
-      run rm -rf "$dest/$exclude_rel"
-      run cp -r "$backup/payload" "$dest/$exclude_rel"
-      rm -rf "$backup"
-    fi
-    if [[ -n "$backup_2" ]]; then
-      run mkdir -p "$(dirname "$dest/$exclude_rel_2")"
-      run rm -rf "$dest/$exclude_rel_2"
-      run cp -r "$backup_2/payload" "$dest/$exclude_rel_2"
-      rm -rf "$backup_2"
-    fi
+    # `"${!arr[@]}"` on an empty array trips `set -u` on bash < 4.4, which the
+    # no-rsync CI images are exactly the kind of host to ship — count first.
+    local i
+    for ((i = 0; i < ${#backup_paths[@]}; i++)); do
+      local rel="${backup_paths[$i]}"
+      local dir="${backup_dirs[$i]}"
+      run mkdir -p "$(dirname "$dest/$rel")"
+      run rm -rf "$dest/$rel"
+      run cp -r "$dir/payload" "$dest/$rel"
+      rm -rf "$dir"
+    done
   fi
 }
 
@@ -204,17 +232,44 @@ merge_tree_preserve_existing() {
   fi
 }
 
+# $3.. are protected paths relative to dest, passed through verbatim.
 install_tree_into() {
   local src="$1"
   local dest="$2"
-  local exclude_rel="${3:-}"
-  local exclude_rel_2="${4:-}"
+  local excludes=("${@:3}")
   if [[ "$UPDATE" -eq 1 ]]; then
-    sync_tree_into "$src" "$dest" "$exclude_rel" "$exclude_rel_2"
+    sync_tree_into "$src" "$dest" ${excludes[@]+"${excludes[@]}"}
   else
-    copy_tree_into "$src" "$dest" "$exclude_rel" "$exclude_rel_2"
+    copy_tree_into "$src" "$dest" ${excludes[@]+"${excludes[@]}"}
   fi
 }
+
+# Project-local paths inside .claude/ that the harness never generates and must
+# therefore never delete. settings.json is the shared, checked-in project
+# settings file (a Bash-permission allowlist among other things);
+# settings.local.json is Claude Code's own per-developer, gitignored override of
+# it. They are the same class of file, created by the client rather than by this
+# repo, and were destroyed by the same single `rsync --delete` sweep — protecting
+# only the one that happened to be reported would leave the identical defect in
+# place for the file Claude Code itself recommends for host-specific permissions.
+CLAUDE_LOCAL_PATHS=(settings.json settings.local.json)
+
+# Project-local paths inside .github/ — GitHub's own reserved, fixed names. The
+# harness ships only agents/, hooks/, instructions/, prompts/, skills/ and
+# .generated-manifest.json there, so everything below belongs to the target
+# project and was being swept by --update. .github/workflows/ is the severe one:
+# an --update silently deleted the target project's entire CI configuration.
+GITHUB_LOCAL_PATHS=(
+  workflows
+  ISSUE_TEMPLATE
+  PULL_REQUEST_TEMPLATE.md
+  PULL_REQUEST_TEMPLATE
+  CODEOWNERS
+  dependabot.yml
+  dependabot.yaml
+  FUNDING.yml
+  copilot-instructions.md
+)
 
 require_existing_install() {
   if [[ ! -f "$TARGET/AGENTS.md" ]]; then
@@ -254,7 +309,7 @@ validate_github_agents() {
 validate_before_update() {
   # Pre-flight checks before --update to prevent propagating corrupted state.
   if [[ "$UPDATE" -eq 1 ]]; then
-    for d in .github .cursor .gemini .opencode .pi .claude; do
+    for d in .github .cursor .gemini .opencode .pi .claude .cline .clinerules; do
       if [[ -d "$TARGET/$d" ]]; then
         local exception=""
         case "$d" in
@@ -262,6 +317,9 @@ validate_before_update() {
           .gemini) exception=" (except $d/settings.json, which is merged, not overwritten)" ;;
           .opencode) exception=" (except $d/opencode.json, which is merged, not overwritten)" ;;
           .pi) exception=" (except $d/mcp.json, which is merged, not overwritten)" ;;
+          .cline) exception=" (except $d/mcp.json, which is merged, not overwritten)" ;;
+          .claude) exception=" (except $d/settings.json and $d/settings.local.json, which are project-local and left untouched)" ;;
+          .github) exception=" (except workflows/, ISSUE_TEMPLATE/, PULL_REQUEST_TEMPLATE*, CODEOWNERS, dependabot.y*ml, FUNDING.yml and copilot-instructions.md, which are project-local and left untouched)" ;;
         esac
         echo "warning: --update replaces $TARGET/$d entirely (rsync --delete)${exception}. Other local edits there will be lost." >&2
       fi
@@ -384,7 +442,7 @@ install_cursor() {
 }
 
 install_github() {
-  install_tree_into "$IMPLEMENTATION/.github" "$TARGET/.github"
+  install_tree_into "$IMPLEMENTATION/.github" "$TARGET/.github" "${GITHUB_LOCAL_PATHS[@]}"
   run mkdir -p "$TARGET/.vscode"
   merge_or_copy_mcp_json "$IMPLEMENTATION/.vscode/mcp.json" "$TARGET/.vscode/mcp.json"
 }
@@ -405,7 +463,7 @@ install_pi() {
 }
 
 install_claude_code() {
-  install_tree_into "$IMPLEMENTATION/.claude" "$TARGET/.claude"
+  install_tree_into "$IMPLEMENTATION/.claude" "$TARGET/.claude" "${CLAUDE_LOCAL_PATHS[@]}"
   merge_or_copy_mcp_json "$IMPLEMENTATION/.mcp.json" "$TARGET/.mcp.json"
   run cp "$IMPLEMENTATION/CLAUDE.md" "$TARGET/CLAUDE.md"
 }
