@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-09-25T17:13:50+00:00",
+  "generatedAt": "2026-09-25T18:34:17+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -913,8 +913,8 @@
       "category": "command",
       "name": "discover-skills",
       "path": "commands/discover-skills.md",
-      "checksum": "e5144ea364ab8c281547ef734160cc4df2f2e59525ea0d98fae42002e2026f80",
-      "maturity": "experimental",
+      "checksum": "e0c68ecb4782717f69ac583c8586f593d600fd26c237cc6aee9fa65f4230f492",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -969,8 +969,8 @@
       "category": "command",
       "name": "handoff",
       "path": "commands/handoff.md",
-      "checksum": "816fb97e97cd5005cfe5fcddaeca62f63f7d0f2949f56efff86896a1db0a710d",
-      "maturity": "experimental",
+      "checksum": "838f79ca4b498d9dc4811634bfe9f9f0881c146ae59234aef28654ede68f4be4",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1277,8 +1277,8 @@
       "category": "command",
       "name": "validate-tasks",
       "path": "commands/validate-tasks.md",
-      "checksum": "914b6b05facd5169a6f4395100d784f3295d5d6b17dddd3c8540e1af96a71e5d",
-      "maturity": "experimental",
+      "checksum": "8ebe7f805cd7971e4e73ce3643d6e07f66d6f1bb4f07db69134ea45db798a059",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",

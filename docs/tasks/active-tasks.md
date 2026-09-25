@@ -4,9 +4,8 @@
 |----|-------|-------|--------|----------|-----------|-------------|
 | T519 | Correct the two documents still stating the pre-T517 placeholder syntax | technical-writer | pending | P2 | — | 2026-09-25 |
 | T521 | Execute ADR-007 verdict C: give RELEASE VERDICT a declared home | release-manager | pending | P2 | — | 2026-09-25 |
-| T525 | Golden-case coverage wave 1: four well-grounded commands | qa-engineer | pending | P2 | — | 2026-09-25 |
 
-> **3 active rows (`T519`, `T521`, `T525`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **2 active rows (`T519`, `T521`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
@@ -192,6 +191,26 @@
 > criteria unsatisfiable as written. The refresh is explicitly **out of the agent's scope** — it
 > reports the digests and stops. See `docs/tasks/task-T525.md` and
 > `docs/plans/plan-072-phase9-golden-case-coverage.md`.
+
+> **`T525` and `T526` closed 2026-09-25 — see `completed-tasks.md`.** Wave 1 delivered **3 green,
+> 1 red**, and `T526` promoted exactly the three: **commands go from 2 of 19 to 5 of 19 `stable`**.
+> **`/skillify` is deliberately not promoted.** All four were flipped to `stable` together to
+> measure it, and its `known_failing` case blocked that one component on criteria 3 and 7 while the
+> other three passed clean — **the ladder working as designed**, and the strongest available evidence
+> wave 1's greens were earned rather than manufactured: the same authoring pass that produced them
+> also produced a case that costs a promotion. **Three follow-ups now need rows.** (1) **`/skillify`
+> contract conflict** — the command declares a five-section `SKILL.md` template that **0 of 26** real
+> skill files satisfy, in both trees including the exact path it names, while the `skillify` *skill*
+> declares a different template that 26 of 26 follow; two declared contracts disagree, which is
+> precisely an `ADR-007` adjudication. (2) **`implementation/runtime/handoff/schema-v1.json` sets no
+> `minItems` on `constraints.writablePaths`**, so a handoff declaring zero writable paths is
+> schema-conformant — found by an orchestrator mutation attempt that was itself mis-designed, and a
+> gap in the schema rather than in the golden case. (3) The still-stale
+> `new-feature-real-checkpoint-format-drift` brief from `T520`, excluded from `T525`'s grant.
+> **Waves 2 and 3 remain unscoped by design** — `plan-072` §3 held them back until wave 1 tested the
+> approach, and it did: the control that did the work was requiring a **verbatim contract-clause
+> quote before writing any `expect.py`**, which is what surfaced the `/skillify` conflict. The
+> **mutation harness** the implementer built unprompted should become an explicit wave-2 deliverable.
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
