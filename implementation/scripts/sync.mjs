@@ -373,14 +373,19 @@ function emitMcp(servers, tags, format) {
   }
 
   if (format === 'claude-code') {
+    // Claude Code expands `${VAR}` / `${VAR:-default}` from the live process environment in
+    // `command`, `args`, `env`, `url` and `headers` — it does NOT recognise VS Code's
+    // `${env:VAR}` form and passes such text through literally (T517; see
+    // docs/artifacts/mcp-header-url-templating-design-v2.md §3 and
+    // https://code.claude.com/docs/en/mcp#environment-variable-expansion-in-mcp-json).
     const mcpServers = {};
     for (const [name, s] of Object.entries(filtered)) {
       if (s.transport === 'remote') {
-        mcpServers[name] = { type: 'http', url: mapTemplatedValue(s.url, '${env:VAR}') };
-        if (s.headers) mcpServers[name].headers = mapEnv(s.headers, '${env:VAR}');
+        mcpServers[name] = { type: 'http', url: mapTemplatedValue(s.url, '${VAR}') };
+        if (s.headers) mcpServers[name].headers = mapEnv(s.headers, '${VAR}');
       } else {
         mcpServers[name] = { command: s.command, args: s.args || [] };
-        if (s.env) mcpServers[name].env = mapEnv(s.env, '${env:VAR}');
+        if (s.env) mcpServers[name].env = mapEnv(s.env, '${VAR}');
       }
     }
     return JSON.stringify({ mcpServers }, null, 2) + '\n';
@@ -408,7 +413,8 @@ function emitMcp(servers, tags, format) {
 //   spec: a plain literal (string/number/bool) -> returned unchanged (String(spec))
 //         OR { fromEnv: VAR }                   -> template.replace('VAR', VAR)
 //         OR { fromEnv: VAR, wrap: "X{VAR}Y" }   -> wrap.replace('{VAR}', <rendered above>)
-//   template: the platform's own placeholder pattern, e.g. '${env:VAR}' or '{env:VAR}'
+//   template: the platform's own placeholder pattern, e.g. '${env:VAR}' (vscode/cursor/gemini/
+//             pi/cline), '{env:VAR}' (opencode) or '${VAR}' (claude-code)
 function mapTemplatedValue(spec, template) {
   if (spec && typeof spec === 'object' && spec.fromEnv) {
     const rendered = template.replace('VAR', spec.fromEnv);

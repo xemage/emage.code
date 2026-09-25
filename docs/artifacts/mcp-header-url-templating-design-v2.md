@@ -1,11 +1,50 @@
-# MCP Header/URL Templating Design — v1
+# MCP Header/URL Templating Design — v2
 
-> **Superseded by `docs/artifacts/mcp-header-url-templating-design-v2.md` (T517, 2026-09-25).**
-> Only the `claude-code` placeholder template changed — it is `${VAR}`, not `${env:VAR}`, because
-> Claude Code expands `${VAR}` / `${VAR:-default}` from the live process environment and passes the
-> `env:` form through as literal text. Everything else in v2 is this document verbatim, apart from
-> the passages that quote or hand-trace that template. This file is left unmodified apart from this
-> supersession link, per `AGENTS.md`'s artifact-versioning rule.
+> Filename: `mcp-header-url-templating-design-v2.md`. Immutable once produced; revisions bump `<N>`.
+
+## v2 metadata
+- **Producer agent**: devops-engineer
+- **Task**: T517
+- **Created**: 2026-09-25
+- **Based on**: `docs/artifacts/mcp-header-url-templating-design-v1.md` (T483 — carried forward
+  verbatim except for the passages listed in "Changes from v1" below, the new §9, and this
+  metadata block);
+  `docs/tasks/task-T517.md`; `docs/plans/plan-068-t517-claude-code-mcp-placeholder-syntax.md`;
+  Claude Code's own MCP documentation, §"Environment variable expansion in `.mcp.json`"
+  (<https://code.claude.com/docs/en/mcp>, read 2026-09-25). v1's own basis is unchanged and still
+  applies — it is reproduced verbatim in the `**Based on:**` block below.
+- **Supersedes**: `mcp-header-url-templating-design-v1.md`
+
+## Changes from v1 (the only substantive change is the `claude-code` placeholder template)
+
+v1 specified `${env:VAR}` — VS Code's placeholder syntax — for the `claude-code` branch of
+`emitMcp()`. **Claude Code does not recognise that form.** It expands `${VAR}` and
+`${VAR:-default}` from the live process environment, in `command`, `args`, `env`, `url` and
+`headers` alike, and passes any other brace expression through as literal text. The generated
+`.mcp.json` therefore shipped unexpanded placeholder strings: `hindsight` and `cwso` failed at
+connect with `'url' is not a valid URL`, and `gitlab`/`brave`/`toolradar` received the literal
+placeholder text where a credential was intended.
+
+v2 changes that one constant to `${VAR}`. No other platform's template changes: `${env:VAR}` is
+correct for at least VS Code, and no evidence was found that `cursor`, `pi`, `gemini`, `opencode`
+or `cline` is also wrong. The architecture is unchanged — `mapTemplatedValue()` already took the
+template as a per-platform parameter, and `opencode` already passed a different one.
+
+| Passage | v1 | v2 |
+|---|---|---|
+| §3 rendering rule + `wrap` note | two placeholder families | three families; `claude-code` renders `"Bearer ${CWSO_BEARER_TOKEN}"` |
+| §5.1 `mapTemplatedValue()` doc comment | "`${env:VAR}` or `{env:VAR}`" | names all three families and their platforms |
+| §5.2 `claude-code` branch | `'${env:VAR}'` | `'${VAR}'`, and the `env` (stdio) call site is shown too |
+| §5.3 evidence table, `claude-code` row | "Empirically verified" from the hand-added `.mcp.json` | corrected: that entry verified the *field shape*, not the placeholder syntax |
+| §6 hand-trace | traced against `${env:…}` output | traced per placeholder family, with the `claude-code` column corrected |
+| §7 QA guidance | two placeholder families in the guard regex | three families, with the non-weakening argument |
+| §9 (new) | — | T517 evidence: documentation, live differential probe, and the `gitlab` startup probe |
+
+Everything else below is v1 verbatim, including the `**Status:**`/`**Owner:**`/`**Task:**`/
+`**Based on:**` block and the "Ratification note" section — those describe v1's own authorship and
+ratification pass and are carried forward unchanged for provenance, not re-asserted by v2.
+
+---
 
 **Status:** Final (ratified this session — independently re-verified, one citation correction
 applied; see "Ratification note" below).
@@ -187,20 +226,24 @@ SomeHeader: { fromEnv: SOME_ENV_VAR }
 
 # Env-var substitution embedded inside fixed literal text (e.g. "Bearer <token>") — adds one new
 # optional key, `wrap`, to the same shape. `wrap`'s value is an author-facing literal string
-# containing exactly one `{VAR}` placeholder token (single braces, chosen deliberately distinct
-# from both platform placeholder syntaxes — `${env:VAR}` and `{env:VAR}` — so it can never be
-# confused with, or accidentally matched by, the per-platform substitution pass in §5):
+# containing exactly one `{VAR}` placeholder token (single braces, no `$`, chosen deliberately
+# distinct from all three platform placeholder syntaxes — `${env:VAR}`, `{env:VAR}` and, since
+# T517, claude-code's `${VAR}` — so it can never be confused with, or accidentally matched by,
+# the per-platform substitution pass in §5):
 SomeHeader: { fromEnv: SOME_ENV_VAR, secret: true, wrap: "Bearer {VAR}" }
 ```
 
 Rendering rule (see §5 for the exact function): compute the platform's own rendered env
-reference first (`${env:SOME_ENV_VAR}` or `{env:SOME_ENV_VAR}` depending on target format), then,
-if `wrap` is present, substitute that rendered reference into `wrap`'s `{VAR}` slot; if `wrap` is
-absent, use the rendered reference directly. This is why `Origin: { fromEnv: CWSO_ORIGIN }` (no
-`wrap`) renders to exactly `"${env:CWSO_ORIGIN}"`, while
-`Authorization: { fromEnv: CWSO_BEARER_TOKEN, secret: true, wrap: "Bearer {VAR}" }` renders to
-exactly `"Bearer ${env:CWSO_BEARER_TOKEN}"` — matching the real target `.mcp.json` shape (input
-#4) exactly, verified by hand-tracing in §6.
+reference first (`${env:SOME_ENV_VAR}`, `{env:SOME_ENV_VAR}` or — for `claude-code`, per T517 —
+`${SOME_ENV_VAR}`, depending on target format), then, if `wrap` is present, substitute that
+rendered reference into `wrap`'s `{VAR}` slot; if `wrap` is absent, use the rendered reference
+directly. This is why `Origin: { fromEnv: CWSO_ORIGIN }` (no `wrap`) renders to exactly
+`"${env:CWSO_ORIGIN}"` on the VS Code-family platforms and to `"${CWSO_ORIGIN}"` on `claude-code`,
+while `Authorization: { fromEnv: CWSO_BEARER_TOKEN, secret: true, wrap: "Bearer {VAR}" }` renders
+to exactly `"Bearer ${env:CWSO_BEARER_TOKEN}"` and `"Bearer ${CWSO_BEARER_TOKEN}"` respectively —
+verified by hand-tracing in §6. (v1 asserted the `${env:…}` rendering matched the real target
+`.mcp.json` shape, input #4. That was the defect: input #4 was a hand-written file that had never
+been read by a running Claude Code client, so it attested to the *field shape* only. See §9.)
 
 `secret: true`/`false` is carried through as inert authorial/audit metadata, exactly matching how
 the pre-existing `env:` block's `secret` flag already works today (it is not read anywhere in
@@ -284,7 +327,8 @@ across the 6 format branches, are unchanged):
 //   spec: a plain literal (string/number/bool) -> returned unchanged (String(spec))
 //         OR { fromEnv: VAR }                   -> template.replace('VAR', VAR)
 //         OR { fromEnv: VAR, wrap: "X{VAR}Y" }   -> wrap.replace('{VAR}', <rendered above>)
-//   template: the platform's own placeholder pattern, e.g. '${env:VAR}' or '{env:VAR}'
+//   template: the platform's own placeholder pattern: '${env:VAR}' (vscode/cursor/gemini/pi/
+//             cline), '{env:VAR}' (opencode) or '${VAR}' (claude-code, T517)
 //             (same `template` parameter mapEnv() already takes today — unrenamed, no collision,
 //             since the author-facing field is named `wrap`, not `template`)
 function mapTemplatedValue(spec, template) {
@@ -347,11 +391,16 @@ if (s.transport === 'remote') {
 }
 ```
 
-**`claude-code` branch:**
+**`claude-code` branch** (note the distinct `${VAR}` placeholder — no `env:` segment — corrected
+in T517; the `env` call site on the stdio side of the same branch takes the same template, since
+Claude Code expands the same syntax in `command`, `args`, `env`, `url` and `headers` alike):
 ```js
 if (s.transport === 'remote') {
-  mcpServers[name] = { type: 'http', url: mapTemplatedValue(s.url, '${env:VAR}') };
-  if (s.headers) mcpServers[name].headers = mapEnv(s.headers, '${env:VAR}');
+  mcpServers[name] = { type: 'http', url: mapTemplatedValue(s.url, '${VAR}') };
+  if (s.headers) mcpServers[name].headers = mapEnv(s.headers, '${VAR}');
+} else {
+  mcpServers[name] = { command: s.command, args: s.args || [] };
+  if (s.env) mcpServers[name].env = mapEnv(s.env, '${VAR}');
 }
 ```
 
@@ -369,7 +418,7 @@ if (s.transport === 'remote') {
 |---|---|---|
 | `gemini` | Vendored official schema (`tests/fixtures/mcp-schemas/gemini-cli-settings.schema.json`), `$defs.MCPServerConfig` defines a `headers` property (T384, cited at lines ~4049/4147 per task brief) | **Schema-verified** |
 | `opencode` | Vendored official schema (`tests/fixtures/mcp-schemas/opencode-config.schema.json`), `$defs.mcp`'s `McpRemoteConfig` defines a `headers` property (independently confirmed this session at line ~660; the task brief's "~543" companion citation was checked and found to be a different, unrelated `headers` property in a model-provider config block, not `$defs.mcp` — dropped, not cited) | **Schema-verified** |
-| `claude-code` | No official schema exists for this platform (T384's own finding). However, the real, already-live, already-merged root `.mcp.json` (input #4) already contains a working `cwso` entry with exactly this `{type, url, headers}` shape, hand-added by the user and reported functioning for URL/header wiring (auth token itself separately reported failing — see §8) | **Empirically verified** (direct production evidence, stronger than a schema citation) |
+| `claude-code` | No official schema exists for this platform (T384's own finding). The real root `.mcp.json` (input #4) contained a hand-added `cwso` entry with exactly this `{type, url, headers}` shape, which is direct evidence that Claude Code accepts a `headers` object on an `http`-type entry. **T517 correction:** that entry was *hand-written and never read by a running Claude Code client*, so it attested to the field shape only and not to the placeholder syntax inside those fields — v1 over-read it as evidence for both, which is how `${env:VAR}` reached this branch. The placeholder syntax is now independently verified: official documentation plus a live differential probe (§9) | **Empirically verified** (field shape: production evidence; placeholder syntax: documentation + live probe, §9) |
 | `github` (vscode) | No official schema. But `.vscode/mcp.json`'s existing dest-only `cwso` entry (`url`, `headers.Authorization`, `headers.Origin`, `type`) is real, currently-preserved, hand-added content — direct proof VS Code's actual MCP client accepts a `headers` object on an `http`-type entry, even though the *values* in that dest entry differ from what this design's generator would produce (see §2(a)) | **Empirically verified** (via dest-only content, not generator output) |
 | `cline` | No official schema. No hand-added or otherwise-observed `cline` MCP config anywhere in this repo's evidence base | **Unverified — disclosed extension** |
 | `cursor` | No official schema. No hand-added or otherwise-observed `cursor` MCP config anywhere in this repo's evidence base | **Unverified — disclosed extension** |
@@ -403,18 +452,37 @@ after `github`/before `hf-mcp-server`... — no ordering constraint is enforced 
       Origin: { fromEnv: CWSO_ORIGIN }
 ```
 
-**Hand-traced verification against the real target `.mcp.json` (claude-code), confirming
-acceptance criterion 3 (byte-for-byte match) is satisfied by this exact YAML plus §5's exact code:**
+**Hand-traced verification (v2: traced per placeholder family, since the target shape is not the
+same on every platform — this is exactly the distinction v1 collapsed):**
+
+On the `${env:VAR}` family (`vscode`/`cursor`/`pi`/`gemini`/`cline`):
 
 - `hindsight.url` = `{fromEnv: 'HINDSIGHT_MCP_URL'}` → `mapTemplatedValue(..., '${env:VAR}')` →
-  `'${env:VAR}'.replace('VAR','HINDSIGHT_MCP_URL')` → `"${env:HINDSIGHT_MCP_URL}"`. Matches input
-  #4 exactly.
-- `cwso.url` = `{fromEnv: 'CWSO_MCP_URL'}` → `"${env:CWSO_MCP_URL}"`. Matches.
+  `'${env:VAR}'.replace('VAR','HINDSIGHT_MCP_URL')` → `"${env:HINDSIGHT_MCP_URL}"`.
+- `cwso.url` = `{fromEnv: 'CWSO_MCP_URL'}` → `"${env:CWSO_MCP_URL}"`.
 - `cwso.headers.Authorization` = `{fromEnv: 'CWSO_BEARER_TOKEN', secret: true, wrap: 'Bearer
   {VAR}'}` → rendered = `"${env:CWSO_BEARER_TOKEN}"` → `wrap.replace('{VAR}', rendered)` =
-  `'Bearer {VAR}'.replace('{VAR}', '${env:CWSO_BEARER_TOKEN}')` =
-  `"Bearer ${env:CWSO_BEARER_TOKEN}"`. Matches input #4 exactly.
-- `cwso.headers.Origin` = `{fromEnv: 'CWSO_ORIGIN'}` (no `wrap`) → `"${env:CWSO_ORIGIN}"`. Matches.
+  `"Bearer ${env:CWSO_BEARER_TOKEN}"`.
+- `cwso.headers.Origin` = `{fromEnv: 'CWSO_ORIGIN'}` (no `wrap`) → `"${env:CWSO_ORIGIN}"`.
+
+On `claude-code` (`${VAR}`, T517) — this is the generated root/`implementation` `.mcp.json`:
+
+- `hindsight.url` → `'${VAR}'.replace('VAR','HINDSIGHT_MCP_URL')` → `"${HINDSIGHT_MCP_URL}"`,
+  which Claude Code expands from the live process environment at startup.
+- `cwso.url` → `"${CWSO_MCP_URL}"`.
+- `cwso.headers.Authorization` → rendered = `"${CWSO_BEARER_TOKEN}"` →
+  `'Bearer {VAR}'.replace('{VAR}', '${CWSO_BEARER_TOKEN}')` = `"Bearer ${CWSO_BEARER_TOKEN}"`.
+  Note `wrap`'s own `{VAR}` token is still unambiguous against the rendered `${CWSO_BEARER_TOKEN}`:
+  `String.replace` matches the first literal `{VAR}` occurrence, and the rendered reference never
+  contains one.
+- `cwso.headers.Origin` → `"${CWSO_ORIGIN}"`.
+- On the stdio side of the same branch, `gitlab`/`brave`/`toolradar` `env` values render the same
+  way, e.g. `"${GITLAB_PERSONAL_ACCESS_TOKEN}"`.
+
+v1's byte-for-byte claim against input #4 no longer holds for `claude-code`, and should not: input
+#4 encoded the defect. The `merge_json` no-op argument below is likewise superseded for this one
+file — the `--update` merge now legitimately rewrites those five servers' placeholder values, which
+is the fix landing, not drift.
 - Key insertion order in the claude-code branch (`{ type, url, headers? }`, headers assigned last)
   matches the real target's `type`/`url`/`headers` order exactly, so `JSON.stringify` produces the
   same field order as the existing hand-added dest content, and since dest already has identical
@@ -446,10 +514,10 @@ to ask follow-up questions:
   a **different** regex than `ALLOWED_ENV_VALUE_RE`, because header values are not always a pure
   placeholder — some are a fixed literal wrapped around one (per §3/§6, e.g. `"Bearer
   ${env:CWSO_BEARER_TOKEN}"`).
-- Recommended pattern for the new header-value check (two platform placeholder families, matching
-  the existing `${env:VAR}` / `{env:VAR}` distinction already encoded in `ALLOWED_ENV_VALUE_RE`):
+- Recommended pattern for the new header-value check (**v2: three** platform placeholder families,
+  matching the `${env:VAR}` / `{env:VAR}` / `${VAR}` distinction encoded in `ALLOWED_ENV_VALUE_RE`):
   a header value is acceptable if it contains **exactly one** well-formed placeholder token
-  (`\$\{env:[A-Z][A-Z0-9_]*\}` or `\{env:[A-Z][A-Z0-9_]*\}`) and the remaining literal text outside
+  (`\$\{env:[A-Z][A-Z0-9_]*\}`, `\{env:[A-Z][A-Z0-9_]*\}` or `\$\{[A-Z][A-Z0-9_]*\}`) and the remaining literal text outside
   that token contains **no** `$` and no unmatched `{`/`}` characters — i.e., reject any header
   value that either has zero placeholder tokens (a bare literal, which is exactly the leak class
   the guard exists to catch) or has residual `${`/`{` sequences outside the one recognized token
@@ -501,3 +569,77 @@ risk writing a numerically-colliding ADR, this decision content is instead captu
 this design document (§1–§7), and the ADR itself is deferred — flagged as a blocker below for the
 orchestrator to resolve (trivial once a shell/`ls docs/decisions/` is available) and dispatch as a
 follow-up if still wanted once the number is confirmed.
+
+## 9. T517 evidence for the `claude-code` placeholder template (new in v2)
+
+### 9.1 Documentation
+
+Claude Code's MCP documentation, §"Environment variable expansion in `.mcp.json`"
+(<https://code.claude.com/docs/en/mcp>, read 2026-09-25), states:
+
+- Supported syntax: `${VAR}` expands to the value of environment variable `VAR`;
+  `${VAR:-default}` expands to `VAR` if set, otherwise the default.
+- Expansion locations: `command`, `args`, `env`, `url` (HTTP server types) and `headers`.
+- Unset variable with no default: the config still loads, a missing-variable warning is reported in
+  `claude mcp list`, and the unexpanded `${VAR}` text is used as-is.
+
+No `${env:…}` form is documented anywhere for this platform.
+
+### 9.2 Live differential probe (the decisive check)
+
+Run in an isolated throwaway project directory with an isolated `CLAUDE_CONFIG_DIR`, so neither
+this repository's config nor the user's own `~/.claude.json` was touched (confirmed unchanged by
+checksum before and after). `HINDSIGHT_MCP_URL` was set in the environment throughout;
+`T517_UNSET_PROBE_VAR` was never set.
+
+| Probe `url` | Variable set? | `claude mcp list` result |
+|---|---|---|
+| `${HINDSIGHT_MCP_URL}` | yes | **✔ Connected** |
+| `${env:HINDSIGHT_MCP_URL}` | yes | **✘ Failed to connect — `'url' is not a valid URL`** |
+| `${T517_UNSET_PROBE_VAR}` | no | `Missing environment variables: T517_UNSET_PROBE_VAR` |
+| `${env:T517_UNSET_PROBE_VAR}` | no | *no warning at all* |
+
+The last two rows are the control that identifies the mechanism rather than merely the symptom:
+with the *same* unset variable, only the bare form is recognised as a variable reference. The
+`env:` form produces no missing-variable warning because Claude Code never parses it as a reference
+— it is inert literal text, which is precisely why it reached the HTTP client as a malformed URL.
+
+### 9.3 `gitlab` startup probe (the silent half)
+
+`@zereight/mcp-gitlab` was launched directly over stdio with an MCP `initialize` request, once with
+the literal pre-fix placeholder text as its configuration and once with the expanded values:
+
+- Literal `${env:GITLAB_API_URL}` / `${env:GITLAB_PERSONAL_ACCESS_TOKEN}` → exit code 1 during
+  startup, `Configuration validation failed: GITLAB_API_URL contains an invalid URL`, no handshake.
+- Expanded values → `Configuration validation passed`, `initialize` handshake completed.
+
+This confirms the plan's stated hypothesis: `gitlab`'s `CONNECTION_CLOSED` was the server exiting
+during startup on the literal placeholder, not a transport or credential problem.
+
+### 9.4 Effect on the secret guard
+
+`tests/functional/test_mcp_secret_guard.py` now admits a third placeholder family. This is a
+widening of an allowlist, so the non-weakening argument must be explicit: the added alternative is
+`^\$\{[A-Z][A-Z0-9_]*\}$` — a bare, fully upper-snake-case variable name between `${` and `}`, with
+nothing else in the value. No credential shape can satisfy it (`tr_live_…`, `glpat-…`, `eyJhbGc…`
+all fail on the required leading `${`), and neither can a partially-interpolated value such as
+`prefix-${REAL_VAR}` or a lowercase brace expression. A regression test asserts exactly that.
+
+Deliberately **not** admitted: the documented `${VAR:-default}` form. The generator never emits a
+default, and accepting `:-…` would let arbitrary literal text sit inside an accepted token. If a
+future `servers.yaml` entry needs a default, the guard must be widened for it deliberately, with
+its own adversarial test.
+
+### 9.5 Constraint to carry forward: credential names that never expand toward a remote server
+
+The same documentation records that in a *remote* server's `url` and `headers`, Claude Code reads
+certain variable names as empty rather than expanding them — its own credentials
+(`ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`), cloud-provider credentials
+(`AWS_BEARER_TOKEN_BEDROCK`), and others the environment carries (`HTTPS_PROXY`, `NPM_TOKEN`). A
+`:-default` fallback on such a name is ignored. No `fromEnv` name currently in `servers.yaml` is in
+that set — the two remote servers reference `HINDSIGHT_MCP_URL`, `CWSO_MCP_URL`, `CWSO_BEARER_TOKEN`
+and `CWSO_ORIGIN`, and the three stdio servers reference `GITLAB_PERSONAL_ACCESS_TOKEN`,
+`GITLAB_API_URL`, `BRAVE_API_KEY` and `TOOLRADAR_API_KEY` (the `env` block is not subject to this
+rule in any case) — so none is affected today. Any
+future remote-server `url`/`headers` entry must avoid those names, and the symptom to look for is a
+`401` from the server rather than a config error.
