@@ -127,6 +127,50 @@ triggered by an earlier `mechanical`-tier failure — as opposed to a first-atte
 of the three states (`pass` / `fail` / `escalated`) applies to a given row, and
 `escalated` is not reducible to the escalation policy's own two-value language for
 the retried task's own result.
+
+## `--check` mode: the drift gate that makes the determinism claim load-bearing (T533)
+
+Default invocation (no arguments) is unchanged: run every case, **write** both output
+artifacts, exit `1` if there are regressions. `--check` is an additive, **read-only**
+second mode: it computes `content` fresh, compares it against the *committed*
+`docs/benchmarks/scorecard-v6.12.0.json`, and exits non-zero on any difference. It
+writes nothing at all — not the JSON, not the Markdown.
+
+Why this exists (`docs/plans/plan-075-scorecard-artifact-staleness.md`): the committed
+artifact was landed once at `T410`-`T415` and **nothing validated it**, so it silently
+rotted from `20` cases / `11` pass to a real tree of `24` / `16`. Three separate
+implementers (`T521`, `T525`, `T531`) hit the resulting dirty `git status` and reverted
+`docs/benchmarks/` by hand, and one of them mis-read the stale file as a deliberately
+frozen baseline — a reading that was only possible *because* the question "who validates
+this?" had an empty answer. This mode is that answer. It is the same control this repo
+already applies to its other generated artifacts (`implementation/registry/` via
+`check.py --registry`, the platform projections via `sync-no-diff`), for the same reason:
+a generated file nothing checks drifts.
+
+**Only the `content` key is compared.** `run_metadata.generated_at` is a wall-clock
+stamp and differs on every run *by design* (see the determinism section above), so a
+gate comparing whole files would be red on every pipeline — and a permanently-red gate
+gets disabled, which is strictly worse than no gate. `content` is exactly the boundary
+this script's own determinism decision already draws.
+
+The Markdown artifact is additionally checked by **re-rendering it from the freshly
+computed `content` plus the *committed* `run_metadata`** and comparing bytes. Because
+`render_markdown()` is a pure function of the scorecard dict, holding `run_metadata`
+fixed at the committed values isolates content drift from the timestamp, and also
+catches a `.md` that was hand-edited away from its own JSON.
+
+`--check` performs **no filesystem walk and no hashing of its own**: it reuses
+`build_content()`'s existing `git`-independent discovery and compares in-memory dicts.
+It therefore cannot reintroduce the failure mode
+`golden_harness/evaluator_hash.py::_iter_tracked_files` documents at length, where a
+naive `rglob` walk picked up gitignored `__pycache__/*.pyc` files (created as an
+ordinary side effect of dynamically importing `expect.py`) and made a supposedly-stable
+digest environment-dependent.
+
+Held-out redaction is unaffected and cannot regress through this mode: the dicts
+`--check` compares and the difference lines it prints both come from `build_content()`,
+which has already run `redact_held_out_identities()`, so no real held-out case ID or
+`case_dir` can reach stdout/stderr any more than it can reach the artifacts.
 """
 from __future__ import annotations
 
@@ -147,6 +191,7 @@ except ImportError as exc:  # pragma: no cover - environment guard, not a case f
 
 SCHEMA_VERSION = "golden-scorecard-v1"
 GOLDEN_VERSION_LABEL = "v6.12.0"  # Phase 1's pre-registered release label (plan-035 §2.4).
+CHECK_FLAG = "--check"  # T533: the additive, read-only drift-gate mode. See module docstring.
 
 
 def repo_root() -> Path:
@@ -431,13 +476,155 @@ def render_markdown(scorecard: dict[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def main() -> int:
-    root = repo_root()
-    golden_dir = golden_root()
-    scorecard = build_scorecard(golden_dir)
+def output_paths(root: Path) -> tuple[Path, Path]:
+    """The two artifact paths this script owns, as `(json_path, md_path)`. Extracted
+    so the writing path (`main()`) and the read-only checking path (`run_check()`)
+    can never disagree about *which* files are the committed record."""
+    benchmarks = root / "docs" / "benchmarks"
+    return (
+        benchmarks / f"scorecard-{GOLDEN_VERSION_LABEL}.json",
+        benchmarks / f"scorecard-{GOLDEN_VERSION_LABEL}.md",
+    )
 
-    json_path = root / "docs" / "benchmarks" / f"scorecard-{GOLDEN_VERSION_LABEL}.json"
-    md_path = root / "docs" / "benchmarks" / f"scorecard-{GOLDEN_VERSION_LABEL}.md"
+
+def diff_summary(committed: dict[str, Any], fresh: dict[str, Any]) -> list[str]:
+    """Human-readable differences between two `summary` dicts (scalar counts and the
+    nested `by_location` breakdown). Pure; returns `[]` when they agree."""
+    lines: list[str] = []
+    for key in sorted(set(committed) | set(fresh)):
+        if key == "by_location":
+            continue
+        was, now = committed.get(key, "<absent>"), fresh.get(key, "<absent>")
+        if was != now:
+            lines.append(f"  summary.{key}: committed={was} fresh={now}")
+
+    was_loc = committed.get("by_location") or {}
+    now_loc = fresh.get("by_location") or {}
+    for location in sorted(set(was_loc) | set(now_loc)):
+        was_stats = was_loc.get(location) or {}
+        now_stats = now_loc.get(location) or {}
+        for key in sorted(set(was_stats) | set(now_stats)):
+            was, now = was_stats.get(key, "<absent>"), now_stats.get(key, "<absent>")
+            if was != now:
+                lines.append(f"  summary.by_location.{location}.{key}: committed={was} fresh={now}")
+    return lines
+
+
+def diff_cases(committed: list[dict[str, Any]], fresh: list[dict[str, Any]]) -> list[str]:
+    """Human-readable differences between two per-case lists, keyed by `id`. Both
+    inputs are already held-out-redacted by `build_content()`, so every `id` printed
+    here is either an `open/` case ID or an anonymized `held-out-case-<n>` label."""
+    was_by_id = {c["id"]: c for c in committed}
+    now_by_id = {c["id"]: c for c in fresh}
+
+    lines: list[str] = []
+    for case_id in sorted(set(was_by_id) - set(now_by_id)):
+        lines.append(f"  case removed since the committed artifact: {case_id}")
+    for case_id in sorted(set(now_by_id) - set(was_by_id)):
+        lines.append(f"  case added since the committed artifact: {case_id}")
+    for case_id in sorted(set(was_by_id) & set(now_by_id)):
+        was, now = was_by_id[case_id], now_by_id[case_id]
+        for key in sorted(set(was) | set(now)):
+            if was.get(key, "<absent>") != now.get(key, "<absent>"):
+                lines.append(
+                    f"  case {case_id}.{key}: committed={was.get(key, '<absent>')!r} "
+                    f"fresh={now.get(key, '<absent>')!r}"
+                )
+    return lines
+
+
+def diff_content(committed: dict[str, Any], fresh: dict[str, Any]) -> list[str]:
+    """Every difference between a committed `content` dict and a freshly computed
+    one, as human-readable lines. `[]` means the committed artifact is current. Pure
+    and read-only: compares in-memory dicts, walks no filesystem, hashes nothing."""
+    lines = diff_summary(committed.get("summary") or {}, fresh.get("summary") or {})
+    lines += diff_cases(committed.get("cases") or [], fresh.get("cases") or [])
+    if lines:
+        return lines
+    # Belt and braces: catch any future `content` key the two helpers above do not
+    # inspect, rather than silently reporting "no drift" for it.
+    if committed != fresh:
+        extra = sorted((set(committed) | set(fresh)) - {"summary", "cases"})
+        lines.append(f"  content differs in a key not covered by summary/cases comparison: {extra}")
+    return lines
+
+
+def load_committed_scorecard(json_path: Path) -> tuple[dict[str, Any] | None, str | None]:
+    """Read the committed JSON artifact. Returns `(scorecard, None)` on success or
+    `(None, reason)` — a missing or malformed committed artifact is a reportable
+    check failure, never an exception escaping to a traceback."""
+    if not json_path.is_file():
+        return None, f"committed artifact does not exist: {json_path}"
+    try:
+        data = json.loads(json_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return None, f"committed artifact is unreadable or not valid JSON: {json_path} ({exc})"
+    if not isinstance(data, dict) or not isinstance(data.get("content"), dict):
+        return None, f"committed artifact has no top-level 'content' object: {json_path}"
+    return data, None
+
+
+def diff_markdown(committed_scorecard: dict[str, Any], fresh_content: dict[str, Any], md_path: Path) -> list[str]:
+    """Re-render the Markdown from the fresh `content` plus the **committed**
+    `run_metadata` and compare bytes. Holding `run_metadata` fixed isolates content
+    drift from `generated_at`'s by-design per-run change, and also catches a `.md`
+    hand-edited away from its own JSON."""
+    if not md_path.is_file():
+        return [f"  committed Markdown artifact does not exist: {md_path}"]
+    try:
+        expected = render_markdown(
+            {"run_metadata": committed_scorecard["run_metadata"], "content": fresh_content}
+        )
+    except (KeyError, TypeError) as exc:
+        return [f"  cannot re-render Markdown from the committed run_metadata: {exc}"]
+    if md_path.read_text(encoding="utf-8") != expected:
+        return [f"  committed Markdown does not match a re-render of the current content: {md_path.name}"]
+    return []
+
+
+def run_check(root: Path) -> int:
+    """`--check`: compare the committed artifacts against a fresh computation and
+    return `0` (in sync) or `1` (drift / missing / malformed). Writes nothing."""
+    json_path, md_path = output_paths(root)
+    committed, reason = load_committed_scorecard(json_path)
+    if committed is None:
+        print(f"scorecard --check: FAIL — {reason}", file=sys.stderr)
+        print(f"  fix: run `python3 scripts/scorecard.py` and commit {json_path.name} + {md_path.name}", file=sys.stderr)
+        return 1
+
+    fresh_content = build_content(golden_root())
+    differences = diff_content(committed["content"], fresh_content)
+    differences += diff_markdown(committed, fresh_content, md_path)
+
+    if differences:
+        print(
+            f"scorecard --check: FAIL — the committed artifacts are stale relative to "
+            f"the current tests/golden/ tree ({len(differences)} difference(s)):",
+            file=sys.stderr,
+        )
+        for line in differences:
+            print(line, file=sys.stderr)
+        print(
+            "  fix: run `python3 scripts/scorecard.py` and commit both "
+            f"{json_path.name} and {md_path.name}",
+            file=sys.stderr,
+        )
+        return 1
+
+    summary = fresh_content["summary"]
+    print(
+        f"scorecard --check: OK — committed content matches a fresh run "
+        f"({summary['total_cases']} cases, {summary['total_pass']} pass, "
+        f"{summary['regressions']} regressions). Wrote nothing."
+    )
+    return 0
+
+
+def run_write(root: Path) -> int:
+    """Default mode (unchanged behaviour): run every case, write both artifacts,
+    return `1` if any regression was found."""
+    scorecard = build_scorecard(golden_root())
+    json_path, md_path = output_paths(root)
 
     json_path.write_text(json.dumps(scorecard, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     md_path.write_text(render_markdown(scorecard), encoding="utf-8")
@@ -451,6 +638,21 @@ def main() -> int:
     print(f"wrote {json_path.relative_to(root)}")
     print(f"wrote {md_path.relative_to(root)}")
     return 1 if summary["regressions"] else 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Dispatch on `--check`. Unknown arguments are rejected with exit code `2`
+    rather than ignored: a gate invoked with a typo'd flag must not silently pass.
+    No arguments at all is the original write mode, byte-for-byte unchanged."""
+    args = list(sys.argv[1:] if argv is None else argv)
+    unknown = [a for a in args if a != CHECK_FLAG]
+    if unknown:
+        print(f"scorecard.py: unrecognized argument(s): {' '.join(unknown)}", file=sys.stderr)
+        print(f"usage: scripts/scorecard.py [{CHECK_FLAG}]", file=sys.stderr)
+        return 2
+
+    root = repo_root()
+    return run_check(root) if CHECK_FLAG in args else run_write(root)
 
 
 if __name__ == "__main__":
