@@ -48,7 +48,7 @@ Generated from: implementation/knowledge
 | discover-skills | command | experimental | commands/discover-skills.md |
 | evaluate-poc | command | experimental | commands/evaluate-poc.md |
 | handoff | command | experimental | commands/handoff.md |
-| new-feature | command | experimental | commands/new-feature.md |
+| new-feature | command | stable | commands/new-feature.md |
 | new-poc | command | experimental | commands/new-poc.md |
 | new-project | command | experimental | commands/new-project.md |
 | plan | command | experimental | commands/plan.md |
