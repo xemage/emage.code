@@ -1,12 +1,60 @@
-# MCP Platform Contract — v1
+# MCP Platform Contract — v2
 
-> **Superseded by `docs/artifacts/mcp-platform-contract-v2.md` (T519, 2026-09-25).** Only §3.1's
-> placeholder-template sentence changed — there are three placeholder families, not two:
-> `claude-code` renders `${VAR}`, not `${env:VAR}` (T517), while `${env:VAR}` remains correct for
-> `vscode`/`cursor`/`pi`/`gemini`/`cline` and `{env:VAR}` for `opencode`. v2 also annotates two
-> citations of `mcp-header-url-templating-design-v1.md` with their `-v2` successor. Everything else
-> in v2 is this document verbatim. This file is left unmodified apart from this supersession link,
-> per `AGENTS.md`'s artifact-versioning rule.
+> Filename: `mcp-platform-contract-v2.md`. Immutable once produced; revisions bump `<N>`.
+
+## v2 metadata
+- **Producer agent**: technical-writer
+- **Task**: T519
+- **Created**: 2026-09-25
+- **Based on**: `docs/artifacts/mcp-platform-contract-v1.md` (T420 — carried forward verbatim
+  except for the passages listed in "Changes from v1" below and this metadata block);
+  `docs/tasks/task-T519.md`; `docs/plans/plan-069-t518-t519-carried-defects.md`;
+  `docs/artifacts/mcp-header-url-templating-design-v2.md` (T517 — authoritative on the corrected
+  `claude-code` placeholder syntax, §3 rendering rule and §9 evidence);
+  `implementation/scripts/sync.mjs` `emitMcp()`/`mapTemplatedValue()`/`mapEnv()` (read directly this
+  session to verify the per-platform placeholder templates rather than take them from the brief).
+  v1's own basis is unchanged and still applies — it is reproduced verbatim in the `**Based on:**`
+  block below.
+- **Supersedes**: `mcp-platform-contract-v1.md`
+- **Consumed by**: T519 (this correction pass). v1's own declared consumers, T421 and T422, are
+  closed — see §6 and §7, carried forward below.
+
+## Changes from v1 (the only substantive change is §3.1's placeholder-template sentence)
+
+v1's §3.1 stated that `env`/`environment` values are emitted as `${env:VAR}` "for
+claude-code/cline/cursor/gemini/vscode" and `{env:VAR}` for opencode — two placeholder families.
+Since `T517`, `claude-code` is a **third** family: it renders `${VAR}`. Claude Code does not
+recognise the `${env:…}` form, expands `${VAR}` / `${VAR:-default}` from the live process
+environment, and passes any other brace expression through as literal text (see
+`docs/artifacts/mcp-header-url-templating-design-v2.md` §3 and its §9 evidence: the platform's own
+documentation, a live differential probe, and a `gitlab` startup probe). v1's sentence is therefore
+wrong for one of the six formats and is corrected here.
+
+| Passage | v1 | v2 |
+|---|---|---|
+| §3.1 placeholder-template sentence (below the wire-shape table) | two families: `${env:VAR}` for claude-code/cline/cursor/gemini/vscode, `{env:VAR}` for opencode | three families; `claude-code` moved out into its own `${VAR}` case, with `pi` named explicitly and `url`/`headers` noted as using the same per-platform template |
+| §3.1 "Updated by T491" paragraph, design citation | pointed at `mcp-header-url-templating-design-v1.md` with no supersession note | same citation, annotated with its `-v2` successor |
+| §8 "Full spec:" design citation | pointed at `mcp-header-url-templating-design-v1.md` §5 with no supersession note | same citation, annotated with its `-v2` successor |
+
+Nothing else changed. In particular, §8's opening sentence ("which implemented T483's ratified
+design (`…-design-v1.md`)") is left exactly as written, because it is a historical statement about
+which artifact version `T491` implemented at the time, not a pointer to the current spec. The
+`${input:cwso_jwt_token}` and "generic `${env:...}` shape" references in §4 and §8 are likewise
+unchanged: both concern `.vscode/mcp.json` (the `vscode` format), for which `${env:VAR}` is and
+remains correct.
+
+**Verification basis for the corrected sentence (read this session, not copied from the brief):**
+`implementation/scripts/sync.mjs` `emitMcp()` — the `vscode`/`cursor` branch passes `'${env:VAR}'`
+(and covers `pi`, whose manifest declares `"format": "cursor"`), the `gemini` branch `'${env:VAR}'`,
+the `opencode` branch `'{env:VAR}'`, the `claude-code` branch `'${VAR}'`, and the `cline` branch
+`'${env:VAR}'`, each passed to `mapTemplatedValue()`/`mapEnv()` for `url`, `headers` and
+`env`/`environment` alike.
+
+Everything else below is v1 verbatim, including the `**Status:**`/`**Based on:**`/`**Owner:**`/
+`**Consumers:**` block — that describes v1's own authorship and is carried forward unchanged for
+provenance, not re-asserted by v2.
+
+---
 
 **Status:** Proposed (author-only; not yet independently reviewed).
 **Based on:** `implementation/knowledge/mcp/servers.yaml` (canonical server registry, read in
@@ -91,10 +139,24 @@ core + 9 extended; see §2, §8).
 | `vscode` (github) | `servers` | `{ command, args, env? }` | `{ type: "http", url }` |
 | `opencode` | top-level `mcp` (plus `$schema` and an `instructions` array from `manifest.mcp.extraFields`) | `{ type: "local", command: [cmd, ...args], environment? }` | `{ type: "remote", url }` |
 
-`env`/`environment` values are emitted as platform-native placeholder templates
-(`${env:VAR}` for claude-code/cline/cursor/gemini/vscode, `{env:VAR}` for opencode) via
-`mapEnv()` — never interpolated to a real secret value at generation time, consistent with
-`security-guidelines.md`.
+**Corrected in v2 (was two placeholder families, is three).** `env`/`environment` values — and,
+since T491, templated `url` and `headers` values — are emitted as platform-native placeholder
+templates via `mapTemplatedValue()`/`mapEnv()`, never interpolated to a real secret value at
+generation time, consistent with `security-guidelines.md`. There are three placeholder families,
+one per target platform's own expansion syntax:
+
+| Placeholder | Platforms | `format` branch in `emitMcp()` |
+|---|---|---|
+| `${env:VAR}` | `vscode` (github), `cursor`, `pi`, `gemini`, `cline` | `vscode`/`cursor` (shared; `pi` declares `"format": "cursor"`), `gemini`, `cline` |
+| `{env:VAR}` | `opencode` | `opencode` |
+| `${VAR}` | `claude-code` | `claude-code` |
+
+`claude-code` is the outlier and was wrong in v1: Claude Code expands `${VAR}` (and
+`${VAR:-default}`) from the live process environment in `command`, `args`, `env`, `url` and
+`headers` alike, and treats `${env:VAR}` as inert literal text. The generator emits the bare
+`${VAR}` form only — it never emits a `:-default`. See
+`docs/artifacts/mcp-header-url-templating-design-v2.md` (T517) §3 for the rendering rule and §9 for
+the evidence.
 
 **Updated by T491:** every "Remote server shape" cell above now optionally gains a trailing
 `headers?` field (e.g. `{ type: "http", url, headers? }` for claude-code) when a server's
@@ -102,8 +164,10 @@ core + 9 extended; see §2, §8).
 either a literal string (unchanged, e.g. `context7`, `hf-mcp-server`) or a templated-value spec
 (`{ fromEnv: VAR }`, optionally with `wrap`) rendered via the new `mapTemplatedValue()` helper,
 which `mapEnv()` is now a thin per-key wrapper around — see
-`docs/artifacts/mcp-header-url-templating-design-v1.md` (T483) §3–§5 for the full spec and
-per-platform `headers`-support evidence table (§5.3).
+`docs/artifacts/mcp-header-url-templating-design-v1.md` (T483 — superseded by
+`docs/artifacts/mcp-header-url-templating-design-v2.md`, T517, which corrects the `claude-code`
+placeholder template; cite v2 for the current spec) §3–§5 for the full spec and per-platform
+`headers`-support evidence table (§5.3).
 
 ### 3.2 Explicit per-platform server enumeration
 
@@ -316,7 +380,9 @@ from the previous `env`-only check) and an inline-object branch for scalar top-l
 a platform's placeholder pattern, and `mapEnv()` is now a thin per-key wrapper around it (unchanged
 signature/call sites). All 6 `emitMcp()` format branches now template `url` via
 `mapTemplatedValue()` and emit `headers` via `mapEnv()` when present. Full spec:
-`docs/artifacts/mcp-header-url-templating-design-v1.md` §5.
+`docs/artifacts/mcp-header-url-templating-design-v1.md` §5 (superseded by
+`docs/artifacts/mcp-header-url-templating-design-v2.md`, T517 — cite v2 for the current
+`claude-code` placeholder template; see §3.1 above).
 
 **Verification performed this session (real command transcripts, not manual trace):**
 
