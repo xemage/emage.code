@@ -2,9 +2,8 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T517 | Emit Claude Code's own env-placeholder syntax in the generated MCP config | devops-engineer | pending | P1 | — | 2026-09-24 |
 
-> **1 active row (`T517`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **0 active rows. `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
@@ -19,19 +18,16 @@
 > independently flipped `tech-lead` itself and confirmed the predicted `FAIL`; the implementer had
 > reported its own failure honestly.
 
-> **T517 scoped 2026-09-24** — a defect in shipped output, found from a user report that the
-> `hindsight` MCP server would not start. Not a user misconfiguration: the env var is set and the
-> generated config is wrong. `sync.mjs`'s `claude-code` emitter renders env references with VS Code's
-> `${env:VAR}` placeholder, which Claude Code does not expand, so `.mcp.json` ships literal
-> placeholder text. **The visible half is the smaller half**: `hindsight` and `cwso` fail loudly
-> (invalid URL), but `gitlab`, `brave` and `toolradar` take `fromEnv` in `env` and fail *silently* —
-> the process starts, the client reports healthy, and a literal `${env:...}` string is handed over as
-> a credential. Three of the five are `core`, so this reaches **every** downstream install of this
-> platform. The suite did not catch it because the suite encodes it (two tests + the design artifact
-> all specify the wrong template), which is why the brief makes a **live reconnect**, not a green
-> suite, the decisive acceptance criterion. Only `claude-code` is proven wrong; the brief explicitly
-> forbids "fixing" the other five emitters. See `docs/tasks/task-T517.md` and
-> `docs/plans/plan-068-t517-claude-code-mcp-placeholder-syntax.md`.
+> **`T517` closed 2026-09-25 — see `completed-tasks.md`.** Fixed a defect in *shipped* output: the
+> `claude-code` MCP emitter used VS Code's `${env:VAR}` placeholder, which Claude Code does not
+> expand, so every generated `.mcp.json` carried literal placeholder text. `hindsight` and `cwso`
+> failed visibly on an invalid URL; `gitlab`, `brave` and `toolradar` failed **silently**, receiving
+> the literal string as a credential. **Proven by live MCP handshake**, not inference: the same
+> variable connects under `${VAR}` and reproduces the exact reported error under `${env:VAR}`, and an
+> unset-variable control shows the `env:` form is never parsed as a reference at all. Independently
+> reproduced by the top-level session in its own isolated config dir before merge. `-v2` of the design
+> artifact records the origin of the defect: v1 cited a hand-added `.mcp.json` as "empirically
+> verified" when no running client had ever read it, so it attested to field *shape* only.
 
 > **`T515` and `T516` both closed 2026-09-25 — see `completed-tasks.md` for the full closure
 > records.** `T515` produced `ADR-007`: *a command's declared contract is authoritative over the

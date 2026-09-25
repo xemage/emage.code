@@ -2,13 +2,13 @@
 
 **ID:** T517
 **Owner:** DevOps Engineer
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Tier:** standard
 **Affects:** —
 **Depends on:** —
 **Created:** 2026-09-24
-**Completed:** —
+**Completed:** 2026-09-25
 **Based on:** docs/plans/plan-068-t517-claude-code-mcp-placeholder-syntax.md
 
 > **`**Affects:**` is `—` deliberately.** This is a defect in a build script, not in any registry
