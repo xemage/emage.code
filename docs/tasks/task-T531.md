@@ -2,12 +2,13 @@
 
 **ID:** T531
 **Owner:** Backend Developer
-**Status:** in_review
+**Status:** done
 **Priority:** P2
 **Tier:** mechanical
 **Affects:** —
 **Depends on:** T527 (merged 2026-09-25)
 **Created:** 2026-09-25
+**Completed:** 2026-09-25
 **Based on:** `docs/plans/plan-074-skillify-followups.md` §1;
 `docs/artifacts/skillify-contract-resolution-v1.md`; `docs/tasks/task-T527.md` §5 (its blocker);
 `docs/artifacts/protected-paths-v1.md` §5; `docs/decisions/ADR-007-command-contract-authority.md`.
