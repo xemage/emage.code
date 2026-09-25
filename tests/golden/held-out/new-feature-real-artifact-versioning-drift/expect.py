@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""expect.py for new-feature-real-artifact-versioning-drift (known_failing / tracked_defect).
+"""expect.py for new-feature-real-artifact-versioning-drift.
 
 Contract under test: implementation/knowledge/commands/new-feature.md Phase 3 step 8 --
-artifact filenames must match "<artifact-name>-v<major>.<minor>.md". Checked against two real
-docs/artifacts/*.md files. Expected to return False today -- see brief.md.
+artifact filenames must match `<artifact-name>-v<N>.md`, per `AGENTS.md` § Artifact
+Versioning. Checked against two real docs/artifacts/*.md files. Expected to return True.
 """
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import re
 import sys
 from pathlib import Path
 
-VERSIONED_NAME_RE = re.compile(r"^.+-v\d+\.\d+\.md$")
+VERSIONED_NAME_RE = re.compile(r"^.+-v\d+\.md$")
 
 
 def check(case_dir: Path) -> bool:

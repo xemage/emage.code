@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "algorithm": "sha256",
+  "digests": {
+    "tests_golden": "0d3f406e50557d2a255457c4e1e1f97d7234aa5a9e84e9b6d7e9f84730cef290",
+    "scripts_scorecard": "e1a93fa51093ee8665a3ae5ad35b11cf8153653d9f1bed488cfe7d494ae23b20"
+  },
+  "computed_from_commit": "efaa7531add06047cc86d12789af4c8a31780fdc",
+  "computed_at": "2026-09-25T17:05:00Z",
+  "protected_paths": {
+    "tests_golden": "tests/golden",
+    "scripts_scorecard": "scripts/scorecard.py"
+  },
+  "supersedes": "evaluator-hash-known-good-v2.json",
+  "reason": "T523 executed ADR-007 verdict H-1 under the file-scoped protected-path authorization in docs/tasks/task-T523.md SS1 -- the second authorized change to tests/golden/** since v1 was bootstrapped at commit 49415a3, and the first to touch tests/golden/held-out/. Three files in one case directory changed: expect.py's version regex aligned to the contract T520 had already amended under ADR-007 branch 1, case.yaml flipped known_failing -> expected_pass, brief.md restated accordingly. The case fixture was NOT touched -- renaming a fixture file would also have turned the case green but would have inverted it, asserting a filename form AGENTS.md does not declare. Only tests_golden drifts; scripts_scorecard is byte-identical to v2 and v1, which is itself cryptographic evidence scripts/scorecard.py was not touched. The refresh was escalated for human sanction by the implementing agent rather than performed by it, per the precedent recorded in T520's completed-tasks.md row, and was explicitly authorized by the user before this file was written.",
+  "update_policy": "Manual only, never automatic. A future legitimate update goes through docs/artifacts/protected-paths-v1.md SS5's exception path and produces evaluator-hash-known-good-v4.json -- this file (v3) is never edited in place, and v1 and v2 are retained unmodified as the historical record. See docs/artifacts/evaluator-hash-check-v1.md for the full policy."
+}
