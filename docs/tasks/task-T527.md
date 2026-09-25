@@ -2,12 +2,13 @@
 
 **ID:** T527
 **Owner:** Solution Architect
-**Status:** in_review
+**Status:** done
 **Priority:** P2
 **Tier:** judgment
 **Affects:** —
 **Depends on:** T525 (merged 2026-09-25)
 **Created:** 2026-09-25
+**Completed:** 2026-09-25
 **Based on:** `docs/plans/plan-073-skillify-adjudication-and-wave2.md` §0–§1;
 `docs/decisions/ADR-007-command-contract-authority.md`;
 `docs/artifacts/protected-paths-v1.md` §5; `docs/tasks/task-T525.md`.
