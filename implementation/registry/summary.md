@@ -34,7 +34,7 @@ Generated from: implementation/knowledge
 | release-manager | agent | stable | agents/release-manager.md |
 | scaffolding-agent | agent | stable | agents/scaffolding-agent.md |
 | scrum-master | agent | stable | agents/scrum-master.md |
-| security-engineer | agent | experimental | agents/security-engineer.md |
+| security-engineer | agent | stable | agents/security-engineer.md |
 | solution-architect | agent | stable | agents/solution-architect.md |
 | tech-lead | agent | experimental | agents/tech-lead.md |
 | technical-debt-narrator | agent | stable | agents/technical-debt-narrator.md |
@@ -54,7 +54,7 @@ Generated from: implementation/knowledge
 | plan | command | experimental | commands/plan.md |
 | poc-demo | command | experimental | commands/poc-demo.md |
 | prepare-release | command | experimental | commands/prepare-release.md |
-| security-audit | command | experimental | commands/security-audit.md |
+| security-audit | command | stable | commands/security-audit.md |
 | skillify | command | experimental | commands/skillify.md |
 | sprint-status | command | experimental | commands/sprint-status.md |
 | team-status | command | experimental | commands/team-status.md |

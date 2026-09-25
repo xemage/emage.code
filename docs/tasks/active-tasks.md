@@ -97,13 +97,33 @@
 > implementation before dispatch, not taken from the criteria document. See `docs/tasks/task-T514.md`
 > and `docs/plans/plan-065-t514-dispatch-plan-coverage.md`.
 
+> **`T522` opened and closed 2026-09-25 — see `completed-tasks.md`. `command/security-audit` is the
+> repository's first `stable` command.** `plan-064` Phase 9's baseline was **0 of 19**; it is now
+> **1 of 19**, and the agent category closes at **26 `stable` / 2 `experimental`**. This collects
+> value already earned by `T516`, `T518` and `T520` — no new capability, no criteria weakened.
+> **`T520` could not have done this itself**: it was `P1` and declared
+> `**Affects:** command/security-audit`, so that component stayed blocked by criterion 3 until the
+> row archived. Promotion inside `T520` was not merely undesirable, it was arithmetically
+> impossible. `P2` here for the same reason `T514` was `P2` — a `P0`/`P1` row naming these
+> components would re-enter criteria 3/7's open-defect scan and block itself. **Measured on two
+> different `develop` HEADs, never predicted.** Two steps the "two one-line flips" framing missed,
+> both caught by running the suite: `implementation/registry/` is generated and *does* carry
+> `maturity:` (needs `generate-registry.py`; `sync.mjs --check` gives **no** signal, as the platform
+> projections carry no `maturity:` field at all), and `test_check_maturity.py` hardcodes the tier
+> distribution. **Conflict of interest disclosed**: the same actor measured and executed this, so
+> `T514`'s second-party control was unavailable — replaced by a one-command reproducible gate
+> stated in the brief. The **2 that remain `experimental`** (`orchestrator`, `tech-lead`) still fail
+> criteria 3+7 on `ADR-007` verdicts **A** and **H-1**, which `T520` deliberately left red. H-1 is
+> the nearer of the two and is blocked on a named authorization for one regex token in an
+> `expect.py` under `tests/golden/**`. See `docs/tasks/task-T522.md`.
+
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
 > Owners are agent names from `knowledge/agents/`.
 
-> 0 active rows. This is not a fresh project — 511 real tasks (`T001`-`T511`) have already run to
-> completion; see `docs/tasks/completed-tasks.md` for the full archive and `docs/checkpoints/` for
-> phase-boundary summaries, most recently `checkpoint-release-v7.0.0.md`. Do not treat an empty
-> table as "no history exists" — it means no task is currently in flight.
+> This is not a fresh project — **319 real tasks (`T001`-`T522`)** have already run to completion;
+> see `docs/tasks/completed-tasks.md` for the full archive and `docs/checkpoints/` for phase-boundary
+> summaries, most recently `checkpoint-036-phase9-partial-and-mcp-syntax-fix.md`. Do not treat a
+> short table as "no history exists" — it means little is currently in flight.
 
 Per-task briefs live alongside this file as `task-T001.md`, `task-T002.md`, …
