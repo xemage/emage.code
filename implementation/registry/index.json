@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-09-25T19:15:49+00:00",
+  "generatedAt": "2026-09-25T20:12:53+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -1977,7 +1977,7 @@
       "category": "skill",
       "name": "skillify",
       "path": "skills/skillify/SKILL.md",
-      "checksum": "f174178846d655afe9a89601ba3a6411ec9a5aee1ff1a86878d8b2b00d9447c1",
+      "checksum": "68d4f9f775e10054e0bfda3df949e14d9eb354317ce31422a010469a6ae389ff",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [

@@ -3,8 +3,8 @@
 
 Contract under test: implementation/knowledge/commands/skillify.md, `### Generate the Skill
 File` -- "After the 4-round interview, generate `.github/skills/<name>/SKILL.md` with this
-structure:" followed by a template declaring `# <Skill Name>`, `## Trigger`, `## Inputs`,
-`## Steps`, `## Success Criteria` and `## Examples`.
+structure." followed by a template declaring `# <Skill Name>`, `## When to Use`, `## Inputs`,
+`## Procedure`, `## Success Criteria` and `## Examples`.
 
 Expected to return False: a corpus survey of all 26 real SKILL.md files (both the
 implementation/knowledge/skills/ sources and their .github/skills/ projections) found 0/26
@@ -17,9 +17,9 @@ import sys
 from pathlib import Path
 
 REQUIRED_SECTIONS = (
-    "## Trigger",
+    "## When to Use",
     "## Inputs",
-    "## Steps",
+    "## Procedure",
     "## Success Criteria",
     "## Examples",
 )
