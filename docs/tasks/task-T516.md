@@ -2,13 +2,13 @@
 
 **ID:** T516
 **Owner:** Backend Developer
-**Status:** pending
+**Status:** done
 **Priority:** P2
 **Tier:** standard
 **Depends on:** —
 **Affects:** —
 **Created:** 2026-09-24
-**Completed:** —
+**Completed:** 2026-09-25
 **Based on:** docs/plans/plan-067-t516-defect-check-declared-field.md
 
 > **Priority note — read before editing this brief.** `P2` is assigned on merit (§6) and has a side

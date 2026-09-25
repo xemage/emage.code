@@ -1,6 +1,6 @@
 # T515 — Decide contract authority for the six tracked-defect golden cases
 
-**Status:** pending
+**Status:** done
 **Owner:** Solution Architect
 **Priority:** P1
 **Depends on:** —

@@ -2,11 +2,9 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T515 | Decide contract authority for the six tracked-defect golden cases | solution-architect | pending | P1 | — | 2026-09-24 |
-| T516 | Narrow the §3.5 defect-check from free-text scan to a declared field | backend-developer | pending | P2 | — | 2026-09-24 |
 | T517 | Emit Claude Code's own env-placeholder syntax in the generated MCP config | devops-engineer | pending | P1 | — | 2026-09-24 |
 
-> **3 active rows (`T515`, `T516`, `T517`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **1 active row (`T517`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
@@ -35,33 +33,17 @@
 > forbids "fixing" the other five emitters. See `docs/tasks/task-T517.md` and
 > `docs/plans/plan-068-t517-claude-code-mcp-placeholder-syntax.md`.
 
-> **T516 scoped 2026-09-24** — fixes a defect in the promotion gate itself, found while drafting
-> `T515`'s brief. `_ledger_defect()` regex-scans the whole body of every active `P0`/`P1` brief for
-> component ids, so a brief that spells out its mandated branch name (`agent/<slug>/<id>`) or cites
-> an instruction by filename (`.claude/rules/*.md`) **indicts the component it merely mentions**.
-> Both failures were hit on `T515`'s first draft and confirmed by running the script, not by reading
-> the regex. Latent until `T514` took the `stable` population to 25 agents + 4 instructions +
-> 7 skills — false matches only bite components that have a claim to fail. Fix is a declared
-> `Affects:` field, **mandatory on `P0`/`P1` briefs with a missing field failing loudly**: the
-> tempting "absent field means affects nothing" fallback would turn a loud false positive into a
-> silent false negative, which is worse than the bug. `P2` is honest — the defect makes the gate
-> over-strict, never under-strict, so nothing is mis-promoted. Migration surface is **one brief**
-> today and grows with every future `P0`/`P1` row. See `docs/tasks/task-T516.md` and
-> `docs/plans/plan-067-t516-defect-check-declared-field.md`.
-
-> **T515 dispatched 2026-09-24** — `plan-064` Phase 9, first task. Decides which side of six
-> command-contract-vs-corpus conflicts is authoritative; these six `tracked_defect` golden cases are
-> the entire remaining distance from 25/3 to **28/0** in the agent category, and they also block
-> their own commands. **Deliberately read-only and deliberately not an implementation task**:
-> scoping found each defect case is one half of a *zero-sum pair* — every affected command also has
-> a sibling `expected_pass` case whose `expect.py` encodes the same contract against an opposite
-> fixture, so amending a contract to match the real corpus relocates the failure instead of removing
-> it. That is judgment, not code, so it is settled first, on its own, without touching the protected
-> `tests/golden/**` tree. Owner is **Solution Architect** because it owns zero commands, while three
-> of the four agents owning the affected commands are the same agents a favourable resolution would
-> promote. `P1` is honest (this blocks Phase 9); the §3.5 self-reference trap is handled by
-> display-name phrasing verified against `check-maturity.py`, not by priority-gaming. See
-> `docs/tasks/task-T515.md` and `docs/plans/plan-066-t515-command-contract-authority.md`.
+> **`T515` and `T516` both closed 2026-09-25 — see `completed-tasks.md` for the full closure
+> records.** `T515` produced `ADR-007`: *a command's declared contract is authoritative over the
+> corpus unless it contradicts a higher-authority document, or the dispute is only a label for
+> content the corpus already carries — popularity is not authority.* Its verdicts are **not a clean
+> sweep, deliberately**: 2 of 6 cases end green, 1 stops blocking, 3 stay red, so of the three
+> `experimental` agents **only `security-engineer` promotes**. `T516` fixed the §3.5 matcher that
+> made a brief's own mandated branch name indict its owner — defects are now declared in an
+> `**Affects:**` field, mandatory at `P0`/`P1` and **fail-closed** (a missing field is exit 2 with no
+> component report, never a quiet `PASS`). Every new `P0`/`P1` brief must now carry that field.
+> **Neither task promoted anything**; acting on `ADR-007`'s verdicts is follow-up work that still
+> needs a file-scoped `protected-paths-v1.md` §5 authorization, which `T515` itself did not require.
 
 > **T514 dispatched 2026-09-24** — `plan-064` Phase 10, approved by the user for task-brief
 > authoring. Re-runs promotion readiness for all 8 agents at `maturity: experimental`; `plan-064`
