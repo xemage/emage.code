@@ -22,7 +22,7 @@ This file documents security trade-offs you must review **before** copying emage
 
 ## 2. MCP server credentials
 
-Servers in `knowledge/mcp/servers.yaml` reference credentials via `${env:VAR}` (or `{env:VAR}` for Opencode). The sync engine emits these placeholders verbatim — secrets are never written to generated files.
+Servers in `knowledge/mcp/servers.yaml` reference credentials via a per-platform placeholder form: `${env:VAR}` (VS Code / GitHub Copilot, Cursor, Pi, Gemini CLI, Cline), `{env:VAR}` (Opencode), and `${VAR}` (Claude Code — it expands `${VAR}` and `${VAR:-default}` from the live process environment and does **not** recognise the `${env:…}` form; see `docs/artifacts/mcp-header-url-templating-design-v2.md` §3 and §9). The sync engine emits these placeholders verbatim — secrets are never written to generated files.
 
 **Required env vars (core):**
 - `GITLAB_PERSONAL_ACCESS_TOKEN`, `GITLAB_API_URL`
