@@ -1,0 +1,18 @@
+id: skillify-skill-file-template-drift
+command: /skillify
+status: known_failing
+known_failing_category: tracked_defect
+known_failing_reason: >-
+  skillify.md's "Generate the Skill File" step declares a five-section SKILL.md template
+  (## Trigger, ## Inputs, ## Steps, ## Success Criteria, ## Examples) written to
+  .github/skills/<name>/SKILL.md. A corpus survey of every real SKILL.md in this repository --
+  26 under implementation/knowledge/skills/ and the same 26 projected to .github/skills/, the
+  exact path the command names -- found 0/26 satisfying that template, and 0/26 containing even
+  one of ## Trigger, ## Inputs or ## Steps. The real corpus uniformly follows a different
+  template (## Purpose, ## When to Use, ## Prerequisites, ## Procedure, ## Examples,
+  ## Edge Cases), which is the template declared by the skillify *skill*
+  (implementation/knowledge/skills/skillify/SKILL.md, "SKILL.md Template" section). The command
+  and the skill of the same name declare two different output shapes and practice follows the
+  skill, not the command. Trackable contract drift, not a permanent capability limitation:
+  either skillify.md adopts the corpus template, or the corpus is wrong and should be migrated.
+tags: [skillify, skill-file-template, contract-drift, real-artifact]
