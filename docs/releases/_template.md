@@ -62,3 +62,20 @@ Set MCP env vars from the generated `mcp.json` / platform config, then run
 ## Breaking changes
 
 - None (or list breaking changes)
+
+## RELEASE VERDICT
+
+Release gate outcome for this version, per step 7 of `/prepare-release`. This document is the
+declared home for the block; fill in every field before the tag is cut.
+
+- **Version**: vX.Y.Z
+- **Status**: PASS | CONDITIONAL_PASS | FAIL
+- **Features included**: <count>
+- **Fixes included**: <count>
+- **Breaking changes**: <count>
+- **Open blockers**: <count>
+- **Quality gates passed**: [list gates: code-review, security-audit, test-coverage, ...]
+- **Quality gates failed**: [list any failed gates]
+- **Blocker IDs**: [if FAIL — list blocking issues with owners]
+- **Release manager**: orchestrator
+- **Timestamp**: <ISO-8601>

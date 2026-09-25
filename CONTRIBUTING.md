@@ -153,7 +153,10 @@ The project uses **Semantic Versioning** (`vMAJOR.MINOR.PATCH`) and
 1. Branch from `develop`: `release/vX.Y.Z`
 2. Bump versions / finalise documentation as needed
 3. Create the per-release brief `docs/releases/vX.Y.Z.md` (copy
-   `docs/releases/_template.md`) with **Install** and **Highlights** sections.
+   `docs/releases/_template.md`) with **Install**, **Highlights** and **RELEASE VERDICT**
+   sections. The `## RELEASE VERDICT` block is the release gate outcome required by step 7 of
+   `/prepare-release`; the release notes document is its declared home, and step 4's gate below
+   checks it is present.
 4. Run the local docs verification gate for the target tag:
    ```bash
    python3 scripts/verify-release-docs.py --tag vX.Y.Z
