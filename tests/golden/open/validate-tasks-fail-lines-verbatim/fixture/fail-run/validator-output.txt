@@ -1,0 +1,6 @@
+FAIL C5: ID appears in both ledgers: T902
+FAIL C6: task-T902.md has ID T902 present in 2 ledgers (expected 1)
+FAIL C7: missing brief file: task-T904.md
+FAIL C8: completed ID T902 has brief status 'in_progress' (expected done or cancelled)
+FAIL C8: completed ID T904 has brief status 'None' (expected done or cancelled)
+TASK LEDGER: FAIL (5 violations)

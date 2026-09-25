@@ -1,0 +1,4 @@
+id: discover-skills-registry-grounded-recommendation
+command: /discover-skills
+status: expected_pass
+tags: [discover-skills, registry-grounding, output-format, mandatory-rules, real-registry]

@@ -1,0 +1,4 @@
+id: handoff-payload-schema-fields-real
+command: /handoff
+status: expected_pass
+tags: [handoff, schema-conformance, dual-artifact, real-artifact]
