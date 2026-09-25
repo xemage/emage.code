@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "algorithm": "sha256",
+  "digests": {
+    "tests_golden": "cc7465fa1ec63e53a01e0c61f871c6cfb0860aee2c76b15de5f7fc3d19c71123",
+    "scripts_scorecard": "e1a93fa51093ee8665a3ae5ad35b11cf8153653d9f1bed488cfe7d494ae23b20"
+  },
+  "computed_from_commit": "03be4df8148c93640a4821870f724034d1e1199e",
+  "computed_at": "2026-09-25T21:05:00Z",
+  "protected_paths": {
+    "tests_golden": "tests/golden",
+    "scripts_scorecard": "scripts/scorecard.py"
+  },
+  "supersedes": "evaluator-hash-known-good-v4.json",
+  "reason": "T531 re-derived tests/golden/open/skillify-skill-file-template-drift/expect.py under the file-scoped protected-path authorization in docs/tasks/task-T531.md SS1 -- the fourth authorized change to tests/golden/** since v1 was bootstrapped at commit 49415a3. After T527 amended the /skillify command's declared SKILL.md template, the checker still asserted the pre-amendment section names, so it was checking a contract no document declared. Exactly four lines changed: two REQUIRED_SECTIONS entries (## Trigger -> ## When to Use, ## Steps -> ## Procedure) and two docstring lines quoting the amended clause. The `section in text` substring operator was deliberately KEPT -- it admits ## Procedures and ## Procedure Summary, which real corpus files use, and tightening it to an exact-heading match would have strengthened the check beyond what T527 decided. The risk in this task was over-strengthening, not relaxation. The case correctly remains known_failing: check() returns False, the real fixture satisfying 1 of 5 sections. Only tests_golden drifts; scripts_scorecard is byte-identical to v4, v3, v2 and v1, which is itself cryptographic evidence scripts/scorecard.py was not touched. The refresh was escalated for human sanction by the implementing agent rather than performed by it -- the fifth such occurrence and the fifth to be respected -- and was explicitly authorized by the user before this file was written.",
+  "update_policy": "Manual only, never automatic. A future legitimate update goes through docs/artifacts/protected-paths-v1.md SS5's exception path and produces evaluator-hash-known-good-v6.json -- this file (v5) is never edited in place, and v1 through v4 are retained unmodified as the historical record. See docs/artifacts/evaluator-hash-check-v1.md for the full policy."
+}

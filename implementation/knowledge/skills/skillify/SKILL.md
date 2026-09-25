@@ -121,6 +121,9 @@ description: "<one-line description>"
 ## Inputs
 - <input/context requirement>
 
+## Required Context
+- <context item>
+
 ## Procedure
 
 ### 1. <Step Title>
