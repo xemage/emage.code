@@ -4,8 +4,9 @@
 |----|-------|-------|--------|----------|-----------|-------------|
 | T519 | Correct the two documents still stating the pre-T517 placeholder syntax | technical-writer | pending | P2 | — | 2026-09-25 |
 | T521 | Execute ADR-007 verdict C: give RELEASE VERDICT a declared home | release-manager | pending | P2 | — | 2026-09-25 |
+| T525 | Golden-case coverage wave 1: four well-grounded commands | qa-engineer | pending | P2 | — | 2026-09-25 |
 
-> **2 active rows (`T519`, `T521`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **3 active rows (`T519`, `T521`, `T525`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
@@ -168,6 +169,29 @@
 > `tests/golden/open/new-feature-real-checkpoint-format-drift/brief.md` reading
 > `known_failing / tracked_defect` while its `case.yaml` says `expected_pass` — found by the `T523`
 > implementer, independently confirmed, outside its grant, **still needs a row.**
+
+> **`T525` scoped 2026-09-25 — Phase 9's largest remaining piece, backed by
+> `plan-072`.** The 14 commands blocked by criterion 4 alone are blocked by an *absence*, not a
+> defect, and fail no other criterion, so one golden case each is **sufficient**, not merely
+> necessary. **The hazard is the point:** an agent asked to author 14 cases that unblock 14
+> promotions has every incentive to author 14 trivially-passing ones — the unearned promotion the
+> ladder exists to prevent, and nearly undetectable afterwards, since a green board with 14 new
+> cases looks like progress. Three controls: every case must **quote the specific contract clause**
+> it tests, a **`known_failing` case is a correct outcome** (`ADR-007` §5 binds authoring exactly as
+> it binds fixing), and **a wave where everything passes is a suspicious result, not a target** —
+> `T515` used that framing and its honest answer was 2 green of 6. **Split into 3 waves by grounding
+> strength; only wave 1 is scoped.** Waves 2 and 3 are deliberately left unscoped because wave 1
+> tests the approach as much as it delivers: if its four cases come back thin or all green, the
+> controls need revising before 10 more are authored against them. **A corpus probe run before the
+> split changed it:** `/handoff` has 2 real artifact pairs plus a schema and validator, while the
+> PoC three (`/new-poc`, `/poc-demo`, `/evaluate-poc`) have **zero** `POC-DEBT-SCORECARD.md` files
+> anywhere in this repo — no corpus at all, which makes them hand-authored counter-examples
+> (`ADR-007` branch 4) and puts them last. **The brief pre-schedules the evaluator-hash sanction**
+> rather than letting the agent discover it: any authorized `tests/golden/**` change drifts the
+> digest and turns 2 tests red, which `T523`'s brief failed to account for, making its acceptance
+> criteria unsatisfiable as written. The refresh is explicitly **out of the agent's scope** — it
+> reports the digests and stops. See `docs/tasks/task-T525.md` and
+> `docs/plans/plan-072-phase9-golden-case-coverage.md`.
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
