@@ -29,6 +29,8 @@ alone twice because it fell outside both tasks' authorizations.
 | Path | Permitted change |
 |---|---|
 | `tests/golden/open/new-feature-real-checkpoint-format-drift/brief.md` | prose only, to match the case's actual `expected_pass` status |
+| `tests/golden/open/skillify-skill-file-template-drift/brief.md` | prose only |
+| `tests/golden/open/skillify-skill-file-template-drift/case.yaml` | the `known_failing_reason` **text** only |
 
 **Nothing else.** Not `case.yaml`, not `expect.py`, not `fixture/`, not `scripts/scorecard.py`, not
 any other case, and nothing under `tests/golden/held-out/`. §5.1 forbids you extending this grant —
@@ -38,6 +40,21 @@ Use `tests/golden/open/new-feature-plan-doc-compliant/brief.md` as the shape ref
 `expected_pass` brief (`## Pass condition`, `## Provenance`). Keep the substantive historical
 content — the corpus survey evidence is a real record of why the case once failed; reframe it
 rather than deleting it, as `T523` did for its own case's brief.
+
+## 1.1 Second case added 2026-09-25, after T527
+
+`T527` found this case's prose stale for a **different** reason and could not fix it: its own grant
+was conditional on a genuine pass, which did not occur. Two statements are now false:
+
+- `known_failing_reason` asserts the corpus "uniformly follows a different template". **It does
+  not** — fence-aware measurement shows **0 of 26** files satisfy the command's template and
+  **0 of 26** satisfy the skill's. The corpus follows neither.
+- It frames the defect as two disagreeing contracts. **After `T527` that is no longer true**: the
+  skill's template is now a strict superset of the command's, in the same relative order.
+
+The case is still correctly `known_failing` — the real fixture satisfies 1 of 5 sections — so
+`status`, `known_failing_category`, `expect.py` and `fixture/` must **not** change. Only the *reason*
+text and the brief's prose. If you believe the status should change, that is a blocker, not an edit.
 
 ## 2. The evaluator-hash baseline — expected to fail, and NOT yours to fix
 
@@ -60,7 +77,7 @@ commit. Do not claim verification you did not perform.
 ## 3. Acceptance criteria
 
 1. `brief.md` no longer describes the case as `known_failing` anywhere, and matches `case.yaml`.
-2. `case.yaml`, `expect.py` and `fixture/` are byte-unchanged.
+2. `expect.py` and `fixture/` are byte-unchanged in both cases; `case.yaml`'s `status` and `known_failing_category` are unchanged.
 3. `check()` still returns `True` — prose-only changes cannot affect it, but confirm the file set.
 4. Exactly the 2 evaluator-hash failures and no third.
 

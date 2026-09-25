@@ -4,12 +4,13 @@
 |----|-------|-------|--------|----------|-----------|-------------|
 | T519 | Correct the two documents still stating the pre-T517 placeholder syntax | technical-writer | pending | P2 | — | 2026-09-25 |
 | T521 | Execute ADR-007 verdict C: give RELEASE VERDICT a declared home | release-manager | pending | P2 | — | 2026-09-25 |
-| T527 | Adjudicate the /skillify contract conflict under ADR-007 | solution-architect | pending | P2 | — | 2026-09-25 |
 | T528 | Golden-case coverage wave 2: five thin-corpus commands | qa-engineer | pending | P2 | — | 2026-09-25 |
 | T529 | handoff schema permits a handoff with zero writable paths | backend-developer | pending | P2 | — | 2026-09-25 |
 | T530 | Correct the stale new-feature-real-checkpoint-format-drift brief | technical-writer | pending | P2 | — | 2026-09-25 |
+| T531 | Re-derive the /skillify checker and close the Required Context defect | backend-developer | pending | P2 | — | 2026-09-25 |
+| T532 | Adjudicate /skillify's declared output path | solution-architect | pending | P2 | T531 | 2026-09-25 |
 
-> **6 active rows (`T519`, `T521`, `T527`–`T530`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **7 active rows (`T519`, `T521`, `T528`–`T532`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
@@ -247,6 +248,36 @@
 > rather than prose because `T518` established that **a hand-fix plus a ledger note is not a fix**.
 > `T530`'s owner has **no `Bash`**, so its brief instructs an uncommitted hand-back rather than
 > claimed verification. Wave 3 stays unscoped until wave 2 reports. See `docs/plans/plan-073-...md`.
+
+> **`T527` closed 2026-09-25 — see `completed-tasks.md`. `T531`/`T532` scoped, `T530` widened, per
+> `plan-074`.** The adjudication came back **per-section**, and its biggest finding **contradicts the
+> brief**: `## Success Criteria` was never a command-vs-skill conflict — the `skillify` **skill**'s
+> own Round 4 declares it verbatim and its final template drops it, so the **skill file contradicts
+> itself**. **Three further corrections to this orchestrator's own documents**, all independently
+> verified: the skill declares **seven** `##` sections not six (`## Guidelines` omitted); `plan-073`
+> §1's "no skills-format artifact exists" is wrong (`maturity-promotion-criteria-v2.md` §2.1 mandates
+> `## Rails`); and **every published corpus count was an upper bound** because the survey
+> substring-matched whole files including fenced code blocks — fence-aware,
+> `## Success Criteria` is **0/26** not 3/26, and **0 of 26** satisfy the skill's template, not 1.
+> **The corpus satisfies neither contract — zero, both ways**; the bias ran toward conformance, so
+> correcting it makes the case *more* firmly red. **Method rule: strip fenced blocks before
+> surveying markdown headings.** `/skillify` correctly does **not** promote. **`T531`** re-derives
+> the checker, which after `T527` asserts strings no document declares — a check nobody can trust is
+> worse than a red case — and carries `T527`'s instruction that the substring operator be **kept**,
+> since the risk there is **over**-strengthening, not relaxation. It also closes
+> `## Required Context`, the identical self-contradiction, verified independently. **`T532`** takes
+> the output-path defect: `.github/skills/` is a **generated** directory `AGENTS.md` says must not be
+> hand-edited, and it hardcodes 1 platform of 7 — correct for an installed target project, wrong for
+> this repo, so the real question is whether commands declare which audience they address. **`AGENTS.md`
+> outranks a command file, so `ADR-007` branch 1 may genuinely fire there, unlike in `T527`.**
+> `T532` depends on `T531` because resolving the path changes the fixture glob. **`T530` widened** to
+> cover this case's now-stale `known_failing_reason` and `brief.md` — same defect shape, and `T527`
+> could not fix it because its grant was conditional on a pass that did not occur.
+> **The queue is 7 deep and that is stated, not hidden** — `plan-074` §3 records it. `T525`'s and
+> `T527`'s findings are generating work faster than it is being executed, which is what good findings
+> do, but the queue should be worked down before wave 3 is scoped. Recommended order: `T531`,
+> `T528`, `T529`/`T530`, `T532` — and `T519`/`T521` must not be forgotten because newer work keeps
+> arriving.
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
