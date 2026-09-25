@@ -50,7 +50,7 @@ Ask and determine:
 
 Output:
 ```markdown
-## Prerequisites
+## Inputs
 - <input 1>
 - <input 2>
 
@@ -117,7 +117,7 @@ description: "<one-line description>"
 - <trigger 2>
 - <trigger 3>
 
-## Prerequisites
+## Inputs
 - <input/context requirement>
 
 ## Procedure
@@ -130,6 +130,10 @@ description: "<one-line description>"
 
 ### 3. <Step Title>
 <instructions>
+
+## Success Criteria
+- <criterion 1>
+- <criterion 2>
 
 ## Examples
 
