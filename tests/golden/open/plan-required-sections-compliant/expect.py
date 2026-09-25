@@ -2,7 +2,7 @@
 """expect.py for plan-required-sections-compliant.
 
 Contract under test: implementation/knowledge/commands/plan.md step 5 — the plan document
-saved to docs/plans/<slug>-plan.md must contain, in order: Goal, Task Decomposition,
+saved to docs/plans/plan-<ID>.md must contain, in order: Goal, Task Decomposition,
 Dependency Graph, Resource Assignments, Risk Assessment, Open Questions; step 2 additionally
 requires the Dependency Graph be rendered as a Mermaid diagram.
 
@@ -25,12 +25,12 @@ REQUIRED_HEADERS = [
 
 
 def check(case_dir: Path) -> bool:
-    """True iff exactly one docs/plans/*-plan.md fixture exists with all six required
+    """True iff exactly one docs/plans/plan-*.md fixture exists with all six required
     headers present in order, and a fenced ```mermaid block under Dependency Graph."""
     plans_dir = case_dir / "fixture" / "docs" / "plans"
     if not plans_dir.is_dir():
         return False
-    candidates = sorted(plans_dir.glob("*-plan.md"))
+    candidates = sorted(plans_dir.glob("plan-*.md"))
     if len(candidates) != 1:
         return False
     text = candidates[0].read_text(encoding="utf-8")

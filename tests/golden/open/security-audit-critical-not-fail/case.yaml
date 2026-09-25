@@ -1,10 +1,19 @@
 id: security-audit-critical-not-fail
 command: /security-audit
 status: known_failing
-known_failing_category: tracked_defect
+known_failing_category: capability_gap
 known_failing_reason: >-
   security-audit.md states unconditionally "If any CRITICAL findings exist, the verdict MUST
   be FAIL." Fixture has CRITICAL findings: 1 and Status: CONDITIONAL_PASS (auditor reasoned a
-  compensating network-level control mitigates it) -- a direct violation of the stated rule,
-  which has no compensating-control exception clause.
+  compensating network-level control mitigates it). Reclassified from tracked_defect to
+  capability_gap at T520 per ADR-007 branch 4: there is no corpus to fix (no real
+  /security-audit output exists in this repo's history, so the fixture was hand-authored to
+  violate the rule) and the rule must not be amended -- security-guidelines.md's Security
+  Review Workflow independently requires SECURITY:CRITICAL findings to block, and its
+  Immutable Security Constraints forbid disabling a control for convenience. What the case
+  demonstrates is that the command's VERDICT surface offers no way to record "CRITICAL
+  present, mitigated by a compensating control" other than by breaking the rule -- a
+  capability the surface does not support, not a bug awaiting a fix. It is a permanent,
+  correct red. See docs/artifacts/command-contract-resolution-v1.md §3 row D, including the
+  recorded counter-reading that capability_gap over-claims.
 tags: [security-audit, verdict, critical, rule-violation, hand-authored]
