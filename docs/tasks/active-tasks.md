@@ -2,12 +2,10 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T518 | Stop `install.sh --update` destroying local settings and ledger prose | devops-engineer | pending | P1 | — | 2026-09-25 |
 | T519 | Correct the two documents still stating the pre-T517 placeholder syntax | technical-writer | pending | P2 | — | 2026-09-25 |
-| T520 | Execute ADR-007 verdicts A, B, D and H-1 | backend-developer | pending | P1 | — | 2026-09-25 |
 | T521 | Execute ADR-007 verdict C: give RELEASE VERDICT a declared home | release-manager | pending | P2 | — | 2026-09-25 |
 
-> **4 active rows (`T518`, `T519`, `T520`, `T521`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **2 active rows (`T519`, `T521`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
@@ -34,6 +32,20 @@
 > branch 3b. Owner of `T520` is **Backend Developer** because it owns zero commands and one held-out
 > case belongs to a `tech-lead`-owned command. See `docs/tasks/task-T520.md`,
 > `docs/tasks/task-T521.md` and `docs/plans/plan-070-t520-t521-adr-007-execution.md`.
+
+> **`T518` and `T520` closed 2026-09-25 — see `completed-tasks.md`.** **`T518`** fixed the recurring
+> `install.sh --update` destruction, and the reported defect turned out to be the smaller half: the
+> sweep was also deleting a target project's **entire `.github/workflows/` CI**, plus `CODEOWNERS`,
+> `ISSUE_TEMPLATE/` and `dependabot.yml`. This repo uses GitLab CI so it never noticed; every
+> downstream project on GitHub Actions would have. **`T520`** executed `ADR-007` verdicts A, B and D.
+> Verdict B's replacement check was mutation-verified to pass the real pre-`T437` fixture while
+> rejecting the old filename form, a missing heading and wrong ordering — the `_template.md`-derived
+> trap was avoided. **H-1 was deliberately left incomplete**: its `expect.py` hardcodes the
+> pre-amendment `v\d+\.\d+` regex, so the case cannot flip whatever the command says — the
+> resolution artifact's claim that it "flips with no fixture change" is factually wrong. That file was
+> not in the §1 authorization table and the implementer correctly refused to extend its own grant.
+> **`security-engineer` is now measurably promotable to `stable`** — measured, not predicted — and
+> `/security-audit`'s criterion 6 is confirmed cleared.
 
 > **`T518` and `T519` scoped 2026-09-25** — the two carried defects `checkpoint-036` recorded
 > without tasks. **`T518` (`P1`)**: `install.sh --update` deletes `.claude/settings.json` (`rsync

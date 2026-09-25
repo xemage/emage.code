@@ -2,13 +2,13 @@
 
 **ID:** T518
 **Owner:** DevOps Engineer
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Tier:** standard
 **Affects:** —
 **Depends on:** —
 **Created:** 2026-09-25
-**Completed:** —
+**Completed:** 2026-09-25
 **Based on:** docs/plans/plan-069-t518-t519-carried-defects.md
 
 ## 1. Objective
