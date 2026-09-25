@@ -2,13 +2,13 @@
 
 **ID:** T520
 **Owner:** Backend Developer
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Tier:** judgment
 **Affects:** command/plan, command/new-feature, command/security-audit
 **Depends on:** —
 **Created:** 2026-09-25
-**Completed:** —
+**Completed:** 2026-09-25
 **Based on:** docs/plans/plan-070-t520-t521-adr-007-execution.md
 
 ## 1. PROTECTED-PATH AUTHORIZATION — read first
