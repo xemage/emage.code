@@ -27,18 +27,25 @@ Document measurable success criteria and expected outputs.
 
 ### Generate the Skill File
 
-After the 4-round interview, generate `.github/skills/<name>/SKILL.md` with this structure:
+After the 4-round interview, generate `.github/skills/<name>/SKILL.md` with this structure. Each
+interview round maps to one section: Round 1 → `## When to Use`, Round 2 → `## Inputs`,
+Round 3 → `## Procedure`, Round 4 → `## Success Criteria`.
 
 ```markdown
+---
+name: <skill-name>
+description: "<one-line description>"
+---
+
 # <Skill Name>
 
-## Trigger
+## When to Use
 <when this skill activates>
 
 ## Inputs
 <required and optional inputs>
 
-## Steps
+## Procedure
 <numbered procedure with decision points>
 
 ## Success Criteria
