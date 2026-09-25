@@ -4,8 +4,9 @@
 |----|-------|-------|--------|----------|-----------|-------------|
 | T519 | Correct the two documents still stating the pre-T517 placeholder syntax | technical-writer | pending | P2 | — | 2026-09-25 |
 | T521 | Execute ADR-007 verdict C: give RELEASE VERDICT a declared home | release-manager | pending | P2 | — | 2026-09-25 |
+| T523 | Execute ADR-007 verdict H-1: align the held-out checker with the amended contract | backend-developer | pending | P2 | T520 | 2026-09-25 |
 
-> **2 active rows (`T519`, `T521`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **3 active rows (`T519`, `T521`, `T523`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
@@ -116,6 +117,37 @@
 > criteria 3+7 on `ADR-007` verdicts **A** and **H-1**, which `T520` deliberately left red. H-1 is
 > the nearer of the two and is blocked on a named authorization for one regex token in an
 > `expect.py` under `tests/golden/**`. See `docs/tasks/task-T522.md`.
+
+> **`T523` scoped 2026-09-25, backed by a measured readiness baseline.** Every `command/*` still
+> at `experimental` was temporarily set to `stable` in a throwaway detached worktree and
+> `check-maturity.py` was run — a probe that touches no protected path, since it edits only
+> `implementation/knowledge/commands/*.md`. Result, recorded in
+> `docs/artifacts/command-promotion-readiness-v1.md`: the 18 remaining commands split **cleanly into
+> two groups with no overlap**. **4** are blocked by an open `tracked_defect` case (criteria 3+7);
+> **14** are blocked *solely* by criterion 4 — no golden case exists for them at all, and they fail
+> no other criterion, so one case each is sufficient rather than merely necessary.
+> **`checkpoint-036`'s estimate of 14 is confirmed exactly**, for the first time by measurement
+> rather than carry-forward. **Only 1 of the 4 is actionable**: `ADR-007` verdicts **A** and **H-2**
+> are branch-3b outcomes that stay red until the corpus is fixed — making them green would mean
+> reclassifying a real defect, which `ADR-007` §5 names as the thing not to do — and **C** belongs to
+> `T521`. That leaves **H-1**, which `T523` takes under a **file-scoped
+> `protected-paths-v1.md` §5 authorization** covering three files in one held-out case directory.
+> `T520` amended the contract half already (branch 1, `AGENTS.md` § Artifact Versioning outranks the
+> command); only the checker's pre-amendment regex remains, which `T520` correctly refused to touch
+> because §5.1 forbids extending its own grant. **The case is identified mechanically, never by
+> name** — `test_golden_held_out_isolation.py` Check B fails the build on any held-out case ID
+> appearing outside `tests/golden/`, including in briefs, commit messages and this ledger. **A
+> correction is recorded in §5 of the artifact**: an earlier claim in this session that H-1 was the
+> nearer of the two remaining *agent* promotions was wrong. H-1 unblocks a **command**, not an agent;
+> `orchestrator` and `tech-lead` are blocked by verdicts **A** and **H-2**, both deliberately left
+> red, so neither agent promotion is near and neither is blocked on an authorization. **`T523`
+> promotes nothing** — it is `P2`, declares `Affects: command/new-feature`, and that component stays
+> criterion-3 blocked until the row archives. **`plan-070` assigned H-1 to `T520` on the theory
+> that it needed only a `case.yaml` status flip; the resolution artifact's "flips with no fixture
+> change" is correct about the fixture and wrong about the checker** — `plan-071` records that
+> correction rather than quietly fixing it. See `docs/tasks/task-T523.md`,
+> `docs/plans/plan-071-t523-adr-007-h1-completion.md` and
+> `docs/artifacts/command-promotion-readiness-v1.md`.
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
