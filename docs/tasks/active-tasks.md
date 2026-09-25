@@ -7,10 +7,9 @@
 | T528 | Golden-case coverage wave 2: five thin-corpus commands | qa-engineer | pending | P2 | — | 2026-09-25 |
 | T529 | handoff schema permits a handoff with zero writable paths | backend-developer | pending | P2 | — | 2026-09-25 |
 | T530 | Correct the stale new-feature-real-checkpoint-format-drift brief | technical-writer | pending | P2 | — | 2026-09-25 |
-| T531 | Re-derive the /skillify checker and close the Required Context defect | backend-developer | pending | P2 | — | 2026-09-25 |
 | T532 | Adjudicate /skillify's declared output path | solution-architect | pending | P2 | T531 | 2026-09-25 |
 
-> **7 active rows (`T519`, `T521`, `T528`–`T532`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **6 active rows (`T519`, `T521`, `T528`–`T530`, `T532`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
@@ -278,6 +277,18 @@
 > do, but the queue should be worked down before wave 3 is scoped. Recommended order: `T531`,
 > `T528`, `T529`/`T530`, `T532` — and `T519`/`T521` must not be forgotten because newer work keeps
 > arriving.
+
+> **`T531` closed 2026-09-25 — see `completed-tasks.md`. `T532` is now unblocked.** The checker
+> again describes the live contract; `/skillify` correctly still does **not** promote. **`T519` and
+> `T521` are now the oldest open rows and have been passed over five times** while newer findings
+> kept arriving — exactly the accretion `plan-074` §3 warned about. Both are being dispatched now,
+> ahead of `T528`, on that basis. **Unresolved and needing an owner:**
+> `docs/benchmarks/scorecard-v6.12.0.*` is committed at `total_cases: 20`, `generated_at:
+> 2026-08-13`, while the live suite reports **24 cases / 16 pass** — both verified. Two subagents
+> read the same file **oppositely**: `T525`'s as a frozen `T414` baseline publication (restored it;
+> the orchestrator agreed at the time), `T531`'s as badly stale (proved its own change had zero
+> effect by regenerating at the base commit and diffing). Both took the same action; they disagree on
+> what the file *is*. Whichever is right, anyone reading it today gets wrong numbers.
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
