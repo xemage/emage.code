@@ -4,8 +4,12 @@
 |----|-------|-------|--------|----------|-----------|-------------|
 | T519 | Correct the two documents still stating the pre-T517 placeholder syntax | technical-writer | pending | P2 | — | 2026-09-25 |
 | T521 | Execute ADR-007 verdict C: give RELEASE VERDICT a declared home | release-manager | pending | P2 | — | 2026-09-25 |
+| T527 | Adjudicate the /skillify contract conflict under ADR-007 | solution-architect | pending | P2 | — | 2026-09-25 |
+| T528 | Golden-case coverage wave 2: five thin-corpus commands | qa-engineer | pending | P2 | — | 2026-09-25 |
+| T529 | handoff schema permits a handoff with zero writable paths | backend-developer | pending | P2 | — | 2026-09-25 |
+| T530 | Correct the stale new-feature-real-checkpoint-format-drift brief | technical-writer | pending | P2 | — | 2026-09-25 |
 
-> **2 active rows (`T519`, `T521`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **6 active rows (`T519`, `T521`, `T527`–`T530`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
@@ -211,6 +215,38 @@
 > approach, and it did: the control that did the work was requiring a **verbatim contract-clause
 > quote before writing any `expect.py`**, which is what surfaced the `/skillify` conflict. The
 > **mutation harness** the implementer built unprompted should become an explicit wave-2 deliverable.
+
+> **`T527`–`T530` scoped 2026-09-25, backed by `plan-073`.** **A correction first, because it
+> was found while scoping and it is in merged documents:** `T525`'s closure record says the real
+> skill corpus **"uniformly follows"** the `skillify` skill's template and this ledger said **"26 of
+> 26 follow"** it. **Overstated — the corpus follows neither template.** Measured across all 26 real
+> `SKILL.md` files: **0 of 26** satisfy the *command*'s template completely, and **1 of 26** satisfy
+> the *skill*'s. Per-section against the skill's: `## When to Use` 20/26, `## Purpose` 16/26,
+> `## Procedure` 16/26, `## Examples` 9/26, `## Prerequisites` 2/26, `## Edge Cases` 1/26. **The
+> `0 of 26` finding stands** — independently verified twice, the golden case's verdict is unaffected
+> and `/skillify` correctly does not promote. What changes is the *shape of the adjudication*: not
+> "a contract versus a well-formed rival corpus" but **two declared contracts and a corpus following
+> neither.** **How it got through:** the orchestrator verified the *falsifying* claim (`0 of 26`)
+> and not the *supporting* one (`26 of 26`) — a claim arguing against the proposal gets scrutiny, a
+> claim merely colouring it slides past. Worth naming as a general way to be wrong.
+> **`T527`** adjudicates under `ADR-007` and is the only one of the four that unblocks a promotion.
+> Checked before scoping so it starts from evidence: **branch 1 does not fire** — `AGENTS.md` is
+> silent on `SKILL.md` structure and no skills-format contract artifact exists. The live question is
+> the *"only a label for content the corpus already carries"* clause, and it looks **only partly**
+> satisfied: `## Trigger`≈`## When to Use`, `## Inputs`≈`## Prerequisites`, `## Steps`≈`## Procedure`
+> read as branch **3a** (relabel), but `## Success Criteria` appears in 3/26 with no counterpart and
+> reads as **3b** (omission). **So the honest verdict may be per-section, and a single tidy verdict
+> is the suspicious outcome, not the target** — scoped as a hypothesis to test, never a conclusion
+> to implement. Its protected-path grant is **conditional**: the `case.yaml` flip only if the verdict
+> genuinely makes `check()` pass, and **`expect.py` is excluded** — changing it needs a wider grant
+> and is a blocker, not a table edit. **`T528`** is wave 2, and carries forward the two controls wave
+> 1 validated: **quote the verbatim clause before designing the check** (the ordering that surfaced
+> the `/skillify` conflict), and a **mutation harness as a mandatory deliverable** — a check that
+> cannot be made to fail is vacuous, and wave 1 showed it cuts both ways, catching a *mis-designed
+> mutation* twice. **`T529`** and **`T530`** are the two carried defects from `T525`; they get rows
+> rather than prose because `T518` established that **a hand-fix plus a ledger note is not a fix**.
+> `T530`'s owner has **no `Bash`**, so its brief instructs an uncommitted hand-back rather than
+> claimed verification. Wave 3 stays unscoped until wave 2 reports. See `docs/plans/plan-073-...md`.
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
