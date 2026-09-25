@@ -4,8 +4,10 @@
 |----|-------|-------|--------|----------|-----------|-------------|
 | T518 | Stop `install.sh --update` destroying local settings and ledger prose | devops-engineer | pending | P1 | — | 2026-09-25 |
 | T519 | Correct the two documents still stating the pre-T517 placeholder syntax | technical-writer | pending | P2 | — | 2026-09-25 |
+| T520 | Execute ADR-007 verdicts A, B, D and H-1 | backend-developer | pending | P1 | — | 2026-09-25 |
+| T521 | Execute ADR-007 verdict C: give RELEASE VERDICT a declared home | release-manager | pending | P2 | — | 2026-09-25 |
 
-> **2 active rows (`T518`, `T519`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **4 active rows (`T518`, `T519`, `T520`, `T521`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
@@ -19,6 +21,19 @@
 > one of the eight it evaluated) was actively controlled, not assumed away: the top-level session
 > independently flipped `tech-lead` itself and confirmed the predicted `FAIL`; the implementer had
 > reported its own failure honestly.
+
+> **`T520` and `T521` scoped 2026-09-25** — executing `ADR-007`, `plan-064` Phase 9's critical path.
+> Six verdicts split on **whether protected paths are involved**: `T520` (`P1`) takes A, B, D and H-1
+> under a **file-scoped `protected-paths-v1.md` §5 authorization**; `T521` (`P2`) takes C, which
+> touches none and therefore needs no authorization — keeping it separate keeps `T520`'s grant as
+> narrow as §5.1 intends. H-2 needs no action now. **Neither task promotes anything**, though verdict
+> D is expected to clear `security-engineer`'s last blocker: `T520` is `P1` and declares
+> `command/security-audit`, so that component stays ledger-blocked until this row archives — the same
+> sequencing `T515`/`T516` used. **Three of six cases are meant to stay red** (A, C, H-2); an
+> implementer optimising for a green board would reclassify them, which `ADR-007` §5 names as evading
+> branch 3b. Owner of `T520` is **Backend Developer** because it owns zero commands and one held-out
+> case belongs to a `tech-lead`-owned command. See `docs/tasks/task-T520.md`,
+> `docs/tasks/task-T521.md` and `docs/plans/plan-070-t520-t521-adr-007-execution.md`.
 
 > **`T518` and `T519` scoped 2026-09-25** — the two carried defects `checkpoint-036` recorded
 > without tasks. **`T518` (`P1`)**: `install.sh --update` deletes `.claude/settings.json` (`rsync
