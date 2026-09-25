@@ -4,9 +4,8 @@
 |----|-------|-------|--------|----------|-----------|-------------|
 | T519 | Correct the two documents still stating the pre-T517 placeholder syntax | technical-writer | pending | P2 | — | 2026-09-25 |
 | T521 | Execute ADR-007 verdict C: give RELEASE VERDICT a declared home | release-manager | pending | P2 | — | 2026-09-25 |
-| T523 | Execute ADR-007 verdict H-1: align the held-out checker with the amended contract | backend-developer | pending | P2 | T520 | 2026-09-25 |
 
-> **3 active rows (`T519`, `T521`, `T523`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **2 active rows (`T519`, `T521`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
@@ -148,6 +147,27 @@
 > correction rather than quietly fixing it. See `docs/tasks/task-T523.md`,
 > `docs/plans/plan-071-t523-adr-007-h1-completion.md` and
 > `docs/artifacts/command-promotion-readiness-v1.md`.
+
+> **`T523` and `T524` closed 2026-09-25 — see `completed-tasks.md`.** `T523` executed `ADR-007`
+> verdict **H-1**, and `T524` collected the promotion it made available: **`command/new-feature` is
+> `stable`, taking commands from 1 of 19 to 2 of 19.** The implementing agent hit the evaluator-hash
+> tamper-evidence drift, **declined to fix it and escalated for human sanction unprompted** — it
+> could have argued the fix was in scope, since `docs/artifacts/` is not a protected path. The
+> orchestrator did not perform it on the agent's behalf either; the user authorized explicitly and
+> `evaluator-hash-known-good-v3.json` followed, with v1 and v2 retained unmodified.
+> **A correction, recorded rather than quietly fixed:** `task-T523.md` §6, `plan-071` §5, this
+> ledger's own `T523` note and MR !383 all claimed `command/new-feature` stayed "criterion-3 blocked
+> until the `T523` row archives" because that row was `P2` and declared
+> `Affects: command/new-feature`. **That is backwards** —
+> `implementation/scripts/check-maturity.py:504` filters the ledger-defect scan by priority, so a
+> **`P2` row never blocks anything**, which is exactly why `T514` and `T522` chose `P2`. Confirmed by
+> measurement with the row still `pending`. **No outcome changes**: the real blocker was criterion
+> 3's *golden-case* clause, so `T523` was a genuine prerequisite and only the stated mechanism was
+> wrong — but the two steps could have been one MR, which is what they are here. **Still open for
+> `/new-feature`'s siblings:** `T520` left
+> `tests/golden/open/new-feature-real-checkpoint-format-drift/brief.md` reading
+> `known_failing / tracked_defect` while its `case.yaml` says `expected_pass` — found by the `T523`
+> implementer, independently confirmed, outside its grant, **still needs a row.**
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)

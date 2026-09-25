@@ -2,12 +2,13 @@
 
 **ID:** T523
 **Owner:** Backend Developer
-**Status:** in_review
+**Status:** done
 **Priority:** P2
 **Tier:** mechanical
 **Affects:** command/new-feature
 **Depends on:** T520 (merged 2026-09-25)
 **Created:** 2026-09-25
+**Completed:** 2026-09-25
 **Based on:** `docs/decisions/ADR-007-command-contract-authority.md` branch 1;
 `docs/artifacts/command-contract-resolution-v1.md` §H-1;
 `docs/artifacts/command-promotion-readiness-v1.md` §4;

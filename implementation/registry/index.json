@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-09-25T11:24:26+00:00",
+  "generatedAt": "2026-09-25T17:13:50+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -997,8 +997,8 @@
       "category": "command",
       "name": "new-feature",
       "path": "commands/new-feature.md",
-      "checksum": "11b79e736f2c6cab3175b1cb26c7313861a32641b87cf016c785c785cab21588",
-      "maturity": "experimental",
+      "checksum": "c9db2f3615085a7f652b531776ca8d18e0b0ef66f329d05736ae7fa2eb4b23d1",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
