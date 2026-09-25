@@ -2,13 +2,13 @@
 
 **ID:** T521
 **Owner:** Release Manager
-**Status:** in_review
+**Status:** done
 **Priority:** P2
 **Tier:** standard
 **Affects:** —
 **Depends on:** —
 **Created:** 2026-09-25
-**Completed:** —
+**Completed:** 2026-09-26
 **Based on:** docs/plans/plan-070-t520-t521-adr-007-execution.md
 
 ## 1. Objective

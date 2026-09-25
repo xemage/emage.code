@@ -2,13 +2,13 @@
 
 **ID:** T519
 **Owner:** Technical Writer
-**Status:** in_review
+**Status:** done
 **Priority:** P2
 **Tier:** mechanical
 **Affects:** —
 **Depends on:** —
 **Created:** 2026-09-25
-**Completed:** —
+**Completed:** 2026-09-26
 **Based on:** docs/plans/plan-069-t518-t519-carried-defects.md
 
 > **You have no shell.** The Technical Writer agent type has no `Bash`, `Grep` or `Glob`. Do not

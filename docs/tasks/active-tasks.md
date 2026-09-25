@@ -2,14 +2,13 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T519 | Correct the two documents still stating the pre-T517 placeholder syntax | technical-writer | pending | P2 | — | 2026-09-25 |
-| T521 | Execute ADR-007 verdict C: give RELEASE VERDICT a declared home | release-manager | pending | P2 | — | 2026-09-25 |
 | T528 | Golden-case coverage wave 2: five thin-corpus commands | qa-engineer | pending | P2 | — | 2026-09-25 |
 | T529 | handoff schema permits a handoff with zero writable paths | backend-developer | pending | P2 | — | 2026-09-25 |
 | T530 | Correct the stale new-feature-real-checkpoint-format-drift brief | technical-writer | pending | P2 | — | 2026-09-25 |
 | T532 | Adjudicate /skillify's declared output path | solution-architect | pending | P2 | T531 | 2026-09-25 |
+| T533 | Settle and fix the committed golden scorecard artifact | devops-engineer | pending | P2 | — | 2026-09-26 |
 
-> **6 active rows (`T519`, `T521`, `T528`–`T530`, `T532`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **5 active rows (`T528`–`T530`, `T532`, `T533`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
@@ -289,6 +288,29 @@
 > the orchestrator agreed at the time), `T531`'s as badly stale (proved its own change had zero
 > effect by regenerating at the base commit and diffing). Both took the same action; they disagree on
 > what the file *is*. Whichever is right, anyone reading it today gets wrong numbers.
+
+> **`T519` and `T521` closed 2026-09-26 — see `completed-tasks.md`. `T533` scoped, per `plan-075`.**
+> The two oldest rows are finally clear. **`T521` added a real operational gate, surfaced and
+> explicitly authorized:** `verify-release-docs.py --tag v7.0.1` goes from **exit 0 to exit 1**, and
+> **0 of 31** shipped release documents carry `## RELEASE VERDICT`, so the next tag cut fails until an
+> author writes it. Tag pipelines only; ordinary CI untouched. **`T533` settles a disagreement this
+> orchestrator got wrong.** `docs/benchmarks/scorecard-v6.12.0.*` is committed at `total_cases: 20 /
+> total_pass: 11` while the live tree yields **24 / 16**. `T525`'s implementer read it as a frozen
+> `T414` baseline and restored it — **the orchestrator agreed** — while `T531`'s and `T521`'s
+> implementers independently called it stale. **`T531`/`T521` are right.** Three checked facts settle
+> it: `scorecard.py`'s own docstring says `content` "is a pure function of the golden suite tree's
+> on-disk bytes", so it is designed to **track**; **nothing validates the committed copy** — no test,
+> no CI job; and it has **exactly one commit**, the original `T410`–`T415` landing, never updated
+> while the suite grew 20 → 24. **Why the wrong reading was plausible, because the mistake is
+> instructive:** one commit plus three tasks declining to touch it *looks* like a freeze policy, but
+> those three declined because it was **outside their scope**, not because a policy existed — absence
+> of updates was mistaken for a decision. *"Who validates this?"* is the question that distinguishes a
+> frozen artifact from an unowned one. The concrete cost: every `scorecard.py` run rewrites the files,
+> so **"expect a clean `git status`" is unreachable in any brief until this is fixed** — it has
+> misfired three times, and three implementers each reverted `docs/benchmarks/` by hand.
+> `T533` recommends **tracking it under a drift gate**, matching how this repo already gates
+> `implementation/registry/` and the platform projections, with a narrow §5 grant for an **additive
+> check mode only** in the protected `scripts/scorecard.py`.
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
