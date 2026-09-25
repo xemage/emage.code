@@ -2,8 +2,10 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T518 | Stop `install.sh --update` destroying local settings and ledger prose | devops-engineer | pending | P1 | — | 2026-09-25 |
+| T519 | Correct the two documents still stating the pre-T517 placeholder syntax | technical-writer | pending | P2 | — | 2026-09-25 |
 
-> **0 active rows. `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **2 active rows (`T518`, `T519`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
@@ -17,6 +19,21 @@
 > one of the eight it evaluated) was actively controlled, not assumed away: the top-level session
 > independently flipped `tech-lead` itself and confirmed the predicted `FAIL`; the implementer had
 > reported its own failure honestly.
+
+> **`T518` and `T519` scoped 2026-09-25** — the two carried defects `checkpoint-036` recorded
+> without tasks. **`T518` (`P1`)**: `install.sh --update` deletes `.claude/settings.json` (`rsync
+> -a --delete` with no exclude, while `.gemini` already has one at `install.sh:393`) and strips all
+> prose from `active-tasks.md`, substituting the template's — which asserts the ledger starts empty
+> and the first task is `T001`, **actively false** here with 316 completed. Reproduced: 65 lines → 11,
+> false text 0 → 1, while `completed-tasks.md`'s 316 rows survive. Row preservation works; prose
+> preservation does not exist. It is worst precisely when the ledger is *healthy* — with zero active
+> rows there is nothing to preserve and the template wins. **`T512` hit both, hand-fixed them, and
+> opened no task; `T517` hit both again verbatim.** A hand-fix plus a ledger note is not a fix.
+> **`T519` (`P2`)**: `SECURITY.md:25` and `mcp-platform-contract-v1.md:87` still enumerate
+> `${env:VAR}` for `claude-code`. The security *guarantee* still holds; only the enumeration is
+> stale. The substantive part is that `-v1` is immutable, so it needs a `-v2`. See
+> `docs/tasks/task-T518.md`, `docs/tasks/task-T519.md` and
+> `docs/plans/plan-069-t518-t519-carried-defects.md`.
 
 > **`T517` closed 2026-09-25 — see `completed-tasks.md`.** Fixed a defect in *shipped* output: the
 > `claude-code` MCP emitter used VS Code's `${env:VAR}` placeholder, which Claude Code does not
