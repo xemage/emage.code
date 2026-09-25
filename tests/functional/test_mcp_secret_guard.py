@@ -16,13 +16,25 @@ from pathlib import Path
 
 from tests._helpers.repo import repo_root
 
-# ${env:VAR} (vscode/cursor/gemini/pi/cline/claude-code) or {env:VAR} (opencode).
-ALLOWED_ENV_VALUE_RE = re.compile(r"^\$?\{env:[A-Z][A-Z0-9_]*\}$")
+# Three generator placeholder families, one per platform group (T517):
+#   ${env:VAR}  vscode/cursor/gemini/pi/cline
+#   {env:VAR}   opencode
+#   ${VAR}      claude-code -- it expands `${VAR}` / `${VAR:-default}` from the live
+#               process environment and passes the `env:` form through as literal text.
+# This is an allowlist of exactly the forms the generator emits, not a general pattern for
+# "anything placeholder-shaped": the `${VAR}` alternative still requires a bare, fully
+# upper-snake-case variable name between `${` and `}`, so no credential-shaped literal
+# (`tr_live_...`, `glpat-...`, `eyJhbGc...`) can satisfy it.
+ALLOWED_ENV_VALUE_RE = re.compile(
+    r"^(?:\$?\{env:[A-Z][A-Z0-9_]*\}|\$\{[A-Z][A-Z0-9_]*\})$"
+)
 
-# A single well-formed placeholder token, either platform family. Used to validate `headers`
-# values, which (unlike `env` values) may wrap a placeholder in fixed literal text, e.g.
-# "Bearer ${env:CWSO_BEARER_TOKEN}".
-HEADER_PLACEHOLDER_TOKEN_RE = re.compile(r"\$\{env:[A-Z][A-Z0-9_]*\}|\{env:[A-Z][A-Z0-9_]*\}")
+# A single well-formed placeholder token, any of the three platform families. Used to
+# validate `headers` values, which (unlike `env` values) may wrap a placeholder in fixed
+# literal text, e.g. "Bearer ${env:CWSO_BEARER_TOKEN}" or "Bearer ${CWSO_BEARER_TOKEN}".
+HEADER_PLACEHOLDER_TOKEN_RE = re.compile(
+    r"\$\{env:[A-Z][A-Z0-9_]*\}|\{env:[A-Z][A-Z0-9_]*\}|\$\{[A-Z][A-Z0-9_]*\}"
+)
 
 
 def is_allowed_header_value(value: str) -> bool:
@@ -181,6 +193,61 @@ class TestMcpSecretGuard(unittest.TestCase):
         }
         violations = find_literal_env_values(fixture)
         self.assertEqual(violations, [], msg="legitimate placeholder syntax must not false-positive")
+
+    def test_guard_allows_claude_code_bare_placeholder_syntax(self):
+        """T517: claude-code's own `${VAR}` family (no `env:` segment) is legitimate
+        generator output and must not false-positive, in `env` and in `headers` alike."""
+        fixture = {
+            "mcpServers": {
+                "gitlab": {"env": {"GITLAB_PERSONAL_ACCESS_TOKEN": "${GITLAB_PERSONAL_ACCESS_TOKEN}"}},
+                "brave": {"env": {"BRAVE_API_KEY": "${BRAVE_API_KEY}"}},
+                "cwso": {
+                    "type": "http",
+                    "url": "${CWSO_MCP_URL}",
+                    "headers": {
+                        "Authorization": "Bearer ${CWSO_BEARER_TOKEN}",
+                        "Origin": "${CWSO_ORIGIN}",
+                    },
+                },
+            }
+        }
+        violations = find_literal_env_values(fixture)
+        self.assertEqual(
+            violations, [], msg="claude-code's ${VAR} placeholder family must not false-positive"
+        )
+
+    def test_bare_placeholder_family_does_not_weaken_literal_detection(self):
+        """T517 admitted a third placeholder family (`${VAR}`) to the allowlist. Confirm
+        that widening cannot be used to smuggle a literal credential past the guard: a
+        real-secret-shaped value, a lowercase/mixed-case brace expression, and a
+        multi-token header value are all still flagged."""
+        fixture = {
+            "mcpServers": {
+                # Real-credential shapes -- none of them can satisfy `^\\$\\{[A-Z][A-Z0-9_]*\\}$`.
+                "a": {"env": {"TOOLRADAR_API_KEY": "tr_live_FAKEVALUEFORTESTONLYNOTREAL"}},
+                "b": {"env": {"GITLAB_PERSONAL_ACCESS_TOKEN": "glpat-FAKEVALUEFORTESTONLYNOTREAL"}},
+                # Brace-shaped but not the generator's syntax: lowercase name, and a
+                # partially-interpolated value with literal text glued onto the token.
+                "c": {"env": {"LOWER": "${lowercase_name}"}},
+                "d": {"env": {"PARTIAL": "prefix-${REAL_VAR}"}},
+                # Header carrying a bare literal secret, plus one carrying two tokens.
+                "e": {"headers": {"Authorization": "Bearer sk_live_FAKEVALUEFORTESTONLYNOTREAL"}},
+                "f": {"headers": {"X-Two": "${ONE}${TWO}"}},
+            }
+        }
+        violations = find_literal_env_values(fixture)
+        self.assertEqual(
+            violations,
+            [
+                ("TOOLRADAR_API_KEY", "tr_live_FAKEVALUEFORTESTONLYNOTREAL"),
+                ("GITLAB_PERSONAL_ACCESS_TOKEN", "glpat-FAKEVALUEFORTESTONLYNOTREAL"),
+                ("LOWER", "${lowercase_name}"),
+                ("PARTIAL", "prefix-${REAL_VAR}"),
+                ("Authorization", "Bearer sk_live_FAKEVALUEFORTESTONLYNOTREAL"),
+                ("X-Two", "${ONE}${TWO}"),
+            ],
+            msg="admitting the ${VAR} family must not weaken literal-secret detection",
+        )
 
     def test_allowlist_permits_known_good_vscode_cwso_entry(self):
         """The exact, documented .vscode/mcp.json `cwso` entry passes: VS Code's

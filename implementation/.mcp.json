@@ -7,8 +7,8 @@
         "@zereight/mcp-gitlab"
       ],
       "env": {
-        "GITLAB_PERSONAL_ACCESS_TOKEN": "${env:GITLAB_PERSONAL_ACCESS_TOKEN}",
-        "GITLAB_API_URL": "${env:GITLAB_API_URL}"
+        "GITLAB_PERSONAL_ACCESS_TOKEN": "${GITLAB_PERSONAL_ACCESS_TOKEN}",
+        "GITLAB_API_URL": "${GITLAB_API_URL}"
       }
     },
     "playwright": {
@@ -46,7 +46,7 @@
         "@brave/brave-search-mcp-server"
       ],
       "env": {
-        "BRAVE_API_KEY": "${env:BRAVE_API_KEY}"
+        "BRAVE_API_KEY": "${BRAVE_API_KEY}"
       }
     },
     "context7": {
@@ -55,14 +55,14 @@
     },
     "hindsight": {
       "type": "http",
-      "url": "${env:HINDSIGHT_MCP_URL}"
+      "url": "${HINDSIGHT_MCP_URL}"
     },
     "cwso": {
       "type": "http",
-      "url": "${env:CWSO_MCP_URL}",
+      "url": "${CWSO_MCP_URL}",
       "headers": {
-        "Authorization": "Bearer ${env:CWSO_BEARER_TOKEN}",
-        "Origin": "${env:CWSO_ORIGIN}"
+        "Authorization": "Bearer ${CWSO_BEARER_TOKEN}",
+        "Origin": "${CWSO_ORIGIN}"
       }
     },
     "hf-mcp-server": {
@@ -138,7 +138,7 @@
         "toolradar-mcp"
       ],
       "env": {
-        "TOOLRADAR_API_KEY": "${env:TOOLRADAR_API_KEY}"
+        "TOOLRADAR_API_KEY": "${TOOLRADAR_API_KEY}"
       }
     }
   }
