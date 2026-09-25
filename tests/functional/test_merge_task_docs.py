@@ -27,7 +27,14 @@ sync_task_docs = _merge.sync_task_docs
 
 
 class TestMergeTaskDocs(unittest.TestCase):
-    def test_merge_preserves_completed_rows_and_updates_footer(self):
+    def test_merge_preserves_completed_rows_and_existing_prose(self):
+        """T518: the existing ledger's prose is the project's, not the template's.
+
+        This test previously asserted the inverse -- that "Old intro text." and
+        "> Old footer." were *gone* and the template's replaced them. That
+        encoded the bug: substituting template prose for project prose is
+        exactly what destroyed active-tasks.md on every --update.
+        """
         template = """# Completed Tasks
 
 Intro from template.
@@ -49,14 +56,17 @@ Old intro text.
 > Old footer.
 """
         merged = merge_ledger(template, existing)
-        self.assertIn("Intro from template.", merged)
         self.assertIn("| T001 | First task |", merged)
         self.assertIn("| T002 | Second task |", merged)
-        self.assertIn("> Template footer line.", merged)
-        self.assertNotIn("Old intro text.", merged)
-        self.assertNotIn("> Old footer.", merged)
+        self.assertIn("Old intro text.", merged)
+        self.assertIn("> Old footer.", merged)
+        self.assertNotIn("Intro from template.", merged)
+        self.assertNotIn("> Template footer line.", merged)
+        self.assertEqual(merged, existing)
 
-    def test_merge_drops_template_example_row_but_keeps_real_rows(self):
+    def test_merge_keeps_real_rows_and_never_injects_template_prose(self):
+        """T518: previously asserted the template's postamble replaced the
+        target's "> Custom note." -- the same encoded bug as above."""
         template = (Path(__file__).resolve().parents[2] / "implementation" / "docs" / "tasks" / "active-tasks.md").read_text(
             encoding="utf-8"
         )
@@ -71,7 +81,80 @@ Old intro text.
         merged = merge_ledger(template, existing)
         self.assertIn("| T009 | Real work |", merged)
         self.assertNotIn("_Example:", merged)
-        self.assertIn("Per-task briefs live alongside", merged)
+        self.assertIn("> Custom note.", merged)
+        self.assertNotIn("Per-task briefs live alongside", merged)
+        self.assertNotIn("ledger starts EMPTY", merged)
+
+    # -- T518 regression: prose preservation ------------------------------
+    # Each of the three below fails against the pre-T518 merge_ledger().
+
+    def test_zero_row_populated_ledger_survives_byte_identical(self):
+        """The worst case: a *healthy* ledger with no active rows. There is
+        nothing to preserve row-wise, so the template used to win outright and
+        overwrite a 90-line project record with an 11-line fresh-install stub."""
+        template = (Path(__file__).resolve().parents[2] / "implementation" / "docs" / "tasks" / "active-tasks.md").read_text(
+            encoding="utf-8"
+        )
+        existing = """# Active Tasks
+
+| ID | Title | Owner | Status | Priority | Depends on | Last update |
+|----|-------|-------|--------|----------|-----------|-------------|
+
+> **0 active rows.** 511 real tasks have already run to completion; see
+> `completed-tasks.md`. Do not treat an empty table as "no history exists".
+
+> Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done`
+
+Per-task briefs live alongside this file as `task-T001.md`, `task-T002.md`, …
+"""
+        merged = merge_ledger(template, existing)
+        self.assertEqual(merged, existing)
+
+    def test_false_fresh_install_claim_never_written_into_existing_ledger(self):
+        """The template asserts the ledger starts empty and the first task is
+        `T001`. In a target with completed history that is actively false, and
+        active-tasks.md is the file a cold session reads first."""
+        template = (Path(__file__).resolve().parents[2] / "implementation" / "docs" / "tasks" / "active-tasks.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("ledger starts EMPTY", template, "template precondition")
+        existing = """# Active Tasks
+
+| ID | Title | Owner | Status | Priority | Depends on | Last update |
+|----|-------|-------|--------|----------|-----------|-------------|
+
+> 316 tasks already completed. This is not a fresh project.
+"""
+        merged = merge_ledger(template, existing)
+        self.assertNotIn("ledger starts EMPTY", merged)
+        self.assertNotIn("The first real task is", merged)
+        self.assertIn("316 tasks already completed", merged)
+
+    def test_existing_ledger_without_table_falls_back_to_template(self):
+        """A dest with no markdown table has nothing to splice into, so the
+        template is still the best available scaffold there."""
+        template = (Path(__file__).resolve().parents[2] / "implementation" / "docs" / "tasks" / "active-tasks.md").read_text(
+            encoding="utf-8"
+        )
+        merged = merge_ledger(template, "# Active Tasks\n\ntruncated, no table\n")
+        self.assertIn("| ID | Title | Owner | Status |", merged)
+        self.assertIn("ledger starts EMPTY", merged)
+
+    def test_sync_seeds_missing_ledger_from_template_verbatim(self):
+        """Fresh-install path is unchanged: a missing ledger gets the full
+        template text, guidance prose included."""
+        template_dir = Path(__file__).resolve().parents[2] / "implementation" / "docs" / "tasks"
+        with tempfile.TemporaryDirectory() as tmp:
+            dest_dir = Path(tmp) / "dest"
+            sync_task_docs(template_dir, dest_dir)
+            self.assertEqual(
+                (dest_dir / "active-tasks.md").read_text(encoding="utf-8"),
+                (template_dir / "active-tasks.md").read_text(encoding="utf-8"),
+            )
+            self.assertIn(
+                "ledger starts EMPTY",
+                (dest_dir / "active-tasks.md").read_text(encoding="utf-8"),
+            )
 
     def test_sync_seeds_missing_and_skips_existing_non_ledger(self):
         with tempfile.TemporaryDirectory() as tmp:
