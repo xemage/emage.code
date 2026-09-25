@@ -45,9 +45,9 @@ Generated from: implementation/knowledge
 | bug-report | command | experimental | commands/bug-report.md |
 | code-review | command | experimental | commands/code-review.md |
 | consolidate-memory | command | experimental | commands/consolidate-memory.md |
-| discover-skills | command | experimental | commands/discover-skills.md |
+| discover-skills | command | stable | commands/discover-skills.md |
 | evaluate-poc | command | experimental | commands/evaluate-poc.md |
-| handoff | command | experimental | commands/handoff.md |
+| handoff | command | stable | commands/handoff.md |
 | new-feature | command | stable | commands/new-feature.md |
 | new-poc | command | experimental | commands/new-poc.md |
 | new-project | command | experimental | commands/new-project.md |
@@ -58,7 +58,7 @@ Generated from: implementation/knowledge
 | skillify | command | experimental | commands/skillify.md |
 | sprint-status | command | experimental | commands/sprint-status.md |
 | team-status | command | experimental | commands/team-status.md |
-| validate-tasks | command | experimental | commands/validate-tasks.md |
+| validate-tasks | command | stable | commands/validate-tasks.md |
 | validate-workflow | command | experimental | commands/validate-workflow.md |
 | coding-standards | instruction | stable | instructions/coding-standards.md |
 | git-workflow | instruction | stable | instructions/git-workflow.md |

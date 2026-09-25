@@ -2,12 +2,13 @@
 
 **ID:** T525
 **Owner:** QA Engineer
-**Status:** in_review
+**Status:** done
 **Priority:** P2
 **Tier:** judgment
 **Affects:** —
 **Depends on:** —
 **Created:** 2026-09-25
+**Completed:** 2026-09-25
 **Based on:** `docs/plans/plan-072-phase9-golden-case-coverage.md`;
 `docs/artifacts/golden-suite-format-v1.md` §2;
 `docs/artifacts/command-promotion-readiness-v1.md` §3.2;

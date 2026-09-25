@@ -2,7 +2,7 @@
 description: "List and recommend skills from the knowledge registry for the current task or intent."
 agent: "orchestrator"
 argument-hint: "Task intent, e.g. 'debug CI failure' or 'prepare release'..."
-maturity: experimental
+maturity: stable
 ---
 
 You are in **Skill Discovery** mode. Match the user's intent to canonical skills.
