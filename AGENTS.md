@@ -85,7 +85,11 @@ in the task brief or checkpoint.
 
 ## Knowledge Base
 - Source knowledge lives in the emage.code repository under `implementation/knowledge/`; this target uses installed platform projections.
-- Per-platform folders (`.github/`, `.gemini/`, `.opencode/`, `.cursor/`, `.pi/`, `.clinerules/`, `.cline/`) are **generated** by `scripts/sync.mjs`. **Do not edit them by hand.**
+- **Every** per-platform folder is **derived**, not authored — `.github/`, `.cursor/`, `.gemini/`, `.opencode/`, `.pi/`, `.claude/`, `.cline/` and `.clinerules/`, with no exceptions and `.claude/` explicitly included. Each is owned by a generator and an installer, never by the author, so **do not hand-edit any of them**: author in the emage.code repository's `implementation/knowledge/` and regenerate. Both generators are required:
+  - `node implementation/scripts/sync.mjs --root implementation` (`make sync`) writes the platform mirrors **under `implementation/.<platform>/`** — *not* to the top-level folders. There is no `scripts/sync.mjs`; that path fails with `Cannot find module`.
+  - `python3 implementation/scripts/generate-registry.py` refreshes `implementation/registry/index.json`, whose per-entry `checksum` any source edit invalidates — running `sync.mjs` alone leaves the registry stale.
+  - The **top-level** folders are written by `scripts/install.sh`, and `--update` replaces each of them wholesale with `rsync -a --delete`: a hand-written file there is **deleted, not merged**. The installer warns about this itself — "`--update` replaces `$TARGET/<folder>` entirely (rsync --delete)… Other local edits there will be lost." Only client-owned paths are spared (`.claude/settings.json`, `.claude/settings.local.json`, and `.github/workflows/`, `ISSUE_TEMPLATE/`, `PULL_REQUEST_TEMPLATE*`, `CODEOWNERS`, `dependabot.y*ml`, `FUNDING.yml`, `copilot-instructions.md`); `agents/`, `skills/`, `commands/`, `rules/` and the whole of `.clinerules/` are not.
+  - Read-only drift gates, safe to run at any time: `node implementation/scripts/sync.mjs --root implementation --check` (`make verify`) and `python3 implementation/scripts/generate-registry.py --check`.
 - Use the installed platform folders (`.github/`, `.cursor/`, `.gemini/`, `.opencode/`, `.pi/`, `.claude/`, `.cline/`, `.clinerules/`) as runtime references in this target project.
 - Cline auto-detects the root `AGENTS.md` natively — no projection is needed for that file itself, it already works as-is. Cline users should also check `.clinerules/` for path-scoped project rules.
 
