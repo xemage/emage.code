@@ -60,6 +60,29 @@ AFFECTS_REQUIRED_PRIORITIES = {"P0", "P1"}
 # annotation style wrapped around it.
 DEPENDS_ID_RE = re.compile(r"\bT\d{3,}\b")
 
+# C13 -- no active row declares a dependency on itself (T540).
+#
+# A self-dependency satisfies C12: the ID resolves, because the row's own ID is
+# in `active_ids`. It is still never a real edge -- it is a length-one cycle
+# that leaves the row permanently unschedulable, and in practice it reads as the
+# ID cell copied into the dependency cell. It gets its own code rather than an
+# extension of C12 because the operator's fix differs (delete the edge, not
+# correct its target) and because C12 carries exactly one message -- "exists in
+# neither ledger" -- which is actively false for this defect.
+#
+# C14 -- the active dependency graph is acyclic (T540).
+#
+# `/sprint-status` reconstructs a DAG from these edges and orders the queue from
+# it. A cycle has no topological order, so it breaks that consumer outright
+# rather than merely misinforming it. Its own code, because the failure belongs
+# to a set of rows rather than to one row: the message names the whole chain,
+# since no single row in a cycle is the one at fault.
+#
+# The search covers active rows only. `completed-tasks.md` has no dependency
+# column, so an edge pointing into it is a leaf and can never close a cycle.
+# Self-edges are excluded here and left to C13, so each defect is reported once,
+# under the more specific of the two codes.
+
 
 class Row:
     def __init__(self, line_no: int, cells: list[str]) -> None:
@@ -186,6 +209,52 @@ def affects_errors(raw: str, known: set[str]) -> list[str]:
     if not declared and not errors:
         errors.append(f"`**Affects:**` value '{raw}' declares nothing (use `—` for 'no component')")
     return errors
+
+
+def dependency_cycles(edges: dict[str, set[str]]) -> list[list[str]]:
+    """Return every dependency cycle in `edges` as an ordered list of node IDs.
+
+    Iterative depth-first search. On a back edge into the current path, the path
+    is sliced from the revisited node onward, which yields the actual chain an
+    operator has to break rather than an unordered component. Roots and
+    neighbours are walked in sorted order and each cycle is keyed on its node
+    set, so repeated runs over one ledger report the same cycles in the same
+    order, and report each of them once.
+    """
+    cycles: list[list[str]] = []
+    reported: set[frozenset[str]] = set()
+    done: set[str] = set()
+
+    for root in sorted(edges):
+        if root in done:
+            continue
+        path = [root]
+        on_path = {root}
+        stack = [(root, iter(sorted(edges[root])))]
+        while stack:
+            node, pending = stack[-1]
+            descended = False
+            for nxt in pending:
+                if nxt == node or nxt not in edges or nxt in done:
+                    continue
+                if nxt in on_path:
+                    cycle = path[path.index(nxt):]
+                    key = frozenset(cycle)
+                    if key not in reported:
+                        reported.add(key)
+                        cycles.append(cycle)
+                    continue
+                stack.append((nxt, iter(sorted(edges[nxt]))))
+                path.append(nxt)
+                on_path.add(nxt)
+                descended = True
+                break
+            if not descended:
+                stack.pop()
+                done.add(node)
+                on_path.discard(node)
+                path.pop()
+    return cycles
 
 
 def add_fail(fails: list[tuple[str, str]], code: str, msg: str) -> None:
@@ -386,9 +455,24 @@ def main() -> int:
         prev_line = line_no
 
     # C12 every ID named in an active row's `Depends on` exists in some ledger
+    # C13 no active row declares a dependency on itself
     known_ids = set(active_ids) | set(completed_ids)
+    active_id_set = set(active_ids)
+    first_line: dict[str, int] = {}
+    edges: dict[str, set[str]] = {task_id: set() for task_id in active_id_set}
     for line_no, task_id, raw_depends in active_depends:
+        first_line.setdefault(task_id, line_no)
         for dep in DEPENDS_ID_RE.findall(raw_depends):
+            if dep == task_id:
+                add_fail(
+                    fails,
+                    "C13",
+                    f"active-tasks.md:{line_no} {task_id} declares Depends on itself",
+                )
+                continue
+            if dep in active_id_set:
+                edges[task_id].add(dep)
+                continue
             if dep in known_ids:
                 continue
             add_fail(
@@ -397,6 +481,16 @@ def main() -> int:
                 f"active-tasks.md:{line_no} {task_id} declares Depends on '{dep}', "
                 "which exists in neither ledger",
             )
+
+    # C14 the active dependency graph is acyclic
+    for cycle in dependency_cycles(edges):
+        chain = " \u2192 ".join([*cycle, cycle[0]])
+        add_fail(
+            fails,
+            "C14",
+            f"active-tasks.md:{first_line[cycle[0]]} dependency cycle {chain} "
+            "has no order that satisfies it; one of its edges must be removed",
+        )
 
     if fails:
         for code, msg in fails:
