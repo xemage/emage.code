@@ -2,14 +2,14 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T529 | handoff schema permits a handoff with zero writable paths | backend-developer | pending | P2 | — | 2026-09-25 |
 | T530 | Correct the stale new-feature-real-checkpoint-format-drift brief | technical-writer | pending | P2 | — | 2026-09-25 |
 | T532 | Adjudicate /skillify's declared output path | solution-architect | pending | P2 | T531 | 2026-09-25 |
 | T535 | Adjudicate /batch step 5's manifest against the ledger schema | solution-architect | pending | P2 | — | 2026-09-26 |
-| T536 | /sprint-status declares no colour for in_review | tech-lead | pending | P2 | — | 2026-09-26 |
-| T537 | validate-tasks.py silently accepts a dangling Depends on | backend-developer | pending | P2 | — | 2026-09-26 |
+| T538 | team-status.md carries the same in_review colour gap | tech-lead | pending | P2 | — | 2026-09-26 |
+| T539 | golden harness has no array-cardinality guard | qa-engineer | pending | P2 | — | 2026-09-26 |
+| T540 | validate-tasks.py detects neither self-dependency nor cycles | backend-developer | pending | P2 | — | 2026-09-26 |
 
-> **6 active rows (`T529`, `T530`, `T532`, `T535`–`T537`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **6 active rows (`T530`, `T532`, `T535`, `T538`–`T540`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
@@ -373,6 +373,28 @@
 > satisfied dependency legitimately points into `completed-tasks.md` (`T532` → completed `T531`), so
 > resolving only against the active ledger would flag every satisfied edge; and **a false positive
 > there blocks all work**, since that validator gates every ledger edit and runs in CI.
+
+> **`T529`, `T536` and `T537` closed 2026-09-26 — see `completed-tasks.md`. `T538`–`T540` scoped per
+> `plan-077`.** All three were dispatched in parallel, chosen as the only three of six with **zero file
+> overlap**. **A governance precedent was set and user-ratified in `T529`:** `AGENTS.md`'s
+> artifact-immutability rule governs **`.md` deliverables under `docs/`**, not runtime JSON contracts
+> whose filename is a wire-protocol identifier — so `implementation/runtime/handoff/schema-v1.json`
+> was edited **in place**, contradicting this orchestrator's own brief steer and the rule it had
+> enforced four times this phase. Five premises verified: the rule text is literally `.md`-scoped; **no
+> `-v2` exists anywhere outside `docs/`**; `benchmark-thresholds-v1.json` has three in-place
+> revisions; both real payloads name the schema **in-band** so a rename orphans them; and a rename
+> would strand `handoff-security-model-v1.md`, a genuine immutable docs artifact hardcoded in
+> `check.py`. **Stop steering briefs toward `-v2` for runtime schemas.** **Two further corrections to
+> this orchestrator's own work**, both recorded in the closure rows: the brief listed seven emittable
+> validator codes when **all of `C1`–`C11`** are emittable, and an earlier diagnosis that a failed
+> mutation was merely "mis-designed" was **half wrong** — the golden `expect.py` implements **zero
+> array keywords**, so that mutation could never have flipped at any schema version. **Three new
+> findings now have rows:** `team-status.md` carries the identical `in_review` gap in a weaker form
+> (no `Color code:` bullet at all); **no guard anywhere in `tests/golden/**` detects array
+> cardinality**, so write-scope emptiness is covered only by `T529`'s new functional tests; and
+> `validate-tasks.py` detects neither self-dependency nor cycles, both cheap additions inside `C12`'s
+> shape. Also found: **`validator.py` never loads `schema-v1.json`** — it re-implements the rules, so
+> any future handoff-schema change must patch the validator too or have no runtime effect.
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
