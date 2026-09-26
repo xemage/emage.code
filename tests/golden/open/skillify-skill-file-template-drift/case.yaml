@@ -4,15 +4,18 @@ status: known_failing
 known_failing_category: tracked_defect
 known_failing_reason: >-
   skillify.md's "Generate the Skill File" step declares a five-section SKILL.md template
-  (## Trigger, ## Inputs, ## Steps, ## Success Criteria, ## Examples) written to
-  .github/skills/<name>/SKILL.md. A corpus survey of every real SKILL.md in this repository --
-  26 under implementation/knowledge/skills/ and the same 26 projected to .github/skills/, the
-  exact path the command names -- found 0/26 satisfying that template, and 0/26 containing even
-  one of ## Trigger, ## Inputs or ## Steps. The real corpus uniformly follows a different
-  template (## Purpose, ## When to Use, ## Prerequisites, ## Procedure, ## Examples,
-  ## Edge Cases), which is the template declared by the skillify *skill*
-  (implementation/knowledge/skills/skillify/SKILL.md, "SKILL.md Template" section). The command
-  and the skill of the same name declare two different output shapes and practice follows the
-  skill, not the command. Trackable contract drift, not a permanent capability limitation:
-  either skillify.md adopts the corpus template, or the corpus is wrong and should be migrated.
+  written to .github/skills/<name>/SKILL.md. Since T527 amended that step, the five are
+  ## When to Use, ## Inputs, ## Procedure, ## Success Criteria and ## Examples (previously
+  ## Trigger and ## Steps in place of the first and third). A fence-aware corpus measurement
+  across the 26 real skill files under implementation/knowledge/skills/*/SKILL.md found 0/26
+  satisfying that template -- and also 0/26 satisfying the template declared by the skillify
+  *skill* (implementation/knowledge/skills/skillify/SKILL.md, "SKILL.md Template" section).
+  The corpus follows neither declared template. The real fixture, a copy of
+  .github/skills/verification-before-completion/SKILL.md, satisfies 1 of the 5 (## When to Use
+  only). Note that after T527 this is no longer a disagreement between two declared contracts:
+  the command's five sections are a subset of the skill's template, in the same relative order,
+  so a file conforming to the skill's template conforms to the command's as well. The drift is
+  between the declared template and the corpus. Trackable contract drift, not a permanent
+  capability limitation: either skillify.md and the skillify skill adopt the corpus's actual
+  shape, or the corpus is wrong and should be migrated to the declared template.
 tags: [skillify, skill-file-template, contract-drift, real-artifact]
