@@ -7,9 +7,8 @@
 | T535 | Adjudicate /batch step 5's manifest against the ledger schema | solution-architect | pending | P2 | — | 2026-09-26 |
 | T538 | team-status.md carries the same in_review colour gap | tech-lead | pending | P2 | — | 2026-09-26 |
 | T539 | golden harness has no array-cardinality guard | qa-engineer | pending | P2 | — | 2026-09-26 |
-| T540 | validate-tasks.py detects neither self-dependency nor cycles | backend-developer | pending | P2 | — | 2026-09-26 |
 
-> **6 active rows (`T530`, `T532`, `T535`, `T538`–`T540`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **5 active rows (`T530`, `T532`, `T535`, `T538`, `T539`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
@@ -395,6 +394,23 @@
 > `validate-tasks.py` detects neither self-dependency nor cycles, both cheap additions inside `C12`'s
 > shape. Also found: **`validator.py` never loads `schema-v1.json`** — it re-implements the rules, so
 > any future handoff-schema change must patch the validator too or have no runtime effect.
+
+> **`T540` closed 2026-09-26 — see `completed-tasks.md`.** The ledger validator now carries `C13`
+> (self-dependency) and `C14` (cycles), and the suite is at **824 tests**. **A session rate limit
+> (HTTP 429) terminated both dispatched agents mid-task this round** — `T540`'s and `T535`'s. Neither
+> reported, but **`T540`'s worktree was not empty**: its last emitted line was "Now the patch" while
+> it had already written a complete, uncommitted, entirely unverified patch. The lesson is procedural
+> and now recorded: **always check a dead agent's worktree before re-dispatching.** That work was
+> reviewed as *unverified partial work rather than a delivered result*, verified across seven graph
+> shapes — including the **diamond** case a naive cycle detector fails — and committed with the
+> provenance stated in both the commit message and MR !405. **`T535` produced nothing and still needs
+> dispatching from scratch**; its worktree is clean and waiting. **`T538` was deliberately held** last
+> round because it collided with `T535` on `implementation/knowledge/commands/`, and that collision no
+> longer exists while `T535` is not in flight — but the two must still not run concurrently, since
+> both regenerate `registry/index.json` and the platform projections. **`T538`'s central question is
+> pre-answered:** a grep for the shared Mermaid block finds exactly **two** copies, `sprint-status.md`
+> (already fixed by `T536`) and `team-status.md`. **There is no third instance** — so this is two
+> instances of a copied section, not an unbounded pattern.
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
