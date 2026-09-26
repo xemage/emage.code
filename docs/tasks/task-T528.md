@@ -2,12 +2,13 @@
 
 **ID:** T528
 **Owner:** QA Engineer
-**Status:** in_review
+**Status:** done
 **Priority:** P2
 **Tier:** judgment
 **Affects:** —
 **Depends on:** T525 (merged 2026-09-25)
 **Created:** 2026-09-25
+**Completed:** 2026-09-26
 **Based on:** `docs/plans/plan-072-phase9-golden-case-coverage.md` §1/§3;
 `docs/plans/plan-073-skillify-adjudication-and-wave2.md` §3/§4;
 `docs/tasks/task-T525.md`; `docs/artifacts/golden-suite-format-v1.md` §2;

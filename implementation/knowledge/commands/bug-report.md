@@ -2,7 +2,7 @@
 description: "Create a structured bug report with reproduction steps, expected vs actual behavior, and severity assessment."
 agent: "orchestrator"
 argument-hint: "Describe the bug you found..."
-maturity: experimental
+maturity: stable
 ---
 
 Create a structured bug report for the following issue:
