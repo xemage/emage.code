@@ -2,12 +2,13 @@
 
 **ID:** T540
 **Owner:** Backend Developer
-**Status:** in_review
+**Status:** done
 **Priority:** P2
 **Tier:** standard
 **Affects:** —
 **Depends on:** T537 (merged 2026-09-26)
 **Created:** 2026-09-26
+**Completed:** 2026-09-26
 **Based on:** `docs/plans/plan-077-parallel-round-findings.md` §3; `docs/tasks/task-T537.md`.
 
 ## 1. The two gaps
