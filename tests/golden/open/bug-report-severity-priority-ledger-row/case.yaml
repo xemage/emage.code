@@ -1,0 +1,4 @@
+id: bug-report-severity-priority-ledger-row
+command: /bug-report
+status: expected_pass
+tags: [bug-report, ledger-row-schema, severity-priority-mapping, cross-artifact-consistency, task-creation]

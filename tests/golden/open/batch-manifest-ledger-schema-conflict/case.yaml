@@ -1,0 +1,27 @@
+id: batch-manifest-ledger-schema-conflict
+command: /batch
+status: known_failing
+known_failing_category: tracked_defect
+known_failing_reason: >-
+  batch.md's `## Instructions` step 5 declares that `docs/tasks/active-tasks.md` is updated with
+  "the full batch manifest: Unit ID, description, assigned agent, branch, status" -- a five-field
+  row carrying a `branch`. That file's schema is pinned elsewhere to exactly seven columns
+  (`ID | Title | Owner | Status | Priority | Depends on | Last update`) by AGENTS.md's Task
+  Protocol, and `docs/tasks/validate-tasks.py:195` hard-fails any row whose cell count differs.
+  There is no `branch` column in that schema and no seventh field the branch can occupy, so step
+  5's manifest cannot be written into the file step 5 names without breaking the ledger's own
+  validator. Demonstrated both directions rather than argued: a schema-conforming fixture ledger
+  carrying one row per unit produces zero C2/C3 failures from the real validator but carries no
+  branch, so this check returns False; appending the declared five-field manifest to the same file
+  makes this check return True and makes the validator emit `FAIL C2: active-tasks.md:11 has 5
+  cells (expected 7)` and `FAIL C2: active-tasks.md:13 has 5 cells (expected 7)` -- the header row
+  fails too, because the parser skips only a literal `ID` first cell and `Unit ID` is not that.
+  A corpus survey found nothing to arbitrate between them: zero `batch/*` branches exist
+  (`git branch -a --list 'batch/*'`) and zero rows in either ledger mention `batch/`, so the
+  command has never been run to completion here and practice has not resolved the disagreement in
+  either direction. Trackable contract drift, not a capability limitation: mechanically resolvable
+  either way -- batch.md declares a manifest location that is not the 7-column ledger (its own
+  `docs/tasks/task-<ID>.md` brief, or a separate batch manifest file), or the ledger schema gains
+  the fields. Needs an ADR-007 adjudication of which document holds authority, exactly as the
+  /skillify command-vs-skill template conflict did.
+tags: [batch, batch-manifest, ledger-schema, contract-drift, worktree-branch-naming, unit-independence]

@@ -1,0 +1,4 @@
+id: new-project-plan-doc-and-lifecycle-states
+command: /new-project
+status: expected_pass
+tags: [new-project, plan-document, mermaid-task-dag, lifecycle-states, in-review-spelling]
