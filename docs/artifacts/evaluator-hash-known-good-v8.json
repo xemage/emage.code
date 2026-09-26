@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "algorithm": "sha256",
+  "digests": {
+    "tests_golden": "9a545fe3001e47441c6350e93630a1957825089fd1c32b9a149ec5ec439449c1",
+    "scripts_scorecard": "45346c178c7f6d92101130d898f55dfaad908aa7e5ae669ce1faac99a51192d6"
+  },
+  "computed_from_commit": "4cbdf6870dfeb23755fe4eff738eee91e5d0b53d",
+  "computed_at": "2026-09-26T16:00:00Z",
+  "protected_paths": {
+    "tests_golden": "tests/golden",
+    "scripts_scorecard": "scripts/scorecard.py"
+  },
+  "supersedes": "evaluator-hash-known-good-v7.json",
+  "reason": "T541 re-derived tests/golden/open/batch-manifest-ledger-schema-conflict/expect.py under the file-scoped protected-path authorization in docs/tasks/task-T541.md SS1, following the element-for-element specification in docs/artifacts/batch-manifest-resolution-v1.md SS7. After T535 amended /batch steps 2, 3 and 5, three of the checker's five elements asserted forms no document declared any more (UNIT_ID_RE ^U\\d+$, BRANCH_RE ^batch/...$, and an assertion requiring a branch in a ledger row the amended contract says has none). Independently confirmed by the orchestrator: the SUPERSEDED checker returns False even against a fully conforming fixture, so it was unfalsifiable in both directions -- the same condition T531 fixed for /skillify. The case now legitimately passes: check() moved False -> True, and the scorecard moved 20 -> 21 pass with ZERO regressions and ZERO unexpected passes, exactly one case transition, satisfying ADR-007 Validation 2. The implementer resolved the sibling-corollary question T535 deliberately left open, choosing the 'name or path' limb (case survives, fixture updated) over 'artifact class' (case invalidated, must be re-purposed), on the ground that every change is literally a name or a path and that the pre-amendment ledger row for a batch unit was never an instantiable artifact -- an amendment cannot change the class of an artifact that had no instances. Only the hand-authored decomposition.md half of the fixture was re-authored, which ADR-007 SS5 expressly permits; the fixture's real-schema ledger half was NOT touched and is absent from the diff, because that it already satisfies the amended 7-column schema unedited is itself the evidence for the chosen limb. Two elements became strictly stronger and the spec's optional sixth element was deliberately omitted, because ADR-007 Validation 1's 'same number of structural elements' binds as a ceiling as much as a floor. Only tests_golden drifts; scripts_scorecard is byte-identical to v7, v6 and v5, which is the proof nothing outside the one authorized case directory was touched -- notably not the protected scripts/scorecard.py. This does NOT make /batch promotable: it remains maturity: experimental and must clear experimental -> beta as a separate component-state decision. The refresh was escalated for human sanction by the implementing agent rather than performed by it, the eighth such occurrence and the eighth to be respected, and was explicitly authorized by the user before this file was written.",
+  "update_policy": "Manual only, never automatic. A future legitimate update goes through docs/artifacts/protected-paths-v1.md SS5's exception path and produces evaluator-hash-known-good-v9.json -- this file (v8) is never edited in place, and v1 through v7 are retained unmodified as the historical record. See docs/artifacts/evaluator-hash-check-v1.md for the full policy."
+}

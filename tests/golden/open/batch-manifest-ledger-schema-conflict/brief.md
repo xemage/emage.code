@@ -1,4 +1,4 @@
-# Case: batch-manifest-ledger-schema-conflict (known_failing / tracked_defect)
+# Case: batch-manifest-ledger-schema-conflict (expected_pass)
 
 ## Command under test
 `/batch`
@@ -8,118 +8,173 @@
 structured logger." The change is decomposed into independent units, each with its own worktree
 branch, and the batch is tracked.
 
+## History — this case was `known_failing` / `tracked_defect` until `T541`
+It recorded a real contract conflict: `batch.md` step 5 declared a five-field manifest row
+(`Unit ID, description, assigned agent, branch, status`) to be written into
+`docs/tasks/active-tasks.md`, whose schema `AGENTS.md` § Task Protocol pins to exactly seven columns
+with no `branch` among them. `T535` adjudicated that conflict under
+`docs/decisions/ADR-007-command-contract-authority.md` and recorded the verdict in
+`docs/artifacts/batch-manifest-resolution-v1.md`: **branch 1 fires twice**, on step 5 against
+`AGENTS.md` and independently on step 3 against `git-workflow.md`, and **nothing is deleted** —
+every one of step 5's five declared fields keeps exactly one home (§4.4). `T541` then re-derived
+this checker element-for-element against `batch-manifest-resolution-v1.md` §7 and the amended
+command file, and the case now passes. The full "why it failed" account, with both directions
+demonstrated, is preserved in `batch-manifest-resolution-v1.md` §§1–3 and in
+`evaluator-hash-known-good-v7.json`'s `reason` field.
+
 ## What this checks
-`implementation/knowledge/commands/batch.md` `## Instructions` steps 2, 3 and 5, verbatim:
+`implementation/knowledge/commands/batch.md` `## Instructions` steps 2, 3 and 5, **as amended**:
 
 > 2. **Decompose into independent units** — each unit must be:
 >    - Self-contained (no cross-unit dependencies within a batch)
->    - Independently testable
->    - Small enough for a single agent session
+>    …
+>    Write the decomposition to a plan document at `docs/plans/plan-<ID>.md`, following the
+>    structure `commands/plan.md` step 5 declares … plus one additional required section:
+>    - **Batch Manifest** — one row per unit: `| Task ID | Description | Assigned agent | Branch |`.
+>      This is where the branch is written down; `docs/tasks/active-tasks.md` is not (step 5). Each
+>      `Branch` cell must equal `agent/<Assigned agent>/<Task ID>`, so the manifest cannot drift
+>      from the ledger row it describes.
 > 3. **Create worktree isolation** — for each unit:
->    - Create a dedicated worktree and branch using the worktree-isolation skill
->    - Branch naming: `batch/<slug>/<unit-number>-<short-description>`
-> 5. **Track progress** — update `docs/tasks/active-tasks.md` with the full batch manifest:
->    - Unit ID, description, assigned agent, branch, status
+>    - Allocate the unit's task ID, ledger row and task brief first (step 5) — the branch name
+>      contains the task ID
+>    - Branch naming: `agent/<agent-name>/<task-id>`, per `git-workflow.md` § "Agent Worktree Branch
+>      Naming" and the worktree-isolation skill's own convention
+> 5. **Track progress** — record each unit as a task in `docs/tasks/active-tasks.md`, using that
+>    file's own 7-column schema (`AGENTS.md` § Task Protocol) and never a five-field manifest row,
+>    which its validator rejects:
+>    - Format (7 columns, exact order):
+>      `| T<NNN> | BATCH <slug>: <description> | <agent-slug> | pending | P0|P1|P2 | <dep-ids or —> | YYYY-MM-DD |`
+>    - Use the NEXT sequential `T<NNN>` ID for every unit. NEVER a `U<n>` …
+>    - `Depends on` must not name another unit of the same batch … A dependency on a task *outside*
+>      the batch is permitted.
+>    - The branch is **not** a ledger column. …
+>    - … The ledger is authoritative for status; the manifest is not a second status record.
 
-These are the command's only structurally checkable steps. Steps 1, 4, 6 and 7 are analysis,
-delegation, verification and human PR guidance, and `## Important`'s third bullet ("Present the
-decomposition plan for user approval") is a human interaction with no declared artifact.
+These remain the command's only structurally checkable steps. Steps 1, 4, 6 and 7 are analysis,
+delegation, verification and human PR guidance, and `## Important`'s "Present the decomposition plan
+for user approval" is a human interaction with no declared artifact.
 
-Three independent assertions:
+Three independent assertions, the same three as before the amendment — relocated, not dropped:
 
 - **A (step 2) — independence.** No unit's declared dependencies may name another unit in the same
-  batch. This is the one step 2 constraint that is mechanically decidable: "independently testable"
-  and "small enough for a single agent session" are judgements. It is also the failure the command
-  itself singles out — `## Important` says "If a unit turns out to have a dependency on another
-  unit, flag it immediately and re-plan", and `## Rails` repeats it as the declared failure mode.
-- **B (step 3) — branch naming.** Every unit's branch matches `batch/<slug>/<unit-number>-<short-description>`
-  exactly as declared.
-- **C (step 5) — the manifest.** `docs/tasks/active-tasks.md` carries, per unit, all five declared
-  fields: Unit ID, description, assigned agent, **branch**, status.
+  batch. Read from the unit's `Depends on` cell in `active-tasks.md`, tokenised exactly the way
+  `validate-tasks.py:61`'s `DEPENDS_ID_RE` tokenises it for checks `C12`/`C13`/`C14` — which step 5
+  itself names as the enforcement home for this constraint. A dependency on a task outside the batch
+  is explicitly permitted and is not a violation.
+- **B (step 3) — branch naming.** Every unit's branch matches `agent/<agent-name>/<task-id>`, and —
+  per step 2's Batch Manifest clause — *equals* `agent/<Assigned agent>/<Task ID>` rather than
+  merely being well-formed. This is checkable against the ledger row, not just against a regex,
+  which is why it is a stronger assertion than the `batch/<slug>/<n>-<desc>` one it replaces.
+- **C (step 5) — the manifest.** Each unit is a row of `active-tasks.md` in that file's own 7-column
+  schema, carrying the unit's ID (matching the `^T\d{3,}$` that `validate-tasks.py:307`'s `C3`
+  applies), a `Title` beginning `BATCH <slug>:`, the unit's agent as `Owner`, and a non-empty
+  `Status`. The `branch` is **not** there — it is in the plan document's Batch Manifest, which is
+  what assertion B reads.
 
-## Pass condition
-`fixture/decomposition.md` declares at least two units in a five-column table (unit / description /
-agent / branch / status), each with a well-formed unit ID, non-empty description, agent and status,
-and a branch matching the declared pattern; a per-unit dependency table covers every unit and no
-unit depends on another in the batch; and for every unit, some row of `fixture/docs/tasks/active-tasks.md`
-carries that unit's ID, agent, status **and branch** together.
-
-## Why this is known_failing today
-
-**Assertions A and B pass. Assertion C cannot be satisfied.** Verified by instrumenting the checker
-against its own fixture: three units parse, all three branches match the declared pattern, the
-dependency table declares `—` for all three, and the check then fails at C because no ledger row
-carries any unit's branch.
-
-It cannot be satisfied because `docs/tasks/active-tasks.md` already has an owner and a schema, and
-that schema has no room for a branch. `AGENTS.md` § Task Protocol pins it:
-
-> Task list: `docs/tasks/active-tasks.md` — columns: `ID | Title | Owner | Status | Priority | Depends on | Last update`
-
-and `docs/tasks/validate-tasks.py:195` enforces the count:
+Step 5 declares five manifest fields, and each has exactly one home
+(`batch-manifest-resolution-v1.md` §4.4): **four** in the plan document's Batch Manifest
+(`Task ID`, `Description`, `Assigned agent`, `Branch`) and `status` in the ledger row's `Status`
+column. The ledger's seven columns remain untouched, and the cell count is still hard-failed as `C2`
+by `docs/tasks/validate-tasks.py`:
 
 ```python
-if len(row.cells) != 7:
-    add_fail(fails, "C2", f"active-tasks.md:{row.line_no} has {len(row.cells)} cells (expected 7)")
+        if len(row.cells) != 7:
+            add_fail(
+                fails,
+                "C2",
+                f"active-tasks.md:{row.line_no} has {len(row.cells)} cells (expected 7)",
+            )
 ```
 
-Five of step 5's fields map onto that schema (`Unit ID`→`ID`, `description`→`Title`,
-`assigned agent`→`Owner`, `status`→`Status`), but `branch` maps onto nothing, and the two remaining
-columns (`Priority`, `Last update`) are already spoken for. So the manifest step 5 declares is not
-writable into the file step 5 names.
+at line 287, with `C3`'s `ID_RE.fullmatch` check at line 307 and `ID_RE = re.compile(r"^T\d{3,}$")`
+at line 11. (The pre-`T541` text of this file and of `case.yaml` cited `validate-tasks.py:195` for
+the cell-count check; that citation was stale, and the quoted one-line `add_fail` form has since
+been wrapped across five lines.)
 
-**Demonstrated in both directions rather than argued.** The fixture's ledger is schema-conforming
-(real header, one 7-column row per unit) and the real validator reports **no** C2 or C3 failure
-against it — so the fixture is not a broken ledger, it is a correct one that simply cannot carry a
-branch. Appending the declared five-field manifest to the same file makes this check return `True`
-and makes the validator fail:
+## Pass condition
+`fixture/decomposition.md` declares at least two units in a four-column Batch Manifest
+(`Task ID | Description | Assigned agent | Branch`), each with a distinct `^T\d{3,}$` task ID, a
+non-empty description and agent, and a branch that both matches
+`^agent/[a-z0-9][a-z0-9-]*/T\d{3,}$` and equals `agent/<that row's agent>/<that row's task ID>`; and
+for every unit, `fixture/docs/tasks/active-tasks.md` carries a row, in that file's declared 7-column
+order, whose `ID` is the unit's ID, whose `Title` begins `BATCH <slug>:`, whose `Owner` is the unit's
+agent, whose `Status` is non-empty, and whose `Depends on` names no other unit of the batch.
 
-```
-FAIL C2: active-tasks.md:11 has 5 cells (expected 7)
-FAIL C2: active-tasks.md:13 has 5 cells (expected 7)
-```
+## What is deliberately not asserted
+Recorded here so that it can be overruled rather than discovered. `ADR-007` Validation criterion 1
+requires the replacement checker to assert "the same number of structural elements with the same
+ordering and value constraints" as the one it replaces — which for a re-derivation whose elements are
+already *stronger* (assertions A and B both are) is a ceiling as much as a floor.
 
-Line 13 is the manifest's data row; **line 11 is its header row**, which also fails, because
-`parse_table_rows` skips a header only when its first cell is the literal string `ID` and `Unit ID`
-is not that. A second, independent collision sits behind the first: unit IDs of the declared
-`U<n>` shape fail `ID_RE = ^T\d{3,}$` (C3), and `bug-report.md` records the consequence of non-`T`
-rows in this file — "non-`T` rows are silently deleted by `install.sh --update`".
-
-**No fixture was selected to manufacture this result.** A survey found nothing to arbitrate between
-the two contracts: `git branch -a --list 'batch/*'` returns zero branches and `grep -c 'batch/'`
-returns 0 for both ledgers, so `/batch` has never been run to completion in this repository and
-practice has not settled the disagreement either way. There is therefore no real artifact that could
-have made this case green, and no choice of real fixture that would have changed the outcome. Making
-it green would have required either asserting a manifest shape the ledger's own validator rejects,
-or quietly dropping `branch` from the five fields step 5 declares — which is exactly the
-check-relaxation `ADR-007` §5 forbids.
+1. **Step 2's declared plan-document path and `/plan`'s six section headers.**
+   `batch-manifest-resolution-v1.md` §7 offers this as its one net addition and instructs that it be
+   omitted, and the omission stated, if §4.1's counter-reading is taken. It is omitted. §4.1 itself
+   records that under either reading "no case outcome or promotion outcome moves", and adding a sixth
+   element would exceed criterion 1's element count. The fixture keeps the filename
+   `decomposition.md` for the same reason: the checker asserts the document's *content*, not its
+   path. A future task that wants the path and the six headers asserted should add them together,
+   with the fixture moved to `fixture/docs/plans/plan-<ID>.md` — and should expect to inherit
+   `/plan`'s own standing red (`command-contract-resolution-v1.md` row A) while doing so.
+2. **A character class for step 5's `<slug>`.** No document in this repository declares one once
+   step 3 stops embedding the slug in a branch name, so only what *is* declared is asserted: the
+   literal `BATCH ` prefix, a non-empty colon-terminated slug, and a non-empty description. This
+   matters, and is the one place a reader should be suspicious: under a kebab-case reading of
+   `<slug>` this fixture's ledger Titles — `BATCH structured-logging U1: …` — would **fail**, because
+   the interposed `U1`/`U2`/`U3` is a residue of the very `U<n>` unit-ID scheme step 5's amendment
+   abolishes. `T541`'s authorization did not extend to the fixture's ledger half, so those Titles
+   were left byte-identical; a future task holding that authorization should strip the `U<n>` marker,
+   after which `^BATCH [a-z0-9][a-z0-9-]*: ` becomes assertable.
+3. **Self-dependency, lifecycle-status membership, and slug consistency across a batch's rows.** A
+   row naming *itself* in `Depends on` is not treated as a cross-unit dependency (it is not "another
+   unit"; `validate-tasks.py`'s `C13` catches it on the real ledger), `Status` is required non-empty
+   rather than a member of `AGENTS.md`'s lifecycle set (`C4`'s job), and the batch's rows are not
+   required to share one slug. All three are defensible additions; none is declared by §7, and §7's
+   spec is the ceiling.
 
 ## Category
-`tracked_defect`, not `capability_gap`. Nothing prevents a conforming manifest from being written;
-two declared contracts simply disagree about one file, and the disagreement is mechanically
-resolvable in either direction — amend `batch.md` step 5 to name a manifest location that is not the
-7-column ledger (the batch's own `docs/tasks/task-<ID>.md` briefs, or a dedicated manifest file), or
-extend the ledger schema and its validator to carry a branch. Choosing between those needs an
-`ADR-007` adjudication of which document holds authority, which is what a tracked defect is for.
-Resolving it by editing `implementation/knowledge/commands/batch.md`, `AGENTS.md`,
-`docs/tasks/validate-tasks.py` or this fixture is explicitly **out of scope** for the task that
-authored this case (`T528` §1).
+No longer a defect of any flavour. The conflict this case recorded was real, was adjudicated by
+`T535` on `ADR-007` branch 1 against two different higher-authority documents, and was cured by
+amending the command rather than by weakening this check: assertions A and B are both **stronger**
+than the elements they replace, assertion C gained conjuncts, and no field was deleted, no regex
+loosened and no second form admitted (`ADR-007` §5). The case now measures the live contract, which
+is the property it lost the moment step 3 and step 5 were amended — under the superseded checker it
+returned `False` against this very fixture even after the fixture was made fully conforming
+(verified by `T541`, by running the superseded `check()` against the re-authored fixture).
+
+**This does not make `/batch` promotable.** It is `maturity: experimental` and must clear
+`experimental → beta` on a separate component-state decision before `beta → stable` is in question
+(`batch-manifest-resolution-v1.md` §8).
 
 ## Provenance
-**Ledger: real schema, real header.** `fixture/docs/tasks/active-tasks.md` carries this repository's
-own real title, header and separator lines copied byte-identically, with three added 7-column unit
-rows using the next free IDs at authoring time (`T534`–`T536`; the highest real ID in either ledger
-is `T533`). The schema the case collides with is therefore the real one, not a restatement.
+**Ledger: real schema, real header, and not edited by `T541`.**
+`fixture/docs/tasks/active-tasks.md` carries this repository's own real title, header and separator
+lines copied byte-identically, with three 7-column unit rows using the next free IDs at authoring
+time (`T534`–`T536`). It **already conformed** to the amended step 5 with no edit — 7 cells,
+`^T\d{3,}$` IDs, real agent-slug `Owner`s, a valid `Status`, `Priority`, `—` in `Depends on`, and a
+well-formed date, all confirmed against `validate-tasks.py`'s own `parse_table_rows`, `ID_RE` and
+`STATUS_SET`. That a fixture hand-authored to demonstrate the *old* contract's impossibility
+satisfies the amended one unedited is evidence that the amended shape is the natural one, and it is
+why `T541` deliberately left this half alone. The one qualification is in
+§ "What is deliberately not asserted" item 2.
 
-**`decomposition.md` is hand-authored.** Surveys:
+**`decomposition.md` is hand-authored, and was re-authored by `T541`.** `ADR-007` §5 permits exactly
+this — "Re-authoring a *hand-authored fixture* to a corrected contract is permitted and is not
+relaxation: the check's strength is unchanged and only the example moves" — and `ADR-007`'s
+sibling-fate corollary's first row ("branch 1, where the amendment changes only a *name or path*")
+is the limb `T541` took: the manifest's unit-ID scheme and branch pattern are **names**, the
+branch's move from a ledger column to a named plan-document section is a **path**, the two artifact
+classes the case reads are the same two files as before, and the ledger half needed no edit at all.
+The change it decomposes (migrating ad-hoc `print()` diagnostics to a shared structured logger) is
+illustrative and the units' contents are not graded — only their structure, their branch naming,
+their agreement with the ledger, and their mutual independence.
+
+Surveys from the original authoring, unchanged and still true of `batch/*`:
 
 ```
-git branch -a --list 'batch/*'                                   ->  0 branches
+git branch -a --list 'batch/*'                                             ->  0 branches
 grep -c 'batch/' docs/tasks/active-tasks.md docs/tasks/completed-tasks.md  ->  0, 0
 ```
 
-No `/batch` run has ever produced a committed artifact here, so there was nothing real to source it
-from; that absence is documented rather than worked around, following
-`new-feature-plan-doc-compliant/brief.md`'s precedent. The change it decomposes (migrating ad-hoc
-`print()` diagnostics to a shared structured logger) is illustrative and the units' contents are not
-graded by the check — only their structure, branch naming and mutual independence.
+No `/batch` run has ever produced a committed artifact here, so there was nothing real to source the
+decomposition from; that absence is documented rather than worked around, following
+`new-feature-plan-doc-compliant/brief.md`'s precedent.
