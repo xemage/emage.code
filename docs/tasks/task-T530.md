@@ -32,6 +32,20 @@ alone twice because it fell outside both tasks' authorizations.
 | `tests/golden/open/skillify-skill-file-template-drift/brief.md` | prose only |
 | `tests/golden/open/skillify-skill-file-template-drift/case.yaml` | the `known_failing_reason` **text** only |
 
+### 1.2 Third defect in the same case, added 2026-09-26 after T528
+
+Wave 2's implementer found a **second** staleness in that same `brief.md`, distinct from §1.1's: its
+`## What this checks` presents a *verbatim* quote listing `## Trigger` and `## Steps` — sections
+`skillify.md` **no longer declares** after `T527` renamed them to `## When to Use` and `## Procedure`.
+`T531` correctly re-derived `expect.py` to check the amended five but was not authorized to touch
+`brief.md`, so **the case's stated contract and its actual check now disagree**, and the brief's own
+survey table measures two rows corresponding to no declared section.
+
+The verdict is unaffected (still `known_failing`). Correct the quote to the five sections
+`skillify.md` declares today, and drop or re-label the two survey rows that no longer correspond to
+anything. **Verify the amended quote against `implementation/knowledge/commands/skillify.md` itself,
+not against this brief.**
+
 **Nothing else.** Not `case.yaml`, not `expect.py`, not `fixture/`, not `scripts/scorecard.py`, not
 any other case, and nothing under `tests/golden/held-out/`. §5.1 forbids you extending this grant —
 if more seems needed, **stop and report a blocker**.
