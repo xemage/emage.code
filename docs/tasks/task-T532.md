@@ -2,7 +2,7 @@
 
 **ID:** T532
 **Owner:** Solution Architect
-**Status:** pending
+**Status:** in_review
 **Priority:** P2
 **Tier:** judgment
 **Affects:** —

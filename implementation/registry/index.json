@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-09-26T14:54:44+00:00",
+  "generatedAt": "2026-09-26T18:26:19+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -1193,7 +1193,7 @@
       "category": "command",
       "name": "skillify",
       "path": "commands/skillify.md",
-      "checksum": "835dddc447a2b255f545294c12ac9495d10ab73affef0492891b77d3f8288720",
+      "checksum": "631d1803ee1d004a7f77a7d08325fba6378462f1c872134ca157e1f9c560a154",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1977,7 +1977,7 @@
       "category": "skill",
       "name": "skillify",
       "path": "skills/skillify/SKILL.md",
-      "checksum": "68d4f9f775e10054e0bfda3df949e14d9eb354317ce31422a010469a6ae389ff",
+      "checksum": "a2b303f47a86416b67fdd8d8cc7a797cfe525247e51dafe99edc64b564e453e7",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
