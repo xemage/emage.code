@@ -51,6 +51,16 @@ ACTIVE_BRIEF = """# T901 — A synthetic active task
 **Created:** 2026-09-26
 """
 
+SECOND_ACTIVE_BRIEF = """# T902 — A second synthetic active task
+
+**ID:** T902
+**Owner:** demo-agent
+**Status:** pending
+**Priority:** P2
+**Affects:** —
+**Created:** 2026-09-26
+"""
+
 COMPLETED_BRIEF = """# T900 — A synthetic completed task
 
 **ID:** T900
@@ -68,12 +78,18 @@ def _write(path: Path, text: str) -> None:
 
 
 def _run(tmp: Path, depends: str) -> subprocess.CompletedProcess[str]:
-    """Drive the validator over a two-row ledger: active T901, completed T900."""
+    """Drive the validator over active T901 and T902 plus completed T900.
+
+    T902 exists so that "a dependency on another active task" can be expressed
+    without the row depending on itself -- a self-edge is C13's defect (T540),
+    not C12's, and it would fail these cases for the wrong reason.
+    """
     tasks = tmp / "docs" / "tasks"
     _write(
         tasks / "active-tasks.md",
         ACTIVE_HEADER
-        + f"| T901 | A synthetic active task | demo-agent | pending | P2 | {depends} | 2026-09-26 |\n",
+        + f"| T901 | A synthetic active task | demo-agent | pending | P2 | {depends} | 2026-09-26 |\n"
+        + "| T902 | A second synthetic active task | demo-agent | pending | P2 | — | 2026-09-26 |\n",
     )
     _write(
         tasks / "completed-tasks.md",
@@ -81,6 +97,7 @@ def _run(tmp: Path, depends: str) -> subprocess.CompletedProcess[str]:
         + "| T900 | A synthetic completed task | demo-agent | 2026-09-25 | done |\n",
     )
     _write(tasks / "task-T901.md", ACTIVE_BRIEF)
+    _write(tasks / "task-T902.md", SECOND_ACTIVE_BRIEF)
     _write(tasks / "task-T900.md", COMPLETED_BRIEF)
     return subprocess.run(
         ["python3", str(VALIDATOR)],
@@ -118,7 +135,7 @@ class TestDependsOnLedgerCheck(unittest.TestCase):
         self._expect_clean("T900")
 
     def test_dependency_on_another_active_task_resolves(self):
-        self._expect_clean("T901")
+        self._expect_clean("T902")
 
     def test_em_dash_placeholder_declares_no_dependency(self):
         self._expect_clean("—")
@@ -135,7 +152,7 @@ class TestDependsOnLedgerCheck(unittest.TestCase):
         The parenthetical annotations are not part of the edge; each ID inside
         the cell still has to resolve.
         """
-        self._expect_clean("T900 (done), T901 (pending)")
+        self._expect_clean("T900 (done), T902 (pending)")
 
     def test_one_dangling_id_among_several_still_fires(self):
         self._expect_dangling("T900 (done), T998 (pending)", "T998")
