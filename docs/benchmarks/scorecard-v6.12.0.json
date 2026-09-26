@@ -80,17 +80,17 @@
         "status": "expected_pass"
       },
       {
-        "actual_result": "fail",
-        "bucket": "known_failing",
+        "actual_result": "pass",
+        "bucket": "pass",
         "case_dir": "golden/open/batch-manifest-ledger-schema-conflict",
         "command": "/batch",
         "error": null,
         "id": "batch-manifest-ledger-schema-conflict",
-        "known_failing_category": "tracked_defect",
+        "known_failing_category": null,
         "location": "open",
         "model_outcome": null,
         "model_tier": null,
-        "status": "known_failing"
+        "status": "expected_pass"
       },
       {
         "actual_result": "pass",
@@ -392,27 +392,27 @@
         },
         "open": {
           "capability_gap": 3,
-          "known_failing": 7,
-          "pass": 16,
+          "known_failing": 6,
+          "pass": 17,
           "regression": 0,
           "total": 23,
-          "tracked_defect": 4,
+          "tracked_defect": 3,
           "unexpected_pass": 0
         }
       },
       "capability_gap": 4,
-      "known_failing": 9,
+      "known_failing": 8,
       "regressions": 0,
       "total_cases": 29,
-      "total_fail": 9,
-      "total_pass": 20,
-      "tracked_defect": 5,
+      "total_fail": 8,
+      "total_pass": 21,
+      "tracked_defect": 4,
       "unexpected_pass": 0,
       "unrecognized_status": 0
     }
   },
   "run_metadata": {
-    "generated_at": "2026-09-26T04:01:16Z",
+    "generated_at": "2026-09-26T15:09:35Z",
     "golden_version": "v6.12.0",
     "runner": "scripts/scorecard.py",
     "schema_version": "golden-scorecard-v1"
