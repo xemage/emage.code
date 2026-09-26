@@ -2,12 +2,13 @@
 
 **ID:** T529
 **Owner:** Backend Developer
-**Status:** in_review
+**Status:** done
 **Priority:** P2
 **Tier:** mechanical
 **Affects:** —
 **Depends on:** —
 **Created:** 2026-09-25
+**Completed:** 2026-09-26
 **Based on:** `docs/plans/plan-073-skillify-adjudication-and-wave2.md` §2;
 `docs/tasks/task-T525.md`; `implementation/runtime/handoff/schema-v1.json`.
 

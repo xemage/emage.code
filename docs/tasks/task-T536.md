@@ -2,12 +2,13 @@
 
 **ID:** T536
 **Owner:** Tech Lead
-**Status:** in_review
+**Status:** done
 **Priority:** P2
 **Tier:** standard
 **Affects:** —
 **Depends on:** —
 **Created:** 2026-09-26
+**Completed:** 2026-09-26
 **Based on:** `docs/plans/plan-076-wave2-findings.md` §2; `docs/tasks/task-T528.md`;
 `docs/artifacts/protected-paths-v1.md` §5.
 
