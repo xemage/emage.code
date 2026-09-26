@@ -76,8 +76,8 @@ rename, enumerate every reference you updated and every one you deliberately lef
    and **commit both files**. Not protected. Confirm held-out rows stay redacted.
 2. **Two evaluator-hash tests will go red.** Expected, **not yours to fix.** Recompute read-only via
    `golden_harness.evaluator_hash.compute_current_digests(Path('.'))`, report both digests against
-   `evaluator-hash-known-good-v8.json`, and stop. `scripts_scorecard` must come back byte-identical to
-   v8. Compute **post-commit** — the digest walks git-tracked files only.
+   `evaluator-hash-known-good-v9.json`, and stop. `scripts_scorecard` must come back byte-identical to
+   v9. Compute **post-commit** — the digest walks git-tracked files only.
 
 ## 6. Verification
 
