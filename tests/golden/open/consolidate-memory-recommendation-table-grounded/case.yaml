@@ -1,0 +1,4 @@
+id: consolidate-memory-recommendation-table-grounded
+command: /consolidate-memory
+status: expected_pass
+tags: [consolidate-memory, recommendation-table, action-vocabulary, entry-set-grounding, real-memory-corpus]

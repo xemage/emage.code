@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "algorithm": "sha256",
+  "digests": {
+    "tests_golden": "8f33cfa6ce5e3b239a111f23fe82e785ccd0efbafea89c2214f8e5717d2a6ae6",
+    "scripts_scorecard": "45346c178c7f6d92101130d898f55dfaad908aa7e5ae669ce1faac99a51192d6"
+  },
+  "computed_from_commit": "09a4e34eaa8a7cb58a26407c5b939d8c68b69278",
+  "computed_at": "2026-09-26T04:20:00Z",
+  "protected_paths": {
+    "tests_golden": "tests/golden",
+    "scripts_scorecard": "scripts/scorecard.py"
+  },
+  "supersedes": "evaluator-hash-known-good-v6.json",
+  "reason": "T528 authored golden-suite coverage wave 2 under the file-scoped protected-path authorization in docs/tasks/task-T528.md SS1 -- five NEW case directories under tests/golden/open/ for /consolidate-memory, /bug-report, /batch, /new-project and /sprint-status, each of which previously had no golden case and was blocked from stable by criterion 4 alone. Four are expected_pass and one (/batch) is known_failing / tracked_defect: batch.md step 5 declares a five-field manifest (Unit ID, description, assigned agent, branch, status) to be written into docs/tasks/active-tasks.md, but AGENTS.md pins that file to exactly ID|Title|Owner|Status|Priority|Depends on|Last update and docs/tasks/validate-tasks.py hard-fails any other cell count -- the `branch` field maps onto no column and the two spare columns are taken, so step 5's manifest cannot be written into the file step 5 names. Demonstrated in both directions rather than argued: the schema-conforming fixture draws zero validator failures, and appending the declared manifest makes check() return True while the real validator emits FAIL C2 on both the manifest's data row and its own header. /batch therefore does not promote, and no fixture choice could have made it green without asserting a shape the ledger's validator rejects or dropping a declared field, which ADR-007 SS5 forbids. Only tests_golden drifts; scripts_scorecard is byte-identical to v6, which is both the proof nothing outside the five authorized case directories was touched and confirmation that the value T533 newly moved is now stable. No existing case directory was modified, nothing under tests/golden/held-out/ was touched, and docs/benchmarks/scorecard-v6.12.0.{json,md} was regenerated per T533's new drift gate (24 -> 29 cases, 16 -> 20 pass, tracked_defect 4 -> 5, zero regressions) with all six held-out rows still redacted as held-out-case-<n> / <redacted>. The refresh was escalated for human sanction by the implementing agent rather than performed by it, the seventh such occurrence and the seventh to be respected, and was explicitly authorized by the user before this file was written.",
+  "update_policy": "Manual only, never automatic. A future legitimate update goes through docs/artifacts/protected-paths-v1.md SS5's exception path and produces evaluator-hash-known-good-v8.json -- this file (v7) is never edited in place, and v1 through v6 are retained unmodified as the historical record. See docs/artifacts/evaluator-hash-check-v1.md for the full policy."
+}
