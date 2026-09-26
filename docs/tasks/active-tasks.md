@@ -6,10 +6,10 @@
 | T532 | Adjudicate /skillify's declared output path | solution-architect | pending | P2 | T531 | 2026-09-25 |
 | T538 | team-status.md carries the same in_review colour gap | tech-lead | pending | P2 | — | 2026-09-26 |
 | T539 | golden harness has no array-cardinality guard | qa-engineer | pending | P2 | — | 2026-09-26 |
-| T541 | Re-derive /batch's checker and resolve the sibling-corollary question | backend-developer | pending | P2 | T535 | 2026-09-26 |
-| T542 | orchestrator.md instructs a protected-branch violation | tech-lead | pending | P2 | — | 2026-09-26 |
+| T543 | Root projections are refreshed by no generator and checked by no gate | devops-engineer | pending | P2 | — | 2026-09-26 |
+| T544 | Three loose ends in the /batch golden case | qa-engineer | pending | P2 | T541 | 2026-09-26 |
 
-> **6 active rows (`T530`, `T532`, `T538`, `T539`, `T541`, `T542`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **6 active rows (`T530`, `T532`, `T538`, `T539`, `T543`, `T544`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
@@ -432,6 +432,34 @@
 > that cannot work, in exactly the change classes an orchestrator handles most. `T541` and `T542` do
 > not collide and may run in parallel, but **neither may run alongside `T538`**, which also contends
 > for the registry and projections.
+
+> **`T541` and `T542` closed 2026-09-26 — see `completed-tasks.md`. `T543`/`T544` scoped per
+> `plan-079`.** **`T542`'s substantive finding: the defect was three encodings in one section, not the
+> two lines that this orchestrator, `plan-078` and `T535` all located.** Beyond the explicit grant,
+> line 91's *"MANDATORY before any **code** commit"* excluded docs **by wording**, and lines 102–103's
+> *"NEVER commit … **for feat/fix/refactor/test work**"* excluded them **by omission** from an
+> enumerated list. **A bare deletion would have left the exemption standing.** Generalisable: when
+> removing a permission, check whether the surrounding framing sentence and any enumerated guard
+> re-grant it by wording or by omission. **`T541` proved the superseded checker was unfalsifiable
+> rather than asserting it** — the old `expect.py` run against the *fully conforming* new fixture also
+> returns `False` — and answered the sibling-corollary question `T535` deliberately left, on an
+> argument neither brief nor spec contained: **the pre-amendment ledger row for a batch unit was never
+> an instantiable artifact, and an amendment cannot change the class of an artifact that had no
+> instances.** It also **corrected a claim this orchestrator made twice**: the fixture's ledger Titles
+> read `BATCH <slug> U<n>: …`, so **the abolished `U<n>` scheme survived inside the evidence offered
+> for its own abolition** — literally "already prefixed", but misleading as evidence of conformance.
+> **`T543` is the systemic one.** The repo-root projections are refreshed by **no generator** and
+> checked by **no gate**: `sync.mjs` writes only under `implementation/`, and `sync.mjs --check`
+> reports "no drift across 577 files" regardless — so **`.claude/agents/orchestrator.md`, which the
+> running orchestrator actually reads, still carries the defect `T542` just fixed.** 5 of 19 root
+> command projections already differed before `T536`. It is asked the prior question first — **is root
+> drift a defect at all**, or is that tree a target-project artifact that is *supposed* to lag? —
+> because those are different repairs and it must pick one. **The queue has held at 6 for three rounds**
+> and `plan-079` §3 names why: every task is instructed to report rather than work around, so each
+> round closes two or three and surfaces two or three. That is the system working, not drift — but the
+> phase will not converge by executing findings alone, and the remaining items should eventually be
+> triaged for whether they are worth doing at all. `T544`'s case-id rename is the first candidate for
+> **correctly declined**, and its brief says so.
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)

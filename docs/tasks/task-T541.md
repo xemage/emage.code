@@ -2,12 +2,13 @@
 
 **ID:** T541
 **Owner:** Backend Developer
-**Status:** in_review
+**Status:** done
 **Priority:** P2
 **Tier:** judgment
 **Affects:** —
 **Depends on:** T535 (merged 2026-09-26)
 **Created:** 2026-09-26
+**Completed:** 2026-09-26
 **Based on:** `docs/plans/plan-078-t535-followups.md` §1;
 `docs/artifacts/batch-manifest-resolution-v1.md` §7 (the element-for-element spec);
 `docs/decisions/ADR-007-command-contract-authority.md`; `docs/artifacts/protected-paths-v1.md` §5.

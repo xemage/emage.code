@@ -2,12 +2,13 @@
 
 **ID:** T542
 **Owner:** Tech Lead
-**Status:** in_review
+**Status:** done
 **Priority:** P2
 **Tier:** standard
 **Affects:** —
 **Depends on:** —
 **Created:** 2026-09-26
+**Completed:** 2026-09-26
 **Based on:** `docs/plans/plan-078-t535-followups.md` §2;
 `docs/artifacts/batch-manifest-resolution-v1.md` (where it was found);
 `docs/decisions/ADR-007-command-contract-authority.md`.
