@@ -5,8 +5,11 @@
 | T529 | handoff schema permits a handoff with zero writable paths | backend-developer | pending | P2 | — | 2026-09-25 |
 | T530 | Correct the stale new-feature-real-checkpoint-format-drift brief | technical-writer | pending | P2 | — | 2026-09-25 |
 | T532 | Adjudicate /skillify's declared output path | solution-architect | pending | P2 | T531 | 2026-09-25 |
+| T535 | Adjudicate /batch step 5's manifest against the ledger schema | solution-architect | pending | P2 | — | 2026-09-26 |
+| T536 | /sprint-status declares no colour for in_review | tech-lead | pending | P2 | — | 2026-09-26 |
+| T537 | validate-tasks.py silently accepts a dangling Depends on | backend-developer | pending | P2 | — | 2026-09-26 |
 
-> **3 active rows (`T529`, `T530`, `T532`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **6 active rows (`T529`, `T530`, `T532`, `T535`–`T537`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
@@ -348,6 +351,28 @@
 > being that brief §5 cited evaluator-hash `-v4` when `-v6` was current: because `T533` deliberately
 > moved `scripts_scorecard`, a literal reader of that instruction would have **misdiagnosed a clean
 > repo as tampered**.
+
+> **`T535`–`T537` scoped 2026-09-26 per `plan-076`; the fourth wave-2 finding folded into `T530`.**
+> All four defects wave 2 surfaced now have owners rather than a ledger note — `T518`'s rule that **a
+> hand-fix plus a ledger note is not a fix**. **`T535`** adjudicates `/batch`: `AGENTS.md` outranks a
+> command file so `ADR-007` branch 1 may fire, **but branch 1 firing does not say *how* to amend** —
+> a batch of parallel units plausibly needs somewhere to record branches, so "delete the requirement"
+> may be the wrong repair even if the contract is what must change. The brief deliberately withholds
+> a preferred answer and states that reaching "drop `branch`" *on the merits* is a good outcome while
+> reaching it *because it was the smallest edit* is not. **`T536`** closes a gap worth recording as a
+> limitation of the ladder, not just of the command: **`/sprint-status` was promoted to `stable` by
+> `T534` while carrying it.** Step 8 requires four node sources and declares three non-`done`
+> colours, so an `in_review` node must be drawn and cannot be coloured — and its only golden case
+> **cannot reach the gap**, since that fixture's four rows are all `pending` and its lone `in_review`
+> occurrence is the status-legend line, not a data row (verified). The case is honest and the criteria
+> were met, so this is **not** grounds to un-promote — but it means **`stable` certifies "passes the
+> cases that exist", not "has no known contract gaps"**, and this is the first concrete instance where
+> those differ. Whether to extend the case is posed to `T536` as a separate question it must answer
+> rather than assume, with no `tests/golden/**` grant. **`T537`** adds the dangling-dependency check
+> `validate-tasks.py:203` never had — it destructures `Depends on` into `_`. Two traps written in: a
+> satisfied dependency legitimately points into `completed-tasks.md` (`T532` → completed `T531`), so
+> resolving only against the active ledger would flag every satisfied edge; and **a false positive
+> there blocks all work**, since that validator gates every ledger edit and runs in CI.
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
