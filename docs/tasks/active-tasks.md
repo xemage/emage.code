@@ -6,9 +6,8 @@
 | T529 | handoff schema permits a handoff with zero writable paths | backend-developer | pending | P2 | — | 2026-09-25 |
 | T530 | Correct the stale new-feature-real-checkpoint-format-drift brief | technical-writer | pending | P2 | — | 2026-09-25 |
 | T532 | Adjudicate /skillify's declared output path | solution-architect | pending | P2 | T531 | 2026-09-25 |
-| T533 | Settle and fix the committed golden scorecard artifact | devops-engineer | pending | P2 | — | 2026-09-26 |
 
-> **5 active rows (`T528`–`T530`, `T532`, `T533`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **4 active rows (`T528`–`T530`, `T532`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
@@ -311,6 +310,26 @@
 > `T533` recommends **tracking it under a drift gate**, matching how this repo already gates
 > `implementation/registry/` and the platform projections, with a narrow §5 grant for an **additive
 > check mode only** in the protected `scripts/scorecard.py`.
+
+> **`T533` closed 2026-09-26 — see `completed-tasks.md`. `T528`'s brief amended as a direct
+> consequence.** The scorecard artifact is now **regenerated and gated**: it was a stale build
+> output, and the clinching evidence was one `plan-075` missed — the committed file was **missing
+> `model_tier`/`model_outcome` on all 20 rows**, schema fields added at `T443`. A frozen baseline is
+> frozen at *some valid* schema; that one was frozen at a schema the script no longer emits.
+> **`plan-075` §0's causal claim was wrong and is corrected on the record:** the recurring dirty
+> `git status` was never caused by staleness but by `run_metadata.generated_at`, which differs every
+> run by design — a run on the freshly-regenerated artifact still dirties both files. The fix was a
+> **brief-authoring** change, and it has now been applied: verification blocks use the new read-only
+> `scripts/scorecard.py --check`. **`T528`'s brief has been amended before dispatch**, because
+> `T533`'s gate changes what that task must do: adding five golden cases now *fails* the drift gate
+> until `docs/benchmarks/` is regenerated, so **regenerating and committing it is a required step of
+> every future golden-suite task**, not a forbidden one — the opposite of the instruction three
+> earlier tasks worked around. `T528`'s baseline is also updated to **792** tests, with an explicit
+> note to measure it rather than trust the number, since three circulating baselines in this phase
+> were all wrong at some point. **`scripts_scorecard` moved for the first time since v1** — its
+> constancy across v1–v5 had been cited in five closure records as proof the script was untouched, and
+> `-v6`'s `reason` field records that the chain ends there deliberately and under authorization so it
+> is not misread as tampering.
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)

@@ -96,22 +96,77 @@ byte-identical to v4; if it does not, you touched something you should not have 
 Note: the digest hashes **git-tracked files only**, so `tests_golden` moves only once your new files
 are committed. Compute it post-commit.
 
+## 5.1 NEW since this brief was first written — the scorecard drift gate (T533)
+
+`T533` landed after this brief was scoped and **changes what you must do.** Read this before §6.
+
+`docs/benchmarks/scorecard-v6.12.0.{json,md}` is now **gated**: `tests/functional/test_scorecard_artifact_no_drift.py`
+asserts the committed artifact matches a fresh computation. Your five new cases change that
+computation, so **the gate will fail until you regenerate the artifact.**
+
+**Regenerating it is now a required step of this task, not a forbidden one.** `docs/benchmarks/` is
+**not** a protected path, so this needs no authorization:
+
+```
+python3 scripts/scorecard.py          # WRITE mode — regenerates both artifacts
+```
+
+Then **commit both regenerated files**. Three earlier tasks in this phase reverted
+`docs/benchmarks/` by hand because the committed copy was stale and nobody owned it; that is fixed,
+and the new expectation is the opposite — a golden-suite change that does not refresh the artifact
+now fails a test.
+
+**Two consequences for your report:**
+
+- The regenerated artifact **must keep held-out identities redacted** — held-out rows appear as
+  `held-out-case-<n>` with `case_dir` ending `<redacted>`. `T533`'s test asserts this directly, and
+  `test_golden_held_out_isolation.py` Check B applies to `docs/benchmarks/` because it sits outside
+  `tests/golden/`. A leak here is a **critical** blocker.
+- Your new cases will appear in the artifact by their **real** `open/` IDs. That is correct and
+  expected — only *held-out* identities are redacted.
+
+**Do not use `scripts/scorecard.py` (write mode) as a read-only check.** It rewrites both files on
+every run — `run_metadata.generated_at` is a wall-clock stamp that differs every time, so a run
+always dirties `git status` even when nothing has drifted. For a read-only check use:
+
+```
+python3 scripts/scorecard.py --check  # read-only; writes nothing; exit 0 in sync, 1 on drift
+```
+
+This brief previously implied a clean `git status` after running the scorecard. **That was
+unreachable and has been corrected** — the earlier wording misdiagnosed the cause as staleness when
+it is the timestamp.
+
 ## 6. Verification
 
 ```
-python3 tests/run.py                 # BASELINE FIRST, before any change
-python3 scripts/scorecard.py         # read it; do not modify it
+python3 tests/run.py                  # BASELINE FIRST, before any change
+python3 scripts/scorecard.py          # WRITE mode — required, see §5.1; commit the result
+python3 scripts/scorecard.py --check  # read-only confirmation; must exit 0 once committed
 python3 -m pytest tests/functional/test_golden_held_out_isolation.py -q
+python3 -m pytest tests/functional/test_scorecard_artifact_no_drift.py -q
 python3 implementation/scripts/check-maturity.py --root implementation
 python3 docs/tasks/validate-tasks.py
 git status --porcelain
 ```
 
-**Full 774-test `tests/run.py`, not `pytest tests/functional` (734)** — the difference contains
-guards that have already broken one MR in this phase. Expected after your change: exactly the two
-evaluator-hash failures and **nothing else**; any third is yours to explain. `check-maturity.py`
-must still be `79 components checked, 0 failing` with an **unchanged distribution** — this task
-promotes nothing.
+**Full `tests/run.py`, not `pytest tests/functional`** — the difference contains guards that have
+already broken one MR in this phase. **The baseline is now 792 tests / OK / 23 skipped** on
+`develop` (it was 774 before `T533` added 18 gate tests; measure it yourself rather than trusting
+this number — three different baselines have circulated in this phase's briefs and all three were
+wrong at some point).
+
+Expected after your change: exactly the two evaluator-hash failures from §5 and **nothing else**;
+any third is yours to explain. In particular `test_scorecard_artifact_no_drift.py` must **pass**
+once you have regenerated and committed the artifact — if it still fails, the artifact is not
+committed.
+
+`check-maturity.py` must still be `79 components checked, 0 failing` with an **unchanged
+distribution** — this task promotes nothing.
+
+`git status --porcelain` should be **empty after you commit**, including `docs/benchmarks/`. If it
+shows only a `generated_at` change, that is the timestamp behaviour described in §5.1 and is not
+drift — `--check` is the authority on whether real drift exists.
 
 Call each new `check()` directly against its own fixture and report the boolean, rather than
 inferring it from the scorecard.
