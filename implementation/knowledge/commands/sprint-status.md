@@ -1,7 +1,7 @@
 ---
 description: "Get a sprint status report showing progress, blockers, completed and remaining work."
 agent: "orchestrator"
-maturity: experimental
+maturity: stable
 ---
 
 Generate a sprint status report for the current sprint:

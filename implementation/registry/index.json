@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-09-25T21:37:57+00:00",
+  "generatedAt": "2026-09-26T05:03:12+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -829,8 +829,8 @@
       "category": "command",
       "name": "bug-report",
       "path": "commands/bug-report.md",
-      "checksum": "160b5faef5ab2239bfe624ca6b45eb1628dc5ccf9e5747cc56e7babff5269183",
-      "maturity": "experimental",
+      "checksum": "d9d0202b99d66ed63b5b6f8852527ab8d39b847c806c7e74c1f1a608aad3fe64",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -885,8 +885,8 @@
       "category": "command",
       "name": "consolidate-memory",
       "path": "commands/consolidate-memory.md",
-      "checksum": "f68da8a8c87bc476cf93731ecfd9a9f49d97571e61b09e32d33b48990965327b",
-      "maturity": "experimental",
+      "checksum": "3548e1122dbaa2e5172e767271ad3ff78ef3ec2d8c8657dd5f9ac327e278987e",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1053,8 +1053,8 @@
       "category": "command",
       "name": "new-project",
       "path": "commands/new-project.md",
-      "checksum": "1b66a3033d53386db4576ed2ea5294ce37741c2891d5e07f88eeccc7906190dc",
-      "maturity": "experimental",
+      "checksum": "fcdffcab39a6bde9fe01c7e69ea09af977adf148dae05e4a4325888841994dc9",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1221,8 +1221,8 @@
       "category": "command",
       "name": "sprint-status",
       "path": "commands/sprint-status.md",
-      "checksum": "1041562fa10ecd9067c6dec400fe8c4b1815277a2e630499ae59d4795a0bdb16",
-      "maturity": "experimental",
+      "checksum": "a293f3a86aa80716d40eac359da479ca39c0f94bdcf00aefbfab8a6f4456a788",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",

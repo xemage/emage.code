@@ -2,12 +2,11 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T528 | Golden-case coverage wave 2: five thin-corpus commands | qa-engineer | pending | P2 | — | 2026-09-25 |
 | T529 | handoff schema permits a handoff with zero writable paths | backend-developer | pending | P2 | — | 2026-09-25 |
 | T530 | Correct the stale new-feature-real-checkpoint-format-drift brief | technical-writer | pending | P2 | — | 2026-09-25 |
 | T532 | Adjudicate /skillify's declared output path | solution-architect | pending | P2 | T531 | 2026-09-25 |
 
-> **4 active rows (`T528`–`T530`, `T532`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **3 active rows (`T529`, `T530`, `T532`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
@@ -330,6 +329,25 @@
 > constancy across v1–v5 had been cited in five closure records as proof the script was untouched, and
 > `-v6`'s `reason` field records that the chain ends there deliberately and under authorization so it
 > is not misread as tampering.
+
+> **`T528` and `T534` closed 2026-09-26 — see `completed-tasks.md`. Commands go from 5 of 19 to
+> 9 of 19 `stable`.** Wave 2 delivered **4 green, 1 red**, and `T534` promoted exactly the four.
+> **`/batch` is deliberately not promoted**: all five were flipped to `stable` together to measure,
+> and its `known_failing` case blocked exactly that one component while the other four passed clean
+> — **the second consecutive wave where that held**, after `T526`'s `/skillify`. *The same authoring
+> pass that earned four promotions also cost one, twice running.* **`/batch`'s red is a real contract
+> conflict**: `batch.md` step 5 declares a five-field manifest including `branch` to be written into
+> `active-tasks.md`, which `AGENTS.md` pins to seven columns with no `branch` and whose validator
+> hard-fails any other cell count — needs an `ADR-007` adjudication. **Four defects now need rows,
+> queued for the next step and listed here so they are not lost:** (1) `/batch`'s schema conflict;
+> (2) `/sprint-status` declares no colour for `in_review` though step 8 requires four node sources;
+> (3) **`validate-tasks.py:203` discards the `Depends on` cell**, so a dangling dependency passes
+> `PASS` silently; (4) the `skillify` case's `brief.md` now contradicts its own `expect.py` after
+> `T527`/`T531` — same defect class `T530` already tracks, and the natural home for it.
+> **Three corrections to this orchestrator's own brief are recorded in `T528`'s row**, the sharpest
+> being that brief §5 cited evaluator-hash `-v4` when `-v6` was current: because `T533` deliberately
+> moved `scripts_scorecard`, a literal reader of that instruction would have **misdiagnosed a clean
+> repo as tampered**.
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
