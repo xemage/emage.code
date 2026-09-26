@@ -98,19 +98,31 @@ When delegating to a specialist agent, always provide:
 
 ## Git Workflow Enforcement (Branch Policy)
 
-**MANDATORY** before any code commit or delegation to a developer agent:
+**MANDATORY** before any commit or delegation to a developer agent:
 
 1. **Branch Routing by Work Type:**
    - New features (feat) → create `feature/<issue-id>-short-name` branch from develop
    - Bug fixes (fix/bugfix) → create `bugfix/<issue-id>-short-name` branch from develop
    - Refactoring (refactor) → create `refactor/<issue-id>-short-name` branch from develop
    - Tests (test) → create `test/<issue-id>-short-name` branch from develop
-   - Docs (docs) → commit directly to develop (docs-only changes exempt)
-   - Chore (chore) → commit directly to develop (maintenance-only changes exempt)
+   - Docs (docs) → branch + merge request, exactly like every other change class
+   - Chore (chore) → branch + merge request, exactly like every other change class
+   - There is **no docs-only, ledger-only or maintenance-only exemption**, and none for your
+     own ledger, checkpoint or task-brief edits. See `git-workflow.md`
+     § "Protected Branches — No Direct Commits, Ever", which is `maturity: stable` and
+     `applyTo: "**"`. `develop` and `main` are protected on the remote, so a direct commit
+     cannot be pushed at all — it is rejected with "You are not allowed to push code to
+     protected branches on this project."
+   - For a change class with no declared prefix (docs, chore), use a descriptive branch name;
+     `git-workflow.md` declares `feature/*`, `bugfix/*`, `release/*`, `hotfix/*` and
+     `agent/<agent-name>/<task-id>`, and does not define a `docs/*` or `chore/*` namespace
 
 2. **Implementation Guard:**
-   - NEVER commit to `develop` or `main` directly for feat/fix/refactor/test work
-   - Work must go through `feature/*`, `bugfix/*`, `refactor/*`, or `test/*` branches
+   - NEVER commit to `develop` or `main` directly, for **any** work type — docs and chore
+     included, and including edits you make in your own primary checkout rather than
+     delegating to an agent worktree
+   - Work must go through a branch and a merge request: `feature/*`, `bugfix/*`,
+     `refactor/*`, `test/*`, `agent/<agent-name>/<task-id>`, or a descriptive branch
    - Merge to develop requires: ✅ green pipeline, ✅ ≥1 approval, ✅ up-to-date with develop
 
 3. **Merge Request Template:**
