@@ -4,11 +4,12 @@
 |----|-------|-------|--------|----------|-----------|-------------|
 | T530 | Correct the stale new-feature-real-checkpoint-format-drift brief | technical-writer | pending | P2 | — | 2026-09-25 |
 | T532 | Adjudicate /skillify's declared output path | solution-architect | pending | P2 | T531 | 2026-09-25 |
-| T535 | Adjudicate /batch step 5's manifest against the ledger schema | solution-architect | pending | P2 | — | 2026-09-26 |
 | T538 | team-status.md carries the same in_review colour gap | tech-lead | pending | P2 | — | 2026-09-26 |
 | T539 | golden harness has no array-cardinality guard | qa-engineer | pending | P2 | — | 2026-09-26 |
+| T541 | Re-derive /batch's checker and resolve the sibling-corollary question | backend-developer | pending | P2 | T535 | 2026-09-26 |
+| T542 | orchestrator.md instructs a protected-branch violation | tech-lead | pending | P2 | — | 2026-09-26 |
 
-> **5 active rows (`T530`, `T532`, `T535`, `T538`, `T539`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **6 active rows (`T530`, `T532`, `T538`, `T539`, `T541`, `T542`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
@@ -411,6 +412,26 @@
 > pre-answered:** a grep for the shared Mermaid block finds exactly **two** copies, `sprint-status.md`
 > (already fixed by `T536`) and `team-status.md`. **There is no third instance** — so this is two
 > instances of a copied section, not an unbounded pattern.
+
+> **`T535` closed 2026-09-26 — see `completed-tasks.md`. `T541`/`T542` scoped per `plan-078`.**
+> `ADR-007` branch 1 fired **twice** on `/batch`, against two different higher authorities, and the
+> amendment **deleted nothing** — all five of step 5's declared fields survive with exactly one home
+> each. **Three of this orchestrator's own claims were wrong** and are corrected in the closure row:
+> the conflict was never only step 5 (**step 3 carries an independent branch-1 defect against the
+> `stable` `git-workflow.md`**, and the case's `expect.py` actively asserts the wrong form); the
+> "branch may be derivable" option was **unsound as stated**, since under the old step 3 the branch
+> was a function of nothing on the ledger; and **`Depends on` was backwards** — not dead weight
+> crowding out `branch` but the column `/batch` most needs, being the only enforcement home for step
+> 2's independence, now validated by `C12`/`C13`/`C14`. **The refusal worth remembering: branch 4
+> would have cleared the promotion criterion today with no command edit at all, and was refused on
+> branch 4's own stated condition.** `/batch` does **not** promote; the amendment makes its contract
+> *harder* to satisfy. **`T542` is the one to read twice**: `orchestrator.md` tells the orchestrator
+> to *"commit directly to develop (docs-only changes exempt)"*, which `git-workflow.md` — `stable`,
+> `applyTo: "**"` — flatly forbids, **and which the remote has already rejected twice**, a precedent
+> `git-workflow.md`'s own Recovery Procedure records verbatim. So an agent file instructs an action
+> that cannot work, in exactly the change classes an orchestrator handles most. `T541` and `T542` do
+> not collide and may run in parallel, but **neither may run alongside `T538`**, which also contends
+> for the registry and projections.
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
