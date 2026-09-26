@@ -2,12 +2,13 @@
 
 **ID:** T535
 **Owner:** Solution Architect
-**Status:** in_review
+**Status:** done
 **Priority:** P2
 **Tier:** judgment
 **Affects:** —
 **Depends on:** T528 (merged 2026-09-26)
 **Created:** 2026-09-26
+**Completed:** 2026-09-26
 **Based on:** `docs/plans/plan-076-wave2-findings.md` §1;
 `docs/decisions/ADR-007-command-contract-authority.md`; `AGENTS.md` § Task Protocol;
 `docs/artifacts/protected-paths-v1.md` §5; `docs/tasks/task-T528.md`.
