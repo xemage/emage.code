@@ -38,6 +38,28 @@ AFFECTS_ENTRY_RE = re.compile(
 )
 AFFECTS_REQUIRED_PRIORITIES = {"P0", "P1"}
 
+# C12 -- a declared `Depends on` must resolve to a real task (T537).
+#
+# Before T537 the sixth cell of an active row was destructured into `_` and
+# never read, so a row declaring a dependency on a task present in *neither*
+# ledger passed `TASK LEDGER: PASS` in silence. Those edges are what
+# `/sprint-status` reconstructs its dependency DAG from, and queue ordering has
+# leaned on them: an unvalidated edge is a dependency nobody is checking.
+#
+# Resolution is against the union of BOTH ledgers. A *satisfied* dependency
+# normally points into `completed-tasks.md` -- resolving against the active
+# ledger alone would flag every satisfied dependency as dangling and make the
+# check worse than useless.
+#
+# Extraction is deliberately token-based rather than shape-based. The corpus
+# writes this cell as the `—` em-dash placeholder, as a bare `T531`, and
+# historically also as `None`, `none`, `T454 (done), T455 (done), T458
+# (pending)`, and prose such as `none (soft: T505)`. Only ID-shaped tokens are
+# resolved and every other character is ignored, so the check fires on exactly
+# the defect it names -- an ID that resolves to nothing -- and never on the
+# annotation style wrapped around it.
+DEPENDS_ID_RE = re.compile(r"\bT\d{3,}\b")
+
 
 class Row:
     def __init__(self, line_no: int, cells: list[str]) -> None:
@@ -189,6 +211,7 @@ def main() -> int:
     active_ids: list[str] = []
     completed_ids: list[str] = []
     active_priorities: list[tuple[int, str, str]] = []
+    active_depends: list[tuple[int, str, str]] = []
 
     # C1, C2, C3, C4, C10 for active
     for row in active_rows:
@@ -200,9 +223,10 @@ def main() -> int:
             )
             continue
 
-        task_id, _, _, status, priority, _, last_update = row.cells
+        task_id, _, _, status, priority, depends_on, last_update = row.cells
         active_ids.append(task_id)
         active_priorities.append((row.line_no, task_id, priority))
+        active_depends.append((row.line_no, task_id, depends_on))
 
         if status in {"done", "cancelled"}:
             add_fail(
@@ -360,6 +384,19 @@ def main() -> int:
         prev_date = parsed
         prev_raw = raw
         prev_line = line_no
+
+    # C12 every ID named in an active row's `Depends on` exists in some ledger
+    known_ids = set(active_ids) | set(completed_ids)
+    for line_no, task_id, raw_depends in active_depends:
+        for dep in DEPENDS_ID_RE.findall(raw_depends):
+            if dep in known_ids:
+                continue
+            add_fail(
+                fails,
+                "C12",
+                f"active-tasks.md:{line_no} {task_id} declares Depends on '{dep}', "
+                "which exists in neither ledger",
+            )
 
     if fails:
         for code, msg in fails:
