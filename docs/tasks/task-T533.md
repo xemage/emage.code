@@ -2,12 +2,13 @@
 
 **ID:** T533
 **Owner:** DevOps Engineer
-**Status:** in_review
+**Status:** done
 **Priority:** P2
 **Tier:** judgment
 **Affects:** —
 **Depends on:** —
 **Created:** 2026-09-26
+**Completed:** 2026-09-26
 **Based on:** `docs/plans/plan-075-scorecard-artifact-staleness.md`; `scripts/scorecard.py`;
 `docs/artifacts/protected-paths-v1.md` §5; `docs/artifacts/golden-suite-format-v1.md`.
 
