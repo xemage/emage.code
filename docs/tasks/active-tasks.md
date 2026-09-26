@@ -2,14 +2,18 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T530 | Correct the stale new-feature-real-checkpoint-format-drift brief | technical-writer | pending | P2 | — | 2026-09-25 |
-| T532 | Adjudicate /skillify's declared output path | solution-architect | pending | P2 | T531 | 2026-09-25 |
+| T530 | Correct the stale new-feature-real-checkpoint-format-drift brief | technical-writer | in_review | P2 | — | 2026-09-26 |
+| T532 | Adjudicate /skillify's declared output path | solution-architect | in_review | P2 | T531 | 2026-09-26 |
 | T538 | team-status.md carries the same in_review colour gap | tech-lead | pending | P2 | — | 2026-09-26 |
 | T539 | golden harness has no array-cardinality guard | qa-engineer | pending | P2 | — | 2026-09-26 |
 | T543 | Root projections are refreshed by no generator and checked by no gate | devops-engineer | pending | P2 | — | 2026-09-26 |
 | T544 | Three loose ends in the /batch golden case | qa-engineer | pending | P2 | T541 | 2026-09-26 |
+| T545 | AGENTS.md Knowledge Base bullet 2 is wrong in two independent ways | tech-lead | pending | P1 | — | 2026-09-26 |
+| T546 | No command declares its audience; two stable commands already broken | solution-architect | pending | P2 | — | 2026-09-26 |
+| T547 | Four commands cite 04-protocols.md, which exists nowhere | technical-writer | pending | P2 | — | 2026-09-26 |
+| T548 | Widen the skillify golden checker to the amended path contract | qa-engineer | pending | P2 | T530, T532 | 2026-09-26 |
 
-> **6 active rows (`T530`, `T532`, `T538`, `T539`, `T543`, `T544`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **10 active rows (`T530`, `T532`, `T538`, `T539`, `T543`, `T544`, `T545`, `T546`, `T547`, `T548`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
