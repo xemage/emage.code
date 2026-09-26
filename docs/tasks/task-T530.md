@@ -2,7 +2,7 @@
 
 **ID:** T530
 **Owner:** Technical Writer
-**Status:** in_review
+**Status:** done
 **Priority:** P2
 **Tier:** mechanical
 **Affects:** —

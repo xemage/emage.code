@@ -2,7 +2,7 @@
 
 **ID:** T546
 **Owner:** Solution Architect
-**Status:** pending
+**Status:** done
 **Priority:** P2
 **Tier:** judgment
 **Affects:** command/discover-skills, command/handoff, command/prepare-release
