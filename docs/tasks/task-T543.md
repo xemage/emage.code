@@ -43,9 +43,62 @@ someone ran `install --update` afterwards.
   while.
 
 **These are different repairs. Pick one and argue it — do not split the difference.** Read
-`AGENTS.md` § Knowledge Base and `scripts/install.sh` before deciding; `AGENTS.md` calls the root
-folders "the installed platform projections" and says the per-platform folders "are **generated** by
-`scripts/sync.mjs`", which is in tension with itself and is part of what you are resolving.
+`AGENTS.md` § Knowledge Base and `scripts/install.sh` before deciding.
+
+### 3.1 AMENDED 2026-09-26 — the tension this brief originally asked you to resolve is already gone
+
+This brief first said `AGENTS.md` was "in tension with itself", calling the root folders "the
+installed platform projections" while saying the per-platform folders "are **generated** by
+`scripts/sync.mjs`". **T545 fixed that** (MR !417, merged). Bullet 2 now states the two-stage
+ownership explicitly: `sync.mjs` writes `implementation/.<platform>/`, and the **top-level** folders
+are written by `scripts/install.sh`, whose `--update` replaces each wholesale with
+`rsync -a --delete`.
+
+So you are no longer resolving a self-contradiction. **You are deciding whether the two-stage
+arrangement bullet 2 now documents is acceptable, or whether the second stage needs a gate.** Read
+the current bullet 2 first; do not reason from the version quoted in older documents.
+
+### 3.2 Evidence for the "target-project artifact" limb — a convention you must weigh
+
+There is **established precedent (T382, T403, T406)** that the repo-root self-install mirror
+(`.claude/`, `.pi/`, `.mcp.json` at the root) is a **separate artifact** from `implementation/`'s
+canonical projections, refreshed only by a manual `scripts/install.sh --target . --update` and
+**never by CI**. `make sync` and `make verify` only ever run `sync.mjs --root implementation`.
+
+**This is the strongest argument that the drift is by design rather than a defect, and this brief
+did not tell you about it.** Verify the precedent yourself — the orchestrator is relaying it from
+session memory, not from a document it re-read. If it holds, the "nothing says so" limb of §3 gets
+much stronger and the "five files are wrong" limb gets weaker.
+
+### 3.3 Evidence for the "it is a real defect" limb — measured, not argued
+
+After T532's single-command knowledge change, the root projections went **48 / 30 / 30 lines** stale
+(`.claude/commands/skillify.md`, `.claude/skills/skillify/SKILL.md`,
+`.github/skills/skillify/SKILL.md`) while `sync.mjs --check` reported "no drift across 577 files"
+**and** `generate-registry.py --check` reported "registry is up to date". Both gates green, both
+correct about what they inspect, neither inspecting the trees this repository's own tooling reads.
+
+T545 also observed, independently, that the root trees currently differ from `implementation/`'s in
+`agents/orchestrator.md`, six commands and `skills/skillify/SKILL.md`, plus an extra root
+`.claude/settings.json`.
+
+### 3.4 A third gate already exists that this brief did not mention
+
+`python3 implementation/scripts/generate-registry.py --check` is a **read-only registry-drift gate,
+distinct from `sync.mjs --check`**. §4's option list was written as though `sync.mjs --check` were the
+only candidate to extend. It is not. Consider which gate the root trees belong to.
+
+### 3.5 The same class of gap was just found elsewhere, with a better-shaped answer
+
+T545 established that the root `AGENTS.md` is byte-for-byte
+`render(implementation/AGENTS.md, --platform all)` — and that **nothing enforces it.** Zero tests
+invoke the renderer. The recommended gate there was a **render-identity assertion**, not a plain file
+equality, because the two files legitimately differ.
+
+**That is the same problem you are solving, one file over.** If your verdict is "add a gate",
+consider whether one gate should cover both `AGENTS.md` and the projection trees, and say so either
+way. A parity test for `AGENTS.md` is *not* in your scope — but an answer that ignores it will be
+half an answer.
 
 ## 4. Then choose a repair, and reject the others on the record
 
@@ -67,6 +120,12 @@ None of these is endorsed:
   `AGENTS.md` mandates a follow-up `/validate-tasks`, and past runs of it have destroyed
   project-local state (see `T518`). If your verdict requires a sync, **say so and stop** — that is a
   separate, disclosed step, not something to fold in silently.
+  **Two specific known failure modes, added 2026-09-26:** a past `--update` run **deleted
+  `.claude/settings.json`** and **reset `docs/tasks/active-tasks.md` to a false empty-ledger
+  scaffold**. The second is the dangerous one — it silently destroys the task ledger this workflow
+  runs on. `install.sh` refuses to run at the repository root without `--update`, so the only
+  sanctioned refresh path is the destructive one. That asymmetry is itself a finding and belongs in
+  your verdict.
 - **`scripts/scorecard.py` and `tests/golden/**` are out of scope** and you hold no authorization for
   them.
 - Do not change any `maturity:` field, and move no ledger row — archival is orchestrator-only.

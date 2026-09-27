@@ -6,12 +6,11 @@
 | T539 | golden harness has no array-cardinality guard | qa-engineer | pending | P2 | — | 2026-09-26 |
 | T543 | Root projections are refreshed by no generator and checked by no gate | devops-engineer | pending | P2 | — | 2026-09-26 |
 | T544 | Three loose ends in the /batch golden case | qa-engineer | pending | P2 | T541 | 2026-09-26 |
-| T545 | AGENTS.md Knowledge Base bullet 2 is wrong in two independent ways | tech-lead | pending | P1 | — | 2026-09-26 |
 | T547 | Four commands cite 04-protocols.md, which exists nowhere | technical-writer | pending | P2 | — | 2026-09-26 |
 | T548 | Widen the skillify golden checker to the amended path contract | qa-engineer | pending | P2 | T530, T532 | 2026-09-26 |
 | T549 | /consolidate-memory instructs data loss in an installed target project | technical-writer | pending | P2 | — | 2026-09-26 |
 
-> **8 active rows (`T538`, `T539`, `T543`, `T544`, `T545`, `T547`, `T548`, `T549`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **7 active rows (`T538`, `T539`, `T543`, `T544`, `T547`, `T548`, `T549`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
