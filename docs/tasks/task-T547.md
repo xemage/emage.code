@@ -2,7 +2,7 @@
 
 **ID:** T547
 **Owner:** Technical Writer
-**Status:** in_review
+**Status:** done
 **Priority:** P2
 **Tier:** mechanical
 **Affects:** command/new-project, command/new-feature, command/new-poc, command/validate-workflow

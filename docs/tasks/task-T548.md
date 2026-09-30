@@ -2,7 +2,7 @@
 
 **ID:** T548
 **Owner:** QA Engineer
-**Status:** in_review
+**Status:** done
 **Priority:** P2
 **Tier:** mechanical
 **Affects:** command/skillify
