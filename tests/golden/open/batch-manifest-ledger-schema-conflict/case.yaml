@@ -1,4 +1,4 @@
 id: batch-manifest-ledger-schema-conflict
 command: /batch
 status: expected_pass
-tags: [batch, batch-manifest, ledger-schema, contract-drift, worktree-branch-naming, unit-independence]
+tags: [batch, batch-manifest, ledger-schema, worktree-branch-naming, unit-independence]

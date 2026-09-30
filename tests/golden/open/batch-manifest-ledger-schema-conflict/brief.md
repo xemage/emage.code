@@ -19,8 +19,13 @@ with no `branch` among them. `T535` adjudicated that conflict under
 every one of step 5's five declared fields keeps exactly one home (§4.4). `T541` then re-derived
 this checker element-for-element against `batch-manifest-resolution-v1.md` §7 and the amended
 command file, and the case now passes. The full "why it failed" account, with both directions
-demonstrated, is preserved in `batch-manifest-resolution-v1.md` §§1–3 and in
-`evaluator-hash-known-good-v7.json`'s `reason` field.
+demonstrated, is preserved in `batch-manifest-resolution-v1.md` §§1–3, and `T541`'s re-derivation
+is recorded in `evaluator-hash-known-good-v8.json`'s `reason` field. (Until `T544` this line cited
+`v7`'s `reason` field, which does not mention this case; `v8` is the baseline `T541` refreshed.)
+
+`T544` then closed the one qualification `T541` left open: the fixture's ledger Titles carried a
+`U<n>` marker from the abolished unit-ID scheme, which was stripped, and the Title check was
+tightened to a kebab-case slug (§ "What is deliberately not asserted", item 2).
 
 ## What this checks
 `implementation/knowledge/commands/batch.md` `## Instructions` steps 2, 3 and 5, **as amended**:
@@ -67,7 +72,8 @@ Three independent assertions, the same three as before the amendment — relocat
   which is why it is a stronger assertion than the `batch/<slug>/<n>-<desc>` one it replaces.
 - **C (step 5) — the manifest.** Each unit is a row of `active-tasks.md` in that file's own 7-column
   schema, carrying the unit's ID (matching the `^T\d{3,}$` that `validate-tasks.py:307`'s `C3`
-  applies), a `Title` beginning `BATCH <slug>:`, the unit's agent as `Owner`, and a non-empty
+  applies), a `Title` of the form `BATCH <slug>: <description>` with a kebab-case `<slug>`, the
+  unit's agent as `Owner`, and a non-empty
   `Status`. The `branch` is **not** there — it is in the plan document's Batch Manifest, which is
   what assertion B reads.
 
@@ -97,8 +103,10 @@ been wrapped across five lines.)
 non-empty description and agent, and a branch that both matches
 `^agent/[a-z0-9][a-z0-9-]*/T\d{3,}$` and equals `agent/<that row's agent>/<that row's task ID>`; and
 for every unit, `fixture/docs/tasks/active-tasks.md` carries a row, in that file's declared 7-column
-order, whose `ID` is the unit's ID, whose `Title` begins `BATCH <slug>:`, whose `Owner` is the unit's
-agent, whose `Status` is non-empty, and whose `Depends on` names no other unit of the batch.
+order, whose `ID` is the unit's ID, whose `Title` matches `^BATCH [a-z0-9][a-z0-9-]*: \S` (the
+literal `BATCH `, a kebab-case slug, a colon and space, and a non-empty description), whose `Owner`
+is the unit's agent, whose `Status` is non-empty, and whose `Depends on` names no other unit of the
+batch.
 
 ## What is deliberately not asserted
 Recorded here so that it can be overruled rather than discovered. `ADR-007` Validation criterion 1
@@ -115,15 +123,31 @@ already *stronger* (assertions A and B both are) is a ceiling as much as a floor
    path. A future task that wants the path and the six headers asserted should add them together,
    with the fixture moved to `fixture/docs/plans/plan-<ID>.md` — and should expect to inherit
    `/plan`'s own standing red (`command-contract-resolution-v1.md` row A) while doing so.
-2. **A character class for step 5's `<slug>`.** No document in this repository declares one once
-   step 3 stops embedding the slug in a branch name, so only what *is* declared is asserted: the
-   literal `BATCH ` prefix, a non-empty colon-terminated slug, and a non-empty description. This
-   matters, and is the one place a reader should be suspicious: under a kebab-case reading of
-   `<slug>` this fixture's ledger Titles — `BATCH structured-logging U1: …` — would **fail**, because
-   the interposed `U1`/`U2`/`U3` is a residue of the very `U<n>` unit-ID scheme step 5's amendment
-   abolishes. `T541`'s authorization did not extend to the fixture's ledger half, so those Titles
-   were left byte-identical; a future task holding that authorization should strip the `U<n>` marker,
-   after which `^BATCH [a-z0-9][a-z0-9-]*: ` becomes assertable.
+2. **A *declared* character class for step 5's `<slug>` — there still is none, and since `T544` the
+   check asserts one anyway.** This is the one place a reader should be suspicious, so the basis and
+   its limit are both stated.
+   - **Before `T544`** only what was declared was asserted — the literal `BATCH ` prefix, a
+     non-empty colon-terminated slug, a non-empty description (`^BATCH [^:\s][^:]*: \S`) — because
+     the fixture's ledger Titles read `BATCH structured-logging U1: …`. The interposed
+     `U1`/`U2`/`U3` was a residue of the very `U<n>` unit-ID scheme step 5's amendment abolishes,
+     surviving inside the evidence offered for its abolition, and a kebab-case check would have
+     rejected it. `T541` held no authorization over the ledger half and left it byte-identical.
+   - **`T544` stripped the marker** and tightened the Title check to
+     `^BATCH [a-z0-9][a-z0-9-]*: \S`, the form `T541` named as assertable once the marker was gone.
+     The tightening is strict: every Title the new regex accepts, the old one accepted.
+   - **The basis is convention, not declaration.** Every slug this repository materializes is
+     lowercase kebab-case: the `<agent-name>` that `git-workflow.md` declares kebab-case and assertion
+     B already checks, the task-management skill's "agent slug, kebab-case", and every
+     `docs/decisions/ADR-<NNN>-<slug>.md` filename. The word *slug* itself denotes a single
+     whitespace-free token, which is exactly what the `U1` residue violated.
+   - **The limit.** `batch.md` does not say `<slug>` is kebab-case, so a Title such as
+     `BATCH structured_logging: …` or `BATCH release-v6.13.0: …` satisfies the command's literal text
+     and fails this check. The circularity worry — tightening a regex to match a fixture just edited —
+     is answered by the order of events (`T541` named `^BATCH [a-z0-9][a-z0-9-]*: ` in this file
+     before the fixture changed; `T544` added only the trailing `\S` the old regex already had), not
+     by any declaration. Declaring `<slug>`'s character set in `batch.md` step 5 would turn this
+     from a convention the check enforces into a contract it measures; that is a knowledge-base
+     change outside this case.
 3. **Self-dependency, lifecycle-status membership, and slug consistency across a batch's rows.** A
    row naming *itself* in `Depends on` is not treated as a cross-unit dependency (it is not "another
    unit"; `validate-tasks.py`'s `C13` catches it on the real ledger), `Status` is required non-empty
@@ -146,16 +170,17 @@ returned `False` against this very fixture even after the fixture was made fully
 (`batch-manifest-resolution-v1.md` §8).
 
 ## Provenance
-**Ledger: real schema, real header, and not edited by `T541`.**
+**Ledger: real schema, real header; not edited by `T541`, and its three Titles edited by `T544`.**
 `fixture/docs/tasks/active-tasks.md` carries this repository's own real title, header and separator
 lines copied byte-identically, with three 7-column unit rows using the next free IDs at authoring
-time (`T534`–`T536`). It **already conformed** to the amended step 5 with no edit — 7 cells,
+time (`T534`–`T536`). It conformed to the amended step 5 **cell for cell** with no edit — 7 cells,
 `^T\d{3,}$` IDs, real agent-slug `Owner`s, a valid `Status`, `Priority`, `—` in `Depends on`, and a
 well-formed date, all confirmed against `validate-tasks.py`'s own `parse_table_rows`, `ID_RE` and
-`STATUS_SET`. That a fixture hand-authored to demonstrate the *old* contract's impossibility
-satisfies the amended one unedited is evidence that the amended shape is the natural one, and it is
-why `T541` deliberately left this half alone. The one qualification is in
-§ "What is deliberately not asserted" item 2.
+`STATUS_SET` — which is why `T541` deliberately left this half alone. It did **not** conform in the
+Title form: each Title read `BATCH structured-logging U<n>: …`, not step 5's
+`BATCH <slug>: <description>`, and `T535` and the orchestrator had both cited these rows as evidence
+that the ledger half "already conforms". `T544` removed the `U1`/`U2`/`U3` marker from the three
+Titles and changed nothing else in the file; see § "What is deliberately not asserted" item 2.
 
 **`decomposition.md` is hand-authored, and was re-authored by `T541`.** `ADR-007` §5 permits exactly
 this — "Re-authoring a *hand-authored fixture* to a corrected contract is permitted and is not
