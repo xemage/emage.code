@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-09-27T04:45:09+00:00",
+  "generatedAt": "2026-09-30T19:10:08+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -997,7 +997,7 @@
       "category": "command",
       "name": "new-feature",
       "path": "commands/new-feature.md",
-      "checksum": "c9db2f3615085a7f652b531776ca8d18e0b0ef66f329d05736ae7fa2eb4b23d1",
+      "checksum": "ea2890687ab46a8dc6b9a0d37b7e8a5e306b43a69127383197f051a4543ee9b0",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1025,7 +1025,7 @@
       "category": "command",
       "name": "new-poc",
       "path": "commands/new-poc.md",
-      "checksum": "8e1d3ed922881d0292b575721090c8cd221ae6e723f4a067d211faceb5affaba",
+      "checksum": "26061c4350abeed1128eaf75bd171f70e32a9c4a0744d0c588381d643fe12fdb",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1053,7 +1053,7 @@
       "category": "command",
       "name": "new-project",
       "path": "commands/new-project.md",
-      "checksum": "fcdffcab39a6bde9fe01c7e69ea09af977adf148dae05e4a4325888841994dc9",
+      "checksum": "d1abb42339b852254950b111987239867a0cecfa10504943685be61acc24e84a",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1305,7 +1305,7 @@
       "category": "command",
       "name": "validate-workflow",
       "path": "commands/validate-workflow.md",
-      "checksum": "10843106297b66e92873e43af74f8c46f1c2afc592f07a79c5bb1cf4cac4328c",
+      "checksum": "975af4c8597bf4feb56463cb323ee3ea05d3054913bd94cb4dc1d8362391af16",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1781,7 +1781,7 @@
       "category": "skill",
       "name": "memory-management",
       "path": "skills/memory-management/SKILL.md",
-      "checksum": "f964649b21e54c670e8bb30104717af9aec389c1fd06603f032861898060bee2",
+      "checksum": "f19d770af43e91f10416d030367c1dbca5ef422bb5256a629b09adb9cb81ea5d",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
