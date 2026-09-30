@@ -2,7 +2,7 @@
 
 **ID:** T543
 **Owner:** DevOps Engineer
-**Status:** in_review
+**Status:** done
 **Priority:** P2
 **Tier:** judgment
 **Affects:** —
