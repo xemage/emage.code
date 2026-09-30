@@ -22,13 +22,14 @@ Options:
                        copilot-instructions.md. In docs/tasks/, an existing ledger is never
                        rewritten beyond its task rows — its surrounding prose is the
                        project's own record, not the template's. Missing files are seeded.
+                       Refused at the emage.code repository root; use --projections-only.
   --projections-only   Refresh ONLY the derived harness of an existing install: the platform
                        trees (with the same project-local exceptions as --update), their
                        MCP configs (merged, as --update does), AGENTS.md and CLAUDE.md. It
                        never writes or deletes anything under the target's docs/ -- the
                        task ledgers included -- or its implementation/. Mutually exclusive
-                       with --update. The one mode besides --update permitted at the emage.code
-                       repository root, and there only with --platform all.
+                       with --update. The only mode permitted at the emage.code repository
+                       root, and there only with --platform all.
   -n, --dry-run        Print actions without copying
   -h, --help           Show this help
 
@@ -91,7 +92,16 @@ fi
 
 TARGET_ABS="$(resolve_abs_path "$TARGET")"
 
-if [[ "$TARGET_ABS" == "$REPO_ROOT" ]]; then
+# True when the target is this repository's own root. The string comparison
+# alone misses every alias of the root -- a symlink to it, a bind mount, a path
+# through a symlinked parent -- because resolve_abs_path does not resolve
+# symlinks, so `-ef` (same device and inode) is checked too. A target that does
+# not exist yet cannot be the root, and `-ef` is false for it.
+target_is_repo_root() {
+  [[ "$TARGET_ABS" == "$REPO_ROOT" || "$TARGET_ABS" -ef "$REPO_ROOT" ]]
+}
+
+if target_is_repo_root; then
   if [[ "$PROJECTIONS_ONLY" -eq 1 ]]; then
     # The refusal below exists because a plain install writes docs/ (the
     # curated task ledgers) and implementation/ (which, here, is the source
@@ -107,7 +117,24 @@ if [[ "$TARGET_ABS" == "$REPO_ROOT" ]]; then
     fi
     echo "warning: refreshing the harness projections in-place at the repository root; docs/ and implementation/ are not touched." >&2
   elif [[ "$UPDATE" -eq 1 ]]; then
-    echo "warning: updating in-place at repository root; templates will be merged without overwriting existing docs files." >&2
+    # Refused since T552. At the root, --update did two harmful things and no
+    # useful one that --projections-only does not also do:
+    #   - merge_task_docs rewrites both task ledgers (dropping non-conforming
+    #     rows); that path took active-tasks.md from 2460 lines to 11 in fee245a.
+    #   - install_mcp_server_runtime copies implementation/runtime/* onto itself.
+    #     Without rsync, sync_tree_into's fallback deleted the source first
+    #     (implementation/runtime/memory/: 22 files to 0, measured by T550).
+    # The refusal comes before anything is written, dry-run included.
+    echo "error: refusing --update at the emage.code source repository root:" >&2
+    echo "  $REPO_ROOT" >&2
+    echo "reason: --update rewrites the task ledgers in docs/tasks/, seeds template files into docs/," >&2
+    echo "  and copies implementation/runtime/ onto itself -- here docs/ is the repository's own record" >&2
+    echo "  and implementation/ is the source the installer reads." >&2
+    echo "use one of the following instead:" >&2
+    echo "  - To refresh the root's own harness projections: scripts/install.sh --target . --platform all --projections-only" >&2
+    echo "  - For repo maintenance: git pull && make sync && make verify" >&2
+    echo "    (these regenerate and check implementation/.<platform>/ only; they do not write the root)" >&2
+    exit 1
   else
     echo "error: refusing to install into the emage.code source repository root:" >&2
     echo "  $REPO_ROOT" >&2
@@ -145,6 +172,31 @@ run() {
   fi
 }
 
+# True when src and dest are one and the same directory, however each is
+# spelled (`-ef`: same device and inode, so symlinks, `.`, relative paths and
+# bind mounts all resolve). The three tree writers below return early in that
+# case: dest already IS src, so "make dest match src" is already true.
+#
+# That is exactly what rsync does with such a call (a self-sync is a no-op); it
+# is the hand-rolled fallbacks that were destructive. sync_tree_into's fallback
+# runs `rm -rf "$dest"` before copying from "$src" -- with src == dest it
+# deleted the source and then failed to copy from it (T552: at the repository
+# root, `--update` took implementation/runtime/memory/ from 22 files to 0).
+# copy_tree_into's fallback removes each exclude "the copy placed" in dest --
+# with src == dest that is the source's own _index/. Guarding the primitives,
+# not one call site, fixes the class at any target: the repository root, an
+# alias of it, or a target whose implementation/runtime/ is a symlink back to
+# this repository's.
+same_tree() {
+  local src="$1"
+  local dest="$2"
+  if [[ -d "$src" && -d "$dest" && "$src" -ef "$dest" ]]; then
+    echo "note: $dest is $src itself; nothing to copy." >&2
+    return 0
+  fi
+  return 1
+}
+
 # Merge source tree into dest without nesting when dest already exists.
 # `cp -r src dest` creates dest/srcname when dest is present; this copies contents.
 # $3.. (optional, relative to dest, variadic): protected paths. The installer
@@ -160,6 +212,7 @@ copy_tree_into() {
   local src="$1"
   local dest="$2"
   local excludes=("${@:3}")
+  if same_tree "$src" "$dest"; then return 0; fi
   run mkdir -p "$dest"
   if command -v rsync >/dev/null 2>&1; then
     local rsync_args=(-a)
@@ -211,6 +264,7 @@ sync_tree_into() {
   local dest="$2"
   local excludes=("${@:3}")
   local e
+  if same_tree "$src" "$dest"; then return 0; fi
   if command -v rsync >/dev/null 2>&1; then
     run mkdir -p "$dest"
     local rsync_args=(-a --delete)
@@ -264,6 +318,7 @@ sync_tree_into() {
 merge_tree_preserve_existing() {
   local src="$1"
   local dest="$2"
+  if same_tree "$src" "$dest"; then return 0; fi
   if command -v rsync >/dev/null 2>&1; then
     run mkdir -p "$dest"
     if [[ "$DRY_RUN" -eq 1 ]]; then
@@ -323,6 +378,24 @@ require_existing_install() {
   fi
 }
 
+# grep -rq with its three outcomes kept apart: 0 = a line matches, 1 = no line
+# matches, anything else = the scan itself failed (missing tool, unreadable
+# file). Inside a bare `if grep ...` a failed scan reads as "no match" and the
+# guard passes without having checked anything. That is how the `name:` check
+# below was skipped on every host without ripgrep -- CI's python:3.12-alpine
+# image among them -- while it still called `rg` (T552). grep is POSIX and in
+# busybox, so it is present wherever this script can run at all.
+source_matches() {
+  local pattern="$1"
+  local path="$2"
+  local status=0
+  grep -rq -e "$pattern" "$path" || status=$?
+  if [[ "$status" -eq 0 ]]; then return 0; fi
+  if [[ "$status" -eq 1 ]]; then return 1; fi
+  echo "error: could not scan $path for '$pattern' (grep exit $status); refusing to run $MODE_FLAG unchecked." >&2
+  exit 1
+}
+
 validate_github_agents() {
   # Guard: --update must not propagate corrupted subagent aliases (v6.0.5 contract).
   # GitHub agents must omit `name:` (use slug aliases) and orchestrators must use kebab-case.
@@ -332,7 +405,7 @@ validate_github_agents() {
   fi
 
   # Check that no agent file has a `name:` key (they should omit it for slug aliasing).
-  if rg -q '^name:' "$github_agents" 2>/dev/null; then
+  if source_matches '^name:' "$github_agents"; then
     echo "error: source .github/agents have corrupted 'name:' keys (violates v6.0.5 contract)." >&2
     echo "  Run 'make sync' in the emage.code repo to regenerate projections." >&2
     exit 1
@@ -342,7 +415,7 @@ validate_github_agents() {
   for orch in orchestrator poc-orchestrator; do
     local file="$github_agents/${orch}.agent.md"
     if [[ -f "$file" ]]; then
-      if grep -q '^agents: \[.*[A-Z]' "$file"; then
+      if source_matches '^agents: \[.*[A-Z]' "$file"; then
         echo "error: $file has display-name aliases (not kebab-case slugs)." >&2
         echo "  Run 'make sync' in the emage.code repo to regenerate projections." >&2
         exit 1
@@ -489,6 +562,14 @@ install_docs() {
     run mkdir -p "$TARGET/implementation/runtime"
     install_tree_into "$IMPLEMENTATION/runtime/memory" "$TARGET/implementation/runtime/memory" "_index" "__pycache__"
     install_tree_into "$IMPLEMENTATION/runtime/security" "$TARGET/implementation/runtime/security" "__pycache__"
+    # Not an MCP server, but runtime source a shipped command names by path:
+    # /handoff step 3 drafts its payload against
+    # implementation/runtime/handoff/schema-v1.json, and the security
+    # guidelines require handoff JSON to pass runtime/handoff/validator.py.
+    # The whole tree ships (schema, validator, worked example) so
+    # both references resolve in an installed project exactly as they do here
+    # (T553). __pycache__/ is excluded for the same reason as above.
+    install_tree_into "$IMPLEMENTATION/runtime/handoff" "$TARGET/implementation/runtime/handoff" "__pycache__"
   }
 
 install_common() {
