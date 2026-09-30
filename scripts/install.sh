@@ -7,7 +7,7 @@ IMPLEMENTATION="${REPO_ROOT}/implementation"
 
 usage() {
   cat <<'EOF'
-Usage: scripts/install.sh --target <dir> [--platform <name>|all] [--update]
+Usage: scripts/install.sh --target <dir> [--platform <name>|all] [--update | --projections-only]
 
 Install emage.code into an existing or new project directory.
 
@@ -22,6 +22,13 @@ Options:
                        copilot-instructions.md. In docs/tasks/, an existing ledger is never
                        rewritten beyond its task rows — its surrounding prose is the
                        project's own record, not the template's. Missing files are seeded.
+  --projections-only   Refresh ONLY the derived harness of an existing install: the platform
+                       trees (with the same project-local exceptions as --update), their
+                       MCP configs (merged, as --update does), AGENTS.md and CLAUDE.md. It
+                       never writes or deletes anything under the target's docs/ -- the
+                       task ledgers included -- or its implementation/. Mutually exclusive
+                       with --update. The one mode besides --update permitted at the emage.code
+                       repository root, and there only with --platform all.
   -n, --dry-run        Print actions without copying
   -h, --help           Show this help
 
@@ -40,6 +47,9 @@ PLATFORM="all"
 TARGET=""
 DRY_RUN=0
 UPDATE=0
+PROJECTIONS_ONLY=0
+# The user-facing flag that selected refresh semantics, for messages only.
+MODE_FLAG="--update"
 
 TARGET_ABS=""
 
@@ -59,6 +69,7 @@ while [[ $# -gt 0 ]]; do
     --target) TARGET="$2"; shift 2 ;;
     --platform) PLATFORM="$2"; shift 2 ;;
     -u|--update) UPDATE=1; shift ;;
+    --projections-only) PROJECTIONS_ONLY=1; shift ;;
     -n|--dry-run) DRY_RUN=1; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown option: $1" >&2; usage >&2; exit 1 ;;
@@ -71,10 +82,31 @@ if [[ -z "$TARGET" ]]; then
   exit 1
 fi
 
+if [[ "$PROJECTIONS_ONLY" -eq 1 && "$UPDATE" -eq 1 ]]; then
+  echo "error: --projections-only and --update are mutually exclusive." >&2
+  echo "  --update is the full refresh (it also merges docs/ and copies the MCP server runtime);" >&2
+  echo "  --projections-only refreshes the harness projections and nothing the project owns." >&2
+  exit 1
+fi
+
 TARGET_ABS="$(resolve_abs_path "$TARGET")"
 
 if [[ "$TARGET_ABS" == "$REPO_ROOT" ]]; then
-  if [[ "$UPDATE" -eq 1 ]]; then
+  if [[ "$PROJECTIONS_ONLY" -eq 1 ]]; then
+    # The refusal below exists because a plain install writes docs/ (the
+    # curated task ledgers) and implementation/ (which, here, is the source
+    # the installer reads). --projections-only writes neither, so it does not
+    # engage that reason. The root hosts every platform and the T543 parity
+    # gate compares it with a --platform all install, so a single-platform
+    # refresh -- which would also re-render AGENTS.md for one platform only --
+    # is refused here.
+    if [[ "$PLATFORM" != "all" ]]; then
+      echo "error: at the emage.code repository root, --projections-only requires --platform all" >&2
+      echo "  (the root hosts every platform; got --platform $PLATFORM)." >&2
+      exit 1
+    fi
+    echo "warning: refreshing the harness projections in-place at the repository root; docs/ and implementation/ are not touched." >&2
+  elif [[ "$UPDATE" -eq 1 ]]; then
     echo "warning: updating in-place at repository root; templates will be merged without overwriting existing docs files." >&2
   else
     echo "error: refusing to install into the emage.code source repository root:" >&2
@@ -82,9 +114,22 @@ if [[ "$TARGET_ABS" == "$REPO_ROOT" ]]; then
     echo "reason: install mode can overwrite curated repository files." >&2
     echo "use one of the following instead:" >&2
     echo "  - For repo maintenance: git pull && make sync && make verify" >&2
+    echo "    (these regenerate and check implementation/.<platform>/ only; they do not write the root)" >&2
+    echo "  - To refresh the root's own harness projections: scripts/install.sh --target . --platform all --projections-only" >&2
     echo "  - For installation testing: scripts/install.sh --target /tmp/emage-test --platform all" >&2
     exit 1
   fi
+fi
+
+if [[ "$PROJECTIONS_ONLY" -eq 1 ]]; then
+  # --projections-only reuses --update's semantics for everything it runs:
+  # trees are replaced with stale-file deletion (sync_tree_into, honouring the
+  # project-local excludes) and MCP configs are merged, not overwritten
+  # (merge_or_copy_mcp_json). What it does NOT run is decided in
+  # install_common, and enforced again inside install_docs and
+  # install_mcp_server_runtime.
+  UPDATE=1
+  MODE_FLAG="--projections-only"
 fi
 
 if [[ ! -d "$IMPLEMENTATION" ]]; then
@@ -273,7 +318,7 @@ GITHUB_LOCAL_PATHS=(
 
 require_existing_install() {
   if [[ ! -f "$TARGET/AGENTS.md" ]]; then
-    echo "error: --update requires an existing emage.code install (missing $TARGET/AGENTS.md)" >&2
+    echo "error: $MODE_FLAG requires an existing emage.code install (missing $TARGET/AGENTS.md)" >&2
     exit 1
   fi
 }
@@ -321,7 +366,7 @@ validate_before_update() {
           .claude) exception=" (except $d/settings.json and $d/settings.local.json, which are project-local and left untouched)" ;;
           .github) exception=" (except workflows/, ISSUE_TEMPLATE/, PULL_REQUEST_TEMPLATE*, CODEOWNERS, dependabot.y*ml, FUNDING.yml and copilot-instructions.md, which are project-local and left untouched)" ;;
         esac
-        echo "warning: --update replaces $TARGET/$d entirely (rsync --delete)${exception}. Other local edits there will be lost." >&2
+        echo "warning: $MODE_FLAG replaces $TARGET/$d entirely (rsync --delete)${exception}. Other local edits there will be lost." >&2
       fi
     done
     validate_github_agents
@@ -336,6 +381,7 @@ if [[ "$UPDATE" -eq 1 ]]; then
 fi
 
 merge_task_docs() {
+  refuse_in_projections_only merge_task_docs "$TARGET/docs/tasks"
   local args=(
     "$REPO_ROOT/scripts/merge-task-docs.py"
     --template-dir "$IMPLEMENTATION/docs/tasks"
@@ -376,7 +422,21 @@ merge_or_copy_mcp_json() {
   fi
 }
 
+# Tripwire for --projections-only. install_common already skips the two steps
+# that write project-owned content (docs/, incl. the task ledgers) or the MCP
+# server runtime (implementation/, which at the repository root is the source
+# itself). This makes any future call path that reaches them in that mode fail
+# before writing anything, instead of silently doing what the mode promises not
+# to do.
+refuse_in_projections_only() {
+  if [[ "$PROJECTIONS_ONLY" -eq 1 ]]; then
+    echo "error: internal: $1 must never run under --projections-only; nothing under $2 was written." >&2
+    exit 70
+  fi
+}
+
 install_docs() {
+  refuse_in_projections_only install_docs "$TARGET/docs"
   run mkdir -p "$TARGET/docs"
   if [[ "$UPDATE" -eq 1 ]]; then
     for sub in "$IMPLEMENTATION/docs"/*/; do
@@ -421,6 +481,7 @@ install_docs() {
   # output) and, once a target project has built its own, that is
   # project-specific generated content this installer must not touch.
   install_mcp_server_runtime() {
+    refuse_in_projections_only install_mcp_server_runtime "$TARGET/implementation"
     run mkdir -p "$TARGET/implementation"
     if [[ ! -f "$TARGET/implementation/__init__.py" ]]; then
       run touch "$TARGET/implementation/__init__.py"
@@ -432,6 +493,11 @@ install_docs() {
 
 install_common() {
     install_agents_doc
+  if [[ "$PROJECTIONS_ONLY" -eq 1 ]]; then
+    # Harness-only refresh: AGENTS.md is rendered above; docs/ (project-owned
+    # once installed) and implementation/runtime/ (not a projection) are skipped.
+    return 0
+  fi
   install_docs
   install_mcp_server_runtime
 }
@@ -497,6 +563,13 @@ case "$PLATFORM" in
     exit 1
     ;;
 esac
+
+if [[ "$PROJECTIONS_ONLY" -eq 1 ]]; then
+  # The MCP-dependency and search-index notices below describe the runtime
+  # install, which this mode deliberately did not perform.
+  echo "Refreshed emage.code harness projections ($PLATFORM) in $TARGET; docs/ and implementation/ were not touched."
+  exit 0
+fi
 
 if [[ "$UPDATE" -eq 1 ]]; then
   echo "Updated emage.code ($PLATFORM) in $TARGET"
