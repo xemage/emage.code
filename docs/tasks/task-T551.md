@@ -2,7 +2,7 @@
 
 **ID:** T551
 **Owner:** Technical Writer
-**Status:** in_review
+**Status:** done
 **Priority:** P2
 **Tier:** judgment
 **Affects:** skill/memory-management
