@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-09-26T18:26:19+00:00",
+  "generatedAt": "2026-09-27T04:45:09+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -885,7 +885,7 @@
       "category": "command",
       "name": "consolidate-memory",
       "path": "commands/consolidate-memory.md",
-      "checksum": "3548e1122dbaa2e5172e767271ad3ff78ef3ec2d8c8657dd5f9ac327e278987e",
+      "checksum": "4d824e765bedeeeeaf14fc93d7b872955a8b6fbe35308146577c99d9f322fd9e",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
