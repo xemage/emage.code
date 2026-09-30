@@ -2,7 +2,7 @@
 
 **ID:** T552
 **Owner:** DevOps Engineer
-**Status:** in_review
+**Status:** done
 **Priority:** P1
 **Tier:** judgment
 **Affects:** —

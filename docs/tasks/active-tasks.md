@@ -3,11 +3,10 @@
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
 | T538 | team-status.md carries the same in_review colour gap | tech-lead | pending | P2 | — | 2026-09-26 |
-| T552 | install.sh --update at the repo root deletes source without rsync | devops-engineer | pending | P1 | T550 | 2026-09-30 |
-| T553 | install.sh never installs implementation/runtime/handoff/, so /handoff step 3 dangles | devops-engineer | pending | P2 | T550 | 2026-09-30 |
 | T554 | /discover-skills step 1 loads a registry installed targets never receive | qa-engineer | pending | P2 | T539, T547 | 2026-09-30 |
+| T555 | install.sh --update without rsync copies this repo's memory index into client projects | devops-engineer | pending | P1 | T552 | 2026-09-30 |
 
-> **4 active rows (`T538`, `T552`, `T553`, `T554`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **3 active rows (`T538`, `T554`, `T555`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
