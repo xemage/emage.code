@@ -63,7 +63,7 @@ closed. Remove it. Leave the other tags.
 
 The id still reads `…-schema-conflict` on a green case. Tidiness says rename it. `T541` said don't,
 and gave reasons worth taking seriously: the id is referenced by
-`docs/benchmarks/scorecard-v6.12.0.{json,md}`, `evaluator-hash-known-good-v7.json`'s `reason` field,
+`docs/benchmarks/scorecard-v6.12.0.{json,md}`, `evaluator-hash-known-good-v8.json`'s `reason` field,
 and `batch-manifest-resolution-v1.md`. **A rename touches a published baseline and two historical
 records**, one of which is an immutable tamper-evidence artifact.
 

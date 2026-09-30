@@ -7,10 +7,11 @@
 | T543 | Root projections are refreshed by no generator and checked by no gate | devops-engineer | pending | P2 | — | 2026-09-26 |
 | T544 | Three loose ends in the /batch golden case | qa-engineer | pending | P2 | T541 | 2026-09-26 |
 | T547 | Four commands cite 04-protocols.md, which exists nowhere | technical-writer | pending | P2 | — | 2026-09-26 |
-| T548 | Widen the skillify golden checker to the amended path contract | qa-engineer | pending | P2 | T530, T532 | 2026-09-26 |
-| T549 | /consolidate-memory instructs data loss in an installed target project | technical-writer | pending | P2 | — | 2026-09-26 |
+| T548 | Widen the skillify golden checker; correct the consolidate-memory case brief | qa-engineer | pending | P2 | T530, T532, T549 | 2026-09-30 |
+| T550 | install.sh has no projections-only refresh mode for the repo root | devops-engineer | pending | P1 | — | 2026-09-30 |
+| T551 | memory-management skill repeats the consolidate-memory data-loss instruction | technical-writer | pending | P2 | T549 | 2026-09-30 |
 
-> **7 active rows (`T538`, `T539`, `T543`, `T544`, `T547`, `T548`, `T549`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **8 active rows (`T538`, `T539`, `T543`, `T544`, `T547`, `T548`, `T550`, `T551`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /

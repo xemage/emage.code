@@ -71,6 +71,12 @@ repair differs for each:
 - Do not touch `AGENTS.md` (**T545** owns it) and do not introduce an `audience:` key (**T546** owns
   that question).
 
+- **Root-drift gate (added 2026-09-30).** Once T543's parity gate (MR !420) is in `develop`, every
+  change under `implementation/knowledge/` that does not refresh the repo root must add the affected
+  root paths to `tests/_baselines/root-install-drift.json` **in the same MR**, or the pipeline goes
+  red. `python3 -m tests.functional.test_root_install_parity --print-drift` prints the exact list.
+  If you cannot run it, say so and the orchestrator will.
+
 ## 4. Acceptance criteria
 
 1. Which of §2's three possibilities holds, with the evidence — including the `git log` result,
