@@ -14,7 +14,7 @@ I want to start a proof-of-concept project.
    - **Validation path**: Define what evidence proves/disproves the hypothesis
    - **3-step plan**: (a) Feasibility check → (b) Core build → (c) Evaluate & demo
    - Write to `docs/plans/poc-<slug>.md`
-   - Reference protocol: `04-protocols.md § Plan-Approve-Execute (PoC variant)`
+   - Reference protocol: `poc-orchestrator` agent § Plan-Approve-Execute (PoC-Adapted) › PLAN PHASE (lightweight); hypothesis format: `poc-guidelines.md` § Hypothesis-First Validation
 2. **Present the plan for approval** before proceeding
 
 ## Phase 1: Coordinate & Build
