@@ -10,7 +10,7 @@ accidental."*
 This module computes **two separate** SHA-256 digests -- one over
 `tests/golden/**`, one over `scripts/scorecard.py` -- and compares each
 against a stored known-good reference
-(`docs/artifacts/evaluator-hash-known-good-v9.json`). See
+(`docs/artifacts/evaluator-hash-known-good-v10.json`). See
 `docs/artifacts/evaluator-hash-check-v1.md` for the full design write-up,
 including the known-good storage/update policy; this docstring states the
 load-bearing properties only.
@@ -62,7 +62,7 @@ DIGEST_KEY_SCRIPTS_SCORECARD = "scripts_scorecard"
 
 ALGORITHM = "sha256"
 
-DEFAULT_KNOWN_GOOD_PATH = REPO_ROOT / "docs" / "artifacts" / "evaluator-hash-known-good-v9.json"
+DEFAULT_KNOWN_GOOD_PATH = REPO_ROOT / "docs" / "artifacts" / "evaluator-hash-known-good-v10.json"
 
 # Required top-level keys a known-good reference file must declare. Missing
 # any of these makes the file structurally invalid (raises), per this

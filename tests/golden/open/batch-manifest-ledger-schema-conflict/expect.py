@@ -38,10 +38,10 @@ addition -- that the decomposition live at step 2's declared `docs/plans/plan-<I
 omission stated here, if SS4.1's counter-reading is taken. It is omitted, for two reasons stated so
 that a reviewer can reject them: `ADR-007` Validation criterion 1 requires the replacement to assert
 "the same number of structural elements", which is a ceiling as much as a floor, and SS4.1 itself
-records that no case outcome and no promotion outcome moves either way. Step 5's `<slug>` is
-likewise given no character class, because no document in this repository declares one -- only that
-the Title begins `BATCH <slug>:`. Both choices are recorded in brief.md SS "What is deliberately not
-asserted", where they can be overruled.
+records that no case outcome and no promotion outcome moves either way. That choice is recorded in
+brief.md SS "What is deliberately not asserted", where it can be overruled. Step 5's `<slug>` is
+asserted kebab-case since `T544` -- by the repository's convention for every slug it names, not by a
+declaration in `batch.md`, which still declares none; brief.md records that basis and its limit.
 
 Expected to return True: five structural elements, all five of step 5's declared manifest fields
 homed exactly once (four in the plan document's Batch Manifest, `status` in the ledger row, per
@@ -61,11 +61,14 @@ UNIT_ID_RE = re.compile(r"^T\d{3,}$")
 # Step 3's declared branch naming: agent/<agent-name>/<task-id>, with <agent-name> the kebab-case
 # agent role name `git-workflow.md` SS "Agent Worktree Branch Naming" declares.
 BRANCH_RE = re.compile(r"^agent/[a-z0-9][a-z0-9-]*/T\d{3,}$")
-# Step 5's declared Title form: `BATCH <slug>: <description>`. Nothing in `batch.md`,
-# `git-workflow.md` or `AGENTS.md` declares <slug>'s character set once step 3 stops embedding it in
-# a branch name, so only what *is* declared is asserted -- the literal `BATCH ` prefix, a non-empty
-# colon-terminated slug, and a non-empty description.
-LEDGER_TITLE_RE = re.compile(r"^BATCH [^:\s][^:]*: \S")
+# Step 5's declared Title form: `BATCH <slug>: <description>`, with <slug> a single kebab-case
+# token -- the same class `BRANCH_RE` applies to <agent-name> -- and a non-empty description.
+# `batch.md` does not itself declare <slug>'s character set; the class is the repository's
+# convention (see brief.md). Tightened at `T544` from `^BATCH [^:\s][^:]*: \S`, which admitted a
+# space inside the slug and so accepted the abolished `U<n>` unit-ID residue
+# (`BATCH structured-logging U1: ...`) this fixture carried until then. Every Title this regex
+# accepts, the one it replaces accepted too.
+LEDGER_TITLE_RE = re.compile(r"^BATCH [a-z0-9][a-z0-9-]*: \S")
 SEPARATOR_ROW_RE = re.compile(r"^[\s|:-]+$")
 # Step 5's `Depends on`, tokenised exactly the way `validate-tasks.py:61` tokenises it as
 # `DEPENDS_ID_RE` for checks `C12`/`C13`/`C14` -- the checks step 5 itself names as the enforcement

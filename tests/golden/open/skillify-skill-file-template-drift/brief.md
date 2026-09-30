@@ -9,13 +9,29 @@
 
 ## What this checks
 `implementation/knowledge/commands/skillify.md` `## Instructions` → `### Generate the Skill File`
-(the step immediately after Round 4 and immediately before `### Present for Approval`), verbatim as
-that step reads today, after `T527` amended it:
+(immediately before `### Present for Approval`) and the `### Choose the Output Path` step it points
+back to, verbatim as they read today, after `T527` amended the first and `T532` added the second:
 
+> ### Choose the Output Path
+>
+> **Check, do not assume.** This command ships both into the emage.code authoring repository and into
+> every project that installed emage.code, and the source of truth for a skill is not the same place
+> in the two. Test for the source tree first, then apply the one row that matches:
+>
+> | If the project has… | Write the skill to | Then |
+> |---|---|---|
+> | `implementation/knowledge/skills/` — an emage.code **authoring** checkout | `implementation/knowledge/skills/<name>/SKILL.md` | Regenerate the derived trees … |
+> | no `implementation/knowledge/` — an **installed target** project | `<platform>/skills/<name>/SKILL.md` in **every** installed platform folder that exists: `.github/`, `.claude/`, `.cursor/`, `.gemini/`, `.opencode/`, `.pi/`, `.cline/` | Tell the user, in the approval step below, that `scripts/install.sh --update` replaces each of those trees wholesale … |
+>
+> This is **one rule with a precondition, not two acceptable output forms**: exactly one row applies to
+> any given project, decided by whether `implementation/knowledge/skills/` exists.
+>
+> …
+>
 > ### Generate the Skill File
 >
-> After the 4-round interview, generate `.github/skills/<name>/SKILL.md` with this structure. Each
-> interview round maps to one section: Round 1 → `## When to Use`, Round 2 → `## Inputs`,
+> After the 4-round interview, generate the `SKILL.md` at the path chosen above, with this structure.
+> Each interview round maps to one section: Round 1 → `## When to Use`, Round 2 → `## Inputs`,
 > Round 3 → `## Procedure`, Round 4 → `## Success Criteria`.
 >
 > ```markdown
@@ -44,21 +60,77 @@ that step reads today, after `T527` amended it:
 
 `T527` renamed two of these sections: the step previously declared `## Trigger` where it now
 declares `## When to Use`, and `## Steps` where it now declares `## Procedure`. The other three
-section names, the declared output path, and the level-1 title are unchanged. The amended template
-additionally declares YAML frontmatter (`name`, `description`); `expect.py` does not assert the
-frontmatter, so the checked surface is the declared path, the level-1 title and the five `##`
-sections.
+section names and the level-1 title are unchanged. The amended template additionally declares YAML
+frontmatter (`name`, `description`); `expect.py` does not assert the frontmatter, so the checked
+surface is the declared output location, the level-1 title and the five `##` sections.
 
-This is the command's only structurally checkable clause — Rounds 1–4 are an interactive
+`T532` then changed the output location and nothing else. Until then the step read "generate
+`.github/skills/<name>/SKILL.md` with this structure" — one hardcoded path. It now points to
+`### Choose the Output Path`, whose two rows are mutually exclusive by a checkable predicate
+(`docs/artifacts/skillify-output-path-resolution-v1.md` §4.4). No section name moved, so the case's
+failure cause did not move either (§5.2 there). This is `ADR-007`'s sibling-fate corollary, row 1,
+applied literally: the amendment changes only a path, so the case survives and its glob is widened
+(`T548`).
+
+**The fixture exercises the installed-target row.** It has no `implementation/knowledge/`, so the
+precondition selects the second row, and `.github/` is the only platform folder in it, so "every
+installed platform folder that exists" is that one folder — the single-platform degenerate case
+§4.4 property 3 describes.
+
+These are the command's only structurally checkable clauses — Rounds 1–4 are an interactive
 interview whose outputs are prose, and `### Present for Approval` is a human interaction. The
-generated file's declared path and declared section list are the whole of what `/skillify` commits
-to producing, so they are what this case asserts.
+generated file's declared location and declared section list are what `/skillify` commits to
+producing as a file, so they are what this case asserts. The follow-through each row declares
+(regenerating the derived trees; warning the user about `install.sh --update`) is an action or a
+message, not a file shape, and is not asserted.
 
 ## Pass condition
-Exactly one `SKILL.md` exists under `fixture/.github/skills/<name>/` (the declared path), and it
-contains a level-1 title plus all five declared `##` sections: `## When to Use`, `## Inputs`,
-`## Procedure`, `## Success Criteria`, `## Examples`. `expect.py` was re-derived against the
-amended template at `T531`.
+Over the eight declared skill directories under `fixture/` — `implementation/knowledge/skills/`,
+and `<platform>/skills/` for `.github`, `.claude`, `.cursor`, `.gemini`, `.opencode`, `.pi`,
+`.cline` — all of the following hold:
+
+- at least one of them exists;
+- **no single directory** holds more than one `<name>/SKILL.md` (two skills in one directory leave
+  it ambiguous which the run generated);
+- **at least one** `SKILL.md` resolves across the whole set; and
+- **every** `SKILL.md` that resolves contains a level-1 title plus all five declared `##` sections:
+  `## When to Use`, `## Inputs`, `## Procedure`, `## Success Criteria`, `## Examples`.
+
+`expect.py` was re-derived against the amended template at `T531`; its discovery was widened from
+`fixture/.github/skills/` alone to the declared set at `T548`, taking option (i) of
+`skillify-output-path-resolution-v1.md` §7. Option (ii) — relocate the fixture to the authoring
+row — would have moved a file under `fixture/`, which `T548` was not authorized to do.
+
+**Uniqueness is per directory, not across the set — a revision made in `T548`'s own review.** The
+first version applied §7's "exactly one candidate across the whole set" literally. That rejected a
+*correct* installed-target output for any project with two or more platform folders, because the
+second row requires the skill in **every** installed platform folder that exists: the checker would
+have contradicted the contract it checks. The orchestrator overruled it. Uniqueness now applies
+within each directory, where a second skill really is ambiguous, and every copy found must conform,
+so a correct copy in one platform folder cannot mask a non-conforming one in another. Two things are
+deliberately **not** asserted across directories: that the copies are byte-identical, and that they
+share one `<name>`. The command says to write "the skill" to each folder but declares neither
+property, and asserting either would add an element §7 does not specify.
+
+**Why the widening is not a relaxation, stated precisely.** It is not true that the wider search
+admits only fewer fixtures than before: a conforming `SKILL.md` placed only under
+`.claude/skills/` or only under `implementation/knowledge/skills/` now resolves, where it did not.
+What makes that legitimate under `ADR-007` §5 is that every newly admitted location is one the
+amended contract declares — nothing undeclared resolves (`docs/skills/`, or `sync.mjs`'s
+`implementation/.<platform>/skills/` output, still do not) — and the five section assertions, which
+are this case's failure cause, are byte-identical and now apply to **every** copy rather than to
+the single file the old guard admitted. Compared with the pre-`T548` checker, the result is:
+
+- **Accepted that was rejected before:** only locations the amended contract declares — a
+  conforming skill only under `.claude/skills/` or only under `implementation/knowledge/skills/`.
+- **Rejected that was accepted before:** a conforming `.github/skills/` copy next to a
+  non-conforming copy in another declared directory.
+- **Unchanged:** the same skill in several platform folders is still accepted, two skills in one
+  directory are still rejected, and undeclared locations (`docs/skills/`, or `sync.mjs`'s
+  `implementation/.<platform>/skills/` output) still resolve nothing.
+
+§7's out-of-scope row forbids asserting that the skill exists in all seven folders, and that is not
+asserted.
 
 ## Why this is known_failing today
 The fixture is a real, representative skill file — `.github/skills/verification-before-completion/
@@ -86,8 +158,8 @@ above, and it was measured against the section names the command declared **befo
 
 Surveyed across **every** real skill file in this repository — the 26 sources under
 `implementation/knowledge/skills/*/SKILL.md` and the same 26 as projected to
-`.github/skills/*/SKILL.md`, which is the exact directory `/skillify` declares it writes to —
-returning identically for both trees:
+`.github/skills/*/SKILL.md`, which was then the exact directory `/skillify` declared it writes to
+(since `T532`, one directory of its declared set) — returning identically for both trees:
 
 | Section as declared pre-`T527` | Files containing it |
 |---|---|
@@ -130,7 +202,9 @@ the task that authored it (`T525` §1) and remains out of scope for the prose co
 ## Provenance
 **Fully real.** `fixture/.github/skills/verification-before-completion/SKILL.md` is a byte-identical
 copy of `.github/skills/verification-before-completion/SKILL.md` from this repository's working
-tree, placed at the same repo-relative path the command declares as its output location.
+tree, placed at the same repo-relative path. When the case was authored that path was the command's
+single declared output location; since `T532` it is the installed-target row's path for a project
+whose only platform folder is `.github/`, and the fixture was not moved.
 
 The historical survey table above is reproducible with the naive substring method that produced it.
 `PRE_T527` reproduces the table as recorded; `CURRENT` applies the same method to the section names
