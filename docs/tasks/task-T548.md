@@ -6,7 +6,7 @@
 **Priority:** P2
 **Tier:** mechanical
 **Affects:** command/skillify
-**Depends on:** T530, T532
+**Depends on:** T530, T532, T549
 **Created:** 2026-09-26
 **Based on:** `docs/artifacts/skillify-output-path-resolution-v1.md` §7;
 `docs/tasks/task-T532.md`; `docs/tasks/task-T530.md`;
@@ -31,11 +31,33 @@ that task**, for exactly these paths:
 
 - `tests/golden/open/skillify-skill-file-template-drift/expect.py`
 - `tests/golden/open/skillify-skill-file-template-drift/brief.md`
+- `tests/golden/open/consolidate-memory-recommendation-table-grounded/brief.md` — **added
+  2026-09-30 by the orchestrator, before dispatch**; see §2.1
 
-**Not authorized:** `case.yaml`, `fixture/`, `scripts/scorecard.py`, any other case, and the
-evaluator-hash baseline. **§5.1 forbids you extending your own grant** — six prior tasks hit this
+**Not authorized:** any `case.yaml`, any `fixture/`, the consolidate-memory case's `expect.py`,
+`scripts/scorecard.py`, any other case, and the evaluator-hash baseline. **§5.1 forbids you extending your own grant** — six prior tasks hit this
 boundary and all six refused. Do the same: if you conclude another path must change, **report it and
 stop.**
+
+### 2.1 Why the consolidate-memory brief is folded in here (amended 2026-09-30)
+
+T549 (MR !419, merged) rewrote `/consolidate-memory`'s step-2 Promote line. The case
+`consolidate-memory-recommendation-table-grounded` has a `brief.md` whose **line 17 quotes the old
+line verbatim**: *"should be elevated to `AGENTS.md`, project docs, or skill files"* — the destructive
+targets T549 removed. So the case's stated contract is now stale prose.
+
+**Its `expect.py` is not affected** and is **not** in your grant. The orchestrator read it: it quotes
+only step 1, step 2's *header* ("assign one of: Keep / Promote / Prune") and step 3's four columns, and
+`check()` reads only the fixture. It returns `True` today and **must still return `True`** after your
+change. Run it and report the result.
+
+Correct `brief.md` against the command **as it is in `develop` now** — read
+`implementation/knowledge/commands/consolidate-memory.md` first, do not work from this quote. Keep any
+history that matters, reframed rather than erased, as T530 did.
+
+**Why fold it here rather than open a task:** every authorized change under `tests/golden/**` drifts
+the evaluator-hash digest, and each drift needs an explicit human authorization for a new baseline.
+Doing both cases in one task costs **one** baseline refresh instead of two.
 
 ## 3. Sequencing — read this before you start
 

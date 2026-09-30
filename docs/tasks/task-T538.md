@@ -64,6 +64,12 @@ python3 implementation/scripts/generate-registry.py
 `MODULE_NOT_FOUND` and silently no-ops if stderr is suppressed. And `sync.mjs --check` alone does
 **not** catch registry drift; forgetting `generate-registry.py` has broken two MRs in this phase.
 
+- **Root-drift gate (added 2026-09-30).** Once T543's parity gate (MR !420) is in `develop`, every
+  change under `implementation/knowledge/` that does not refresh the repo root must add the affected
+  root paths to `tests/_baselines/root-install-drift.json` **in the same MR**, or the pipeline goes
+  red. `python3 -m tests.functional.test_root_install_parity --print-drift` prints the exact list.
+  If you cannot run it, say so and the orchestrator will.
+
 ## 5. Verification
 
 ```

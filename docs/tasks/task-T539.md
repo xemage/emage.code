@@ -84,8 +84,8 @@ blocker.** Five tasks in this phase hit that boundary and all five refused.
 2. **Two evaluator-hash tests will go red.** Expected. **Do not fix it.** `docs/artifacts/` is
    unprotected so you could argue the refresh is in scope — it is not. Recompute read-only via
    `golden_harness.evaluator_hash.compute_current_digests(Path('.'))`, report both digests and how each
-   differs from `evaluator-hash-known-good-v7.json`, and stop. `scripts_scorecard` must come back
-   byte-identical to v7. The digest hashes git-tracked files only, so compute it **post-commit**.
+   differs from `evaluator-hash-known-good-v9.json`, and stop. `scripts_scorecard` must come back
+   byte-identical to v9. *(Corrected 2026-09-30: this brief said v7, which was two baselines stale.)* The digest hashes git-tracked files only, so compute it **post-commit**.
 
 ## 6. Verification
 
