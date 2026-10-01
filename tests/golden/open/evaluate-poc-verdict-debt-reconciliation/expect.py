@@ -5,10 +5,12 @@ Contract under test: implementation/knowledge/commands/evaluate-poc.md, verbatim
 step 9's `## POC VERDICT` block (eight fields, three enums, a severity-broken-down count), step 11's
 Debt Summary table, step 10's handoff checklist ("If recommending `proceed` or
 `proceed_with_constraints`"), step 6's "top 5 minimum" backlog, and the `## Rails` Failure mode
-("If evidence strength is weak ... returns `INCONCLUSIVE`") -- the last asserted only as "weak is
-never VALIDATED", because which non-validated label is correct is contested by poc-guidelines
-Rules 3-4 (see brief.md). The load-bearing assertion is that the VERDICT's `Debt items` count and
-per-severity breakdown reconcile with the Debt Summary rows.
+("If evidence strength is weak, ... returns `INVALIDATED` with `Evidence strength: weak`"), asserted
+in full as "weak evidence => INVALIDATED". The value scales are the contract as amended by T564
+(poc-contract-resolution-v1.md SS3b, SS5): a binary Status, three severities CRITICAL/MEDIUM/LOW,
+effort S/M/L. `INCONCLUSIVE`, `HIGH` and `XL` are rejected outright, never ignored (SS9.2). The
+load-bearing assertion is that the VERDICT's `Debt items` count and per-severity breakdown
+reconcile with the Debt Summary rows.
 """
 from __future__ import annotations
 
@@ -19,15 +21,15 @@ from pathlib import Path
 
 FIELDS = ("Hypothesis", "Status", "Production recommendation", "Evidence strength", "Debt items",
           "Residual risks", "Evaluator", "Timestamp")
-STATUS = {"VALIDATED", "INVALIDATED", "INCONCLUSIVE"}
+STATUS = {"VALIDATED", "INVALIDATED"}
 RECOMMENDATION = {"proceed", "proceed_with_constraints", "do_not_proceed"}
 STRENGTH = {"strong", "moderate", "weak"}
-SEVERITIES = ("CRITICAL", "HIGH", "MEDIUM", "LOW")
-EFFORT = {"S", "M", "L", "XL"}
+SEVERITIES = ("CRITICAL", "MEDIUM", "LOW")
+EFFORT = {"S", "M", "L"}
 IMPACT = {"blocks", "degrades", "cosmetic"}
 DEBT_HEADER = ["#", "Debt Item", "Severity", "Effort", "Risk", "Owner", "Production Impact"]
 DEBT_ITEMS_RE = re.compile(
-    r"^(\d+) \(CRITICAL: (\d+), HIGH: (\d+), MEDIUM: (\d+), LOW: (\d+)\)$")
+    r"^(\d+) \(CRITICAL: (\d+), MEDIUM: (\d+), LOW: (\d+)\)$")
 CHECKLIST = (
     "All CRITICAL debt items have remediation plans with owners",
     "Architecture decisions documented in `docs/decisions/`",
@@ -113,9 +115,8 @@ def check(case_dir: Path) -> bool:
         return False
     if v["Evidence strength"] not in STRENGTH:
         return False
-    if v["Evidence strength"] == "weak" and v["Status"] == "VALIDATED":
-        # Rails Failure mode, asserted only in the part not contested by poc-guidelines Rules 3-4
-        # (which would call a weak PoC failed, i.e. INVALIDATED): weak evidence never VALIDATES.
+    if v["Evidence strength"] == "weak" and v["Status"] != "INVALIDATED":
+        # Rails Failure mode, in full: weak evidence returns INVALIDATED (poc-guidelines Rules 3-4).
         return False
     if not re.fullmatch(r"\d+", v["Residual risks"]) or v["Evaluator"] != "poc-orchestrator":
         return False

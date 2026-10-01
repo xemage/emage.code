@@ -5,8 +5,9 @@ Contract under test: implementation/knowledge/commands/poc-demo.md, verbatim in 
 `## Hypothesis Validation Status` step 8's `## Hypothesis Status` block (five fields, two enums),
 the `## Rails` Failure mode ("If the demo cannot show evidence for the stated hypothesis, reports the
 evidence gap explicitly in the Hypothesis Status block rather than omitting it"), and the Demo
-Package deliverables 1-6 plus step 10's mocked/simulated call-out. Step 7's artifact links are not
-asserted: every path it names is contested (P11, P12, checkpoint path) -- see brief.md.
+Package deliverables 1-6 plus step 10's mocked/simulated call-out. The status enum is the contract as
+amended by T564 (poc-contract-resolution-v1.md SS5): `INCONCLUSIVE` is rejected outright; `IN_PROGRESS`
+stays. Step 7's artifact links (resolved by T563/T564) are still not asserted -- see brief.md.
 """
 from __future__ import annotations
 
@@ -17,10 +18,10 @@ from pathlib import Path
 BLOCK_HEADING = "## Hypothesis Status"
 FIELDS = ("Hypothesis", "Validation status", "Key evidence demonstrated", "Evidence gaps",
           "Confidence level")
-STATUS_VALUES = {"VALIDATED", "INVALIDATED", "INCONCLUSIVE", "IN_PROGRESS"}
+STATUS_VALUES = {"VALIDATED", "INVALIDATED", "IN_PROGRESS"}
 CONFIDENCE_VALUES = {"HIGH", "MEDIUM", "LOW"}
 # Statuses under which the demo has not shown evidence for the hypothesis (Failure mode).
-NO_EVIDENCE_STATUSES = {"INCONCLUSIVE", "IN_PROGRESS"}
+NO_EVIDENCE_STATUSES = {"IN_PROGRESS"}
 # Statuses that claim a decided outcome, which must be backed by demonstrated evidence.
 DECIDED_STATUSES = {"VALIDATED", "INVALIDATED"}
 NONE_LIKE = {"", "none", "n/a", "na", "-", "—", "–", "[]", "nothing", "tbd"}
