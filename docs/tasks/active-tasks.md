@@ -2,9 +2,8 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T556 | Declare every command's audience: schema + 19 frontmatter lines, one atomic commit | backend-developer | pending | P2 | — | 2026-10-01 |
 
-> **1 active row (`T556`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **0 active rows.** `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /

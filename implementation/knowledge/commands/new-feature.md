@@ -3,6 +3,7 @@ description: "Plan and create a new feature including user story, tasks, and imp
 agent: "orchestrator"
 argument-hint: "Describe the feature you want to add..."
 maturity: stable
+audience: both
 ---
 
 I want to add a new feature to the project. Please:

@@ -3,6 +3,7 @@ description: "Create a structured bug report with reproduction steps, expected v
 agent: "orchestrator"
 argument-hint: "Describe the bug you found..."
 maturity: stable
+audience: both
 ---
 
 Create a structured bug report for the following issue:

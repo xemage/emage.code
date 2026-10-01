@@ -3,6 +3,7 @@ description: "Create a structured session handoff for the next agent or human. C
 agent: "orchestrator"
 argument-hint: "Optional: focus task ID or session summary..."
 maturity: stable
+audience: both
 ---
 
 You are in **Session Handoff** mode. Produce a resumable handoff artifact for the next session.

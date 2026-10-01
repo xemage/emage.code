@@ -3,6 +3,7 @@ description: "Capture the current workflow or a recurring pattern as a reusable 
 agent: "orchestrator"
 argument-hint: "Describe the workflow to capture as a skill..."
 maturity: experimental
+audience: both
 ---
 
 You are in **Skillify mode**. Capture a workflow or recurring pattern as a reusable skill file.
