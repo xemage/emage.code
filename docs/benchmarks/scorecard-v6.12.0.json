@@ -160,6 +160,19 @@
       {
         "actual_result": "pass",
         "bucket": "pass",
+        "case_dir": "golden/open/evaluate-poc-verdict-debt-reconciliation",
+        "command": "/evaluate-poc",
+        "error": null,
+        "id": "evaluate-poc-verdict-debt-reconciliation",
+        "known_failing_category": null,
+        "location": "open",
+        "model_outcome": null,
+        "model_tier": null,
+        "status": "expected_pass"
+      },
+      {
+        "actual_result": "pass",
+        "bucket": "pass",
         "case_dir": "golden/open/handoff-payload-schema-fields-real",
         "command": "/handoff",
         "error": null,
@@ -212,6 +225,19 @@
       {
         "actual_result": "pass",
         "bucket": "pass",
+        "case_dir": "golden/open/new-poc-plan-hypothesis-format",
+        "command": "/new-poc",
+        "error": null,
+        "id": "new-poc-plan-hypothesis-format",
+        "known_failing_category": null,
+        "location": "open",
+        "model_outcome": null,
+        "model_tier": null,
+        "status": "expected_pass"
+      },
+      {
+        "actual_result": "pass",
+        "bucket": "pass",
         "case_dir": "golden/open/new-project-plan-doc-and-lifecycle-states",
         "command": "/new-project",
         "error": null,
@@ -255,6 +281,19 @@
         "command": "/plan",
         "error": null,
         "id": "plan-task-creation-precondition-real",
+        "known_failing_category": null,
+        "location": "open",
+        "model_outcome": null,
+        "model_tier": null,
+        "status": "expected_pass"
+      },
+      {
+        "actual_result": "pass",
+        "bucket": "pass",
+        "case_dir": "golden/open/poc-demo-hypothesis-status-evidence-gaps",
+        "command": "/poc-demo",
+        "error": null,
+        "id": "poc-demo-hypothesis-status-evidence-gaps",
         "known_failing_category": null,
         "location": "open",
         "model_outcome": null,
@@ -368,6 +407,19 @@
       {
         "actual_result": "pass",
         "bucket": "pass",
+        "case_dir": "golden/open/team-status-dag-colour-code",
+        "command": "/team-status",
+        "error": null,
+        "id": "team-status-dag-colour-code",
+        "known_failing_category": null,
+        "location": "open",
+        "model_outcome": null,
+        "model_tier": null,
+        "status": "expected_pass"
+      },
+      {
+        "actual_result": "pass",
+        "bucket": "pass",
         "case_dir": "golden/open/validate-tasks-fail-lines-verbatim",
         "command": "/validate-tasks",
         "error": null,
@@ -377,6 +429,19 @@
         "model_outcome": null,
         "model_tier": null,
         "status": "expected_pass"
+      },
+      {
+        "actual_result": "fail",
+        "bucket": "known_failing",
+        "case_dir": "golden/open/validate-workflow-gate-verdict-sources",
+        "command": "/validate-workflow",
+        "error": null,
+        "id": "validate-workflow-gate-verdict-sources",
+        "known_failing_category": "tracked_defect",
+        "location": "open",
+        "model_outcome": null,
+        "model_tier": null,
+        "status": "known_failing"
       }
     ],
     "summary": {
@@ -392,27 +457,27 @@
         },
         "open": {
           "capability_gap": 3,
-          "known_failing": 6,
-          "pass": 17,
+          "known_failing": 7,
+          "pass": 21,
           "regression": 0,
-          "total": 23,
-          "tracked_defect": 3,
+          "total": 28,
+          "tracked_defect": 4,
           "unexpected_pass": 0
         }
       },
       "capability_gap": 4,
-      "known_failing": 8,
+      "known_failing": 9,
       "regressions": 0,
-      "total_cases": 29,
-      "total_fail": 8,
-      "total_pass": 21,
-      "tracked_defect": 4,
+      "total_cases": 34,
+      "total_fail": 9,
+      "total_pass": 25,
+      "tracked_defect": 5,
       "unexpected_pass": 0,
       "unrecognized_status": 0
     }
   },
   "run_metadata": {
-    "generated_at": "2026-09-26T15:09:35Z",
+    "generated_at": "2026-10-01T13:46:18Z",
     "golden_version": "v6.12.0",
     "runner": "scripts/scorecard.py",
     "schema_version": "golden-scorecard-v1"
