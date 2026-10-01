@@ -12,16 +12,23 @@ Usage: scripts/install.sh --target <dir> [--platform <name>|all] [--update | --p
 Install emage.code into an existing or new project directory.
 
 Options:
-  --target <dir>       Destination project root (created if missing)
+  --target <dir>       Destination project root (created if missing). Not the emage.code
+                       repository: its root accepts only --projections-only, and any
+                       directory below its root is refused in every mode.
   --platform <name>    cursor | github | gemini | opencode | pi | claude-code | cline | all (default: all)
   -u, --update         Update an existing install. Replaces the platform trees, EXCEPT
                        project-local files the harness never ships and therefore does not
                        own: each platform's MCP/settings config, .claude/settings.json and
                        .claude/settings.local.json, and .github's workflows, issue/PR
                        templates, CODEOWNERS, dependabot.yml, FUNDING.yml and
-                       copilot-instructions.md. In docs/tasks/, an existing ledger is never
-                       rewritten beyond its task rows — its surrounding prose is the
-                       project's own record, not the template's. Missing files are seeded.
+                       copilot-instructions.md. In docs/tasks/, each existing task ledger
+                       (active-tasks.md, completed-tasks.md) is always rewritten: rows of
+                       its task table that are not T<NNN> task rows are dropped (with a
+                       warning), line endings become LF and a missing final newline is
+                       added. Prose around the table is kept -- it is the project's own
+                       record -- but a ledger with no task table at all is replaced by the
+                       template, keeping only its task rows. Every other docs/ file is
+                       seeded when missing and otherwise left alone.
                        Refused at the emage.code repository root; use --projections-only.
   --projections-only   Refresh ONLY the derived harness of an existing install: the platform
                        trees (with the same project-local exceptions as --update), their
@@ -148,6 +155,74 @@ if target_is_repo_root; then
   fi
 fi
 
+# The physical path of $1 -- every symlink on it resolved -- for a path that
+# need not exist yet: its deepest existing ancestor is resolved with `cd -P`,
+# and the components below that are appended as given.
+physical_path() {
+  local path="$1"
+  local rest=""
+  local parent
+  while [[ ! -d "$path" ]]; do
+    parent="$(dirname -- "$path")"
+    if [[ "$parent" == "$path" ]]; then break; fi
+    rest="/$(basename -- "$path")$rest"
+    path="$parent"
+  done
+  printf '%s%s\n' "$(CDPATH='' cd -P -- "$path" && pwd -P)" "$rest"
+}
+
+# True when path $1 is directory $2 or lies anywhere below it. Each ancestor of
+# $1's physical path is compared with $2 by `-ef` (same device and inode), as
+# target_is_repo_root does, so neither a symlink anywhere on the way nor a bind
+# mount of $2 hides the overlap; a plain string prefix would miss both.
+path_within() {
+  local path
+  local parent
+  path="$(physical_path "$1")"
+  while :; do
+    if [[ -e "$path" && "$path" -ef "$2" ]]; then return 0; fi
+    parent="$(dirname -- "$path")"
+    if [[ "$parent" == "$path" ]]; then return 1; fi
+    path="$parent"
+  done
+}
+
+# Refused since T559: every target strictly inside this repository, in every
+# mode, dry-run included, before anything is written. The root itself is
+# handled above. Two cases, for two reasons:
+#   - implementation/ and anything below it is the source the installer reads,
+#     so the install is written from itself. Measured on the pre-T559 script:
+#     --update re-rendered AGENTS.md over its own source, created
+#     implementation/implementation/ and exited 1 at the CLAUDE.md self-copy;
+#     --target implementation/.cursor under rsync copied .cursor into its own
+#     subdirectory, several levels deep; --target implementation/new-dir
+#     exited 0 after writing a second harness into the source tree.
+#   - Anywhere else in the repository, an install writes a second copy of the
+#     harness (AGENTS.md, CLAUDE.md, the platform trees, docs/ with its task
+#     ledgers, implementation/runtime/) into the repository's own working tree.
+#     No script, Makefile target or document installs inside the repository;
+#     every recorded install targets a directory outside it.
+if ! target_is_repo_root && path_within "$TARGET_ABS" "$REPO_ROOT"; then
+  if path_within "$TARGET_ABS" "$IMPLEMENTATION"; then
+    echo "error: refusing to install into the emage.code source tree:" >&2
+    echo "  $TARGET_ABS" >&2
+    echo "  is, or is inside, $IMPLEMENTATION" >&2
+    echo "reason: implementation/ is the source the installer reads; a target there would be" >&2
+    echo "  written from itself (AGENTS.md rendered over its own source, implementation/ nested in" >&2
+    echo "  implementation/, platform trees copied into their own subdirectories)." >&2
+  else
+    echo "error: refusing to install inside the emage.code source repository:" >&2
+    echo "  $TARGET_ABS" >&2
+    echo "  is inside $REPO_ROOT" >&2
+    echo "reason: an install writes a second copy of the harness (AGENTS.md, CLAUDE.md, the platform" >&2
+    echo "  trees, docs/ and implementation/runtime/) into the repository's own working tree." >&2
+  fi
+  echo "use one of the following instead:" >&2
+  echo "  - For installation testing: scripts/install.sh --target /tmp/emage-test --platform all" >&2
+  echo "  - To refresh the root's own harness projections: scripts/install.sh --target . --platform all --projections-only" >&2
+  exit 1
+fi
+
 if [[ "$PROJECTIONS_ONLY" -eq 1 ]]; then
   # --projections-only reuses --update's semantics for everything it runs:
   # trees are replaced with stale-file deletion (sync_tree_into, honouring the
@@ -270,17 +345,19 @@ exclude_hits() {
   rm -f "$list"
 }
 
-# `cp -r "$src/." "$dest/"`, minus the relative paths in $3.. (hits from
-# exclude_hits "$src"), which are never copied -- not copied and then removed.
-# With no hits it runs exactly that single cp, as before T555. Otherwise it
-# copies entry by entry, descending only into directories that contain a hit,
-# so a whole subtree without one still goes in a single cp.
+# `cp $1 "$src/." "$dest/"` ($1 is -r, or -rn for a no-clobber merge), minus
+# the relative paths in $4.. (hits from exclude_hits "$src"), which are never
+# copied -- not copied and then removed. With no hits it runs exactly that
+# single cp, as before T555. Otherwise it copies entry by entry, descending only
+# into directories that contain a hit, so a whole subtree without one still
+# goes in a single cp.
 copy_contents_excluding() {
-  local src="$1"
-  local dest="$2"
-  shift 2
+  local cp_opt="$1"
+  local src="$2"
+  local dest="$3"
+  shift 3
   if [[ $# -eq 0 ]]; then
-    run cp -r "$src/." "$dest/"
+    run cp "$cp_opt" "$src/." "$dest/"
     return 0
   fi
   local saved_shopt
@@ -300,9 +377,160 @@ copy_contents_excluding() {
     if [[ "$skip" -eq 1 ]]; then continue; fi
     if [[ ${#below[@]} -gt 0 ]]; then
       run mkdir -p "$dest/$name"
-      copy_contents_excluding "$entry" "$dest/$name" "${below[@]}"
+      copy_contents_excluding "$cp_opt" "$entry" "$dest/$name" "${below[@]}"
     else
-      run cp -r "$entry" "$dest/"
+      run cp "$cp_opt" "$entry" "$dest/"
+    fi
+  done
+}
+
+# --- Type conflicts: one meaning under both copiers (T559) -------------------
+#
+# A path can be one type in src and another in dest: a file where dest has a
+# directory, a directory where dest has a file or a symlink. `rsync -a` (no
+# --delete, no --force; measured with 3.2.7) resolves each such path:
+#   1. src directory, dest non-directory (a file, or any symlink -- even one to
+#      a directory): dest's path is removed and the directory created.
+#   2. src non-directory, dest an EMPTY directory: the directory is removed.
+#   3. src non-directory, dest a NON-EMPTY directory (excluded content counts):
+#      refused -- "could not make way for new regular file", exit 23, after
+#      transferring everything else. --dry-run fails the same way.
+#   4. src file or symlink over a dest symlink, or src symlink over a dest
+#      file: dest's path is replaced. A symlink is never written through.
+# `cp -r` does none of this. It exits 1 ("cannot overwrite directory") for 1-3,
+# and for a file over a symlink to a file it writes THROUGH the link, into
+# wherever the link points (T555 §8.2). make_way_for_source gives the cp
+# fallback rsync's results: it removes what rsync would remove, and refuses
+# what rsync refuses -- before writing anything, naming every such path,
+# rather than after a partial copy as rsync does. sync_tree_into's fallback
+# empties dest before copying, so only rule 3 can arise there, at the
+# ancestors of a kept (excluded) path: refuse_kept_paths_under_source_nondirs.
+
+# True when directory $1 has no entries at all, dotfiles included.
+dir_is_empty() {
+  local saved_shopt
+  saved_shopt="$(shopt -p dotglob nullglob || true)"
+  shopt -s dotglob nullglob
+  local entries=("$1"/*)
+  eval "$saved_shopt"
+  [[ ${#entries[@]} -eq 0 ]]
+}
+
+# Rule 3, for either fallback: exit 1, naming each dest path ($3..) that is a
+# non-empty directory where src ($1) has a file or symlink. Called before the
+# fallback has written anything.
+refuse_blocked_paths() {
+  local src="$1"
+  local dest="$2"
+  shift 2
+  echo "error: cannot copy $src into $dest: where the source has a file or symlink," >&2
+  echo "  the target has a directory that is not empty:" >&2
+  local rel
+  for rel in "$@"; do echo "    $dest/$rel" >&2; done
+  echo "  rsync refuses this too (\"could not make way\"). Nothing was written to $dest;" >&2
+  echo "  move or remove the directory and re-run." >&2
+  exit 1
+}
+
+# Rule 3 for sync_tree_into's fallback. Each kept path $3.. (an excluded dest
+# path, relative to dest $2) survives the replace inside its ancestors, which
+# therefore stay non-empty directories. Where src $1 has a file or symlink at
+# one of those ancestors, rsync refuses to make way for it, and so does this --
+# before the fallback's `rm -rf "$dest"`. Before T559 the fallback ran that rm
+# first and then either failed at `mkdir -p` (the target's kept path deleted,
+# its backup left in a temp directory) or restored the kept path THROUGH a
+# symlink shipped by src, writing outside dest, and exited 0.
+refuse_kept_paths_under_source_nondirs() {
+  local src="$1"
+  local dest="$2"
+  shift 2
+  local blocked=()
+  local h anc rest b dup
+  for h in "$@"; do
+    anc=""
+    rest="$h"
+    while [[ "$rest" == */* ]]; do
+      anc="${anc:+$anc/}${rest%%/*}"
+      rest="${rest#*/}"
+      if [[ -L "$src/$anc" || ( -e "$src/$anc" && ! -d "$src/$anc" ) ]]; then
+        dup=0
+        for b in ${blocked[@]+"${blocked[@]}"}; do
+          if [[ "$b" == "$anc" ]]; then dup=1; fi
+        done
+        if [[ "$dup" -eq 0 ]]; then blocked+=("$anc"); fi
+        break
+      fi
+    done
+  done
+  if [[ ${#blocked[@]} -gt 0 ]]; then refuse_blocked_paths "$src" "$dest" "${blocked[@]}"; fi
+}
+
+# Writes every path under $1, NUL-separated and pre-order, to file $2 --
+# without descending into a path named by one of $3.. (the excluded names,
+# which are never copied, so never compared). Through a file, not a pipe, so
+# a failed find stops the run instead of reading as "no paths".
+list_source_paths() {
+  local src="$1"
+  local list="$2"
+  shift 2
+  local expr=()
+  local e
+  for e in "$@"; do
+    if [[ -z "$e" ]]; then continue; fi
+    if [[ ${#expr[@]} -gt 0 ]]; then expr+=(-o); fi
+    expr+=(-name "$e")
+  done
+  if [[ ${#expr[@]} -gt 0 ]]; then expr=(\( "${expr[@]}" \) -prune -o); fi
+  if ! find "$src/." -mindepth 1 ${expr[@]+"${expr[@]}"} -print0 >"$list"; then
+    rm -f "$list"
+    echo "error: could not scan $src; refusing to copy it unchecked." >&2
+    exit 1
+  fi
+}
+
+# Compares every path of $1 (minus the excluded names $3..) with the same path
+# under $2, then removes each dest path rsync would replace (rules 1, 2, 4), or
+# exits 1 with nothing written if any path is rule 3.
+make_way_for_source() {
+  local src="$1"
+  local dest="$2"
+  shift 2
+  if [[ ! -d "$dest" ]]; then return 0; fi
+  local list
+  list="$(mktemp)"
+  list_source_paths "$src" "$list" "$@"
+  local remove=()
+  local blocked=()
+  local gone=()
+  local p rel s d g below
+  while IFS= read -r -d '' p; do
+    rel="${p#"$src/./"}"
+    below=0
+    for g in ${gone[@]+"${gone[@]}"}; do
+      if [[ "$rel" == "$g/"* ]]; then below=1; fi
+    done
+    if [[ "$below" -eq 1 ]]; then continue; fi
+    s="$src/$rel"
+    d="$dest/$rel"
+    if [[ ! -e "$d" && ! -L "$d" ]]; then continue; fi
+    if [[ -d "$s" && ! -L "$s" ]]; then
+      if [[ -d "$d" && ! -L "$d" ]]; then continue; fi
+      remove+=("$rel")
+      gone+=("$rel")
+    elif [[ -d "$d" && ! -L "$d" ]]; then
+      if dir_is_empty "$d"; then remove+=("$rel"); else blocked+=("$rel"); fi
+      gone+=("$rel")
+    elif [[ -L "$d" || -L "$s" ]]; then
+      remove+=("$rel")
+    fi
+  done <"$list"
+  rm -f "$list"
+  if [[ ${#blocked[@]} -gt 0 ]]; then refuse_blocked_paths "$src" "$dest" "${blocked[@]}"; fi
+  for rel in ${remove[@]+"${remove[@]}"}; do
+    if [[ -d "$dest/$rel" && ! -L "$dest/$rel" ]]; then
+      run rmdir "$dest/$rel"
+    else
+      run rm -f "$dest/$rel"
     fi
   done
 }
@@ -344,8 +572,12 @@ copy_tree_into() {
     # that removed the target's OWN copy along with the source's (a plain
     # re-install deleted a target's built _index/), and missed every nested
     # one (runtime/memory/context_retriever_mcp_server/__pycache__/ shipped).
+    # Type conflicts are resolved first, as rsync resolves them (see "Type
+    # conflicts" above): before T559 each one made cp exit 1 part-way through,
+    # or write through a symlink in the target.
     exclude_hits "$src" ${excludes[@]+"${excludes[@]}"}
-    copy_contents_excluding "$src" "$dest" ${EXCLUDE_HITS[@]+"${EXCLUDE_HITS[@]}"}
+    make_way_for_source "$src" "$dest" ${excludes[@]+"${excludes[@]}"}
+    copy_contents_excluding -r "$src" "$dest" ${EXCLUDE_HITS[@]+"${EXCLUDE_HITS[@]}"}
   fi
 }
 
@@ -400,6 +632,7 @@ sync_tree_into() {
     for h in ${dest_hits[@]+"${dest_hits[@]}"}; do
       if [[ "$h" == */* ]]; then keep+=("$h"); fi
     done
+    refuse_kept_paths_under_source_nondirs "$src" "$dest" ${keep[@]+"${keep[@]}"}
     # Which of src's paths never to copy: the same names, at any depth. Before
     # T555 nothing was skipped here -- the whole source was copied, and only
     # the paths dest already had were put back -- so a target without its own
@@ -423,7 +656,7 @@ sync_tree_into() {
     done
     run rm -rf "$dest"
     run mkdir -p "$dest"
-    copy_contents_excluding "$src" "$dest" ${src_hits[@]+"${src_hits[@]}"}
+    copy_contents_excluding -r "$src" "$dest" ${src_hits[@]+"${src_hits[@]}"}
     # `"${!arr[@]}"` on an empty array trips `set -u` on bash < 4.4, which the
     # no-rsync CI images are exactly the kind of host to ship — count first.
     local i
@@ -440,20 +673,31 @@ sync_tree_into() {
 
 # Merge source tree into dest while preserving existing dest files.
 # Used by --update for docs templates so local/project docs are never overwritten.
+# $3.. (optional, variadic): excluded names, with the meaning described under
+# "Excluded paths" above. A path so named is never copied from source; dest's
+# own is never touched here anyway, since nothing existing is overwritten.
 merge_tree_preserve_existing() {
   local src="$1"
   local dest="$2"
+  local excludes=("${@:3}")
+  check_exclude_names ${excludes[@]+"${excludes[@]}"}
   if same_tree "$src" "$dest"; then return 0; fi
   if command -v rsync >/dev/null 2>&1; then
     run mkdir -p "$dest"
+    local rsync_args=(-a --ignore-existing)
+    local e
+    for e in ${excludes[@]+"${excludes[@]}"}; do
+      if [[ -n "$e" ]]; then rsync_args+=(--exclude="$e"); fi
+    done
     if [[ "$DRY_RUN" -eq 1 ]]; then
-      run rsync -a --ignore-existing --dry-run "$src/" "$dest/"
+      run rsync "${rsync_args[@]}" --dry-run "$src/" "$dest/"
     else
-      run rsync -a --ignore-existing "$src/" "$dest/"
+      run rsync "${rsync_args[@]}" "$src/" "$dest/"
     fi
   else
     run mkdir -p "$dest"
-    run cp -rn "$src/." "$dest/"
+    exclude_hits "$src" ${excludes[@]+"${excludes[@]}"}
+    copy_contents_excluding -rn "$src" "$dest" ${EXCLUDE_HITS[@]+"${EXCLUDE_HITS[@]}"}
   fi
 }
 
@@ -633,21 +877,36 @@ refuse_in_projections_only() {
   fi
 }
 
+# Names never shipped from $IMPLEMENTATION/docs, at any depth (T559). Python
+# writes __pycache__/ beside any script it imports, and docs/tasks/ ships one
+# (validate-tasks.py): an authoring checkout that has run it has a gitignored
+# implementation/docs/tasks/__pycache__/, which every fresh install copied, with
+# and without rsync. On --update, docs/tasks/ goes through merge_task_docs,
+# which copies top-level files only; every other docs/ subdirectory honours
+# these names too.
+DOCS_EXCLUDES=(__pycache__)
+
 install_docs() {
   refuse_in_projections_only install_docs "$TARGET/docs"
   run mkdir -p "$TARGET/docs"
   if [[ "$UPDATE" -eq 1 ]]; then
+    local e skip
     for sub in "$IMPLEMENTATION/docs"/*/; do
       [[ -d "$sub" ]] || continue
       name="$(basename "$sub")"
+      skip=0
+      for e in "${DOCS_EXCLUDES[@]}"; do
+        if [[ "$name" == "$e" ]]; then skip=1; fi
+      done
+      if [[ "$skip" -eq 1 ]]; then continue; fi
       if [[ "$name" == "tasks" ]]; then
         merge_task_docs
       else
-        merge_tree_preserve_existing "$sub" "$TARGET/docs/$name"
+        merge_tree_preserve_existing "$sub" "$TARGET/docs/$name" "${DOCS_EXCLUDES[@]}"
       fi
     done
   else
-    copy_tree_into "$IMPLEMENTATION/docs" "$TARGET/docs"
+    copy_tree_into "$IMPLEMENTATION/docs" "$TARGET/docs" "${DOCS_EXCLUDES[@]}"
   fi
 }
 

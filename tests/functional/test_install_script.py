@@ -1121,9 +1121,28 @@ class TestInstallPreservesProjectLocalFiles(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertIn(".claude/settings.json", proc.stdout)
         self.assertIn("workflows", proc.stdout)
-        self.assertIn("rewritten beyond its task rows", proc.stdout)
-        self.assertIn("project's own record, not the template's", proc.stdout)
         self.assertNotIn("preserves task rows in docs/tasks/*.md", proc.stdout)
+
+    def test_update_help_text_states_that_the_ledgers_are_rewritten(self):
+        """T559 P18. merge-task-docs.py always rewrites both existing ledgers,
+        drops non-conforming rows, normalises line endings, and replaces a
+        table-less ledger with the template. The pre-T559 text said an existing
+        ledger was "never rewritten beyond its task rows"."""
+        proc = subprocess.run(
+            [self.bash, str(repo_root() / "scripts" / "install.sh"), "--help"],
+            cwd=repo_root(), capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        text = " ".join(proc.stdout.split())
+        self.assertNotIn("rewritten beyond its task rows", text)
+        self.assertIn("each existing task ledger (active-tasks.md, completed-tasks.md) is "
+                      "always rewritten", text)
+        self.assertIn("that are not T<NNN> task rows are dropped", text)
+        self.assertIn("line endings become LF", text)
+        self.assertIn("it is the project's own record", text)
+        self.assertIn("a ledger with no task table at all is replaced by the template", text)
+        self.assertIn("Every other docs/ file is seeded when missing and otherwise left alone",
+                      text)
 
 
 class TestInstallPreservesLedgerProse(unittest.TestCase):
