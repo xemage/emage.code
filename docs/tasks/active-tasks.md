@@ -2,10 +2,9 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T564 | Amend the PoC command contracts and PoC agents' outcome vocabulary (T563 FU-A + FU-C) | backend-developer | pending | P2 | T562, T563 | 2026-10-01 |
 | T565 | Realign the three PoC golden cases to the amended contracts (T563 FU-B) | qa-engineer | pending | P2 | T564 | 2026-10-01 |
 
-> **2 active rows (`T564`, `T565`), scoped by `plan-092`. `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **1 active row (`T565`), scoped by `plan-092`; `T564` closed 2026-10-01 (MR !447). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
