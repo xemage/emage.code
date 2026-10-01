@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-01T20:15:13+00:00",
+  "generatedAt": "2026-10-01T21:27:01+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -297,7 +297,7 @@
       "category": "agent",
       "name": "Orchestrator",
       "path": "agents/orchestrator.md",
-      "checksum": "0955f65bed1573fd23873aa76e1bed9eb412dde2bfe009725adb0701ded72c4c",
+      "checksum": "ba60ce3a0549c3ed77a07ed6d4323d45378193029f6f70393e317e3ae7d91350",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -661,7 +661,7 @@
       "category": "agent",
       "name": "Tech Lead",
       "path": "agents/tech-lead.md",
-      "checksum": "6b3203adef25b93e93955971e68b6d5b3460951d7b0158960345c0b0cec95228",
+      "checksum": "638c9cf407a914246aca76231096aaee79a75ae0af99b0c6ab46ea1eab3290b8",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1613,7 +1613,7 @@
       "category": "skill",
       "name": "code-review",
       "path": "skills/code-review/SKILL.md",
-      "checksum": "a608def62ef6747ebc3d5d3b0a3b03ca20dd7869e2740bd464b141853865a4a7",
+      "checksum": "f2a0da1ec0512c96a027a98a15e747ff93b2788eb3d87945c0940d23caea8b52",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1865,7 +1865,7 @@
       "category": "skill",
       "name": "project-planning",
       "path": "skills/project-planning/SKILL.md",
-      "checksum": "25540da72e39cf7a77515797459a8fc07f89402e1e7ad9a5bb54d1ccb90160a5",
+      "checksum": "bf5fc6076f8c50568976b99e39d0c97cbec8add775f40c98dbc8cbe17c4b8c84",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -2117,7 +2117,7 @@
       "category": "skill",
       "name": "testing-strategy",
       "path": "skills/testing-strategy/SKILL.md",
-      "checksum": "05cbc48f2d15749595cdbd5ff2db28f832e5b4ff3ddef7dcdcc24188f1fed657",
+      "checksum": "68c97534b05f91b3cd7c68c0191a8348388f8c0b5c77e058ecb36308bf0278bd",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [

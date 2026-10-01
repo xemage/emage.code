@@ -215,6 +215,8 @@ The QA validation gate consumes test results and produces a verdict:
 [VERDICT] gate=qa-validation | result=PASS|CONDITIONAL_PASS|FAIL | coverage={N}% | failed_tests={count} | critical_failures={count} | artifact_ref=test-plan-v{N} | date={YYYY-MM-DD}
 ```
 
+The QA validation gate is the integration validation gate named above: the `validation-gates` skill's **Integration** gate (§ Gate Types: QA Agent, after feature merge, before release). As with code review, this line accompanies, and does not replace, the `## Gate Verdict` block that skill's § Verdict Format requires of every gate, with `**Gate:** integration`, and `result=` carries the same value as the block's `### Verdict:`. This skill supplies the thresholds that verdict is judged against (§ Coverage Thresholds That Determine Gate Outcome).
+
 ### VERDICT Format for QA Gate
 
 The QA gate uses the same VERDICT protocol as code review, ensuring consistent gate behavior across the workflow:

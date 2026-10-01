@@ -116,6 +116,8 @@ Code review is a **validation gate** in the emage.code workflow. Every review MU
 [VERDICT] gate=code-review | result=PASS|CONDITIONAL_PASS|FAIL | reviewer={role} | artifact_ref={artifact-version} | date={YYYY-MM-DD}
 ```
 
+Code review is the `validation-gates` skill's **Implementation** gate (§ Gate Types: Tech Lead, after code complete, before merge). This line accompanies, and does not replace, the `## Gate Verdict` block that skill's § Verdict Format requires of every gate, with `**Gate:** implementation`. Both record the gate's one verdict, so `result=` carries the same value as the block's `### Verdict:`.
+
 **Verdict definitions:**
 
 | Verdict | Meaning | Pipeline Effect |
