@@ -11,7 +11,7 @@ Determine if the PoC proves the hypothesis.
 ## Deliverables
 - Hypothesis restatement
 - Evidence summary
-- Verdict: Validated | Invalidated | Inconclusive
+- Verdict: Validated | Invalidated
 - Recommended next step
 - Production recommendation: proceed | proceed_with_constraints | do_not_proceed
 - Prioritized production refactoring backlog (top 5 minimum)
@@ -44,7 +44,7 @@ If you cannot proceed:
 
 **Inputs**: The PoC's stated hypothesis, success signal, and failure criteria, plus the observed evidence produced during PoC execution.
 **Out of scope**: Forming a verdict that isn't directly tied to observable outcomes; skipping the residual-risks/assumptions section.
-**Failure mode**: If the available evidence is insufficient to reach a Validated/Invalidated verdict, returns `Inconclusive` with the specific missing evidence named, rather than forcing a binary verdict.
+**Failure mode**: If the available evidence is insufficient, or the hypothesis wasn't actually tested by its deadline, returns `Invalidated` with the specific missing evidence named and recommends a follow-up PoC with refined criteria as the next step, rather than forcing a `Validated` verdict (`poc-guidelines.md` § Hypothesis-First Validation, Rules 3–4).
 
 ## Constraints
 

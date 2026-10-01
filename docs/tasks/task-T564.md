@@ -2,7 +2,7 @@
 
 **ID:** T564
 **Owner:** Backend Developer
-**Status:** pending
+**Status:** in_review
 **Priority:** P2
 **Tier:** standard
 **Affects:** command/new-poc, command/poc-demo, command/evaluate-poc, agent/poc-orchestrator, agent/evaluation-agent

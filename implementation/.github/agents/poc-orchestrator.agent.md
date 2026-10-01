@@ -79,7 +79,7 @@ the summary below.
   format that instruction documents is superseded and should not be used for
   new PoC work)
 - At evaluation, produce explicit handoff artifacts:
-  - Hypothesis verdict (Validated / Invalidated / Inconclusive)
+  - Hypothesis verdict (Validated / Invalidated)
    - `TECHNICAL-DEBT.md` from `@technical-debt-narrator`
   - Production refactoring backlog (top 5 minimum)
   - Recommended architecture adjustments for production
