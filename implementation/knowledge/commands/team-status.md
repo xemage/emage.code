@@ -2,7 +2,7 @@
 description: "Report team-wide status across active streams with blockers, workload, and next actions."
 agent: "orchestrator"
 argument-hint: "Optional scope: project-id, stream, or portfolio"
-maturity: experimental
+maturity: stable
 audience: both
 ---
 

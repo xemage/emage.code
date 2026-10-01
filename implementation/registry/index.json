@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-01T06:49:27+00:00",
+  "generatedAt": "2026-10-01T14:52:58+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -941,8 +941,8 @@
       "category": "command",
       "name": "evaluate-poc",
       "path": "commands/evaluate-poc.md",
-      "checksum": "82ba0d691d847ac03a89a5427c3da80a44b89d1ca12083e314c73dc5129c6269",
-      "maturity": "experimental",
+      "checksum": "192fbc35a10691d6e0d1ac36f45c942418498d205c90b98270e2da11725aa290",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1025,8 +1025,8 @@
       "category": "command",
       "name": "new-poc",
       "path": "commands/new-poc.md",
-      "checksum": "78498402c6e34c1ae7c211c1aa21764a7f4910b6a1aadf5ed8c2bcf715158100",
-      "maturity": "experimental",
+      "checksum": "8635bcd025f12533597350d58e9849341b4e5a99c472497101752181b5baa5e2",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1109,8 +1109,8 @@
       "category": "command",
       "name": "poc-demo",
       "path": "commands/poc-demo.md",
-      "checksum": "f518035e42c8f128befa6e8b3522bb15c3e6a4b4d4b0ec54f45b266c89ada7ae",
-      "maturity": "experimental",
+      "checksum": "7aceb520f5199a613ae55eaab5c2ecfeabd921f542423dcbdf8c0ed3271a2cf7",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
@@ -1249,8 +1249,8 @@
       "category": "command",
       "name": "team-status",
       "path": "commands/team-status.md",
-      "checksum": "e656af57f68224be42eb5d3a8b7990a5612d5b6f019345a842129999ef9760aa",
-      "maturity": "experimental",
+      "checksum": "67754ac08234627e02d48a4f254927c2d9d7b99cb53b54a9ff813791bb60afe9",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
