@@ -99,8 +99,10 @@ docs/artifacts/poc-{name}-v2.md
 At the conclusion of prototyping (or at significant milestones), publish a hypothesis validation checkpoint:
 
 ```
-[CHECKPOINT] id=poc-{name}-validation | hypothesis="{hypothesis text}" | evidence=[{evidence items}] | debt_tags={count} | verdict=validated|invalidated|inconclusive | artifact_refs=[poc-{name}-v{N}] | next=[{next steps}]
+[CHECKPOINT] id=poc-{name}-validation | hypothesis="{hypothesis text}" | evidence=[{evidence items}] | debt_tags={count} | verdict=validated|invalidated|in_progress | artifact_refs=[poc-{name}-v{N}] | next=[{next steps}]
 ```
+
+**Verdict values:** `in_progress` is allowed only at a milestone checkpoint, before any of the checkpoint triggers below has fired. At a trigger, the verdict is binary: `validated` or `invalidated` (`poc-guidelines.md` § Hypothesis-First Validation, Rule 4). A hypothesis not validated when the time-box expires is `invalidated` (Rule 3). A partial result is `invalidated`, and `next=` names a follow-up PoC with refined criteria.
 
 **Evidence items** should be specific and measurable:
 - "API response time < 200ms for 95th percentile" ✅
