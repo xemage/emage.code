@@ -2,7 +2,7 @@
 
 **ID:** T557
 **Owner:** QA Engineer
-**Status:** pending
+**Status:** done
 **Priority:** P2
 **Tier:** judgment
 **Affects:** —

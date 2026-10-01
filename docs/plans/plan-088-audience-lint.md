@@ -9,3 +9,12 @@ the declaration checked: a command declared `both` or `target` must not name a p
 repository but not in a fresh install. It reuses T543's design — the installer as the oracle, a declared baseline
 that fails in both directions — so no hand-maintained list of "authoring-only paths" can drift. P22 (the
 `/discover-skills` step 6 no-op) is surfaced by the lint's first run and declared, not silently fixed.
+
+## 2. First run — one real defect, scoped as `T558`
+
+The lint's first run (T557) declared 15 entries: legitimate authoring-row mentions in `/skillify`,
+`/discover-skills` and `/consolidate-memory`, P22, and **one real, untracked defect: `/batch` cites
+`commands/plan.md`** (class C / rule B4). `T558` repairs it; its MR must also remove the `/batch` baseline entry,
+or the gate fails on a declared entry that is no longer a violation. The `/skillify` `scripts/install.sh` entry
+was adjudicated as legitimate: the target row names the installer only to warn the user, and nothing reads or
+runs it in a target.
