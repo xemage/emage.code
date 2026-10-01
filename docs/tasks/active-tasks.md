@@ -2,8 +2,10 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T559 | install.sh batch: P17, P18, P20, P21 | devops-engineer | pending | P2 | — | 2026-10-01 |
+| T560 | Golden batch: P13, P14, P15, P24 prose and fixture corrections | qa-engineer | pending | P2 | — | 2026-10-01 |
 
-> **0 active rows.** `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **2 active rows (`T559`, `T560`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
