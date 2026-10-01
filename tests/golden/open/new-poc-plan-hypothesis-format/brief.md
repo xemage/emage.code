@@ -15,7 +15,7 @@ approval.
 >    - **Hypothesis**: Restate the hypothesis clearly with measurable success criteria
 >    - **Validation path**: Define what evidence proves/disproves the hypothesis
 >    - **3-step plan**: (a) Feasibility check → (b) Core build → (c) Evaluate & demo
->    - Write to `docs/plans/poc-<slug>.md`
+>    - Write to `docs/plans/plan-<ID>.md`
 >    - Reference protocol: `poc-orchestrator` agent § Plan-Approve-Execute (PoC-Adapted) › PLAN PHASE (lightweight); hypothesis format: `poc-guidelines.md` § Hypothesis-First Validation
 
 and the format that last bullet imports, `implementation/knowledge/instructions/poc-guidelines.md`
@@ -48,27 +48,32 @@ not contested by another document. Three assertions:
   Feasibility comes first because the command's Failure mode depends on it: "If the feasibility check …
   finds a critical assumption fails, stops or reframes rather than continuing to build."
 
-### Contested clauses deliberately not asserted — reported, not resolved
-`/new-poc` declares three output files, and **every one of the three is contradicted by another
-document**. This case asserts none of them, and the green it earns covers step 1's *content* only:
+### Output paths — formerly contested, resolved by T563/T564; still not asserted
+When this case was authored (T561), `/new-poc`'s three output files were each contradicted by another
+document, and the case asserted none of them. `poc-contract-resolution-v1.md` ruled all three
+`ADR-007` branch 1, and T564 amended the command. The clauses now read verbatim:
 
-1. **The plan path (parked item P11).** Step 1 says `docs/plans/poc-<slug>.md`; the protocol step 1
-   itself cites — `poc-orchestrator` § PLAN PHASE (lightweight), step 3 — says "Write a lightweight plan
-   in `docs/plans/plan-<ID>.md`". The fixture uses `poc-<slug>.md` (the command under test's own form);
-   `check()` reads whichever single `*.md` sits in `fixture/docs/plans/`, and was shown to pass with the
-   file renamed `plan-042.md`.
-2. **The debt scorecard (parked item P12).** Step 11 says `docs/decisions/poc-debt-<slug>.md`;
-   `poc-guidelines.md` § Debt Scorecard says "Create a `POC-DEBT-SCORECARD.md` file in the PoC root";
-   and `poc-orchestrator` / `technical-debt-narrator` name a third artifact, `TECHNICAL-DEBT.md`. Any
-   check of step 11 would have to pick one, which is the adjudication `T561` forbids.
-3. **The checkpoint path — a new finding.** Step 14 says "Write checkpoint to
-   `docs/checkpoints/checkpoint-poc-<gate>.md`"; `AGENTS.md` § Checkpoint Protocol says
-   `docs/checkpoints/checkpoint-<SEQ>-<phase>.md`. That is the same defect class `ADR-007` already ruled
-   on for `/new-feature`'s `checkpoint-feature-<slug>.md` (branch 1, contract amended;
-   `command-contract-resolution-v1.md`), which `/new-feature` no longer carries but `/new-poc` still does.
+1. **The plan path (P11, resolution §2): resolved.** Step 1 now says "Write to
+   `docs/plans/plan-<ID>.md`" (quoted above), which is the path its cited protocol uses
+   (`poc-orchestrator` § PLAN PHASE (lightweight): "Write a lightweight plan in
+   `docs/plans/plan-<ID>.md`"). Under `ADR-007`'s corollary row for a name-or-path-only amendment, the
+   case survives with its fixture moved to the amended form: the plan is now
+   `fixture/docs/plans/plan-001.md` (formerly `poc-local-note-search.md`, contents unchanged).
+   `check()` is unchanged and path-agnostic. It reads whichever single `*.md` sits in
+   `fixture/docs/plans/`, so the rename changes no result.
+2. **The debt scorecard (P12/P29, resolution §3a): resolved.** Step 11 now reads:
 
-A green here therefore does **not** attest that `/new-poc` writes its artifacts where it should — it
-cannot, while the command and three other documents disagree about where that is.
+   >     - Write to `POC-DEBT-SCORECARD.md` in the PoC root, per `poc-guidelines.md` § Debt Scorecard
+
+   `TECHNICAL-DEBT.md` was ruled a separate narrative register, not a scorecard home (§3c).
+3. **The checkpoint path (P30, resolution §4): resolved.** Step 14 now reads:
+
+   > 	- Write checkpoint per `AGENTS.md` § Checkpoint Protocol: store at `docs/checkpoints/checkpoint-<SEQ>-<phase>.md`, with `<phase>` naming the PoC gate
+
+The contract no longer contradicts itself or another document, but this case **still asserts none of
+the three paths**. Its `check()` covers step 1's *content* only, and this realignment (T565) does not
+change it. A green here therefore still does **not** attest that `/new-poc` writes its artifacts where
+it should. A path assertion would be a new check, left as a candidate follow-up.
 
 ### Readings deliberately not asserted
 - **The other `poc-guidelines` rules** (time-box, binary outcome). Step 1 cites the section for its
@@ -88,8 +93,9 @@ once as a list-item or heading lead, in order (a) → (b) → (c).
 swapped; a second `HYPOTHESIS:` added; success criteria made non-numeric ("search feels instant while
 typing"); the feasibility step removed; (b) renamed "Build everything"; (b) mislabelled `(c)`; the
 `VALIDATION:` label removed with its prose kept; `SUCCESS CRITERIA` moved before `VALIDATION`; a second
-plan file added. It stays `True` with the plan renamed `plan-042.md` (path not asserted — P11) and with
-"Evaluate and demo" for "Evaluate & demo".
+plan file added. It stays `True` with the plan renamed `plan-042.md` (path not asserted) and with
+"Evaluate and demo" for "Evaluate & demo". After the T565 rename to `plan-001.md` it is still `True`,
+and it stays `True` with the file renamed back to `poc-local-note-search.md` (path not asserted).
 
 ## Provenance
 **Hand-authored; no real corpus exists.** No `/new-poc` run has ever produced a committed artifact in

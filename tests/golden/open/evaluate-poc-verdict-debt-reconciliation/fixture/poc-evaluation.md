@@ -28,8 +28,8 @@ proceed_with_constraints — adopt FTS5 for v1 read paths, conditional on the co
 6. Add latency telemetry to production dashboards
 
 ## Technical Debt Scorecard Summary
-Five debt items: one CRITICAL (no input validation on the query path), one HIGH, two MEDIUM, one LOW —
-see the Debt Summary table below for severity, effort, risk and owner per item.
+Five debt items: two CRITICAL (no input validation on the query path; no strategy for online writes),
+two MEDIUM, one LOW — see the Debt Summary table below for severity, effort, risk and owner per item.
 
 ## Residual Risks and Assumptions
 1. Concurrent write throughput is unknown and may force a read replica.
@@ -41,7 +41,7 @@ see the Debt Summary table below for severity, effort, risk and owner per item.
 - **Status**: VALIDATED
 - **Production recommendation**: proceed_with_constraints
 - **Evidence strength**: moderate
-- **Debt items**: 5 (CRITICAL: 1, HIGH: 1, MEDIUM: 2, LOW: 1)
+- **Debt items**: 5 (CRITICAL: 2, MEDIUM: 2, LOW: 1)
 - **Residual risks**: 2
 - **Evaluator**: poc-orchestrator
 - **Timestamp**: 2026-10-01T16:40:00Z
@@ -62,7 +62,7 @@ see the Debt Summary table below for severity, effort, risk and owner per item.
 | # | Debt Item | Severity | Effort | Risk | Owner | Production Impact |
 |---|-----------|----------|--------|------|-------|-------------------|
 | 1 | No input validation or length limit on search queries | CRITICAL | S | Query-based denial of service | backend-developer | blocks |
-| 2 | Index built once; no strategy for online writes | HIGH | L | Stale or blocked search under write load | backend-developer | blocks |
+| 2 | Index built once; no strategy for online writes | CRITICAL | L | Stale or blocked search under write load | backend-developer | blocks |
 | 3 | Hardcoded database path | MEDIUM | S | Misconfigured deploys | devops-engineer | degrades |
 | 4 | Loader has no retry or partial-failure handling | MEDIUM | M | Silent gaps in the index | backend-developer | degrades |
 | 5 | Throwaway terminal UI | LOW | M | None in production if not carried over | frontend-developer | cosmetic |

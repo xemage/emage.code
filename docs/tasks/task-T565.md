@@ -2,7 +2,7 @@
 
 **ID:** T565
 **Owner:** QA Engineer
-**Status:** pending
+**Status:** in_review
 **Priority:** P2
 **Tier:** judgment
 **Affects:** command/new-poc, command/poc-demo, command/evaluate-poc

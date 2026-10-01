@@ -17,7 +17,7 @@ runs complete.
 > ## Hypothesis Status
 >
 > - **Hypothesis**: <restated hypothesis>
-> - **Validation status**: VALIDATED | INVALIDATED | INCONCLUSIVE | IN_PROGRESS
+> - **Validation status**: VALIDATED | INVALIDATED | IN_PROGRESS
 > - **Key evidence demonstrated**: [list what the demo proves]
 > - **Evidence gaps**: [list what the demo does NOT prove]
 > - **Confidence level**: HIGH | MEDIUM | LOW
@@ -41,31 +41,36 @@ and the `## Demo Package` deliverables with step 10:
 **The load-bearing assertion is the Failure mode, because it is the one that protects the audience.**
 A demo is the PoC artifact most likely to over-claim: it is built to persuade, and the cheapest way to
 look finished is to leave the gaps out. The Failure mode forbids exactly that, and it is checkable: when
-the block's own `Validation status` says the demo has *not* shown the evidence (`INCONCLUSIVE` or
-`IN_PROGRESS`), `Evidence gaps` must be a real, non-empty list — `None`, `n/a`, `—`, `TBD` and an empty
+the block's own `Validation status` says the demo has *not* shown the evidence (`IN_PROGRESS`, the
+enum's one undecided value), `Evidence gaps` must be a real, non-empty list — `None`, `n/a`, `—`, `TBD` and an empty
 field all fail. Conversely, a decided status (`VALIDATED` / `INVALIDATED`) with nothing under `Key
 evidence demonstrated` fails: a verdict the demo did not demonstrate is the over-claim in another form.
 The fixture is deliberately `IN_PROGRESS`, so the Failure mode branch is exercised, not vacuous.
 
 Around that, the block's structure: exactly one `## Hypothesis Status` heading; the five fields, each
 once, in declared order; `Validation status` and `Confidence level` each a single value from the
-declared enum (`PARTIALLY_VALIDATED`, `VERY HIGH` fail). And the package's seven declared deliverables
+declared enum (`PARTIALLY_VALIDATED`, `VERY HIGH` and the removed `INCONCLUSIVE` fail). And the package's seven declared deliverables
 (items 1–6 and step 10), each present as a heading, matched by concept — the command names deliverables,
 not heading text.
 
-### Contested clause deliberately not asserted — reported, not resolved
-**Step 7, `## Artifact References`, is not checked, because every path it names is contested:**
-- "Link to the PoC plan document (`docs/plans/poc-<slug>.md`)" — parked item **P11**: `poc-orchestrator`
-  writes PoC plans to `docs/plans/plan-<ID>.md`.
-- "Link to the latest checkpoint (`docs/checkpoints/checkpoint-poc-<gate>.md`)" — contradicts
-  `AGENTS.md` § Checkpoint Protocol's `checkpoint-<SEQ>-<phase>.md`; the same defect class `ADR-007`
-  ruled on for `/new-feature` (reported with the `new-poc-plan-hypothesis-format` case).
-- "Reference the Technical Debt Scorecard (`docs/decisions/poc-debt-<slug>.md`)" — parked item **P12**:
-  `poc-guidelines.md` declares `POC-DEBT-SCORECARD.md` in the PoC root.
+### Step 7 — formerly contested, resolved by T563/T564; still not asserted
+When this case was authored (T561), every path step 7 named was contested: the plan path (parked item
+**P11**, `docs/plans/poc-<slug>.md` against `poc-orchestrator`'s `docs/plans/plan-<ID>.md`), the
+checkpoint path (`checkpoint-poc-<gate>.md` against `AGENTS.md` § Checkpoint Protocol), and the debt
+scorecard (parked item **P12**, `docs/decisions/poc-debt-<slug>.md` against `poc-guidelines.md`'s
+`POC-DEBT-SCORECARD.md`). `poc-contract-resolution-v1.md` §§2, 4 and 3a ruled all three `ADR-007` branch
+1, and T564 amended the links, which now read verbatim:
 
-Item 6's "tied to the Technical Debt Scorecard" is checked only as a heading for the same reason: which
-scorecard it is tied to is P12. The fixture states its transition notes without citing a scorecard
-path rather than pick a side.
+>    - Link to the PoC plan document (`docs/plans/plan-<ID>.md`)
+>    - Link to the latest checkpoint (`docs/checkpoints/checkpoint-<SEQ>-<phase>.md`, per `AGENTS.md` § Checkpoint Protocol, with `<phase>` naming the PoC gate)
+>    - Reference the Technical Debt Scorecard (`POC-DEBT-SCORECARD.md` in the PoC root, per `poc-guidelines.md` § Debt Scorecard)
+
+The contract is no longer contested, but step 7 is **still not asserted**. This realignment (T565)
+carries the amended wording and value sets only. It adds no new assertion, and the fixture, which has no
+`## Artifact References` section, is outside its grant. Asserting step 7 would be a new check with a new
+fixture, so it is left as a candidate follow-up. Item 6's "tied to the Technical Debt Scorecard" stays a
+heading-only check for the same reason. The fixture states its transition notes without citing a
+scorecard path.
 
 ### Readings deliberately not asserted
 - **That the restated hypothesis matches the plan's.** "Restated" admits paraphrase; equality would
@@ -74,20 +79,25 @@ path rather than pick a side.
   a `VALIDATED` demo with `Evidence gaps: None` passes (demonstrated).
 - **Step 9 ("Highlight which parts … directly validate").** No declared form; the fixture carries a
   line for it, ungraded.
-- **`poc-guidelines.md` Rule 4, "Binary outcome".** The status enum's `INCONCLUSIVE` sits awkwardly
-  against "A PoC either validates or invalidates the hypothesis"; for a mid-PoC demo, `IN_PROGRESS` is
-  not in tension with it, and this case does not adjudicate the rest (see the `/evaluate-poc` case).
+- **`poc-guidelines.md` Rule 4, "Binary outcome" — resolved, not a reading any more.** The enum's
+  former `INCONCLUSIVE` sat against "A PoC either validates or invalidates the hypothesis".
+  `poc-contract-resolution-v1.md` §5 (P31) removed it and kept `IN_PROGRESS`: a demo runs before
+  evaluation, so "not yet decided" is a legitimate state that Rule 4 does not touch. T564 amended the
+  enum (quoted above), and the check now rejects `INCONCLUSIVE` as off-enum.
 
 ## Pass condition
 `fixture/poc-demo.md` has headings covering all seven deliverables; exactly one `## Hypothesis Status`
 block whose five declared fields appear once each in order, with non-empty `Hypothesis`, a single
-declared `Validation status` and `Confidence level`; if the status is `INCONCLUSIVE`/`IN_PROGRESS`,
+declared `Validation status` and `Confidence level`; if the status is `IN_PROGRESS`,
 `Evidence gaps` is non-empty and not a none-marker; if `VALIDATED`/`INVALIDATED`, `Key evidence
 demonstrated` is.
 
 ## Discrimination (demonstrated at authoring, on temp copies)
 `check()` is `True` on the fixture and `False` on each of: `Evidence gaps: None` with `IN_PROGRESS`;
-`Evidence gaps: n/a` with `INCONCLUSIVE`; the gaps field omitted; status `PARTIALLY_VALIDATED`;
+`Evidence gaps: n/a` with `IN_PROGRESS`; status `INCONCLUSIVE` with the fixture's real gaps kept (it
+now fails on the enum; at T561 the perturbation was `Evidence gaps: n/a` with `INCONCLUSIVE`, which
+exercised the gap rule, and the gap rule is now shown by the two `IN_PROGRESS` rows); the gaps field
+omitted; status `PARTIALLY_VALIDATED`;
 confidence `VERY HIGH`; `VALIDATED` with `Key evidence demonstrated: none`; the mocked/simulated
 heading renamed; `Confidence level` moved above `Evidence gaps`; "Fallback Path" dropped from the
 presenter heading; a second `## Hypothesis Status` block. It stays `True` for `VALIDATED` with
