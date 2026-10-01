@@ -18,3 +18,13 @@ The lint's first run (T557) declared 15 entries: legitimate authoring-row mentio
 or the gate fails on a declared entry that is no longer a violation. The `/skillify` `scripts/install.sh` entry
 was adjudicated as legitimate: the target row names the installer only to warn the user, and nothing reads or
 runs it in a target.
+
+## 3. T558 landed; one item parked
+
+`/batch` now cites `/plan` by name, and its lint entry is gone (15 → 14 declared). `/batch`'s six repo-root
+projections are declared as drift until the next root refresh.
+
+| # | Item | Trigger |
+|---|---|---|
+| P24 | `tests/golden/open/batch-manifest-ledger-schema-conflict/brief.md` line 37 quotes `/batch` step 2 verbatim, including the retired `commands/plan.md` wording. Prose only — `check()` reads fixtures and is unchanged. | next golden batch, with P13–P15 — one baseline authorization for all four |
+

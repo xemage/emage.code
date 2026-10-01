@@ -8,11 +8,6 @@
   ],
   "violations": [
     {
-      "command": "/batch",
-      "path": "commands/plan.md",
-      "reason": "DEFECT, untracked: class C / rule B4 (docs/artifacts/command-audience-resolution-v1.md §2.3, §4.3) -- steps 2 and Important cite /plan by its authoring-tree path (implementation/knowledge/commands/plan.md) outside any authoring branch; a target has it only as .<platform>/commands/plan.md, .github/prompts/plan.prompt.md, etc. Repair: cite `/plan` by name. plan-087 §2 counts the six T546 body edits as landed, but /batch's is not."
-    },
-    {
       "command": "/consolidate-memory",
       "path": "implementation/AGENTS.md",
       "reason": "Authoring branch by design (T549): named only in the Promotion Targets bullet 'In the emage.code repository itself', as a file this command must NOT edit there."
@@ -45,7 +40,7 @@
     {
       "command": "/discover-skills",
       "path": "packs/installed/",
-      "reason": "P22 — tracked no-op, see plan-087 §3"
+      "reason": "P22 \u2014 tracked no-op, see plan-087 \u00a73"
     },
     {
       "command": "/skillify",
