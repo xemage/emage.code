@@ -2,10 +2,13 @@
 
 > Filename: `ADR-007-command-contract-authority.md` (zero-padded sequential, kebab-case slug).
 
-- **Status**: proposed
+- **Status**: Accepted. The user approved it on 2026-10-01 (parked item P34), after it had been applied as a procedure in
+  T515/T520/T521, T542, T563, T566 and T570. Accepted ADRs are immutable, so any later change needs a superseding ADR.
 - **Date**: 2026-09-25
 - **Decider(s)**: solution-architect
-- **Tasks**: T515 (this decision); follow-up implementation task, not yet opened
+- **Tasks**: T515 (this decision). Implemented by T520 and T521 (`command-contract-resolution-v1.md`). Applied in T542,
+  T563 (`poc-contract-resolution-v1.md`), T566 (`validate-workflow-gate-resolution-v1.md`) and T570
+  (`poc-skills-alignment-v1.md`).
 - **Requirements**: `docs/tasks/task-T515.md` §§1–7; `docs/plans/plan-066-t515-command-contract-authority.md`;
   `docs/artifacts/maturity-promotion-criteria-v1.md` §3.5; `tests/golden/README.md`
   ("What 'known-failing' means"); `AGENTS.md`
