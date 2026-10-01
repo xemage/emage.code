@@ -2,8 +2,9 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T570 | Adjudicate the PoC skills' vocabulary and debt-scorecard rivalry (P35) | solution-architect | pending | P2 | — | 2026-10-01 |
 
-> **0 active rows. `plan-093` is complete (P28 repaired): `T567` (MR !453), `T568` (MR !454, evaluator-hash v15) and `T569` (MR !455) closed 2026-10-01. Commands are now 14 `stable` / 5 `experimental`.** Next candidates: P35, P36, P37 and P32–P34 (`plan-092` §4, `plan-093` §4).
+> **1 active row (`T570`), scoped by `plan-094` (P35, aligning the three PoC skills with T563's rulings). `plan-093` is complete (P28 repaired; `/validate-workflow` stable; commands 14/5).**
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
