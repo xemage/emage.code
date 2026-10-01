@@ -2,7 +2,7 @@
 
 **ID:** T573
 **Owner:** Backend Developer
-**Status:** pending
+**Status:** in_review
 **Priority:** P2
 **Tier:** mechanical
 **Affects:** skill/code-review, skill/testing-strategy, skill/project-planning, agent/tech-lead, agent/orchestrator
