@@ -2,7 +2,7 @@
 
 **ID:** T567
 **Owner:** Backend Developer
-**Status:** in_review
+**Status:** done
 **Priority:** P2
 **Tier:** mechanical
 **Affects:** command/validate-workflow

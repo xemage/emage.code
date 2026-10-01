@@ -2,7 +2,7 @@
 
 **ID:** T568
 **Owner:** QA Engineer
-**Status:** in_review
+**Status:** done
 **Priority:** P2
 **Tier:** judgment
 **Affects:** command/validate-workflow
