@@ -197,10 +197,121 @@ same_tree() {
   return 1
 }
 
+# --- Excluded paths: one meaning under both copiers -------------------------
+#
+# The tree writers take a list of excluded names. With rsync each becomes
+# `--exclude=<name>`; without rsync a hand-rolled cp fallback must mean exactly
+# the same thing, or the two copiers ship different trees. For a pattern with no
+# `/` and no wildcard -- the only kind this script passes, and enforced below --
+# rsync's meaning is:
+#   1. it matches a file or directory of that name at ANY depth (an rsync
+#      pattern without a `/` is compared with the last path component only);
+#   2. a matching source path is never transferred, nor anything under it;
+#   3. a matching destination path is never deleted or overwritten, even under
+#      --delete (we never pass --delete-excluded) -- and a directory that
+#      disappeared upstream is kept if it still holds one ("cannot delete
+#      non-empty directory"; rsync still exits 0).
+# Before T555 the cp fallbacks honoured none of 1-3 fully: they looked at the
+# top level only, sync_tree_into's copied the SOURCE's excluded paths into
+# every target that lacked its own (under --update without rsync, an authoring
+# checkout's populated, gitignored runtime/memory/_index/ -- a search index of
+# this repository -- was copied into client projects), and copy_tree_into's
+# deleted a target's own top-level _index/ whenever the source had one too.
+# exclude_hits, copy_contents_excluding and the two fallbacks below implement
+# 1-3 by hand.
+
+# The one internal invariant the cp fallbacks rely on: every exclude is a single
+# literal path component, so `find -name` and a string compare both mean what
+# rsync means. A `/` or a wildcard would make rsync match differently; refusing
+# such a caller is cheaper than emulating rsync's full pattern language.
+check_exclude_names() {
+  local e
+  for e in "$@"; do
+    case "$e" in
+      */* | *'*'* | *'?'* | *'['*)
+        echo "error: internal: exclude '$e' must be one literal path component (no '/', '*', '?' or '[')." >&2
+        exit 70
+        ;;
+    esac
+  done
+}
+
+# Sets EXCLUDE_HITS to every path under $1 (relative to $1) whose own name is
+# one of $2.., without descending into a hit: exactly the paths rsync would
+# leave alone. A global, because bash functions cannot return arrays; each
+# caller copies it out before the next call. The scan goes through a file, not
+# a pipe, so a failed find stops the run instead of reading as "no hits".
+EXCLUDE_HITS=()
+exclude_hits() {
+  local root="$1"
+  shift
+  EXCLUDE_HITS=()
+  local expr=()
+  local e
+  for e in "$@"; do
+    if [[ -z "$e" ]]; then continue; fi
+    if [[ ${#expr[@]} -gt 0 ]]; then expr+=(-o); fi
+    expr+=(-name "$e")
+  done
+  if [[ ${#expr[@]} -eq 0 || ! -d "$root" ]]; then return 0; fi
+  local list
+  list="$(mktemp)"
+  # "$root/." rather than "$root": find does not follow a starting point that
+  # is itself a symlink, and a symlinked .claude/ must be scanned like a real one.
+  if ! find "$root/." -mindepth 1 \( "${expr[@]}" \) -prune -print0 >"$list"; then
+    rm -f "$list"
+    echo "error: could not scan $root for excluded paths; refusing to copy it unchecked." >&2
+    exit 1
+  fi
+  local p
+  while IFS= read -r -d '' p; do
+    EXCLUDE_HITS+=("${p#"$root/./"}")
+  done <"$list"
+  rm -f "$list"
+}
+
+# `cp -r "$src/." "$dest/"`, minus the relative paths in $3.. (hits from
+# exclude_hits "$src"), which are never copied -- not copied and then removed.
+# With no hits it runs exactly that single cp, as before T555. Otherwise it
+# copies entry by entry, descending only into directories that contain a hit,
+# so a whole subtree without one still goes in a single cp.
+copy_contents_excluding() {
+  local src="$1"
+  local dest="$2"
+  shift 2
+  if [[ $# -eq 0 ]]; then
+    run cp -r "$src/." "$dest/"
+    return 0
+  fi
+  local saved_shopt
+  saved_shopt="$(shopt -p dotglob nullglob || true)"
+  shopt -s dotglob nullglob
+  local entries=("$src"/*)
+  eval "$saved_shopt"
+  local entry name h skip below
+  for entry in ${entries[@]+"${entries[@]}"}; do
+    name="${entry##*/}"
+    skip=0
+    below=()
+    for h in "$@"; do
+      if [[ "$h" == "$name" ]]; then skip=1; fi
+      if [[ "$h" == "$name/"* ]]; then below+=("${h#"$name/"}"); fi
+    done
+    if [[ "$skip" -eq 1 ]]; then continue; fi
+    if [[ ${#below[@]} -gt 0 ]]; then
+      run mkdir -p "$dest/$name"
+      copy_contents_excluding "$entry" "$dest/$name" "${below[@]}"
+    else
+      run cp -r "$entry" "$dest/"
+    fi
+  done
+}
+
 # Merge source tree into dest without nesting when dest already exists.
 # `cp -r src dest` creates dest/srcname when dest is present; this copies contents.
-# $3.. (optional, relative to dest, variadic): protected paths. The installer
-# neither writes nor deletes these, for two distinct reasons that share one
+# $3.. (optional, variadic): excluded names -- see "Excluded paths" above for
+# their exact meaning, which is rsync's. The installer neither writes nor
+# deletes a path so named, at any depth, for two distinct reasons that share one
 # mechanism:
 #   1. Source-side build artifacts that must not leak into a target (e.g.
 #      implementation/runtime/memory/_index/, __pycache__/).
@@ -212,6 +323,7 @@ copy_tree_into() {
   local src="$1"
   local dest="$2"
   local excludes=("${@:3}")
+  check_exclude_names ${excludes[@]+"${excludes[@]}"}
   if same_tree "$src" "$dest"; then return 0; fi
   run mkdir -p "$dest"
   if command -v rsync >/dev/null 2>&1; then
@@ -226,29 +338,21 @@ copy_tree_into() {
       run rsync "${rsync_args[@]}" "$src/" "$dest/"
     fi
   else
-    run cp -r "$src/." "$dest/"
-    # Bare `[[ cond ]] && cmd` as a function's own last statement(s) would
-    # make the *function's* exit status that of the failed `[[ ]]` test
-    # whenever cond is false (a real bug hit and fixed here, not a
-    # hypothetical: it silently killed every install.sh run under `set -e`
-    # on any host without rsync, since the exclude list is empty for most
-    # callers) — real `if` blocks instead, so a false condition never becomes
-    # this function's own return code.
-    #
-    # The `-e "$src/$e"` guard makes this fallback match rsync --exclude
-    # exactly: undo only what the copy above actually placed. Without it the
-    # fallback deleted pre-existing *dest* content that was never in src —
-    # which is the whole point of an exclude like settings.json or _index/.
-    local e
-    for e in ${excludes[@]+"${excludes[@]}"}; do
-      if [[ -n "$e" && -e "$src/$e" ]]; then run rm -rf "$dest/$e"; fi
-    done
+    # Never copies a source path that rsync --exclude would skip, so it never
+    # has to delete one afterwards. The pre-T555 fallback copied everything and
+    # then ran `rm -rf "$dest/$e"` for each top-level exclude the source had:
+    # that removed the target's OWN copy along with the source's (a plain
+    # re-install deleted a target's built _index/), and missed every nested
+    # one (runtime/memory/context_retriever_mcp_server/__pycache__/ shipped).
+    exclude_hits "$src" ${excludes[@]+"${excludes[@]}"}
+    copy_contents_excluding "$src" "$dest" ${EXCLUDE_HITS[@]+"${EXCLUDE_HITS[@]}"}
   fi
 }
 
 # Replace dest with source, removing files that no longer exist upstream.
-# Every path in $3.. (relative to dest, variadic) is left untouched by this
-# whole-tree replace — neither deleted nor overwritten. Two kinds of path need
+# Every path named in $3.. (variadic; see "Excluded paths" above -- a name
+# matches at any depth) is left untouched by this whole-tree replace: neither
+# deleted nor overwritten, and never copied from source. Two kinds of path need
 # that, for two different reasons:
 #   - Config files that a later merge step owns (merge_or_copy_mcp_json and its
 #     provenance sidecar), so hand-added content in them is not lost.
@@ -264,6 +368,7 @@ sync_tree_into() {
   local dest="$2"
   local excludes=("${@:3}")
   local e
+  check_exclude_names ${excludes[@]+"${excludes[@]}"}
   if same_tree "$src" "$dest"; then return 0; fi
   if command -v rsync >/dev/null 2>&1; then
     run mkdir -p "$dest"
@@ -279,31 +384,51 @@ sync_tree_into() {
       run rsync "${rsync_args[@]}" "$src/" "$dest/"
     fi
   else
-    # Parallel arrays, one entry per protected path that actually exists in
-    # dest: backup_paths[i] is the relative path, backup_dirs[i] the mktemp -d
-    # holding its saved copy. Paths absent from dest are simply not recorded.
+    # Which of dest's own paths to keep: every excluded name, at any depth.
+    # Top-level ones first, in the caller's order (the pre-T555 fallback's
+    # order, so its output is unchanged where nothing nested is involved), then
+    # nested ones -- which the pre-T555 fallback deleted, and rsync keeps.
+    exclude_hits "$dest" ${excludes[@]+"${excludes[@]}"}
+    local dest_hits=(${EXCLUDE_HITS[@]+"${EXCLUDE_HITS[@]}"})
+    local keep=()
+    local h
+    for e in ${excludes[@]+"${excludes[@]}"}; do
+      for h in ${dest_hits[@]+"${dest_hits[@]}"}; do
+        if [[ "$h" == "$e" ]]; then keep+=("$h"); fi
+      done
+    done
+    for h in ${dest_hits[@]+"${dest_hits[@]}"}; do
+      if [[ "$h" == */* ]]; then keep+=("$h"); fi
+    done
+    # Which of src's paths never to copy: the same names, at any depth. Before
+    # T555 nothing was skipped here -- the whole source was copied, and only
+    # the paths dest already had were put back -- so a target without its own
+    # _index/ or __pycache__/ received the installer's.
+    exclude_hits "$src" ${excludes[@]+"${excludes[@]}"}
+    local src_hits=(${EXCLUDE_HITS[@]+"${EXCLUDE_HITS[@]}"})
+    # Parallel arrays, one entry per kept path: backup_paths[i] is the relative
+    # path, backup_dirs[i] the mktemp -d holding its saved copy.
     local backup_paths=()
     local backup_dirs=()
+    local rel
     # -r here (not plain cp) so an excluded path may name either a file (the
     # original mcp.json/provenance use case) or a directory (a generated index
     # dir, .github/workflows/) without a separate code path.
-    for e in ${excludes[@]+"${excludes[@]}"}; do
-      if [[ -n "$e" && -e "$dest/$e" ]]; then
-        local backup_dir
-        backup_dir="$(mktemp -d)"
-        cp -r "$dest/$e" "$backup_dir/payload"
-        backup_paths+=("$e")
-        backup_dirs+=("$backup_dir")
-      fi
+    for rel in ${keep[@]+"${keep[@]}"}; do
+      local backup_dir
+      backup_dir="$(mktemp -d)"
+      cp -r "$dest/$rel" "$backup_dir/payload"
+      backup_paths+=("$rel")
+      backup_dirs+=("$backup_dir")
     done
     run rm -rf "$dest"
     run mkdir -p "$dest"
-    run cp -r "$src/." "$dest/"
+    copy_contents_excluding "$src" "$dest" ${src_hits[@]+"${src_hits[@]}"}
     # `"${!arr[@]}"` on an empty array trips `set -u` on bash < 4.4, which the
     # no-rsync CI images are exactly the kind of host to ship — count first.
     local i
     for ((i = 0; i < ${#backup_paths[@]}; i++)); do
-      local rel="${backup_paths[$i]}"
+      rel="${backup_paths[$i]}"
       local dir="${backup_dirs[$i]}"
       run mkdir -p "$(dirname "$dest/$rel")"
       run rm -rf "$dest/$rel"
@@ -549,9 +674,12 @@ install_docs() {
   # `python3 -m implementation.runtime.memory...`, and outside the emage.code
   # source repo itself, no such module exists to run until this step copies
   # it there. `_index/` (context-retriever's per-project, locally-built
-  # search index) is deliberately excluded from being overwritten/deleted on
-  # `--update` — it is never present in $IMPLEMENTATION (gitignored, build.py
-  # output) and, once a target project has built its own, that is
+  # search index) is excluded in both directions, at any depth: never copied
+  # from $IMPLEMENTATION, and never overwritten or deleted in the target.
+  # Being gitignored (build.py output) only keeps it out of git -- this
+  # installer reads the working tree, and in an authoring checkout
+  # $IMPLEMENTATION/runtime/memory/_index/ holds an index of THIS repository,
+  # which must never reach a client project (T555). A target's own _index/ is
   # project-specific generated content this installer must not touch.
   install_mcp_server_runtime() {
     refuse_in_projections_only install_mcp_server_runtime "$TARGET/implementation"

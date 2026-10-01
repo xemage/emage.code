@@ -141,17 +141,15 @@ class TestHandoffRuntimeIsInstalled(_CopierMatrix):
             self.skipTest("rsync not on PATH")
         self._update_ships_no_source_pycache(None, "pycache-rsync")
 
-    @unittest.expectedFailure
     def test_update_ships_no_source_pycache_with_cp_fallback(self) -> None:
-        """KNOWN GAP, pre-existing and not specific to handoff (T553 finding).
+        """Pinned by T553 as an expected failure; fixed by T555.
 
-        sync_tree_into's cp fallback protects a *destination's* excluded paths
-        (it saves and restores them) but never stops the *source's* from being
-        copied, as rsync --exclude does. So under --update without rsync, a
-        target that lacks its own __pycache__/ (or memory/_index/) receives the
-        installer's. Measured on HEAD fda6a90 for runtime/memory. Fresh installs
-        are unaffected (copy_tree_into undoes what the copy placed). When the
-        fallback is fixed this test passes unexpectedly: drop the decorator."""
+        sync_tree_into's cp fallback protected a *destination's* excluded paths
+        but never stopped the *source's* from being copied, as rsync --exclude
+        does: under --update without rsync, a target lacking its own
+        __pycache__/ (or memory/_index/) received the installer's. The fallback
+        now never copies an excluded source path. The _index/ side, nested
+        caches and a target's own copies: test_install_exclude_parity."""
         self._update_ships_no_source_pycache(self.no_rsync, "pycache-cp")
 
 
