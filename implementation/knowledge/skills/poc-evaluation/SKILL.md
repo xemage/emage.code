@@ -18,7 +18,6 @@ maturity: experimental
 ## Verdicts
 - Validated
 - Invalidated
-- Inconclusive
 
 ## Required Output Additions
 - Production recommendation
@@ -34,7 +33,7 @@ maturity: experimental
 Every PoC evaluation MUST conclude with a structured verdict that integrates with the gate protocol:
 
 ```
-[VERDICT] gate=poc-evaluation | result=VALIDATED|INVALIDATED|INCONCLUSIVE | poc_ref=poc-{name}-v{N} | hypothesis="{short hypothesis}" | production_recommendation=proceed|proceed_with_constraints|do_not_proceed | debt_count={N} | date={YYYY-MM-DD}
+[VERDICT] gate=poc-evaluation | result=VALIDATED|INVALIDATED | evidence_strength=strong|moderate|weak | poc_ref=poc-{name}-v{N} | hypothesis="{short hypothesis}" | production_recommendation=proceed|proceed_with_constraints|do_not_proceed | debt_count={N} | date={YYYY-MM-DD}
 ```
 
 **Full evaluation artifact structure:**
@@ -61,9 +60,13 @@ Every PoC evaluation MUST conclude with a structured verdict that integrates wit
 [Specific, measurable evidence gathered during the PoC]
 
 ## 4. Verdict
-**{VALIDATED | INVALIDATED | INCONCLUSIVE}**
+**{VALIDATED | INVALIDATED}**
+
+Evidence strength: {strong | moderate | weak}
 
 Rationale: [Why this verdict]
+
+Recommended next step: [The next step; for an `INVALIDATED` verdict with weak evidence, name a follow-up PoC with refined criteria]
 
 ## 5. Production Recommendation
 **{proceed | proceed_with_constraints | do_not_proceed}**
@@ -90,7 +93,7 @@ Rationale: [Why this verdict]
 | {risk} | H/M/L | H/M/L | {mitigation} |
 
 ## 8. Technical Debt Scorecard Linkage
-[Reference to technical-debt-tracking scorecard items created from this evaluation]
+[Reference, by inventory `#`, to the related items in `POC-DEBT-SCORECARD.md` in the PoC root (`poc-guidelines.md` § Debt Scorecard), and, by `DEBT-{ID}`, to any debt-ledger items the technical-debt-tracking skill created from this evaluation]
 ```
 
 ### Hypothesis Success Criteria Reference
@@ -100,7 +103,9 @@ The evaluation MUST reference the original success criteria defined in the PoC a
 **Rules:**
 - Every success criterion from the PoC artifact must appear in the assessment table — even if not tested (mark as "Not Tested" with reason).
 - Criteria added after PoC start are flagged: `(post-hoc)`.
-- A PoC with >50% untested criteria should receive an `INCONCLUSIVE` verdict, not `VALIDATED`.
+- The verdict is `VALIDATED` only if every success criterion defined in the PoC artifact was tested and met by the PoC's deadline. Post-hoc criteria cannot stand in for an untested one.
+- If any such criterion was tested and not met, the verdict is `INVALIDATED`, with the evidence strength the tests support.
+- Otherwise, if any such criterion is "Not Tested" or rests only on weak evidence, the verdict is `INVALIDATED` with `Evidence strength: weak`, and the Recommended next step names a follow-up PoC with refined criteria. Never force a `VALIDATED` call (`poc-guidelines.md` § Hypothesis-First Validation, Rules 3–4).
 
 ### Production Handoff Checklist
 

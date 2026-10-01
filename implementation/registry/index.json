@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-01T19:08:30+00:00",
+  "generatedAt": "2026-10-01T20:15:13+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -1837,7 +1837,7 @@
       "category": "skill",
       "name": "poc-evaluation",
       "path": "skills/poc-evaluation/SKILL.md",
-      "checksum": "444d89c87585c5ac2f13256a4c06876bf49e67a030293897c25ba02296a07559",
+      "checksum": "cd03d7991de13266b94259ab4a9445f029d12201fef4cbf2fb8dcf258556e5fc",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1893,7 +1893,7 @@
       "category": "skill",
       "name": "rapid-prototyping",
       "path": "skills/rapid-prototyping/SKILL.md",
-      "checksum": "879ce443a84cbaefff183aad5a657f9e3577973ac12d23e2e15b796bc8203d69",
+      "checksum": "ca68994277104c7f474f83b99ce71ca648d102b7d03e37f42377221c9d7fab13",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -2061,7 +2061,7 @@
       "category": "skill",
       "name": "technical-debt-tracking",
       "path": "skills/technical-debt-tracking/SKILL.md",
-      "checksum": "74baf7d563fe451d61862be4b455f1d53e10e611df2d2e581a85988ba9963068",
+      "checksum": "3c25c081c242310eb5fb9a8d34d1c7a1b4b2b21d42da94964b6645ba20df128d",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
