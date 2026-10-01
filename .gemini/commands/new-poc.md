@@ -12,7 +12,7 @@ I want to start a proof-of-concept project.
    - **Hypothesis**: Restate the hypothesis clearly with measurable success criteria
    - **Validation path**: Define what evidence proves/disproves the hypothesis
    - **3-step plan**: (a) Feasibility check → (b) Core build → (c) Evaluate & demo
-   - Write to `docs/plans/poc-<slug>.md`
+   - Write to `docs/plans/plan-<ID>.md`
    - Reference protocol: `poc-orchestrator` agent § Plan-Approve-Execute (PoC-Adapted) › PLAN PHASE (lightweight); hypothesis format: `poc-guidelines.md` § Hypothesis-First Validation
 2. **Present the plan for approval** before proceeding
 
@@ -32,7 +32,7 @@ Please coordinate the PoC team and focus on:
 10. Preparing a stakeholder demo and evaluation report
 11. **Capturing technical debt explicitly**:
     - Maintain a Technical Debt Scorecard: severity, effort, risk, owner
-    - Write to `docs/decisions/poc-debt-<slug>.md`
+    - Write to `POC-DEBT-SCORECARD.md` in the PoC root, per `poc-guidelines.md` § Debt Scorecard
     - Flag any debt items that would block production adoption
 12. Reporting blockers and escalations explicitly
 
@@ -41,7 +41,7 @@ Please coordinate the PoC team and focus on:
 13. Use progressive context loading for delegations (hypothesis slice, dependency slice, artifact refs, blockers)
 14. After each PoC gate, publish a compact checkpoint summary:
 	- `[CHECKPOINT] id=<poc_gate> | done=[...] | in_flight=[...] | blocked=[...] | decisions=[...] | artifact_refs=[...] | next=[...]`
-	- Write checkpoint to `docs/checkpoints/checkpoint-poc-<gate>.md`
+	- Write checkpoint per `AGENTS.md` § Checkpoint Protocol: store at `docs/checkpoints/checkpoint-<SEQ>-<phase>.md`, with `<phase>` naming the PoC gate
 15. Apply strict PoC token envelope and model routing by risk/complexity
 16. Include spend telemetry (`used`, `remaining`, `projected_total`) in each PoC checkpoint
 
