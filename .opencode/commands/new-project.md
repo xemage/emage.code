@@ -11,7 +11,7 @@ I have a new project idea. Please orchestrate the full team to turn this into a 
 1. **Create a plan document** with task decomposition and dependency graph
    - Write the plan to `docs/plans/plan-<project-slug>.md`
    - Include: objective, scope, task DAG (Mermaid), risk assessment, estimated phases
-   - Reference protocol: `04-protocols.md § Plan-Approve-Execute`
+   - Reference protocol: `plan-approve-execute` skill § The Three Phases › Phase 1: Plan (Plan Document Format)
 2. **Present the plan for my approval before executing**
    - Show the plan summary, task count, estimated phases, and identified risks
    - Wait for explicit approval (`APPROVED`, `APPROVED_WITH_CHANGES`, or `REJECTED`)
@@ -44,7 +44,7 @@ I have a new project idea. Please orchestrate the full team to turn this into a 
 
 ## Phase 5: Validation & Artifacts
 
-17. Run validation gates before phase transitions (reference: `04-protocols.md § Validation Gates`)
+17. Run validation gates before phase transitions (reference: `validation-gates` skill § Gate Types and § Verdict Format)
 18. Produce versioned artifacts for all deliverables:
     - Format: `<artifact-name>-v<major>.<minor>.md`
     - Store in `docs/artifacts/`

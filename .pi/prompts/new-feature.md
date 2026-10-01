@@ -10,7 +10,7 @@ I want to add a new feature to the project. Please:
 1. **Create a lightweight plan document** for this feature
    - Write to `docs/plans/feature-<slug>.md`
    - Include: objective, affected components, task breakdown, dependency impact
-   - Reference protocol: `04-protocols.md § Plan-Approve-Execute`
+   - Reference protocol: `plan-approve-execute` skill § The Three Phases › Phase 1: Plan (Plan Document Format)
 2. **Present the plan for my approval before executing**
    - Show: scope summary, estimated tasks, risk assessment
    - Wait for explicit approval before proceeding
@@ -24,11 +24,11 @@ I want to add a new feature to the project. Please:
 
 ## Phase 3: Track & Validate
 
-7. Write a checkpoint after implementation completes:
-   - `[CHECKPOINT] id=feature-<slug> | done=[...] | in_flight=[...] | blocked=[...] | artifact_refs=[...] | next=[...]`
-   - Store at `docs/checkpoints/checkpoint-feature-<slug>.md`
+7. Write a checkpoint after implementation completes, per `AGENTS.md` § Checkpoint Protocol:
+   - Store at `docs/checkpoints/checkpoint-<SEQ>-<phase>.md`
+   - Include, in this order: completed tasks, key decisions, blockers, token metrics, next steps
 8. Produce versioned artifacts for feature deliverables:
-   - Format: `<artifact-name>-v<major>.<minor>.md`
+   - Format: `<artifact-name>-v<N>.md`, per `AGENTS.md` § Artifact Versioning
    - Store in `docs/artifacts/`
 9. Update `docs/tasks/active-tasks.md` with new tasks and state transitions
 

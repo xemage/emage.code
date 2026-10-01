@@ -18,13 +18,15 @@ Run a workflow validation pass for the AI development team configuration.
 
 ## Validation Gate References
 
-5. **Check all validation gates** defined in `04-protocols.md § Validation Gates`:
-   - Plan approval gate
-   - Architecture briefing gate
-   - Integration checkpoint gate
-   - Code review gate
-   - Security audit gate
-   - Release gate
+5. **Check all validation gates.** Gate types, executors and the VERDICT format are defined in the `validation-gates` skill (§ Gate Types, § Verdict Format); the orchestrator's invocation points are in the `orchestrator` agent's § Validation Gates. Each gate below names where it is defined:
+   - Plan approval gate — `plan-approve-execute` skill § The Three Phases › Phase 2: Approve
+   - Architecture briefing gate — `orchestrator` agent § Core Workflow › Phase 3: Development, step 1
+   - Integration checkpoint gate — `validation-gates` skill § Gate Types, **Integration**
+   - Code review gate — `validation-gates` skill § Gate Types, **Implementation**
+   - Security audit gate — `validation-gates` skill § Gate Types, **Security**
+   - Release gate — `validation-gates` skill § Gate Types, **Release**
+
+   The first two are workflow steps, not among the `validation-gates` skill's five gate types.
 6. For each gate, verify:
    - Gate is reachable in workflow
    - Gate produces a VERDICT

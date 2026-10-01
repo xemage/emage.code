@@ -32,7 +32,11 @@ Release type: {{input}}
 
 ## Release Gate Verdict
 
-7. **Produce a structured release gate VERDICT**:
+7. **Produce a structured release gate VERDICT** in the release notes document from step 5
+   (`docs/releases/v<version>.md`) as a top-level `## RELEASE VERDICT` section. That document is
+   the block's home — not the release checkpoint from step 6. `docs/releases/_template.md`
+   carries the slot, and `scripts/verify-release-docs.py --tag v<version>` checks the section is
+   present when the tag is cut:
 
 ```
 ## RELEASE VERDICT

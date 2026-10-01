@@ -18,9 +18,20 @@ Capture emerging workflows, recurring patterns, or successful procedures as reus
 
 ## File Location
 
-```
-.github/skills/<skill-name>/SKILL.md
-```
+The output path depends on whether this is an emage.code **authoring** checkout or an **installed
+target** project. Check for the source tree; do not assume.
+
+- `implementation/knowledge/skills/` exists → write
+  `implementation/knowledge/skills/<skill-name>/SKILL.md`, then re-run
+  `node implementation/scripts/sync.mjs` and
+  `python3 implementation/scripts/generate-registry.py --root implementation`. Never hand-write a
+  platform projection folder — `sync.mjs` deletes and rebuilds each one.
+- otherwise → write `<platform>/skills/<skill-name>/SKILL.md` into every installed platform folder
+  that exists (`.github/`, `.claude/`, `.cursor/`, `.gemini/`, `.opencode/`, `.pi/`, `.cline/`), and
+  warn the user that `scripts/install.sh --update` replaces those trees wholesale.
+
+`commands/skillify.md` § "Choose the Output Path" is authoritative for this rule. This section
+restates it for readers who reach the skill directly and must not diverge from it.
 
 ## Procedure: The 4-Round Interview
 
@@ -50,7 +61,7 @@ Ask and determine:
 
 Output:
 ```markdown
-## Prerequisites
+## Inputs
 - <input 1>
 - <input 2>
 
@@ -117,8 +128,11 @@ description: "<one-line description>"
 - <trigger 2>
 - <trigger 3>
 
-## Prerequisites
+## Inputs
 - <input/context requirement>
+
+## Required Context
+- <context item>
 
 ## Procedure
 
@@ -130,6 +144,10 @@ description: "<one-line description>"
 
 ### 3. <Step Title>
 <instructions>
+
+## Success Criteria
+- <criterion 1>
+- <criterion 2>
 
 ## Examples
 
@@ -157,7 +175,7 @@ After generating the skill file:
    I've drafted a new skill: **<skill-name>**
    
    **Purpose:** <purpose>
-   **Location:** `.github/skills/<skill-name>/SKILL.md`
+   **Location:** <the exact path(s) chosen per § File Location>
    
    Key steps:
    1. <step summary>
