@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-09-30T20:37:17+00:00",
+  "generatedAt": "2026-10-01T00:41:33+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -913,7 +913,7 @@
       "category": "command",
       "name": "discover-skills",
       "path": "commands/discover-skills.md",
-      "checksum": "e0c68ecb4782717f69ac583c8586f593d600fd26c237cc6aee9fa65f4230f492",
+      "checksum": "18c59b5ee7762e9ac57b28a7253c801c2c5143331fcb2d783a8eb25d0420df85",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [

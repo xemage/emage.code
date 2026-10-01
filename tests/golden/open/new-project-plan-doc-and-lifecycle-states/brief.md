@@ -15,7 +15,7 @@ are produced.
 > 1. **Create a plan document** with task decomposition and dependency graph
 >    - Write the plan to `docs/plans/plan-<project-slug>.md`
 >    - Include: objective, scope, task DAG (Mermaid), risk assessment, estimated phases
->    - Reference protocol: `04-protocols.md § Plan-Approve-Execute`
+>    - Reference protocol: `plan-approve-execute` skill § The Three Phases › Phase 1: Plan (Plan Document Format)
 
 > 19. Build an initial task dependency graph with lifecycle states
 >     - Track states: `pending → in_progress → blocked → in_review → done | cancelled`
