@@ -2,9 +2,8 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T565 | Realign the three PoC golden cases to the amended contracts (T563 FU-B) | qa-engineer | pending | P2 | T564 | 2026-10-01 |
 
-> **1 active row (`T565`), scoped by `plan-092`; `T564` closed 2026-10-01 (MR !447). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **0 active rows. `plan-092` is complete: `T564` closed 2026-10-01 (MR !447) and `T565` closed 2026-10-01 (MR !449, evaluator-hash v14).** Next candidates: P28 (`/validate-workflow` repair) and P35 (PoC skill vocabulary), both parked in `plan-092` §4. `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
