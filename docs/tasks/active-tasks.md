@@ -2,9 +2,9 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T572 | Adjudicate the validation-gate verdict formats and gate-definition inconsistencies (P37) | solution-architect | pending | P2 | — | 2026-10-01 |
+| T573 | Apply the gate-verdict consistency edits (T572 FU-1) | backend-developer | pending | P2 | T572 | 2026-10-01 |
 
-> **1 active row (`T572`), scoped by `plan-096` (P37, reconciling the validation-gate verdict formats and gate definitions). plan-094 and plan-095 are complete: the PoC skills are aligned, the root drift is 0, ADR-007 is Accepted, and P36 is closed.**
+> **1 active row (`T573`), scoped by `plan-096` §4 from T572's ruling (P37, reconciling the validation-gate verdict formats and gate definitions). plan-094 and plan-095 are complete: the PoC skills are aligned, the root drift is 0, ADR-007 is Accepted, and P36 is closed.**
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /

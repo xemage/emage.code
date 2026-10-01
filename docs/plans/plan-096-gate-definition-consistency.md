@@ -2,7 +2,7 @@
 
 **Created:** 2026-10-01
 **Based on:** `docs/plans/plan-093-validate-workflow-repair.md` §4 (P37); `docs/plans/plan-095-user-decisions-p34-p36-root-refresh.md`.
-**Scopes:** `T572`.
+**Scopes:** `T572`; follow-up `T573` (§4).
 
 ## 1. Why P37 next
 
@@ -33,3 +33,24 @@ The task is **P2**.
 - P32, P33, P34b and P38.
 - The `new-poc` `expect.py` docstring.
 - Older P4–P27 items.
+
+## 4. T572's decision and the follow-up
+
+`gate-verdict-consistency-v1.md` reconciles the formats **without ranking any documents**: two MUSTs that can both be satisfied, one verdict per gate, and each skill's own declared scope. As a result, P34b is not triggered.
+
+- The one-line `[VERDICT]` markers in `code-review` and `testing-strategy` sit **alongside** the canonical `validation-gates` block.
+- Gate names map onto the skill's five kinds (`code-review` → implementation, `qa-validation` → integration).
+- `project-planning` is amended to match P36.
+- `tech-lead` and the orchestrator each get a one-line clarification.
+- `validation-gates` and `/validate-workflow` are untouched, so no golden case needs re-fixturing and the baseline does not change.
+
+In §13 the orchestrator verified the claims that dispatch depends on and accepted E1–E7.
+
+| Task | Covers | Protected paths? | Owner |
+|---|---|---|---|
+| `T573` | FU-1: E1–E7 in 3 skills and 2 agents, regeneration, root-drift declarations | No | Backend Developer |
+
+**Parked (new):**
+- **P39:** whether CONDITIONAL_PASS allows a merge. This is a behavioural conflict. An ADR-007 ruling on `/code-review` may need a held-out read grant, which needs the user's approval.
+- **P40:** differing verdict *criteria*. Depends on P34b.
+- **P41:** remaining verdict renderings and editorial items (G3–G9).
