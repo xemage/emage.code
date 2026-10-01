@@ -2,7 +2,7 @@
 
 **ID:** T560
 **Owner:** QA Engineer
-**Status:** pending
+**Status:** done
 **Priority:** P2
 **Tier:** mechanical
 **Affects:** —
@@ -24,10 +24,23 @@ This task, T560, is the authorizing task for **exactly** these paths:
 | P14 | `consolidate-memory-recommendation-table-grounded` | `fixture/recommendations.md`; `expect.py` (**module docstring only**) |
 | P15 | `skillify-skill-file-template-drift` | `case.yaml` (**`known_failing_reason` text only**) |
 | P24 | `batch-manifest-ledger-schema-conflict` | `brief.md` |
+| P14b | `consolidate-memory-recommendation-table-grounded` | `brief.md` — **extension, see below** |
+| P24b | `batch-manifest-ledger-schema-conflict` | `expect.py` — **module docstring only; extension, see below** |
 
 **Not authorized:** any other file in those cases (in particular any `expect.py` *logic*, any `status` or
 `known_failing_category`), any other case, `tests/golden/held-out/` (do not open it), `scripts/scorecard.py`, and
 the evaluator-hash baseline. You may not extend this grant; report and stop instead.
+
+### Grant extension — 2026-10-01, by the orchestrator
+
+The implementer's first hand-back found that its own fixes left two neighbouring spots stale: the
+consolidate-memory `brief.md` still described the old Promote destinations, and the batch `expect.py` docstring
+still cited `commands/plan.md`. It also found three pre-existing deviations in the batch `brief.md` quote block
+(already in the original grant). Rather than compute v12 and need a v13 for these, the orchestrator extended the
+grant **before** the baseline was computed, with rows **P14b** and **P24b** above. `protected-paths-v1.md` §5.1
+forbids a *holding agent* from extending its own grant; it does not forbid the orchestrator from scoping one. The
+extension was first given by message; the implementer rightly pointed out that §5.2 wants it in this brief, so it is
+recorded here in the same MR as the work.
 
 ## The four items
 
