@@ -59,7 +59,7 @@ Generated from: implementation/knowledge
 | sprint-status | command | stable | commands/sprint-status.md |
 | team-status | command | stable | commands/team-status.md |
 | validate-tasks | command | stable | commands/validate-tasks.md |
-| validate-workflow | command | experimental | commands/validate-workflow.md |
+| validate-workflow | command | stable | commands/validate-workflow.md |
 | coding-standards | instruction | stable | instructions/coding-standards.md |
 | git-workflow | instruction | stable | instructions/git-workflow.md |
 | mechanical-tier-escalation-policy | instruction | experimental | instructions/mechanical-tier-escalation-policy.md |
