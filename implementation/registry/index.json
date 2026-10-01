@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-09-30T19:10:08+00:00",
+  "generatedAt": "2026-09-30T20:37:17+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -1249,7 +1249,7 @@
       "category": "command",
       "name": "team-status",
       "path": "commands/team-status.md",
-      "checksum": "c327767e3973e70ede5d0d5f607132c0b7c3dd32b7b192c15b6498406820e917",
+      "checksum": "83fde197790690f7f7689ab05560c497ee8ab7f66d2abdde1dde6d36c3e51471",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
