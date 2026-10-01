@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-01T14:52:58+00:00",
+  "generatedAt": "2026-10-01T15:22:48+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -185,7 +185,7 @@
       "category": "agent",
       "name": "Evaluation Agent",
       "path": "agents/evaluation-agent.md",
-      "checksum": "b426a0f4f69fdf8d4ada2f257cc12b8359480039f93e575a36c707dc97bf1c76",
+      "checksum": "9788d36fe88339bb6838f4b9ca04ec2f02dd5ec1e45d6f6c1de6dfc67a7de33d",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -353,7 +353,7 @@
       "category": "agent",
       "name": "PoC Orchestrator",
       "path": "agents/poc-orchestrator.md",
-      "checksum": "80e9dea233d0b14fffd3d7c0c563c6d77ed563e57e42e49b37e6f5aa694ccfaa",
+      "checksum": "dcb911916420c6f5900f830bd490c32c8116e2024b2b2e90f753051f9a39d366",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -941,7 +941,7 @@
       "category": "command",
       "name": "evaluate-poc",
       "path": "commands/evaluate-poc.md",
-      "checksum": "192fbc35a10691d6e0d1ac36f45c942418498d205c90b98270e2da11725aa290",
+      "checksum": "da1e5360df11013b28e0f523e9159efd53c9e2be38f147bdd6f1208d5d9d1cfd",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1025,7 +1025,7 @@
       "category": "command",
       "name": "new-poc",
       "path": "commands/new-poc.md",
-      "checksum": "8635bcd025f12533597350d58e9849341b4e5a99c472497101752181b5baa5e2",
+      "checksum": "f7e78b9d1efe641748f70bb96272f67ef584c4fcf18fb3f21641ddfbbbef6407",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1109,7 +1109,7 @@
       "category": "command",
       "name": "poc-demo",
       "path": "commands/poc-demo.md",
-      "checksum": "7aceb520f5199a613ae55eaab5c2ecfeabd921f542423dcbdf8c0ed3271a2cf7",
+      "checksum": "caea41d44f60f0874ffe1386285fa74f6a34087da87496124e5095cc163b8651",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
