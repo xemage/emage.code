@@ -2,12 +2,13 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "emage.code command",
   "type": "object",
-  "required": ["description", "maturity"],
+  "required": ["description", "maturity", "audience"],
   "properties": {
     "description": { "type": "string", "minLength": 10 },
     "agent": { "type": "string" },
     "argument-hint": { "type": "string" },
-    "maturity": { "type": "string", "enum": ["experimental", "beta", "stable", "deprecated"] }
+    "maturity": { "type": "string", "enum": ["experimental", "beta", "stable", "deprecated"] },
+    "audience": { "type": "string", "enum": ["authoring", "target", "both"] }
   },
   "additionalProperties": false
 }

@@ -3,6 +3,7 @@ description: "Request a thorough code review of specified files or the current c
 agent: "tech-lead"
 argument-hint: "Specify files or describe what to review..."
 maturity: experimental
+audience: both
 ---
 
 Please perform a thorough code review on the following:

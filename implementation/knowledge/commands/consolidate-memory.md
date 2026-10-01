@@ -3,6 +3,7 @@ description: "Review MCP Memory entries, prune stale items, and promote valuable
 agent: "orchestrator"
 argument-hint: "Optional: focus area or category to consolidate..."
 maturity: stable
+audience: both
 ---
 
 You are in **Memory Consolidation mode**. Review, organize, and clean up MCP Memory entries to keep the project knowledge base accurate and lean.

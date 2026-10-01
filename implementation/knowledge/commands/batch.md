@@ -3,6 +3,7 @@ description: "Decompose a sweeping change into independent units for parallel ex
 agent: "orchestrator"
 argument-hint: "Describe the change to batch-process..."
 maturity: experimental
+audience: both
 ---
 
 You are in **Batch Processing mode**. Decompose a large change into independent units that can be worked on in parallel across isolated worktrees.

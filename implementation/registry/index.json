@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-01T00:41:33+00:00",
+  "generatedAt": "2026-10-01T04:19:26+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -801,7 +801,7 @@
       "category": "command",
       "name": "batch",
       "path": "commands/batch.md",
-      "checksum": "a0b3877944835ebc5b9450d9c1673c82144f274ba21cab97219a85607b9b1d1a",
+      "checksum": "49d31ef89473aa3e05dbc653d109281d30e6839146e95edd6e747d750aca37be",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -829,7 +829,7 @@
       "category": "command",
       "name": "bug-report",
       "path": "commands/bug-report.md",
-      "checksum": "d9d0202b99d66ed63b5b6f8852527ab8d39b847c806c7e74c1f1a608aad3fe64",
+      "checksum": "adc2151ce6458a6d580edc82ec6b950e9c7d33c2fd4f9cf0a7f073c4bac46cdb",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -857,7 +857,7 @@
       "category": "command",
       "name": "code-review",
       "path": "commands/code-review.md",
-      "checksum": "d0a3740e9472c2f26c86109b27f4076646a27df5c938f9c3e82525ada4e1e0c5",
+      "checksum": "3af9137db346951d190a30751fa73834408be5816d9724543ac51471bd171e77",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -885,7 +885,7 @@
       "category": "command",
       "name": "consolidate-memory",
       "path": "commands/consolidate-memory.md",
-      "checksum": "4d824e765bedeeeeaf14fc93d7b872955a8b6fbe35308146577c99d9f322fd9e",
+      "checksum": "840c7bdfc48f2843ebcbb3bfc06706062779d1f031bbe043cc45e63410f3ea1e",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -913,7 +913,7 @@
       "category": "command",
       "name": "discover-skills",
       "path": "commands/discover-skills.md",
-      "checksum": "18c59b5ee7762e9ac57b28a7253c801c2c5143331fcb2d783a8eb25d0420df85",
+      "checksum": "70bf327a0b4b0ba71e935ff97831d3c580e84886ee1ef38214d9ccdb324c339e",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -941,7 +941,7 @@
       "category": "command",
       "name": "evaluate-poc",
       "path": "commands/evaluate-poc.md",
-      "checksum": "697d2f7faf65321385a4f757084dd5d4c8c7961277e2912d125c9157e6e0f1a6",
+      "checksum": "82ba0d691d847ac03a89a5427c3da80a44b89d1ca12083e314c73dc5129c6269",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -969,7 +969,7 @@
       "category": "command",
       "name": "handoff",
       "path": "commands/handoff.md",
-      "checksum": "838f79ca4b498d9dc4811634bfe9f9f0881c146ae59234aef28654ede68f4be4",
+      "checksum": "b013fbb33852ad5ddcb5e1f13568de4b8f30e7bc58bb95cc73d507bbcb2d5fab",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -997,7 +997,7 @@
       "category": "command",
       "name": "new-feature",
       "path": "commands/new-feature.md",
-      "checksum": "ea2890687ab46a8dc6b9a0d37b7e8a5e306b43a69127383197f051a4543ee9b0",
+      "checksum": "55575b5f3adb03d65024ed90126767a493e1ceb31a842f1c1a6d10335eee0a59",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1025,7 +1025,7 @@
       "category": "command",
       "name": "new-poc",
       "path": "commands/new-poc.md",
-      "checksum": "26061c4350abeed1128eaf75bd171f70e32a9c4a0744d0c588381d643fe12fdb",
+      "checksum": "78498402c6e34c1ae7c211c1aa21764a7f4910b6a1aadf5ed8c2bcf715158100",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1053,7 +1053,7 @@
       "category": "command",
       "name": "new-project",
       "path": "commands/new-project.md",
-      "checksum": "d1abb42339b852254950b111987239867a0cecfa10504943685be61acc24e84a",
+      "checksum": "81660ef2e7245fdd466909cdca4d7a0a65e2a8ab9bb7e53ef0d79324885703c6",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1081,7 +1081,7 @@
       "category": "command",
       "name": "plan",
       "path": "commands/plan.md",
-      "checksum": "67c75b4091ed8211307ea50960d36453ffbd743d4b5081f4ccb3a892b6170cef",
+      "checksum": "87f8a151bd66387448a94672a6f60c9369abfeb8a75e70bcc620cb015478477a",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1109,7 +1109,7 @@
       "category": "command",
       "name": "poc-demo",
       "path": "commands/poc-demo.md",
-      "checksum": "7b68688fb4172ce56d3821bc35c8ac4a2e17ca7c6d884602eec227d89d915d90",
+      "checksum": "f518035e42c8f128befa6e8b3522bb15c3e6a4b4d4b0ec54f45b266c89ada7ae",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1137,7 +1137,7 @@
       "category": "command",
       "name": "prepare-release",
       "path": "commands/prepare-release.md",
-      "checksum": "8dfd4e3bc4a66ed6167714eb45ac63f31af17fd7993c09c44fd73b4f7b08c094",
+      "checksum": "eb16a46f77741203d226b4510e5a5291a20bc59d6ecf9db3e00037ca81dcfc29",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1165,7 +1165,7 @@
       "category": "command",
       "name": "security-audit",
       "path": "commands/security-audit.md",
-      "checksum": "65a2bba59d7844a72b8f31b72895043713d4786d97c44b2dace226cbe7c0538a",
+      "checksum": "56e5027313ce88b1b197d3d504340fe0f32ca05b45afa47318c8bf2e3f46382d",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1193,7 +1193,7 @@
       "category": "command",
       "name": "skillify",
       "path": "commands/skillify.md",
-      "checksum": "631d1803ee1d004a7f77a7d08325fba6378462f1c872134ca157e1f9c560a154",
+      "checksum": "fa95012e7fb71340d78cb453331a6377cc268e4faa46c065355819553e400a7b",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1221,7 +1221,7 @@
       "category": "command",
       "name": "sprint-status",
       "path": "commands/sprint-status.md",
-      "checksum": "183af819ca11607483ba07990dc3345dfde9f99bda214d8c1281aea55d28443c",
+      "checksum": "4c6c433c2554e9297f0a6faf36dca57071fb65bdcd9e7ebd5c189961fda51231",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1249,7 +1249,7 @@
       "category": "command",
       "name": "team-status",
       "path": "commands/team-status.md",
-      "checksum": "83fde197790690f7f7689ab05560c497ee8ab7f66d2abdde1dde6d36c3e51471",
+      "checksum": "e656af57f68224be42eb5d3a8b7990a5612d5b6f019345a842129999ef9760aa",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1277,7 +1277,7 @@
       "category": "command",
       "name": "validate-tasks",
       "path": "commands/validate-tasks.md",
-      "checksum": "8ebe7f805cd7971e4e73ce3643d6e07f66d6f1bb4f07db69134ea45db798a059",
+      "checksum": "ae502f3692904c2be8c57d586910c181ffd1850223fb7394745a1591e6d98f35",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1305,7 +1305,7 @@
       "category": "command",
       "name": "validate-workflow",
       "path": "commands/validate-workflow.md",
-      "checksum": "975af4c8597bf4feb56463cb323ee3ea05d3054913bd94cb4dc1d8362391af16",
+      "checksum": "f1fc29b0ef88780bdf34264cf4adcf87c2df807c897b05d0e86f3036b4fffe45",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [

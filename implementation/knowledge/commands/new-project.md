@@ -3,6 +3,7 @@ description: "Start a new software project from an idea. Triggers the full orche
 agent: "orchestrator"
 argument-hint: "Describe your project idea in detail..."
 maturity: stable
+audience: both
 ---
 
 I have a new project idea. Please orchestrate the full team to turn this into a real software product:

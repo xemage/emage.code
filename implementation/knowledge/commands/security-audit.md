@@ -3,6 +3,7 @@ description: "Request a security audit of the project or specific components, ch
 agent: "security-engineer"
 argument-hint: "Specify scope: full project, specific feature, or files..."
 maturity: stable
+audience: both
 ---
 
 Please perform a security audit on:

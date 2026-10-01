@@ -248,7 +248,7 @@ def _write_passing_components(tmp: Path, impl: Path) -> None:
     _write(
         impl / "knowledge" / "commands" / "demo-command.md",
         "---\ndescription: \"Runs the demo workflow end to end.\"\n"
-        "agent: \"demo-agent\"\nmaturity: stable\n---\n"
+        "agent: \"demo-agent\"\nmaturity: stable\naudience: both\n---\n"
         + RAILS_BLOCK
         + "\nSee instruction `demo-instruction` for the routing rule.\n",
     )

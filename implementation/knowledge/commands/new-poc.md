@@ -3,6 +3,7 @@ description: "Start a proof-of-concept project focused on hypothesis validation 
 agent: "poc-orchestrator"
 argument-hint: "Describe the hypothesis and what you need to prove..."
 maturity: experimental
+audience: both
 ---
 
 I want to start a proof-of-concept project.

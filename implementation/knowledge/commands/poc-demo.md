@@ -3,6 +3,7 @@ description: "Package the current PoC into a stakeholder-ready demo flow."
 agent: "poc-orchestrator"
 argument-hint: "Describe the audience and what outcome the demo should prove..."
 maturity: experimental
+audience: both
 ---
 
 Prepare a polished PoC demo package for stakeholder review.
