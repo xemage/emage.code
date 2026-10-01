@@ -63,5 +63,7 @@ the amended contract, not inherited.
 - **P34:** formal acceptance of ADR-007 (still `proposed`), and whether an ADR on agent-definition authority
   (FU-D) is wanted. **Trigger:** a user decision; flagged to the user 2026-10-01.
 
+- **P35:** three `experimental` skills still carry the pre-T564 vocabulary, found by T564's sweep. `skills/poc-evaluation/SKILL.md` (lines 21, 37, 64, 103) and `skills/rapid-prototyping/SKILL.md:102` offer `INCONCLUSIVE`, which is P31's shape. `skills/technical-debt-tracking/SKILL.md` uses an `XS…XL` effort scale and four severity tiers (lines 76, 78, 119, 151, 157), which is P29b's shape. That skill may also serve the production track, so first decide whether `poc-guidelines.md` governs it. **No maturity impact**, because all three are `experimental`. **Trigger:** after `T565`.
+
 Still parked from earlier plans: **P28** (`/validate-workflow` step 6 against its non-verdict gates). Its trigger,
 "after T563", has now fired. It is the next single-command repair after `T565`.
