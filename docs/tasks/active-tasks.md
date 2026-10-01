@@ -2,9 +2,8 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T571 | Align the three PoC skills with T563's rulings (T570 FU-1) | backend-developer | pending | P2 | T570 | 2026-10-01 |
 
-> **1 active row (`T571`), scoped by `plan-094` §4 from T570's ruling (P35, aligning the three PoC skills with T563's rulings). `plan-093` is complete (P28 repaired; `/validate-workflow` stable; commands 14/5).**
+> **0 active rows. `plan-094` is complete (P35): `T570` decided and `T571` (MR !459) aligned the three PoC skills with T563's rulings on 2026-10-01.** Commands are 14 `stable` / 5 `experimental`. Next candidates: P36, P37, P38 and P32–P34 (`plan-092`/`093`/`094` §4).
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
