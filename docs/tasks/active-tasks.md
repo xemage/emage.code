@@ -2,8 +2,9 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T566 | Adjudicate /validate-workflow's gate list against its VERDICT requirement (P28) | solution-architect | pending | P2 | — | 2026-10-01 |
 
-> **0 active rows. `plan-092` is complete: `T564` closed 2026-10-01 (MR !447) and `T565` closed 2026-10-01 (MR !449, evaluator-hash v14).** Next candidates: P28 (`/validate-workflow` repair) and P35 (PoC skill vocabulary), both parked in `plan-092` §4. `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **1 active row (`T566`), scoped by `plan-093` (P28, the `/validate-workflow` repair). `plan-092` is complete: `T564` (MR !447) and `T565` (MR !449, evaluator-hash v14) closed 2026-10-01.**
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
