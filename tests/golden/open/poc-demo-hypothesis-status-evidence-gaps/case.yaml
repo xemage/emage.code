@@ -1,0 +1,4 @@
+id: poc-demo-hypothesis-status-evidence-gaps
+command: /poc-demo
+status: expected_pass
+tags: [poc-demo, hypothesis-status, evidence-gaps, mocked-vs-real, hand-authored, no-corpus]

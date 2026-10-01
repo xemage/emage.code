@@ -1,0 +1,20 @@
+id: validate-workflow-gate-verdict-sources
+command: /validate-workflow
+status: known_failing
+known_failing_category: tracked_defect
+known_failing_reason: >-
+  validate-workflow.md step 6 requires, "For each gate", that the "Gate produces a VERDICT", and its
+  Failure mode makes any gate that "doesn't produce a VERDICT" force the overall VERDICT to FAIL.
+  Step 5 lists six gates and cites where each is defined. Resolved against byte-identical copies of
+  the three cited files, four produce a VERDICT (the validation-gates skill's Integration,
+  Implementation, Security and Release rows, all admitted by its Verdict Format "**Gate:**" field)
+  and two do not: the plan approval gate (plan-approve-execute skill, Phase 2: Approve) emits
+  Approve / Revise / Reject, and the architecture briefing gate (orchestrator agent, Core Workflow,
+  Phase 3 step 1) declares no output at all. Step 5 itself says "The first two are workflow steps,
+  not among the validation-gates skill's five gate types", and the Verdict Format's "**Gate:**"
+  field admits only those five kinds -- so the command's own text contradicts its step 6, and the
+  declared "Status: PASS" is unreachable against the real definitions: the command always FAILs.
+  Parked item P9 (plan-084 SS4), confirmed by this case. A contract defect awaiting adjudication
+  (ADR-007 branch 1 territory: a clause contradicting another clause of the same command file),
+  not a capability the surface was never meant to have. Not resolved here.
+tags: [validate-workflow, gate-verdicts, contract-self-contradiction, p9, real-artifact]
