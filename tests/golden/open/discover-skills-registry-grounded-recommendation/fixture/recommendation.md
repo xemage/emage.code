@@ -16,4 +16,4 @@
 | `worktree-isolation` | The task runs in an isolated agent worktree off `develop`. | no |
 
 ### Next command
-`/validate-tasks`, or read `skills/verification-before-completion/SKILL.md`
+`/validate-tasks`, or load the `verification-before-completion` skill
