@@ -54,3 +54,7 @@ In §13 the orchestrator verified the claims that dispatch depends on and accept
 - **P39:** whether CONDITIONAL_PASS allows a merge. This is a behavioural conflict. An ADR-007 ruling on `/code-review` may need a held-out read grant, which needs the user's approval.
 - **P40:** differing verdict *criteria*. Depends on P34b.
 - **P41:** remaining verdict renderings and editorial items (G3–G9).
+
+## 5. Outcome (2026-10-01)
+
+P37 is resolved. T573 (!465) applied E1-E7, so the verdict formats are now reconciled without ranking any document above another. The 33 root paths stay declared until the next user-approved root refresh. **P39** (whether CONDITIONAL_PASS allows a merge) is the most consequential open item. Resolving it may need a held-out read grant, which is the user's call.
