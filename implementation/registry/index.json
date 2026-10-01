@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-01T18:25:57+00:00",
+  "generatedAt": "2026-10-01T19:08:30+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -1305,8 +1305,8 @@
       "category": "command",
       "name": "validate-workflow",
       "path": "commands/validate-workflow.md",
-      "checksum": "d7f9ca162a6b877dcc9dba9d65ecd9320c7009264cb58b473c75bed0b66308f4",
-      "maturity": "experimental",
+      "checksum": "77ce6359aedc67ce6110c7958c52c5f7b871a2958a5867e4b03482619b6d1761",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
