@@ -2,9 +2,11 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T566 | Adjudicate /validate-workflow's gate list against its VERDICT requirement (P28) | solution-architect | pending | P2 | — | 2026-10-01 |
+| T567 | Amend /validate-workflow step 5's gate list (T566 FU-1) | backend-developer | pending | P2 | T566 | 2026-10-01 |
+| T568 | Realign validate-workflow-gate-verdict-sources to the amended gate list (T566 FU-2) | qa-engineer | pending | P2 | T567 | 2026-10-01 |
+| T569 | Promote /validate-workflow to stable (T566 FU-3) | backend-developer | pending | P2 | T568 | 2026-10-01 |
 
-> **1 active row (`T566`), scoped by `plan-093` (P28, the `/validate-workflow` repair). `plan-092` is complete: `T564` (MR !447) and `T565` (MR !449, evaluator-hash v14) closed 2026-10-01.**
+> **3 active rows (`T567` → `T568` → `T569`), scoped by `plan-093` §4 from T566's ruling (P28, the `/validate-workflow` repair). `plan-092` is complete: `T564` (MR !447) and `T565` (MR !449, evaluator-hash v14) closed 2026-10-01.**
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
