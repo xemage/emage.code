@@ -2,8 +2,9 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T572 | Adjudicate the validation-gate verdict formats and gate-definition inconsistencies (P37) | solution-architect | pending | P2 | — | 2026-10-01 |
 
-> **0 active rows. `plan-094` is complete (P35): `T570` decided and `T571` (MR !459) aligned the three PoC skills with T563's rulings on 2026-10-01.** Commands are 14 `stable` / 5 `experimental`. Next candidates: P36, P37, P38 and P32–P34 (`plan-092`/`093`/`094` §4).
+> **1 active row (`T572`), scoped by `plan-096` (P37, reconciling the validation-gate verdict formats and gate definitions). plan-094 and plan-095 are complete: the PoC skills are aligned, the root drift is 0, ADR-007 is Accepted, and P36 is closed.**
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
