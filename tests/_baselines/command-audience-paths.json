@@ -1,0 +1,86 @@
+{
+  "_comment": [
+    "Declared references from commands with `audience: both|target` to paths that exist in this repository but not in a fresh `scripts/install.sh --platform all` (T557, plan-088, plan-087 P23).",
+    "Consumed by tests/functional/test_command_audience_paths.py, which fails on any undeclared violation AND on any declared entry that is no longer a violation.",
+    "An entry is (command, path) as the path is written in the command body; one entry covers every occurrence of that path in that command, so its reason must hold for all of them.",
+    "Most entries are correct by design: the path is named inside an explicit authoring branch (a row or clause that applies only where the authoring tree exists, or the existence test that selects it). Entries marked DEFECT or P22 are known problems, not exemptions.",
+    "List the current set: python3 -m tests.functional.test_command_audience_paths --print-violations"
+  ],
+  "violations": [
+    {
+      "command": "/batch",
+      "path": "commands/plan.md",
+      "reason": "DEFECT, untracked: class C / rule B4 (docs/artifacts/command-audience-resolution-v1.md §2.3, §4.3) -- steps 2 and Important cite /plan by its authoring-tree path (implementation/knowledge/commands/plan.md) outside any authoring branch; a target has it only as .<platform>/commands/plan.md, .github/prompts/plan.prompt.md, etc. Repair: cite `/plan` by name. plan-087 §2 counts the six T546 body edits as landed, but /batch's is not."
+    },
+    {
+      "command": "/consolidate-memory",
+      "path": "implementation/AGENTS.md",
+      "reason": "Authoring branch by design (T549): named only in the Promotion Targets bullet 'In the emage.code repository itself', as a file this command must NOT edit there."
+    },
+    {
+      "command": "/consolidate-memory",
+      "path": "implementation/docs/",
+      "reason": "Authoring branch by design (T549): named only in the 'In the emage.code repository itself' bullet, as the shipped tree not to promote into (promote into the root docs/ instead)."
+    },
+    {
+      "command": "/consolidate-memory",
+      "path": "implementation/knowledge/",
+      "reason": "Authoring branch by design (T549): named only in the 'In the emage.code repository itself' bullet, as shipped skills this command must NOT edit there."
+    },
+    {
+      "command": "/discover-skills",
+      "path": "implementation/knowledge/skills/*/SKILL.md",
+      "reason": "Authoring branch by design (T554): the step 1 'exists' row and the Rails Inputs clause that applies only where implementation/registry/index.json exists; the target row enumerates .<platform>/skills/*/SKILL.md instead."
+    },
+    {
+      "command": "/discover-skills",
+      "path": "implementation/registry/index.json",
+      "reason": "Authoring discriminator by design (T554): step 1 tests for this file's existence to choose the row, and the target row says targets have no registry; naming it is the test itself, not a dependency."
+    },
+    {
+      "command": "/discover-skills",
+      "path": "implementation/registry/summary.md",
+      "reason": "Authoring branch by design (T554): an optional accelerator named only in the step 1 'exists' (authoring) row and the matching Rails Inputs clause."
+    },
+    {
+      "command": "/discover-skills",
+      "path": "packs/installed/",
+      "reason": "P22 — tracked no-op, see plan-087 §3"
+    },
+    {
+      "command": "/skillify",
+      "path": "implementation/knowledge/",
+      "reason": "Authoring discriminator by design (T532): the target row is selected by its absence ('no implementation/knowledge/'), and the explanatory bullet quotes AGENTS.md's 'Source knowledge lives ... under implementation/knowledge/' for an authoring checkout."
+    },
+    {
+      "command": "/skillify",
+      "path": "implementation/knowledge/skills/",
+      "reason": "Authoring discriminator and branch by design (T532): the existence test that selects the authoring row, and the Rails Out-of-scope clause scoped to 'an emage.code authoring checkout'."
+    },
+    {
+      "command": "/skillify",
+      "path": "implementation/knowledge/skills/<name>/SKILL.md",
+      "reason": "Authoring branch by design (T532): the output path in the authoring row only; the target row writes <platform>/skills/<name>/SKILL.md."
+    },
+    {
+      "command": "/skillify",
+      "path": "implementation/registry/",
+      "reason": "Authoring branch by design (T532): named only in the 'In an authoring checkout the platform folders are derived' explanatory bullet."
+    },
+    {
+      "command": "/skillify",
+      "path": "implementation/scripts/generate-registry.py",
+      "reason": "Authoring branch by design (T532): the regeneration command in the authoring row's 'Then' cell only."
+    },
+    {
+      "command": "/skillify",
+      "path": "implementation/scripts/sync.mjs",
+      "reason": "Authoring branch by design (T532): the regeneration command in the authoring row's 'Then' cell, and the 'In an authoring checkout' explanatory bullet."
+    },
+    {
+      "command": "/skillify",
+      "path": "scripts/install.sh",
+      "reason": "Target row, but not a dependency: it names the upstream installer (run from the user's emage.code checkout, not the target) only so the agent can warn the user that `--update` replaces the platform trees; no step reads or runs it in the target."
+    }
+  ]
+}
