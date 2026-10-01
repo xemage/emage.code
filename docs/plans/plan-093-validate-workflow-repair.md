@@ -55,3 +55,7 @@ They run in sequence, one MR each. T567 alone leaves the case red, which is alre
 
   **Trigger:** the next task touching `validation-gates`, `testing-strategy` or `orchestrator.md`.
 - `validation-gates`' `docs/plans/plan-<feature>.md` joins **P32**.
+
+## 5. Outcome (2026-10-01)
+
+P28 is repaired. T567 (!453), T568 (!454, v15) and T569 (!455) merged, and `/validate-workflow` is `stable`, which makes commands **14 / 5**. **Standing rule from T568:** every future brief that touches `tests/golden/` must require pruning `tests/golden/held-out` before any `find`/`grep` traversal. An unpruned `find` printed one held-out directory name. The user chose to record it without rotation, and the name is not to be repeated anywhere.
