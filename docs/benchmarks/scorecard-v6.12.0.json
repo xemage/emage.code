@@ -431,17 +431,17 @@
         "status": "expected_pass"
       },
       {
-        "actual_result": "fail",
-        "bucket": "known_failing",
+        "actual_result": "pass",
+        "bucket": "pass",
         "case_dir": "golden/open/validate-workflow-gate-verdict-sources",
         "command": "/validate-workflow",
         "error": null,
         "id": "validate-workflow-gate-verdict-sources",
-        "known_failing_category": "tracked_defect",
+        "known_failing_category": null,
         "location": "open",
         "model_outcome": null,
         "model_tier": null,
-        "status": "known_failing"
+        "status": "expected_pass"
       }
     ],
     "summary": {
@@ -457,27 +457,27 @@
         },
         "open": {
           "capability_gap": 3,
-          "known_failing": 7,
-          "pass": 21,
+          "known_failing": 6,
+          "pass": 22,
           "regression": 0,
           "total": 28,
-          "tracked_defect": 4,
+          "tracked_defect": 3,
           "unexpected_pass": 0
         }
       },
       "capability_gap": 4,
-      "known_failing": 9,
+      "known_failing": 8,
       "regressions": 0,
       "total_cases": 34,
-      "total_fail": 9,
-      "total_pass": 25,
-      "tracked_defect": 5,
+      "total_fail": 8,
+      "total_pass": 26,
+      "tracked_defect": 4,
       "unexpected_pass": 0,
       "unrecognized_status": 0
     }
   },
   "run_metadata": {
-    "generated_at": "2026-10-01T13:46:18Z",
+    "generated_at": "2026-10-01T18:45:00Z",
     "golden_version": "v6.12.0",
     "runner": "scripts/scorecard.py",
     "schema_version": "golden-scorecard-v1"
