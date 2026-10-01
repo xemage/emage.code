@@ -2,9 +2,8 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T558 | /batch cites commands/plan.md, a path installed targets never have | technical-writer | pending | P2 | T557 | 2026-10-01 |
 
-> **1 active row (`T558`). `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
+> **0 active rows.** `T514` closed 2026-09-24 — see `completed-tasks.md` for the full closure
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /

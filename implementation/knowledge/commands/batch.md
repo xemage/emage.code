@@ -16,7 +16,7 @@ You are in **Batch Processing mode**. Decompose a large change into independent 
    - Independently testable
    - Small enough for a single agent session
 
-   Write the decomposition to a plan document at `docs/plans/plan-<ID>.md`, following the structure `commands/plan.md` step 5 declares (`Goal`, `Task Decomposition`, `Dependency Graph`, `Resource Assignments`, `Risk Assessment`, `Open Questions`) — an independent batch renders as a `Dependency Graph` with no edges, which is the visual proof of step 2's constraint — plus one additional required section:
+   Write the decomposition to a plan document at `docs/plans/plan-<ID>.md`, following the structure `/plan` step 5 declares (`Goal`, `Task Decomposition`, `Dependency Graph`, `Resource Assignments`, `Risk Assessment`, `Open Questions`) — an independent batch renders as a `Dependency Graph` with no edges, which is the visual proof of step 2's constraint — plus one additional required section:
    - **Batch Manifest** — one row per unit: `| Task ID | Description | Assigned agent | Branch |`. This is where the branch is written down; `docs/tasks/active-tasks.md` is not (step 5). Each `Branch` cell must equal `agent/<Assigned agent>/<Task ID>`, so the manifest cannot drift from the ledger row it describes.
 3. **Create worktree isolation** — for each unit:
    - Allocate the unit's task ID, ledger row and task brief first (step 5) — the branch name contains the task ID
@@ -42,7 +42,7 @@ You are in **Batch Processing mode**. Decompose a large change into independent 
 - Never modify the main branch directly. All work happens in worktree branches.
 - If a unit turns out to have a dependency on another unit, flag it immediately and re-plan.
 - Present the decomposition plan for user approval before creating worktrees.
-- The order is fixed by the artifacts themselves: plan document (step 2) → user approval → ledger rows and task briefs (step 5) → worktrees and branches (step 3) → delegation (step 4). A unit's branch cannot be named before its task ID exists, and per `commands/plan.md` § "Task Creation Precondition" no unit row may be created until the step 2 plan document exists and has been presented for review.
+- The order is fixed by the artifacts themselves: plan document (step 2) → user approval → ledger rows and task briefs (step 5) → worktrees and branches (step 3) → delegation (step 4). A unit's branch cannot be named before its task ID exists, and per `/plan` § "Task Creation Precondition" no unit row may be created until the step 2 plan document exists and has been presented for review.
 
 ## Rails
 

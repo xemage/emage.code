@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-01T04:19:26+00:00",
+  "generatedAt": "2026-10-01T06:49:27+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -801,7 +801,7 @@
       "category": "command",
       "name": "batch",
       "path": "commands/batch.md",
-      "checksum": "49d31ef89473aa3e05dbc653d109281d30e6839146e95edd6e747d750aca37be",
+      "checksum": "c683c3517f2a550300b981376b8bb1c36eea2375483f9a765e3ea7881cd627f4",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [

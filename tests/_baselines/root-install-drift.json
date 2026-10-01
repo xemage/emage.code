@@ -7,5 +7,12 @@
     "Regenerate: python3 -m tests.functional.test_root_install_parity --print-drift",
     "Initial 49 entries: root last refreshed at fee245a (2026-09-19); lagging since T532 (skillify), T542 (orchestrator) and the batch/new-feature/plan/prepare-release/sprint-status command changes."
   ],
-  "drift": []
+  "drift": [
+    ".claude/commands/batch.md",
+    ".cursor/commands/batch.mdc",
+    ".gemini/commands/batch.md",
+    ".github/prompts/batch.prompt.md",
+    ".opencode/commands/batch.md",
+    ".pi/prompts/batch.md"
+  ]
 }
