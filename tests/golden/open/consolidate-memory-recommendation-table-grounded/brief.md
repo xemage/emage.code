@@ -67,15 +67,17 @@ check rejects it rather than accepting any non-empty string.
 
   **Since `T549`, step 4 does declare one piece of output**, and it is not asserted either: "For
   each Promote, name the proposed target file and section (see **Promotion Targets**) below the
-  table, not as a table column". The fixture predates that clause and does not satisfy it: its three
-  `Promote` rows name their destinations inside the `Rationale` cell rather than below the table, and
-  those destinations are the root `AGENTS.md` (twice), which `## Promotion Targets` now lists under
-  **Never use**, and `implementation/knowledge/memory/README.md`, which is not under `docs/`, the
-  only location that section permits. Because `expect.py` grades neither rationale content nor
-  anything below the table, `check()` still returns `True`. Recorded here rather than silently
-  carried: asserting the new clause, or re-authoring the fixture's `Promote` rows to it, needs an
-  authorization covering `expect.py` or `fixture/`, which the task that wrote this paragraph (`T548`)
-  did not hold.
+  table, not as a table column". The fixture predates that clause and still does not satisfy it: its
+  three `Promote` rows name their destinations inside the `Rationale` cell rather than below the
+  table. Those destinations are durable `docs/` documents, as `## Promotion Targets` requires:
+  `docs/wiki/architecture.md` (a new § Blocker protocol, and the existing § Validation gates) and a
+  new `docs/wiki/memory-vault-authoring.md`. `T560` set them; before that they were the root
+  `AGENTS.md` (twice), which that section lists under **Never use**, and
+  `implementation/knowledge/memory/README.md`, which is not under `docs/`. Because `expect.py`
+  grades neither rationale content nor anything below the table, `check()` returned `True` before
+  and after that change. Asserting the new clause would be a new assertion rather than a
+  correction, and no task has authorized one; this paragraph was first written by `T548`, which
+  held no authorization covering `expect.py` or `fixture/`.
 
 ## Pass condition
 `fixture/recommendations.md` contains at least one 4-column pipe table whose header cells identify

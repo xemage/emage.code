@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "algorithm": "sha256",
+  "digests": {
+    "tests_golden": "42264ed6d790e86d3171875e331fb625701c7caaba1ba15744623c30f3c634a4",
+    "scripts_scorecard": "45346c178c7f6d92101130d898f55dfaad908aa7e5ae669ce1faac99a51192d6"
+  },
+  "computed_from_commit": "4af930144dfee6266ce9c62ee047e5dd85773243",
+  "computed_at": "2026-10-01T18:00:00Z",
+  "protected_paths": {
+    "tests_golden": "tests/golden",
+    "scripts_scorecard": "scripts/scorecard.py"
+  },
+  "supersedes": "evaluator-hash-known-good-v11.json",
+  "reason": "T560, the golden batch of plan-089, corrected seven files in four cases under the file-scoped protected-path grant in docs/tasks/task-T560.md (protected-paths-v1.md \u00a75), one baseline authorization covering all of them per plan-083 decision 2. P13: the handoff-payload-schema-fields-real fixture now embeds the live implementation/runtime/handoff/schema-v1.json (byte-identical), so an empty writablePaths is rejected for that fixture as T539 intended; check() stays True on the real fixture. P14 and P14b: the consolidate-memory fixture's Promote rationales point at durable docs/ targets instead of targets T549 placed on its Never-use list, and the case brief describes them. P15: the skillify case's known_failing_reason describes T532's output-path rule. P24, P24b and P24c: the /batch case's brief and checker docstring cite /plan by name as T558 does, and the brief's quote of /batch is verbatim. The grant was extended by the orchestrator before this baseline was computed (rows P14b, P24b), and the extension is recorded in the brief. Independently verified by the orchestrator: every changed file lies inside the written grant; both edited checkers are AST-identical to 0d0649e apart from their docstrings; the skillify case.yaml changed only known_failing_reason; check() results unchanged (handoff True, consolidate-memory True, batch True, skillify False); held-out isolation passes; scorecard unchanged (29/21/0); the full suite showed exactly the two evaluator-hash failures before this refresh. scripts_scorecard is byte-identical to v11 through v5. The implementing agent committed locally but neither pushed nor refreshed this baseline; the orchestrator escalated it -- the twelfth such escalation in this phase and the twelfth respected -- and the user explicitly authorized it before this file was written.",
+  "update_policy": "Manual only, never automatic. A future legitimate update goes through docs/artifacts/protected-paths-v1.md \u00a75's exception path and produces evaluator-hash-known-good-v13.json -- this file (v12) is never edited in place, and v1 through v11 are retained unmodified as the historical record. See docs/artifacts/evaluator-hash-check-v1.md for the full policy."
+}

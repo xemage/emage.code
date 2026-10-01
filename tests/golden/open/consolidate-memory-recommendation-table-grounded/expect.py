@@ -10,9 +10,16 @@ Contract under test: implementation/knowledge/commands/consolidate-memory.md `##
 
 The load-bearing assertion is steps 1+3 together: the table must cover the retrieved entry set
 exactly -- no invented key, no silently dropped entry. Step 3's column *labels* are not declared
-by the command, so the header is matched by concept rather than by literal string; step 4
-("Wait for user approval") is a human interaction with no declared artifact and is not checked.
-See brief.md.
+by the command, so the header is matched by concept rather than by literal string.
+
+Step 4 ("Wait for user approval") is not asserted. Since T549 it does declare one piece of
+output: "For each Promote, name the proposed target file and section (see **Promotion Targets**)
+below the table, not as a table column". This checker still does not assert it, for two reasons:
+the approval itself is a human interaction, and this checker grades only the table -- its
+structure, step 2's vocabulary and its coverage of the retrieved set -- never rationale content
+or anything below the table, so asserting the clause would be a new assertion rather than a
+correction. The fixture's Promote rows name their `docs/` targets, per `## Promotion Targets`,
+in their Rationale cells. See brief.md.
 """
 from __future__ import annotations
 

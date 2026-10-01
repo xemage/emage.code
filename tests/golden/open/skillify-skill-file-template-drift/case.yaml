@@ -4,7 +4,10 @@ status: known_failing
 known_failing_category: tracked_defect
 known_failing_reason: >-
   skillify.md's "Generate the Skill File" step declares a five-section SKILL.md template
-  written to .github/skills/<name>/SKILL.md. Since T527 amended that step, the five are
+  written to the path its "Choose the Output Path" step selects -- since T532 one rule with a
+  precondition, two rows: implementation/knowledge/skills/<name>/SKILL.md in an emage.code
+  authoring checkout, or <platform>/skills/<name>/SKILL.md in every installed platform folder
+  of an installed target. Since T527 amended the Generate step, the five are
   ## When to Use, ## Inputs, ## Procedure, ## Success Criteria and ## Examples (previously
   ## Trigger and ## Steps in place of the first and third). A fence-aware corpus measurement
   across the 26 real skill files under implementation/knowledge/skills/*/SKILL.md found 0/26

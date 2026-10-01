@@ -34,7 +34,7 @@ tightened to a kebab-case slug (§ "What is deliberately not asserted", item 2).
 >    - Self-contained (no cross-unit dependencies within a batch)
 >    …
 >    Write the decomposition to a plan document at `docs/plans/plan-<ID>.md`, following the
->    structure `commands/plan.md` step 5 declares … plus one additional required section:
+>    structure `/plan` step 5 declares … plus one additional required section:
 >    - **Batch Manifest** — one row per unit: `| Task ID | Description | Assigned agent | Branch |`.
 >      This is where the branch is written down; `docs/tasks/active-tasks.md` is not (step 5). Each
 >      `Branch` cell must equal `agent/<Assigned agent>/<Task ID>`, so the manifest cannot drift
@@ -42,14 +42,16 @@ tightened to a kebab-case slug (§ "What is deliberately not asserted", item 2).
 > 3. **Create worktree isolation** — for each unit:
 >    - Allocate the unit's task ID, ledger row and task brief first (step 5) — the branch name
 >      contains the task ID
+>    - Create a dedicated worktree and branch using the worktree-isolation skill
 >    - Branch naming: `agent/<agent-name>/<task-id>`, per `git-workflow.md` § "Agent Worktree Branch
 >      Naming" and the worktree-isolation skill's own convention
 > 5. **Track progress** — record each unit as a task in `docs/tasks/active-tasks.md`, using that
 >    file's own 7-column schema (`AGENTS.md` § Task Protocol) and never a five-field manifest row,
 >    which its validator rejects:
 >    - Format (7 columns, exact order):
->      `| T<NNN> | BATCH <slug>: <description> | <agent-slug> | pending | P0|P1|P2 | <dep-ids or —> | YYYY-MM-DD |`
+>      `| T<NNN> | BATCH <slug>: <description> | <agent-slug> | pending | P0\|P1\|P2 | <dep-ids or —> | YYYY-MM-DD |`
 >    - Use the NEXT sequential `T<NNN>` ID for every unit. NEVER a `U<n>` …
+>    …
 >    - `Depends on` must not name another unit of the same batch … A dependency on a task *outside*
 >      the batch is permitted.
 >    - The branch is **not** a ledger column. …

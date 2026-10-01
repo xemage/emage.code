@@ -34,7 +34,7 @@ the superseded checker would have returned False even against a fully conforming
 
 **Not asserted, deliberately.** `batch-manifest-resolution-v1.md` SS7's sixth row offers one net
 addition -- that the decomposition live at step 2's declared `docs/plans/plan-<ID>.md` and carry
-`commands/plan.md` step 5's six section headers -- and instructs that it be omitted, and the
+`/plan` step 5's six section headers -- and instructs that it be omitted, and the
 omission stated here, if SS4.1's counter-reading is taken. It is omitted, for two reasons stated so
 that a reviewer can reject them: `ADR-007` Validation criterion 1 requires the replacement to assert
 "the same number of structural elements", which is a ceiling as much as a floor, and SS4.1 itself
