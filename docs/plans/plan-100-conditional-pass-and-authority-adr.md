@@ -36,3 +36,17 @@
    it, and P40 and P43 become schedulable.
 
 Both tasks are P2.
+
+## 3. T581 outcome: ADR-008 accepted (2026-10-02)
+
+The architect drafted `ADR-008-knowledge-document-authority.md`, codified from the precedents. The user then answered the three review questions:
+
+- Q1: **"Self-placement only"**. Nesting alone never decides.
+- Q2: **"Treat as peers (Recommended)"**. Experimental instructions are peers.
+- Q3: **"Keep unranked (Recommended)"**. Between `AGENTS.md` and the stable instructions, an uncontested declared precedence holds; otherwise the conflict escalates. The orchestrator aligned the ADR's `AGENTS.md` sub-rule with the option text the user chose.
+
+The user then **accepted ADR-008**.
+
+Its order of application: A, joint satisfiability; B, tier 1 (`AGENTS.md` and stable instructions, within their declared scope); C, the command contract; D, peer self-placement; E, escalate. Maturity never ranks.
+
+**P40 and P43 are now schedulable** under ADR-008. Slices that self-placement does not decide escalate to the user by design.
