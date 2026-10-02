@@ -2,9 +2,9 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T578 | Adjudicate the PoC security reviewer's non-blocking rule for critical findings (O1, SECURITY:HIGH) | solution-architect | pending | P1 | — | 2026-10-02 |
+| T579 | Make the PoC security reviewer block on critical findings (T578 FU-1, O1, SECURITY:HIGH) | backend-developer | pending | P1 | T578 | 2026-10-02 |
 
-> **1 active row: `T578` (plan-099, **P1** by the user's decision: O1, SECURITY:HIGH, the PoC security reviewer defers critical findings to debt). While it is open, `poc-security-engineer` is held at `beta`. `plan-098` is complete: P42 fixed by T577 (MR !474).**
+> **1 active row: `T579` (plan-099 §4, **P1** by the user's decision: apply O1 ruling v3 so the PoC security reviewer blocks on critical findings). While it is open, `poc-security-engineer` is held at `beta`.**
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
