@@ -2,8 +2,10 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T580 | Make CONDITIONAL_PASS merge semantics consistent (P39), per the user's decision | solution-architect | pending | P2 | — | 2026-10-02 |
+| T581 | Draft ADR-008, knowledge-document authority (P34b), per the user's decision | solution-architect | pending | P2 | — | 2026-10-02 |
 
-> **0 active rows. `plan-099` is complete: O1 (SECURITY:HIGH) is fixed by T579 (MR !477), and `poc-security-engineer` is re-promoted to `stable` in the same MR that archives T579. `plan-098` (P42) and `plan-097` (P38) are complete.** Root drift: 73 declared paths; clearing them needs a root refresh, which the user approves at the time.
+> **2 active rows, both scoped by `plan-100` from the user's decisions of 2026-10-02: `T580` (P39, CONDITIONAL_PASS allows merge with tracked conditions; security HIGH/CRITICAL never qualifies) and `T581` (P34b, draft ADR-008 on knowledge-document authority as `proposed`). The root was refreshed in MR !479, so drift is 0.**
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
