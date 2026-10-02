@@ -2,8 +2,9 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T574 | Adjudicate the PoC skill/command overlaps (P38) | solution-architect | pending | P2 | — | 2026-10-02 |
 
-> **0 active rows. `plan-096` is complete (P37): `T572` decided and `T573` (MR !465) reconciled the gate-verdict formats on 2026-10-01.** Root drift: 33 declared paths. Parked: P39 (CONDITIONAL_PASS merge semantics, behavioural; flagged to the user), P40 (verdict criteria, needs P34b), P41, P38, P32, P33, P34b.
+> **1 active row (`T574`), scoped by `plan-097` (P38: PoC skill/command overlaps). plan-096 is complete (P37 gate verdicts reconciled). Waiting on the user: P39, P34b.**
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
