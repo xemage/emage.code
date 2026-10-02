@@ -244,7 +244,7 @@ When the user provides a project idea, follow this process:
    - **@backend-developer** — API endpoints, business logic, services
    - **@frontend-developer** — UI components, pages, client-side logic
    - **@database-engineer** — Complex queries, stored procedures
-3. After each completion, delegate to **@tech-lead** for code review
+3. After each completion, run the **Implementation Gate**: delegate to **@tech-lead** for code review (see § Validation Gates)
 4. Run **Integration Gate** after all parallel work completes
 
 ### Phase 4: Quality Assurance

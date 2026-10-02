@@ -152,13 +152,10 @@ The skill produces:
 All plans produced by this skill feed into the **plan-approve-execute** protocol. The workflow is:
 
 1. **Plan** — This skill produces the plan document (WBS, milestones, sprint backlogs).
-2. **Approve** — The plan is submitted for review. Approval is a validation gate that produces a verdict:
-   ```
-   [VERDICT] gate=plan-review | result=PASS|CONDITIONAL_PASS|FAIL | reviewer={role} | artifact_ref=plan-v{N} | date={YYYY-MM-DD}
-   ```
-3. **Execute** — Only after a `PASS` or `CONDITIONAL_PASS` verdict does execution begin. `CONDITIONAL_PASS` items become tracked tasks.
+2. **Approve** — The plan is presented to the user, who decides **Approve**, **Revise** or **Reject** (`plan-approve-execute` skill § The Three Phases › Phase 2: Approve). Plan approval is the user's decision, not a validation gate: it produces no `PASS` / `CONDITIONAL_PASS` / `FAIL` verdict.
+3. **Execute** — Only after the user approves does execution begin.
 
-**No work begins without an approved plan.** If a plan is rejected (`FAIL`), it must be revised and resubmitted.
+**No work begins without an approved plan.** If the user chooses Revise, update the plan per the feedback and re-present it for approval. If the user chooses Reject, set the plan's status to `rejected` and discuss alternative approaches.
 
 ### Plan Document Format and Versioning
 
@@ -175,7 +172,7 @@ docs/plans/project-plan-v2.md
 
 ## Version: {N}
 ## Date: {YYYY-MM-DD}
-## Status: draft | approved | superseded
+## Status: draft | approved | rejected | superseded
 
 ## Changes from v{N-1}
 - [List of changes]
@@ -196,9 +193,9 @@ docs/plans/project-plan-v2.md
 [Risk content]
 
 ## Approval
-- Reviewer: {role}
-- Verdict: PASS | CONDITIONAL_PASS | FAIL
-- Conditions (if CONDITIONAL_PASS): [list]
+- Decided by: user
+- Decision: Approve | Revise | Reject
+- Changes requested (if Revise): [list]
 ```
 
 ### Task Decomposition to `docs/tasks/active-tasks.md`
