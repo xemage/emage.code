@@ -55,3 +55,7 @@ In §16 the orchestrator verified the claims and accepted E1–E12.
 - **P42 (security, scheduled next):** the stable `poc-guidelines.md` and `rapid-prototyping` present "No input validation" as a model shortcut, which contradicts `security-guidelines` Immutable Constraints 3–4. `security-guidelines` states that it supersedes, so no P34b ranking is needed.
 - **P43:** two binary verdicts for one PoC. Joins P40 (depends on P34b).
 - **P44:** the `evaluate-poc` golden case expects numbered backlog lines, but the skill's template uses a table. This is a protected path; batch it with the `new-poc` docstring.
+
+## 5. Outcome (2026-10-02)
+
+P38 is resolved: T575 (!470) applied E1-E12, so the PoC skills now complement `/evaluate-poc` instead of competing with it. 54 root paths are declared. P42 continues in plan-098.
