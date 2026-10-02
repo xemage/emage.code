@@ -2,7 +2,7 @@
 
 **ID:** T574
 **Owner:** Solution Architect
-**Status:** pending
+**Status:** done
 **Priority:** P2
 **Tier:** judgment
 **Affects:** —
