@@ -5,6 +5,13 @@ description: "Document PoC shortcuts and production remediation plans using a co
 
 # Technical Debt Tracking
 
+## Rails
+**Inputs**: A PoC codebase to scan for `POC-DEBT` tags, plus the code-review findings, PoC-evaluation refactoring backlog items and security-scan findings to merge with them (§ POC-DEBT Tag Scanning Procedure). The scan runs at the conclusion of every PoC (before evaluation), before any production handoff, and as part of the QA validation gate (Automation note).
+
+**Out of scope**: Does not create or transition tasks: it writes promotion proposals, and the orchestrator decides on them and creates the tasks (`AGENTS.md` § Task Protocol; § Promotion Procedure for Debt Items to Production Backlog). Does not define a second scorecard: it adds sections to `POC-DEBT-SCORECARD.md` (§ Scorecard Requirements).
+
+**Failure mode**: If the scorecard does not account for every `POC-DEBT` tag found in Step 1, it is not finalized, and no PoC task may be marked complete without a finalized scorecard (`poc-guidelines.md` Scorecard Rules 1 and 4). A `critical` item cannot be deferred or only monitored: it is always `must_fix_pre_prod`.
+
 ## Categories
 - Security
 - Architecture
