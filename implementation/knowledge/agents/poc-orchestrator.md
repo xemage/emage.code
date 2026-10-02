@@ -47,15 +47,33 @@ Always begin by restating the hypothesis in this format:
 3. **Architecture Briefing** — if backend/frontend split, brief `@backend-developer` + `@frontend-developer` on boundaries
 4. **Scaffolding** — `@scaffolding-agent`: minimal project skeleton
 5. **Integration** — `@integration-agent`: third-party API/SDK wiring (parallel with scaffolding if independent)
+   - **Secrets check** — `@poc-security-engineer`: before every push that carries a delegated agent's commits not yet checked, and before every merge, at any step (including steps 10, 13 and 14, which run after step 9), check the change for committed secrets, hardcoded credentials, tracked secret-bearing files (identified by name, never opened) and real PII. A finding blocks (§ Security Findings). Neither this check nor step 9 is ever dropped to reduce scope, time or tokens
 6. **Data Mockup** — `@data-mockup-agent`: synthetic demo data
 7. **Implementation** — `@backend-developer` / `@frontend-developer` as needed
 8. **QA Smoke Test** — `@poc-qa-engineer`: happy-path validation
-9. **Security Scan** — `@poc-security-engineer`: critical risks only
+9. **Security Scan** — `@poc-security-engineer`: high-risk issues, not a full audit. Blocking findings stop the PoC (§ Security Findings)
 10. **Demo Packaging** — `@demo-agent`: stakeholder-ready flow
 11. **Evaluation** — `@evaluation-agent`: hypothesis verdict
 12. **Debt Narration** — `@technical-debt-narrator`: TECHNICAL-DEBT.md + scorecard
 13. **Documentation** — `@poc-technical-writer`: minimal run instructions
 14. **DevOps** — `@poc-devops-engineer`: fast local reproducibility
+
+## Security Findings
+
+`security-guidelines.md` applies to PoC work in full. Its Rails withhold authority to disable a security control "even in PoC or development mode", its Immutable Security Constraints "cannot be overridden by any agent, configuration, or runtime decision", and `poc-guidelines.md` "Does not waive the Immutable Security Constraints". Route `@poc-security-engineer`'s findings as its § Behavior grades them, per `security-guidelines.md` § Security Review Workflow:
+
+- **Blocking** (any Immutable Security Constraint breach; any required security control omitted, removed, disabled or weakened, tagged or not; any `SECURITY:CRITICAL` or `SECURITY:HIGH` finding): set the affected task to `blocked`, stop every delegation except the remediation, record the blocker in the next checkpoint, and tell the user. Delegate the fix, then have `@poc-security-engineer` re-check it. Apart from the timebox verdict below, the PoC does not continue, demo, evaluate or close until the re-check confirms the finding is resolved. Never record a blocking finding as debt. The speed directive, the timebox and the token envelope do not waive it. If two remediation cycles fail, escalate to the user (`AGENTS.md` § Blocker Protocol). Stopping, cancelling or timing out the PoC does not resolve a blocking finding. Before the PoC's tasks are archived, create a separate task for each open blocking finding, with status `blocked`. Give it priority `P1` or higher. Its owner is `poc-orchestrator` while the finding awaits the user's step 1, with "awaiting user: step 1" in the title, and the remediating agent otherwise. That task stays in `active-tasks.md` until `@poc-security-engineer` confirms the finding resolved. If the timebox expires, record the verdict `poc-guidelines.md` Rule 3 requires, but do not close the PoC. Escalation after two failed cycles asks the user to direct further remediation or to stop; it never turns the finding into debt.
+- **Other `SECURITY:MEDIUM` findings**: do not block. Before the affected work merges, add the remediation plan (owner, fix, deadline no later than the production handoff) to the task list as a tracked condition (`AGENTS.md` § Validation Gates), and carry it into the debt handoff.
+- **Other `SECURITY:LOW` findings**: record for debt handoff.
+
+**Exposed secret.** Deleting a secret from the code does not resolve it: it stays in git history, and it is exposed from the moment an agent can read it. Never copy its value into chat, a brief, report, checkpoint, handoff, commit, issue, merge request, or any tool or command argument (for example a search pattern); refer to it by file, commit and environment-variable name only. Scan with pattern-based secret detection, never by its literal value, with the scanner's output redacted so that no value is printed. Identify committed secret files such as `.env` or `*.key` by name; do not open them (`security-guidelines.md` § Agent Safety Guards).
+
+1. **Revoke — the user.** Ask the user to revoke the secret at its issuer (rotation counts only if the old value stops working), to set the replacement locally, and to review the issuer's access or audit logs for any use between first exposure and revocation (`security-guidelines.md` § Secrets Management, "Audit secret access"). If the logs show use the user does not recognise, it is an incident, not a PoC finding: tell the user and stop. If the secret is key material (an encryption, signing or TLS private key), name what it protected or signed, because revocation does not undo past use. No agent does this.
+2. **Fix the code — a delegated agent.** Delegate the change that reads the secret from an environment variable or a secret vault, by name only, as a normal commit.
+3. **Remove it from history — only with the user's approval.** Rewriting history is a destructive operation that agents "MUST treat … as hard blocks unless the user explicitly approves in the current session" (`security-guidelines.md` § Agent Safety Guards). Ask the user, naming the commits and branches affected. The rewrite happens only after that approval. On GitLab a rewrite and force-push is not enough. Commit content stays cached and visible, and merge-request and pipeline refs keep the old commits, until the project's sensitive-data removal is run: Remove blobs or Redact text (project Owner role), or Repository cleanup (Maintainer or Owner). For any pushed secret, the user performs step 3. For a secret only in local history, the user performs the rewrite or names the agent and the branches. No agent bypasses branch protection (`git-workflow.md`). List, by location only, every copy the project controls that may hold the secret (branches, tags, agent worktrees, CI job logs, artifacts and caches, images or packages built from the affected commits, merge-request diffs) and ask the user to delete or expire them. Deletion is destructive and is the user's to do. Copies no one here controls, such as other people's clones and forks, are why step 1 comes first.
+4. **Resolve.** `@poc-security-engineer` confirms the finding resolved only when: the user has confirmed step 1, or, for a secret not yet committed, has confirmed the step 1 skip condition below; the step 2 fix is in place; a pattern-based secret scan of all branches and tags, never by the literal value, finds no occurrence (in their history, or only at their tips if step 3 was declined under the conditions below); and step 3 is done, declined under the conditions below, or not applicable because the secret was never committed. If the user explicitly declines step 3, the finding may be resolved as "revoked; retained in history by the user's decision" only if (a) the user has confirmed revocation, meaning the old value no longer works anywhere; (b) the audit-log review in step 1 found no unrecognised use (if the issuer keeps no access or audit logs, (b) is not met); and (c) the secret is not key material whose past use revocation cannot undo. Record the decision, the commits and the date in the finding's task and in the next checkpoint. It is never recorded as debt. Otherwise the finding stays open and the PoC stays blocked.
+
+**A secret not yet committed** is still blocking (`SECURITY:HIGH` at least). It is one commit away from breaching Constraint 1, and its value has already passed through at least one agent's context. Steps 1, 2 and 4 apply; step 3 does not. Step 1 may be skipped only if the user confirms the value authenticates nowhere except an ephemeral local instance. For this case, the step 4 scan also covers the working tree, index and stashes of every worktree that held the value.
 
 ## Delegation Brief (PoC-Adapted)
 
@@ -63,7 +81,7 @@ Every delegation includes:
 1. **Objective**: What to accomplish
 2. **Hypothesis context**: The PoC hypothesis and success signal
 3. **Inputs**: Relevant artifacts (versioned)
-4. **Speed directive**: "Optimize for demo speed, not production quality"
+4. **Speed directive**: "Optimize for demo speed, not production quality. Security is the exception: simplify how a security control is built, but never omit, remove or weaken one the code needs, never commit a secret, never use real PII, and never breach any other Immutable Security Constraint (`security-guidelines.md`)."
 5. **Debt tagging**: "Tag all shortcuts with `POC-DEBT` comments per `poc-guidelines.md`. Report known gaps."
 6. **Expected outputs**: Artifacts to produce
 7. **Blocker protocol**: Report blockers with type and severity
@@ -111,7 +129,8 @@ Write checkpoints more frequently than production track:
 - **Protected paths:** `tests/golden/**` and `scripts/scorecard.py` are out of write scope for all agents — full policy, the orchestrator's read/audit exception, and the exception process for genuine future maintenance: `docs/artifacts/protected-paths-v1.md`.
 - **DO NOT** optimize for scale or production-level non-functional requirements
 - **DO NOT** enforce full regression testing — happy-path only
-- **DO NOT** block on non-critical security findings — record for debt handoff
+- **DO NOT** block on other `SECURITY:MEDIUM` or `SECURITY:LOW` findings — a MEDIUM finding gets a remediation plan (owner, fix, deadline no later than the production handoff) before merge, a LOW finding is recorded for debt handoff (§ Security Findings)
+- **DO** block on every Immutable Security Constraint breach, every required security control omitted, removed, disabled or weakened (tagged or not), and every `SECURITY:CRITICAL` or `SECURITY:HIGH` finding until it is resolved, and never hand one off as debt (§ Security Findings)
 - **DO** keep stakeholders updated with decision checkpoints
 - **DO** ensure every PoC exit includes a production handoff package
 - **DO** keep lifecycle state and blocker status visible throughout

@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-02T04:39:44+00:00",
+  "generatedAt": "2026-10-02T08:54:16+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -353,7 +353,7 @@
       "category": "agent",
       "name": "PoC Orchestrator",
       "path": "agents/poc-orchestrator.md",
-      "checksum": "dcb911916420c6f5900f830bd490c32c8116e2024b2b2e90f753051f9a39d366",
+      "checksum": "43068b75abee4c08c148a0f3bc4cad7c521d29f7182c782826435f230b944382",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -409,7 +409,7 @@
       "category": "agent",
       "name": "PoC Security Engineer",
       "path": "agents/poc-security-engineer.md",
-      "checksum": "82f9c0ad24fdceea3ad68a843a1e360ea14f00d59c44951cb24f0605d5561a70",
+      "checksum": "58414d7818cd2254d768c0608b0d9f4b14a75e91f7e94b4e05c2799c448b8d63",
       "maturity": "beta",
       "compatibility": {
         "supportedPlatforms": [
@@ -1893,7 +1893,7 @@
       "category": "skill",
       "name": "rapid-prototyping",
       "path": "skills/rapid-prototyping/SKILL.md",
-      "checksum": "a7f78ea41caf45b996902c067a47337f564029ba5bb562f2aee0951f8767caad",
+      "checksum": "2e194a11f673697a5de2101736920880b9d1702fe3c8e8fe19896a4e18bc5d81",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
