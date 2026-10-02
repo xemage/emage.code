@@ -27,7 +27,7 @@ Generated from: implementation/knowledge
 | poc-devops-engineer | agent | stable | agents/poc-devops-engineer.md |
 | poc-orchestrator | agent | stable | agents/poc-orchestrator.md |
 | poc-qa-engineer | agent | stable | agents/poc-qa-engineer.md |
-| poc-security-engineer | agent | stable | agents/poc-security-engineer.md |
+| poc-security-engineer | agent | beta | agents/poc-security-engineer.md |
 | poc-technical-writer | agent | stable | agents/poc-technical-writer.md |
 | product-owner | agent | stable | agents/product-owner.md |
 | qa-engineer | agent | stable | agents/qa-engineer.md |

@@ -2,9 +2,10 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T578 | Adjudicate the PoC security reviewer's non-blocking rule for critical findings (O1, SECURITY:HIGH) | solution-architect | pending | P1 | — | 2026-10-02 |
 | T577 | Replace the PoC examples that model forbidden security shortcuts (T576 FU-1, P42) | backend-developer | pending | P2 | T576 | 2026-10-02 |
 
-> **1 active row: `T577` (plan-098 §4, P42: apply ruling v2 after the Security Engineer's CONDITIONAL_PASS). O1 (SECURITY:HIGH, poc-security-engineer) is scoped next at P1 by the user's decision.**
+> **2 active rows: `T577` (plan-098 §4, P2: apply the P42 security-example ruling v2) and `T578` (plan-099, **P1** by the user's decision: O1, SECURITY:HIGH, the PoC security reviewer defers critical findings to debt). While T578's P1 row is open, `poc-security-engineer` is held at `beta`.**
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
