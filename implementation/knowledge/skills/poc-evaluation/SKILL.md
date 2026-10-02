@@ -6,6 +6,13 @@ maturity: experimental
 
 # PoC Evaluation
 
+## Rails
+**Inputs**: A PoC whose outcome is to be assessed: its PoC artifact (`poc-{name}-v{N}`) with the hypothesis and success criteria defined before the PoC started, the evidence gathered against them, and the PoC's `POC-DEBT-SCORECARD.md` and debt ledger (technical-debt-tracking skill). This includes an evaluation run through the `/evaluate-poc` command.
+
+**Out of scope**: Does not scan for `POC-DEBT` tags or write the scorecard; the technical-debt-tracking skill does, and § 8 of the evaluation links to its items. Does not create tasks or write checkpoints: debt items reach the task backlog as promotion proposals, and an orchestrator creates the tasks and writes the checkpoints (`AGENTS.md` § Task Protocol, § Checkpoint Protocol). The `[VERDICT]` line is the PoC track's hypothesis verdict, not a `validation-gates` gate verdict.
+
+**Failure mode**: If any success criterion defined in the PoC artifact was not tested by the PoC's deadline, or rests only on weak evidence, the verdict is `INVALIDATED` with `Evidence strength: weak`, and the Recommended next step names a follow-up PoC with refined criteria (§ Hypothesis Success Criteria Reference). Never force a `VALIDATED` call (`poc-guidelines.md` § Hypothesis-First Validation, Rules 3–4).
+
 ## Framework
 1. Restate hypothesis
 2. Gather evidence
@@ -35,6 +42,8 @@ Every PoC evaluation MUST conclude with a structured verdict that integrates wit
 ```
 [VERDICT] gate=poc-evaluation | result=VALIDATED|INVALIDATED | evidence_strength=strong|moderate|weak | poc_ref=poc-{name}-v{N} | hypothesis="{short hypothesis}" | production_recommendation=proceed|proceed_with_constraints|do_not_proceed | debt_count={N} | date={YYYY-MM-DD}
 ```
+
+This line is the one-line rendering of the evaluation's single verdict: a PoC either validates or invalidates its hypothesis (`poc-guidelines.md` § Hypothesis-First Validation, Rule 4). When the evaluation is run through the `/evaluate-poc` command, the line accompanies, and does not replace, that command's `## POC VERDICT` block. Both record the same evaluation, so their values agree: `result=` is the block's `Status`, `evidence_strength=` its `Evidence strength`, `production_recommendation=` its `Production recommendation`, and `hypothesis=` a short form of its `Hypothesis`; `debt_count=` is the total in its `Debt items` line, and `date=` is the date of its `Timestamp`. `gate=poc-evaluation` names this PoC-track verdict. It is not one of the `validation-gates` skill's gate types, and its values are not that skill's `PASS` / `CONDITIONAL_PASS` / `FAIL`.
 
 **Full evaluation artifact structure:**
 
@@ -109,14 +118,14 @@ The evaluation MUST reference the original success criteria defined in the PoC a
 
 ### Production Handoff Checklist
 
-When the verdict is `proceed` or `proceed_with_constraints`, complete the following handoff checklist before transitioning to production implementation:
+When the production recommendation is `proceed` or `proceed_with_constraints`, complete the following handoff checklist before transitioning to production implementation:
 
 ```markdown
 ## Production Handoff Checklist
 
 ### Code & Architecture
-- [ ] All POC-DEBT tags cataloged and promoted to technical debt backlog
-- [ ] Architecture decisions from PoC documented as decision artifacts
+- [ ] All POC-DEBT tags inventoried in `POC-DEBT-SCORECARD.md` (`poc-guidelines.md` Scorecard Rule 1) and recorded in the debt ledger with a disposition (technical-debt-tracking skill)
+- [ ] Architecture decisions documented in `docs/decisions/`
 - [ ] API contracts from PoC promoted to versioned api-contract artifacts
 - [ ] Security shortcuts identified and remediation planned
 
@@ -126,9 +135,9 @@ When the verdict is `proceed` or `proceed_with_constraints`, complete the follow
 - [ ] Failure modes and edge cases discovered during PoC documented
 
 ### Task Creation
-- [ ] Refactoring backlog items created as tasks in docs/tasks/active-tasks.md
-- [ ] Debt remediation tasks created with severity and target sprint
-- [ ] Production implementation tasks created referencing PoC artifacts
+- [ ] Refactoring backlog items merged into the debt ledger (technical-debt-tracking skill, § POC-DEBT Tag Scanning Procedure, Step 3)
+- [ ] Promotion proposals for every `must_fix_pre_prod` and `can_defer_post_ga` debt item reported to the orchestrator, each with its proposed priority and target sprint (technical-debt-tracking skill, § Promotion Procedure for Debt Items to Production Backlog)
+- [ ] Production implementation tasks, and tasks for the accepted proposals, created by an orchestrator as rows in `docs/tasks/active-tasks.md` with `docs/tasks/task-<ID>.md` briefs, referencing PoC artifacts (`AGENTS.md` § Task Protocol)
 
 ### Approvals
 - [ ] Evaluation verdict reviewed and approved by {approving role}
@@ -137,3 +146,5 @@ When the verdict is `proceed` or `proceed_with_constraints`, complete the follow
 ```
 
 The completed checklist is included in the evaluation artifact and referenced in the next checkpoint summary.
+
+When the evaluation is run through the `/evaluate-poc` command, that command's step 10 handoff checklist is required for the same recommendations. Its items complement this list and do not replace it. Produce one `## Production Handoff Checklist` holding this list's four groups and a fifth group, `### Production Readiness (/evaluate-poc step 10)`, with the command's other seven items, each worded exactly as the command words it. The command's eighth item, its architecture-decisions item, is already in the Code & Architecture group in the same words, so list it there only.
