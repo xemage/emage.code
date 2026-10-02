@@ -2,7 +2,7 @@
 
 **ID:** T578
 **Owner:** Solution Architect
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Tier:** judgment
 **Affects:** agent/poc-security-engineer

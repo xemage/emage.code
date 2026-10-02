@@ -3,7 +3,7 @@
 **Created:** 2026-10-02
 **Based on:** `docs/artifacts/security-review-poc-security-shortcuts-v1.md` § O1; `docs/artifacts/poc-security-shortcut-examples-v2.md` §13.2;
 the user's decision of 2026-10-02 ("Scope it next as P1").
-**Scopes:** `T578`.
+**Scopes:** `T578`; follow-up `T579` (§4).
 
 ## 1. Why, and why P1
 
@@ -39,3 +39,37 @@ The agent returns to `stable` by a normal promotion after the fix merges and the
 
 Until this closes, no release should ship with the current text of `poc-security-engineer` and `poc-orchestrator`.
 The Security Engineer recommended this. It is recorded here for the release manager.
+
+## 4. T578's decision, two security reviews, and the follow-up
+
+`poc-security-reviewer-blocking-v1.md` → v2 → **v3**:
+
+- **Review of v1:** CONDITIONAL_PASS (`security-review-poc-security-reviewer-blocking-v1.md`), with seven MEDIUM conditions:
+  - M1: block on any omitted, removed or weakened control;
+  - M2: severity floor, and secrets not yet committed;
+  - M3: durable `blocked` task, so a stop or timeout can't bury a finding;
+  - M4: issuer audit-log review, and an inventory of copies;
+  - M5: GitLab purge, and a scan of all refs;
+  - M6: scan before every push and merge;
+  - M7: no waiver and no `accepted-risk` route.
+- **Delta review of v2:** CONDITIONAL_PASS (`security-review-poc-security-reviewer-blocking-v2.md`), with one new MEDIUM (R2-6, a presence check for required controls) and seven LOW wording fixes. v3 adopts all of them verbatim.
+
+**User decisions, 2026-10-02:**
+
+- A declined history rewrite may close a finding only under strict conditions: revocation confirmed, no unrecognised use, not key material.
+- The presence check is accepted, so PoCs will block more often.
+- QD is kept strict: no audit logs means the finding stays open.
+
+In v3 §16 the orchestrator verified that all 12 edits apply uniquely on develop `c523415` and that every reviewer phrase is present.
+
+| Task | Covers | Protected paths? | Owner | Priority |
+|---|---|---|---|---|
+| `T579` | FU-1: v3's 12 edits in `poc-security-engineer`, `poc-orchestrator` and `rapid-prototyping`, then regenerate and declare drift | No | Backend Developer | **P1** (`Affects: agent/poc-security-engineer`; keeps the agent at `beta`) |
+
+**Re-promotion** of `poc-security-engineer` to `stable` follows once T579 closes.
+
+**Parked:**
+
+- L4/X5: replace `execute` with a fixed-command scanner.
+- A security carve-out for `code-review:150`'s Tech Lead waiver.
+- X1–X6 (v3 §12).
