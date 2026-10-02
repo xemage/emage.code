@@ -2,7 +2,7 @@
 
 **Created:** 2026-10-02
 **Based on:** `docs/artifacts/poc-skill-command-overlaps-v1.md` §13 (O1) and §16.3 (P42).
-**Scopes:** `T576`.
+**Scopes:** `T576`; follow-up `T577` (§4).
 
 ## 1. Why P42 next
 
@@ -33,3 +33,20 @@ T576 is **P2**. It is a decision and declares no `Affects`, so it holds nothing 
 - P32, P33, P41 and P44.
 - The `new-poc` docstring.
 - Root drift, which the user approves at refresh time.
+
+## 4. T576's decision, the security review, and the follow-up
+
+`poc-security-shortcut-examples-v1.md` ruled every site. A read-only Security Engineer review returned **CONDITIONAL_PASS** (`security-review-poc-security-shortcuts-v1.md`), with two MEDIUM conditions:
+
+- F1: widen the new rule from the Immutable Constraints to every `security-guidelines` control.
+- F2: use `sslmode=verify-full`, not `require`.
+
+There were also five LOW items. **v2** (`poc-security-shortcut-examples-v2.md`) meets all of them and supersedes v1. v1 is kept as the record.
+
+In v2 §13 the orchestrator confirmed that all 11 edits apply uniquely on develop `7da064a`, and accepted v2.
+
+| Task | Covers | Protected paths? | Owner | Priority |
+|---|---|---|---|---|
+| `T577` | FU-1: v2 R1–R11 in `poc-guidelines` and `rapid-prototyping`, regenerate, declare root drift | No | Backend Developer | **P2** (user, 2026-10-02) |
+
+**O1 is re-rated SECURITY:HIGH by the reviewer.** The stable `poc-security-engineer` routes exposed secrets and injection/auth gaps to debt instead of blocking. By the user's decision of 2026-10-02 it gets its **own task at P1**, scoped next (plan-099). It is not parked.

@@ -2,9 +2,9 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T576 | Adjudicate the PoC debt-tag examples that model forbidden security shortcuts (P42) | solution-architect | pending | P2 | — | 2026-10-02 |
+| T577 | Replace the PoC examples that model forbidden security shortcuts (T576 FU-1, P42) | backend-developer | pending | P2 | T576 | 2026-10-02 |
 
-> **1 active row: `T576` (plan-098, P42: the PoC track models security shortcuts that security-guidelines forbids). `plan-097` is complete (P38): `T574` decided and `T575` (MR !470) applied the PoC skill/command overlap edits on 2026-10-02.**
+> **1 active row: `T577` (plan-098 §4, P42: apply ruling v2 after the Security Engineer's CONDITIONAL_PASS). O1 (SECURITY:HIGH, poc-security-engineer) is scoped next at P1 by the user's decision.**
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
