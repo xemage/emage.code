@@ -69,7 +69,7 @@ conventions this section summarizes. When reviewing code:
 
 ### Review Verdict Format
 
-When completing a code review, issue a structured verdict:
+When completing a code review, issue a structured verdict. A code review is the `validation-gates` skill's **Implementation** gate, so this block accompanies, and does not replace, that skill's `## Gate Verdict` block (`**Gate:** implementation`) and the concluding `[VERDICT] gate=code-review` line of skill `code-review` (§ VERDICT Format for Validation Gates). All three record the same verdict. This block adds the artifact, decision-ID and merge-authorization fields this role requires (§ State and Handoff Protocol, § Merge and Architecture Authority):
 
 ```markdown
 ## VERDICT: [PASS | CONDITIONAL_PASS | FAIL]
