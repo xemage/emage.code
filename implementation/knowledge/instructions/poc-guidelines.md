@@ -65,6 +65,8 @@ FAILURE CRITERIA: p95 latency > 200ms OR connection drops > 1%
 - Minimal infrastructure setup
 - Temporary integration adapters
 
+Shortcuts may simplify how security controls are built but never remove or weaken them. Every rule in `security-guidelines.md` applies to PoC code, and its Immutable Security Constraints apply in full; Constraint 3 holds "even in development or PoC mode": input validation, authentication checks and security middleware stay in place and stay enforced. What may be simplified is how a control is built, not what it enforces: for example, hand-written validation checks instead of a schema library, or a CORS allowlist hardcoded to the one demo origin. Tag the simplification like any other shortcut. A `POC-DEBT` tag records a shortcut; it does not make a forbidden shortcut permissible.
+
 ## Mandatory Debt Tracking
 
 Every shortcut taken during a PoC **must** be tracked. Untracked debt is unacceptable — it becomes invisible and compounds.
@@ -78,15 +80,26 @@ When introducing a shortcut in code, mark it with an HTML comment tag:
 
 ### Examples
 ```python
-# <!-- POC-DEBT: Hardcoded connection string; production must use secret vault -->
-db_url = "postgresql://localhost:5432/poc_db"
+# <!-- POC-DEBT: Hardcoded local database URL (no credentials in it); production must read the URL from configuration and the credentials from the secret vault. The local Postgres must run with TLS enabled; the CA certificate is loaded from libpq's default location or PGSSLROOTCERT, never committed -->
+db_url = "postgresql://localhost:5432/poc_db?sslmode=verify-full"
 
-# <!-- POC-DEBT: No input validation; production must validate all user input -->
+import re
+
+EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,63}")
+
+# <!-- POC-DEBT: Hand-written inline validation instead of the shared request-schema layer; production must move these checks into the schema layer and return the project's standard validation error response; keep inserting only allowlisted fields (never pass the request object through), via parameterized queries -->
 def create_user(name, email):
+    if not (isinstance(name, str) and 1 <= len(name) <= 100 and name.isprintable() and name.strip()):
+        log.warning("input_rejected", extra={"field": "name"})
+        raise ValueError("invalid name")
+    if not (isinstance(email, str) and len(email) <= 254 and EMAIL_RE.fullmatch(email)):
+        log.warning("input_rejected", extra={"field": "email"})
+        raise ValueError("invalid email")
     return db.insert({"name": name, "email": email})
 
-# <!-- POC-DEBT: Synchronous call; production should use async with retry -->
-response = requests.post(external_api_url, json=payload)
+# external_api_url is fixed HTTPS configuration, never user input (OWASP A10, SSRF)
+# <!-- POC-DEBT: Synchronous call with no retry; production should use async with retry. The response is validated before use, in the PoC as in production -->
+response = requests.post(external_api_url, json=payload, timeout=10)
 ```
 
 ### Debt Tag Rules
@@ -115,8 +128,8 @@ Create a `POC-DEBT-SCORECARD.md` file in the PoC root with this structure:
 
 | # | File | Line | Category | Description | Production Effort |
 |---|------|------|----------|-------------|-------------------|
-| 1 | src/db.py | 12 | Security | Hardcoded connection string | S — use vault integration |
-| 2 | src/api.py | 34 | Validation | No input validation | M — add schema validation |
+| 1 | src/db.py | 12 | Security | Hardcoded local database URL (no credentials) | S — read URL from configuration, credentials from vault |
+| 2 | src/api.py | 34 | Validation | Hand-written inline input validation instead of the shared schema layer | M — move checks into the request-schema layer |
 | 3 | src/sync.py | 56 | Reliability | No retry logic | M — add retry with backoff |
 
 ## Summary
@@ -143,6 +156,7 @@ When introducing shortcuts, document them with `DEBT:` comments and update `TECH
 ## Not Allowed
 - Exposing secrets in code
 - Using real PII in demos
+- Removing or weakening any security control in `security-guidelines.md` — including every Immutable Security Constraint — with or without a `POC-DEBT` tag
 - Claiming production readiness without explicit criteria
 - Marking a PoC complete without a debt scorecard
 - Starting implementation without a documented hypothesis
