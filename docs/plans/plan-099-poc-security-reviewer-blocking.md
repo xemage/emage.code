@@ -73,3 +73,7 @@ In v3 §16 the orchestrator verified that all 12 edits apply uniquely on develop
 - L4/X5: replace `execute` with a fixed-command scanner.
 - A security carve-out for `code-review:150`'s Tech Lead waiver.
 - X1–X6 (v3 §12).
+
+## 5. Outcome (2026-10-02)
+
+O1 is fixed. T579 (!477) applied v3. The archival MR closes T579's P1 row and **re-promotes `poc-security-engineer` to `stable`** (check-maturity: 79 components, 0 failing; agents 26 stable / 2 experimental). The Security Engineer's release block on the old text is lifted, because the fixed text is now on `develop`. The repo-root copies stay stale (73 declared drift paths) until a root refresh the user approves. Still parked: L4/X5 (replace `execute` with a fixed-command scanner), a security carve-out for `code-review:150`'s waiver, and X1–X6.
