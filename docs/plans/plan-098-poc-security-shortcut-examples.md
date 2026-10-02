@@ -50,3 +50,7 @@ In v2 §13 the orchestrator confirmed that all 11 edits apply uniquely on develo
 | `T577` | FU-1: v2 R1–R11 in `poc-guidelines` and `rapid-prototyping`, regenerate, declare root drift | No | Backend Developer | **P2** (user, 2026-10-02) |
 
 **O1 is re-rated SECURITY:HIGH by the reviewer.** The stable `poc-security-engineer` routes exposed secrets and injection/auth gaps to debt instead of blocking. By the user's decision of 2026-10-02 it gets its **own task at P1**, scoped next (plan-099). It is not parked.
+
+## 5. Outcome (2026-10-02)
+
+P42 is fixed by T577 (!474). The shipped PoC guidance no longer teaches forbidden security shortcuts, and it now states that every `security-guidelines` control applies to PoC code. The repo-root copies stay stale (61 declared drift paths) until the next root refresh the user approves. O1 continues in plan-099 (T578, P1).
