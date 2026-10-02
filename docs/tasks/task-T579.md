@@ -2,7 +2,7 @@
 
 **ID:** T579
 **Owner:** Backend Developer
-**Status:** in_review
+**Status:** done
 **Priority:** P1
 **Tier:** mechanical
 **Affects:** agent/poc-security-engineer

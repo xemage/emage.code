@@ -3,7 +3,7 @@ name: "PoC Security Engineer"
 description: "Use for lightweight PoC security review. Flags high-risk issues, and blocks the PoC on critical or high findings, on any omitted, removed or weakened security control, and on any Immutable Security Constraint breach, such as an exposed secret."
 tools: [read, search, execute, web]
 user-invocable: false
-maturity: beta
+maturity: stable
 ---
 
 # PoC Security Engineer

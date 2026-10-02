@@ -2,9 +2,8 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T579 | Make the PoC security reviewer block on critical findings (T578 FU-1, O1, SECURITY:HIGH) | backend-developer | pending | P1 | T578 | 2026-10-02 |
 
-> **1 active row: `T579` (plan-099 §4, **P1** by the user's decision: apply O1 ruling v3 so the PoC security reviewer blocks on critical findings). While it is open, `poc-security-engineer` is held at `beta`.**
+> **0 active rows. `plan-099` is complete: O1 (SECURITY:HIGH) is fixed by T579 (MR !477), and `poc-security-engineer` is re-promoted to `stable` in the same MR that archives T579. `plan-098` (P42) and `plan-097` (P38) are complete.** Root drift: 73 declared paths; clearing them needs a root refresh, which the user approves at the time.
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
