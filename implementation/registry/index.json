@@ -1445,7 +1445,7 @@
       "category": "instruction",
       "name": "poc-guidelines",
       "path": "instructions/poc-guidelines.md",
-      "checksum": "a2b77d6cccf85b012a2d890ad210985baef572d97990d7f5d2f5b0b96019a550",
+      "checksum": "62f68102d450ff729e399294b6c6f28e81018d397152e25928ff2e5d2d8ef76e",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1893,7 +1893,7 @@
       "category": "skill",
       "name": "rapid-prototyping",
       "path": "skills/rapid-prototyping/SKILL.md",
-      "checksum": "1e0d0f21bd58edf8cc859dc0af57b6438d1e736e613c77b798f7c6d2b9f7553b",
+      "checksum": "a7f78ea41caf45b996902c067a47337f564029ba5bb562f2aee0951f8767caad",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [

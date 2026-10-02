@@ -34,25 +34,38 @@ All PoC code MUST tag known shortcuts, workarounds, and deferred quality concern
 <!-- POC-DEBT: description of the shortcut or deferred concern -->
 ```
 
+A tag records a shortcut; it does not make a forbidden shortcut permissible. Security work may be simplified but never removed or weakened: the rules in `security-guidelines.md`, including its Immutable Security Constraints, apply to PoC code in full (`poc-guidelines.md` § Allowed Shortcuts).
+
 **Placement rules:**
 - Place the tag directly above or inline with the code that embodies the shortcut.
 - For architectural shortcuts, place the tag in the relevant architecture or design document.
-- For configuration shortcuts (e.g., hardcoded values, disabled security), place the tag in the config file.
+- For configuration shortcuts (e.g., hardcoded non-secret values, a single replica with no autoscaling), place the tag in the config file.
 
 **Examples:**
 ```python
-# <!-- POC-DEBT: No input validation — add comprehensive validation before production -->
-def create_user(data):
-    return db.users.insert(data)
+import re
+
+EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,63}")
+
+# <!-- POC-DEBT: Hand-written inline validation instead of the shared request-schema layer — move these checks into the schema layer before production; keep inserting only allowlisted fields (never pass the request object through), via parameterized queries -->
+def create_user(name, email):
+    if not (isinstance(name, str) and 1 <= len(name) <= 100 and name.isprintable() and name.strip()):
+        log.warning("input_rejected", extra={"field": "name"})
+        raise ValueError("invalid name")
+    if not (isinstance(email, str) and len(email) <= 254 and EMAIL_RE.fullmatch(email)):
+        log.warning("input_rejected", extra={"field": "email"})
+        raise ValueError("invalid email")
+    return db.users.insert({"name": name, "email": email})
 
 # <!-- POC-DEBT: Using in-memory store — replace with persistent database before production -->
 cache = {}
 ```
 
 ```yaml
-# <!-- POC-DEBT: CORS allow-all — restrict origins before production -->
+# <!-- POC-DEBT: CORS exact-match allowlist hardcoded to the single PoC demo origin — load the per-environment exact-match allowlist from configuration before production -->
 cors:
-  origin: "*"
+  origin:
+    - "https://poc-demo.example.com"
 ```
 
 **Enforcement:**
