@@ -2,9 +2,8 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T587 | Apply the security-gate alignment ruling (FU-6, FU-7): seven edits from security-gate-alignment-v2.md | backend-developer | pending | P2 | T586 | 2026-10-08 |
 
-> **1 active row (`plan-103`).** T586 ruled FU-6 and FU-7 at Step A, with no escalation. The Security Engineer gave CONDITIONAL_PASS, and C1, C2 and every LOW were adopted in `security-gate-alignment-v2.md`. T587 applies the seven edits. Baseline v16. Root drift is 41 declared paths (a refresh needs the user's approval). Parked: FU-8, P32, P33, P41, P44, L4/X5, SEC-T586-07.
+> **0 active rows. `plan-103` is complete:** the security-gate criteria now align with `security-guidelines.md` (T587, MR !495; FU-6 and FU-7 closed). Baseline v16. Root drift is 54 declared paths; the next root refresh needs the user's approval. Parked: FU-8, P32, P33, P41, P44, L4/X5, SEC-T586-07.
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
