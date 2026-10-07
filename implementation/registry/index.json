@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-02T09:08:12+00:00",
+  "generatedAt": "2026-10-07T15:19:10+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -521,7 +521,7 @@
       "category": "agent",
       "name": "Release Manager",
       "path": "agents/release-manager.md",
-      "checksum": "43775ac78a776674913c32ee8f4df2ee50772283f8d25a3e027b9932b57208e7",
+      "checksum": "3b38e615915ce33b7a34e65a2aa16d34db511074a170a0dee52b0061d8432ecb",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -661,7 +661,7 @@
       "category": "agent",
       "name": "Tech Lead",
       "path": "agents/tech-lead.md",
-      "checksum": "638c9cf407a914246aca76231096aaee79a75ae0af99b0c6ab46ea1eab3290b8",
+      "checksum": "72aec013ca7c706bf18ca3dcf9d582df8e61018d7e23c09c75d163687b3ade12",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -857,7 +857,7 @@
       "category": "command",
       "name": "code-review",
       "path": "commands/code-review.md",
-      "checksum": "3af9137db346951d190a30751fa73834408be5816d9724543ac51471bd171e77",
+      "checksum": "4f9f72d5e7ce48f740ecc89864818d961f122b6b6a8c3c475a04ba5d50909a0a",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1137,7 +1137,7 @@
       "category": "command",
       "name": "prepare-release",
       "path": "commands/prepare-release.md",
-      "checksum": "eb16a46f77741203d226b4510e5a5291a20bc59d6ecf9db3e00037ca81dcfc29",
+      "checksum": "73df75f399db4f8dbb4199f86c81abb6f0bf22dcf0d8150d886f2128ce0da64d",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1165,7 +1165,7 @@
       "category": "command",
       "name": "security-audit",
       "path": "commands/security-audit.md",
-      "checksum": "56e5027313ce88b1b197d3d504340fe0f32ca05b45afa47318c8bf2e3f46382d",
+      "checksum": "27f05535c08b4f4e0bb63ed59315b71b088581a4a6faad0eb42ad204856c7ac8",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1613,7 +1613,7 @@
       "category": "skill",
       "name": "code-review",
       "path": "skills/code-review/SKILL.md",
-      "checksum": "f2a0da1ec0512c96a027a98a15e747ff93b2788eb3d87945c0940d23caea8b52",
+      "checksum": "c63067f0304dbbde1e23644ad103610d1a95c81535b05aac3a40931ac8f3aa2a",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -2117,7 +2117,7 @@
       "category": "skill",
       "name": "testing-strategy",
       "path": "skills/testing-strategy/SKILL.md",
-      "checksum": "68c97534b05f91b3cd7c68c0191a8348388f8c0b5c77e058ecb36308bf0278bd",
+      "checksum": "0b8bd77ed4a30618e07a7cf7da446258a70903b65e8bb6f80e696fd14389d852",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -2145,7 +2145,7 @@
       "category": "skill",
       "name": "validation-gates",
       "path": "skills/validation-gates/SKILL.md",
-      "checksum": "cecf78f2e8e6d3b0eecd1a924bdc2fdd61dfc834f19e4a8b6921cc40a867839f",
+      "checksum": "48b72f095a71b152c67118e26e08cac5567ca8e8a2cbae34b365378e7773fef3",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [

@@ -58,7 +58,7 @@ Release type: {{input}}
 ```
 
 8. If blocked, include blocker IDs, owners, and escalation path
-9. If CONDITIONAL_PASS, list conditions that must be met before deployment
+9. If CONDITIONAL_PASS, list the conditions. The release may ship with each condition tracked as a task for the next release cycle, after the explicit risk acceptance `release-manager` § Release Gate Policy requires. A security finding is never such a condition (skill `validation-gates` § Verdict Rules): a `SECURITY:CRITICAL` or `SECURITY:HIGH` finding blocks the release, and so does a breach of an Immutable Security Constraint or a required security control omitted, removed, disabled or weakened, whatever its grade; a `SECURITY:MEDIUM` finding is fixed before the release ships; a `SECURITY:LOW` finding is not a condition and is tracked as technical debt.
 
 Ensure all quality gates are met before proceeding.
 
@@ -66,4 +66,4 @@ Ensure all quality gates are met before proceeding.
 
 **Inputs**: The release type (`{{input}}`: major/minor/patch) and `docs/tasks/completed-tasks.md` since the last release.
 **Out of scope**: Tagging or announcing a release while any quality gate (code-review, security-audit, test-coverage) has failed.
-**Failure mode**: If a quality gate has failed or a blocker is open, the VERDICT is `FAIL` (or `CONDITIONAL_PASS` with listed conditions) rather than a silent `PASS`.
+**Failure mode**: If a quality gate has failed, the VERDICT is `FAIL`. If a blocker is open, the VERDICT is `FAIL`, or `CONDITIONAL_PASS` with listed conditions only when no security finding is among them (skill `validation-gates` § Verdict Rules), rather than a silent `PASS`.

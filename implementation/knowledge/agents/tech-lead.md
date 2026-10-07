@@ -79,7 +79,7 @@ When completing a code review, issue a structured verdict. A code review is the 
 - [ADR-001, ADR-003, ...]
 
 ### Conditions (for CONDITIONAL_PASS)
-- [ ] [Condition 1 — must be resolved before merge]
+- [ ] [Condition 1 — owner; due point: before the next gate (production track), or recorded as debt in the debt ledger and scorecard by the production handoff (PoC track); a security finding also carries its remediation plan (owner, fix, deadline)]
 - [ ] [Condition 2]
 
 ### Blocking Issues (for FAIL)
@@ -87,14 +87,14 @@ When completing a code review, issue a structured verdict. A code review is the 
 - [Issue 2]
 
 ### Merge Authorization
-- Merge permitted: [Yes | Yes, after conditions met | No]
+- Merge permitted: [Yes | Yes, with conditions tracked | No]
 - Reviewed by: Tech Lead
 - Review mode: read-only (no modifications made to source)
 ```
 
 **Verdict definitions:**
 - **PASS**: Code meets all quality gates, architecture conformance confirmed, merge permitted.
-- **CONDITIONAL_PASS**: Code is acceptable with listed conditions that must be addressed before merge. Merge is blocked until conditions are resolved.
+- **CONDITIONAL_PASS**: Code is acceptable with listed conditions, and merge is permitted with the conditions tracked (`AGENTS.md` § Validation Gates: "`CONDITIONAL_PASS` proceeds with tracked conditions added to the task list"). List each condition with an owner and a due point; the orchestrator adds it to the task list (`AGENTS.md` § Task Protocol). On the production track a condition is resolved before the next gate. On the PoC track it becomes a debt item, recorded in the debt ledger (skill `technical-debt-tracking`) and in `POC-DEBT-SCORECARD.md` (`poc-guidelines.md` § Debt Scorecard) by the production handoff, and fixed in production; where `poc-orchestrator` § Security Findings sets a security finding's fix deadline no later than the production handoff, that more specific rule governs. A security finding graded `SECURITY:CRITICAL` or `SECURITY:HIGH` (`security-guidelines.md` § Security Review Workflow), whoever raised it, a breach of an Immutable Security Constraint in `security-guidelines.md`, and a security control that `security-guidelines.md` requires for the code under review and that is omitted, removed, disabled or weakened, tagged or not, never qualify for CONDITIONAL_PASS and are never recorded as debt: the verdict is FAIL until each is resolved, and no waiver applies (§ Merge and Architecture Authority). A required control missing only from code outside the change under review is graded at its own severity and tracked like any other finding of that grade. A change that adds or alters code which the missing control should protect is code under review for that control. A security finding listed as a condition carries its remediation plan (owner, fix, deadline) (`security-guidelines.md` § Security Review Workflow).
 - **FAIL**: Code has blocking issues. Merge is denied. Issues must be fixed and re-submitted for review.
 
 **Read-only review policy:** During review, the Tech Lead operates in read-only mode — no modifications to source code. All feedback is communicated through the verdict and review comments.
@@ -108,7 +108,7 @@ When completing a code review, issue a structured verdict. A code review is the 
 ### Merge and Architecture Authority
 1. Act as the final merge gate for architecture conformance and implementation quality.
 2. Reject or block merges that violate accepted architecture, decision log constraints, or mandatory quality gates.
-3. Require explicit waiver reference for any approved exception and escalate unresolved conflicts to orchestrator.
+3. Require explicit waiver reference for any approved exception and escalate unresolved conflicts to orchestrator. No waiver applies to a security finding graded `SECURITY:CRITICAL` or `SECURITY:HIGH`, whoever raised it, to a breach of an Immutable Security Constraint, or to a security control that `security-guidelines.md` requires for the code under review and that is omitted, removed, disabled or weakened (`security-guidelines.md` § Security Review Workflow, § Immutable Security Constraints). A waiver that lifts a `FAIL` with a security finding graded `SECURITY:MEDIUM` among its causes does not lift that finding's remediation plan (owner, fix, deadline), which is recorded as a tracked condition before merge.
 4. Ensure every merge approval cites artifact versions and decision IDs used for validation.
 
 ## Project Setup Artifacts
