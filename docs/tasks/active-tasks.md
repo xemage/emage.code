@@ -2,8 +2,9 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T584 | Rule P40 slices S2–S4 and P43 under ADR-008 (decision only) | solution-architect | pending | P2 | — | 2026-10-07 |
 
-> **0 active rows. `plan-101` is complete: root refresh 4 merged (MR !485, drift 0); T583 refreshed the golden quotes T582 left stale (MR !487), and the user-approved evaluator-hash baseline v16 (`tests_golden 3c50b447…`) was written after independent verification.** Parked: FU-6, FU-7, FU-8 (plan-101 §4: residual golden docstring/fixture staleness), P40 S2–S4, P43, P32, P33, P41, P44, L4/X5.
+> **1 active row (`plan-102`).** T584 makes the first ADR-008 rulings: P40 slices S2–S4 and P43. It is decision only, and every P5 escalation goes to the user before any implementation. Baseline v16; root drift 0. Parked: FU-6, FU-7, FU-8, P32, P33, P41, P44, L4/X5.
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
