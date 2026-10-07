@@ -115,6 +115,7 @@ The evaluation MUST reference the original success criteria defined in the PoC a
 - The verdict is `VALIDATED` only if every success criterion defined in the PoC artifact was tested and met by the PoC's deadline. Post-hoc criteria cannot stand in for an untested one.
 - If any such criterion was tested and not met, the verdict is `INVALIDATED`, with the evidence strength the tests support.
 - Otherwise, if any such criterion is "Not Tested" or rests only on weak evidence, the verdict is `INVALIDATED` with `Evidence strength: weak`, and the Recommended next step names a follow-up PoC with refined criteria. Never force a `VALIDATED` call (`poc-guidelines.md` § Hypothesis-First Validation, Rules 3–4).
+- This verdict is the PoC's outcome. A `[CHECKPOINT]` line from the rapid-prototyping skill is an input to it (§ Hypothesis Validation Checkpoint Format there), never a substitute for this assessment: its `verdict=validated` does not stand in for a criterion that the rules above find untested, unmet or resting only on weak evidence. If a `[CHECKPOINT]` line reported at a checkpoint trigger carries `verdict=invalidated`, the verdict is `INVALIDATED`, whatever the assessment table shows; if the assessment would otherwise support `VALIDATED`, the Recommended next step names a follow-up PoC with refined criteria (`poc-guidelines.md` § Hypothesis-First Validation, Rule 4).
 
 ### Production Handoff Checklist
 

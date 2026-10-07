@@ -229,7 +229,7 @@ The QA gate uses the same VERDICT protocol as code review, ensuring consistent g
 
 ### Coverage Thresholds That Determine Gate Outcome
 
-The following coverage thresholds directly determine the QA gate verdict:
+The following coverage thresholds directly determine the QA gate verdict, together with skill `validation-gates` § Verdict Rules and the executing agent's own gate criteria; the verdict is the most restrictive that any of them requires (`validation-gates` § Verdict Rules, the paragraph "Criteria from the executor's own documents"):
 
 | Metric | PASS Threshold | CONDITIONAL_PASS Range | FAIL Threshold |
 |--------|---------------|----------------------|----------------|

@@ -2,7 +2,7 @@
 
 **ID:** T585
 **Owner:** backend-developer
-**Status:** pending
+**Status:** in_review
 **Priority:** P2
 **Tier:** mechanical
 **Affects:** skill/validation-gates, skill/code-review, skill/testing-strategy, skill/rapid-prototyping, skill/poc-evaluation, agent/evaluation-agent
