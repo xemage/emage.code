@@ -79,6 +79,8 @@ Every gate MUST produce a verdict in this format:
 | `medium` | Quality concern or technical debt. Should be addressed, can be tracked. |
 | `low` | Minor style issue, optimization opportunity, or suggestion. |
 
+A security finding (§ Verdict Rules) takes the tier its grade names on the `security-guidelines.md` § Security Review Workflow scale: `SECURITY:CRITICAL` is `critical`, `SECURITY:HIGH` is `high`, `SECURITY:MEDIUM` is `medium` and `SECURITY:LOW` is `low`. What a security finding of each grade requires is stated in § Verdict Rules, and its tier never lowers that: a breach of an Immutable Security Constraint, or a security control that `security-guidelines.md` requires for the code under review and that is omitted, removed, disabled or weakened, yields FAIL whatever its tier; any other security finding graded medium needs its remediation plan before merge, and any other graded low is tracked as technical debt.
+
 ## Gate Input Requirements
 
 Each gate type requires specific inputs to perform its evaluation:
@@ -125,7 +127,7 @@ Each gate type requires specific inputs to perform its evaluation:
 ### 2. Handle a FAIL Verdict
 
 1. Return the verdict to the task assignee with specific findings.
-2. The assignee addresses all critical and high findings.
+2. The assignee addresses all critical and high findings and every security finding that § Verdict Rules excludes from CONDITIONAL_PASS.
 3. The assignee requests a re-evaluation.
 4. The gate executor re-runs the gate, producing a new verdict.
 
