@@ -39,8 +39,8 @@ Please perform a security audit on:
 
 9. Classify each finding with severity:
    - **CRITICAL**: Actively exploitable, immediate remediation required
-   - **HIGH**: Exploitable with moderate effort, fix within current sprint
-   - **MEDIUM**: Potential risk, schedule for next sprint
+   - **HIGH**: Exploitable with moderate effort; blocks merge until resolved (`security-guidelines.md` § Security Review Workflow)
+   - **MEDIUM**: Potential risk; requires a remediation plan (owner, fix, deadline) before merge
    - **LOW**: Hardening recommendation, add to backlog
 
 ## Verdict Output
@@ -62,10 +62,10 @@ Please perform a security audit on:
 ```
 
 Provide a structured security report with findings, severity levels, and remediation steps.
-If any CRITICAL findings exist, the verdict MUST be FAIL.
+If any CRITICAL or HIGH finding exists, or any Immutable Security Constraint in `security-guidelines.md` is breached, or any security control that `security-guidelines.md` requires for the code under review is omitted, removed, disabled or weakened, the verdict MUST be FAIL (`security-guidelines.md` § Security Review Workflow: "`CRITICAL` and `HIGH` findings block merge until resolved"). A required control missing only from code outside the change under review is graded at its own severity. A change that adds or alters code which the missing control should protect is code under review for that control. With no change under review (for example a full-project `/security-audit`), the whole project is the code under review. If any MEDIUM finding exists, the verdict is at best CONDITIONAL_PASS, with a remediation plan (owner, fix, deadline) listed as a condition for each MEDIUM finding. PASS requires no CRITICAL, HIGH or MEDIUM finding.
 
 ## Rails
 
 **Inputs**: The scope to audit (`{{input}}`: full project, a feature, or specific files).
 **Out of scope**: Fixing any finding directly — this command only produces findings, severity, and remediation recommendations.
-**Failure mode**: If any CRITICAL finding exists, the verdict MUST be FAIL — the command cannot return PASS/CONDITIONAL_PASS while a CRITICAL finding is unresolved.
+**Failure mode**: If any CRITICAL or HIGH finding exists, an Immutable Security Constraint is breached, or a security control that `security-guidelines.md` requires for the code under review is omitted, removed, disabled or weakened, the verdict MUST be FAIL — the command cannot return PASS/CONDITIONAL_PASS while such a finding is unresolved. With no change under review (for example a full-project `/security-audit`), the whole project is the code under review.
