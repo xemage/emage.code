@@ -50,3 +50,12 @@ gate's documents into line with `security-guidelines.md`.
 
   It regenerates the mirrors and the registry and declares the root drift. No golden case, command or tier-1 file is
   touched.
+
+## 5. Completion (2026-10-08)
+
+- **T587 is merged** (MR !495, `develop` `38b043e`). The seven v2 edits were applied verbatim and verified
+  independently, and conditions C1 and C2 are satisfied. FU-6 and FU-7 are closed.
+- **Root drift is 54 declared paths.** The next root refresh needs the user's approval.
+- **SEC-T586-07** stays parked as observations: (a) how an executor that is not the Security Engineer grades a security
+  finding; (b) the per-MR OWASP run against the Security gate's "Before any release" trigger.
+- The queue is empty, and plan-103 is complete.
