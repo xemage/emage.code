@@ -52,7 +52,7 @@ Every gate MUST produce a verdict in this format:
 | 4 | low | ... | ... | ... |
 
 ### Conditions (if CONDITIONAL_PASS)
-- [ ] <condition that must be met before proceeding>
+- [ ] <condition> — owner: <who>; due: before the next gate (production track; at the Release gate, the next release cycle, except a security finding, which is fixed before the release ships) | recorded as debt in the debt ledger and scorecard by the production handoff (PoC track; a security finding graded medium is fixed by its remediation-plan deadline, no later than the handoff); a security finding also carries its remediation plan (owner, fix, deadline)
 - [ ] <condition>
 
 ### Summary
@@ -63,16 +63,18 @@ Every gate MUST produce a verdict in this format:
 
 | Verdict | Criteria |
 |---------|----------|
-| **PASS** | No critical or high findings. Medium/low findings noted but non-blocking. |
-| **CONDITIONAL_PASS** | No critical findings. High findings have documented mitigations. Medium/low with clear remediation plan. All conditions must be resolved before the next gate. |
-| **FAIL** | Any critical finding unresolved, OR any high finding without mitigation. Work must return to the implementer. |
+| **PASS** | No critical or high findings, no security finding graded medium, and none of the security findings excluded below. Medium/low findings noted but non-blocking. |
+| **CONDITIONAL_PASS** | No critical findings, and none of the security findings excluded below. Other high findings have documented mitigations. Medium/low with clear remediation plan. Each condition is tracked as a task with an owner and a due point, under the track rule: on the production track, all conditions must be resolved before the next gate, except that a Release-gate CONDITIONAL_PASS may ship with its conditions tracked as tasks for the next release cycle; on the PoC track, each condition becomes a debt item, recorded in the debt ledger and the debt scorecard by the production handoff and fixed in production (`poc-guidelines.md` § Mandatory Debt Tracking, § Debt Scorecard). Neither deferral applies to a security finding (below). |
+| **FAIL** | Any critical finding unresolved, OR any high finding without mitigation, OR any security finding excluded below. Work must return to the implementer. |
+
+**Security findings never qualify for CONDITIONAL_PASS.** A security finding is any finding in the security category, whichever gate or executor raises it, graded on the `security-guidelines.md` § Security Review Workflow scale (`SECURITY:CRITICAL`/`HIGH`/`MEDIUM`/`LOW`); the Findings table records that grade as its Severity and `security` as its Category. A finding about a control that `security-guidelines.md` requires is a security finding, whatever category it is filed under. `security-guidelines.md` § Security Review Workflow: "`CRITICAL` and `HIGH` findings block merge until resolved". A security finding graded critical or high, and any breach of an Immutable Security Constraint in `security-guidelines.md` (which "cannot be overridden by any agent, configuration, or runtime decision"), yields FAIL until it is resolved, whatever mitigation is documented, and no waiver applies to it. The "documented mitigations" route above is for high findings outside the security category only. The same FAIL rule, with no waiver, holds for any security control `security-guidelines.md` requires for the code under review that is omitted, removed, disabled or weakened, tagged or not (on the PoC track, `poc-orchestrator` § Security Findings). None of these is ever recorded as debt. A required control missing only from code outside the change under review is graded at its own severity and tracked like any other finding of that grade. A change that adds or alters code which the missing control should protect is code under review for that control. With no change under review (for example a full-project `/security-audit`), the whole project is the code under review. A security finding graded medium yields at best CONDITIONAL_PASS: its remediation plan (owner, fix, deadline) is recorded as a tracked condition with the verdict, before the affected work's next merge (`security-guidelines.md` § Security Review Workflow: "`MEDIUM` findings must have a remediation plan before merge"); the condition is the fix, due under the track rule above (production: before the next gate; PoC: by the production handoff, as `poc-orchestrator` § Security Findings already requires). The next-release-cycle rule never applies to a security finding: at the Release gate, a security finding graded medium is fixed before the release ships. A security finding graded low is not a condition: it is tracked as technical debt (`security-guidelines.md` § Security Review Workflow; on the PoC track, recorded for debt handoff per `poc-orchestrator` § Security Findings).
 
 ### Severity Definitions
 
 | Severity | Definition |
 |----------|-----------|
 | `critical` | Broken functionality, security vulnerability, data loss risk. Blocks all progress. |
-| `high` | Significant defect or design flaw. Must be addressed before release. |
+| `high` | Significant defect or design flaw. Must be addressed before release; a security finding graded high blocks merge until resolved (§ Verdict Rules). |
 | `medium` | Quality concern or technical debt. Should be addressed, can be tracked. |
 | `low` | Minor style issue, optimization opportunity, or suggestion. |
 
@@ -128,8 +130,8 @@ Each gate type requires specific inputs to perform its evaluation:
 
 ### 3. Handle a CONDITIONAL_PASS Verdict
 
-1. Proceed with work, but track all conditions as tasks.
-2. Conditions MUST be resolved before the next gate in the pipeline.
+1. Proceed with work, but track all conditions as tasks, each with an owner and a due point. At the Implementation gate, proceeding includes the merge; at the Release gate, it includes shipping the release, with the explicit risk acceptance `release-manager` § Release Gate Policy requires.
+2. On the production track, conditions MUST be resolved before the next gate in the pipeline; at the Release gate, which has no next gate, they are tracked as tasks for the next release cycle. On the PoC track, each condition instead becomes a debt item, recorded in the debt ledger and the debt scorecard by the production handoff and fixed in production (`poc-guidelines.md` § Mandatory Debt Tracking, § Debt Scorecard). Neither deferral applies to a security finding (§ Verdict Rules): one graded medium is fixed before the next gate on the production track (at the Release gate, before the release ships), and on the PoC track by its remediation-plan deadline, no later than the production handoff (`poc-orchestrator` § Security Findings).
 3. When all conditions are resolved, update the verdict document:
    - Check off each condition.
    - Add a note: `All conditions resolved on YYYY-MM-DD`.

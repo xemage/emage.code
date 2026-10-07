@@ -8,8 +8,11 @@
 to conditionally pass, with follow-up items mentioned only informally ("discussed in standup").
 
 ## What this checks
-`implementation/knowledge/commands/code-review.md`: "If CONDITIONAL_PASS, list the conditions
-that must be met before merge." This case asks: can a deterministic, structured check verify
+`implementation/knowledge/commands/code-review.md`: "If CONDITIONAL_PASS, list the conditions,
+each with an owner and a due point." (as amended by `T582`, item A4; the sentence formerly ended
+"that must be met before merge"). The amendment says what each condition must carry, but the
+command still defines no structured `**Conditions**:` field: its `## VERDICT` template has none.
+This case asks: can a deterministic, structured check verify
 that the conditions were actually *listed* (as opposed to merely alluded to in prose), given that
 the command never specifies what a machine-checkable "conditions list" must look like (no
 required field name, no required list format)?

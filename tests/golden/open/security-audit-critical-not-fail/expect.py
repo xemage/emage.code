@@ -2,7 +2,8 @@
 """expect.py for security-audit-critical-not-fail (known_failing / tracked_defect).
 
 Contract under test: implementation/knowledge/commands/security-audit.md -- "If any CRITICAL
-findings exist, the verdict MUST be FAIL." Expected to return False today -- see brief.md.
+or HIGH finding exists, … the verdict MUST be FAIL" (as amended by T582, B3). Expected to return
+False today -- see brief.md.
 """
 from __future__ import annotations
 

@@ -15,8 +15,10 @@ and the format that clause imports from poc-guidelines.md SS Hypothesis Format:
 
   HYPOTHESIS: / VALIDATION: / SUCCESS CRITERIA: / FAILURE CRITERIA:
 
-with that section's Rule 2, "One hypothesis per PoC". The plan's *path* is deliberately not
-asserted (parked item P11) -- see brief.md.
+with that section's Rule 2, "One hypothesis per PoC". The plan's *path* is still deliberately not
+asserted: the glob below reads whichever single *.md sits in fixture/docs/plans/, path-agnostic by
+design. P11 (the plan path) is resolved: T563 ruled, T564 amended the command to
+`docs/plans/plan-<ID>.md`, T565 realigned this case -- see brief.md.
 """
 from __future__ import annotations
 

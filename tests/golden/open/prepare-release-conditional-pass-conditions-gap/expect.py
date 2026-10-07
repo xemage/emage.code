@@ -3,7 +3,8 @@
 capability_gap).
 
 Contract under test: implementation/knowledge/commands/prepare-release.md step 9 -- "If
-CONDITIONAL_PASS, list conditions that must be met before deployment." Checks for a structured
+CONDITIONAL_PASS, list the conditions." (as amended by T582, R5). The step 7 "## RELEASE
+VERDICT" template still has no structured "**Conditions**:" field. Checks for a structured
 "**Conditions**:" field or a "## Conditions" section. Expected to return False today -- see
 brief.md.
 """
