@@ -77,3 +77,7 @@ v4 meets every condition. The orchestrator verified it in v4 §16, because the p
 - **FU-6**: the `security-engineer` SLA table and the `validation-gates:74` tiers.
 - **FU-7**: `receiving-code-review:86`.
 - **P40** slices S2–S4 and **P43**, both under ADR-008. Slice S1 is settled by T580.
+
+## 5. Outcome (2026-10-07)
+
+plan-100 is complete. ADR-008 was accepted (T581, !481). P39 was decided in T580 (!482) and applied in T582 (!483). CONDITIONAL_PASS semantics are now consistent across `AGENTS.md`, the orchestrator, `tech-lead`, `/code-review`, `validation-gates`, `code-review`, `testing-strategy`, `/security-audit`, `release-manager` and `/prepare-release`, and security findings never qualify. Root drift is 51 paths. FU-2 also covers the stale provenance note in the `validate-workflow-gate-verdict-sources` fixture (its copy of `validation-gates` no longer matches the live file; the result is unchanged).

@@ -2,9 +2,8 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T582 | Apply the CONDITIONAL_PASS ruling (T580 FU-1, P39) | backend-developer | pending | P2 | T580 | 2026-10-07 |
 
-> **1 active row: `T582` (plan-100 §4, P39: apply ruling v4 after three Security Engineer reviews). ADR-008 was accepted on 2026-10-02 (T581).**
+> **0 active rows. `plan-100` is complete: P39 (CONDITIONAL_PASS semantics) was applied by T582 (MR !483), and ADR-008 was accepted (T581).** Root drift is 51 declared paths; the next root refresh needs the user's approval. Parked: FU-2 (golden quote refresh, a protected path needing a user v16), FU-6, FU-7, P40 S2–S4, P43, P32, P33, P41, P44, L4/X5, the new-poc docstring.
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
