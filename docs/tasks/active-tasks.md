@@ -2,9 +2,9 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T580 | Make CONDITIONAL_PASS merge semantics consistent (P39), per the user's decision | solution-architect | pending | P2 | — | 2026-10-02 |
+| T582 | Apply the CONDITIONAL_PASS ruling (T580 FU-1, P39) | backend-developer | pending | P2 | T580 | 2026-10-07 |
 
-> **1 active row: `T580` (plan-100, P39: CONDITIONAL_PASS allows merge with tracked conditions; security never qualifies). Ruling v2 is under a Security Engineer delta review. `T581` closed 2026-10-02: ADR-008 (knowledge-document authority) was **accepted by the user**.**
+> **1 active row: `T582` (plan-100 §4, P39: apply ruling v4 after three Security Engineer reviews). ADR-008 was accepted on 2026-10-02 (T581).**
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /

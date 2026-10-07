@@ -50,3 +50,30 @@ The user then **accepted ADR-008**.
 Its order of application: A, joint satisfiability; B, tier 1 (`AGENTS.md` and stable instructions, within their declared scope); C, the command contract; D, peer self-placement; E, escalate. Maturity never ranks.
 
 **P40 and P43 are now schedulable** under ADR-008. Slices that self-placement does not decide escalate to the user by design.
+
+## 4. T580 outcome: P39 ruling v4 (2026-10-07)
+
+`conditional-pass-semantics-v1.md` went through three Security Engineer reviews to reach **v4** (`security-review-conditional-pass-semantics-v1.md`):
+- v1: FAIL as scoped. SEC-001 (HIGH): a Tech Lead waiver could override a security FAIL. SEC-002 (HIGH): `/security-audit` failed only on CRITICAL.
+- v2: CONDITIONAL_PASS. SEC-012: the Release Manager's risk acceptance did not apply the Q4 security exclusion.
+- v3: CONDITIONAL_PASS. SEC-018 (R5 grades) and SEC-019 (B1 adjacency).
+
+v4 meets every condition. The orchestrator verified it in v4 §16, because the producing agent hit a usage limit before handing back.
+
+**User decisions (2026-10-02):**
+- Q1: keep the Tech Lead waiver, except for security.
+- Q2: PoC conditions are recorded as debt by the handoff.
+- Q3: the omitted, removed, disabled or weakened control class applies on both tracks.
+- Q4: Release-gate conditions move to the next release cycle. Security is never a condition.
+- Q7: a full-project audit treats the whole project as the code under review.
+- Q8: a pre-existing security HIGH blocks unrelated merges.
+
+| Task | Covers | Protected paths? | Owner |
+|---|---|---|---|
+| `T582` | FU-1: v4's 21 required edits plus C2, in 8 files (`tech-lead`, `release-manager`, `/code-review`, `/security-audit`, `/prepare-release`, `validation-gates`, `testing-strategy`, `code-review`); regenerate; declare drift | No | Backend Developer |
+
+**Parked:**
+- **FU-2**: refresh the stale quotes in three open golden cases. This is a protected path: it needs a grant and a v16 baseline authorized by the user. No results change.
+- **FU-6**: the `security-engineer` SLA table and the `validation-gates:74` tiers.
+- **FU-7**: `receiving-code-review:86`.
+- **P40** slices S2–S4 and **P43**, both under ADR-008. Slice S1 is settled by T580.
