@@ -236,7 +236,7 @@ The following coverage thresholds directly determine the QA gate verdict:
 | **Unit test coverage** | ≥ 80% | 75–79% | < 75% |
 | **Integration test pass rate** | 100% | ≥ 95% (no critical failures) | < 95% or any critical failure |
 | **E2E critical path pass rate** | 100% | N/A (critical paths must pass) | < 100% |
-| **Security scan** | No critical/high findings | No critical; high findings have mitigations | Any critical finding |
+| **Security scan** | No critical, high or medium findings, and nothing in the FAIL column | No critical or high findings and nothing in the FAIL column; each medium finding has a remediation plan (`security-guidelines.md` § Security Review Workflow) | Any critical or high finding, any breach of an Immutable Security Constraint (`security-guidelines.md`), or any security control that `security-guidelines.md` requires for the code under review and that is omitted, removed, disabled or weakened, whatever its grade (a control missing only from code outside the change is graded at its own severity; a change that adds or alters code which the missing control should protect is code under review for that control) |
 | **Performance** | All targets met | ≤ 10% deviation on non-critical endpoints | > 10% deviation on critical endpoints |
 
 **Important:** These thresholds are defaults. Project-specific overrides can be documented in the test plan artifact (`test-plan-vN.md`), but overrides require Tech Lead approval recorded as a decision artifact.

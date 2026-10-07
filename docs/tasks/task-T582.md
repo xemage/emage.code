@@ -2,7 +2,7 @@
 
 **ID:** T582
 **Owner:** Backend Developer
-**Status:** pending
+**Status:** in_review
 **Priority:** P2
 **Tier:** mechanical
 **Affects:** agent/tech-lead, agent/release-manager, command/code-review, command/security-audit, command/prepare-release, skill/validation-gates, skill/testing-strategy, skill/code-review
