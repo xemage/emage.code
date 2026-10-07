@@ -41,3 +41,17 @@ v16 baseline only after independently verifying T583:
 
 **P44** (the `evaluate-poc` case counts numbered backlog lines while the skill's template uses a table) needs a
 `check()` change. It stays parked for its own task.
+
+## 4. Outcome and follow-up (2026-10-07)
+
+- **Done:** root refresh 4 (MR !485), T583 (MR !487), and evaluator-hash baseline **v16** (user-approved, written after
+  independent verification). The queue is empty.
+- **FU-8 (parked; needs its own protected-path grant).** T583 reported residual staleness outside its grant:
+  - the `validate-workflow-gate-verdict-sources` fixture copy of `commands/validate-workflow.md` is still at `a6be6b0`
+    (it differs only in frontmatter `maturity`, which `check()` does not read), while its `expect.py` docstring still
+    calls the copy "byte-identical";
+  - the `security-audit-critical-not-fail` `expect.py` docstring header still says `known_failing / tracked_defect`
+    (the case was reclassified to `capability_gap` at T520), and its case text says the rule "must not be amended"
+    where "must not be relaxed" is meant.
+
+  Any fix changes `tests_golden` and needs a user-authorized v17.

@@ -2,9 +2,8 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T583 | Refresh stale golden quotes and fixture provenance (FU-2 + new-poc docstring) | qa-engineer | pending | P2 | T582 | 2026-10-07 |
 
-> **1 active row (`plan-101`).** T583 refreshes the golden quotes that T582 left stale, under a file-scoped `protected-paths-v1.md` §5 grant; the user pre-approved evaluator-hash baseline v16 (2026-10-07), which the orchestrator writes after verifying T583. Root refresh 4 is in MR !485. Parked: FU-6, FU-7, P40 S2–S4, P43, P32, P33, P41, P44, L4/X5.
+> **0 active rows. `plan-101` is complete: root refresh 4 merged (MR !485, drift 0); T583 refreshed the golden quotes T582 left stale (MR !487), and the user-approved evaluator-hash baseline v16 (`tests_golden 3c50b447…`) was written after independent verification.** Parked: FU-6, FU-7, FU-8 (plan-101 §4: residual golden docstring/fixture staleness), P40 S2–S4, P43, P32, P33, P41, P44, L4/X5.
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
