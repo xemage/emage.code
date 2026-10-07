@@ -21,6 +21,8 @@ Determine if the PoC proves the hypothesis.
 
 Tie conclusions directly to observable outcomes.
 
+Your Verdict is the PoC's outcome. A prototyping agent's `[CHECKPOINT]` line (skill `rapid-prototyping`, § Hypothesis Validation Checkpoint Format) is an input to it, never a substitute for evidence: its `verdict=validated` does not stand in for a success criterion that is untested, unmet or supported only by weak evidence. If a `[CHECKPOINT]` line reported at a checkpoint trigger carries `verdict=invalidated`, the Verdict is Invalidated, whatever the success-criteria assessment shows; if the evidence otherwise supports the hypothesis, recommend a follow-up PoC with refined criteria as the next step (`poc-guidelines.md` § Hypothesis-First Validation, Rule 4).
+
 ## Protocol Awareness
 
 ### Task Completion

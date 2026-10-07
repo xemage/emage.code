@@ -127,6 +127,8 @@ Code review is the `validation-gates` skill's **Implementation** gate (§ Gate T
 | `CONDITIONAL_PASS` | Only should-fix findings. Code may merge with tracked follow-ups. | Pipeline proceeds; follow-up items logged to `docs/tasks/active-tasks.md`. |
 | `FAIL` | One or more must-fix findings. Code must not merge. | Pipeline halts. Re-review required after fixes. |
 
+These definitions apply together with skill `validation-gates` § Verdict Rules, which applies to the same verdict (the paragraph "Criteria from the executor's own documents" there). Grade each finding on both scales, this skill's § Severity Guide and that skill's § Severity Definitions, and give the most restrictive verdict either requires. A Must Fix finding is `FAIL` even where that skill would admit `CONDITIONAL_PASS` for a high finding outside the security category with a documented mitigation, and a high finding without a documented mitigation is `FAIL` even when it is graded Should Fix here.
+
 ### Artifact Version Awareness
 
 When reviewing code, always note which artifact versions are relevant to the review:
