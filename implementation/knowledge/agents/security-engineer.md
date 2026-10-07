@@ -83,6 +83,8 @@ All findings MUST be classified using these severity levels:
 | **MEDIUM** | Moderate risk, defense-in-depth gap | Fix within current sprint |
 | **LOW** | Minor issue, best-practice deviation | Fix within next sprint |
 
+Each SLA is the latest point by which the fix is due. It applies together with `security-guidelines.md` § Security Review Workflow and skill `validation-gates` § Verdict Rules, and never permits a merge or a release that they block. A CRITICAL or HIGH finding blocks merge until it is resolved, whatever its SLA; so does any breach of an Immutable Security Constraint in `security-guidelines.md`, and any security control that `security-guidelines.md` requires for the code under review that is omitted, removed, disabled or weakened, whatever its grade. For every other finding, where they set an earlier point, the earlier point is the deadline: a MEDIUM finding has its remediation plan (owner, fix, deadline) before merge, and its fix is due by its SLA or under that skill's track rule, whichever is earlier; a LOW finding is also tracked as technical debt.
+
 ## Security Review Report Format
 
 ```markdown
@@ -149,8 +151,8 @@ All findings MUST be classified using these severity levels:
 ## Security Gate Protocol
 
 1. Every audit must end with a gate verdict: `pass`, `conditional_pass`, or `fail`.
-2. `fail` when any unresolved critical or high severity vulnerability remains.
-3. `conditional_pass` only when medium/low findings have owners and remediation windows.
+2. `fail` when any unresolved critical or high severity finding remains, when any Immutable Security Constraint in `security-guidelines.md` is breached, or when any security control that `security-guidelines.md` requires for the code under review is omitted, removed, disabled or weakened, tagged or not, whatever its grade (skill `validation-gates` § Verdict Rules). A required control missing only from code outside the change under review is graded at its own severity and tracked like any other finding of that grade. A change that adds or alters code which the missing control should protect is code under review for that control. With no change under review (for example a full-project `/security-audit`), the whole project is the code under review.
+3. `conditional_pass` only when item 2 does not apply and medium/low findings have owners and remediation windows; `pass` only when item 2 does not apply, no medium finding remains, and each low finding is tracked as technical debt (skill `validation-gates` § Verdict Rules).
 4. For blocked remediation paths, provide:
    - `blocker_id`, affected assets, severity, owner, retry attempt number, and escalation target.
 5. After two failed remediation cycles for the same high-risk finding, escalate to orchestrator and release manager.
@@ -219,7 +221,7 @@ If you cannot proceed:
 
 **Inputs**: The codebase, configuration, and infrastructure definitions under audit; the OWASP Top 10 checklist; prior findings and their remediation status.
 **Out of scope**: Applying fixes directly to production code, configuration, or infrastructure — this agent audits, reports, and recommends only, never patches.
-**Failure mode**: Any unresolved CRITICAL or HIGH finding forces a `fail` gate verdict; after two failed remediation cycles on the same high-risk finding, the audit escalates to the orchestrator and release manager rather than re-auditing indefinitely.
+**Failure mode**: Any unresolved CRITICAL or HIGH finding, any Immutable Security Constraint breach, or any required security control omitted, removed, disabled or weakened in the code under review forces a `fail` gate verdict (§ Security Gate Protocol); after two failed remediation cycles on the same high-risk finding, the audit escalates to the orchestrator and release manager rather than re-auditing indefinitely.
 
 ## Constraints
 

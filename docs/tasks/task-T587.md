@@ -2,7 +2,7 @@
 
 **ID:** T587
 **Owner:** backend-developer
-**Status:** pending
+**Status:** in_review
 **Priority:** P2
 **Tier:** mechanical
 **Affects:** agent/security-engineer, skill/validation-gates, skill/receiving-code-review
