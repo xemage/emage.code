@@ -2,9 +2,9 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T584 | Rule P40 slices S2–S4 and P43 under ADR-008 (decision only) | solution-architect | pending | P2 | — | 2026-10-07 |
+| T585 | Apply the first ADR-008 rulings (P40 S2/S3 notes N1–N3, P43 edits P1–P3) | backend-developer | pending | P2 | T584 | 2026-10-07 |
 
-> **1 active row (`plan-102`).** T584 makes the first ADR-008 rulings: P40 slices S2–S4 and P43. It is decision only, and every P5 escalation goes to the user before any implementation. Baseline v16; root drift 0. Parked: FU-6, FU-7, FU-8, P32, P33, P41, P44, L4/X5.
+> **1 active row (`plan-102`).** T584 made the first ADR-008 rulings (P40 S2–S4 jointly satisfiable; P43 escalated). The user decided P43 (evaluation decides, tighten-only) and S2/S3 (strictest applies, N1–N3). The Security Engineer PASSED N1. T585 applies the six edits in `adr-008-rulings-p40-p43-v3.md`. Baseline v16. Parked: FU-6, FU-7, FU-8, P32, P33, P41, P44, L4/X5.
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
