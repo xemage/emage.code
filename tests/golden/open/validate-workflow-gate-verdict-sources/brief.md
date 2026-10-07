@@ -164,13 +164,19 @@ Contrast: the pre-`T568` `check()` (six gates, per-gate only), run on the new fi
 `False`. Its plan approval and architecture briefing entries cite files the fixture no longer carries.
 
 ## Provenance
-**Fully real.** Two fixture files, each a byte-identical copy of its source at `develop` `a6be6b0`
-(the merge of `T567`, MR !453); `cmp` against `implementation/knowledge/` to confirm:
+**Fully real.** Two fixture files, each a byte-identical copy of its source at the `develop` commit
+named below; `cmp` against that commit's `implementation/knowledge/` to confirm:
 
 - `fixture/implementation/knowledge/commands/validate-workflow.md` — the amended command, added by
-  `T568`. The list-fidelity predicate reads it.
+  `T568`, copied at `develop` `a6be6b0` (the merge of `T567`, MR !453). The list-fidelity predicate
+  reads it. The source has since changed only in its frontmatter (`maturity: experimental` →
+  `stable`, `T569`), which `check()` does not read; this copy was not refreshed.
 - `fixture/implementation/knowledge/skills/validation-gates/SKILL.md` — the one file step 5 now cites.
-  It was not changed by `T568`; `cmp` re-confirmed it identical to source.
+  First copied at `a6be6b0`; re-copied by `T583` at `develop` `7be9926`, after `T582` (MR !483)
+  amended, within § Verdict Format, the verdict template's Conditions line, § Verdict Rules and
+  § Severity Definitions, and § Procedures › 3. Handle a CONDITIONAL_PASS Verdict. `cmp` confirmed
+  the re-copy identical to source. `check()` reads only § Gate Types and, from § Verdict Format,
+  the `**Gate:**` field and "Every gate MUST produce a verdict", none of which `T582` changed.
 
 `T568` removed the copies of `skills/plan-approve-execute/SKILL.md` and `agents/orchestrator.md`. After
 `T567`, no step 5 bullet cites them and `check()` reads neither. Keeping them would have made the

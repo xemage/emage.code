@@ -3,9 +3,10 @@ command: /security-audit
 status: known_failing
 known_failing_category: capability_gap
 known_failing_reason: >-
-  security-audit.md states unconditionally "If any CRITICAL findings exist, the verdict MUST
-  be FAIL." Fixture has CRITICAL findings: 1 and Status: CONDITIONAL_PASS (auditor reasoned a
-  compensating network-level control mitigates it). Reclassified from tracked_defect to
+  security-audit.md states unconditionally "If any CRITICAL or HIGH finding exists, … the
+  verdict MUST be FAIL" (as amended by T582, B3; formerly CRITICAL only). Fixture has CRITICAL
+  findings: 1 and Status: CONDITIONAL_PASS (auditor reasoned a compensating network-level
+  control mitigates it), which violates the amended rule as it did the old one. Reclassified from tracked_defect to
   capability_gap at T520 per ADR-007 branch 4: there is no corpus to fix (no real
   /security-audit output exists in this repo's history, so the fixture was hand-authored to
   violate the rule) and the rule must not be amended -- security-guidelines.md's Security

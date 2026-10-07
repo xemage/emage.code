@@ -9,9 +9,13 @@ check on data export), but the auditor concludes `CONDITIONAL_PASS` on the reaso
 compensating network-level control mitigates it today.
 
 ## What this checks
-`implementation/knowledge/commands/security-audit.md`'s closing sentence, verbatim: "If any
-CRITICAL findings exist, the verdict MUST be FAIL." This is an unconditional rule with no stated
-exception for compensating controls.
+`implementation/knowledge/commands/security-audit.md`'s verdict rule (the paragraph after step
+10's `## VERDICT` template), as amended by `T582` (item B3), verbatim with an omission marked: "If
+any CRITICAL or HIGH finding exists, … the verdict MUST be FAIL". The rule formerly read "If any
+CRITICAL findings exist, the verdict MUST be FAIL."; the amendment widened it to HIGH findings and
+added further FAIL triggers. This is an unconditional rule with no stated exception for
+compensating controls. The fixture (`CRITICAL findings: 1`, `Status: CONDITIONAL_PASS`) violates
+the amended rule just as it violated the old one.
 
 ## Pass condition (as specified — deliberately not met by the fixture)
 If `**CRITICAL findings**` is greater than 0, `**Status**` must be `FAIL`.
