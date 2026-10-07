@@ -4,7 +4,7 @@
 **Based on:** the user's instruction of 2026-10-07, "Continue with the Recommended next step" (a ruling task for P40
 S2–S4 and P43 under ADR-008, with no knowledge-file edits until the user approves);
 `docs/decisions/ADR-008-knowledge-document-authority.md` (Accepted); `docs/plans/plan-101-golden-quote-refresh.md` §4.
-**Scopes:** `T584`.
+**Scopes:** `T584`, `T585`.
 
 ## 1. Why now
 
@@ -29,3 +29,26 @@ first rulings made under ADR-008, so they also exercise the ADR's Validation ite
 - Also out of scope: FU-6, FU-7, FU-8, P32, P33, P41, P44 and L4/X5.
 - If a ruling bears on FU-6 (the `security-engineer` SLA table against the `validation-gates` tiers), the artifact may
   note it, but does not decide it.
+
+## 4. Outcome (2026-10-07)
+
+- **T584 ruling.** The orchestrator verified it independently: 65 of 65 quotes are verbatim at `a54bbba`, and the
+  anchors are unique. The ruling has three versions:
+  - `adr-008-rulings-p40-p43-v1.md`: S2, S3 and S4 are jointly satisfiable at Step A, and P43 escalates under P5.
+  - `-v2.md`: the exact P43 edits.
+  - `-v3.md`: the final implementation input, with the Security Engineer's wording adopted.
+- **The user's decisions (2026-10-07, verbatim option labels):**
+  - P43: **"Evaluation decides, tighten-only (Recommended)"**.
+  - P40 S2/S3: **"Strictest applies (Recommended)"**.
+  - Notes: **"N1 + N2 + N3 (Recommended)"**.
+- **Security Engineer phrase check of N1: PASS.** Three optional `SECURITY:LOW` wording points were all adopted in v3
+  (`security-review-adr-008-rulings-n1-v1.md`).
+- **Next: T585 (backend-developer, P2), the implementation task.** It applies the six edits in v3 (N1–N3; P1–P3 for P43) to
+  `validation-gates`, `code-review`, `testing-strategy`, `rapid-prototyping`, `poc-evaluation` and
+  `evaluation-agent`. It also runs `sync.mjs` and `generate-registry.py`, and either declares the root drift or
+  refreshes it later with the user's approval.
+  - No command, tier-1 file or golden case is touched, so no evaluator-hash change is expected.
+  - `validate-workflow-gate-verdict-sources` keeps a frozen fixture of `validation-gates`. The fixture lags, and the
+    result is unchanged.
+- **Parked observations from v1 §12:** the scope-gaming mitigation's breadth (ADR-008 § Risks), and G1's own example
+  being single-valued. Neither changes an outcome. FU-6 is noted, not decided.
