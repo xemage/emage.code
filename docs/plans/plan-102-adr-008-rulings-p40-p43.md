@@ -52,3 +52,14 @@ first rulings made under ADR-008, so they also exercise the ADR's Validation ite
     result is unchanged.
 - **Parked observations from v1 §12:** the scope-gaming mitigation's breadth (ADR-008 § Risks), and G1's own example
   being single-valued. Neither changes an outcome. FU-6 is noted, not decided.
+
+## 5. Completion (2026-10-07)
+
+- **T585 is merged** (MR !491, `develop` `f42ecec`). The six v3 edits are applied verbatim and verified independently.
+  Root drift is 41 declared paths, and the next root refresh needs the user's approval. No golden or evaluator-hash
+  change was needed (v16 still holds).
+- **Erratum to `adr-008-rulings-p40-p43-v3.md` §4** (the artifact is immutable, so it is recorded here):
+  - `the rules above included` occurs twice, on one line, so `grep -c` returns 1.
+  - `is the PoC's outcome` has 0 hits in `rapid-prototyping` and 1 in `evaluation-agent`. P1's text reads
+    "**The PoC's outcome.**" and "it is not the PoC's outcome".
+- The queue is empty, and plan-102 is complete.
