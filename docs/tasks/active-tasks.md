@@ -2,8 +2,9 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T602 | Rule L4/X5: replace poc-security-engineer's execute tool with fixed-command scanning (decision only) | solution-architect | pending | P2 | — | 2026-10-08 |
 
-> **0 active rows. `plan-112` is complete:** T601 cleaned up the mechanical parked notes (MR !530) with the user-approved evaluator-hash baseline v20 (`tests_golden 41459062…`). Baseline v20; root drift 0. Parked: the notes that need rulings and the `poc-orchestrator:102` indentation (plan-112 §2), and L4/X5.
+> **1 active row (`plan-113`).** T602 rules L4/X5: whether `poc-security-engineer` should lose its unrestricted `execute` tool in favour of fixed-command scanning, and how it still reports commit and push status for exposed secrets. It is decision only; the tool grant is a user decision. Baseline v20; root drift 0. Parked: the notes in plan-112 §2.
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
