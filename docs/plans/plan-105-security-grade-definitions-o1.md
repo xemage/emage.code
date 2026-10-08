@@ -50,3 +50,12 @@ Everything already decided is an input: P39, FU-6/FU-7, the P40 rulings, and A1/
 - **The sequencing guard is satisfied.** T589 is merged, and its floor sentence is on `develop`.
 - **Next: T591** (backend-developer, P2) applies E-O1a to the stable `/security-audit` command and E-O1b to
   `security-engineer`. No golden quote, fixture or result changes.
+
+## 5. Completion (2026-10-08)
+
+- **T591 is merged** (MR !502, `develop` `f984ae9`).
+  - E-O1a and E-O1b were applied verbatim and verified independently.
+  - Conditions C1–C3 are satisfied.
+  - O1 is closed.
+- **Root drift** is 32 declared paths: 20 from T589 and 12 from T591. The next root refresh needs the user's approval.
+- **Status:** the queue is empty, and plan-104 and plan-105 are complete.
