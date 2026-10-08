@@ -65,10 +65,12 @@ Skill for performing thorough, structured code reviews following best practices.
 
 ### 3. Feedback Format
 
+The `### Verdict:` below is the review's one gate verdict (§ VERDICT Format for Validation Gates), so it takes one of the values `AGENTS.md` § Validation Gates allows, `PASS`, `CONDITIONAL_PASS` or `FAIL`, and the same value as the concluding `[VERDICT]` line. An open point that is a defect is a finding: grade it on § Severity Guide, and the verdict follows from the findings. A review that cannot conclude because a question stays open issues no verdict until the question is answered: the reviewer reports a blocker (`AGENTS.md` § Blocker Protocol) rather than fabricating a `PASS` (skill `validation-gates` § Rails, Failure mode), and no merge is approved without the verdict (§ Rails).
+
 ```markdown
 ## Review: [MR Title]
 
-### Verdict: [Approved | Changes Requested | Needs Discussion]
+### Verdict: [PASS | CONDITIONAL_PASS | FAIL]
 
 ### Summary
 [1-2 sentence overall assessment]
