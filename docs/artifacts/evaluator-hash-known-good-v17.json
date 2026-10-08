@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "algorithm": "sha256",
+  "digests": {
+    "tests_golden": "05fb8b079ea46c274df6c911ad97af123522a99ca31f457d7fbb0255453b852b",
+    "scripts_scorecard": "45346c178c7f6d92101130d898f55dfaad908aa7e5ae669ce1faac99a51192d6"
+  },
+  "computed_from_commit": "17745225261a168621f7d7269d9def40662d1d30",
+  "computed_at": "2026-10-08T05:18:09Z",
+  "protected_paths": {
+    "tests_golden": "tests/golden",
+    "scripts_scorecard": "scripts/scorecard.py"
+  },
+  "supersedes": "evaluator-hash-known-good-v16.json",
+  "reason": "T592 (plan-106, FU-8) refreshed residual staleness in two open golden cases under the file-scoped grant in docs/tasks/task-T592.md (protected-paths-v1.md \u00a75). validate-workflow-gate-verdict-sources: both fixture copies (commands/validate-workflow.md and skills/validation-gates/SKILL.md) were re-copied byte-identical to their sources at develop f46b42b (cmp-confirmed), and the brief.md provenance now records what changed since the previous copies (maturity T569; N1 T585; FB1 and FD1 T587; E-A1 T589), none of which check() reads. security-audit-critical-not-fail: the expect.py docstring header 'tracked_defect' was corrected to 'capability_gap' (reclassified at T520), and 'the rule must not be amended' was corrected to 'must not be relaxed' in case.yaml known_failing_reason and brief.md (T582 amended the rule, but only to make it stricter). No check() logic changed. The orchestrator independently confirmed: both expect.py files are AST-identical apart from their module docstrings; only known_failing_reason changed in case.yaml; both fixtures are cmp-identical; case results are unchanged (True / False); scorecard --check is OK at 34 cases, 26 pass, 0 regressions; held-out isolation passes; the suite showed exactly the two evaluator-hash failures. scripts_scorecard is byte-identical to v16 and to every version back to v5. The implementing agent committed locally (1774522) but neither pushed nor refreshed this baseline. The user explicitly pre-approved this v17 on 2026-10-08 ('Next item: approving a v17 baseline - continue with FU-8'). This is the seventeenth escalation and the seventeenth respected. The orchestrator wrote it only after independent verification.",
+  "update_policy": "Manual only, never automatic. Any future legitimate update goes through the exception path in docs/artifacts/protected-paths-v1.md \u00a75 and produces evaluator-hash-known-good-v18.json. This file (v17) is never edited in place, and v1 through v16 are kept unmodified as the historical record. See docs/artifacts/evaluator-hash-check-v1.md for the full policy."
+}

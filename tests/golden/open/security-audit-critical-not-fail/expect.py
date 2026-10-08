@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""expect.py for security-audit-critical-not-fail (known_failing / tracked_defect).
+"""expect.py for security-audit-critical-not-fail (known_failing / capability_gap).
 
 Contract under test: implementation/knowledge/commands/security-audit.md -- "If any CRITICAL
 or HIGH finding exists, … the verdict MUST be FAIL" (as amended by T582, B3). Expected to return

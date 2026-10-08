@@ -39,7 +39,8 @@ classification implied is available:
   this fixture was hand-authored *in order to* violate the rule. `tests/golden/README.md` defines
   `tracked_defect` as "a known, expected-to-be-fixed bug", and nothing in the repository is
   broken here.
-- **The rule must not be amended.** `security-guidelines.md`'s Security Review Workflow
+- **The rule must not be relaxed.** `T582` amended it, but only to make it stricter.
+  `security-guidelines.md`'s Security Review Workflow
   independently requires `SECURITY:CRITICAL` findings to block merge, and its Immutable Security
   Constraints forbid disabling a security control for convenience. Adding a compensating-control
   exception clause is therefore not an available fix.
