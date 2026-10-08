@@ -2,9 +2,8 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T599 | Apply the P33 ruling: PoC root, Debt Inventory severity, narrative register, debt-ledger security rule (eight edits) | backend-developer | pending | P2 | T598 | 2026-10-08 |
 
-> **1 active row (`plan-110`).** T599 applies the user's P33 decisions: the PoC root is the PoC's own top-level directory, the Debt Inventory gets a Severity column with Rule 5, and `TECHNICAL-DEBT.md` stays required and is written by the narrator. It also applies the Security Engineer's conditions, including E-O3 (blocking findings never become debt). Baseline v18; root drift 0. Parked: P44, L4/X5, small observations.
+> **0 active rows. `plan-110` is complete:** P33 is applied (T599, MR !523). The PoC root is defined, the Debt Inventory has a Severity column and Rule 5, `TECHNICAL-DEBT.md` is required and written by the narrator, and blocking security findings never become debt (E-O3). Baseline v18. Root drift is 26 declared paths; the next root refresh needs the user's approval. Parked: P44 (needs v19), L4/X5, and the small observations in plans 106–110.
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /

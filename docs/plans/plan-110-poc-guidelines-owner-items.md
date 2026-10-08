@@ -53,3 +53,10 @@ P44, L4/X5 and the small parked observations stay parked.
 
   No golden quote, fixture or result changes, so no grant or v19 is needed.
 - **Parked:** the artifact's observations O1, O2, O4, O5 and O6.
+
+## 5. Completion (2026-10-08)
+
+- **T599 is merged** (MR !523, `develop` `705f280`). All 8 edits were applied verbatim and verified independently.
+  SEC-001 and SEC-002 are satisfied, and P33 is closed.
+- **Root drift** is 26 declared paths. The next root refresh needs the user's approval.
+- **The queue is empty**, and plan-110 is complete.
