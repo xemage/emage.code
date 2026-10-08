@@ -2,9 +2,10 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T588 | Rule SEC-T586-07 (security-finding grading by any executor; per-MR OWASP run) under ADR-008 (decision only) | solution-architect | pending | P2 | — | 2026-10-08 |
+| T589 | Apply the security-finding grading and per-MR OWASP ruling (SEC-T586-07): three edits from security-finding-grading-and-owasp-run-v2.md | backend-developer | pending | P2 | T588 | 2026-10-08 |
+| T590 | Rule O1 (two security grade definition sets) under ADR-008 and ADR-007 (decision only) | solution-architect | pending | P2 | — | 2026-10-08 |
 
-> **1 active row (`plan-104`).** T588 rules SEC-T586-07 under ADR-008: how an executor other than the Security Engineer grades a security finding, and who runs the per-MR OWASP checklist. It is decision only; the Security Engineer reviews and the user decides any P5 escalation. Root refresh 5 is in MR !497. Baseline v16. Parked: FU-8, P32, P33, P41, P44, L4/X5.
+> **2 active rows (`plan-104`, `plan-105`).** T589 applies the SEC-T586-07 ruling chosen by the user (A1, a grading pointer; B1, the Tech Lead runs the per-MR OWASP check; Security Engineer C1 adopted). T590 rules O1 (two grade definition sets), decision only. Baseline v16; root drift 0. Parked: FU-8, P32, P33, P41, P44, L4/X5.
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /

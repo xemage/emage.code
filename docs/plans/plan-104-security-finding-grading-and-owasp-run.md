@@ -4,7 +4,7 @@
 **Based on:** the user's decisions of 2026-10-08 ("Root refresh: yes, please refresh"; "Next item: continue as
 recommended"); `docs/plans/plan-103-security-gate-alignment.md` §5;
 `docs/artifacts/security-review-security-gate-alignment-v1.md` (SEC-T586-07).
-**Scopes:** `T588`.
+**Scopes:** `T588`, `T589`.
 
 ## 1. Root refresh 5
 
@@ -26,3 +26,25 @@ The fifth `--projections-only` refresh follows the plan-082 §2 procedure. It wa
 - P39, FU-6/FU-7 and the P40 rulings are inputs.
 - No command is amended.
 - FU-8, P32, P33, P41 and P44 stay parked.
+
+## 4. Outcome (2026-10-08)
+
+- **The T588 ruling** is `security-finding-grading-and-owasp-run-v1.md`.
+  - (a) and (b) are both gaps, not contradictions (Step A). Both escalated under P5.
+  - The orchestrator verified the ruling: 40/40 quotes verbatim, and all six anchors unique.
+- **User decisions** (2026-10-08, verbatim option labels):
+  - Q-a: **"Pointer (Recommended)"** (A1).
+  - Q-b: **"Tech Lead per MR (Recommended)"** (B1).
+  - O1: **"Rule it next (Recommended)"**.
+- **Security Engineer review: CONDITIONAL_PASS** (`security-review-security-finding-grading-v1.md`).
+  - C1 (SEC-T588-01, `SECURITY:MEDIUM`): the pointer must not displace the PoC severity floors at
+    `poc-security-engineer:21` and `poc-orchestrator:76`. The orchestrator verified that both floors exist.
+  - SEC-T588-02 to 05 are `SECURITY:LOW`.
+  - All were adopted verbatim in `security-finding-grading-and-owasp-run-v2.md`.
+- **Orchestrator check of v2.** The three edits apply once each to scratch copies. The user-chosen A1 sentences are
+  verbatim, and C1 and the LOW wordings are present.
+- **Next: T589** (backend-developer, P2) applies v2's three edits:
+  - E-A1 in `validation-gates`
+  - E-B1a in `code-review`
+  - E-B1b in `tech-lead`
+- **O1** is ruled in plan-105 (T590).
