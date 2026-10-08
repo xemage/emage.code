@@ -2,8 +2,9 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T595 | Rule P32 (production plan path and release-notes path conventions) under ADR-008 and ADR-007 (decision only) | solution-architect | pending | P2 | — | 2026-10-08 |
 
-> **0 active rows. `plan-107` is complete:** P41 is applied (T594, MR !510). The G3 notes, the G6 vocabularies and the G7 `project-planning` edits are in place, and `/prepare-release` now names `release-manager` as the Release-gate executor (the user's Q-G4 decision). Baseline v17. Root drift is 44 declared paths; the next root refresh needs the user's approval. Parked: P32 (including G5 and the G7 plan path), P33, P44, L4/X5, plan-106 §3, and P41 observations O1–O5 (plan-107 §4).
+> **1 active row (`plan-108`).** T595 rules P32: the production plan path convention and the release-notes duplication (G5). It is decision only; the user decides any P5 escalation or command change. Root refresh 7 is in MR !512. Baseline v17. Parked: P33, P44, L4/X5, plan-106 §3, P41 O1–O5.
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
