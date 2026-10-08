@@ -82,6 +82,8 @@ Every gate MUST produce a verdict in this format:
 
 A security finding (§ Verdict Rules) takes the tier its grade names on the `security-guidelines.md` § Security Review Workflow scale: `SECURITY:CRITICAL` is `critical`, `SECURITY:HIGH` is `high`, `SECURITY:MEDIUM` is `medium` and `SECURITY:LOW` is `low`. What a security finding of each grade requires is stated in § Verdict Rules, and its tier never lowers that: a breach of an Immutable Security Constraint, or a security control that `security-guidelines.md` requires for the code under review and that is omitted, removed, disabled or weakened, yields FAIL whatever its tier; any other security finding graded medium needs its remediation plan before merge, and any other graded low is tracked as technical debt.
 
+Whichever gate or executor raises a security finding, it is graded with the definitions in agent `security-engineer` § Findings Classification, whose CRITICAL, HIGH, MEDIUM and LOW are `SECURITY:CRITICAL`, `SECURITY:HIGH`, `SECURITY:MEDIUM` and `SECURITY:LOW`. A finding that fits more than one definition takes the highest grade it fits. Those definitions decide the grade only; what each grade requires is stated in § Verdict Rules and in the paragraph above. No grade so given is lower than a minimum grade set elsewhere for that kind of finding (for example `poc-security-engineer` § Behavior, "Severity floor", or `poc-orchestrator` § Security Findings for a secret not yet committed). Nor does this paragraph lift an earlier deadline that the executor's own documents set (for the Security Engineer, the SLA paragraph of that section).
+
 ## Gate Input Requirements
 
 Each gate type requires specific inputs to perform its evaluation:

@@ -35,7 +35,7 @@ conventions this section summarizes. When reviewing code:
    - SOLID principles
    - Appropriate abstractions (not over-engineered)
    - Clear naming and readability
-4. **Security**: Input validation, SQL injection, XSS, auth checks
+4. **Security**: Input validation, SQL injection, XSS, auth checks; for a merge request touching security-sensitive code, the full OWASP Top 10 checklist (skill `code-review` § Security (OWASP); `security-guidelines.md` § Security Review Workflow, step 1)
 5. **Performance**: N+1 queries, unnecessary allocations, efficient algorithms
 6. **Testing**: Adequate test coverage, meaningful test cases
 7. **Documentation**: Public API documented, complex logic explained

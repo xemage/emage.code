@@ -2,7 +2,7 @@
 
 **ID:** T589
 **Owner:** backend-developer
-**Status:** pending
+**Status:** in_review
 **Priority:** P2
 **Tier:** mechanical
 **Affects:** skill/validation-gates, skill/code-review, agent/tech-lead

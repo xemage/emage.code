@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-07T22:14:12+00:00",
+  "generatedAt": "2026-10-08T03:33:11+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -661,7 +661,7 @@
       "category": "agent",
       "name": "Tech Lead",
       "path": "agents/tech-lead.md",
-      "checksum": "72aec013ca7c706bf18ca3dcf9d582df8e61018d7e23c09c75d163687b3ade12",
+      "checksum": "643c1d8fb8a0f7e4b0267a7cff53f43ae947ed4f7803453f388e217647049be7",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1613,7 +1613,7 @@
       "category": "skill",
       "name": "code-review",
       "path": "skills/code-review/SKILL.md",
-      "checksum": "1779f7255031ff72582d07f10fc192253aca2ade884e96bcc85f707f27dcd4f5",
+      "checksum": "1bdc568b4449d1c9977623e264bc6daffb7e23955e564d033514d661628e8454",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -2145,7 +2145,7 @@
       "category": "skill",
       "name": "validation-gates",
       "path": "skills/validation-gates/SKILL.md",
-      "checksum": "8facbc5d3c606507df042446d3138c7a638131677b8e29940c41de4a19cb5241",
+      "checksum": "6dd7d87153d74a8a450b9781c14588cea2cb49f9844ef002e9a1807bbf6b386c",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
