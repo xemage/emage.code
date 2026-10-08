@@ -3,7 +3,7 @@
 **Created:** 2026-10-08
 **Based on:** the user's instruction of 2026-10-08, "continue", where the recommended item was P33;
 `docs/plans/plan-092-poc-contract-amendments.md` §4 (P33); `docs/artifacts/poc-skills-alignment-v1.md` F5.
-**Scopes:** `T598`.
+**Scopes:** `T598`, `T599`.
 
 ## 1. Why now
 
@@ -23,3 +23,33 @@ to its own text is a user decision under ADR-008. F5 (the three debt registers) 
 ## 3. Not in scope
 
 P44, L4/X5 and the small parked observations stay parked.
+
+## 4. Outcome (2026-10-08)
+
+- **The T598 ruling** (`poc-guidelines-owner-items-v1.md` → `-v2.md`):
+  - (a) The PoC root is not defined or placed by any document, so it escalated under P5.
+  - (b) Step A applies: the `## Summary` cannot be computed from the scorecard's own table. Fixing that requires a
+    tier-1 edit, so it went to the user.
+  - (c) Step A holds, but the section's own text is ambiguous. Fixing that also requires a tier-1 edit, so it went to
+    the user.
+  - (d) Step A: the three debt registers can coexist. Note D1 relates them.
+  - The orchestrator verified the ruling: the quotes are verbatim (one restored bold), all 17 anchors are unique,
+    the six "PoC root" sites are confirmed, and no test is coupled.
+- **User decisions** (2026-10-08, verbatim option labels):
+  - Q-A: **"PoC's own top dir (Recommended)"**
+  - Q-B: **"Add Severity column (Recommended)"**
+  - Q-C: **"Required, by narrator (Recommended)"**
+- **Security Engineer review: CONDITIONAL_PASS** (`security-review-poc-guidelines-owner-items-v1.md`). Both MEDIUM
+  findings were adopted verbatim in v2:
+  - SEC-001 (C-1): Rule 5 now keeps a security finding's grade and handling.
+  - SEC-002 (O3): a new edit, E-O3, means a blocking finding enters the debt ledger only as `resolved`.
+- **v2 check by the orchestrator.** The 8 edits each apply once across 4 files. C-1, E-O3 and I-2 are present
+  verbatim, and the counts are confirmed mechanically.
+- **Next: T599** (backend-developer, P2) applies v2's 8 edits:
+  - 4 in the tier-1 file `poc-guidelines.md`, decided by the user;
+  - 1 in `poc-orchestrator`;
+  - 2 in `technical-debt-tracking`;
+  - 1 in `technical-debt-narrator`.
+
+  No golden quote, fixture or result changes, so no grant or v19 is needed.
+- **Parked:** the artifact's observations O1, O2, O4, O5 and O6.
