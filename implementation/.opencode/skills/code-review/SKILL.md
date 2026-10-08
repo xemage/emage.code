@@ -36,6 +36,7 @@ Skill for performing thorough, structured code reviews following best practices.
 - [ ] Authentication/authorization checks present
 - [ ] Sensitive data not logged or exposed
 - [ ] No hardcoded secrets or credentials
+- [ ] The review states whether the merge request touches security-sensitive code. For one that does: the `security-guidelines.md` § OWASP Top 10 Checklist Reference run against the change, all ten categories (A01 to A10), as that instruction's § Security Review Workflow step 1 requires, with each category's result (findings, none, or not applicable) noted in the review; each security finding recorded with its grade (skill `validation-gates` § Verdict Rules, § Severity Definitions). This run does not replace the Security gate before release (skill `validation-gates` § Gate Types).
 
 #### Performance
 - [ ] No N+1 query issues

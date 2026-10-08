@@ -11,5 +11,26 @@
     "Emptied 2026-10-07 by the fourth user-approved --projections-only refresh (51 paths: the T582 CONDITIONAL_PASS edits).",
     "Emptied 2026-10-08 by the fifth user-approved --projections-only refresh (54 paths: the T585 ADR-008 ruling edits and the T587 security-gate alignment edits)."
   ],
-  "drift": []
+  "drift": [
+    ".claude/agents/tech-lead.md",
+    ".claude/skills/code-review/SKILL.md",
+    ".claude/skills/validation-gates/SKILL.md",
+    ".cline/skills/code-review/SKILL.md",
+    ".cline/skills/validation-gates/SKILL.md",
+    ".cursor/agents/tech-lead.mdc",
+    ".cursor/skills/code-review/SKILL.md",
+    ".cursor/skills/validation-gates/SKILL.md",
+    ".gemini/agents/tech-lead.md",
+    ".gemini/skills/code-review/SKILL.md",
+    ".gemini/skills/validation-gates/SKILL.md",
+    ".github/agents/tech-lead.agent.md",
+    ".github/skills/code-review/SKILL.md",
+    ".github/skills/validation-gates/SKILL.md",
+    ".opencode/agents/tech-lead.md",
+    ".opencode/skills/code-review/SKILL.md",
+    ".opencode/skills/validation-gates/SKILL.md",
+    ".pi/agents/tech-lead.md",
+    ".pi/skills/code-review/SKILL.md",
+    ".pi/skills/validation-gates/SKILL.md"
+  ]
 }
