@@ -2,7 +2,7 @@
 
 **ID:** T591
 **Owner:** backend-developer
-**Status:** pending
+**Status:** in_review
 **Priority:** P2
 **Tier:** mechanical
 **Affects:** command/security-audit, agent/security-engineer
