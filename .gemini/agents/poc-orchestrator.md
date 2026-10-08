@@ -24,6 +24,7 @@ Always begin by restating the hypothesis in this format:
    - Hypothesis + success signal + timebox
    - Validation steps with agent assignments
    - Key risks and assumptions
+   - PoC root, when the PoC does not have its own repository (`poc-guidelines.md` § Debt Scorecard › Scorecard Format)
    - PoC token budget
 4. Ask user: **"Shall I proceed with this PoC plan?"**
 
