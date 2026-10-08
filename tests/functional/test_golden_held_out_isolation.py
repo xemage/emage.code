@@ -34,12 +34,10 @@ Two independent, narrowly-scoped checks:
 The acceptance criterion says "never referenced from any file outside
 `tests/golden/held-out/`." Applied completely literally, Check B would also flag
 `tests/golden/open/*/brief.md` files that name a held-out sibling case ID in a "see
-also"/provenance note -- and several real ones do, e.g.
+also"/provenance note -- and a real one does, e.g.
 `tests/golden/open/security-audit-verdict-fields-compliant/brief.md` names
-`security-audit-owasp-matrix-compliant` (a held-out case) as a "distinct from" reference,
-and `tests/golden/open/new-feature-plan-doc-compliant/brief.md` names
-`new-feature-real-artifact-versioning-drift` (also held-out) as a sibling absence-of-
-precedent case. These were authored at T411, before the open/held-out split existed, and
+`security-audit-owasp-matrix-compliant` (a held-out case) as a "distinct from" reference.
+Such notes were authored at T411, before the open/held-out split existed, and
 T412's own acceptance criterion 1 requires the move to be byte-identical -- editing this
 content to scrub cross-references is out of scope and would silently redefine what T411's
 authored cases said.
