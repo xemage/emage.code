@@ -2,8 +2,9 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T593 | Rule P41 (remaining verdict renderings and editorial items G3–G9) under ADR-008 and ADR-007 (decision only) | solution-architect | pending | P2 | — | 2026-10-08 |
 
-> **0 active rows. `plan-106` is complete:** root refresh 6 is merged (MR !504, drift 0), and FU-8 is closed (T592, MR !506) with the user-approved evaluator-hash baseline v17 (`tests_golden 05fb8b07…`). Parked: P32, P33, P41, P44, L4/X5, and the scoped provenance grep note in validate-workflow `brief.md:193` (plan-106 §3).
+> **1 active row (`plan-107`).** T593 rules P41 (G3–G9): the six remaining verdict renderings, the release gate executor, the release-notes path, the second verdict vocabularies and the `project-planning` defects. It is decision only; the user decides any P5 escalation or command change. Baseline v17; root drift 0. Parked: P32, P33, P44, L4/X5, and the plan-106 §3 note.
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
