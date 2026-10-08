@@ -32,3 +32,19 @@ No case result changes.
 - the discrimination run passes;
 - results and scorecard are unchanged;
 - exactly two hash failures.
+
+## 3. Outcome (2026-10-08)
+
+- **T597 merged** (MR !519, `develop` `0979d25`), together with evaluator-hash baseline **v18**. The user approved v18,
+  and the orchestrator wrote it only after verifying the task independently, including its own discrimination probe.
+  FU-P32-G is closed.
+- **Scope extension BLK-T597-1.** The implementer caught that
+  `tests/functional/test_golden_harness_scoring.py:77, :83` load the real `new-feature` `expect.py` with a
+  `feature-*.md` name, so `:83` had been passing vacuously. The orchestrator authorized changing those two literals.
+  The file is not a protected path and is not part of the digest.
+- **Parked observations.**
+  - `tests/functional/test_golden_held_out_isolation.py:39–41`: the docstring's example no longer holds, since the
+    `new-feature` brief no longer names a held-out sibling.
+  - `tests/functional/test_golden_harness_scratch.py:55` still uses `feature-x.md`. It is a helper-only test and does
+    not score.
+- **The queue is empty**, and plan-109 is complete.
