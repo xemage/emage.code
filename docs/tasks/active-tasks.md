@@ -2,8 +2,9 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T601 | Mechanical cleanup of parked golden and test notes under a user-approved v20 | qa-engineer | pending | P2 | — | 2026-10-08 |
 
-> **0 active rows. `plan-111` is complete:** root refresh 9 is merged (MR !525, drift 0), and P44 is closed (T600, MR !527) with the user-approved evaluator-hash baseline v19 (`tests_golden 2811d829…`). No substantive parked item remains. Parked: L4/X5 and the small observations recorded in plans 106–111.
+> **1 active row (`plan-112`).** T601 batches the mechanical parked notes (isolation-test docstring, a helper test filename, the `evaluate-poc` discrimination section, the `validate-workflow` provenance grep, one stale fixture field). The user approved v20 (2026-10-08), which the orchestrator writes after verifying T601. Baseline v19; root drift 0. Parked: L4/X5 and the notes that need rulings (plan-112 §2).
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
