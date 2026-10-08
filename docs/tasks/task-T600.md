@@ -2,7 +2,7 @@
 
 **ID:** T600
 **Owner:** qa-engineer
-**Status:** pending
+**Status:** in_review
 **Priority:** P2
 **Tier:** standard
 **Affects:** —

@@ -52,8 +52,22 @@ Around that: the VERDICT's eight fields once each, in declared order, with the t
 `Residual risks`, `Evaluator: poc-orchestrator` and an ISO-8601 date-time `Timestamp`; the table's
 declared header, sequential `#`, and the declared `Severity`, `Effort` and `Production Impact`
 vocabularies with non-empty item, risk and owner; the eight checklist items present (checked or not)
-**when and only when** the recommendation is `proceed`/`proceed_with_constraints`; and at least five
-numbered items under the one backlog heading.
+**when** the recommendation is `proceed`/`proceed_with_constraints` — step 10 says
+"**If recommending `proceed` or `proceed_with_constraints`**, produce a handoff checklist", an "if", not
+an "only if", and the check enforces exactly that (a checklist under `do_not_proceed` is not asserted
+either way); and at least five prioritized items under the one backlog heading, as numbered items or
+table rows. Step 6, "Prioritized production refactoring backlog (top 5 minimum)", declares no format,
+and the `poc-evaluation` skill's § 6 Refactoring Backlog template
+(`implementation/knowledge/skills/poc-evaluation/SKILL.md`) renders the backlog as a table:
+
+> [Prioritized list of items from POC-DEBT tags and review findings]
+>
+> | Priority | Item | Rationale | Suggested Owner | Effort |
+> |----------|------|-----------|-----------------|--------|
+
+So the check counts the section's numbered items, or, when it has none, the data rows of its first
+table (the header and `|---|` separator skipped, each row with a non-empty first cell, up to the first
+non-table line).
 
 ### The weak-evidence Failure mode — asserted in full (formerly contested, resolved by T563/T564)
 This case was authored (T561) while the Failure mode said weak evidence "returns `INCONCLUSIVE`",
@@ -103,7 +117,8 @@ PoC's debt/shortcut record" are still not reconciled against a scorecard file: t
 order and in their declared value spaces; weak evidence is `INVALIDATED`; exactly one `## Debt
 Summary` table with the declared header and valid rows; `Debt items` total = breakdown sum = row count,
 with each severity count matching the table; all eight handoff-checklist items present if the
-recommendation is `proceed`/`proceed_with_constraints`; and ≥ 5 numbered backlog items.
+recommendation is `proceed`/`proceed_with_constraints`; and ≥ 5 backlog items under the one backlog
+heading, numbered items or table rows.
 
 ## Discrimination (demonstrated at authoring, on temp copies)
 `check()` is `True` on the fixture and `False` on each of: `Debt items` total 6 over 5 rows; a breakdown
