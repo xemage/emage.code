@@ -2,7 +2,7 @@
 
 **ID:** T602
 **Owner:** solution-architect
-**Status:** pending
+**Status:** done
 **Priority:** P2
 **Tier:** judgment
 **Affects:** —

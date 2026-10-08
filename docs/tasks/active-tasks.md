@@ -2,9 +2,9 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T602 | Rule L4/X5: replace poc-security-engineer's execute tool with fixed-command scanning (decision only) | solution-architect | pending | P2 | — | 2026-10-08 |
+| T603 | Implement the fixed-command PoC security scanner and drop execute from poc-security-engineer (L4/X5) | backend-developer | pending | P2 | T602 | 2026-10-09 |
 
-> **1 active row (`plan-113`).** T602 rules L4/X5: whether `poc-security-engineer` should lose its unrestricted `execute` tool in favour of fixed-command scanning, and how it still reports commit and push status for exposed secrets. It is decision only; the tool grant is a user decision. Baseline v20; root drift 0. Parked: the notes in plan-112 §2.
+> **1 active row (`plan-113`).** T603 builds the two-tool `poc-security-audit` server (git-config isolation, redaction, tri-state `pushed`, bounded scans) and then drops `execute` from `poc-security-engineer`, per the user's decisions. It needs a Security Engineer code review before merge. Baseline v20; root drift 0.
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
