@@ -9,7 +9,7 @@ I have a new project idea. Please orchestrate the full team to turn this into a 
 ## Phase 1: Plan-Approve-Execute
 
 1. **Create a plan document** with task decomposition and dependency graph
-   - Write the plan to `docs/plans/plan-<project-slug>.md`
+   - Write the plan to `docs/plans/plan-<ID>.md`, with `<ID>` as the `plan-approve-execute` skill § File Location defines it
    - Include: objective, scope, task DAG (Mermaid), risk assessment, estimated phases
    - Reference protocol: `plan-approve-execute` skill § The Three Phases › Phase 1: Plan (Plan Document Format)
 2. **Present the plan for my approval before executing**

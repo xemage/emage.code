@@ -19,8 +19,10 @@ Enforce a structured three-phase workflow — Plan, Approve, Execute — to ensu
 ## File Location
 
 ```
-docs/plans/plan-<feature-or-phase>.md
+docs/plans/plan-<ID>.md
 ```
+
+`<ID>` is the plan's three-digit number, a hyphen, and a short slug naming the feature or phase, written in lowercase letters, digits, hyphens and dots, for example `docs/plans/plan-042-rate-limiting.md`. A new plan takes the next number not yet used in `docs/plans/`. Every plan document a command or agent writes under this protocol uses this path.
 
 ## The Three Phases
 
@@ -93,7 +95,7 @@ I've prepared a plan for **<Feature/Phase Name>**.
 **Open questions:**
 - <question>
 
-Please review the full plan at `docs/plans/plan-<name>.md`.
+Please review the full plan at `docs/plans/plan-<ID>.md`.
 
 Options:
 1. ✅ **Approve** — proceed with execution

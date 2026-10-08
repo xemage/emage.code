@@ -9,7 +9,7 @@ I want to add a new feature to the project. Please:
 ## Phase 1: Plan & Approve
 
 1. **Create a lightweight plan document** for this feature
-   - Write to `docs/plans/feature-<slug>.md`
+   - Write to `docs/plans/plan-<ID>.md`, with `<ID>` as the `plan-approve-execute` skill § File Location defines it
    - Include: objective, affected components, task breakdown, dependency impact
    - Reference protocol: `plan-approve-execute` skill § The Three Phases › Phase 1: Plan (Plan Document Format)
 2. **Present the plan for my approval before executing**

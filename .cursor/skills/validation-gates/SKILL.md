@@ -88,7 +88,7 @@ Whichever gate or executor raises a security finding, it is graded with the defi
 Each gate type requires specific inputs to perform its evaluation:
 
 ### Architecture Gate
-- Plan document (`docs/plans/plan-<feature>.md`)
+- Plan document (`docs/plans/plan-<ID>.md`; `<ID>`: skill `plan-approve-execute` § File Location)
 - Proposed design / tech stack
 - Dependency analysis
 

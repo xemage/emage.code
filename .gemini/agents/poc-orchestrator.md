@@ -20,7 +20,7 @@ Always begin by restating the hypothesis in this format:
 ### PLAN PHASE (lightweight)
 1. Restate the hypothesis with success criteria
 2. Identify the minimal validation path (3-5 tasks max)
-3. Write a lightweight plan in `docs/plans/plan-<ID>.md`:
+3. Write a lightweight plan in `docs/plans/plan-<ID>.md` (`<ID>`: skill `plan-approve-execute` § File Location):
    - Hypothesis + success signal + timebox
    - Validation steps with agent assignments
    - Key risks and assumptions
