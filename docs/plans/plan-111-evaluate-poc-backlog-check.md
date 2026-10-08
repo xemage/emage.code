@@ -32,3 +32,16 @@ result changes, and no non-golden test loads this case.
 - the discrimination run holds;
 - the result and the scorecard are unchanged;
 - there are exactly two hash failures.
+
+## 3. Outcome (2026-10-08)
+
+- **T600 merged** (MR !527, `develop` `3e56120`), together with evaluator-hash baseline **v19**. The user approved
+  v19, and the orchestrator wrote it after verifying the work independently, including its own discrimination
+  probe. P44 is closed.
+- **Push.** `git push` failed authentication, so both local commits went up as one Commits-API commit. The remote
+  tree was verified identical to the local tree. v19's `computed_from_commit` names the local agent commit
+  `34c0d75`, whose golden content is identical; the field is informational.
+- **Not done.** The case's "Discrimination (demonstrated at authoring)" section still lists only the original
+  probes. The grant did not cover adding the new table probes there, so they were not added. This is parked as a
+  small observation.
+- **The queue is empty**, and plan-111 is complete.

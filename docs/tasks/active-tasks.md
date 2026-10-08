@@ -2,9 +2,8 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T600 | Fix the evaluate-poc golden case's backlog check and checklist wording (P44) under a user-approved v19 | qa-engineer | pending | P2 | — | 2026-10-08 |
 
-> **1 active row (`plan-111`).** T600 fixes P44: the `evaluate-poc` golden backlog check accepts numbered items or table rows (it stays at 5 minimum), and the brief's checklist wording becomes "when". The user pre-approved v19 (2026-10-08), which the orchestrator writes after verifying T600. Root refresh 9 is in MR !525. Parked: L4/X5 and small observations.
+> **0 active rows. `plan-111` is complete:** root refresh 9 is merged (MR !525, drift 0), and P44 is closed (T600, MR !527) with the user-approved evaluator-hash baseline v19 (`tests_golden 2811d829…`). No substantive parked item remains. Parked: L4/X5 and the small observations recorded in plans 106–111.
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
