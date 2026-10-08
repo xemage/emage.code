@@ -52,7 +52,7 @@ For release candidates: `MAJOR.MINOR.PATCH-rc.N` (e.g., `2.0.0-rc.1`)
    - All planned tasks should be `done` or archived.
 3. **Generate the changelog** (see procedure below).
 4. **Run the release gate** (see gate checklist below).
-5. **Create the release artifact** at `docs/artifacts/release-notes-v<VERSION>.md`.
+5. **Write the release notes** to `docs/releases/v<VERSION>.md` (§ 4).
 
 ### 2. Generate Changelog
 
@@ -127,6 +127,8 @@ The release gate is the final validation before deployment. All items must be ch
 
 ### 4. Create Release Artifact
 
+The release notes are one document per release, `docs/releases/v<VERSION>.md`: the file the `orchestrator` agent § Release Workflow Preflights publishes, and the release notes document into which `/prepare-release` step 7 writes the `## RELEASE VERDICT` section. Add the sections below, from `## Summary` on, to that document. When the release is prepared with `/prepare-release`, that command's steps govern the document, and these sections accompany them. The `Release` line under `## Gate Verdicts` carries the same value as the `**Status**` of the `## RELEASE VERDICT` section.
+
 ```markdown
 # Release Notes — v<VERSION>
 
@@ -156,7 +158,7 @@ The release gate is the final validation before deployment. All items must be ch
 <steps to roll back if critical issues are discovered post-release>
 ```
 
-File location: `docs/artifacts/release-notes-v<VERSION>.md`
+File location: `docs/releases/v<VERSION>.md`, one document per release (above).
 
 ### 5. Hotfix Workflow
 
