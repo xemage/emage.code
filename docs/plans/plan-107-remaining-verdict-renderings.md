@@ -56,3 +56,10 @@ executor (G4), the release-notes path (G5), the second vocabularies (G6) and the
   - O4: E7's pointer at `orchestrator.md:249` leads to `:205`'s looser wording.
   - O5: the stale fixture field noted above.
 - **Next: T594** (backend-developer, P2) applies the nine edits.
+
+## 5. Completion (2026-10-08)
+
+- **T594 is merged** (MR !510, `develop` `6c0c8f0`). The nine edits are applied verbatim and verified independently.
+  P41 is closed, except for the parts deferred to P32 and the parked observations O1–O5.
+- **Root drift** is 44 declared paths. The next root refresh needs the user's approval.
+- The queue is empty, and plan-107 is complete.

@@ -2,7 +2,7 @@
 
 **ID:** T594
 **Owner:** backend-developer
-**Status:** in_review
+**Status:** done
 **Priority:** P2
 **Tier:** mechanical
 **Affects:** agent/qa-engineer, agent/security-engineer, agent/release-manager, agent/tech-lead, skill/code-review, skill/project-planning, command/prepare-release
