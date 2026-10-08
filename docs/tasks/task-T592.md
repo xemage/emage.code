@@ -2,7 +2,7 @@
 
 **ID:** T592
 **Owner:** qa-engineer
-**Status:** in_review
+**Status:** done
 **Priority:** P2
 **Tier:** standard
 **Affects:** —
