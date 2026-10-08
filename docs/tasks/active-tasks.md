@@ -2,9 +2,9 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T595 | Rule P32 (production plan path and release-notes path conventions) under ADR-008 and ADR-007 (decision only) | solution-architect | pending | P2 | — | 2026-10-08 |
+| T596 | Apply the P32 path-conventions ruling (plan-<NNN>-<slug>.md everywhere; one release-notes document at docs/releases/) | backend-developer | pending | P2 | T595 | 2026-10-08 |
 
-> **1 active row (`plan-108`).** T595 rules P32: the production plan path convention and the release-notes duplication (G5). It is decision only; the user decides any P5 escalation or command change. Root refresh 7 is in MR !512. Baseline v17. Parked: P33, P44, L4/X5, plan-106 §3, P41 O1–O5.
+> **1 active row (`plan-108`).** T596 applies the user's P32 decisions: every plan is `plan-<NNN>-<slug>.md`, with `<ID>` defined once in `plan-approve-execute`, and there is one release-notes document at `docs/releases/v<VERSION>.md`. The golden realignment FU-P32-G needs a user-authorized v18. Baseline v17; root drift 0. Parked: P33, P44, L4/X5, plan-106 §3, P41 O1–O5, P32 O1–O6.
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /

@@ -4,7 +4,7 @@
 **Based on:** the user's decisions of 2026-10-08 ("Root refresh: yes, please"; "Next item: continue as
 recommended"); `docs/plans/plan-107-remaining-verdict-renderings.md` §4 (G5 and the G7 plan path → P32);
 `docs/plans/plan-092-poc-contract-amendments.md` §4 (P32).
-**Scopes:** `T595`.
+**Scopes:** `T595`, `T596`.
 
 ## 1. Root refresh 7
 
@@ -29,3 +29,32 @@ The following stay parked:
 - L4/X5;
 - the plan-106 §3 note;
 - P41 observations O1–O5.
+
+## 4. Outcome (2026-10-08)
+
+- **The T595 ruling** is `path-conventions-v1.md` → `-v2.md` → `-v3.md`; v3 is the implementation input.
+  - (a) Under `/new-feature`, Step C decided the command's path. Everything else turned on the undefined `<ID>`, so it
+    escalated under P5 as Q-P32a.
+  - (b) Step A holds. The convention question escalated as Q-P32b.
+- **The user's decisions** (2026-10-08, verbatim option labels):
+  - Q-P32a: **"plan-<NNN>-<slug>.md (Recommended)"**, option 1, including the PoC track. The slug may contain dots,
+    matching the release plans.
+  - Q-P32b: **"One, at docs/releases/ (Recommended)"**, option 1.
+- **Orchestrator verification:**
+  - 64 quotes were checked mechanically, and the 4 multi-segment quotes were checked by hand.
+  - All 108 real plans conform to the decided form.
+  - No `docs/artifacts/release-notes-v*.md` exists, and the CI scripts use `docs/releases/`.
+  - No non-golden test asserts any changed string.
+  - The orchestrator found a sixth plan-path variant (`validation-gates:92`), which was added as P-10 in v3.
+  - v3's 13 applications land once each across 10 files. Held-out isolation passes.
+- **Security review:** not required, because no security criterion is touched.
+- **Next: T596** (backend-developer, P2) applies v3's edits P-1 to P-10 and R-1 to R-3. No golden result changes.
+- **FU-P32-G.** The golden realignment needs a protected-path grant and a user-authorized **v18**, which is not yet
+  authorized:
+  - `new-feature-plan-doc-compliant`: glob, fixture name and brief;
+  - `new-project-plan-doc-and-lifecycle-states`: brief and docstring;
+  - optional re-copies.
+
+  It goes to the user after T596.
+- **Parked:** observations O1–O6 (v3 §8). O1 is the version-suffix question, which includes the template's
+  `plan-<slug>-v2.md` revision line.
