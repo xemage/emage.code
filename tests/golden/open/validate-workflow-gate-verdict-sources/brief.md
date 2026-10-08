@@ -168,15 +168,22 @@ Contrast: the pre-`T568` `check()` (six gates, per-gate only), run on the new fi
 named below; `cmp` against that commit's `implementation/knowledge/` to confirm:
 
 - `fixture/implementation/knowledge/commands/validate-workflow.md` — the amended command, added by
-  `T568`, copied at `develop` `a6be6b0` (the merge of `T567`, MR !453). The list-fidelity predicate
-  reads it. The source has since changed only in its frontmatter (`maturity: experimental` →
-  `stable`, `T569`), which `check()` does not read; this copy was not refreshed.
+  `T568`. First copied at `develop` `a6be6b0` (the merge of `T567`, MR !453); re-copied by `T592` at
+  `develop` `f46b42b`, and `cmp` confirmed the re-copy identical to source. The list-fidelity
+  predicate reads it. Changed in the source since the `a6be6b0` copy, and not read by `check()`:
+  - frontmatter `maturity: experimental` → `stable` (`T569`).
 - `fixture/implementation/knowledge/skills/validation-gates/SKILL.md` — the one file step 5 now cites.
-  First copied at `a6be6b0`; re-copied by `T583` at `develop` `7be9926`, after `T582` (MR !483)
-  amended, within § Verdict Format, the verdict template's Conditions line, § Verdict Rules and
-  § Severity Definitions, and § Procedures › 3. Handle a CONDITIONAL_PASS Verdict. `cmp` confirmed
-  the re-copy identical to source. `check()` reads only § Gate Types and, from § Verdict Format,
-  the `**Gate:**` field and "Every gate MUST produce a verdict", none of which `T582` changed.
+  First copied at `a6be6b0`; re-copied by `T583` at `develop` `7be9926`, after `T582` (MR !483);
+  re-copied by `T592` at `develop` `f46b42b`, and `cmp` confirmed the re-copy identical to source.
+  Changed in the source since the `T583` copy, none of it read by `check()`:
+  - § Verdict Rules: note N1, verdict criteria from the executor's own documents (`T585`).
+  - § Severity Definitions: FB1, the tier a security finding takes from its grade (`T587`).
+  - § Procedures › 2. Handle a FAIL Verdict: FD1, step 2 also covers excluded security findings (`T587`).
+  - § Severity Definitions: E-A1, the pointer to `security-engineer` § Findings Classification (`T589`).
+
+  `check()` reads only § Gate Types and, from § Verdict Format, the first `**Gate:**` field and
+  "Every gate MUST produce a verdict". None of these changes touches § Gate Types, adds a
+  `**Gate:**` line or alters that sentence.
 
 `T568` removed the copies of `skills/plan-approve-execute/SKILL.md` and `agents/orchestrator.md`. After
 `T567`, no step 5 bullet cites them and `check()` reads neither. Keeping them would have made the

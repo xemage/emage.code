@@ -9,7 +9,8 @@ known_failing_reason: >-
   control mitigates it), which violates the amended rule as it did the old one. Reclassified from tracked_defect to
   capability_gap at T520 per ADR-007 branch 4: there is no corpus to fix (no real
   /security-audit output exists in this repo's history, so the fixture was hand-authored to
-  violate the rule) and the rule must not be amended -- security-guidelines.md's Security
+  violate the rule) and the rule must not be relaxed (T582 amended it, but only to make it
+  stricter) -- security-guidelines.md's Security
   Review Workflow independently requires SECURITY:CRITICAL findings to block, and its
   Immutable Security Constraints forbid disabling a control for convenience. What the case
   demonstrates is that the command's VERDICT surface offers no way to record "CRITICAL
