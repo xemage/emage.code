@@ -2,8 +2,9 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T600 | Fix the evaluate-poc golden case's backlog check and checklist wording (P44) under a user-approved v19 | qa-engineer | pending | P2 | — | 2026-10-08 |
 
-> **0 active rows. `plan-110` is complete:** P33 is applied (T599, MR !523). The PoC root is defined, the Debt Inventory has a Severity column and Rule 5, `TECHNICAL-DEBT.md` is required and written by the narrator, and blocking security findings never become debt (E-O3). Baseline v18. Root drift is 26 declared paths; the next root refresh needs the user's approval. Parked: P44 (needs v19), L4/X5, and the small observations in plans 106–110.
+> **1 active row (`plan-111`).** T600 fixes P44: the `evaluate-poc` golden backlog check accepts numbered items or table rows (it stays at 5 minimum), and the brief's checklist wording becomes "when". The user pre-approved v19 (2026-10-08), which the orchestrator writes after verifying T600. Root refresh 9 is in MR !525. Parked: L4/X5 and small observations.
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
