@@ -2,9 +2,8 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T591 | Apply the O1 ruling: higher of the two grade definition sets under /security-audit (E-O1a, E-O1b) | backend-developer | pending | P2 | T589, T590 | 2026-10-08 |
 
-> **1 active row (`plan-105`).** T591 applies the user's O1 decision ('Higher of the two'): E-O1a in the stable `/security-audit` command and E-O1b in `security-engineer`, with Security Engineer conditions C1–C3 adopted. plan-104 is complete (T589, MR !500). Baseline v16. Root drift is 20 declared paths (a refresh needs the user's approval). Parked: FU-8, P32, P33, P41, P44, L4/X5.
+> **0 active rows. `plan-104` and `plan-105` are complete:** SEC-T586-07 (grading pointer, Tech Lead per-MR OWASP run) and O1 (the higher of the two grade sets under `/security-audit`) are applied (T589 MR !500, T591 MR !502). Baseline v16. Root drift is 32 declared paths; the next root refresh needs the user's approval. Parked: FU-8, P32, P33, P41, P44, L4/X5.
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
