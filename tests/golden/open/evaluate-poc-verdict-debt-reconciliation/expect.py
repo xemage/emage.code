@@ -4,7 +4,9 @@
 Contract under test: implementation/knowledge/commands/evaluate-poc.md, verbatim in brief.md --
 step 9's `## POC VERDICT` block (eight fields, three enums, a severity-broken-down count), step 11's
 Debt Summary table, step 10's handoff checklist ("If recommending `proceed` or
-`proceed_with_constraints`"), step 6's "top 5 minimum" backlog, and the `## Rails` Failure mode
+`proceed_with_constraints`"), step 6's "top 5 minimum" backlog as at least five prioritized items
+under the one backlog heading, numbered or as table rows (`/evaluate-poc` step 6 declares no format;
+the `poc-evaluation` skill's § 6 template is a table), and the `## Rails` Failure mode
 ("If evidence strength is weak, ... returns `INVALIDATED` with `Evidence strength: weak`"), asserted
 in full as "weak evidence => INVALIDATED". The value scales are the contract as amended by T564
 (poc-contract-resolution-v1.md SS3b, SS5): a binary Status, three severities CRITICAL/MEDIUM/LOW,
@@ -96,11 +98,24 @@ def _rows_valid(rows: list[list[str]]) -> bool:
 
 
 def _backlog_size(text: str) -> int:
+    # /evaluate-poc step 6 declares no format; the poc-evaluation skill's § 6 template is a table.
     hits = [m for m in re.finditer(r"^## (.*backlog.*)$", text, re.MULTILINE | re.IGNORECASE)]
     if len(hits) != 1:
         return 0
     body = _section(text, hits[0].group(1).strip()) or ""
-    return len(re.findall(r"^\d+\.\s+\S", body, re.MULTILINE))
+    numbered = len(re.findall(r"^\d+\.\s+\S", body, re.MULTILINE))
+    if numbered:
+        return numbered
+    lines = [ln.strip() for ln in body.splitlines()]
+    start = next((i for i, ln in enumerate(lines) if ln.startswith("|")), None)
+    if start is None or start + 1 >= len(lines) or not re.fullmatch(r"\|[\s:|-]+", lines[start + 1]):
+        return 0  # no table, or a header without its |---| separator row
+    rows = 0
+    for ln in lines[start + 2:]:  # skip the header and the |---| separator
+        if not ln.startswith("|"):
+            break  # the table ends at the first non-table line
+        rows += bool(ln[1:].split("|")[0].strip())  # a data row needs a non-empty first cell
+    return rows
 
 
 def check(case_dir: Path) -> bool:
