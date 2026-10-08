@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-08T04:14:17+00:00",
+  "generatedAt": "2026-10-08T10:20:21+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -493,7 +493,7 @@
       "category": "agent",
       "name": "QA Engineer",
       "path": "agents/qa-engineer.md",
-      "checksum": "78d986fda7e71b670f2dc7b529562a006be4ea29afbfc93d7ceeebc6c8e47945",
+      "checksum": "5d2717b53a16148c5752d354b1ca28095e82177430bab065f2314d003f636d37",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -521,7 +521,7 @@
       "category": "agent",
       "name": "Release Manager",
       "path": "agents/release-manager.md",
-      "checksum": "3b38e615915ce33b7a34e65a2aa16d34db511074a170a0dee52b0061d8432ecb",
+      "checksum": "60ca50f61abfe20db6264d1ed4124e7edd39515016efdbd798b65fe4d5881865",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -605,7 +605,7 @@
       "category": "agent",
       "name": "Security Engineer",
       "path": "agents/security-engineer.md",
-      "checksum": "2c9b3ee5661ef4e9dbc309e8d342f7b240e5576e93075219f992ef1ccb6f2fa3",
+      "checksum": "94b05a9af6febb8efbffc589f57f271340a6c6fc9e20e4947a87436262c7f2d4",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -661,7 +661,7 @@
       "category": "agent",
       "name": "Tech Lead",
       "path": "agents/tech-lead.md",
-      "checksum": "643c1d8fb8a0f7e4b0267a7cff53f43ae947ed4f7803453f388e217647049be7",
+      "checksum": "b41383baa8057414d05c9e8f2377a464d02f26fa3feee3f9186e4965be3cab65",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1137,7 +1137,7 @@
       "category": "command",
       "name": "prepare-release",
       "path": "commands/prepare-release.md",
-      "checksum": "73df75f399db4f8dbb4199f86c81abb6f0bf22dcf0d8150d886f2128ce0da64d",
+      "checksum": "54aa58e78b04d0f09f37b155fc198238da77625c495cdf771b7d4b70fb552acf",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1613,7 +1613,7 @@
       "category": "skill",
       "name": "code-review",
       "path": "skills/code-review/SKILL.md",
-      "checksum": "1bdc568b4449d1c9977623e264bc6daffb7e23955e564d033514d661628e8454",
+      "checksum": "6f3e5a11ec7345d0a0d3bc23f94480b38da4dc55b8aa7d9d8c49a90e393bbf6e",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1865,7 +1865,7 @@
       "category": "skill",
       "name": "project-planning",
       "path": "skills/project-planning/SKILL.md",
-      "checksum": "bf5fc6076f8c50568976b99e39d0c97cbec8add775f40c98dbc8cbe17c4b8c84",
+      "checksum": "a34927380a28b3ffbe774fda2491e9cc30750880f102b21525245c2ec963705a",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [

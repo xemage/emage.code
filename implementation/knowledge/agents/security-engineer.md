@@ -161,7 +161,7 @@ When this agent runs `/security-audit`, that command's § Severity Classificatio
 
 ## VERDICT Format
 
-Every security audit MUST conclude with a structured verdict:
+Every security audit MUST conclude with a structured verdict. This block accompanies, and does not replace, the `validation-gates` skill's `## Gate Verdict` block (§ Verdict Format) for the gate the audit is run for: `**Gate:** security` at the Security gate (that skill's § Gate Types), or `**Gate:** architecture` where the orchestrator delegates an architecture review to this agent (`orchestrator` agent § Validation Gates). When this agent runs `/security-audit`, the block also accompanies that command's `## VERDICT`, the command's declared output. The `**Status**` in the Summary of § Security Review Report Format, the gate verdict of § Security Gate Protocol, this block and those blocks record the audit's one verdict, so they carry the same value:
 
 ```markdown
 ## VERDICT: [PASS | CONDITIONAL_PASS | FAIL]
