@@ -2,8 +2,9 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T597 | Golden realignment after P32 (FU-P32-G) under a user-approved v18 | qa-engineer | pending | P2 | T596 | 2026-10-08 |
 
-> **0 active rows. `plan-108` is complete:** P32 is applied (T596, MR !515). Every plan is `plan-<NNN>-<slug>.md`, with `<ID>` defined in `plan-approve-execute`, and there is one release-notes document at `docs/releases/v<VERSION>.md`. Baseline v17. Root drift is 52 declared paths; the next root refresh needs the user's approval. Open: FU-P32-G (golden realignment; needs a user-authorized v18). Parked: P33, P44, L4/X5, plan-106 §3, P41 O1–O5, P32 O1–O6.
+> **1 active row (`plan-109`).** T597 realigns five open golden cases with the P32 plan-path convention, under a file-scoped protected-path grant. The user pre-approved v18 (2026-10-08), which the orchestrator writes after verifying T597. Root refresh 8 is in MR !517. Parked: P33, P44, L4/X5, plan-106 §3, P41 O1–O5, P32 O1–O6.
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
