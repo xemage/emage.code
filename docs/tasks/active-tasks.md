@@ -2,8 +2,9 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T598 | Rule P33 (poc-guidelines owner items and the three debt registers) under ADR-008 (decision only) | solution-architect | pending | P2 | — | 2026-10-08 |
 
-> **0 active rows. `plan-109` is complete:** root refresh 8 is merged (MR !517, drift 0), and FU-P32-G is closed (T597, MR !519) with the user-approved evaluator-hash baseline v18 (`tests_golden 2f0a786b…`). Parked: P33, P44, L4/X5, plan-106 §3, P41 O1–O5, P32 O1–O6, and the plan-109 §3 observations.
+> **1 active row (`plan-110`).** T598 rules P33: the undefined PoC root, the Debt Inventory severity column, the Legacy section and the three debt registers. It is decision only; any `poc-guidelines` (tier 1) or command edit is a user decision. Baseline v18; root drift 0. Parked: P44, L4/X5, and small observations.
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
