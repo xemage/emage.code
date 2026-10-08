@@ -39,7 +39,8 @@ Release type: {{input}}
    (`docs/releases/v<version>.md`) as a top-level `## RELEASE VERDICT` section. That document is
    the block's home — not the release checkpoint from step 6. `docs/releases/_template.md`
    carries the slot, and `scripts/verify-release-docs.py --tag v<version>` checks the section is
-   present when the tag is cut:
+   present when the tag is cut. The verdict is issued by `@release-manager`, the Release gate's
+   executor (skill `validation-gates` § Gate Types; `orchestrator` agent § Validation Gates):
 
 ```
 ## RELEASE VERDICT
@@ -53,7 +54,7 @@ Release type: {{input}}
 - **Quality gates passed**: [list gates: code-review, security-audit, test-coverage, ...]
 - **Quality gates failed**: [list any failed gates]
 - **Blocker IDs**: [if FAIL — list blocking issues with owners]
-- **Release manager**: orchestrator
+- **Release manager**: release-manager
 - **Timestamp**: <ISO-8601>
 ```
 

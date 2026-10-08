@@ -41,10 +41,13 @@ conventions this section summarizes. When reviewing code:
 7. **Documentation**: Public API documented, complex logic explained
 
 ### Review Feedback Format
+
+The `### Status:` below is the review's verdict, in the values of `AGENTS.md` § Validation Gates, and carries the same value as the `## VERDICT:` of § Review Verdict Format. For an open point, and for a review that cannot conclude, follow skill `code-review` § Feedback Format.
+
 ```markdown
 ## Code Review: [Feature/MR Title]
 
-### Status: [Approved | Changes Requested | Needs Discussion]
+### Status: [PASS | CONDITIONAL_PASS | FAIL]
 
 ### Summary
 [Overall assessment]

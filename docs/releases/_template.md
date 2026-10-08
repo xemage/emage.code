@@ -77,5 +77,5 @@ declared home for the block; fill in every field before the tag is cut.
 - **Quality gates passed**: [list gates: code-review, security-audit, test-coverage, ...]
 - **Quality gates failed**: [list any failed gates]
 - **Blocker IDs**: [if FAIL — list blocking issues with owners]
-- **Release manager**: orchestrator
+- **Release manager**: release-manager
 - **Timestamp**: <ISO-8601>
