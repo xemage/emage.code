@@ -29,3 +29,9 @@ The orchestrator writes it after independent verification.
 | `orchestrator:249` pointing at `:205` (P41 O4); `scrum-master` task protocol (P41 O2) | Content judgements. |
 | Narrator `<type>-vN.md` boilerplate; scan scope; `/evaluate-poc` severity source; category sets (P33 O1, O2, O5, O6) | Ruling needed. |
 | `poc-orchestrator:102` indentation (P33 O4) | Cosmetic. Fixing it would force another root refresh; it waits for the next change to that file. |
+
+## 3. Outcome (2026-10-08)
+
+- **T601 merged** (MR !530, `develop` `a418839`), together with evaluator-hash baseline **v20**. The user approved
+  v20, and the orchestrator wrote it after verifying the work independently. The five mechanical notes are closed.
+- **The queue is empty**, and plan-112 is complete. The notes in §2 stay parked.
