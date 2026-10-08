@@ -1,6 +1,6 @@
 # Plan: <slug>
 
-> Filename convention: `plan-<slug>.md` (e.g. `plan-payment-feature.md`).
+> Filename convention: `plan-<ID>.md`, with `<ID>` as the `plan-approve-execute` skill § File Location defines it (e.g. `plan-042-payment-feature.md`).
 > Replace this template's content; do not delete the headings.
 
 ## Goal
