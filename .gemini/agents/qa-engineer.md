@@ -108,6 +108,8 @@ tests/
 
 ## Validation Gate Protocol
 
+The QA gate is the `validation-gates` skill's **Integration** gate (§ Gate Types). Its verdict is recorded in that skill's `## Gate Verdict` block (§ Verdict Format), with `**Gate:** integration`. The gate verdict of item 1 and the `## VERDICT:` of § Structured Test Report accompany that block and do not replace it. All of them record the gate's one verdict, so they carry the same value.
+
 1. Every QA run must end with a gate verdict:
    - `pass`, `conditional_pass`, or `fail`.
 2. `fail` conditions:

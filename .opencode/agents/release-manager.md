@@ -162,7 +162,7 @@ feature/b ─────────●───┘
 
 ## Release Gate VERDICT
 
-Every release decision MUST conclude with a structured verdict:
+Every release decision MUST conclude with a structured verdict. The release decision is the `validation-gates` skill's **Release** gate (§ Gate Types), so this block accompanies, and does not replace, that skill's `## Gate Verdict` block (§ Verdict Format), with `**Gate:** release`. When the release is prepared with `/prepare-release`, that command's `## RELEASE VERDICT` section in the release notes document (its step 7) is the gate's published rendering: this block does not replace it and is not a second `## RELEASE VERDICT` section in that document. All of them record the gate's one verdict, so they carry the same Status:
 
 ```markdown
 ## RELEASE VERDICT: [PASS | CONDITIONAL_PASS | FAIL]

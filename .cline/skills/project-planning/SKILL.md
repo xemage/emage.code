@@ -204,23 +204,12 @@ When a plan is approved, the sprint backlog tasks MUST be decomposed into entrie
 
 **Decomposition procedure:**
 
-1. For each task in the approved sprint backlog, create an entry in `active-tasks.md`:
-   ```markdown
-   ### T{ID}: {Title}
-   - **Status:** pending
-   - **Assignee:** {role}
-   - **Priority:** must | should | could
-   - **Points:** {N}
-   - **Sprint:** {sprint-name}
-   - **Depends on:** [T{ID}, ...] or none
-   - **Artifact refs:** [{artifact-version}, ...]
-   - **Created:** {YYYY-MM-DD}
-   ```
+1. For each task in the approved sprint backlog, the orchestrator creates the task (`AGENTS.md` § Task Protocol: "Only orchestrators create/transition tasks"). An agent other than an orchestrator that applies this skill proposes the tasks to the orchestrator and does not write the ledger. Each task gets:
+   - a row in `active-tasks.md` with the columns `ID | Title | Owner | Status | Priority | Depends on | Last update`, Status `pending`, and a Priority of `P0`, `P1` or `P2` (`AGENTS.md` § Task Protocol), which the orchestrator sets. The sprint backlog's Must / Should / Could is not a value of that column;
+   - a brief at `docs/tasks/task-<ID>.md` (objective, inputs, outputs, acceptance criteria), which also records the task's sprint, points and artifact references, for which the row has no column.
 
 2. Assign sequential TASK IDs continuing from the last used ID.
 3. Record dependency links between tasks (e.g., frontend task depends on API contract task).
 4. Sync each new task to a GitLab issue (see gitlab-management skill).
 
-**Task lifecycle:**
-- `pending` → `in-progress` → `review` → `done` (moved to `completed-tasks.md`)
-- `pending` → `blocked` (when a `[BLOCKER]` is raised) → `in-progress` (when blocker resolved)
+**Task lifecycle:** a task's states are those of `AGENTS.md` § Lifecycle States: `pending`, `in_progress`, `blocked`, `in_review`, `done` and `cancelled`. Only an orchestrator transitions a task (`AGENTS.md` § Task Protocol). A task is set to `blocked` when a `[BLOCKER]` is raised, and back to `in_progress` when the blocker is resolved. A task that reaches `done` or `cancelled` is moved to `completed-tasks.md` in the same edit (`AGENTS.md` § Task Protocol). The allowed transitions, and the archive procedure, are those of skill `task-management` (§ Status Lifecycle, § Complete a Task).
