@@ -2,9 +2,8 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T594 | Apply the P41 ruling (verdict renderings, second vocabularies, project-planning, release executor): nine edits | backend-developer | pending | P2 | T593 | 2026-10-08 |
 
-> **1 active row (`plan-107`).** T594 applies the P41 ruling: G3 notes, G6 vocabularies and G7 `project-planning` edits, plus the user's Q-G4 decision ('Orchestrator runs, RM decides', which changes the `/prepare-release` executor field). Baseline v17; root drift 0. Parked: P32 (now including G5 and the G7 plan path), P33, P44, L4/X5, plan-106 §3, and P41 observations O1–O5.
+> **0 active rows. `plan-107` is complete:** P41 is applied (T594, MR !510). The G3 notes, the G6 vocabularies and the G7 `project-planning` edits are in place, and `/prepare-release` now names `release-manager` as the Release-gate executor (the user's Q-G4 decision). Baseline v17. Root drift is 44 declared paths; the next root refresh needs the user's approval. Parked: P32 (including G5 and the G7 plan path), P33, P44, L4/X5, plan-106 §3, and P41 observations O1–O5 (plan-107 §4).
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
