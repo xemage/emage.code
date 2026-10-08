@@ -29,3 +29,12 @@ The task has a file-scoped `protected-paths-v1.md` §5 grant. It changes no `che
 - the results are unchanged;
 - the scorecard is unchanged;
 - exactly two hash tests fail.
+
+## 3. Outcome (2026-10-08)
+
+- **T592 is merged** (MR !506, `develop` `a404dbc`), together with evaluator-hash baseline **v17**. The user
+  approved v17, and the orchestrator wrote it after verifying the work independently. FU-8 is closed.
+- **Parked observation.** In `validate-workflow-gate-verdict-sources/brief.md:193`, the provenance grep result
+  ("0 matches") is stated as of `a6be6b0`. A re-run today would also match `docs/tasks/task-T572.md`. The statement
+  is not false as written. Restating it would need a new grant and a v18.
+- **The queue is empty**, and plan-106 is complete.

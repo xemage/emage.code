@@ -2,9 +2,8 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T592 | Refresh residual golden staleness (FU-8) under a user-approved v17 | qa-engineer | pending | P2 | — | 2026-10-08 |
 
-> **1 active row (`plan-106`).** T592 refreshes the residual golden staleness (FU-8) under a file-scoped protected-path grant. The user pre-approved evaluator-hash v17 (2026-10-08), which the orchestrator writes after verifying T592. Root refresh 6 is in MR !504. Parked: P32, P33, P41, P44, L4/X5.
+> **0 active rows. `plan-106` is complete:** root refresh 6 is merged (MR !504, drift 0), and FU-8 is closed (T592, MR !506) with the user-approved evaluator-hash baseline v17 (`tests_golden 05fb8b07…`). Parked: P32, P33, P41, P44, L4/X5, and the scoped provenance grep note in validate-workflow `brief.md:193` (plan-106 §3).
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
