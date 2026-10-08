@@ -2,9 +2,8 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T596 | Apply the P32 path-conventions ruling (plan-<NNN>-<slug>.md everywhere; one release-notes document at docs/releases/) | backend-developer | pending | P2 | T595 | 2026-10-08 |
 
-> **1 active row (`plan-108`).** T596 applies the user's P32 decisions: every plan is `plan-<NNN>-<slug>.md`, with `<ID>` defined once in `plan-approve-execute`, and there is one release-notes document at `docs/releases/v<VERSION>.md`. The golden realignment FU-P32-G needs a user-authorized v18. Baseline v17; root drift 0. Parked: P33, P44, L4/X5, plan-106 §3, P41 O1–O5, P32 O1–O6.
+> **0 active rows. `plan-108` is complete:** P32 is applied (T596, MR !515). Every plan is `plan-<NNN>-<slug>.md`, with `<ID>` defined in `plan-approve-execute`, and there is one release-notes document at `docs/releases/v<VERSION>.md`. Baseline v17. Root drift is 52 declared paths; the next root refresh needs the user's approval. Open: FU-P32-G (golden realignment; needs a user-authorized v18). Parked: P33, P44, L4/X5, plan-106 §3, P41 O1–O5, P32 O1–O6.
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /

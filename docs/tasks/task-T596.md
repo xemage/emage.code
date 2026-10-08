@@ -2,7 +2,7 @@
 
 **ID:** T596
 **Owner:** backend-developer
-**Status:** in_review
+**Status:** done
 **Priority:** P2
 **Tier:** mechanical
 **Affects:** skill/plan-approve-execute, skill/project-planning, skill/release-workflow, skill/validation-gates, agent/orchestrator, agent/poc-orchestrator, command/new-feature, command/new-project

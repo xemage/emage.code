@@ -58,3 +58,18 @@ The following stay parked:
   It goes to the user after T596.
 - **Parked:** observations O1–O6 (v3 §8). O1 is the version-suffix question, which includes the template's
   `plan-<slug>-v2.md` revision line.
+
+## 5. Completion (2026-10-08)
+
+- **T596 is merged** (MR !515, `develop` `2cf54ec`). The 13 edits are applied verbatim and were verified
+  independently.
+- **Erratum to `path-conventions-v3.md`.** §7 row 33 expects `## RELEASE VERDICT` in release-workflow at 1 line /
+  1 occurrence after R-2. The correct count is 1 line / 2 occurrences: R-2's text names it twice on one line.
+- **Root drift** is 52 declared paths. The next root refresh needs the user's approval.
+- **Open: FU-P32-G**, the golden realignment. It covers:
+  - the `new-feature-plan-doc-compliant` glob, fixture name and brief;
+  - the `new-project-plan-doc-and-lifecycle-states` brief quote and docstring;
+  - optional fixture re-copies.
+
+  It needs a protected-path grant and a v18 that the user has not yet authorized.
+- The queue is empty, and plan-108 is complete.
