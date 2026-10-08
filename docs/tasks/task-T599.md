@@ -2,7 +2,7 @@
 
 **ID:** T599
 **Owner:** backend-developer
-**Status:** pending
+**Status:** in_review
 **Priority:** P2
 **Tier:** mechanical
 **Affects:** instruction/poc-guidelines, agent/poc-orchestrator, agent/technical-debt-narrator, skill/technical-debt-tracking

@@ -14,5 +14,32 @@
     "Emptied 2026-10-08 by the seventh user-approved --projections-only refresh (44 paths: the T594 P41 verdict-rendering, vocabulary, project-planning and release-executor edits).",
     "Emptied 2026-10-08 by the eighth user-approved --projections-only refresh (52 paths: the T596 P32 plan-path and release-notes edits)."
   ],
-  "drift": []
+  "drift": [
+    ".claude/agents/poc-orchestrator.md",
+    ".claude/agents/technical-debt-narrator.md",
+    ".claude/rules/poc-guidelines.md",
+    ".claude/skills/technical-debt-tracking/SKILL.md",
+    ".cline/skills/technical-debt-tracking/SKILL.md",
+    ".clinerules/poc-guidelines.md",
+    ".cursor/agents/poc-orchestrator.mdc",
+    ".cursor/agents/technical-debt-narrator.mdc",
+    ".cursor/rules/poc-guidelines.mdc",
+    ".cursor/skills/technical-debt-tracking/SKILL.md",
+    ".gemini/agents/poc-orchestrator.md",
+    ".gemini/agents/technical-debt-narrator.md",
+    ".gemini/instructions/poc-guidelines.md",
+    ".gemini/skills/technical-debt-tracking/SKILL.md",
+    ".github/agents/poc-orchestrator.agent.md",
+    ".github/agents/technical-debt-narrator.agent.md",
+    ".github/instructions/poc-guidelines.instructions.md",
+    ".github/skills/technical-debt-tracking/SKILL.md",
+    ".opencode/agents/poc-orchestrator.md",
+    ".opencode/agents/technical-debt-narrator.md",
+    ".opencode/instructions/poc-guidelines.md",
+    ".opencode/skills/technical-debt-tracking/SKILL.md",
+    ".pi/agents/poc-orchestrator.md",
+    ".pi/agents/technical-debt-narrator.md",
+    ".pi/instructions/poc-guidelines.md",
+    ".pi/skills/technical-debt-tracking/SKILL.md"
+  ]
 }

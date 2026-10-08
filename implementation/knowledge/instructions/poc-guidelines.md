@@ -113,6 +113,8 @@ response = requests.post(external_api_url, json=payload, timeout=10)
 Before a PoC can be marked as complete, a **debt scorecard** must be produced. This is a summary document that inventories all shortcuts taken.
 
 ### Scorecard Format
+The PoC root is the top-level directory of the PoC's code: the repository root when the PoC has its own repository, otherwise the directory that the PoC plan (`docs/plans/plan-<ID>.md`) names as the PoC root. Each PoC has its own PoC root and its own scorecard.
+
 Create a `POC-DEBT-SCORECARD.md` file in the PoC root with this structure:
 
 ```markdown
@@ -126,11 +128,11 @@ Create a `POC-DEBT-SCORECARD.md` file in the PoC root with this structure:
 
 ## Debt Inventory
 
-| # | File | Line | Category | Description | Production Effort |
-|---|------|------|----------|-------------|-------------------|
-| 1 | src/db.py | 12 | Security | Hardcoded local database URL (no credentials) | S — read URL from configuration, credentials from vault |
-| 2 | src/api.py | 34 | Validation | Hand-written inline input validation instead of the shared schema layer | M — move checks into the request-schema layer |
-| 3 | src/sync.py | 56 | Reliability | No retry logic | M — add retry with backoff |
+| # | File | Line | Category | Description | Severity | Production Effort |
+|---|------|------|----------|-------------|----------|-------------------|
+| 1 | src/db.py | 12 | Security | Hardcoded local database URL (no credentials) | Critical | S — read URL from configuration, credentials from vault |
+| 2 | src/api.py | 34 | Validation | Hand-written inline input validation instead of the shared schema layer | Critical | M — move checks into the request-schema layer |
+| 3 | src/sync.py | 56 | Reliability | No retry logic | Medium | M — add retry with backoff |
 
 ## Summary
 - Total debt items: N
@@ -147,9 +149,10 @@ Create a `POC-DEBT-SCORECARD.md` file in the PoC root with this structure:
 2. Each item must have an estimated production effort: `S` (small), `M` (medium), `L` (large)
 3. The scorecard must be reviewed by the Tech Lead before the PoC is closed
 4. No PoC task may be marked complete without a finalized scorecard
+5. Each item must have a severity: `Critical` (must fix before production), `Medium` (should fix before production) or `Low` (nice to have). In the `## Summary`, `Total debt items` is the number of Debt Inventory rows, and each tier's count is the number of rows with that `Severity`. This severity is the debt scale, not the `SECURITY:*` scale of `security-guidelines.md` § Security Review Workflow: a debt item's `Critical` is not a `SECURITY:CRITICAL` grade, and no tag or severity here makes a shortcut that `security-guidelines.md` forbids permissible (§ Allowed Shortcuts). A security finding keeps its `SECURITY:*` grade and the handling that grade requires (`poc-orchestrator.md` § Security Findings), and its debt severity never lowers that handling: a blocking security finding is never recorded as debt, and a `SECURITY:MEDIUM` finding, whose fix is due no later than the production handoff, is `Critical` here
 
-## Required Debt Marking (Legacy)
-When introducing shortcuts, document them with `DEBT:` comments and update `TECHNICAL-DEBT.md`.
+## Narrative Debt Register (`TECHNICAL-DEBT.md`)
+Every PoC must also produce `TECHNICAL-DEBT.md`, a narrative register that explains the PoC's debt to the team that inherits it. `@technical-debt-narrator` writes it at the PoC's Debt Narration step (`poc-orchestrator.md` § PoC Workflow), from the `POC-DEBT` tags and the debt scorecard. It is not a scorecard and does not replace one: every shortcut is still recorded by its `POC-DEBT` tag when it is introduced (§ Inline Debt Tags) and inventoried in the debt scorecard (§ Debt Scorecard).
 
 > **Note:** The `POC-DEBT` tag format above supersedes the legacy `DEBT:` comment format. Use `POC-DEBT` tags for all new PoC work.
 
