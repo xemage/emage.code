@@ -2,9 +2,9 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T593 | Rule P41 (remaining verdict renderings and editorial items G3–G9) under ADR-008 and ADR-007 (decision only) | solution-architect | pending | P2 | — | 2026-10-08 |
+| T594 | Apply the P41 ruling (verdict renderings, second vocabularies, project-planning, release executor): nine edits | backend-developer | pending | P2 | T593 | 2026-10-08 |
 
-> **1 active row (`plan-107`).** T593 rules P41 (G3–G9): the six remaining verdict renderings, the release gate executor, the release-notes path, the second verdict vocabularies and the `project-planning` defects. It is decision only; the user decides any P5 escalation or command change. Baseline v17; root drift 0. Parked: P32, P33, P44, L4/X5, and the plan-106 §3 note.
+> **1 active row (`plan-107`).** T594 applies the P41 ruling: G3 notes, G6 vocabularies and G7 `project-planning` edits, plus the user's Q-G4 decision ('Orchestrator runs, RM decides', which changes the `/prepare-release` executor field). Baseline v17; root drift 0. Parked: P32 (now including G5 and the G7 plan path), P33, P44, L4/X5, plan-106 §3, and P41 observations O1–O5.
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
