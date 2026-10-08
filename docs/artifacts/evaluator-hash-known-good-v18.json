@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "algorithm": "sha256",
+  "digests": {
+    "tests_golden": "2f0a786bc0f347d2c463affbe295bc86fba63df6de8f051b284a0d3518de6ef2",
+    "scripts_scorecard": "45346c178c7f6d92101130d898f55dfaad908aa7e5ae669ce1faac99a51192d6"
+  },
+  "computed_from_commit": "2e48d8bfcaa45c1d65b90ff7216714a0b4c0b983",
+  "computed_at": "2026-10-08T15:29:56Z",
+  "protected_paths": {
+    "tests_golden": "tests/golden",
+    "scripts_scorecard": "scripts/scorecard.py"
+  },
+  "supersedes": "evaluator-hash-known-good-v17.json",
+  "reason": "T597 (plan-109, FU-P32-G) realigned five open golden cases with the user's P32 plan-path decision (plan-<NNN>-<slug>.md, applied by T596 / MR !515) under the file-scoped grant in docs/tasks/task-T597.md (protected-paths-v1.md \u00a75). new-feature-plan-doc-compliant: the check() glob changed from feature-*.md to plan-*.md (same strength: exactly one matching plan with the four required headers), the fixture was renamed to plan-001-audit-log-export.md (byte-identical), and the brief and docstring now quote /new-feature step 1 verbatim. new-project-plan-doc-and-lifecycle-states: the quotes and comment were updated and the fixture renamed to plan-001-taskflow.md (byte-identical); PLAN_NAME_RE is unchanged. new-poc-plan-hypothesis-format: the fixture was renamed to plan-001-local-note-search.md (byte-identical) and the brief updated. plan-required-sections-compliant: the brief's stale path description was corrected. validate-workflow-gate-verdict-sources: the validation-gates fixture was re-copied (cmp-identical after P-10) and a provenance bullet added. A scope extension authorized the two string literals in tests/functional/test_golden_harness_scoring.py (:77, :83), which load the real new-feature expect.py; the :83 test was otherwise vacuous. That file is not a protected path and is not part of this digest. The orchestrator independently confirmed: every edited expect.py is AST-identical apart from docstrings and the one glob; all case.yaml files are unchanged; the three renames are R100; both validate-workflow fixtures are cmp-identical; the quotes are verbatim; its own discrimination probe returns True for the control and False for an old-style name, two plans and a missing header; case results are unchanged (all True); scorecard --check is OK at 34 cases, 26 pass, 0 regressions; held-out isolation passes; and the suite showed exactly the two evaluator-hash failures. scripts_scorecard is byte-identical to v17 and to every version back to v5. The implementing agent committed locally (2e48d8b) but neither pushed nor refreshed this baseline. The user explicitly approved this v18 on 2026-10-08 ('Approving v18 baseline'), the eighteenth escalation and the eighteenth respected; the orchestrator wrote it only after independent verification.",
+  "update_policy": "Manual only, never automatic. Any future legitimate update goes through the exception path in docs/artifacts/protected-paths-v1.md \u00a75 and produces evaluator-hash-known-good-v19.json. This file (v18) is never edited in place, and v1 through v17 are kept unmodified as the historical record. See docs/artifacts/evaluator-hash-check-v1.md for the full policy."
+}

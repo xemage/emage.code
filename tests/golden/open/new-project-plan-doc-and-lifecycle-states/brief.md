@@ -13,7 +13,7 @@ are produced.
 `## Phase 5: Validation & Artifacts` step 19, verbatim:
 
 > 1. **Create a plan document** with task decomposition and dependency graph
->    - Write the plan to `docs/plans/plan-<project-slug>.md`
+>    - Write the plan to `docs/plans/plan-<ID>.md`, with `<ID>` as the `plan-approve-execute` skill § File Location defines it
 >    - Include: objective, scope, task DAG (Mermaid), risk assessment, estimated phases
 >    - Reference protocol: `plan-approve-execute` skill § The Three Phases › Phase 1: Plan (Plan Document Format)
 
@@ -69,7 +69,8 @@ not satisfied by a fenced block with nodes and no dependencies, which is a list 
   cases for one reason, which makes the board harder to read rather than better covered.
 
 ## Pass condition
-`fixture/docs/plans/` contains exactly one file named `plan-<slug>.md`; it carries headings for all
+`fixture/docs/plans/` contains exactly one file whose name `PLAN_NAME_RE` (`plan-<slug>.md`, see
+§ Provenance) accepts, here `plan-001-taskflow.md`; it carries headings for all
 five declared contents (objective, scope, task DAG / dependency graph, risk, phases) and at least one
 ```` ```mermaid ```` fence declaring a `graph`/`flowchart` with at least one edge; and every status
 cell in `fixture/docs/tasks/active-tasks.md` — with the status column located from the header row — is
@@ -84,7 +85,8 @@ ls docs/plans | grep -cE '^plan-[0-9]{3}-'      ->  75
 ls docs/plans | grep -vE '^plan-[0-9]{3}-'      ->  _template.md
 ```
 
-Zero files match `/new-project`'s declared `plan-<project-slug>.md` shape without an intervening
+When surveyed, before `T596`, step 1 declared `plan-<project-slug>.md`, and zero files matched that
+shape without an intervening
 sequence number, because every real plan here is produced by `/plan` and follows *its* naming
 convention. Nothing in this repository was produced by `/new-project` — this harness's own
 development has never been bootstrapped by it — so there was no real plan document or initial task
@@ -92,10 +94,14 @@ ledger to source either fixture from. That absence is documented rather than wor
 following `new-feature-plan-doc-compliant/brief.md`'s precedent, which recorded the same finding for
 `/new-feature`'s `feature-<slug>.md`.
 
-Note that the check's `PLAN_NAME_RE` (`plan-<slug>.md`) would also accept a real
-`plan-072-phase9-golden-case-coverage.md`, since `072-phase9-golden-case-coverage` is a valid slug.
-That is intentional: the declared pattern genuinely admits both, and narrowing it to *exclude* the
-convention this repo actually uses would be inventing a contract rather than checking one.
+Since `T596` (P32), step 1 declares `plan-<ID>.md`, with `<ID>` a three-digit number, a hyphen and
+a slug of lowercase letters, digits, hyphens and dots (`plan-approve-execute` § File Location): the
+numbered prefix the survey above counts. The check's `PLAN_NAME_RE` (`plan-<slug>.md`) predates
+that form and is unchanged, so the two differ. It accepts every name of that form whose slug has no
+dot, such as the fixture's `plan-001-taskflow.md` (renamed by `T597` from `plan-taskflow.md`,
+contents byte-identical) and a real `plan-072-phase9-golden-case-coverage.md`. It also accepts an
+unnumbered `plan-taskflow.md`, which the form does not admit, and it rejects a slug containing a
+dot, which the form admits. Narrowing or widening it is a separate check decision, not taken here.
 
 The project described (TaskFlow) is illustrative. Its content is not graded — the check asserts the
 plan's structure and the ledger's state vocabulary, never whether the risks are the right risks or

@@ -2,7 +2,7 @@
 
 **ID:** T597
 **Owner:** qa-engineer
-**Status:** pending
+**Status:** in_review
 **Priority:** P2
 **Tier:** standard
 **Affects:** —
@@ -51,6 +51,12 @@ This task realigns them so that:
 
 Line numbers come from `path-conventions-v3.md` §6 at `c152eb7`. Re-read each file before editing, and match by text,
 not by line number.
+
+**Scope extension (orchestrator, 2026-10-08):** because of BLK-T597-1, edits to
+`tests/functional/test_golden_harness_scoring.py` are authorized, limited to the string literals at `:77` and `:83`
+only (`"docs/plans/feature-audit-log.md"` → `"docs/plans/plan-001-audit-log.md"`).
+That file loads the real `new-feature-plan-doc-compliant/expect.py`, so the glob change above made `:77` fail and `:83`
+pass vacuously. It is not a protected path. Nothing else in that file is in scope.
 
 ## 3. The changes
 
