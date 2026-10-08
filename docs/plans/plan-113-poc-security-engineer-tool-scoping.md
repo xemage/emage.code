@@ -3,7 +3,7 @@
 **Created:** 2026-10-08
 **Based on:** the user's instruction of 2026-10-08, "Continue with the next best step";
 `docs/artifacts/poc-security-reviewer-blocking-v3.md` §12 X5; plan-099.
-**Scopes:** `T602`, `T603`.
+**Scopes:** `T602`, `T603`, `T604`.
 
 ## 1. Why now
 
@@ -37,3 +37,17 @@ The notes in plan-112 §2, and the other X-items (X1–X4, X6–X8).
   the hardened invocation. Git's `-z -n` layout is `path NUL line NUL text`.
 - **Next: T603** (backend-developer, P2) implements v2: the new `poc-security-audit` server with two tools, its
   tests, the registrations, and then the grant swap and held edits.
+
+## 5. T603 review and follow-up (2026-10-09)
+
+- **Code review round 1: FAIL** (P-1 HIGH, P-2..P-4 MEDIUM, 8 LOW). The orchestrator tested the claims on git 2.43.0:
+  P-1 did **not** reproduce, P-2 and P-3 did. The work went back for retry 1.
+- **Round 2: CONDITIONAL_PASS.** P-1 was re-graded to LOW. Details are in
+  `security-review-poc-security-audit-code-v1.md`.
+- **Condition C-1 remediation plan.** The unquoted `KEY=value` rule gap and the untracked-`.env*` name check are
+  owned by `@orchestrator`, with **T604** as the deadline. T604 must be done no later than the production handoff of
+  any PoC that relies on the scanner.
+- **Next:** T604 (backend-developer, P2) covers C-1, the LOW findings L-1, L-2 and L-7, and the extra token formats.
+  The unquoted-rule false-positive trade-off goes to the user first.
+- **User action remaining after T603 merges:** allow `mcp__poc-security-audit__*` in `.claude/settings.json`. That
+  file is client-owned and is never auto-edited. Until then the tools are denied, which fails closed.

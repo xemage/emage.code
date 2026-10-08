@@ -106,6 +106,19 @@ servers:
     command: python3
     args: ["-m", "implementation.runtime.security.audit_server"]
 
+  poc-security-audit:
+    # T603 -- fixed-command git-scan server for @poc-security-engineer, per
+    # docs/artifacts/poc-security-engineer-tool-scoping-v2.md §3. A SEPARATE server from
+    # `security-audit` (that one stays at exactly four tools). Exactly two tools:
+    # scan_secrets and ref_containment -- fixed argv, no matched text, stderr or argv in
+    # any result. `--allowed-root .` is fixed at launch (the workspace root, the cwd the
+    # client launches from); it is never a tool parameter. No `env:` block: local git
+    # subprocess calls only, no network call, no API key.
+    tags: [extended]
+    transport: stdio
+    command: python3
+    args: ["-m", "implementation.runtime.security.poc_audit_server", "--allowed-root", "."]
+
   filesystem:
     tags: [extended]
     transport: stdio

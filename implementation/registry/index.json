@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-08T16:52:49+00:00",
+  "generatedAt": "2026-10-08T22:46:01+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -409,7 +409,7 @@
       "category": "agent",
       "name": "PoC Security Engineer",
       "path": "agents/poc-security-engineer.md",
-      "checksum": "ba7a1c6bda585c5f41552eb5927aaf8cbe27df70408fd3d31d704c75735381a3",
+      "checksum": "99900640df2956a3c178fe4fd3d5b7d4fec736868e8f41de3f14cb567e1be816",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
