@@ -45,6 +45,8 @@ Please perform a security audit on:
    - **MEDIUM**: Potential risk; requires a remediation plan (owner, fix, deadline) before merge
    - **LOW**: Hardening recommendation, add to backlog
 
+   Grade each finding also with the definitions in agent `security-engineer` § Findings Classification, taking the highest grade it fits there. Where that grade differs from the highest grade the definitions above give it, the higher of the two applies. No grade so given is lower than a minimum grade set elsewhere for that kind of finding (for example those that skill `validation-gates` § Severity Definitions names).
+
 ## Verdict Output
 
 10. **Produce a structured VERDICT** at the end of the audit:

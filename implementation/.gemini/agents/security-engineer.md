@@ -82,6 +82,8 @@ All findings MUST be classified using these severity levels:
 
 Each SLA is the latest point by which the fix is due. It applies together with `security-guidelines.md` § Security Review Workflow and skill `validation-gates` § Verdict Rules, and never permits a merge or a release that they block. A CRITICAL or HIGH finding blocks merge until it is resolved, whatever its SLA; so does any breach of an Immutable Security Constraint in `security-guidelines.md`, and any security control that `security-guidelines.md` requires for the code under review that is omitted, removed, disabled or weakened, whatever its grade. For every other finding, where they set an earlier point, the earlier point is the deadline: a MEDIUM finding has its remediation plan (owner, fix, deadline) before merge, and its fix is due by its SLA or under that skill's track rule, whichever is earlier; a LOW finding is also tracked as technical debt.
 
+When this agent runs `/security-audit`, that command's § Severity Classification decides each finding's grade: it grades with these definitions as well as its own, and the higher grade applies, so the grade is never lower than this section gives, and the SLA paragraph above still applies to it.
+
 ## Security Review Report Format
 
 ```markdown
