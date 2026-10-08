@@ -199,5 +199,5 @@ which only *mention* the block (artifact §9.1). It is restated here with `tests
 `docs/artifacts/` pruned before traversal, which also keeps it out of `tests/golden/held-out/`:
 
 ```
-find . \( -path ./tests/golden -o -path ./docs/artifacts \) -prune -o -type f -name '*.md' -print0 | xargs -0 grep -l 'WORKFLOW VALIDATION VERDICT' | grep -vE '/commands/|/prompts/|/skills/|/agents/|/workflows/'  ->  0 matches (at develop a6be6b0 plus this change)
+find . \( -path ./tests/golden -o -path ./docs/artifacts \) -prune -o -type f -name '*.md' -print0 | xargs -0 grep -l 'WORKFLOW VALIDATION VERDICT' | grep -vE '/commands/|/prompts/|/skills/|/agents/|/workflows/'  ->  1 match, docs/tasks/task-T572.md (at develop ea9a8a2 plus T601)
 ```

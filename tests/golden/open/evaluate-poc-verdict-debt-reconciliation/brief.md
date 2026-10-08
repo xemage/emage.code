@@ -131,6 +131,13 @@ from T561, where it stayed `True`); a table row's severity `HIGH` with a reconci
 `(CRITICAL: 1, HIGH: 1, MEDIUM: 2, LOW: 1)` breakdown; the same `HIGH` row under a three-tier breakdown;
 effort `XL`. It stays `True` for weak + `INVALIDATED` and `do_not_proceed` with no checklist.
 
+Backlog-format probes (T600, re-run at T601 on scratch copies outside the repo, each mutation confirmed applied,
+all other fixture fields kept valid): the unmodified fixture (6 numbered items) is `True`; the numbered list
+trimmed to 4 is `False`; the backlog replaced by the skill's table with 5 data rows is `True`; the same table
+with 4 data rows is `False`; a table with only the header and separator rows is `False`; a second
+`## ...Backlog...` heading added is `False`; and the pre-T600 `_backlog_size` (numbered items only), run on the
+5-row table, is `False`, which demonstrates the defect T600 fixed.
+
 ## Provenance
 **Hand-authored; no real corpus exists.** No `/evaluate-poc` output has ever been committed here:
 
