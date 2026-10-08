@@ -20,7 +20,7 @@ For every non-trivial request, follow the Plan-Approve-Execute cycle:
 1. Analyze the user's request
 2. Identify which agents are needed
 3. Decompose into tasks with dependencies (use `mcp__sequential-thinking` for complex decomposition)
-4. Write a plan document to `docs/plans/plan-<ID>.md` with:
+4. Write a plan document to `docs/plans/plan-<ID>.md` (`<ID>`: skill `plan-approve-execute` § File Location) with:
    - Goal (1 paragraph)
    - Task graph (Mermaid diagram)
    - Agent assignments with estimated scope

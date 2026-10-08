@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-08T10:20:21+00:00",
+  "generatedAt": "2026-10-08T13:53:53+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -297,7 +297,7 @@
       "category": "agent",
       "name": "Orchestrator",
       "path": "agents/orchestrator.md",
-      "checksum": "ba60ce3a0549c3ed77a07ed6d4323d45378193029f6f70393e317e3ae7d91350",
+      "checksum": "9b69ee24b422bc76b69294cc25575c693ff559025cd376b0aad09e68cc8b4473",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -353,7 +353,7 @@
       "category": "agent",
       "name": "PoC Orchestrator",
       "path": "agents/poc-orchestrator.md",
-      "checksum": "43068b75abee4c08c148a0f3bc4cad7c521d29f7182c782826435f230b944382",
+      "checksum": "b33859a66f3e58b9ccf1062ca4c7787ef754af6a0f133027c1aa28cadfafb9f0",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -997,7 +997,7 @@
       "category": "command",
       "name": "new-feature",
       "path": "commands/new-feature.md",
-      "checksum": "55575b5f3adb03d65024ed90126767a493e1ceb31a842f1c1a6d10335eee0a59",
+      "checksum": "c09a6e42e92334122863ab59a72120a34ab09d5c15b8afc33108a04634152426",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1053,7 +1053,7 @@
       "category": "command",
       "name": "new-project",
       "path": "commands/new-project.md",
-      "checksum": "81660ef2e7245fdd466909cdca4d7a0a65e2a8ab9bb7e53ef0d79324885703c6",
+      "checksum": "8578f2e2d4e648de74e0b267c80a49fd256d62574d40744af8a9ffcb34569c40",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1809,7 +1809,7 @@
       "category": "skill",
       "name": "plan-approve-execute",
       "path": "skills/plan-approve-execute/SKILL.md",
-      "checksum": "927f8370266e623682163324497796aa2bf7d126c76080f62c00d92cf0ae94b1",
+      "checksum": "2d53683b66f08ec4c63a710aa0b551738f8bc74c1379ac4c7eb27185b9c274b7",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1865,7 +1865,7 @@
       "category": "skill",
       "name": "project-planning",
       "path": "skills/project-planning/SKILL.md",
-      "checksum": "a34927380a28b3ffbe774fda2491e9cc30750880f102b21525245c2ec963705a",
+      "checksum": "7f5f6bafbb742242bb1f951b35c35af18cfc49ba337c13685ee552b8eee9f12e",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1949,7 +1949,7 @@
       "category": "skill",
       "name": "release-workflow",
       "path": "skills/release-workflow/SKILL.md",
-      "checksum": "eaeed012239b78af9cc37b8400ab62e3fec1008b4459b14271dbf8104e4b4462",
+      "checksum": "09e135d4d0fce82e818c009ffa151f527dba44cb1c6606b65344e4f3afb37739",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -2145,7 +2145,7 @@
       "category": "skill",
       "name": "validation-gates",
       "path": "skills/validation-gates/SKILL.md",
-      "checksum": "6dd7d87153d74a8a450b9781c14588cea2cb49f9844ef002e9a1807bbf6b386c",
+      "checksum": "f6595ffdb374c6fb12aa31e2a7c90fe19df815630c2b44ad582936033fe8f56d",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [

@@ -159,12 +159,13 @@ All plans produced by this skill feed into the **plan-approve-execute** protocol
 
 ### Plan Document Format and Versioning
 
-Plan documents are versioned artifacts stored under `docs/plans/`:
+Plan documents are versioned artifacts stored under `docs/plans/`, at the path skill `plan-approve-execute` § File Location defines:
 
 ```
-docs/plans/project-plan-v1.md
-docs/plans/project-plan-v2.md
+docs/plans/plan-<ID>.md
 ```
+
+Each version is its own plan document at that path, with its own `<ID>`; the `## Version` and `## Changes from v{N-1}` fields below record which version it is. A superseded version is marked as `plan-approve-execute` § Guidelines describes.
 
 **Plan document structure:**
 ```markdown
