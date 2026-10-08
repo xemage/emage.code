@@ -48,3 +48,10 @@ The fifth `--projections-only` refresh follows the plan-082 §2 procedure. It wa
   - E-B1a in `code-review`
   - E-B1b in `tech-lead`
 - **O1** is ruled in plan-105 (T590).
+
+## 5. Completion (2026-10-08)
+
+- **T589 is merged** (MR !500, `develop` `fad9580`). E-A1, E-B1a and E-B1b were applied verbatim, and the
+  orchestrator verified them independently. Condition C1 is satisfied.
+- **Root drift** is 20 declared paths. The next root refresh needs the user's approval.
+- **plan-104 is complete.** O1 continues in plan-105.
