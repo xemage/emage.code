@@ -57,10 +57,12 @@ document, and the case asserted none of them. `poc-contract-resolution-v1.md` ru
    `docs/plans/plan-<ID>.md`" (quoted above), which is the path its cited protocol uses
    (`poc-orchestrator` § PLAN PHASE (lightweight): "Write a lightweight plan in
    `docs/plans/plan-<ID>.md`"). Under `ADR-007`'s corollary row for a name-or-path-only amendment, the
-   case survives with its fixture moved to the amended form: the plan is now
-   `fixture/docs/plans/plan-001.md` (formerly `poc-local-note-search.md`, contents unchanged).
-   `check()` is unchanged and path-agnostic. It reads whichever single `*.md` sits in
-   `fixture/docs/plans/`, so the rename changes no result.
+   case survives with its fixture moved to the amended form: T565 renamed the plan
+   `fixture/docs/plans/plan-001.md` (formerly `poc-local-note-search.md`, contents unchanged). After
+   `T596` (P32) defined `<ID>` as a three-digit number, a hyphen and a slug (`plan-approve-execute`
+   § File Location), `T597` renamed it `fixture/docs/plans/plan-001-local-note-search.md`, contents
+   byte-identical. `check()` is unchanged and path-agnostic. It reads whichever single `*.md` sits in
+   `fixture/docs/plans/`, so neither rename changes a result.
 2. **The debt scorecard (P12/P29, resolution §3a): resolved.** Step 11 now reads:
 
    >     - Write to `POC-DEBT-SCORECARD.md` in the PoC root, per `poc-guidelines.md` § Debt Scorecard
@@ -96,6 +98,8 @@ typing"); the feasibility step removed; (b) renamed "Build everything"; (b) misl
 plan file added. It stays `True` with the plan renamed `plan-042.md` (path not asserted) and with
 "Evaluate and demo" for "Evaluate & demo". After the T565 rename to `plan-001.md` it is still `True`,
 and it stays `True` with the file renamed back to `poc-local-note-search.md` (path not asserted).
+After the T597 rename to `plan-001-local-note-search.md` it is still `True`, and it stays `True` with
+the file named `plan-001.md` or `poc-local-note-search.md` (path not asserted).
 
 ## Provenance
 **Hand-authored; no real corpus exists.** No `/new-poc` run has ever produced a committed artifact in

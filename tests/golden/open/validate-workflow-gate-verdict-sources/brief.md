@@ -174,12 +174,14 @@ named below; `cmp` against that commit's `implementation/knowledge/` to confirm:
   - frontmatter `maturity: experimental` → `stable` (`T569`).
 - `fixture/implementation/knowledge/skills/validation-gates/SKILL.md` — the one file step 5 now cites.
   First copied at `a6be6b0`; re-copied by `T583` at `develop` `7be9926`, after `T582` (MR !483);
-  re-copied by `T592` at `develop` `f46b42b`, and `cmp` confirmed the re-copy identical to source.
+  re-copied by `T592` at `develop` `f46b42b`; re-copied by `T597` at `develop` `4367dc9`, and `cmp`
+  confirmed each re-copy identical to source.
   Changed in the source since the `T583` copy, none of it read by `check()`:
   - § Verdict Rules: note N1, verdict criteria from the executor's own documents (`T585`).
   - § Severity Definitions: FB1, the tier a security finding takes from its grade (`T587`).
   - § Procedures › 2. Handle a FAIL Verdict: FD1, step 2 also covers excluded security findings (`T587`).
   - § Severity Definitions: E-A1, the pointer to `security-engineer` § Findings Classification (`T589`).
+  - § Gate Input Requirements › Architecture Gate: the plan document's path (`T596`, P32), not read by `check()`.
 
   `check()` reads only § Gate Types and, from § Verdict Format, the first `**Gate:**` field and
   "Every gate MUST produce a verdict". None of these changes touches § Gate Types, adds a

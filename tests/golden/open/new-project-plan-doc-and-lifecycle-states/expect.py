@@ -3,7 +3,8 @@
 
 Contract under test: implementation/knowledge/commands/new-project.md --
   Phase 1 step 1 "Create a plan document with task decomposition and dependency graph -- Write
-  the plan to `docs/plans/plan-<project-slug>.md` -- Include: objective, scope, task DAG
+  the plan to `docs/plans/plan-<ID>.md`, with `<ID>` as the `plan-approve-execute` skill § File Location defines it
+  -- Include: objective, scope, task DAG
   (Mermaid), risk assessment, estimated phases",
   Phase 5 step 19 "Build an initial task dependency graph with lifecycle states -- Track states:
   `pending -> in_progress -> blocked -> in_review -> done | cancelled` -- The state is spelled
@@ -22,7 +23,10 @@ from pathlib import Path
 DECLARED_STATES = frozenset(
     {"pending", "in_progress", "blocked", "in_review", "done", "cancelled"}
 )
-# Step 1's declared plan filename: plan-<project-slug>.md.
+# Step 1's declared plan filename: plan-<ID>.md, <ID> a three-digit number, a hyphen and a slug of
+# lowercase letters, digits, hyphens and dots (plan-approve-execute § File Location). This pattern
+# predates that form and is unchanged: it admits every such name whose slug has no dot, and also an
+# unnumbered plan-<slug>.md. See brief.md § Provenance.
 PLAN_NAME_RE = re.compile(r"^plan-[a-z0-9][a-z0-9-]*\.md$")
 # Step 1's five declared contents, matched by concept -- the command declares content, not headings.
 PLAN_CONTENT_CONCEPTS = (
