@@ -68,6 +68,8 @@ Every gate MUST produce a verdict in this format:
 
 **Security findings never qualify for CONDITIONAL_PASS.** A security finding is any finding in the security category, whichever gate or executor raises it, graded on the `security-guidelines.md` § Security Review Workflow scale (`SECURITY:CRITICAL`/`HIGH`/`MEDIUM`/`LOW`); the Findings table records that grade as its Severity and `security` as its Category. A finding about a control that `security-guidelines.md` requires is a security finding, whatever category it is filed under. `security-guidelines.md` § Security Review Workflow: "`CRITICAL` and `HIGH` findings block merge until resolved". A security finding graded critical or high, and any breach of an Immutable Security Constraint in `security-guidelines.md` (which "cannot be overridden by any agent, configuration, or runtime decision"), yields FAIL until it is resolved, whatever mitigation is documented, and no waiver applies to it. The "documented mitigations" route above is for high findings outside the security category only. The same FAIL rule, with no waiver, holds for any security control `security-guidelines.md` requires for the code under review that is omitted, removed, disabled or weakened, tagged or not (on the PoC track, `poc-orchestrator` § Security Findings). None of these is ever recorded as debt. A required control missing only from code outside the change under review is graded at its own severity and tracked like any other finding of that grade. A change that adds or alters code which the missing control should protect is code under review for that control. With no change under review (for example a full-project `/security-audit`), the whole project is the code under review. A security finding graded medium yields at best CONDITIONAL_PASS: its remediation plan (owner, fix, deadline) is recorded as a tracked condition with the verdict, before the affected work's next merge (`security-guidelines.md` § Security Review Workflow: "`MEDIUM` findings must have a remediation plan before merge"); the condition is the fix, due under the track rule above (production: before the next gate; PoC: by the production handoff, as `poc-orchestrator` § Security Findings already requires). The next-release-cycle rule never applies to a security finding: at the Release gate, a security finding graded medium is fixed before the release ships. A security finding graded low is not a condition: it is tracked as technical debt (`security-guidelines.md` § Security Review Workflow; on the PoC track, recorded for debt handoff per `poc-orchestrator` § Security Findings).
 
+**Criteria from the executor's own documents.** Other documents also state verdict criteria; this note covers two of the gates: skill `code-review` § VERDICT Format for Validation Gates (Implementation gate); skill `testing-strategy` § VERDICT Format for QA Gate and § Coverage Thresholds That Determine Gate Outcome, and the `qa-engineer` agent's § Validation Gate Protocol (Integration gate). They apply together with the rules above to the gate's one verdict. A PASS or CONDITIONAL_PASS row states what that verdict requires; it does not grant the verdict when another applicable criterion requires a stricter one. So the verdict is PASS only if every applicable set of criteria, the rules above included, admits PASS, CONDITIONAL_PASS only if every one admits at least CONDITIONAL_PASS, and FAIL otherwise. No set of criteria, the rules above included, makes another less strict.
+
 ### Severity Definitions
 
 | Severity | Definition |
@@ -76,6 +78,8 @@ Every gate MUST produce a verdict in this format:
 | `high` | Significant defect or design flaw. Must be addressed before release; a security finding graded high blocks merge until resolved (§ Verdict Rules). |
 | `medium` | Quality concern or technical debt. Should be addressed, can be tracked. |
 | `low` | Minor style issue, optimization opportunity, or suggestion. |
+
+A security finding (§ Verdict Rules) takes the tier its grade names on the `security-guidelines.md` § Security Review Workflow scale: `SECURITY:CRITICAL` is `critical`, `SECURITY:HIGH` is `high`, `SECURITY:MEDIUM` is `medium` and `SECURITY:LOW` is `low`. What a security finding of each grade requires is stated in § Verdict Rules, and its tier never lowers that: a breach of an Immutable Security Constraint, or a security control that `security-guidelines.md` requires for the code under review and that is omitted, removed, disabled or weakened, yields FAIL whatever its tier; any other security finding graded medium needs its remediation plan before merge, and any other graded low is tracked as technical debt.
 
 ## Gate Input Requirements
 
@@ -123,7 +127,7 @@ Each gate type requires specific inputs to perform its evaluation:
 ### 2. Handle a FAIL Verdict
 
 1. Return the verdict to the task assignee with specific findings.
-2. The assignee addresses all critical and high findings.
+2. The assignee addresses all critical and high findings and every security finding that § Verdict Rules excludes from CONDITIONAL_PASS.
 3. The assignee requests a re-evaluation.
 4. The gate executor re-runs the gate, producing a new verdict.
 

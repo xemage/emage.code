@@ -125,6 +125,8 @@ This line is a status report, not a checkpoint file. Checkpoints (`docs/checkpoi
 
 **Verdict values:** `in_progress` is allowed only at a milestone checkpoint, before any of the checkpoint triggers below has fired. At a trigger, the verdict is binary: `validated` or `invalidated` (`poc-guidelines.md` § Hypothesis-First Validation, Rule 4). A hypothesis not validated when the time-box expires is `invalidated` (Rule 3). A partial result is `invalidated`, and `next=` names a follow-up PoC with refined criteria.
 
+**The PoC's outcome.** The `verdict=` in this line is the prototyping agent's report and an input to the PoC evaluation (the poc-evaluation skill); it is not the PoC's outcome. The outcome is the evaluation's verdict: the poc-evaluation skill's `[VERDICT]` `result=`, which is the `/evaluate-poc` command's `Status` when the evaluation is run through that command, or the `evaluation-agent`'s Verdict. The evaluation may turn a `validated` reported here into `INVALIDATED`. It never turns an `invalidated` reported at a trigger into `VALIDATED`: if the evidence later appears to support the hypothesis, the next step is a follow-up PoC with refined criteria (`poc-guidelines.md` § Hypothesis-First Validation, Rule 4).
+
 **Evidence items** should be specific and measurable:
 - "API response time < 200ms for 95th percentile" ✅
 - "Integration with {service} successful via SDK v{X}" ✅
