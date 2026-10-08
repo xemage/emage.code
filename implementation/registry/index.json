@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-08T13:53:53+00:00",
+  "generatedAt": "2026-10-08T16:52:49+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -353,7 +353,7 @@
       "category": "agent",
       "name": "PoC Orchestrator",
       "path": "agents/poc-orchestrator.md",
-      "checksum": "b33859a66f3e58b9ccf1062ca4c7787ef754af6a0f133027c1aa28cadfafb9f0",
+      "checksum": "30f662041dcc982026fb3b18d64fe22ffbb86d6f10353f9ce2d55eb7ef8c572a",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -689,7 +689,7 @@
       "category": "agent",
       "name": "Technical Debt Narrator",
       "path": "agents/technical-debt-narrator.md",
-      "checksum": "78c3e212f168c79a0507a92f12e2eabe3a035f5b301585313ebb0d25931ccf7e",
+      "checksum": "30cf2e95859d7242c92d448353c36f88e69dd88be7644f0129950fc7fdca3b9b",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1445,7 +1445,7 @@
       "category": "instruction",
       "name": "poc-guidelines",
       "path": "instructions/poc-guidelines.md",
-      "checksum": "62f68102d450ff729e399294b6c6f28e81018d397152e25928ff2e5d2d8ef76e",
+      "checksum": "108604c3cb106290eefc24309fd5feca51dcebcac049c59761226d06396dc542",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -2061,7 +2061,7 @@
       "category": "skill",
       "name": "technical-debt-tracking",
       "path": "skills/technical-debt-tracking/SKILL.md",
-      "checksum": "3408c3892bea35848913b7038f179aa9e7d47b4d4d723af0140f1ca8fece12cf",
+      "checksum": "9c3b47ffd1682d1148a5bead6316f751124f7a4b3c4583676836e00920a47c98",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [

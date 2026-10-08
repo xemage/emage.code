@@ -63,6 +63,8 @@ Merge POC-DEBT scan results with:
 - PoC evaluation refactoring backlog items
 - Security scan findings
 
+A blocking security finding, from any of these sources (`poc-orchestrator` § Security Findings: any breach of an Immutable Security Constraint in `security-guidelines.md`, any security control it requires that is omitted, removed, disabled or weakened, tagged or not, and any `SECURITY:CRITICAL` or `SECURITY:HIGH` finding), is never recorded as debt: it enters the ledger only as `resolved`, after `@poc-security-engineer` confirms the fix, never as `open`, `in-progress` or `accepted-risk` (rapid-prototyping skill § Mandatory Debt Tagging, Enforcement). Any other security finding keeps its `SECURITY:*` grade, recorded in the item's **Impact**, and its debt severity never lowers what that grade requires: a `SECURITY:MEDIUM` finding, whose fix is due no later than the production handoff, is `critical`, with disposition `must_fix_pre_prod`.
+
 **Step 4: Produce consolidated debt ledger, then the scorecard**
 
 Output the full debt ledger as a versioned artifact (see below). Then write `POC-DEBT-SCORECARD.md` from it (see Technical Debt Scorecard below). Every `POC-DEBT` tag found in Step 1 must appear in the scorecard's Debt Inventory (`poc-guidelines.md` Scorecard Rule 1). The ledger is this skill's working register and does not substitute for the scorecard.
@@ -142,7 +144,7 @@ Each version is immutable. Create a new version when items are added, resolved, 
 
 ### Technical Debt Scorecard (Enhanced)
 
-The Technical Debt Scorecard is `POC-DEBT-SCORECARD.md` in the PoC root. Write it in the structure `poc-guidelines.md` § Debt Scorecard › Scorecard Format defines — `## Hypothesis`, `## Result`, `## Debt Inventory`, `## Summary`, `## Recommendation` — unchanged and in that order. Count the `## Summary` tiers from the debt ledger's per-item severity. Then append the following sections after `## Recommendation`:
+The Technical Debt Scorecard is `POC-DEBT-SCORECARD.md` in the PoC root. Write it in the structure `poc-guidelines.md` § Debt Scorecard › Scorecard Format defines — `## Hypothesis`, `## Result`, `## Debt Inventory`, `## Summary`, `## Recommendation` — unchanged and in that order. Fill the Debt Inventory's `Severity` column with each item's debt-ledger severity (capitalised as in Scorecard Rule 5), and count the `## Summary` tiers from that column (`poc-guidelines.md` Scorecard Rule 5). Then append the following sections after `## Recommendation`:
 
 ```markdown
 ## Scorecard Source
