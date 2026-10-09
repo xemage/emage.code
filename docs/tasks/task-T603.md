@@ -2,7 +2,7 @@
 
 **ID:** T603
 **Owner:** backend-developer
-**Status:** in_review
+**Status:** done
 **Priority:** P2
 **Tier:** standard
 **Affects:** —
