@@ -2,8 +2,9 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T616 | Apply the task-protocol skill rulings (items 1 to 6) | backend-developer | pending | P2 | — | 2026-10-09 |
 
-> **No active rows.** `plan-117` is complete: T613 ruled and T614 applied the Scrum Master and checkpoint-name amendments. Root drift: 13 paths (`scrum-master` on 6 platforms, `checkpoint-protocol` on 7) declared by T614 wait for one user-approved root refresh. Baseline v20. Open, unscheduled: R-1, the other plan-112 §2 notes, the held-out check, the stale golden quote, and the unruled task-protocol observations (blocker-escalation:78, task-management, gitlab-management, dependency-graphing).
+> **1 active row (`plan-118`).** T615 is ruled and archived; T616 applies the user-approved edits (items 1 to 6) to five skills, declares about 35 root-drift paths, and then one user-approved root refresh follows. Baseline v20; root drift 0. Open, unscheduled: R-1, the other plan-112 §2 notes, the held-out check, the stale golden quote, and the further observations O-1..O-12 of the T615 ruling.
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
