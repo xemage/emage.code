@@ -24,21 +24,8 @@
     "Emptied 2026-10-09 by the twelfth user-approved --projections-only refresh (6 paths: the T611 poc-security-engineer blind-spot wording on each platform).",
     "Declared 2026-10-09 by T612 (altered-path marker and regex self-test agent text): 12 paths = the poc-orchestrator and poc-security-engineer projections on 6 platforms; the scanner, server, tests and contract v5 are not root-installed; root not refreshed.",
     "Emptied 2026-10-09 by the thirteenth user-approved --projections-only refresh (12 paths: the T612 altered-path and regex-self-test agent text in the poc-orchestrator and poc-security-engineer projections on 6 platforms).",
-    "Declared 2026-10-09 by T614 (Scrum Master task-protocol and checkpoint-name rulings S1-A, S2-A, K-A): 13 paths = the scrum-master projections on 6 platforms and the checkpoint-protocol projections on 7; root not refreshed."
+    "Declared 2026-10-09 by T614 (Scrum Master task-protocol and checkpoint-name rulings S1-A, S2-A, K-A): 13 paths = the scrum-master projections on 6 platforms and the checkpoint-protocol projections on 7; root not refreshed.",
+    "Emptied 2026-10-09 by the fourteenth user-approved --projections-only refresh (13 paths: the T614 scrum-master agent on 6 platforms and the checkpoint-protocol skill on 7)."
   ],
-  "drift": [
-    ".claude/agents/scrum-master.md",
-    ".claude/skills/checkpoint-protocol/SKILL.md",
-    ".cline/skills/checkpoint-protocol/SKILL.md",
-    ".cursor/agents/scrum-master.mdc",
-    ".cursor/skills/checkpoint-protocol/SKILL.md",
-    ".gemini/agents/scrum-master.md",
-    ".gemini/skills/checkpoint-protocol/SKILL.md",
-    ".github/agents/scrum-master.agent.md",
-    ".github/skills/checkpoint-protocol/SKILL.md",
-    ".opencode/agents/scrum-master.md",
-    ".opencode/skills/checkpoint-protocol/SKILL.md",
-    ".pi/agents/scrum-master.md",
-    ".pi/skills/checkpoint-protocol/SKILL.md"
-  ]
+  "drift": []
 }

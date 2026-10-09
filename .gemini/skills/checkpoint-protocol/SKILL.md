@@ -52,7 +52,7 @@ section for the canonical filename convention this skill implements.
 ## Checkpoint Format
 
 ```markdown
-# Checkpoint <N>
+# Checkpoint <SEQ>
 
 **Date:** YYYY-MM-DD HH:MM
 **Author:** <agent-name or orchestrator>
@@ -95,12 +95,12 @@ section for the canonical filename convention this skill implements.
 
 ### 1. Write a Checkpoint
 
-1. Determine the next checkpoint number by listing `docs/checkpoints/` and incrementing the highest `<N>`.
+1. Determine the next checkpoint sequence number by listing `docs/checkpoints/` and incrementing the highest `<SEQ>`.
 2. Fill in every section of the checkpoint format above.
 3. For "Completed Tasks," query `active-tasks.md` for tasks marked `done` since the last checkpoint.
 4. For "Active Blockers," query any open blocker reports.
 5. For "Key Decisions," review conversation history for architectural or design decisions made.
-6. Write the file to `docs/checkpoints/checkpoint-<N>.md`.
+6. Write the file to the path in § File Location, `docs/checkpoints/checkpoint-<SEQ>-<phase>.md`, per `AGENTS.md` § Checkpoint Protocol.
 
 ### 2. Compress Old Checkpoints
 
@@ -113,7 +113,7 @@ To keep the checkpoint directory manageable and reduce token cost when loading c
 3. Compressed format:
 
 ```markdown
-# Checkpoint <N> (Compressed)
+# Checkpoint <SEQ> (Compressed)
 
 **Date:** YYYY-MM-DD
 **Phase:** <phase>
@@ -169,14 +169,14 @@ When resuming after context loss:
 ### Checkpoint Trigger: Phase Boundary
 
 After completing Phase 0 (Foundation):
-- Write `checkpoint-001.md` covering all Phase 0 work.
+- Write `checkpoint-001-phase0-foundation.md` covering all Phase 0 work.
 - Include decisions like technology choices, architecture patterns selected.
 - Next steps should reference Phase 1 starting tasks.
 
 ### Checkpoint Trigger: Mid-Phase Progress
 
 After completing T005, T006, T007 during Phase 1:
-- Write `checkpoint-003.md` covering those task completions.
+- Write `checkpoint-003-phase1-t005-t007.md` covering those task completions.
 - Note any blockers encountered and resolved.
 
 ## Guidelines
