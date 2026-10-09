@@ -15,7 +15,8 @@ What the tools return, and what they never return:
   reduced to a shape name and discarded. Every other rule and scope still drops it unread.
 * The caller supplies no pattern. The rule table below is the only source of patterns; it
   is also applied to paths, ref names and tag names before they are returned.
-* Errors are codes: not_a_toplevel, bad_scope, bad_rev, timeout, git_missing, git_failed.
+* Errors are codes: not_a_toplevel, bad_scope, bad_rev, timeout, git_missing, git_failed,
+  regex_unsupported (T612: the host regex library cannot compile the largest rule, see below).
 
 Documented limits (v2 §3.2 / R-3, R-4, R-5): a clean result means "no match for this rule
 set at the scanned refs", not "no secret"; dangling objects and reflog-only commits are
@@ -95,6 +96,22 @@ handled in T611 (contract `poc-security-engineer-tool-scoping-v4.md`):
   hit simply carries no label and the scan stays `complete: true`; a missing label may therefore
   mean the check degraded. The scan assumes a quiescent tree: an edit between the two `git grep`
   passes could in theory shift a line, which at worst gives a wrong or missing label.
+
+Further limits handled in T612 (contract `poc-security-engineer-tool-scoping-v5.md`):
+
+* T611-2: `safe_name` changes the shown name, so a hit whose shown path differs from the real path
+  carries `path_altered: true` (`add_hit` computes it from the raw name: `safe_name` changed it, or the
+  bytes were not valid UTF-8 and were shown as U+FFFD, see `_decode_name`; a valid name with a literal
+  U+FFFD character is not altered; a name shown as
+  `<redacted-by-rule:ID>` carries `path_index` instead and no marker). Such a hit cannot be flagged
+  (agent text): the shown text does not identify one file, and two different files can show the same
+  text.
+* T611-3: the bounded repeats `{7,1024}`, `{1024}` and `{10,512}` need a regex library whose
+  `RE_DUP_MAX` is at least 1024 (glibc: 32767; some other libraries, for example musl or BSD ones: 255, unverified here). Every
+  scan that runs `git grep -E` or `git log -G` first compiles the largest rule once through
+  `git_executor` (`_regex_selftest`); if that call fails while a trivial pattern compiles (usually a low
+  `RE_DUP_MAX`) the scan ends `regex_unsupported`,
+  `complete: false`, no hits and no clean claim, instead of a bare `git_failed`.
 """
 from __future__ import annotations
 
@@ -109,6 +126,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from implementation.runtime.security.git_executor import (
+    EMPTY_TREE,
     ERR_GIT_FAILED,
     ERR_TIMEOUT,
     LOG_FLAGS,
@@ -244,8 +262,9 @@ _UNQUOTED_MATCH_RE = re.compile(r"[^:=]*[:=][ \t]*([^ \t\r]+)[ \t\r]*")
 # or `;` or any other text leaves the hit unlabelled).
 _LINE_END = "[ \t\r]*$"
 # Every key a `scan_secrets` hit may carry (the contract v3 output list). Pinned by a test.
+# T612 (contract v5) adds `path_altered`.
 HIT_KEYS = frozenset({"rule_id", "scope", "path_or_redacted", "path_index", "line", "commit", "ref",
-                      "via", "value_shape", "template_shape"})
+                      "via", "value_shape", "template_shape", "path_altered"})
 
 
 def _anchored(rule_id: str, pattern: str) -> str:
@@ -311,6 +330,7 @@ ERR_NOT_TOPLEVEL = "not_a_toplevel"
 ERR_BAD_SCOPE = "bad_scope"
 ERR_BAD_REV = "bad_rev"
 ERR_INTERNAL = "internal_error"
+ERR_REGEX_UNSUPPORTED = "regex_unsupported"  # T611-3: the host regex library cannot compile a rule
 
 
 @dataclass(frozen=True)
@@ -358,6 +378,17 @@ def redact_name(name: str) -> tuple[str, str | None]:
 
 def _decode(raw: bytes) -> str:
     return raw.decode("utf-8", errors="replace")
+
+
+def _decode_name(raw: bytes) -> tuple[str, bool]:
+    """-> (text, lossy). `lossy` is True exactly when `raw` is not valid UTF-8, so `_decode` replaced
+    bytes with U+FFFD and two different names can show the same text (T612, SEC-1). It is derived
+    from the raw bytes, not from a U+FFFD in the text: a valid name that contains a literal U+FFFD
+    character decodes cleanly and is not lossy."""
+    try:
+        return raw.decode("utf-8"), False
+    except UnicodeDecodeError:
+        return _decode(raw), True
 
 
 def parse_grep_z(data: bytes) -> tuple[list[tuple[bytes, int]], bool]:
@@ -453,14 +484,21 @@ class _Scan:
             return False
         hit = {"rule_id": rule_id, "scope": self.scope}
         name = fields.pop("name", None)
+        fields.pop("path_altered", None)  # never taken from a caller: derived from the raw name below
+        lossy = fields.pop("name_lossy", False) is True  # set by the module's own decode of the raw bytes
         if name is not None:
             hit["path_or_redacted"], idx = self.display(name)
             if idx is not None:
                 hit["path_index"] = idx
+            elif hit["path_or_redacted"] != name or lossy:
+                # T611-2: safe_name changed the name, or the bytes were not valid UTF-8 (U+FFFD
+                # replacement): the shown text is not the real path and may be shared by other files
+                hit["path_altered"] = True
         hit.update({k: v for k, v in fields.items() if v is not None})
         for key in set(hit) - HIT_KEYS:  # contract v3 allow-list, enforced: an unknown key is dropped
             del hit[key]
         self._check_label(hit)
+        self._check_path_altered(hit)
         self.hits.append(hit)
         return True
 
@@ -477,6 +515,16 @@ class _Scan:
         if not valid:
             hit.pop("value_shape", None)
             hit.pop("template_shape", None)
+
+    @staticmethod
+    def _check_path_altered(hit: dict) -> None:
+        """T612: `path_altered` is either absent or exactly `True`, and only on a hit that shows a
+        path (`path_or_redacted`) that is not a redacted one (`path_index`). Anything else is
+        dropped, so the key never appears in a form the agent text does not describe."""
+        if "path_altered" not in hit:
+            return
+        if hit["path_altered"] is not True or "path_or_redacted" not in hit or "path_index" in hit:
+            del hit["path_altered"]
 
     def result(self) -> dict:
         counts = dict(Counter(h["rule_id"] for h in self.hits))
@@ -519,12 +567,12 @@ class _Scan:
             for (raw, line), found in shapes.items():
                 m = _TREE_PREFIX_RE.match(raw) if trees else None
                 commit = m.group(1).decode() if m else None
-                name = _decode(raw[m.end():] if m else raw)
+                name, lossy = _decode_name(raw[m.end():] if m else raw)
                 ref = (refs or {}).get(commit) if commit else None
                 label = {}
                 if (raw, line) in ends_line and redact_name(name)[1] is None:
                     label = _label_for(found)
-                if not self.add_hit(rule_id, name=name, line=line, commit=commit, ref=ref, **label):
+                if not self.add_hit(rule_id, name=name, name_lossy=lossy, line=line, commit=commit, ref=ref, **label):
                     return
 
     def _value_ends_line(self, flags: tuple[str, ...], rule_id: str,
@@ -615,16 +663,56 @@ class _Scan:
             if index % _NAME_CHECK_EVERY == 0 and self.deadline.remaining() <= 0:
                 self._error(ERR_TIMEOUT, True)  # complete: false, never a silent partial pass
                 return
-            name = _decode(raw)
+            name, lossy = _decode_name(raw)
             base = name.rsplit("/", 1)[-1]
             lowered = base.lower()
             if any(fnmatch.fnmatchcase(lowered, pat) for pat in TRACKED_NAME_PATTERNS):
-                if not self.add_hit(rule_id, name=name):
+                if not self.add_hit(rule_id, name=name, name_lossy=lossy):
                     return
 
     @staticmethod
     def _oids(data: bytes) -> list[str]:
         return [t for t in _decode(data).split() if _OID_RE.match(t)]
+
+
+_REPEAT_RE = re.compile(r"\{(\d+)(?:,(\d+))?\}")
+
+
+def _largest_repeat(pattern: str) -> int:
+    """The largest repeat count `{n}` / `{n,m}` in a pattern (0 if none)."""
+    return max((int(n) for pair in _REPEAT_RE.findall(pattern) for n in pair if n), default=0)
+
+
+def selftest_pattern() -> str:
+    """The rule pattern the self-test compiles: the one with the largest repeat count, then the
+    longest (today the unquoted-credential rule: `{7,1024}` and `{1024}`, 7560 characters). Every
+    other rule has a smaller repeat count, so a library that compiles this one compiles them all.
+    The anchored variants used for the label (`ANCHORED_RULES`) are shorter and carry no larger
+    repeat count (pinned by a test)."""
+    return max((pat for _, pat in RULES), key=lambda pat: (_largest_repeat(pat), len(pat)))
+
+
+def _selftest_call(root: str, pattern: str, deadline: Deadline, max_bytes: int):
+    # The empty tree is a built-in git object: nothing is read, only the pattern is compiled.
+    return run_git(git_argv(root, "grep", "--no-color", "-q", "-E", "-e", pattern, EMPTY_TREE, "--"),
+                   deadline, max_bytes, (0, 1))
+
+
+def _regex_selftest(root: str, cfg: PocAuditConfig, deadline: Deadline) -> str | None:
+    """T611-3: compile the largest rule once through `git grep` (same executor, hardening and
+    aggregate deadline as every other call) and return None or an error code. A compile failure
+    exits non-zero (`git_failed`); a second, trivial pattern then tells "the compile call failed while a
+    trivial pattern compiled" (`regex_unsupported`, usually a low `RE_DUP_MAX`) from any other git
+    failure (`git_failed`, unchanged). The
+    control call runs only on the failure path: a normal scan pays for exactly one cheap call.
+    Fails closed: any error, timeout included, ends the scan; nothing is ever treated as a pass."""
+    res = _selftest_call(root, selftest_pattern(), deadline, cfg.max_bytes)
+    if res.error is None:
+        return None
+    if res.error != ERR_GIT_FAILED:
+        return res.error
+    control = _selftest_call(root, "a", deadline, cfg.max_bytes)
+    return ERR_REGEX_UNSUPPORTED if control.error is None else control.error
 
 
 def _failure(code: str, **extra) -> dict:
@@ -650,6 +738,10 @@ def _scan_secrets(root_dir: str, scope: str, rev_range: str | None, cfg: PocAudi
         root, failure = resolve_root(root_dir, cfg, deadline)
     if failure is not None:
         return _failure(failure)
+    if scope != "tracked_names":  # the only scope that runs no `git grep -E` and no `git log -G`
+        failure = _regex_selftest(root, cfg, deadline)
+        if failure is not None:
+            return _failure(failure)
     scan = _Scan(root, cfg, deadline, scope)
     if scope == "worktree":
         scan.grep(("--untracked", "--no-exclude-standard"))

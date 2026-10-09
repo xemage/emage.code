@@ -282,6 +282,43 @@ class PlaceholderFlagTextTests(unittest.TestCase):
         self.assertEqual(self.o1.count("a local instance included"), 1)
         self.assertEqual(self.p1.count("report it to the PoC orchestrator as a blocker"), 1)
 
+    # --- T612 / T611-2: an altered path cannot be flagged ----------------------------------------------------
+    def test_t612_altered_path_is_unflaggable_and_unresolved(self):
+        sub = [line for line in self.p1.split("\n") if line.startswith("  - **Altered paths:**")]
+        self.assertEqual(len(sub), 1)
+        (sub,) = sub
+        self.assertLess(len(sub), 3500)
+        for phrase in ("marks such a hit with `path_altered: true`", "A hit with `path_altered: true` cannot be flagged and stays unresolved", "whatever a register says",
+                       "Do not propose a flag for it", "must be renamed or removed",
+                       "removed, cut at 200 characters", "(fail closed)", "Never infer the marker from your own reading"):
+            self.assertEqual(sub.count(phrase), 1, phrase)
+        self.assertEqual(self.p1.count("`path_altered: true`"), 3)  # sub-bullet (2) and the Reporting exception
+        self.assertEqual(self.p1.count("except one with `path_altered: true` (see Altered paths), as a proposed flag"), 1)
+        for phrase in ("A hit with `path_altered: true`", "cannot be flagged: it stays unresolved",
+                       "is not put to the user as a proposed flag", "a register entry never records an altered path"):
+            self.assertEqual(self.o1.count(phrase), 1, phrase)
+
+    # --- T612 review: SEC-1 (lossy names), SEC-2 (label), SEC-3 (task), SEC-5 (remedy) -----------------------
+    def test_t612_review_text_pins(self):
+        (sub,) = [line for line in self.p1.split("\n") if line.startswith("  - **Altered paths:**")]
+        self.assertLess(len(sub), 3500)
+        for phrase in ("every byte that is not valid UTF-8 replaced by U+FFFD",
+                       "the marker covers a name with bytes that are not valid UTF-8, but not a valid name that contains a literal U+FFFD character",
+                       'The one exception to "unresolved" is the label: an altered-path hit that carries `value_shape: "template-ref"` stays `template-ref` (listed and counted as template-ref, not unresolved, because the label is not a flag) but still cannot be flagged',
+                       'awaits the rename or removal of the file, with the remediating agent as owner, and is not titled "awaiting user: placeholder flag"'):
+            self.assertEqual(sub.count(phrase), 1, phrase)
+        for phrase in ('The one exception to "unresolved" is the label: an altered-path hit that carries `value_shape: "template-ref"` stays `template-ref` (listed and counted as template-ref, not unresolved, because the label is not a flag) but still cannot be flagged',
+                       'awaits the rename or removal of the file, with the remediating agent as owner, and is not titled "awaiting user: placeholder flag"',
+                       "every other hit is unresolved and, except a hit with `path_altered: true`, gets a `user-attested` proposal",
+                       "cleaned, cut or not-valid-UTF-8 file name"):
+            self.assertEqual(self.o1.count(phrase), 1, phrase)
+        self.assertNotIn("every other hit is unresolved and gets a `user-attested` proposal", self.o1)
+        remedy = ("A scan that ends `regex_unsupported` (the compile call failed while a trivial pattern compiled, usually a regex library "
+                  "whose `RE_DUP_MAX` is below 1024) is such a scan: report it as a `technical` blocker, never as clean, and name the fix: "
+                  "run the scan on a host whose git uses a regex library with `RE_DUP_MAX` of at least 1024")
+        self.assertEqual(self.p1.count(remedy), 1)
+        self.assertEqual(self.se.count("whatever the flags say"), 1)
+
     # --- unchanged texts --------------------------------------------------------------------------------
     def test_f8_e1b_e1c_after_texts_still_exactly_once(self):
         for after in FROZEN:

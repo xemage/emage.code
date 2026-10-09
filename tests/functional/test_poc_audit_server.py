@@ -183,7 +183,9 @@ class ArgvTests(RepoCase):
             for argv in calls:
                 self.assertEqual(argv[:3], ["git", "-C", str(root)])
                 self.assertEqual(argv[3:SUB], PREFIX)
-            self.assertEqual(calls[1][SUB:], grep)
+            self.assertEqual(calls[2][SUB:], grep)  # T612: calls[1] is the regex self-test
+            self.assertEqual(calls[1][SUB:], ["grep", "--no-color", "-q", "-E", "-e", poc_scan.selftest_pattern(),
+                                              EMPTY_TREE, "--"])
             self.assertEqual(calls[0][SUB:], ["rev-parse", "--show-toplevel"])
 
     def test_history_log_argv_has_no_textconv_no_ext_diff_and_only_percent_h(self):
@@ -1176,7 +1178,8 @@ class TemplateLabelTests(RepoCase):
             for text in (secret, "DB_PASSWORD", "set-me", "uperSecret", "key }}"):
                 self.assertNotIn(text, dump, (scope, text))
         self.assertEqual(poc_scan.HIT_KEYS, {"rule_id", "scope", "path_or_redacted", "path_index", "line", "commit",
-                                             "ref", "via", "value_shape", "template_shape"})
+                                             "ref", "via", "value_shape", "template_shape",
+                                             "path_altered"})  # T612 adds path_altered
 
     def test_errors_carry_no_matched_text(self):
         with mock.patch.object(poc_scan, "_shape_of", side_effect=RuntimeError('password = "<set-me>"')):
@@ -1589,6 +1592,352 @@ class T611Tests(RepoCase):
         for needle in ("Amends `poc-security-engineer-tool-scoping-v3.md`", "2026-10-09.5", "SEV-1", "SEV-6",
                        "T609-10", "T609-13", "quiescent"):
             self.assertIn(needle, v4, needle)
+
+
+class T612Tests(RepoCase):
+    """T612: T611-2 (`path_altered`) and T611-3 (regex self-test), contract
+    `poc-security-engineer-tool-scoping-v5.md`. Secret-shaped strings are assembled at run time;
+    file names with control and zero-width characters are written as escapes."""
+
+    CRED = 'db_password = "hunter2hunter2"\n'
+    ZW = "\u200b"
+
+    def _scan_files(self, files: dict[str, str], scope: str = "index") -> dict:
+        self._n = getattr(self, "_n", 0) + 1
+        return self.scan(self.make_repo(name=f"r{self._n}", files=files), scope)
+
+    def _cred_hits(self, res: dict) -> list:
+        return [h for h in res["hits"] if h["rule_id"] == "credential-assignment"]
+
+    # -- T611-2: path_altered -------------------------------------------------------------------
+    def test_path_altered_for_a_stripped_control_character(self):
+        res = self._scan_files({"a\x01b.txt": self.CRED, "plain.txt": self.CRED})
+        by_path = {h["path_or_redacted"]: h for h in self._cred_hits(res)}
+        self.assertEqual(sorted(by_path), ["ab.txt", "plain.txt"])  # shown text is the v4 text
+        self.assertIs(by_path["ab.txt"]["path_altered"], True)
+        self.assertNotIn("path_altered", by_path["plain.txt"])  # an unaltered path is unchanged
+        self.assertTrue(res["complete"])
+        self.assertNotIn("hunter2", json.dumps(res))
+
+    def test_path_altered_for_zero_width_bidi_and_separator_characters(self):
+        names = {"z" + self.ZW + "w.txt": "zw.txt", "b\u202ed.txt": "bd.txt", "l\u2028s.txt": "ls.txt"}
+        res = self._scan_files({n: self.CRED for n in names})
+        hits = {h["path_or_redacted"]: h for h in self._cred_hits(res)}
+        self.assertEqual(sorted(hits), sorted(names.values()))
+        self.assertTrue(all(h.get("path_altered") is True for h in hits.values()))
+
+    def test_path_altered_for_a_name_cut_at_200_characters(self):
+        long_name = "n" * 250 + ".txt"
+        res = self._scan_files({long_name: self.CRED, "m" * 200: self.CRED})
+        hits = {h["path_or_redacted"]: h for h in self._cred_hits(res)}
+        self.assertEqual(sorted(hits), sorted(["n" * 197 + "...", "m" * 200]))
+        self.assertIs(hits["n" * 197 + "..."]["path_altered"], True)
+        self.assertNotIn("path_altered", hits["m" * 200])  # exactly 200 characters is not cut
+
+    def test_a_name_that_only_looks_like_a_cut_is_not_marked(self):
+        res = self._scan_files({"a...b.txt": self.CRED})
+        self.assertNotIn("path_altered", self._cred_hits(res)[0])
+
+    def test_colliding_displayed_names_are_each_marked_and_counted(self):
+        res = self._scan_files({"ab.txt": self.CRED, "a\x01b.txt": self.CRED, "a\x02b.txt": self.CRED})
+        hits = self._cred_hits(res)
+        self.assertEqual([h["path_or_redacted"] for h in hits], ["ab.txt"] * 3)
+        self.assertEqual(sorted("path_altered" in h for h in hits), [False, True, True])
+        self.assertEqual(res["counts"]["credential-assignment"], 3)  # nothing merged away or dropped
+
+    def test_redacted_names_carry_path_index_and_no_marker(self):
+        res = self._scan_files({"AKIA" + self.ZW + "ABCDEFGHIJKLMNOP.txt": self.CRED, "ok\x01.txt": self.CRED})
+        by_path = {h["path_or_redacted"]: h for h in self._cred_hits(res)}
+        redacted = by_path["<redacted-by-rule:aws-access-key-id>"]
+        self.assertEqual(redacted["path_index"], 1)
+        self.assertNotIn("path_altered", redacted)
+        self.assertIs(by_path["ok.txt"]["path_altered"], True)
+
+    def test_path_altered_in_every_path_bearing_scope(self):
+        root = self.make_repo(files={"a\x01b.txt": self.CRED})
+        (root / "u\x01v.txt").write_text(self.CRED)
+        (root / "k\x01.pem").write_text("x\n")
+        for scope, rule in (("index", "credential-assignment"), ("worktree", "credential-assignment"),
+                            ("worktree", "untracked-secret-file-name")):
+            res = self.scan(root, scope)
+            marked = {h["path_or_redacted"] for h in res["hits"] if h["rule_id"] == rule and h.get("path_altered") is True}
+            self.assertTrue(marked, (scope, rule))
+        shown = {h["path_or_redacted"] for h in self.scan(root, "worktree")["hits"]}
+        self.assertLessEqual({"ab.txt", "uv.txt", "k.pem"}, shown)
+        tracked = self._scan_files({"k\x01.pem": "x\n", ".env": "x\n"}, "tracked_names")
+        self.assertEqual({h["path_or_redacted"]: h.get("path_altered") for h in tracked["hits"]},
+                         {"k.pem": True, ".env": None})
+        history = self.scan(root, "history")
+        tree_hits = [h for h in history["hits"] if "path_or_redacted" in h and h["rule_id"] == "credential-assignment"]
+        self.assertTrue(tree_hits and all(h.get("path_altered") is True for h in tree_hits))
+        log_hits = [h for h in history["hits"] if h.get("via") == "log"]
+        self.assertTrue(log_hits)  # non-vacuous: the history scan did report `via: "log"` hits
+        self.assertTrue(all("path_altered" not in h for h in log_hits))
+
+    def test_path_altered_is_in_hit_keys_and_every_returned_key_is_allowed(self):
+        self.assertIn("path_altered", poc_scan.HIT_KEYS)
+        self.assertEqual(poc_scan.HIT_KEYS, {"rule_id", "scope", "path_or_redacted", "path_index", "line", "commit",
+                                             "ref", "via", "value_shape", "template_shape", "path_altered"})
+        res = self._scan_files({"a\x01b.txt": self.CRED})
+        self.assertLessEqual({k for h in res["hits"] for k in h}, poc_scan.HIT_KEYS)
+
+    def _add(self, name=None, **fields) -> dict:
+        scan = poc_scan._Scan(str(self.base), self.cfg, Deadline(5.0), "index")
+        scan.add_hit("credential-assignment", name=name, line=1, **fields)
+        return scan.hits[0]
+
+    def test_add_hit_derives_the_marker_and_never_takes_it_from_a_caller(self):
+        self.assertIs(self._add("a\x01b.txt")["path_altered"], True)
+        for given in (True, False, "yes", 1, None, ["x"]):
+            self.assertNotIn("path_altered", self._add("plain.txt", path_altered=given), given)
+            self.assertNotIn("path_altered", self._add(None, path_altered=given), given)
+            self.assertIs(self._add("a\x01b.txt", path_altered=given)["path_altered"], True, given)
+
+    def test_check_path_altered_drops_anything_but_true_on_a_shown_path(self):
+        check = poc_scan._Scan._check_path_altered
+        for hit, kept in (({"path_or_redacted": "x", "path_altered": True}, True),
+                          ({"path_or_redacted": "x", "path_altered": False}, False),
+                          ({"path_or_redacted": "x", "path_altered": 1}, False),
+                          ({"path_or_redacted": "x", "path_altered": "true"}, False),
+                          ({"path_altered": True}, False),
+                          ({"path_or_redacted": "<redacted-by-rule:r>", "path_index": 1, "path_altered": True}, False),
+                          ({"path_or_redacted": "x"}, False)):
+            check(hit)
+            self.assertEqual(hit.get("path_altered") is True, kept, hit)
+            self.assertTrue("path_altered" not in hit or kept)
+
+    def test_the_marker_changes_no_label_count_or_completeness(self):
+        line = 'db_password = "${DB_PASSWORD}"\n'
+        plain = self._scan_files({"ab.txt": line}, "worktree")
+        altered = self._scan_files({"a\x01b.txt": line}, "worktree")
+        (p_hit,), (a_hit,) = self._cred_hits(plain), self._cred_hits(altered)
+        self.assertEqual(a_hit.pop("path_altered"), True)
+        self.assertEqual(a_hit, p_hit)  # same path text, label, line: only the marker differs
+        self.assertEqual(a_hit["value_shape"], "template-ref")
+        for key in ("complete", "truncated", "counts", "errors"):
+            self.assertEqual(altered[key], plain[key], key)
+
+    # -- SEC-1: names that are not valid UTF-8 ----------------------------------------------------
+    def _fs_name(self, raw: bytes) -> str:
+        name = os.fsdecode(raw)
+        try:
+            probe = self.base / name
+            probe.write_text("x")
+            probe.unlink()
+        except OSError:
+            self.skipTest("filesystem rejects non-UTF-8 names")
+        return name
+
+    def test_non_utf8_names_that_show_the_same_text_are_both_marked(self):
+        a, b = self._fs_name(b"cfg\xff.yaml"), self._fs_name(b"cfg\xfe.yaml")
+        for scope in ("index", "worktree"):
+            res = self._scan_files({a: self.CRED, b: self.CRED}, scope)
+            hits = self._cred_hits(res)
+            self.assertEqual([h["path_or_redacted"] for h in hits], ["cfg\ufffd.yaml"] * 2, scope)
+            self.assertTrue(all(h.get("path_altered") is True for h in hits), scope)
+            self.assertEqual(res["counts"]["credential-assignment"], 2)
+        tracked = self._scan_files({self._fs_name(b"k\xff.pem"): "x\n"}, "tracked_names")
+        self.assertEqual([(h["path_or_redacted"], h.get("path_altered")) for h in tracked["hits"]], [("k\ufffd.pem", True)])
+        history = self._scan_files({a: self.CRED, b: self.CRED}, "history")
+        tree_hits = [h for h in history["hits"] if "path_or_redacted" in h]
+        self.assertEqual(len(tree_hits), 2)
+        self.assertTrue(all(h.get("path_altered") is True for h in tree_hits))
+
+    def test_a_literal_replacement_character_that_decoded_cleanly_is_not_marked(self):
+        clean = "cfg\ufffd.yaml"  # valid UTF-8: the shown text IS the real path
+        self.assertEqual(poc_scan._decode_name(clean.encode()), (clean, False))
+        self.assertEqual(poc_scan._decode_name(b"cfg\xff.yaml"), ("cfg\ufffd.yaml", True))
+        self.assertEqual(poc_scan._decode_name("caf\u00e9".encode()), ("caf\u00e9", False))
+        lossy = self._fs_name(b"cfg\xff.yaml")
+        res = self._scan_files({clean: self.CRED}, "index")
+        (hit,) = self._cred_hits(res)
+        self.assertEqual(hit["path_or_redacted"], clean)
+        self.assertNotIn("path_altered", hit)
+        # both together: the lossy one is marked, the clean one is not, both are counted under the same text
+        res = self._scan_files({clean: self.CRED, lossy: self.CRED}, "index")
+        hits = self._cred_hits(res)
+        self.assertEqual({h["path_or_redacted"] for h in hits}, {clean})
+        self.assertEqual(sorted("path_altered" in h for h in hits), [False, True])
+        self.assertEqual(res["counts"]["credential-assignment"], 2)  # a flag on the clean path would have the wrong hit_count
+
+    def test_add_hit_lossy_flag_is_internal_and_never_returned(self):
+        scan = poc_scan._Scan(str(self.base), self.cfg, Deadline(5.0), "index")
+        scan.add_hit("credential-assignment", name="plain.txt", name_lossy=True, line=1)
+        scan.add_hit("credential-assignment", name="plain.txt", name_lossy="yes", line=1)
+        scan.add_hit("credential-assignment", name="plain.txt", name_lossy=False, line=1)
+        self.assertEqual(["path_altered" in h for h in scan.hits], [True, False, False])
+        self.assertTrue(all("name_lossy" not in h for h in scan.hits))
+
+    def test_ref_fields_never_carry_the_marker(self):
+        root = self.make_repo(files={"a.txt": self.CRED})
+        _git(root, "tag", "v1" + self.ZW)  # one tag per commit: the scan keeps one ref per tip commit
+        self.commit_file(root, "b.txt", self.CRED)
+        env = {"PATH": os.environ.get("PATH", ""), "HOME": str(root), "GIT_CONFIG_GLOBAL": "/dev/null",
+               "GIT_CONFIG_NOSYSTEM": "1"}
+        made = subprocess.run(["git", "-C", str(root), "tag", b"v\xff"], capture_output=True, env=env)
+        self.commit_file(root, "c.txt", self.CRED)
+        res = self.scan(root, "history")
+        tree_hits = [h for h in res["hits"] if "path_or_redacted" in h]
+        refs = {h["ref"] for h in tree_hits}
+        self.assertIn("refs/tags/v1", refs)  # the zero-width character is stripped from the shown ref
+        if made.returncode == 0:
+            self.assertIn("refs/tags/v\ufffd", refs)  # a non-UTF-8 tag name is shown with U+FFFD
+        self.assertTrue(tree_hits)
+        self.assertTrue(all("path_altered" not in h for h in tree_hits))  # the paths are clean; ref fields never mark
+
+    # -- T611-3: the regex self-test --------------------------------------------------------------
+    def _failing_compile(self, control_ok: bool = True, error: str = "git_failed"):
+        """Patch `poc_scan.run_git`: the self-test compile call fails with `error` (the control call
+        with the trivial pattern passes when `control_ok`), everything else runs for real."""
+        real = poc_scan.run_git
+        pattern = poc_scan.selftest_pattern()
+        calls: list[list[str]] = []
+
+        def fake(argv, deadline, max_bytes, ok_codes=(0,)):
+            calls.append(list(argv))
+            if EMPTY_TREE in argv[SUB:]:
+                is_compile = pattern in argv
+                if is_compile or not control_ok:
+                    return git_executor.GitResult(b"", error == "timeout", error)
+            return real(argv, deadline, max_bytes, ok_codes)
+
+        return calls, mock.patch.object(poc_scan, "run_git", fake)
+
+    def test_selftest_pattern_is_the_rule_with_the_largest_repeat_count(self):
+        pattern = poc_scan.selftest_pattern()
+        self.assertEqual(pattern, dict(poc_scan.RULES)["unquoted-credential-assignment"])
+        biggest = max(poc_scan._largest_repeat(p) for _, p in poc_scan.RULES)
+        self.assertEqual(biggest, 1024)
+        self.assertEqual(poc_scan._largest_repeat(pattern), biggest)
+        self.assertLessEqual(max(poc_scan._largest_repeat(p) for p in poc_scan.ANCHORED_RULES.values()), biggest)
+        self.assertEqual(poc_scan._largest_repeat("a{3}b{2,9}"), 9)
+        self.assertEqual(poc_scan._largest_repeat("abc"), 0)
+
+    def test_a_normal_scan_pays_one_cheap_self_test_call(self):
+        root = self.make_repo()
+        for scope in ("worktree", "index", "stashes", "history"):
+            calls, patch = self.capture()
+            with patch:
+                res = self.scan(root, scope)
+            self.assertTrue(res["complete"], scope)
+            selftests = [a for a in calls if EMPTY_TREE in a[SUB:]]
+            self.assertEqual(len(selftests), 1, scope)
+            self.assertEqual(selftests[0][:SUB], ["git", "-C", str(root), *PREFIX])  # same hardening prefix
+            self.assertEqual(selftests[0][SUB:], ["grep", "--no-color", "-q", "-E", "-e", poc_scan.selftest_pattern(),
+                                                  EMPTY_TREE, "--"])
+            self.assertEqual(calls[1], selftests[0], "the self-test runs right after the root check")
+        t0 = time.monotonic()
+        self.assertIsNone(poc_scan._regex_selftest(str(root), self.cfg, Deadline(30.0)))
+        self.assertLess(time.monotonic() - t0, 5.0)
+
+    def test_tracked_names_runs_no_self_test(self):
+        root = self.make_repo()
+        calls, patch = self.capture()
+        with patch:
+            self.assertTrue(self.scan(root, "tracked_names")["complete"])
+        self.assertFalse([a for a in calls if EMPTY_TREE in a[SUB:]])
+
+    def test_a_simulated_compile_failure_reports_regex_unsupported_and_fails_closed(self):
+        root = self.make_repo(files={"a.txt": self.CRED, "b.txt": "k = " + AWS + "\n"})
+        for scope in ("worktree", "index", "stashes", "history"):
+            calls, patch = self._failing_compile()
+            with patch:
+                res = self.scan(root, scope)
+            self.assertEqual(res["errors"], ["regex_unsupported"], scope)
+            self.assertEqual((res["complete"], res["truncated"], res["hits"], res["counts"]), (False, False, [], {}), scope)
+            self.assertEqual(res["rules_version"], poc_scan.RULES_VERSION)
+            self.assertFalse([a for a in calls if a[SUB] in ("log",) or "-o" in a], "no rule call after the failure")
+            self.assertEqual(len([a for a in calls if EMPTY_TREE in a[SUB:]]), 2, "compile call plus control")
+        # without the failure the same repository has hits, so the empty result above is the failure, not a clean scan
+        self.assertTrue(self.scan(root, "index")["hits"])
+
+    def test_a_real_git_compile_failure_goes_through_the_same_path(self):
+        """No patching of the executor: git itself rejects a repeat count above its limit."""
+        root = self.make_repo(files={"a.txt": self.CRED})
+        with mock.patch.object(poc_scan, "selftest_pattern", lambda: "a{1,99999}"):
+            res = self.scan(root, "index")
+        self.assertEqual((res["errors"], res["complete"], res["hits"]), (["regex_unsupported"], False, []))
+
+    def test_a_failing_control_keeps_git_failed(self):
+        root = self.make_repo()
+        calls, patch = self._failing_compile(control_ok=False)
+        with patch:
+            res = self.scan(root, "index")
+        self.assertEqual((res["errors"], res["complete"], res["hits"]), (["git_failed"], False, []))
+
+    def test_a_self_test_timeout_is_a_timeout_not_regex_unsupported(self):
+        root = self.make_repo()
+        calls, patch = self._failing_compile(error="timeout")
+        with patch:
+            res = self.scan(root, "index")
+        self.assertEqual((res["errors"], res["complete"], res["truncated"], res["hits"]), (["timeout"], False, True, []))
+        self.assertEqual(len([a for a in calls if EMPTY_TREE in a[SUB:]]), 1, "no control after a timeout")
+
+    def test_the_self_test_shares_the_aggregate_deadline(self):
+        root = self.make_repo()
+        seen: list = []
+        real = poc_scan.run_git
+
+        def spy(argv, deadline, max_bytes, ok_codes=(0,)):
+            seen.append((EMPTY_TREE in argv[SUB:], deadline))
+            return real(argv, deadline, max_bytes, ok_codes)
+
+        with mock.patch.object(poc_scan, "run_git", spy):
+            self.assertTrue(self.scan(root, "index")["complete"])
+        self.assertEqual([is_self for is_self, _ in seen].count(True), 1)
+        self.assertEqual(len({id(d) for _, d in seen}), 1, "one Deadline object for every call of the scan")
+        self.assertIsInstance(seen[0][1], Deadline)
+
+    def test_an_expired_deadline_stops_the_self_test_before_any_subprocess(self):
+        root = self.make_repo()
+        with mock.patch("subprocess.Popen", side_effect=AssertionError("no subprocess")):
+            self.assertEqual(poc_scan._regex_selftest(str(root), self.cfg, Deadline(0.0)), "timeout")
+
+    def test_self_test_failure_is_not_a_clean_result_for_any_error_code(self):
+        root = self.make_repo(files={"a.txt": self.CRED})
+        for code in ("git_failed", "git_missing", "timeout"):
+            _, patch = self._failing_compile(control_ok=False, error=code)
+            with patch:
+                res = self.scan(root, "worktree")
+            self.assertFalse(res["complete"], code)
+            self.assertEqual(res["hits"], [], code)
+            self.assertTrue(res["errors"], code)
+
+    def test_a_failed_self_test_leaks_neither_argv_nor_pattern(self):
+        root = self.make_repo()
+        _, patch = self._failing_compile()
+        with patch:
+            dump = json.dumps(self.scan(root, "index"))
+        self.assertNotIn(poc_scan.selftest_pattern()[:40], dump)
+        self.assertNotIn("grep", dump)
+
+    # -- contract v5 and the text ----------------------------------------------------------------
+    def test_contract_v5_exists_and_leaves_v4_alone(self):
+        v5 = (REPO_ROOT / "docs" / "artifacts" / "poc-security-engineer-tool-scoping-v5.md").read_text(encoding="utf-8")
+        for needle in ("Amends `poc-security-engineer-tool-scoping-v4.md`", "`RULES_VERSION` stays `2026-10-09.5`",
+                       "`path_altered`", "`regex_unsupported`", "`RE_DUP_MAX`", "**at least 1024**",
+                       "T611-2", "T611-3", "control call", "Immutable once produced"):
+            self.assertIn(needle, v5, needle)
+        v4 = (REPO_ROOT / "docs" / "artifacts" / "poc-security-engineer-tool-scoping-v4.md").read_text(encoding="utf-8")
+        self.assertNotIn("regex_unsupported", v4)
+        self.assertNotIn("path_altered", v4)
+
+    def test_tool_description_and_module_doc_name_both_changes(self):
+        tool = [n for n in ast.walk(ast.parse(SERVER_PY.read_text(encoding="utf-8")))
+                if isinstance(n, ast.FunctionDef) and n.name == "scan_secrets"][0]
+        doc = " ".join(ast.get_docstring(tool).split())
+        for needle in ("`path_altered: true` and cannot be flagged", "`regex_unsupported`", "never clean"):
+            self.assertIn(needle, doc, needle)
+        module_doc = " ".join(poc_scan.__doc__.split())
+        for needle in ("T611-2", "T611-3", "`RE_DUP_MAX` is at least 1024", "regex_unsupported"):
+            self.assertIn(needle, module_doc, needle)
+
+    def test_rules_version_and_executor_surface_are_unchanged(self):
+        self.assertEqual(poc_scan.RULES_VERSION, "2026-10-09.5")
+        calls = [n for n in ast.walk(ast.parse(SCAN_PY.read_text(encoding="utf-8")))
+                 if isinstance(n, ast.Attribute) and n.attr in ("Popen", "run", "system", "popen")
+                 and isinstance(n.value, ast.Name) and n.value.id in ("subprocess", "os")]
+        self.assertEqual(calls, [], "poc_scan.py spawns nothing itself")
 
 
 class TextAndStructureTests(unittest.TestCase):
