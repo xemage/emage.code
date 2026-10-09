@@ -2,7 +2,7 @@
 
 **ID:** T606
 **Owner:** solution-architect
-**Status:** pending
+**Status:** done
 **Priority:** P2
 **Tier:** judgment
 **Depends on:** —
