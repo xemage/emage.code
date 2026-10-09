@@ -68,7 +68,7 @@ section for the canonical filename convention this skill implements.
 | TNNN | ... | YYYY-MM-DD |
 
 ## Active Tasks
-| ID | Title | Status | Assignee |
+| ID | Title | Status | Owner |
 |----|-------|--------|----------|
 | TNNN | ... | in_progress | ... |
 
@@ -150,7 +150,7 @@ When resuming after context loss:
 <phase name and description>
 
 ## Active Work
-| ID | Title | Status | Assignee |
+| ID | Title | Status | Owner |
 |----|-------|--------|----------|
 | ... | ... | ... | ... |
 

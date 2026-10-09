@@ -35,7 +35,7 @@ When filing a blocker, create a report with this structure:
 
 - **Blocker ID:** BLK-NNN
 - **Type:** technical | dependency | unclear_requirements | external
-- **Severity:** critical | high | medium | low
+- **Severity:** critical | major | minor
 - **Reporter:** <agent-name>
 - **Date:** YYYY-MM-DD
 - **Impacted Tasks:** TNNN, TMMM
@@ -49,12 +49,13 @@ When filing a blocker, create a report with this structure:
 
 ### Severity Definitions
 
+The severity set is the one in `AGENTS.md` § Blocker Protocol: `critical`, `major`, `minor`.
+
 | Severity | Criteria |
 |----------|----------|
 | `critical` | Blocks the critical path; no workaround; project timeline at risk |
-| `high` | Blocks multiple tasks or a high-priority task; workaround is costly |
-| `medium` | Blocks a single non-critical task; workaround available |
-| `low` | Minor inconvenience; does not block progress |
+| `major` | Blocks multiple tasks or a high-priority task; workaround is costly |
+| `minor` | Blocks a single non-critical task and a workaround is available, or is a minor inconvenience that does not block progress |
 
 ## Escalation Path
 
@@ -144,7 +145,7 @@ Present the blocker to the user with full context:
 ```markdown
 - **Blocker ID:** BLK-005
 - **Type:** technical
-- **Severity:** high
+- **Severity:** major
 - **Reporter:** backend-dev
 - **Impacted Tasks:** T021
 - **Description:** Token bucket implementation fails under concurrent access. Race condition in counter decrement.
@@ -160,7 +161,7 @@ Present the blocker to the user with full context:
 ```markdown
 - **Blocker ID:** BLK-008
 - **Type:** unclear_requirements
-- **Severity:** medium
+- **Severity:** minor
 - **Reporter:** frontend-dev
 - **Impacted Tasks:** T030
 - **Description:** Design spec does not specify behavior when user has no profile photo. Should we show initials, a default avatar, or leave blank?

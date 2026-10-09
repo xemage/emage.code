@@ -2,9 +2,8 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T618 | Apply the O-1..O-10 rulings (blocker severity, release checkpoint name, release check and follow-up logging, clean-ups) | backend-developer | pending | P2 | — | 2026-10-09 |
 
-> **1 active row (`plan-119`).** T617 is ruled and archived; T618 applies the user-approved edits (O-1..O-10) to eleven knowledge files, declares about 74 root-drift paths, and then one user-approved root refresh follows. Baseline v20; root drift 0. Open, unscheduled: R-1, the other plan-112 §2 notes, the held-out check, the stale golden quote.
+> **No active rows.** `plan-119` is complete: T617 ruled the observations O-1..O-12 and T618 applied the edits to eleven knowledge files. Root drift: 74 paths (eight skills on 7 platforms, three agents/commands on 6) declared by T618 wait for one user-approved root refresh. Baseline v20. Open, unscheduled: R-1, the other plan-112 §2 notes, the held-out check, the stale golden quote.
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)

@@ -143,7 +143,7 @@ When delegating to a specialist agent, always provide:
 3. **Release Blocking Conditions:**
    - CI pipeline must be green on develop before cutting a release tag
    - Security Gate must pass if security changes are in the release
-   - All task statuses in `docs/tasks/active-tasks.md` matching the release scope must be `done`
+   - No task matching the release scope remains in `docs/tasks/active-tasks.md`: each is `done` and archived in `docs/tasks/completed-tasks.md` (`AGENTS.md` § Task Protocol: `active-tasks.md` never holds a `done` row)
 
 ## Checkpoint Management
 

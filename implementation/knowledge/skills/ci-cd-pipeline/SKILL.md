@@ -177,4 +177,4 @@ The CI/CD pipeline is responsible for enforcing the following validation gates. 
 **Gate failure handling:**
 - If any gate fails, the pipeline MUST halt and report the failure in the next checkpoint summary.
 - Gate failures that cannot be resolved by the current agent should be raised as blockers.
-- `CONDITIONAL_PASS` verdicts from code review allow progression but require tracked follow-up items in `docs/tasks/active-tasks.md`.
+- `CONDITIONAL_PASS` verdicts from code review allow progression but require tracked follow-up items, which the orchestrator adds to `docs/tasks/active-tasks.md` (`AGENTS.md` § Task Protocol).
