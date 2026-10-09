@@ -74,7 +74,7 @@ User (final decision-maker)
 1. Attempt to self-resolve the issue (retry count = 1).
 2. If the first attempt fails, try an alternative approach (retry count = 2).
 3. If both attempts fail, create a Blocker Report.
-4. Transition the impacted task(s) to `blocked` status in `active-tasks.md`.
+4. Name the impacted task(s) in the Blocker Report. Do not edit `active-tasks.md`: "Only orchestrators create/transition tasks. Agents report completion and blockers." (`AGENTS.md` § Task Protocol), so the orchestrator sets those tasks to `blocked`.
 5. Send the Blocker Report to the orchestrator.
 
 ### 2. Orchestrator Triages a Blocker
@@ -118,7 +118,7 @@ Present the blocker to the user with full context:
 ### 4. Resolve and Close a Blocker
 
 1. Apply the resolution.
-2. Transition impacted tasks from `blocked` back to `in_progress`.
+2. The orchestrator transitions impacted tasks from `blocked` back to `in_progress` (`AGENTS.md` § Task Protocol).
 3. Add a resolution note to the blocker report:
 
 ```markdown

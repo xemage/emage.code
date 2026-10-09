@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-09T14:00:36+00:00",
+  "generatedAt": "2026-10-09T15:56:17+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -1529,7 +1529,7 @@
       "category": "skill",
       "name": "blocker-escalation",
       "path": "skills/blocker-escalation/SKILL.md",
-      "checksum": "cb836a89f4117c7ddc3f9e9bee3e854071270ecd8af4796211eeea6bebd01b0d",
+      "checksum": "c68113f1c294780c8d423b6f6fc59493513ee802afbdb0059ad2d1dc702759af",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1557,7 +1557,7 @@
       "category": "skill",
       "name": "checkpoint-protocol",
       "path": "skills/checkpoint-protocol/SKILL.md",
-      "checksum": "34d5e0b185495bf56c894a9306593ec6f49018ab453d80450813a891d1ff5ff2",
+      "checksum": "c2a58e3c1f0a459670f48667db983f953c54cbb2bb10dbe84f20983dae2e5f8f",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1725,7 +1725,7 @@
       "category": "skill",
       "name": "dependency-graphing",
       "path": "skills/dependency-graphing/SKILL.md",
-      "checksum": "e4632d0965c6987863dd88385c99e0331d290304d7448500ebac8e915d46d478",
+      "checksum": "6a1677c5f429693834360a3fc23631e8d95ba397da7add39499a132720a8ba8f",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1753,7 +1753,7 @@
       "category": "skill",
       "name": "gitlab-management",
       "path": "skills/gitlab-management/SKILL.md",
-      "checksum": "8ef4fc5f97e0b0a40e4f3ca127ce56638961e61aee54f3561b403beaa9eae5eb",
+      "checksum": "4a834016656a64b6a5e8717b019c4d40247f584de8a07e968a1949442b9d168f",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -2033,7 +2033,7 @@
       "category": "skill",
       "name": "task-management",
       "path": "skills/task-management/SKILL.md",
-      "checksum": "38b12a819c2bc5b4da345dd0e948fee86675321cf4ce260c8858f04eae2af692",
+      "checksum": "c7779069016ed1b832006f9a65dba799c814ff932f6bb339aefa88a9c04389fa",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [

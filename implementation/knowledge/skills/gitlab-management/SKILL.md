@@ -134,7 +134,7 @@ The canonical task list lives in `docs/tasks/active-tasks.md`. GitLab issues are
 1. When a task is added to `active-tasks.md`, create a corresponding GitLab issue with the same ID in the title (e.g., `[T007] Implement auth middleware`).
 2. When a task status changes in `active-tasks.md`, update the GitLab issue labels to match.
 3. When a task is moved to `completed-tasks.md`, close the corresponding GitLab issue.
-4. When a GitLab issue is updated externally (e.g., by a human team member), sync the change back to `active-tasks.md` at the next checkpoint.
+4. When a GitLab issue is updated externally (e.g., by a human team member), report the change to the orchestrator, who syncs it back to `active-tasks.md` at the next checkpoint (`AGENTS.md` § Task Protocol: "Only orchestrators create/transition tasks").
 
 **Conflict resolution:** If `active-tasks.md` and a GitLab issue disagree, `active-tasks.md` wins unless the GitLab update was made by a human (identifiable by author).
 
@@ -168,8 +168,8 @@ In addition to the standard labels defined above, the following labels are used 
 | Label | Meaning | Sync Rule |
 |-------|---------|-----------|
 | `status::todo` | Task not started | Maps to `pending` in active-tasks.md |
-| `status::in-progress` | Task actively being worked | Maps to `in-progress` in active-tasks.md |
-| `status::review` | Task complete, awaiting review | Maps to `review` in active-tasks.md |
+| `status::in-progress` | Task actively being worked | Maps to `in_progress` in active-tasks.md |
+| `status::review` | Task complete, awaiting review | Maps to `in_review` in active-tasks.md |
 | `status::blocked` | Task blocked by a dependency or blocker | Maps to `blocked` in active-tasks.md; must have a linked `[BLOCKER]` |
 | `status::done` | Task complete and verified | Triggers move to completed-tasks.md |
 | `gate::pending` | Awaiting validation gate result | Used for tasks gated on code-review or QA verdict |

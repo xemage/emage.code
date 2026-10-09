@@ -56,7 +56,7 @@ section for the canonical filename convention this skill implements.
 # Checkpoint <SEQ>
 
 **Date:** YYYY-MM-DD HH:MM
-**Author:** <agent-name or orchestrator>
+**Author:** orchestrator
 **Phase:** <current phase>
 
 ## Progress Summary
@@ -98,7 +98,7 @@ section for the canonical filename convention this skill implements.
 
 1. Determine the next checkpoint sequence number by listing `docs/checkpoints/` and incrementing the highest `<SEQ>`.
 2. Fill in every section of the checkpoint format above.
-3. For "Completed Tasks," query `active-tasks.md` for tasks marked `done` since the last checkpoint.
+3. For "Completed Tasks," query `docs/tasks/completed-tasks.md` for the rows whose `Done on` is after the last checkpoint: `active-tasks.md` never holds a `done` row (`AGENTS.md` § Task Protocol).
 4. For "Active Blockers," query any open blocker reports.
 5. For "Key Decisions," review conversation history for architectural or design decisions made.
 6. Write the file to the path in § File Location, `docs/checkpoints/checkpoint-<SEQ>-<phase>.md`, per `AGENTS.md` § Checkpoint Protocol.
