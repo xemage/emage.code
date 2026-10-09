@@ -2,9 +2,8 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T604 | Close the T603 review residuals: unquoted-secret rule, untracked secret files, LOW findings (C-1 deadline) | backend-developer | in_review | P2 | T603 | 2026-10-09 |
 
-> **1 active row (`plan-113`).** T604 closes condition C-1 (review PASS, awaiting merge). T603 (done, !534) built the two-tool `poc-security-audit` server (git-config isolation, redaction, tri-state `pushed`, bounded scans) and then drops `execute` from `poc-security-engineer`, per the user's decisions. It needs a Security Engineer code review before merge. Baseline v20; root drift 0.
+> **No active rows.** `plan-113` (L4/X5) is complete: T602 to T604 are done. Baseline v20; root drift 0. Next: a placeholder-flag design ruling (L-3) and the AGENTS.md naming rulings (plan-112 §2).
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /

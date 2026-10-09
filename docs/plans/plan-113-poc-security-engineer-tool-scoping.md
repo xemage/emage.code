@@ -65,3 +65,7 @@ The notes in plan-112 §2, and the other X-items (X1–X4, X6–X8).
 - **Parked (T605, not scheduled):** SEV-1..SEV-6 and three missing pins.
 - **Still with the user:** allow `mcp__poc-security-audit__*` in `.claude/settings.json`. That file is client-owned and
   is never auto-edited.
+
+## 7. Completion (2026-10-09)
+
+T602 to T604 are done (MRs !534 and !536). User rulings: T604 merged as is; T605 (SEV-1..SEV-6 plus three pins) stays unscheduled; the scanner stays strict, but findings must be flaggable as placeholders so they do not block (design ruling still to be scheduled).
