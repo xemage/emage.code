@@ -58,4 +58,4 @@ T004 → test-report-v1.md   (consumed by: T005)
 ## Approval
 
 - [ ] User approved on YYYY-MM-DD
-- [ ] Plan locked; revisions create `plan-<slug>-v2.md`
+- [ ] Plan locked; a later revision is a new plan with the next free number (`plan-approve-execute` skill § File Location), and this plan is then marked `superseded` (§ Guidelines)

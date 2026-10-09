@@ -112,7 +112,7 @@ the summary below.
   new PoC work)
 - At evaluation, produce explicit handoff artifacts:
   - Hypothesis verdict (Validated / Invalidated)
-   - `TECHNICAL-DEBT.md` from `@technical-debt-narrator`
+  - `TECHNICAL-DEBT.md` from `@technical-debt-narrator`
   - Production refactoring backlog (top 5 minimum)
   - Recommended architecture adjustments for production
 

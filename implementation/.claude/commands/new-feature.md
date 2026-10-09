@@ -19,7 +19,7 @@ I want to add a new feature to the project. Please:
 
 3. Have the Product Owner write a user story with acceptance criteria
 4. Have the Solution Architect assess the technical impact
-5. Have the Scrum Master create tasks and estimate effort
+5. Have the Scrum Master propose the tasks and estimate effort; the orchestrator creates them, per `AGENTS.md` § Task Protocol
 6. Assign to appropriate developers and start implementation
 
 ## Phase 3: Track & Validate

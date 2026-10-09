@@ -63,23 +63,29 @@ change to be redone as a new version, not silently patched in place.
 ## Artifact Versioning & File Naming
 
 ### Versioned Artifact Convention
-All plan, decision, and documentation artifacts follow the `<type>-vN.md` naming convention:
-- `plan-v1.md`, `plan-v2.md`, `plan-v3.md`
-- `decision-v1.md`, `decision-v2.md`
-- `checkpoint-v1.md`, `checkpoint-v2.md`
+Immutable artifacts (`AGENTS.md` § Artifact Versioning) follow the `<type>-vN.md` naming convention:
+- `requirements-v1.md`, `requirements-v2.md`
+- `architecture-v1.md`, `architecture-v2.md`
+
+Three artifact classes keep their own file names and take no `-vN` suffix:
+- Plans: `plan-<ID>.md` (skill `plan-approve-execute` § File Location)
+- Decision records: `ADR-<NNN>-<slug>.md` (`AGENTS.md` § Decision Log)
+- Checkpoints: `checkpoint-<SEQ>-<phase>.md` (`AGENTS.md` § Checkpoint Protocol)
+
+The rules and increment triggers below apply to the artifacts that take a `-vN` suffix only. A plan, a decision record or a checkpoint follows the source named beside it.
 
 ### Rules
 - **Never overwrite prior versions.** Always create a new file with an incremented version number.
 - Version numbers are sequential integers starting at 1 (`v1`, `v2`, `v3`, ...).
 - The latest version is the active/current version. Prior versions are historical record.
-- When referencing an artifact, always use the full versioned filename (e.g., `plan-v3.md`, not `plan.md`).
+- When referencing an artifact, always use the full versioned filename (e.g., `architecture-v3.md`, not `architecture.md`).
 
 ### Artifact Types and Their Prefixes
-| Prefix | Location | Purpose |
+| File name | Location | Purpose |
 |--------|----------|---------|
-| `plan-vN.md` | `docs/plans/` | Implementation plans |
-| `decision-vN.md` | `docs/decisions/` | Architecture/design decisions |
-| `checkpoint-vN.md` | `docs/checkpoints/` | Progress checkpoints |
+| `plan-<ID>.md` | `docs/plans/` | Implementation plans |
+| `ADR-<NNN>-<slug>.md` | `docs/decisions/` | Architecture/design decisions |
+| `checkpoint-<SEQ>-<phase>.md` | `docs/checkpoints/` | Progress checkpoints |
 | `artifact-vN.md` | `docs/artifacts/` | General deliverable artifacts |
 
 ### Version Increment Triggers

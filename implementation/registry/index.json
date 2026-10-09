@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-09T10:32:52+02:00",
+  "generatedAt": "2026-10-09T08:54:17+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -353,7 +353,7 @@
       "category": "agent",
       "name": "PoC Orchestrator",
       "path": "agents/poc-orchestrator.md",
-      "checksum": "087a8cf42cb7079d2926fec6a67814611d67e97e9945ef01dc9685445c863aa3",
+      "checksum": "b91f54c738b39aa3b6a37c9e4d71b9b264afd94440416754451240d57c37d4de",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -997,7 +997,7 @@
       "category": "command",
       "name": "new-feature",
       "path": "commands/new-feature.md",
-      "checksum": "c09a6e42e92334122863ab59a72120a34ab09d5c15b8afc33108a04634152426",
+      "checksum": "4f3b6ae2d3d06f46ac2f156bb125e1ae68f28fb3a6542e3b8e9d5e2a4e54fd7b",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1053,7 +1053,7 @@
       "category": "command",
       "name": "new-project",
       "path": "commands/new-project.md",
-      "checksum": "8578f2e2d4e648de74e0b267c80a49fd256d62574d40744af8a9ffcb34569c40",
+      "checksum": "df7bd82f2375c4955bf4fc3d787cdbc7a3fb58df0d724567d2646360c500e8ac",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1333,7 +1333,7 @@
       "category": "instruction",
       "name": "coding-standards",
       "path": "instructions/coding-standards.md",
-      "checksum": "85d9e25f7e1e5d22ec5e8216b3408ce845834d0761ce728ce10cf4e47fd15cdf",
+      "checksum": "1c5b53c5b3cbafa267f34a3fc76364b6ad9079c98a16d9054d68f1f056ba7fbd",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
