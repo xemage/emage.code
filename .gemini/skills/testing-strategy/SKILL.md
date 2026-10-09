@@ -224,7 +224,7 @@ The QA gate uses the same VERDICT protocol as code review, ensuring consistent g
 | Verdict | Criteria | Pipeline Effect |
 |---------|----------|-----------------|
 | `PASS` | All tests pass, coverage thresholds met, no critical defects. | Pipeline proceeds to next stage. |
-| `CONDITIONAL_PASS` | Minor test failures (non-critical paths), coverage within 5% of threshold. | Pipeline proceeds; failures logged as tasks in `docs/tasks/active-tasks.md`. |
+| `CONDITIONAL_PASS` | Minor test failures (non-critical paths), coverage within 5% of threshold. | Pipeline proceeds; failures are proposed to the orchestrator, who logs them as tasks in `docs/tasks/active-tasks.md` (`AGENTS.md` § Task Protocol). |
 | `FAIL` | Critical test failures, coverage below threshold by >5%, or security test failures. | Pipeline halts. Defects must be fixed and tests re-run. |
 
 ### Coverage Thresholds That Determine Gate Outcome

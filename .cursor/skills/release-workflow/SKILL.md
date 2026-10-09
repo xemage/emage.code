@@ -49,7 +49,7 @@ For release candidates: `MAJOR.MINOR.PATCH-rc.N` (e.g., `2.0.0-rc.1`)
 1. **Determine the version number** using the semantic versioning rules above.
 2. **Verify all planned tasks are complete:**
    - Check `docs/tasks/active-tasks.md` — no tasks for this release should be `in_progress` or `blocked`.
-   - All planned tasks should be `done` or archived.
+   - All planned tasks should be `done` and archived in `docs/tasks/completed-tasks.md`: `active-tasks.md` never holds a `done` row (`AGENTS.md` § Task Protocol), so none should be left there.
 3. **Generate the changelog** (see procedure below).
 4. **Run the release gate** (see gate checklist below).
 5. **Write the release notes** to `docs/releases/v<VERSION>.md` (§ 4).
