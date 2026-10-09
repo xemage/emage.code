@@ -15,7 +15,21 @@
     "Emptied 2026-10-08 by the eighth user-approved --projections-only refresh (52 paths: the T596 P32 plan-path and release-notes edits).",
     "Emptied 2026-10-08 by the ninth user-approved --projections-only refresh (26 paths: the T599 P33 poc-guidelines, poc-orchestrator, technical-debt-tracking and technical-debt-narrator edits).",
     "Declared 2026-10-09 by T603 (poc-security-audit server and poc-security-engineer grant swap): 18 paths = the poc-security-engineer projections (6) and the poc-security-audit MCP entry in each platform MCP config and provenance file (12); root not refreshed.",
-    "Emptied 2026-10-09 by the tenth user-approved --projections-only refresh (18 paths: the T603 poc-security-audit server registration and the poc-security-engineer grant swap)."
+    "Emptied 2026-10-09 by the tenth user-approved --projections-only refresh (18 paths: the T603 poc-security-audit server registration and the poc-security-engineer grant swap).",
+    "Declared 2026-10-09 by T608 (placeholder-flag agent text, E-P1/E-O1/E-P2): 12 paths = the poc-orchestrator and poc-security-engineer projections on 6 platforms."
   ],
-  "drift": []
+  "drift": [
+    ".claude/agents/poc-orchestrator.md",
+    ".claude/agents/poc-security-engineer.md",
+    ".cursor/agents/poc-orchestrator.mdc",
+    ".cursor/agents/poc-security-engineer.mdc",
+    ".gemini/agents/poc-orchestrator.md",
+    ".gemini/agents/poc-security-engineer.md",
+    ".github/agents/poc-orchestrator.agent.md",
+    ".github/agents/poc-security-engineer.agent.md",
+    ".opencode/agents/poc-orchestrator.md",
+    ".opencode/agents/poc-security-engineer.md",
+    ".pi/agents/poc-orchestrator.md",
+    ".pi/agents/poc-security-engineer.md"
+  ]
 }

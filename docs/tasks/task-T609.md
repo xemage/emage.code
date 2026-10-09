@@ -33,6 +33,9 @@ Binding review conditions, quoted from the v3 security review:
 - **V3-8:** replace E-P2 so it keeps the remaining blind spots (a clean scan excludes ...); state which leaders stay excluded and why; use "unresolved" not "blocks"; drop `dummy-word` for `bearer-token`.
 - E-S2 conditions 1-5 of v3 (all matches on the line must be an exact shape; the dedup at `:300-304` must not discard a second match first; only `worktree`/`index` hits without `commit` are labelled; compare in memory, never return matched text), plus the mixed-line and `log`-hit tests.
 
+
+**Carried from the T608 review (tracked LOW debt, apply here because T609 edits the same bullets;** `docs/artifacts/security-review-t608-placeholder-flag-text-v1.md` **):** SEC-6 (require a re-read of the line for a content-rule hit that fits no class, before proposing a `user-attested` flag, without reintroducing the "looks like a placeholder" phrase), SEC-7 (class proposals use the "classic default value; confirm that no service accepts it, local ones included" wording; the "unverified by the reviewer" label applies to `user-attested` proposals), SEC-8 (reword the provider-token flag restriction to "the rules listed above" and add a drift test over the provider ids in `RULES`).
+
 The tool list stays two tools; the F-8 text and the existing contract tests stay green except where the hit-key pin legitimately changes.
 
 ## Constraints
