@@ -73,14 +73,13 @@ CREDENTIAL_VARIANTS = (
     'access_key = "abcdefgh12"', 'private-key: "abcdefgh12"', "'client_secret': 'abcdefgh12'",
 )
 PLACEHOLDERS = (
-    'password = "${DB_PASSWORD}"', "token = '<set-me>'", '"password": "${PW}"', "api-key: '{{ key }}'",
-    "u = postgres://user:${PASS}@host/db", "u = postgres://user:<pw>@host/db",
+    '"password": "${PW}"',  # shorter than eight characters: still not reported (RA-11)
     "u = http://localhost:8080/x", "see risk-assessment-for-the-quarterly-planning-doc",
     "task-management-planning-document-for-everyone",
     # unquoted-assignment false-positive guards (T604, user-tuned)
     "TOKEN_TTL=3600", "SESSION_TIMEOUT=30000", "TOKEN_TTL=86400000", "API_URL=https://example.com/v1",
     "TOKEN_URL=https://auth.example.com/oauth/token", "PASSWORD_FILE=/run/secrets/db_password",
-    "password=${DB_PASSWORD}", "password: ${DB_PASSWORD}", "password: <set-me>", "secret: {{ vault_secret }}",
+    "secret: {{ vault_secret }}",  # unquoted value ends at the first space: 2 characters, not reported
     "key: value", "api_key: value", "password=short", "password: abc",
     "password = get_password_from_vault(name)", "if password == hunter2hunter2",
     # placeholders for the extra token formats (T604)
@@ -371,7 +370,9 @@ class ParsingTests(RepoCase):
             dump = json.dumps(res)
             for secret in (AWS, GHP, "sk_live_"):
                 self.assertNotIn(secret, dump)
-            self.assertNotIn("text", {k for h in res["hits"] for k in h})
+            # Hit-key pin (contract v3): only the allow-listed keys, never a text/value field.
+            self.assertLessEqual({k for h in res["hits"] for k in h}, poc_scan.HIT_KEYS)
+            self.assertFalse({"text", "value", "match", "matched"} & {k for h in res["hits"] for k in h})
 
     def test_every_rule_matches_in_git_and_is_counted(self):
         root = self.make_repo(files={f"{i}.txt": s + "\n" for i, s in enumerate(SAMPLES.values())})
@@ -390,9 +391,10 @@ class ParsingTests(RepoCase):
         root = self.make_repo(files={f"p{i}.txt": v + "\n" for i, v in enumerate(PLACEHOLDERS)})
         res = self.scan(root, "worktree")
         self.assertEqual((res["hits"], res["complete"]), ([], True))
+        # T609 (E-S2): the formerly skipped `$ < {` values are visible hits now (see TemplateLabelTests).
         root = self.make_repo("r2", files={"c.txt": 'password = "${DB_PASSWORD}"\ntoken = "<set-me>"\n'})
         res = self.scan(root, "worktree")
-        self.assertEqual((res["hits"], res["complete"]), ([], True))
+        self.assertEqual(([h["line"] for h in res["hits"]], res["complete"]), ([1, 2], True))
 
     def test_worktree_covers_untracked_and_ignored(self):
         root = self.make_repo(files={".gitignore": "ign.txt\n"})
@@ -831,7 +833,6 @@ class T604Tests(RepoCase):
         for text in ("TOKEN_TTL=3600", "SESSION_TIMEOUT=30000", "TOKEN_TTL=86400000", "token_timeout: 30000000",
                      "API_URL=https://example.com/v1", "TOKEN_URL=https://auth.example.com/oauth/token",
                      "SECRET_KEY_PATH=/etc/ssl/private/k", "PASSWORD_FILE=/run/secrets/db_password",
-                     "password=${DB_PASSWORD}", "password: ${DB_PASSWORD}", "password: <set-me>",
                      "secret: {{ vault_secret }}", "key: value", "api_key: value", "password=short",
                      "password: abc", "password = get_password_from_vault(name)",
                      "password=abcdefgh(x)", "if password == hunter2hunter2", 'password = "hunter2hunter2"',
@@ -871,8 +872,8 @@ class T604Tests(RepoCase):
             self.assertIsNotNone(rx.match("DB_" + w.upper() + "S"))
 
     def test_rules_version_bumped(self):
-        self.assertEqual(poc_scan.RULES_VERSION, "2026-10-09.3")
-        self.assertEqual(self.scan(self.make_repo(), "index")["rules_version"], "2026-10-09.3")
+        self.assertEqual(poc_scan.RULES_VERSION, "2026-10-09.4")
+        self.assertEqual(self.scan(self.make_repo(), "index")["rules_version"], "2026-10-09.4")
 
     # -- item 6: extra token formats ---------------------------------------------------
     def test_extra_token_formats_match_and_placeholders_do_not(self):
@@ -969,6 +970,340 @@ class T604Tests(RepoCase):
             plain = self.base / "plain-dir"
             plain.mkdir()
             self.assertEqual(self.scan(plain, "index")["errors"], ["not_a_toplevel"])  # genuine: no .git
+
+
+class TemplateLabelTests(RepoCase):
+    """T609 (placeholder-flag-ruling-v3 E-S2, review V3-2/V3-6/V3-7): the `$ < { space` skips are gone and
+    a hit carries `value_shape` only under the E-S2 conditions. Secret-shaped values are assembled at run time."""
+
+    REAL = "real" + "value123"  # a non-shape quoted value (8+ characters)
+
+    def _scan(self, files: dict[str, str], scope: str = "index") -> dict:
+        self._n = getattr(self, "_n", 0) + 1
+        root = self.make_repo(name=f"t{self._n}", files=files)
+        return self.scan(root, scope)
+
+    def _line(self, text: str, scope: str = "index", rule: str = "credential-assignment") -> list[dict]:
+        return [h for h in self._scan({"f.txt": text + "\n"}, scope)["hits"] if h["rule_id"] == rule]
+
+    def _shape(self, text: str, scope: str = "index", rule: str = "credential-assignment") -> tuple:
+        hits = self._line(text, scope, rule)
+        self.assertEqual(len(hits), 1, text)
+        return hits[0].get("value_shape"), hits[0].get("template_shape")
+
+    # -- the skips are removed, and exactly the listed ones --------------------------------------------
+    def test_skipped_leading_characters_are_ordinary_hits_now(self):
+        for text in ('password = "${DB_PASSWORD}"', "token = '<set-me>'", "api-key: '{{ key }}'",
+                     'password = " abcdefgh"', 'secret = "{abcdefgh}"', 'secret = "$abcdefgh"'):
+            self.assertEqual(len(self._line(text)), 1, text)
+        for text in ("password=${DB_PASSWORD}", "password: <set-me>", "password: {abcdefgh}", "password: $abcdefgh"):
+            self.assertEqual(len(self._line(text, rule="unquoted-credential-assignment")), 1, text)
+        for text in ("u = postgres://user:${PASS}@host/db", "u = postgres://user:<pw>@host/db",
+                     "u = postgres://user:{pw}@host/db"):
+            self.assertEqual(len(self._line(text, rule="url-embedded-credentials")), 1, text)
+
+    def test_the_other_leading_characters_stay_excluded(self):
+        for text in ("password:  =abcdefgh", "password: (abcdefgh", "password: 'abcdefgh", 'password: "abcdefgh'):
+            self.assertEqual(self._line(text, rule="unquoted-credential-assignment"), [], text)
+        for text in ("u = postgres://user:/pwd1234@h", "u = postgres://user: pwd@h", "u = postgres://user:@pwd1234@h"):
+            self.assertEqual(self._line(text, rule="url-embedded-credentials"), [], text)
+        for text in ('password = "${PW}"', 'password = "<pw>"', "password = 'abc'", 'password = "a\'bcdefgh"'):
+            self.assertEqual(self._line(text), [], text)  # shorter than eight, or holds a quote (RA-11)
+
+    # -- each shape, both quoted and unquoted forms, worktree and index ---------------------------------
+    def test_each_exact_shape_is_labelled_in_worktree_and_index(self):
+        cases = (('password = "${DB_PASSWORD}"', "braced"), ("token = '<set-me>'", "angle"),
+                 ('secret = "<your-api-key>"', "angle"), ('secret = "<set_me_now>"', "angle"),
+                 ("api-key: '{{ key }}'", "jinja"), ('api_key = "{{ vault.api_key }}"', "jinja"))
+        for text, shape in cases:
+            for scope in ("index", "worktree"):
+                self.assertEqual(self._shape(text, scope), ("template-ref", shape), (text, scope))
+        for text, shape in (("password=${DB_PASSWORD}", "braced"), ("password: <set-me>", "angle"),
+                            ("API_KEY=<your-api-key>", "angle")):
+            self.assertEqual(self._shape(text, rule="unquoted-credential-assignment"), ("template-ref", shape), text)
+
+    def test_bare_dollar_name_gets_its_own_label_and_never_template_ref(self):
+        for text in ('password = "$uperSecret1"', 'password = "$DB_PASSWORD"'):
+            self.assertEqual(self._shape(text), ("bare-dollar-name", None), text)
+        self.assertEqual(self._shape("password=$uperSecret1", rule="unquoted-credential-assignment"),
+                         ("bare-dollar-name", None))
+
+    def test_near_misses_are_ordinary_unlabelled_hits(self):
+        for text in ('secret = "<hunter2>"', 'secret = "<password>"', 'secret = "<apitoken>"', 'secret = "<Set-Me>"',
+                     'secret = "<set--me>"', 'secret = "<set-me-2>"', 'secret = "<-set-me>"', 'secret = "<set me>x"',
+                     'secret = "${abcdefgh}"', 'secret = "${Abcdefgh}"', 'secret = "${ABC DEF}"', 'secret = "${A1}xyzzy"',
+                     'secret = "x${ABCDEFGH}"', 'secret = "${ABCDEFGH}x"', 'secret = "${ABCDEFGH"',
+                     'secret = "{{ hunter2 }}"', 'secret = "{{keyname}}"', 'secret = "{{  key  }}"', 'secret = "{{ Key }}"',
+                     'secret = "{{ a }}12"', 'secret = "$"', 'secret = "$ab"', 'secret = "$ab cdefgh"'):
+            hits = self._line(text)
+            if text in ('secret = "$"', 'secret = "$ab"'):
+                self.assertEqual(hits, [], text)  # shorter than eight characters: no hit at all
+                continue
+            self.assertEqual(len(hits), 1, text)
+            self.assertNotIn("template_shape", hits[0], text)
+            self.assertNotEqual(hits[0].get("value_shape"), "template-ref", text)
+
+    def test_shape_regexes_are_pinned_exactly(self):
+        self.assertEqual({n: rx.pattern for n, rx in poc_scan.TEMPLATE_SHAPES},
+                         {"braced": r"\$\{[A-Z][A-Z0-9_]{2,}\}", "angle": r"<[a-z]+([ _-][a-z]+)+>",
+                          "jinja": r"\{\{ [a-z][a-z_.]{1,30} \}\}"})
+        self.assertEqual(poc_scan._BARE_DOLLAR_RE.pattern, r"\$[A-Za-z_][A-Za-z0-9_]{2,}")
+        for rule, text in (("credential-assignment", 'x_password: "${abc}"'), ("credential-assignment", 'x_password: "<hunter2>"'),
+                           ("credential-assignment", 'x_password: "<password>"'), ("credential-assignment", 'x_password: "${ABC}"'),
+                           ("credential-assignment", 'x_password: "<a-b>"'), ("credential-assignment", 'x_password: "{{ ab }}"')):
+            self.assertEqual(poc_scan._shape_of(rule, text.encode()) is not None, text in (
+                'x_password: "<a-b>"', 'x_password: "{{ ab }}"', 'x_password: "${ABC}"'), text)
+
+    # -- E-S2 condition 3/4: every match on the line, in any order -----------------------------------
+    def test_mixed_line_gets_no_label(self):
+        real = self.REAL
+        for text in (f'a_password: "<set-me>", b_secret: "{real}"',
+                     f'a_secret: "{real}", b_password: "<set-me>"',
+                     f'a_password: "<set-me>" # old b_secret: "{real}"'):
+            hits = self._line(text)
+            self.assertEqual(len(hits), 1, text)
+            self.assertNotIn("value_shape", hits[0], text)
+        for text in (f"a_password=<set-me> b_secret={real}", f"a_password={real} b_secret=<set-me>"):
+            hits = self._line(text, rule="unquoted-credential-assignment")
+            self.assertEqual(len(hits), 1, text)
+            self.assertNotIn("value_shape", hits[0], text)
+
+    def test_three_matches_label_only_if_all_three_are_shapes(self):
+        real = self.REAL
+        a, b, c = '"<set-me>"', '"${DB_PASSWORD}"', '"{{ key }}"'
+        n = lambda v: f'x_password: {v}'  # noqa: E731
+        for order in ((a, a, a), (b, b, b), (c, c, c)):
+            hits = self._line(", ".join(n(v) for v in order))
+            self.assertEqual(len(hits), 1)
+            self.assertEqual(hits[0].get("value_shape"), "template-ref")
+        for order in ((a, a, f'"{real}"'), (a, f'"{real}"', a), (f'"{real}"', a, a), (f'"{real}"', f'"{real}"', a)):
+            hits = self._line(", ".join(n(v) for v in order))
+            self.assertEqual(len(hits), 1, order)
+            self.assertNotIn("value_shape", hits[0], order)
+        # different shapes on one line: one hit, no single template_shape to report, so no label
+        hits = self._line(", ".join(n(v) for v in (a, b, c)))
+        self.assertEqual(len(hits), 1)
+        self.assertNotIn("value_shape", hits[0])
+        # a bare $NAME next to a template shape: no label either
+        hits = self._line(n(a) + ', y_secret: "$uperSecret1"')
+        self.assertEqual([h.get("value_shape") for h in hits], [None])
+
+    def test_second_match_is_not_discarded_by_the_dedupe_before_the_check(self):
+        # Two matches in one line produce two `-o` records for the same (path, line); the second one
+        # decides the label, so the same line in reverse order gives the same answer.
+        for text in (f'a_password: "<set-me>", b_secret: "{self.REAL}"', f'a_secret: "{self.REAL}", b_password: "<set-me>"'):
+            self.assertEqual(len(self._line(text)), 1)
+            self.assertNotIn("value_shape", self._line(text)[0])
+        # And two shape matches still make exactly ONE hit.
+        hits = self._line('a_password: "<set-me>", b_secret: "<your-key-here>"')
+        self.assertEqual([(h["line"], h["value_shape"], h["template_shape"]) for h in hits], [(1, "template-ref", "angle")])
+
+    # -- E-S2 condition 1/2 and V3-2: scope, commit, log, tree hits, rules ---------------------------------
+    def test_log_stash_and_history_tree_hits_get_no_label(self):
+        root = self.make_repo(files={"f.txt": 'password = "${DB_PASSWORD}"\ntoken = "<set-me>"\n'})
+        self.assertEqual({h["value_shape"] for h in self.scan(root, "index")["hits"]}, {"template-ref"})
+        hist = self.scan(root, "history")
+        self.assertTrue(any(h.get("via") == "log" for h in hist["hits"]))
+        self.assertTrue(any(h.get("commit") and "via" not in h for h in hist["hits"]))
+        for h in hist["hits"]:
+            self.assertNotIn("value_shape", h)
+            self.assertNotIn("template_shape", h)
+        (root / "f.txt").write_text('password = "${OTHER_PASSWORD}"\n')
+        _git(root, "stash", "push", "-q", "-m", "wip")
+        stash = self.scan(root, "stashes")
+        self.assertEqual({h["rule_id"] for h in stash["hits"]}, {"credential-assignment"})
+        self.assertTrue(stash["hits"])
+        for h in stash["hits"]:
+            self.assertIn("commit", h)
+            self.assertNotIn("value_shape", h)
+
+    def test_url_hits_and_other_rules_never_carry_a_label(self):
+        root = self.make_repo(files={"f.txt": "u = postgres://user:${PASS}@host/db\nu2 = postgres://<set-me>:${PASS}@h/d\n"
+                                              "Authorization: Bearer " + "Z" * 24 + "\n" + SAMPLES["aws-access-key-id"] + "\n"})
+        for scope in ("index", "worktree"):
+            res = self.scan(root, scope)
+            self.assertTrue(res["complete"])
+            self.assertIn("url-embedded-credentials", res["counts"])
+            for h in res["hits"]:
+                self.assertNotIn("value_shape", h, h["rule_id"])
+        self.assertEqual(set(poc_scan.LABEL_RULES), {"credential-assignment", "unquoted-credential-assignment"})
+
+    def test_redacted_path_hit_gets_no_label(self):
+        root = self.make_repo(files={f"{AWS}.txt": 'password = "${DB_PASSWORD}"\n'})
+        hits = [h for h in self.scan(root, "index")["hits"] if h["rule_id"] == "credential-assignment"]
+        self.assertEqual(len(hits), 1)
+        self.assertIn("path_index", hits[0])
+        self.assertNotIn("value_shape", hits[0])
+        self.assertNotIn(AWS, json.dumps(hits))
+
+    def test_truncated_scan_gives_no_label(self):
+        lines = "".join(f'password{i} = "<set-me>"\n' for i in range(400))
+        root = self.make_repo(files={"f.txt": lines})
+        res = self.scan(root, "index", cfg=PocAuditConfig(allowed_root=self.base, max_bytes=2000))
+        self.assertTrue(res["truncated"] and not res["complete"])
+        self.assertTrue(all("value_shape" not in h for h in res["hits"]))
+
+    # -- the label changes nothing else, and no matched text is returned ------------------------------------
+    def test_label_does_not_change_hits_counts_or_completeness(self):
+        res = self._scan({"f.txt": 'password = "${DB_PASSWORD}"\ntoken = "<hunter2>"\n'})
+        self.assertEqual((res["complete"], res["truncated"], res["errors"]), (True, False, []))
+        self.assertEqual(res["counts"], {"credential-assignment": 2})
+        self.assertEqual([h["line"] for h in res["hits"]], [1, 2])
+        self.assertEqual([h.get("value_shape") for h in res["hits"]], ["template-ref", None])
+
+    def test_hit_keys_are_allow_listed_and_no_matched_text_is_returned(self):
+        secret = "Zq9" + "xK2mP7vL"
+        files = {"a.txt": f'password = "${{DB_PASSWORD}}"\ntoken = "<set-me>"\nsecret = "{secret}"\nx_secret: "<set-me>", y_secret: "{secret}"\n'
+                          f"api-key: '{{{{ key }}}}'\npassword=$uperSecret1\nu = postgres://user:{secret}@h/d\n"}
+        root = self.make_repo(files=files)
+        (root / ".env").write_text("x\n")
+        _git(root, "stash", "push", "-q", "--include-untracked", "-m", "wip")
+        (root / "a.txt").write_text("x\n")
+        (root / "id_rsa").write_text("x\n")
+        for scope in ("worktree", "index", "history", "stashes", "tracked_names"):
+            res = self.scan(root, scope)
+            self.assertTrue(res["complete"], scope)
+            keys = {k for h in res["hits"] for k in h}
+            self.assertLessEqual(keys, poc_scan.HIT_KEYS, scope)
+            for h in res["hits"]:
+                self.assertEqual("template_shape" in h, h.get("value_shape") == "template-ref", h)
+                self.assertIn(h.get("value_shape", "template-ref"), ("template-ref", "bare-dollar-name"))
+            dump = json.dumps(res)
+            for text in (secret, "DB_PASSWORD", "set-me", "uperSecret", "key }}"):
+                self.assertNotIn(text, dump, (scope, text))
+        self.assertEqual(poc_scan.HIT_KEYS, {"rule_id", "scope", "path_or_redacted", "path_index", "line", "commit",
+                                             "ref", "via", "value_shape", "template_shape"})
+
+    def test_errors_carry_no_matched_text(self):
+        with mock.patch.object(poc_scan, "_shape_of", side_effect=RuntimeError('password = "<set-me>"')):
+            res = self._scan({"f.txt": 'password = "<set-me>"\n'})
+        self.assertEqual(res["errors"], ["internal_error"])
+        self.assertNotIn("set-me", json.dumps(res))
+
+
+    # -- T609-1: the value must END the line -------------------------------------------------------------
+    def test_text_after_the_value_leaves_the_hit_unlabelled(self):
+        real = self.REAL
+        for text in ("password: <set-me> hunter2hunter2xx", 'password = "<set-me>" "realvalue1xyz"',
+                     'PASSWORD="<set-me>"realtail1xyz', 'password = "<set-me>",', 'password = "<set-me>";',
+                     'password = "<set-me>" # note', f'password = "<set-me>" + "{real}"', "password: <set-me>;"):
+            for rule in ("credential-assignment", "unquoted-credential-assignment"):
+                for hit in self._line(text, rule=rule):
+                    self.assertNotIn("value_shape", hit, (text, rule))
+        # ... but a shape-only line with nothing after the value is labelled (control for the above)
+        self.assertEqual(self._shape('password = "<set-me>"'), ("template-ref", "angle"))
+
+    def test_trailing_whitespace_tabs_and_crlf_still_label(self):
+        for text in ('password = "<set-me>"   ', 'password = "<set-me>"\t', 'password = "<set-me>"\r',
+                     'password\t=\t"<set-me>"\t \r'):
+            self.assertEqual(self._shape(text), ("template-ref", "angle"), repr(text))
+        for text in ("password: <set-me>   ", "password:\t<set-me>\t", "password: <set-me>\r"):
+            self.assertEqual(self._shape(text, rule="unquoted-credential-assignment"), ("template-ref", "angle"), repr(text))
+        root = self.make_repo(name="crlf", files={})
+        (root / "w.txt").write_bytes(b'password = "${DB_PASSWORD}"\r\ntoken: <set-me>\r\n')
+        for scope in ("worktree",):
+            self.assertEqual([h.get("value_shape") for h in self.scan(root, scope)["hits"]], ["template-ref"] * 2)
+
+    def test_invalid_utf8_and_full_width_lookalikes_are_unlabelled_hits(self):
+        root = self.make_repo(name="u8", files={})
+        (root / "w.txt").write_bytes(b'password = "<set-\xffme>"\npassword = "\xef\xbc\x9cset-me\xef\xbc\x9e"\n'
+                                     b'password = "\xef\xbc\x84{DB_PASSWORD}"\n')
+        res = self.scan(root, "worktree")
+        self.assertEqual([h["line"] for h in res["hits"]], [1, 2, 3])
+        self.assertTrue(all("value_shape" not in h for h in res["hits"]))
+
+    def test_anchor_is_what_leaves_trailing_text_lines_unlabelled(self):
+        # Mutation: without the second, anchored grep every one of these would be labelled.
+        lines = 'password = "<set-me>",\npassword = "<set-me>" "realvalue1xyz"\nPASSWORD="<set-me>"realtail1xyz\n'
+        root = self.make_repo(name="mut", files={"f.txt": lines + "password: <set-me> hunter2hunter2xx\n"})
+        self.assertTrue(all("value_shape" not in h for h in self.scan(root, "index")["hits"]))
+        everything = lambda self_, flags, rule_id, shapes: {k for k in shapes}  # noqa: E731
+        with mock.patch.object(poc_scan._Scan, "_value_ends_line", everything):
+            labelled = [h["line"] for h in self.scan(root, "index")["hits"] if h.get("value_shape")]
+        self.assertEqual(labelled, [1, 2, 3, 4])
+
+    def test_anchored_grep_failure_never_hides_a_hit_nor_fails_the_scan(self):
+        root = self.make_repo(name="anc", files={"f.txt": 'password = "<set-me>"\nsecret: "' + self.REAL + '"\n'})
+        base = self.scan(root, "index")
+        real = poc_scan.run_git
+
+        for bad in (git_executor.GitResult(b"", True, "timeout"), git_executor.GitResult(b"", False, "git_failed"),
+                    git_executor.GitResult(b"f.txt\x001\x00cut", True, None),
+                    git_executor.GitResult(b"garbage without nul", False, None)):
+            def failing(argv, deadline, max_bytes, ok_codes=(0,), bad=bad):
+                if any(a.endswith("[ \t\r]*$") for a in argv):
+                    return bad
+                return real(argv, deadline, max_bytes, ok_codes)
+
+            with mock.patch.object(poc_scan, "run_git", failing):
+                res = self.scan(root, "index")
+            self._check_failed_anchor(res, base)
+
+    def _check_failed_anchor(self, res, base):
+        self.assertEqual((res["complete"], res["errors"]), (True, []))
+        self.assertEqual([(h["rule_id"], h["line"]) for h in res["hits"]], [(h["rule_id"], h["line"]) for h in base["hits"]])
+        self.assertTrue(all("value_shape" not in h for h in res["hits"]))
+        self.assertTrue(any("value_shape" in h for h in base["hits"]))
+
+    def test_anchored_grep_uses_the_same_executor_and_only_for_label_candidates(self):
+        root = self.make_repo(name="calls", files={"f.txt": "nothing here\n"})
+        calls, patch = self.capture()
+        with patch:
+            self.scan(root, "index")
+        self.assertFalse(any(a.endswith("[ \t\r]*$") for c in calls for a in c))
+        root = self.make_repo(name="calls2", files={"f.txt": 'password = "<set-me>"\n'})
+        calls, patch = self.capture()
+        with patch:
+            self.scan(root, "index")
+        anchored = [c for c in calls if any(a.endswith("[ \t\r]*$") for a in c)]
+        self.assertEqual(len(anchored), 1)
+        self.assertEqual(anchored[0][3:SUB], PREFIX)
+        self.assertEqual(set(anchored[0][SUB:]) & {"--cached", "-a", "-o", "-n", "-z", "-E", "--"},
+                         {"--cached", "-a", "-o", "-n", "-z", "-E", "--"})
+
+    # -- T609-2/3/4 ----------------------------------------------------------------------------------------
+    def test_matched_text_is_kept_only_for_label_rules_in_worktree_and_index(self):
+        data = b"a.txt\x001\x00secret text\n"
+        self.assertEqual(poc_scan._parse_records(data), ([(b"a.txt", 1, b"")], False))
+        self.assertEqual(poc_scan._parse_records(data, keep_text=True), ([(b"a.txt", 1, b"secret text")], False))
+        kept: list[tuple[str, str, bool]] = []
+        real = poc_scan._parse_records
+
+        def spy(data, keep_text=False):
+            kept.append((self._cur_scope, "", keep_text))
+            return real(data, keep_text)
+
+        root = self.make_repo(name="keep", files={"f.txt": 'password = "<set-me>"\n' + SAMPLES["aws-access-key-id"] + "\n"})
+        for scope in ("worktree", "index", "history"):
+            self._cur_scope = scope
+            kept.clear()
+            with mock.patch.object(poc_scan, "_parse_records", spy):
+                self.scan(root, scope)
+            want = scope in ("worktree", "index")
+            self.assertEqual(sum(k for _, _, k in kept), 2 if want else 0, scope)  # the 2 label rules only
+
+    def test_hit_keys_are_enforced_at_runtime(self):
+        scan = poc_scan._Scan(str(self.base), self.cfg, git_executor.Deadline(5.0), "index")
+        scan.add_hit("jwt", name="a.txt", line=3, text="SECRET", matched="x", value_shape="template-ref")
+        self.assertEqual(set(scan.hits[0]), {"rule_id", "scope", "path_or_redacted", "line", "value_shape"})
+
+    def test_labelled_scan_writes_nothing_to_stdout_stderr_or_logs(self):
+        import contextlib
+        import io
+        root = self.make_repo(name="quiet", files={"f.txt": 'password = "${DB_PASSWORD}"\ntoken: "<set-me>", x_secret: "' + self.REAL + '"\n'})
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err), self.assertNoLogs(level="DEBUG"):
+            for scope in ("worktree", "index"):
+                res = self.scan(root, scope)
+        self.assertEqual((out.getvalue(), err.getvalue()), ("", ""))
+        self.assertTrue(any("value_shape" in h for h in res["hits"]))
+
+    def test_extraction_regexes_are_pinned_exactly(self):
+        self.assertEqual(poc_scan._QUOTED_MATCH_RE.pattern, r"""[^:=]*[:=][ \t]*[\"']([^\"']*)[\"']""")
+        self.assertEqual(poc_scan._UNQUOTED_MATCH_RE.pattern, r"[^:=]*[:=][ \t]*([^ \t\r]+)[ \t\r]*")
+        self.assertEqual(set(poc_scan.ANCHORED_RULES), set(poc_scan.LABEL_RULES))
+        for rid, pat in poc_scan.ANCHORED_RULES.items():
+            self.assertTrue(pat.endswith("[ \t\r]*$"), rid)
 
 
 class TextAndStructureTests(unittest.TestCase):

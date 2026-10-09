@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-09T08:54:17+00:00",
+  "generatedAt": "2026-10-09T09:04:58+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -353,7 +353,7 @@
       "category": "agent",
       "name": "PoC Orchestrator",
       "path": "agents/poc-orchestrator.md",
-      "checksum": "b91f54c738b39aa3b6a37c9e4d71b9b264afd94440416754451240d57c37d4de",
+      "checksum": "787eb158ece56f01addd3b3eac8894609307ef455ecf33ea7634fa756ea840d3",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -409,7 +409,7 @@
       "category": "agent",
       "name": "PoC Security Engineer",
       "path": "agents/poc-security-engineer.md",
-      "checksum": "7009a28f97fca35cee400a7b22476f4b35fb58670cd9836c0cb56be5d55fd511",
+      "checksum": "d99335e901677b9e9ea9b86c7981ff364fcbae7b6b8d5ddc7b131252f11d5761",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [

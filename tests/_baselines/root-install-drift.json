@@ -17,7 +17,8 @@
     "Declared 2026-10-09 by T603 (poc-security-audit server and poc-security-engineer grant swap): 18 paths = the poc-security-engineer projections (6) and the poc-security-audit MCP entry in each platform MCP config and provenance file (12); root not refreshed.",
     "Emptied 2026-10-09 by the tenth user-approved --projections-only refresh (18 paths: the T603 poc-security-audit server registration and the poc-security-engineer grant swap).",
     "Declared 2026-10-09 by T608 (placeholder-flag agent text, E-P1/E-O1/E-P2): 12 paths = the poc-orchestrator and poc-security-engineer projections on 6 platforms.",
-    "Declared 2026-10-09 by T610 (AGENTS.md naming rulings O1-A, O2-A, O5-A and the poc-orchestrator indent cosmetic): 19 further paths = the coding-standards projections (7), the /new-project projections (6) and the /new-feature projections (6); the 6 poc-orchestrator projections were already declared by T608; root not refreshed."
+    "Declared 2026-10-09 by T610 (AGENTS.md naming rulings O1-A, O2-A, O5-A and the poc-orchestrator indent cosmetic): 19 further paths = the coding-standards projections (7), the /new-project projections (6) and the /new-feature projections (6); the 6 poc-orchestrator projections were already declared by T608; root not refreshed.",
+    "Declared 2026-10-09 by T609 (template-ref label and E-S2 agent text: the same 12 poc-orchestrator and poc-security-engineer projections, no new path; the scanner, server and tests are not root-installed); root not refreshed."
   ],
   "drift": [
     ".claude/agents/poc-orchestrator.md",
