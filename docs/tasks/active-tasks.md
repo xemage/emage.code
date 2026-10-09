@@ -2,8 +2,10 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T606 | Rule how a scanner finding can be flagged as a placeholder without weakening the secret check (L-3) | solution-architect | pending | P2 | — | 2026-10-09 |
+| T607 | Rule the three AGENTS.md naming conflicts (P32 O1, O2, O5) | solution-architect | pending | P2 | — | 2026-10-09 |
 
-> **No active rows.** `plan-113` (L4/X5) is complete: T602 to T604 are done. Baseline v20; root drift 0. Next: a placeholder-flag design ruling (L-3) and the AGENTS.md naming rulings (plan-112 §2).
+> **2 active rows (`plan-114`).** T606 (placeholder flag, L-3) and T607 (AGENTS.md naming conflicts) are decision-only Solution Architect tasks. Baseline v20; root drift 0. T605 stays unscheduled.
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
