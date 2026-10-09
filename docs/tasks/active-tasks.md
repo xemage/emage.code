@@ -2,10 +2,11 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T606 | Rule how a scanner finding can be flagged as a placeholder without weakening the secret check (L-3) | solution-architect | pending | P2 | — | 2026-10-09 |
-| T607 | Rule the three AGENTS.md naming conflicts (P32 O1, O2, O5) | solution-architect | pending | P2 | — | 2026-10-09 |
+| T608 | Apply the placeholder-flag agent text (E-P1, E-O1, E-P2) with the V3 conditions | backend-developer | pending | P2 | — | 2026-10-09 |
+| T609 | Remove the $ < { space skips and add the template-ref label to the scanner (E-S2) | backend-developer | pending | P2 | T608 | 2026-10-09 |
+| T610 | Apply the AGENTS.md naming rulings (O1, O2, O5) and the poc-orchestrator indentation cosmetic | backend-developer | pending | P2 | T608 | 2026-10-09 |
 
-> **2 active rows (`plan-114`).** T606 (placeholder flag, L-3) and T607 (AGENTS.md naming conflicts) are decision-only Solution Architect tasks. Baseline v20; root drift 0. T605 stays unscheduled.
+> **3 active rows (`plan-114`).** T606 and T607 are ruled and archived; T608 (placeholder-flag agent text), T609 (scanner skip removal and `template-ref`) and T610 (naming edits plus the indentation cosmetic) implement the user's decisions of 2026-10-09. Each needs a Security Engineer or Tech Lead review before merge, then one root refresh. Baseline v20; root drift 0. T605 stays unscheduled.
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
