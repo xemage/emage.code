@@ -2,7 +2,7 @@
 
 **ID:** T610
 **Owner:** backend-developer
-**Status:** pending
+**Status:** done
 **Priority:** P2
 **Tier:** standard
 **Depends on:** T608

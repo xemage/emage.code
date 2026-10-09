@@ -3,9 +3,8 @@
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
 | T609 | Remove the $ < { space skips and add the template-ref label to the scanner (E-S2) | backend-developer | pending | P2 | T608 | 2026-10-09 |
-| T610 | Apply the AGENTS.md naming rulings (O1, O2, O5) and the poc-orchestrator indentation cosmetic | backend-developer | pending | P2 | T608 | 2026-10-09 |
 
-> **2 active rows (`plan-114`).** T608 (placeholder-flag agent text, MR !540) is done. T609 (scanner skip removal and `template-ref`, also carries the T608 review debt SEC-6..SEC-8) and T610 (naming edits plus the indentation cosmetic) implement the user's decisions of 2026-10-09. Each needs a Security Engineer or Tech Lead review before merge, then one root refresh. Baseline v20; root drift 12 (declared by T608). T605 stays unscheduled.
+> **1 active row (`plan-114`).** T610 (naming edits plus the indentation cosmetic, MR !541) is done. T609 (scanner skip removal and `template-ref`, also carries the T608 review debt SEC-6..SEC-8) implements the user's decision of 2026-10-09 and needs a Security Engineer code review before merge, then one root refresh. Baseline v20; root drift 31 (declared by T608 and T610). T605 stays unscheduled.
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
