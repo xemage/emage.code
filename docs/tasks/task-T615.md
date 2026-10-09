@@ -2,7 +2,7 @@
 
 **ID:** T615
 **Owner:** solution-architect
-**Status:** in_review
+**Status:** done
 **Priority:** P2
 **Tier:** judgment
 **Depends on:** —
