@@ -3,7 +3,7 @@
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
 
-> **No active rows.** `plan-115` is complete: T611 batched the scanner residuals (SEV-1..SEV-6 and T609-10..T609-13). Root drift: the 6 `poc-security-engineer` projections declared by T611 wait for one user-approved root refresh. Baseline v20. Unscheduled: the T611 review residuals T611-2 (altered path flags), T611-3 (regex-library portability) and R-1.
+> **No active rows.** `plan-116` is complete: T612 closed the altered-path flag gap and added the regex-library self-test. Root drift: the 12 `poc-orchestrator` and `poc-security-engineer` projections declared by T612 wait for one user-approved root refresh. Baseline v20. Open, unscheduled: R-1 and the parked plan-112 §2 notes.
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /

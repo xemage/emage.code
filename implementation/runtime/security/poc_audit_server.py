@@ -50,7 +50,12 @@ def build_server(cfg: PocAuditConfig) -> MCPServer:
         label may also mean the end-of-line check degraded. Other rules, URL hits, stash and
         history hits never carry a label, and a label never removes or uncounts a hit.
         Returned names have control, format (bidi, zero width) and line/paragraph separator
-        characters removed and are cut at 200 characters.
+        characters removed and are cut at 200 characters, and bytes that are not valid UTF-8 are shown
+        as U+FFFD; a hit whose shown path differs from the real one in any of these ways carries
+        `path_altered: true` and cannot be flagged. Before any scope but tracked_names the largest
+        rule is compiled once through git: if that compile call fails while a trivial pattern
+        compiles (usually a low RE_DUP_MAX) the scan ends `regex_unsupported` (complete false, no
+        hits), never clean.
         Limits: `history` uses `git log -G`, which does not diff merge commits (L-4); a
         range over `max_refs` commits is flagged `truncated` although fully covered (L-5);
         a `.git` file may point to a gitdir outside the allowed root (L-6); `worktree` also
