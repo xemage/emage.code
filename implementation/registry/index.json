@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-09T13:53:38+02:00",
+  "generatedAt": "2026-10-09T14:00:36+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -577,7 +577,7 @@
       "category": "agent",
       "name": "Scrum Master",
       "path": "agents/scrum-master.md",
-      "checksum": "941aaa9d413ebd0b9012f53df5c60ceb3615178a3076d41474ad16f483d60361",
+      "checksum": "acb2c365da3601c8152d49b0c46ca7b71beb16199885bebef785af49608512af",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1557,7 +1557,7 @@
       "category": "skill",
       "name": "checkpoint-protocol",
       "path": "skills/checkpoint-protocol/SKILL.md",
-      "checksum": "a78b81b18a2657a1061ad3b48b032d860b3dbcbe65faa156daf094be019539e7",
+      "checksum": "34d5e0b185495bf56c894a9306593ec6f49018ab453d80450813a891d1ff5ff2",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
