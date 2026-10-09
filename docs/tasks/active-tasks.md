@@ -2,8 +2,13 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T619 | Make the release job use the single release document and stop writing a third release-notes.md (P32 O6) | devops-engineer | pending | P1 | — | 2026-10-09 |
+| T620 | Bound the aperiodic-input cost of the JWT rule (R-1) | backend-developer | pending | P1 | — | 2026-10-09 |
+| T621 | Rule the remaining task-protocol and PoC-track observations (P41 O4, P33 O1/O2/O5/O6, O-8) | solution-architect | pending | P1 | — | 2026-10-09 |
+| T622 | Plan the re-evaluation and promotion of orchestrator and tech-lead and the golden realignment under baseline v21 | solution-architect | pending | P1 | — | 2026-10-09 |
+| T623 | Release-level audit of v7.0.1..develop: breaking and behaviour changes for the v8.0.0 migration notes | tech-lead | pending | P1 | — | 2026-10-09 |
 
-> **No active rows.** `plan-119` is complete: T617 ruled the observations O-1..O-12 and T618 applied the edits to eleven knowledge files. Root drift: 74 paths (eight skills on 7 platforms, three agents/commands on 6) declared by T618 wait for one user-approved root refresh. Baseline v20. Open, unscheduled: R-1, the other plan-112 §2 notes, the held-out check, the stale golden quote.
+> **5 active rows (`plan-120`, release readiness for v8.0.0).** Wave 1: T619 (CI release job), T620 (R-1), T621 (remaining rulings), T622 (promotion and golden realignment plan under the user-authorized baseline v21), T623 (release-level audit). Baseline v20; root drift 0. Release gates and release preparation follow after waves 1 and 2.
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
