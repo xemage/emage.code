@@ -22,8 +22,8 @@ Build and visualize task dependency graphs as Mermaid DAGs. Identify critical pa
 
 ### 1. Extract Dependencies from Task Table
 
-1. Read `docs/tasks/active-tasks.md`.
-2. For each task row, extract `ID`, `Title`, `Status`, `Blocks`, and `BlockedBy`.
+1. Read `docs/tasks/active-tasks.md` for the `pending`, `in_progress`, `blocked` and `in_review` tasks, and `docs/tasks/completed-tasks.md` for the `done` and `cancelled` ones: `active-tasks.md` never holds a terminal row (`AGENTS.md` § Task Protocol). A task ID that appears only in a `Depends on` cell and in `completed-tasks.md` is a `done` node.
+2. For each task row, extract `ID`, `Title`, `Status` and `Depends on`, the ledger's own columns (`AGENTS.md` § Task Protocol), and read each `Depends on` cell as the task IDs it names (`—` means none). The ledger has no `Blocks` or `BlockedBy` column: the tasks a task blocks are the rows whose `Depends on` names it.
 3. Build an adjacency list: for each task, record its outgoing edges (tasks it blocks).
 
 ### 2. Generate Mermaid DAG
@@ -97,7 +97,7 @@ function dfs(node, graph, visited, stack):
 ### 4. Identify Critical Path
 
 1. Assign a weight of 1 to each task (or use estimated effort if available).
-2. Find the longest path from any root node (no `BlockedBy`) to any leaf node (no `Blocks`).
+2. Find the longest path from any root node (empty `Depends on`) to any leaf node (no task names it in `Depends on`).
 3. The critical path determines the minimum project duration.
 4. Highlight the critical path in the Mermaid graph with thick arrows:
 
@@ -131,13 +131,13 @@ Lane 3: T005             (depends on Lane 2)
 
 Given active tasks:
 
-| ID | Title | Blocks | BlockedBy |
-|----|-------|--------|-----------|
-| T001 | Design schema | T003 | — |
-| T002 | Setup CI | T004 | — |
-| T003 | Implement API | T004 | T001 |
-| T004 | Run tests | T005 | T002, T003 |
-| T005 | Deploy | — | T004 |
+| ID | Title | Depends on |
+|----|-------|------------|
+| T001 | Design schema | — |
+| T002 | Setup CI | — |
+| T003 | Implement API | T001 |
+| T004 | Run tests | T002, T003 |
+| T005 | Deploy | T004 |
 
 Output:
 

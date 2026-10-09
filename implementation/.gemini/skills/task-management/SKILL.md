@@ -106,13 +106,15 @@ Valid transitions:
 
 ## Procedures
 
+Every ledger write in this section (create, update, dependency bookkeeping, complete, cancel) is performed by an orchestrator: "Only orchestrators create/transition tasks. Agents report completion and blockers." (`AGENTS.md` § Task Protocol). An agent other than an orchestrator that applies this skill proposes the change to the orchestrator and does not write the ledger.
+
 ### 1. Create a Task
 
 1. Open `docs/tasks/active-tasks.md`.
 2. Determine the next available `TNNN` ID (increment the highest existing ID).
 3. Add a new row to the table with status `pending`.
-4. If the task depends on other tasks, populate `BlockedBy`.
-5. If other tasks depend on this task, update their `BlockedBy` field and this task's `Blocks` field.
+4. If the task depends on other tasks, set its `Depends on` cell to their IDs, comma-separated (`—` when there are none).
+5. If other tasks depend on this task, add this task's ID to their `Depends on` cells. This row needs no entry of its own: the ledger has no `Blocks` or `BlockedBy` column (`AGENTS.md` § Task Protocol).
 
 ### 2. Update Task Status
 
@@ -124,11 +126,9 @@ Valid transitions:
 
 ### 3. Manage Dependencies
 
-1. When adding a dependency, update **both** sides:
-   - Add the dependency ID to the dependent task's `BlockedBy` field.
-   - Add the dependent task's ID to the dependency's `Blocks` field.
-2. Before transitioning a task to `in_progress`, verify all `BlockedBy` tasks are `done`.
-3. When a task reaches `done`, check its `Blocks` field and evaluate if blocked tasks can be unblocked.
+1. When adding a dependency, record it once, in the dependent task's `Depends on` cell. The tasks a task blocks are the rows whose `Depends on` names it: they are derived, not stored.
+2. Before transitioning a task to `in_progress`, verify that every task named in its `Depends on` cell is `done` (listed in `completed-tasks.md`, or marked `(done)`).
+3. When a task reaches `done`, find the active rows whose `Depends on` names it and evaluate whether they can be unblocked (§ 6 rewrites those cells).
 
 ### 4. Complete a Task (ATOMIC — all 4 steps in one edit session)
 
@@ -163,25 +163,25 @@ rewrite that cell as `T-x (done)`. NEVER delete the reference — it is the audi
 ### Creating a Task
 
 ```markdown
-| T012 | Add rate limiting to API | pending | backend-dev | — | T010 | high | 2025-03-20 |
+| T012 | Add rate limiting to API | backend-developer | pending | P1 | T010 | 2025-03-20 |
 ```
 
 ### Transitioning a Task
 
 Before:
 ```markdown
-| T012 | Add rate limiting to API | pending | backend-dev | — | T010 | high | 2025-03-20 |
+| T012 | Add rate limiting to API | backend-developer | pending | P1 | T010 | 2025-03-20 |
 ```
 
 After (T010 completed):
 ```markdown
-| T012 | Add rate limiting to API | in_progress | backend-dev | — | — | high | 2025-03-20 |
+| T012 | Add rate limiting to API | backend-developer | in_progress | P1 | T010 (done) | 2025-03-21 |
 ```
 
 ## Guidelines
 
 - Never skip statuses in the lifecycle (e.g., do not go directly from `pending` to `in_review`).
-- Always update both sides of a dependency relationship.
-- Archive promptly — do not leave `done` tasks in `active-tasks.md` longer than one checkpoint cycle.
+- Record each dependency once, in `Depends on`; never add a `Blocks` or `BlockedBy` field.
+- Archive immediately: the row leaves `active-tasks.md` in the same edit that sets `done` or `cancelled` (§ Complete a Task; `AGENTS.md` § Task Protocol). Never leave a terminal row there, not even for one checkpoint cycle.
 - Use the `dependency-graphing` skill to visualize complex dependency chains.
 - Task IDs are immutable once assigned. Never reuse an ID.
