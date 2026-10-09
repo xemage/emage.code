@@ -31,10 +31,12 @@ tracked in T604):
   whole, one of three exact shapes, and `bare-dollar-name` for a bare `$NAME`; see `_label_for`.
   Still not reported: quoted or unquoted values shorter than eight characters (a URL password
   shorter than three), values with a quote (and, unquoted, `(`), unquoted values that start with a
-  space, tab, CR, quote, `(` or `=`, unquoted names that end in a configuration word (ttl, timeout,
-  url, ... see NON_SECRET_NAME_ENDINGS), a URL password that starts with `/`, `@` or a space or
-  contains `/`, `@` or a space, a URL whose scheme is 32 or more characters long or in upper case,
-  and secrets in unlisted formats.
+  space, tab, CR, quote, `(` or `=`, unquoted names that end in a configuration word after `_` or
+  `-` (ttl, timeout, url, ... see NON_SECRET_NAME_ENDINGS and SEV-4 below), a URL password that
+  starts with `/`, `@` or a space or contains `/`, `@` or a space, a URL whose scheme is in upper
+  case, and secrets in unlisted formats. (T609-13: a scheme of 32 or more characters is NOT a blind
+  spot: the pattern is not anchored on the left, so a longer scheme still matches its last 32
+  characters; only an upper-case scheme is missed.)
 * L-4: `scan_secrets(scope="history")` uses `git log -G`, which does not diff merge commits.
   A secret that exists only as a merge-resolution change is found only if it is also visible
   in a scanned tip tree.
@@ -50,6 +52,49 @@ tracked in T604):
   `=`, and a name that does not end in a non-secret word (ttl, timeout, url, ...). A
   value shorter than 8 characters is never reported, and a code identifier such as
   `password = args.password` is (a known false positive).
+
+Further limits recorded by the T604 code review (security-review-poc-security-audit-code-v2,
+SEV-1..SEV-6) and the T609 code review (security-review-t609-template-label-v1, T609-10..T609-13),
+handled in T611 (contract `poc-security-engineer-tool-scoping-v4.md`):
+
+* SEV-1: the work per line is bounded, because git grep was quadratic on one line that repeats a
+  credential keyword or `eyJ`. Blind spots this creates: a credential keyword followed by more than
+  more than 64 name characters (quoted rule; 65 to 67 for the unquoted rule, depending on the
+  ending) before the `:` or `=` (NAME_RUN_MAX; the name-ending exclusion is judged only within that
+  run), and a JWT whose first segment has more than 512 characters after its leading `eyJ`. An
+  unquoted value is judged to its end up to 1025 characters; a run of 1025 or more non-space,
+  non-quote, non-`(` characters is reported without that check (UNQUOTED_VALUE_MAX = 1024), so a
+  `(` or quote beyond the bound is over-reported, never missed. Text beyond either bound is also
+  unjudged for the label (T609-10): a line with a real credential whose name is longer than the
+  name-run bound, followed by a template-shaped assignment that ends the line, is labelled
+  `template-ref` for the visible match only. Every timeout still ends in `timeout` / `complete: false`.
+* SEV-2: the Python loop over file names checks the shared deadline once per 4096 names; on expiry
+  the scan stops with `timeout` and `complete: false`.
+* SEV-3: a returned file, ref or tag name has control, format (bidi, zero width) and line/paragraph
+  separator characters removed and is cut at 200 characters (`safe_name`); the redaction rules are
+  tested on the raw name and on the cleaned name (T611-1: a token split by a zero-width character is
+  still redacted) before the cut.
+* SEV-4: a configuration-word ending excludes an unquoted name only after `_` or `-`
+  (`SECRET_FILE`), so `SECRET_PROFILE` is reported. A camel-case or run-together name (`tokenUrl`,
+  `passwordfile`) is therefore no longer excluded and is reported (a false positive).
+* SEV-5, known false positives (pinned by tests, not fixed): a type annotation such as
+  `password: Optional[str] = None`, `MAX_TOKENS=100000000` (an all-digit value under a name that
+  contains "token"; there is no all-digits rule and no `tokens` exclusion, because `API_TOKENS=a,b`
+  can be a real secret list) and `args.password`.
+* SEV-6: a JWT test fixture (the jwt.io sample, an unsigned `eyJ...` token) is reported by the
+  `jwt` rule like any token.
+* T609-10: the label is judged on the matched text, not on the whole line. With several matches on
+  one line only the last is anchored, so text BETWEEN two shape matches that no rule matches is not
+  judged; and a line continuation (a YAML plain scalar that continues on the next line, a trailing
+  backslash) is not judged either. A label therefore means "every matched value on this line is
+  one template shape and the last ends the line", not "the whole logical value is a template".
+* T609-11: `add_hit` also checks the label VALUES against the fixed sets (an invalid label, or a
+  `template-ref` without a `template_shape`, is dropped; the hit stays), and `_anchored` raises an explicit error instead of using
+  `assert`.
+* T609-12: if the anchored check degrades (error, timeout, truncation, unparseable output), the
+  hit simply carries no label and the scan stays `complete: true`; a missing label may therefore
+  mean the check degraded. The scan assumes a quiescent tree: an edit between the two `git grep`
+  passes could in theory shift a line, which at worst gives a wrong or missing label.
 """
 from __future__ import annotations
 
@@ -58,12 +103,14 @@ import os
 import re
 import stat
 from collections import Counter
+import unicodedata
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
 from implementation.runtime.security.git_executor import (
     ERR_GIT_FAILED,
+    ERR_TIMEOUT,
     LOG_FLAGS,
     Deadline,
     GitResult,
@@ -71,7 +118,7 @@ from implementation.runtime.security.git_executor import (
     run_git,
 )
 
-RULES_VERSION = "2026-10-09.4"
+RULES_VERSION = "2026-10-09.5"
 
 
 def _ci(word: str) -> str:
@@ -88,15 +135,24 @@ def _name_class(chars: set[str]) -> str:
     return "[" + "".join(parts) + ("-" if "-" in chars else "") + "]"
 
 
-def _not_ending(words: tuple[str, ...]) -> str:
+# SEV-1 (T611): the run of name characters between a credential keyword and the `:` or `=` is
+# bounded. An unbounded run made git grep quadratic on one line that repeats a keyword (60 s,
+# fail closed). Blind spot: a keyword followed by more than 64 name characters (65 to 67 in the
+# unquoted rule) before the
+# separator is not matched (a longer name is also excluded-ending-checked only within the bound).
+NAME_RUN_MAX = 64
+
+
+def _not_ending(words: tuple[str, ...], max_run: int = NAME_RUN_MAX) -> str:
     """ERE (no lookaround) for name-character strings, empty included, that end in NONE of
-    `words` (case-insensitive). Built by peeling the last character off every word."""
+    `words` (case-insensitive). Built by peeling the last character off every word. The free run
+    in front of the last character is at most `max_run` characters (SEV-1)."""
     last = {w[-1] for w in words}
-    alts = ["[A-Za-z0-9_-]*" + _name_class(set(_NAME_CHARS) - last)]
+    alts = ["[A-Za-z0-9_-]{0," + str(max_run) + "}" + _name_class(set(_NAME_CHARS) - last)]
     for c in sorted(last):
         rest = tuple(w[:-1] for w in words if w[-1] == c)
         if all(rest):  # a one-letter word would forbid every string ending in c
-            alts.append(_not_ending(rest) + _name_class({c}))
+            alts.append(_not_ending(rest, max_run) + _name_class({c}))
     return "(" + "|".join(alts) + ")?"
 
 
@@ -108,9 +164,22 @@ _CREDENTIAL_WORDS = "(" + "|".join([
 NON_SECRET_NAME_ENDINGS = ("ttl", "timeout", "url", "uri", "endpoint", "path", "file", "dir",
                            "name", "expiry", "expires", "expiration", "length", "size", "type",
                            "header", "env", "var")
-_UNQUOTED_VALUE = (
-    "[^ \t\r\"'(=][^ \t\r\"'(]{7,}([ \t\r]|$)"  # 8+ chars, no space/quote/( ; ends at space/EOL
-)
+# SEV-4 (T611): an ending only counts after a separator, so `SECRET_FILE` is excluded but
+# `SECRET_PROFILE` (which merely ends in the letters "file") is reported. Consequence: a
+# camel-case or run-together name (`tokenUrl`, `passwordfile`) is no longer excluded.
+NON_SECRET_NAME_SUFFIXES = tuple(sep + word for word in NON_SECRET_NAME_ENDINGS for sep in "_-")
+# The value: 8 to UNQUOTED_VALUE_MAX + 1 (1025) characters without space/quote/( that end at a space or the end
+# of the line, OR a longer run (UNQUOTED_VALUE_MAX + 1 characters without space/quote/( ) reported
+# without looking for its end. The bound (SEV-1) stops the quadratic cost of `password=` repeated
+# inside one very long token that ends in `(` or a quote; the second branch keeps a long secret
+# visible. Residual: a token longer than the bound that contains `(` or a quote after the bound is
+# reported (over-reporting, the safe direction).
+UNQUOTED_VALUE_MAX = 1024
+_UV_FIRST = "[^ \t\r\"'(=]"
+_UV_REST = "[^ \t\r\"'(]"
+_UNQUOTED_BODY = _UV_FIRST + _UV_REST + "{7," + str(UNQUOTED_VALUE_MAX) + "}"
+_UNQUOTED_VALUE = ("(" + _UNQUOTED_BODY + "([ \t\r]|$)|"
+                   + _UV_FIRST + _UV_REST + "{" + str(UNQUOTED_VALUE_MAX) + "})")
 
 # (rule_id, pattern). POSIX-ERE and Python-re compatible subset only.
 RULES: tuple[tuple[str, str], ...] = (
@@ -126,7 +195,10 @@ RULES: tuple[tuple[str, str], ...] = (
     ("github-fine-grained-pat", r"github_pat_[A-Za-z0-9_]{22,}"),
     ("npm-token", r"npm_[A-Za-z0-9]{36,}"),
     ("sendgrid-api-key", r"SG\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,}"),
-    ("jwt", r"eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]*"),
+    # SEV-1: the header segment is bounded ({10,512}); an unbounded run made git grep quadratic on a
+    # line of repeated `eyJ`. Blind spot: a JWT first segment with more than 512 characters after its leading `eyJ`. The
+    # payload segment stays unbounded: it is reached only after `.eyJ` and a match consumes it.
+    ("jwt", r"eyJ[A-Za-z0-9_-]{10,512}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]*"),
     ("sk-api-key", r"(^|[^A-Za-z0-9_])sk-(ant-|proj-)?[A-Za-z0-9_-]{20,}"),
     # URL with embedded credentials; a password starting with / @ or a space is a delimiter case.
     # The scheme is bounded ({0,31}): an unbounded run made git grep quadratic (minutes) on one
@@ -135,12 +207,12 @@ RULES: tuple[tuple[str, str], ...] = (
     (
         "credential-assignment",
         _CREDENTIAL_WORDS
-        # [A-Za-z0-9_-]* then an optional closing quote then : or = (JSON/YAML/.env/code)
-        + "[A-Za-z0-9_-]*[\"']?[ \t]*[:=][ \t]*[\"'][^\"'][^\"']{7,}[\"']",
+        # up to NAME_RUN_MAX name characters, an optional closing quote, then : or = (JSON/YAML/.env/code)
+        + "[A-Za-z0-9_-]{0," + str(NAME_RUN_MAX) + "}[\"']?[ \t]*[:=][ \t]*[\"'][^\"'][^\"']{7,}[\"']",
     ),
     (
         "unquoted-credential-assignment",
-        _CREDENTIAL_WORDS + _not_ending(NON_SECRET_NAME_ENDINGS)
+        _CREDENTIAL_WORDS + _not_ending(NON_SECRET_NAME_SUFFIXES)
         + "[\"']?[ \t]*[:=][ \t]*" + _UNQUOTED_VALUE,
     ),
 )
@@ -160,6 +232,7 @@ TEMPLATE_SHAPES: tuple[tuple[str, "re.Pattern[str]"], ...] = (
     ("angle", re.compile(r"<[a-z]+([ _-][a-z]+)+>")),
     ("jinja", re.compile(r"\{\{ [a-z][a-z_.]{1,30} \}\}")),
 )
+TEMPLATE_SHAPE_NAMES = frozenset(name for name, _ in TEMPLATE_SHAPES)
 _BARE_DOLLAR_RE = re.compile(r"\$[A-Za-z_][A-Za-z0-9_]{2,}")
 # What `git grep -o` returns for these rules: name, optional quote, separator, value. The name
 # characters contain neither `:` nor `=`, so the first one is the separator.
@@ -170,17 +243,23 @@ _UNQUOTED_MATCH_RE = re.compile(r"[^:=]*[:=][ \t]*([^ \t\r]+)[ \t\r]*")
 # same rule whose tail is `[ \t\r]*$` (only spaces, tabs or CR may follow the value; a trailing `,`
 # or `;` or any other text leaves the hit unlabelled).
 _LINE_END = "[ \t\r]*$"
-_UNQUOTED_TAIL = "([ \t\r]|$)"
 # Every key a `scan_secrets` hit may carry (the contract v3 output list). Pinned by a test.
 HIT_KEYS = frozenset({"rule_id", "scope", "path_or_redacted", "path_index", "line", "commit", "ref",
                       "via", "value_shape", "template_shape"})
 
 
 def _anchored(rule_id: str, pattern: str) -> str:
-    """The rule pattern with its tail replaced by `[ \t\r]*$` (value must end the line)."""
+    """The rule pattern with its value tail replaced by `[ \t\r]*$` (value must end the line).
+    T609-11: an explicit check, not an `assert` (which `python -O` removes). A pattern that no
+    longer has the expected tail raises at import time, so a drifted rule cannot silently produce
+    a wrong anchored pattern (the scan never starts)."""
     if rule_id == "unquoted-credential-assignment":
-        assert pattern.endswith(_UNQUOTED_TAIL)
-        return pattern[:-len(_UNQUOTED_TAIL)] + _LINE_END
+        if not pattern.endswith(_UNQUOTED_VALUE):
+            raise ValueError("unquoted rule does not end with the expected value group")
+        # only the bounded first branch can end the line; the longer-run branch is never anchored
+        return pattern[:-len(_UNQUOTED_VALUE)] + _UNQUOTED_BODY + _LINE_END
+    if not pattern.endswith("[\"']"):
+        raise ValueError("quoted rule does not end with its closing quote")
     return pattern + _LINE_END
 
 
@@ -244,12 +323,37 @@ class PocAuditConfig:
     max_bytes: int = 4_000_000
 
 
+NAME_MAX_CHARS = 200  # SEV-3: longest name text returned (a longer one ends in "...")
+_NAME_CHECK_EVERY = 4096  # SEV-2: the name loop looks at the deadline once per this many names
+_STRIPPED_CATEGORIES = ("Cc", "Cf", "Zl", "Zp")  # control, format (bidi, zero width), line/paragraph separators
+
+
+def _strip_name(name: str) -> str:
+    return "".join(ch for ch in name if unicodedata.category(ch) not in _STRIPPED_CATEGORIES)
+
+
+def _cap_name(name: str) -> str:
+    return name[:NAME_MAX_CHARS - 3] + "..." if len(name) > NAME_MAX_CHARS else name
+
+
+def safe_name(name: str) -> str:
+    """SEV-3: a returned name without control, format (bidi, zero width) or line/paragraph
+    separator characters and at most NAME_MAX_CHARS characters, so a hostile file name cannot
+    become instructions or an escape sequence in the reviewing agent's context. It does not decide
+    redaction: `redact_name` tests the rules on the raw AND the cleaned name first."""
+    return _cap_name(_strip_name(name))
+
+
 def redact_name(name: str) -> tuple[str, str | None]:
-    """-> (name, None) or ("<redacted-by-rule:ID>", rule_id) if a rule matches the name."""
+    """-> (safe_name(name), None) or ("<redacted-by-rule:ID>", rule_id) if a rule matches the name.
+    T611-1: each rule is tested on the raw name and on the name with the characters of `safe_name`
+    removed (before the length cap), so a token split by a zero-width or control character
+    (`AKIA<ZWSP>...`) is still redacted. The cap comes last."""
+    cleaned = _strip_name(name)
     for rule_id, rx in _COMPILED:
-        if rx.search(name):
+        if rx.search(name) or (cleaned != name and rx.search(cleaned)):
             return f"<redacted-by-rule:{rule_id}>", rule_id
-    return name, None
+    return _cap_name(cleaned), None
 
 
 def _decode(raw: bytes) -> str:
@@ -356,8 +460,23 @@ class _Scan:
         hit.update({k: v for k, v in fields.items() if v is not None})
         for key in set(hit) - HIT_KEYS:  # contract v3 allow-list, enforced: an unknown key is dropped
             del hit[key]
+        self._check_label(hit)
         self.hits.append(hit)
         return True
+
+    @staticmethod
+    def _check_label(hit: dict) -> None:
+        """T609-11: the label VALUES are enforced like the keys, against the fixed sets. An unknown
+        `value_shape`, an unknown `template_shape`, a `template-ref` without a `template_shape` or a
+        `template_shape` on `bare-dollar-name` is dropped: the hit stays, without a label."""
+        shape, template = hit.get("value_shape"), hit.get("template_shape")
+        if shape is None and template is None:
+            return
+        valid = ((shape == TEMPLATE_REF and isinstance(template, str) and template in TEMPLATE_SHAPE_NAMES)
+                 or (shape == BARE_DOLLAR and template is None))
+        if not valid:
+            hit.pop("value_shape", None)
+            hit.pop("template_shape", None)
 
     def result(self) -> dict:
         counts = dict(Counter(h["rule_id"] for h in self.hits))
@@ -491,7 +610,11 @@ class _Scan:
         parts = res.stdout.split(b"\0")
         if res.truncated:
             parts = parts[:-1]  # last name may be cut
-        for raw in parts:
+        for index, raw in enumerate(parts):
+            # SEV-2: the loop is Python work outside any subprocess; bound it by the same deadline.
+            if index % _NAME_CHECK_EVERY == 0 and self.deadline.remaining() <= 0:
+                self._error(ERR_TIMEOUT, True)  # complete: false, never a silent partial pass
+                return
             name = _decode(raw)
             base = name.rsplit("/", 1)[-1]
             lowered = base.lower()
