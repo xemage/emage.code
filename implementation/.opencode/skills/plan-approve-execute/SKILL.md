@@ -118,7 +118,7 @@ Begin implementation according to the approved plan.
 #### Execution Kickoff Procedure
 
 1. Confirm plan status is `approved`.
-2. Create all tasks from the plan's Task Breakdown in `docs/tasks/active-tasks.md` (use `task-management` skill).
+2. Create all tasks from the plan's Task Breakdown in `docs/tasks/active-tasks.md` (use `task-management` skill). An orchestrator writes the rows, one per plan row, in the ledger's seven columns (`AGENTS.md` § Task Protocol): Assignee becomes Owner (an agent slug), Priority is `P0`, `P1` or `P2`, BlockedBy becomes Depends on, and Estimated Effort goes to the task brief, because the ledger has no column for it.
 3. Generate the dependency graph (use `dependency-graphing` skill).
 4. Identify the first set of unblocked tasks.
 5. Assign tasks to agents per the plan's Assignee column.
@@ -164,10 +164,10 @@ Add rate limiting to the public API to prevent abuse.
 ## Task Breakdown
 | ID | Title | Assignee | Priority | BlockedBy | Estimated Effort |
 |----|-------|----------|----------|-----------|-----------------|
-| T020 | Research rate limit strategies | backend-dev | high | — | S |
-| T021 | Implement token bucket | backend-dev | high | T020 | M |
-| T022 | Add rate limit headers | backend-dev | medium | T021 | S |
-| T023 | Write rate limit tests | qa-agent | high | T021 | M |
+| T020 | Research rate limit strategies | backend-developer | P1 | — | S |
+| T021 | Implement token bucket | backend-developer | P1 | T020 | M |
+| T022 | Add rate limit headers | backend-developer | P2 | T021 | S |
+| T023 | Write rate limit tests | qa-engineer | P1 | T021 | M |
 
 ## Success Criteria
 - [ ] Rate limiting active on all public endpoints

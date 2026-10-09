@@ -64,7 +64,7 @@ Manage the full lifecycle of project tasks — creation, status tracking, depend
 ### Field rules
 | Field | Rule |
 |-------|------|
-| ID | `T` + 3 or more digits. `T001`, `T042`, `T1001`. NEVER `T001`. NEVER `BUG-7`. |
+| ID | `T` + 3 or more digits. `T001`, `T042`, `T1001`. NEVER `T1` or `T01`. NEVER `BUG-7`. |
 | Owner | Exact agent slug, kebab-case, from the installed agents folder. |
 | Status | `pending` \| `in_progress` \| `blocked` \| `in_review` \| `done` \| `cancelled` |
 | Priority | `P0` \| `P1` \| `P2`. NEVER `critical`/`high`/`medium`/`low`. |
