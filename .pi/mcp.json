@@ -136,6 +136,15 @@
         "-m",
         "implementation.runtime.security.audit_server"
       ]
+    },
+    "poc-security-audit": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "implementation.runtime.security.poc_audit_server",
+        "--allowed-root",
+        "."
+      ]
     }
   }
 }

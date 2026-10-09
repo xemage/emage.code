@@ -14,26 +14,8 @@
     "Emptied 2026-10-08 by the seventh user-approved --projections-only refresh (44 paths: the T594 P41 verdict-rendering, vocabulary, project-planning and release-executor edits).",
     "Emptied 2026-10-08 by the eighth user-approved --projections-only refresh (52 paths: the T596 P32 plan-path and release-notes edits).",
     "Emptied 2026-10-08 by the ninth user-approved --projections-only refresh (26 paths: the T599 P33 poc-guidelines, poc-orchestrator, technical-debt-tracking and technical-debt-narrator edits).",
-    "Declared 2026-10-09 by T603 (poc-security-audit server and poc-security-engineer grant swap): 18 paths = the poc-security-engineer projections (6) and the poc-security-audit MCP entry in each platform MCP config and provenance file (12); root not refreshed."
+    "Declared 2026-10-09 by T603 (poc-security-audit server and poc-security-engineer grant swap): 18 paths = the poc-security-engineer projections (6) and the poc-security-audit MCP entry in each platform MCP config and provenance file (12); root not refreshed.",
+    "Emptied 2026-10-09 by the tenth user-approved --projections-only refresh (18 paths: the T603 poc-security-audit server registration and the poc-security-engineer grant swap)."
   ],
-  "drift": [
-    ".claude/agents/poc-security-engineer.md",
-    ".cline/mcp.json",
-    ".cline/mcp.json.provenance.json",
-    ".cursor/agents/poc-security-engineer.mdc",
-    ".cursor/mcp.json",
-    ".cursor/mcp.json.provenance.json",
-    ".gemini/agents/poc-security-engineer.md",
-    ".gemini/settings.json",
-    ".gemini/settings.json.provenance.json",
-    ".github/agents/poc-security-engineer.agent.md",
-    ".mcp.json",
-    ".mcp.json.provenance.json",
-    ".opencode/agents/poc-security-engineer.md",
-    ".opencode/opencode.json",
-    ".opencode/opencode.json.provenance.json",
-    ".pi/agents/poc-security-engineer.md",
-    ".pi/mcp.json",
-    ".pi/mcp.json.provenance.json"
-  ]
+  "drift": []
 }
