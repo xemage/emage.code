@@ -42,7 +42,10 @@ def build_server(cfg: PocAuditConfig) -> MCPServer:
         content with a fixed rule table. scope: worktree | index | stashes | history |
         tracked_names. rev_range is valid for history only. Returns rule ids, paths
         (redacted when they match a rule), line numbers and commits -- never matched text.
-        Check `complete` and `truncated`: an incomplete scan proves nothing.
+        Check `complete` and `truncated`: an incomplete scan proves nothing. A
+        credential-assignment hit in worktree or index scope may carry `value_shape`
+        (`template-ref` with `template_shape`, or `bare-dollar-name`) when every match of the
+        rule on its line has an exact shape; a label never removes or uncounts a hit.
         Limits: `history` uses `git log -G`, which does not diff merge commits (L-4); a
         range over `max_refs` commits is flagged `truncated` although fully covered (L-5);
         a `.git` file may point to a gitdir outside the allowed root (L-6); `worktree` also

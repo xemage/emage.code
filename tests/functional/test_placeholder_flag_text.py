@@ -1,4 +1,4 @@
-"""T608 -- text pins for the placeholder-flag agent text (E-P1, E-O1, E-P2).
+"""T608/T609 -- text pins for the placeholder-flag agent text (E-P1, E-O1, E-P2).
 
 Implements `docs/artifacts/placeholder-flag-ruling-v3.md` §7 and the binding conditions V3-1, V3-3, V3-4,
 V3-5 and V3-8 of `docs/artifacts/security-review-placeholder-flag-ruling-v3.md`. Pure text tests: no scanner,
@@ -31,7 +31,9 @@ SE_MIRRORS = (
 )
 OR_MIRRORS = tuple(p.replace("poc-security-engineer", "poc-orchestrator") for p in SE_MIRRORS)
 
-P1_HEAD = "- **Placeholder flags:** a scan hit is unresolved until a valid flag covers it or you classify it as a real secret."
+P1_HEAD = ("- **Placeholder flags:** a scan hit is unresolved until a valid flag covers it or you classify it as a real "
+           "secret, with one named exception, the user's standing decision of 2026-10-09")
+P1_TAIL = " An unresolved hit makes the verdict `FAIL`, and a flag never removes the hit from the report."
 P2_HEAD = "- **Scan blind spots:**"
 O1_HEAD = "- **Placeholder flags**: when `@poc-security-engineer` reports an"
 O1_BEFORE = "- **Other `SECURITY:LOW` findings**: record for debt handoff."
@@ -85,7 +87,8 @@ class PlaceholderFlagTextTests(unittest.TestCase):
 
     def test_e_p1_is_split_into_sub_bullets_with_each_pin_in_one_bullet(self):
         lines = self.p1.rstrip("\n").split("\n")
-        self.assertEqual(lines[0], P1_HEAD + " An unresolved hit makes the verdict `FAIL`, and a flag never removes the hit from the report.")
+        self.assertTrue(lines[0].startswith(P1_HEAD))
+        self.assertTrue(lines[0].endswith(P1_TAIL))
         self.assertGreaterEqual(len(lines), 6)
         for sub in lines[1:]:
             self.assertTrue(sub.startswith("  - **"), sub[:40])
@@ -152,11 +155,67 @@ class PlaceholderFlagTextTests(unittest.TestCase):
         self.assertIn("has a path shown as `<redacted-by-rule:…>`", self.p1)
         self.assertIn("has a redacted path", self.o1)
 
-    # --- V3-7: the standing decision is NOT recorded here (Question 2 Option A is T609) -------------------
-    def test_v3_7_no_standing_decision_text_yet(self):
-        self.assertNotIn("template-ref", self.se)
-        self.assertNotIn("standing decision", self.p1)
+    # --- V3-7 / V3-2 (T609): the standing decision, the grading and the totals ----------------------------
+    def test_v3_7_standing_decision_grading_and_totals(self):
+        decision = '("Remove skip, label 3 shapes (Recommended)")'
+        self.assertEqual(self.p1.count(decision), 1)
+        self.assertEqual(self.o1.count(decision), 1)
+        self.assertIn("with one named exception, the user's standing decision of 2026-10-09", self.p1)
+        self.assertIn("a hit that carries `value_shape: \"template-ref\"` is listed and counted separately and is not unresolved", self.p1)
+        self.assertIn("Only the scan tool's label counts: never infer a shape from your own reading", self.p1)
+        self.assertIn("A hit without the label, a hit with `value_shape: \"bare-dollar-name\"`, and any hit from `stashes`, `history` or `via: \"log\"` follows the rules below", self.p1)
         self.assertIn("record it for debt handoff as `SECURITY:LOW`", self.p1)
+        self.assertIn("Grade it `SECURITY:LOW` and record it for debt handoff", self.p1)
+        self.assertIn("graded `SECURITY:LOW`, recorded for debt handoff, and is not unresolved", self.o1)
+        for block in (self.p1, self.o1):
+            self.assertEqual(block.count("total, flagged, template-ref, unresolved and blocking"), 1)
+            self.assertIn("`credential-assignment` and `unquoted-credential-assignment`", block)
+        self.assertIn("(never for `url-embedded-credentials` or any other rule)", self.p1)
+
+    def test_v3_7_shapes_are_exact_and_bare_dollar_stays_unresolved(self):
+        for needle in ("`${NAME}` with NAME in capital letters, digits and `_` (`braced`)",
+                       "`<word-word>` with lowercase words, a space, `_` or `-` between words and no digits (`angle`;",
+                       "`{{ name }}` with a lowercase name and no digits (`jinja`)",
+                       'A bare `$NAME` gets `value_shape: "bare-dollar-name"` and stays unresolved',
+                       "a line that also holds any other match gets no label",
+                       "never describe a `template-ref` hit as a checked placeholder"):
+            self.assertEqual(self.p1.count(needle), 1, needle)
+
+    # --- T609 review: end-of-line condition, real-credential rule, hit_count, length qualifier ----------------
+    def test_t609_review_text_pins(self):
+        self.assertIn("has no `commit`, and that every match of the rule on that line is exactly one of the shapes `${NAME}`, `<word-word>` or `{{ name }}` and the value ends the line", self.p1)
+        self.assertEqual(self.p1.count("The value must end the line: only spaces, tabs or a carriage return may follow it, so a trailing comma, semicolon or any other text leaves the hit unlabelled"), 1)
+        self.assertEqual(self.p1.count("If you know that the value of a `template-ref` hit is a real credential, it is a real secret at once and the severity floor above applies"), 1)
+        count_basis = "every hit the scan reports counted, labelled ones included"
+        self.assertEqual(self.p1.count(count_basis), 1)
+        self.assertEqual(self.o1.count(count_basis), 1)
+        p2 = _block(self.se, P2_HEAD, None)
+        self.assertIn("is reported as an ordinary hit if it is at least eight characters (three for a URL password) and no exclusion above applies", p2)
+
+    # --- SEC-6, SEC-7, SEC-8 (T608 review, carried to T609) ------------------------------------------------
+    def test_sec_6_reread_before_user_attested_proposal(self):
+        self.assertEqual(self.p1.count("before you propose a `user-attested` flag for a content-rule hit that fits no class below, re-read its line"), 1)
+        self.assertNotIn("looks like a placeholder", self.p1)
+
+    def test_sec_7_unverified_label_only_on_user_attested(self):
+        self.assertEqual(self.p1.count('a `user-attested` proposal as an "unresolved hit, proposed flag, unverified by the reviewer"'), 1)
+        self.assertEqual(self.p1.count('a `dummy-word` or `repeated-char` proposal, whose line you have re-read, with the wording given under the classes instead'), 1)
+        self.assertEqual(self.o1.count('for a `user-attested` proposal in the words "unresolved hit, proposed flag, unverified by the reviewer"'), 1)
+        self.assertIn("whose line the reviewer has re-read, with \"classic default value; confirm that no service accepts it, local ones included\" instead", self.o1)
+
+    def test_sec_8_provider_flag_restriction_is_tied_to_the_listed_rules(self):
+        self.assertEqual(self.p1.count("A hit of any of the rules listed above for provider-token formats may be flagged only when the user states"), 1)
+        self.assertNotIn("Provider-token rules may be flagged only", self.p1)
+
+    def test_sec_8_drift_provider_ids_in_rules_are_all_listed(self):
+        from implementation.runtime.security import poc_scan
+        generic = {"credential-assignment", "unquoted-credential-assignment", "url-embedded-credentials", "bearer-token"}
+        key_material = {"private-key-header", "pgp-private-key-block"}
+        provider = {rule_id for rule_id, _ in poc_scan.RULES} - generic - key_material
+        self.assertEqual(provider, set(PROVIDER_RULE_IDS))
+        for rule_id in provider:
+            self.assertIn(f"`{rule_id}`", self.p1)
+            self.assertIn(f"`{rule_id}`", self.o1)
 
     # --- V3-8 / E-P2 ------------------------------------------------------------------------------------
     def test_v3_8_e_p2_blind_spots_include_url_scheme_clause(self):
@@ -167,6 +226,14 @@ class PlaceholderFlagTextTests(unittest.TestCase):
                        "a secret in a format the fixed rule table does not list"):
             self.assertEqual(p2.count(needle), 1, needle)
         self.assertNotIn("blocks", p2)
+        # T609 replacement: the removed leading characters are gone, the remaining blind spots are kept.
+        self.assertIn("a quoted credential value that is shorter than eight characters or contains a quote character", p2)
+        self.assertIn("begins with a space, tab, carriage return, quote, `(` or `=`", p2)
+        self.assertIn("a URL password that begins with `/`, `@` or a space, contains `/`, `@` or a space, or is shorter than three characters", p2)
+        self.assertNotIn("begins with `$`, `<`, `{` or a space, is shorter", p2)
+        self.assertIn("because they are delimiters or syntax, not values", p2)
+        self.assertIn("is reported as an ordinary hit", p2)
+        self.assertNotIn("dummy-word", p2)
 
     # --- SEC-1: the branch-changed-paths list fails closed -----------------------------------------------
     def test_sec_1_branch_changed_paths_list_fails_closed(self):
@@ -247,7 +314,7 @@ PROVIDER_RULE_IDS = ("aws-access-key-id", "github-token", "gitlab-token", "slack
 E_P1_PINS = (
     "never removes", "classic default value", "exact path and commit sha",
     "`refs/remotes/origin/develop`", "`[value omitted]`", "whatever the flags say", "never drop a flagged hit",
-    "`SECURITY:LOW`", "a local instance included",
+    "record it for debt handoff as `SECURITY:LOW`", "a local instance included",
 )
 
 

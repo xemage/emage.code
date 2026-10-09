@@ -8,7 +8,11 @@ module spawns no process itself: every command goes through
 What the tools return, and what they never return:
 
 * No matched text, no stderr, no argv. `git grep -z -n` output is parsed as
-  `path NUL line NUL text LF`; the text field is skipped, never copied into a result.
+  `path NUL line NUL text LF`. The text field is never copied into a result. One narrow
+  exception to "dropped unread" (contract v3, `poc-security-engineer-tool-scoping-v3.md`): only
+  for the two credential-assignment rules in `worktree`/`index` scope (`_parse_records` with
+  `keep_text=True`) the text is compared in memory against fixed template shapes (`_label_for`),
+  reduced to a shape name and discarded. Every other rule and scope still drops it unread.
 * The caller supplies no pattern. The rule table below is the only source of patterns; it
   is also applied to paths, ref names and tag names before they are returned.
 * Errors are codes: not_a_toplevel, bad_scope, bad_rev, timeout, git_missing, git_failed.
@@ -20,9 +24,17 @@ invisible; `pushed` is `true` or `"unknown"`, never `false`.
 Further limits recorded by the T603 code review (security-review-poc-security-audit-code-v1,
 tracked in T604):
 
-* L-3 (a user decision, unchanged): the quoted-credential placeholder heuristic skips a value
-  that starts with `$`, `<`, `{` or a space, so a real secret that starts with one of those
-  characters is not reported.
+* L-3 (superseded by the user decision of 2026-10-09, T606 Q2 Option A, placeholder-flag-ruling-v3
+  E-S2): the `$`, `<`, `{` and (quoted rule only) space leading-character skips are gone, so a
+  value that starts with one of those is an ordinary hit. A hit carries `value_shape`
+  `template-ref` (with `template_shape`) only when every match of its rule on the line is, as a
+  whole, one of three exact shapes, and `bare-dollar-name` for a bare `$NAME`; see `_label_for`.
+  Still not reported: quoted or unquoted values shorter than eight characters (a URL password
+  shorter than three), values with a quote (and, unquoted, `(`), unquoted values that start with a
+  space, tab, CR, quote, `(` or `=`, unquoted names that end in a configuration word (ttl, timeout,
+  url, ... see NON_SECRET_NAME_ENDINGS), a URL password that starts with `/`, `@` or a space or
+  contains `/`, `@` or a space, a URL whose scheme is 32 or more characters long or in upper case,
+  and secrets in unlisted formats.
 * L-4: `scan_secrets(scope="history")` uses `git log -G`, which does not diff merge commits.
   A secret that exists only as a merge-resolution change is found only if it is also visible
   in a scanned tip tree.
@@ -34,8 +46,8 @@ tracked in T604):
   `untracked-secret-file-name`; their content is covered by the content rules, so a file whose
   name is not on the allowlist is still scanned by content. Ignored files are included.
 * `unquoted-credential-assignment` is a tuned heuristic: it needs a credential keyword in the
-  name, a value of 8 or more characters without whitespace, `(`, quotes, `$`, `<`, `{` or a
-  leading `=`, and a name that does not end in a non-secret word (ttl, timeout, url, ...). A
+  name, a value of 8 or more characters without whitespace, `(` or quotes and not starting with
+  `=`, and a name that does not end in a non-secret word (ttl, timeout, url, ...). A
   value shorter than 8 characters is never reported, and a code identifier such as
   `password = args.password` is (a known false positive).
 """
@@ -59,7 +71,7 @@ from implementation.runtime.security.git_executor import (
     run_git,
 )
 
-RULES_VERSION = "2026-10-09.3"
+RULES_VERSION = "2026-10-09.4"
 
 
 def _ci(word: str) -> str:
@@ -97,7 +109,7 @@ NON_SECRET_NAME_ENDINGS = ("ttl", "timeout", "url", "uri", "endpoint", "path", "
                            "name", "expiry", "expires", "expiration", "length", "size", "type",
                            "header", "env", "var")
 _UNQUOTED_VALUE = (
-    "[^ \t\r\"'$<{(=][^ \t\r\"'(]{7,}([ \t\r]|$)"  # 8+ chars, no space/quote/( ; ends at space/EOL
+    "[^ \t\r\"'(=][^ \t\r\"'(]{7,}([ \t\r]|$)"  # 8+ chars, no space/quote/( ; ends at space/EOL
 )
 
 # (rule_id, pattern). POSIX-ERE and Python-re compatible subset only.
@@ -116,15 +128,15 @@ RULES: tuple[tuple[str, str], ...] = (
     ("sendgrid-api-key", r"SG\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,}"),
     ("jwt", r"eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]*"),
     ("sk-api-key", r"(^|[^A-Za-z0-9_])sk-(ant-|proj-)?[A-Za-z0-9_-]{20,}"),
-    # URL with embedded credentials; a password starting with $ < { is a placeholder.
+    # URL with embedded credentials; a password starting with / @ or a space is a delimiter case.
     # The scheme is bounded ({0,31}): an unbounded run made git grep quadratic (minutes) on one
     # very long line of scheme characters, which L-1's `-o` fix now lets reach the scanner.
-    ("url-embedded-credentials", r"[a-z][a-z0-9+.-]{0,31}://[^/:@ ]+:[^/@ $<{][^/@ ]{2,}@"),
+    ("url-embedded-credentials", r"[a-z][a-z0-9+.-]{0,31}://[^/:@ ]+:[^/@ ][^/@ ]{2,}@"),
     (
         "credential-assignment",
         _CREDENTIAL_WORDS
         # [A-Za-z0-9_-]* then an optional closing quote then : or = (JSON/YAML/.env/code)
-        + "[A-Za-z0-9_-]*[\"']?[ \t]*[:=][ \t]*[\"'][^\"'$<{ ][^\"']{7,}[\"']",
+        + "[A-Za-z0-9_-]*[\"']?[ \t]*[:=][ \t]*[\"'][^\"'][^\"']{7,}[\"']",
     ),
     (
         "unquoted-credential-assignment",
@@ -133,6 +145,72 @@ RULES: tuple[tuple[str, str], ...] = (
     ),
 )
 _COMPILED = tuple((rid, re.compile(pat)) for rid, pat in RULES)
+
+# --- value-shape labels (T609, placeholder-flag-ruling-v3 E-S2, security review V3-2) -----------
+# Only these two rules can carry a label; URL hits never do (V3-2). Only these scopes can.
+LABEL_RULES = ("credential-assignment", "unquoted-credential-assignment")
+LABEL_SCOPES = ("worktree", "index")
+TEMPLATE_REF = "template-ref"
+BARE_DOLLAR = "bare-dollar-name"
+# Exact shapes, matched with fullmatch against the whole value (no prefix or substring match):
+# `${NAME}` (NAME upper case), `<word-word>` (lower-case words, at least one separator, no digits),
+# `{{ name }}` (one space each side, no digits). `$NAME` bare is not a template reference.
+TEMPLATE_SHAPES: tuple[tuple[str, "re.Pattern[str]"], ...] = (
+    ("braced", re.compile(r"\$\{[A-Z][A-Z0-9_]{2,}\}")),
+    ("angle", re.compile(r"<[a-z]+([ _-][a-z]+)+>")),
+    ("jinja", re.compile(r"\{\{ [a-z][a-z_.]{1,30} \}\}")),
+)
+_BARE_DOLLAR_RE = re.compile(r"\$[A-Za-z_][A-Za-z0-9_]{2,}")
+# What `git grep -o` returns for these rules: name, optional quote, separator, value. The name
+# characters contain neither `:` nor `=`, so the first one is the separator.
+_QUOTED_MATCH_RE = re.compile(r"[^:=]*[:=][ \t]*[\"']([^\"']*)[\"']")
+_UNQUOTED_MATCH_RE = re.compile(r"[^:=]*[:=][ \t]*([^ \t\r]+)[ \t\r]*")
+# T609-1: the `-o` text ends at the closing quote or the first whitespace, so it cannot show what
+# follows the value on the line. A label therefore also needs a second, ANCHORED `git grep` of the
+# same rule whose tail is `[ \t\r]*$` (only spaces, tabs or CR may follow the value; a trailing `,`
+# or `;` or any other text leaves the hit unlabelled).
+_LINE_END = "[ \t\r]*$"
+_UNQUOTED_TAIL = "([ \t\r]|$)"
+# Every key a `scan_secrets` hit may carry (the contract v3 output list). Pinned by a test.
+HIT_KEYS = frozenset({"rule_id", "scope", "path_or_redacted", "path_index", "line", "commit", "ref",
+                      "via", "value_shape", "template_shape"})
+
+
+def _anchored(rule_id: str, pattern: str) -> str:
+    """The rule pattern with its tail replaced by `[ \t\r]*$` (value must end the line)."""
+    if rule_id == "unquoted-credential-assignment":
+        assert pattern.endswith(_UNQUOTED_TAIL)
+        return pattern[:-len(_UNQUOTED_TAIL)] + _LINE_END
+    return pattern + _LINE_END
+
+
+ANCHORED_RULES = {rid: _anchored(rid, pat) for rid, pat in RULES if rid in LABEL_RULES}
+
+
+def _shape_of(rule_id: str, text: bytes) -> str | None:
+    """Reduce one matched text to a shape name (`braced`, `angle`, `jinja`, `bare-dollar-name`)
+    or None. The text is compared here, in memory, and not kept or returned."""
+    rx = _QUOTED_MATCH_RE if rule_id == "credential-assignment" else _UNQUOTED_MATCH_RE
+    m = rx.fullmatch(_decode(text))
+    if m is None:
+        return None
+    value = m.group(1)
+    for shape, shape_rx in TEMPLATE_SHAPES:
+        if shape_rx.fullmatch(value):
+            return shape
+    return BARE_DOLLAR if _BARE_DOLLAR_RE.fullmatch(value) else None
+
+
+def _label_for(shapes: list[str | None]) -> dict:
+    """Label fields for one (rule, path, line) from the shape of EVERY match of the rule on that
+    line. Any non-shape match, or two different shapes, gives no label (the whole line is judged)."""
+    kinds = set(shapes)
+    if not shapes or None in kinds or len(kinds) != 1:
+        return {}
+    (kind,) = kinds
+    if kind == BARE_DOLLAR:
+        return {"value_shape": BARE_DOLLAR}
+    return {"value_shape": TEMPLATE_REF, "template_shape": kind}
 
 # security-guidelines.md "Secret and credential files" allowlist (names only).
 # Matched case-insensitively against the lower-cased basename (patterns are lower case).
@@ -184,9 +262,18 @@ def parse_grep_z(data: bytes) -> tuple[list[tuple[bytes, int]], bool]:
     `leftover` is True when bytes remain that are not a well-formed record. For output
     that was NOT truncated that means the format was not understood (for example ANSI
     colour escapes), and the caller must fail closed instead of reporting zero hits.
-    The matched text is skipped, never copied.
+    The matched text is skipped, never copied (`_parse_records` copies it only with
+    `keep_text=True`, for the label rules in `worktree`/`index` scope).
     """
-    records: list[tuple[bytes, int]] = []
+    records, leftover = _parse_records(data)
+    return [(path, line) for path, line, _ in records], leftover
+
+
+def _parse_records(data: bytes, keep_text: bool = False) -> tuple[list[tuple[bytes, int, bytes]], bool]:
+    """As `parse_grep_z`, but each record carries a third item: the matched-text bytes when
+    `keep_text` is true (only the label rules in `worktree`/`index` scope), otherwise `b""` (the
+    text is dropped unread). Only `_shape_of` reads that field; it never reaches a result."""
+    records: list[tuple[bytes, int, bytes]] = []
     pos, n = 0, len(data)
     while pos < n:
         p1 = data.find(b"\0", pos)
@@ -194,7 +281,7 @@ def parse_grep_z(data: bytes) -> tuple[list[tuple[bytes, int]], bool]:
         eol = data.find(b"\n", p2 + 1) if p2 >= 0 else -1
         if eol < 0 or not data[p1 + 1:p2].isdigit():
             return records, True
-        records.append((data[pos:p1], int(data[p1 + 1:p2])))
+        records.append((data[pos:p1], int(data[p1 + 1:p2]), data[p2 + 1:eol] if keep_text else b""))
         pos = eol + 1
     return records, False
 
@@ -267,6 +354,8 @@ class _Scan:
             if idx is not None:
                 hit["path_index"] = idx
         hit.update({k: v for k, v in fields.items() if v is not None})
+        for key in set(hit) - HIT_KEYS:  # contract v3 allow-list, enforced: an unknown key is dropped
+            del hit[key]
         self.hits.append(hit)
         return True
 
@@ -284,8 +373,9 @@ class _Scan:
     # -- git grep ---------------------------------------------------------------
     def grep(self, flags: tuple[str, ...], trees: tuple[str, ...] = (),
              refs: dict[str, str | None] | None = None) -> None:
-        """One `git grep` per rule (so each hit carries its rule_id); text never read."""
+        """One `git grep` per rule (so each hit carries its rule_id); text never returned."""
         for rule_id, pattern in RULES:
+            keep = rule_id in LABEL_RULES and self.scope in LABEL_SCOPES and not trees
             # -a (treat as text) so a `-diff`/binary attribute cannot hide a match.
             # -o (L-1) prints only the matched part, so a huge single line cannot fill the byte cap.
             args = ("grep", "--no-color", *flags, "-a", "-o", "-n", "-z", "-E", "-e", pattern,
@@ -293,21 +383,45 @@ class _Scan:
             res = self.run(*args, ok=(0, 1))
             if res is None:
                 return
-            records, leftover = parse_grep_z(res.stdout)
+            records, leftover = _parse_records(res.stdout, keep_text=keep)
             if leftover and not res.truncated:
                 self._error(ERR_GIT_FAILED, False)  # unparseable output: fail closed
                 return
-            seen: set[tuple[bytes, int]] = set()  # -o prints one record per match, not per line
-            for raw, line in records:
-                if (raw, line) in seen:
-                    continue
-                seen.add((raw, line))
+            # A cut-off output may hide further matches on a line, so it gets no labels.
+            labelled = keep and not res.truncated
+            # -o prints one record per match, not per line: one hit per (path, line), and the
+            # shape of EVERY match on the line is collected before the label is decided.
+            shapes: dict[tuple[bytes, int], list[str | None]] = {}
+            for raw, line, text in records:
+                found = shapes.setdefault((raw, line), [])
+                if labelled:
+                    found.append(_shape_of(rule_id, text))
+            ends_line = self._value_ends_line(flags, rule_id, shapes) if labelled else set()
+            for (raw, line), found in shapes.items():
                 m = _TREE_PREFIX_RE.match(raw) if trees else None
                 commit = m.group(1).decode() if m else None
                 name = _decode(raw[m.end():] if m else raw)
                 ref = (refs or {}).get(commit) if commit else None
-                if not self.add_hit(rule_id, name=name, line=line, commit=commit, ref=ref):
+                label = {}
+                if (raw, line) in ends_line and redact_name(name)[1] is None:
+                    label = _label_for(found)
+                if not self.add_hit(rule_id, name=name, line=line, commit=commit, ref=ref, **label):
                     return
+
+    def _value_ends_line(self, flags: tuple[str, ...], rule_id: str,
+                         shapes: dict[tuple[bytes, int], list[str | None]]) -> set[tuple[bytes, int]]:
+        """(path, line) pairs where a match of the rule ENDS the line (T609-1). One extra anchored
+        `git grep` through the same executor and deadline, only when some line is a label
+        candidate. Fail closed and quiet: an error, a timeout, truncation or unparseable output
+        returns the empty set (no label), records no scan error and never removes a hit."""
+        if not any(_label_for(found) for found in shapes.values()):
+            return set()
+        args = ("grep", "--no-color", *flags, "-a", "-o", "-n", "-z", "-E", "-e", ANCHORED_RULES[rule_id], "--")
+        res = run_git(git_argv(self.root, *args), self.deadline, self.cfg.max_bytes, (0, 1))
+        if res.error or res.truncated:
+            return set()
+        records, leftover = _parse_records(res.stdout)
+        return set() if leftover else {(raw, line) for raw, line, _ in records}
 
     def grep_trees(self, shas: list[str], refs: dict[str, str | None] | None = None) -> None:
         for i in range(0, len(shas), _BATCH):
