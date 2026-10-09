@@ -24,7 +24,7 @@ Release type: {{input}}
 6. **Manage version artifacts**:
    - Update version in all relevant config files
    - Tag all current artifacts with release version
-   - Create a release checkpoint: `docs/checkpoints/checkpoint-release-v<version>.md`, based on
+   - Create a release checkpoint: `docs/checkpoints/checkpoint-<SEQ>-release-v<version>.md` (`AGENTS.md` § Checkpoint Protocol, with `release-v<version>` as the `<phase>`), based on
      `docs/checkpoints/_template.md` (including its `## Maturity distribution` section — regenerate
      `implementation/registry/summary.md` via `implementation/scripts/generate-registry.py --root
      implementation` first if stale, then populate the table's category × maturity-level counts

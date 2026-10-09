@@ -61,7 +61,7 @@ graph TD
 
 | # | Blocker ID | Severity | Owner | Age (days) | Blocked Tasks | Mitigation | Escalation |
 |---|-----------|----------|-------|------------|---------------|------------|------------|
-| 1 | ... | CRITICAL/HIGH/MEDIUM | ... | ... | [task IDs] | ... | ... |
+| 1 | ... | CRITICAL/MAJOR/MINOR | ... | ... | [task IDs] | ... | ... |
 
 ## Velocity Data
 
