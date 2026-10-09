@@ -38,7 +38,7 @@ I have a new project idea. Please orchestrate the full team to turn this into a 
 13. Use progressive context loading for delegations (only objective, dependency slice, artifact refs, blockers)
 14. After each phase, publish a compact checkpoint summary:
 	- `[CHECKPOINT] id=<phase_or_gate> | done=[...] | in_flight=[...] | blocked=[...] | decisions=[...] | artifact_refs=[...] | next=[...]`
-	- Write checkpoint to `docs/checkpoints/checkpoint-<phase>.md`
+	- Write checkpoint per `AGENTS.md` § Checkpoint Protocol: store at `docs/checkpoints/checkpoint-<SEQ>-<phase>.md`, with `<phase>` naming the phase
 15. Apply per-phase token budgets, model routing by complexity, and caching of repeated references
 16. Include spend telemetry (`used`, `projected`, `variance`) in each phase checkpoint
 
@@ -46,7 +46,7 @@ I have a new project idea. Please orchestrate the full team to turn this into a 
 
 17. Run validation gates before phase transitions (reference: `validation-gates` skill § Gate Types and § Verdict Format)
 18. Produce versioned artifacts for all deliverables:
-    - Format: `<artifact-name>-v<major>.<minor>.md`
+    - Format: `<artifact-name>-v<N>.md`, per `AGENTS.md` § Artifact Versioning
     - Store in `docs/artifacts/`
     - Include artifact manifest in checkpoint summaries
 19. Build an initial task dependency graph with lifecycle states
