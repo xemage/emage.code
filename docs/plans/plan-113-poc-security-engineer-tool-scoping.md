@@ -51,3 +51,17 @@ The notes in plan-112 §2, and the other X-items (X1–X4, X6–X8).
   The unquoted-rule false-positive trade-off goes to the user first.
 - **User action remaining after T603 merges:** allow `mcp__poc-security-audit__*` in `.claude/settings.json`. That
   file is client-owned and is never auto-edited. Until then the tools are denied, which fails closed.
+
+## 6. T604 (2026-10-09)
+
+- **T604 closes condition C-1.** The unquoted-credential rule was added as the user decided ("Add it, tuned"), along
+  with the untracked `.env*` name check, L-1, L-2, L-7 and the extra token formats.
+- **Security Engineer review: PASS** (`security-review-poc-security-audit-code-v2.md`). 0 critical, 0 high, 0 medium
+  and 6 low findings (SEV-1..SEV-6), which are tracked as technical debt.
+- **Orchestrator checks.** All six real secret shapes hit and 11 of 12 harmless lines did not. `MAX_TOKENS=100000000`
+  is a documented false positive. An 800 KB single line completes in 0.2 s. Adversarial keyword-dense lines time out
+  at 60 s and fail closed. An ignored `.env` is reported by name. No secret value appears in any output.
+- **Suite 978 OK.**
+- **Parked (T605, not scheduled):** SEV-1..SEV-6 and three missing pins.
+- **Still with the user:** allow `mcp__poc-security-audit__*` in `.claude/settings.json`. That file is client-owned and
+  is never auto-edited.

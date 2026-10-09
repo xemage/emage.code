@@ -63,6 +63,10 @@ SAMPLES = {
     "github-fine-grained-pat": "t = github_pat_" + "A1b2C3d4E5" * 3,
     "sk-api-key": "k = sk-ant-" + "a1B2" * 6,
     "url-embedded-credentials": "u = postgres://admin:" + "s3cretpw" + "@db.example.invalid/x",
+    "npm-token": "//registry.npmjs.org/:_authToken=npm_" + "a1B2c3D4e5" * 4,
+    "sendgrid-api-key": "k = SG." + "aB3dE5gH7jK9mN1pQ3" + "." + "xY2zW4vU6tS8rQ0pO2nM4lK6jI8hG0fE2dC4bA6",
+    "jwt": "t = eyJ" + "hbGciOiJIUzI1NiJ9" + ".eyJ" + "zdWIiOiIxMjM0NTY3ODkwIn0" + "." + "dBjftJeZ4CVPmB92K27uhbUJU1p1r",
+    "unquoted-credential-assignment": "DB_PASSWORD=" + "hunter2" * 2,
 }
 CREDENTIAL_VARIANTS = (
     '"password": "hunter2hunter2"', "api-key: 'abcdefgh1234'", "pwd = 'abcdefgh'",
@@ -73,7 +77,32 @@ PLACEHOLDERS = (
     "u = postgres://user:${PASS}@host/db", "u = postgres://user:<pw>@host/db",
     "u = http://localhost:8080/x", "see risk-assessment-for-the-quarterly-planning-doc",
     "task-management-planning-document-for-everyone",
+    # unquoted-assignment false-positive guards (T604, user-tuned)
+    "TOKEN_TTL=3600", "SESSION_TIMEOUT=30000", "TOKEN_TTL=86400000", "API_URL=https://example.com/v1",
+    "TOKEN_URL=https://auth.example.com/oauth/token", "PASSWORD_FILE=/run/secrets/db_password",
+    "password=${DB_PASSWORD}", "password: ${DB_PASSWORD}", "password: <set-me>", "secret: {{ vault_secret }}",
+    "key: value", "api_key: value", "password=short", "password: abc",
+    "password = get_password_from_vault(name)", "if password == hunter2hunter2",
+    # placeholders for the extra token formats (T604)
+    "npm_config_user_agent=node", "x = npm_TOKEN", "x = SG.your-api-key-here", "x = SG.short.short",
+    "x = eyJhbGciOiJIUzI1NiJ9", "x = eyJ...", "Authorization: Bearer <token>",
 )
+
+
+def _process_is_dead(pid: int) -> bool:
+    """L-7: gone, or a zombie (state Z in /proc/<pid>/stat) that nobody has reaped yet.
+    `os.kill(pid, 0)` alone reports a zombie as alive, which flakes where pid 1 never reaps."""
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return True
+    except PermissionError:
+        pass
+    try:
+        stat_text = Path(f"/proc/{pid}/stat").read_text()
+    except OSError:
+        return False  # no /proc: cannot tell, treat as alive
+    return stat_text.rpartition(")")[2].split()[0] == "Z"
 
 
 def _which_git() -> str:
@@ -144,9 +173,9 @@ class ArgvTests(RepoCase):
         _git(root, "tag", "-a", "v1", "-m", "t")
         rid, pat = poc_scan.RULES[0]
         expected_grep = {
-            "worktree": ["grep", "--no-color", "--untracked", "--no-exclude-standard", "-a", "-n",
+            "worktree": ["grep", "--no-color", "--untracked", "--no-exclude-standard", "-a", "-o", "-n",
                          "-z", "-E", "-e", pat, "--"],
-            "index": ["grep", "--no-color", "--cached", "-a", "-n", "-z", "-E", "-e", pat, "--"],
+            "index": ["grep", "--no-color", "--cached", "-a", "-o", "-n", "-z", "-E", "-e", pat, "--"],
         }
         for scope, grep in expected_grep.items():
             calls, patch = self.capture()
@@ -725,9 +754,7 @@ class FollowUpHardeningTests(RepoCase):
         self.assertEqual(len(pids), 2)
         for pid in pids:
             for _ in range(60):
-                try:
-                    os.kill(pid, 0)
-                except ProcessLookupError:
+                if _process_is_dead(pid):
                     break
                 time.sleep(0.1)
             else:
@@ -783,6 +810,165 @@ class FollowUpHardeningTests(RepoCase):
             sha = "a" * 40
             self.assertEqual(poc_scan.ref_containment(dotdot, sha, self.cfg)["errors"],
                              ["not_a_toplevel"])
+
+
+class T604Tests(RepoCase):
+    """T604: unquoted rule, untracked secret file names, L-1, L-2, extra token formats."""
+
+    def _rule_hits(self, text: str, rule: str, scope: str = "index") -> list:
+        root = self.make_repo(name=f"r{abs(hash((text, rule, scope)))}", files={"f.txt": text + "\n"})
+        return [h for h in self.scan(root, scope)["hits"] if h["rule_id"] == rule]
+
+    # -- item 1: the unquoted-assignment rule and its false-positive table -------------
+    def test_unquoted_rule_matches_real_shapes(self):
+        for text in ("DB_PASSWORD=hunter2hunter2", "password: hunter2hunter2", "export API_KEY=abcdefgh1234",
+                     "  secret_key_base: abcdef1234567890  # c", "SECRET_KEY_BASE=abcdef1234567890",
+                     "services:\n  db:\n    environment:\n      POSTGRES_PASSWORD: changeme123",
+                     "token = abcdefgh1234", '"password": hunter2hunter2,'):
+            self.assertEqual(len(self._rule_hits(text, "unquoted-credential-assignment")), 1, text)
+
+    def test_unquoted_rule_false_positive_cases_do_not_match(self):
+        for text in ("TOKEN_TTL=3600", "SESSION_TIMEOUT=30000", "TOKEN_TTL=86400000", "token_timeout: 30000000",
+                     "API_URL=https://example.com/v1", "TOKEN_URL=https://auth.example.com/oauth/token",
+                     "SECRET_KEY_PATH=/etc/ssl/private/k", "PASSWORD_FILE=/run/secrets/db_password",
+                     "password=${DB_PASSWORD}", "password: ${DB_PASSWORD}", "password: <set-me>",
+                     "secret: {{ vault_secret }}", "key: value", "api_key: value", "password=short",
+                     "password: abc", "password = get_password_from_vault(name)",
+                     "password=abcdefgh(x)", "if password == hunter2hunter2", 'password = "hunter2hunter2"',
+                     "password: 'hunter2hunter2'", "password: two words here", "token_type: bearer-token-value",
+                     "REFRESH_TOKEN_EXPIRY=1700000000000"):
+            self.assertEqual(self._rule_hits(text, "unquoted-credential-assignment"), [], text)
+
+    def test_unquoted_rule_known_false_positive_is_documented_not_hidden(self):
+        # Code identifiers without whitespace or "(" still match: recorded limit in the docstring.
+        self.assertEqual(len(self._rule_hits("password = args.password", "unquoted-credential-assignment")), 1)
+        self.assertIn("args.password", poc_scan.__doc__)
+
+    def test_unquoted_rule_blocks_in_untracked_env_and_in_history(self):
+        root = self.make_repo(files={".gitignore": ".env\n"})
+        (root / ".env").write_text("DB_PASSWORD=" + "hunter2" * 2 + "\nTOKEN_TTL=3600\n")
+        hits = self.scan(root, "worktree")["hits"]
+        self.assertEqual([(h["rule_id"], h["path_or_redacted"], h["line"]) for h in hits
+                          if h["rule_id"] == "unquoted-credential-assignment"], [("unquoted-credential-assignment", ".env", 1)])
+        self.commit_file(root, "old.env.txt", "API_TOKEN=" + "zq8" * 6 + "\n")
+        _git(root, "rm", "-q", "old.env.txt")
+        _git(root, "commit", "-q", "-m", "rm")
+        hist = self.scan(root, "history")
+        self.assertIn("unquoted-credential-assignment", {h["rule_id"] for h in hist["hits"] if h.get("via") == "log"})
+
+    def test_not_ending_builder_agrees_with_str_endswith(self):
+        import random
+        import re
+        rx = re.compile("^" + poc_scan._not_ending(poc_scan.NON_SECRET_NAME_ENDINGS) + "$")
+        rng = random.Random(7)
+        alphabet = "ltimeoutrpafndsyzxvhUTL_-1"
+        for _ in range(20000):
+            word = "".join(rng.choice(alphabet) for _ in range(rng.randint(0, 9)))
+            expected = not any(word.lower().endswith(w) for w in poc_scan.NON_SECRET_NAME_ENDINGS)
+            self.assertEqual(bool(rx.match(word)), expected, word)
+        for w in poc_scan.NON_SECRET_NAME_ENDINGS:
+            self.assertIsNone(rx.match("DB_" + w.upper()))
+            self.assertIsNotNone(rx.match("DB_" + w.upper() + "S"))
+
+    def test_rules_version_bumped(self):
+        self.assertEqual(poc_scan.RULES_VERSION, "2026-10-09.3")
+        self.assertEqual(self.scan(self.make_repo(), "index")["rules_version"], "2026-10-09.3")
+
+    # -- item 6: extra token formats ---------------------------------------------------
+    def test_extra_token_formats_match_and_placeholders_do_not(self):
+        for rule in ("npm-token", "sendgrid-api-key", "jwt"):
+            self.assertEqual(len(self._rule_hits(SAMPLES[rule], rule)), 1, rule)
+        for text in ("npm_config_user_agent=node", "x = npm_TOKEN", "x = npm_" + "a" * 20, "x = SG.your-api-key-here",
+                     "x = SG.short.short", "x = eyJhbGciOiJIUzI1NiJ9", "x = eyJ...", "x = eyJhbGciOiJIUzI1NiJ9.e30"):
+            for rule in ("npm-token", "sendgrid-api-key", "jwt"):
+                self.assertEqual(self._rule_hits(text, rule), [], (rule, text))
+
+    # -- item 2: untracked secret files, by name only ----------------------------------
+    def test_untracked_secret_file_names_reported_by_name_only(self):
+        root = self.make_repo(files={".gitignore": ".env\n*.pem\n"})
+        content = "plain-content-marker-xyz"
+        for name in (".env", "deploy/id_rsa", "c.pem", "NOTES.txt", ".env.local"):
+            (root / name).parent.mkdir(parents=True, exist_ok=True)
+            (root / name).write_text(content + "\n")
+        res = self.scan(root, "worktree")
+        names = {h["path_or_redacted"] for h in res["hits"] if h["rule_id"] == poc_scan.UNTRACKED_NAME_RULE}
+        self.assertEqual(names, {".env", "deploy/id_rsa", "c.pem", ".env.local"})
+        self.assertTrue(res["complete"])
+        self.assertNotIn(content, json.dumps(res))
+        # ... but the same names are NOT reported for the other scopes, nor when tracked.
+        for scope in ("index", "stashes", "history"):
+            self.assertNotIn(poc_scan.UNTRACKED_NAME_RULE, {h["rule_id"] for h in self.scan(root, scope)["hits"]})
+        _git(root, "add", "-f", ".env")
+        names = {h["path_or_redacted"] for h in self.scan(root, "worktree")["hits"]
+                 if h["rule_id"] == poc_scan.UNTRACKED_NAME_RULE}
+        self.assertNotIn(".env", names)
+
+    def test_untracked_secret_file_name_matching_a_rule_is_redacted(self):
+        root = self.make_repo()
+        (root / f"{AWS}.pem").write_text("")
+        res = self.scan(root, "worktree")
+        self.assertEqual([(h["rule_id"], h["path_or_redacted"], h["path_index"]) for h in res["hits"]],
+                         [(poc_scan.UNTRACKED_NAME_RULE, "<redacted-by-rule:aws-access-key-id>", 1)])
+        self.assertNotIn(AWS, json.dumps(res))
+
+    def test_untracked_names_argv_and_spawn_list(self):
+        root = self.make_repo()
+        want = {
+            "worktree": ["rev-parse", "grep*", "ls-files -z --others"],
+            "index": ["rev-parse", "grep*"],
+            "tracked_names": ["rev-parse", "ls-files -z"],
+        }
+        for scope, subs in want.items():
+            calls, patch = self.capture()
+            with patch:
+                self.scan(root, scope)
+            self.assertTrue(all(c[3:SUB] == PREFIX for c in calls), scope)
+            shown = ["grep*" if c[SUB] == "grep" else " ".join(c[SUB:]) if c[SUB] == "ls-files" else c[SUB]
+                     for c in calls]
+            collapsed = [x for i, x in enumerate(shown) if not (x == "grep*" and shown[i - 1] == "grep*")]
+            self.assertEqual(collapsed, subs, scope)
+        calls, patch = self.capture()
+        with patch:
+            self.scan(root, "worktree")
+        self.assertEqual(calls[-1][SUB:], ["ls-files", "-z", "--others"])
+        self.assertNotIn("--exclude-standard", calls[-1])
+
+    # -- item 3 / L-1: -o and the per-rule (path, line) dedupe -------------------------
+    def test_huge_single_line_does_not_hit_the_byte_cap(self):
+        line = "a" * 400_000 + " " + AWS + " " + AWS + " " + "b" * 400_000
+        root = self.make_repo(files={"big.txt": line + "\n"})
+        cfg = PocAuditConfig(allowed_root=self.base, max_bytes=100_000)
+        for scope in ("worktree", "index"):
+            res = self.scan(root, scope, cfg=cfg)
+            self.assertEqual((res["complete"], res["truncated"], res["errors"]), (True, False, []), scope)
+            self.assertEqual([(h["rule_id"], h["line"]) for h in res["hits"]], [("aws-access-key-id", 1)], scope)
+
+    def test_dedupe_is_per_rule_path_and_line_not_global(self):
+        root = self.make_repo(files={"a.txt": f"{AWS} {AWS} {GHP}\n{AWS}\n", "b.txt": AWS + "\n"})
+        res = self.scan(root, "index")
+        got = sorted((h["rule_id"], h["path_or_redacted"], h["line"]) for h in res["hits"])
+        self.assertEqual(got, [("aws-access-key-id", "a.txt", 1), ("aws-access-key-id", "a.txt", 2),
+                               ("aws-access-key-id", "b.txt", 1), ("github-token", "a.txt", 1)])
+        hist = self.scan(root, "history")
+        self.assertEqual(len([h for h in hist["hits"] if h.get("via") != "log" and h["rule_id"] == "aws-access-key-id"
+                              and h["path_or_redacted"] == "a.txt"]), 2)
+
+    # -- item 4 / L-2 ------------------------------------------------------------------
+    def test_rev_parse_failure_in_a_real_repository_stays_git_failed(self):
+        root = self.make_repo()
+        real = _which_git()
+        d = self.base / "fakebin3"
+        d.mkdir()
+        (d / "git").write_text(f'#!/bin/sh\ncase "$*" in *show-toplevel*) exit 128;; esac\nexec {real} "$@"\n')
+        (d / "git").chmod(0o755)
+        with mock.patch.dict(os.environ, {"PATH": f"{d}:{os.environ['PATH']}"}):
+            for scope in poc_scan.SCOPES:
+                self.assertEqual(self.scan(root, scope)["errors"], ["git_failed"], scope)
+            ref = poc_scan.ref_containment(str(root), "a" * 40, self.cfg)
+            self.assertEqual(ref["errors"], ["git_failed"])
+            plain = self.base / "plain-dir"
+            plain.mkdir()
+            self.assertEqual(self.scan(plain, "index")["errors"], ["not_a_toplevel"])  # genuine: no .git
 
 
 class TextAndStructureTests(unittest.TestCase):

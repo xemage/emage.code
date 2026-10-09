@@ -16,6 +16,28 @@ What the tools return, and what they never return:
 Documented limits (v2 §3.2 / R-3, R-4, R-5): a clean result means "no match for this rule
 set at the scanned refs", not "no secret"; dangling objects and reflog-only commits are
 invisible; `pushed` is `true` or `"unknown"`, never `false`.
+
+Further limits recorded by the T603 code review (security-review-poc-security-audit-code-v1,
+tracked in T604):
+
+* L-3 (a user decision, unchanged): the quoted-credential placeholder heuristic skips a value
+  that starts with `$`, `<`, `{` or a space, so a real secret that starts with one of those
+  characters is not reported.
+* L-4: `scan_secrets(scope="history")` uses `git log -G`, which does not diff merge commits.
+  A secret that exists only as a merge-resolution change is found only if it is also visible
+  in a scanned tip tree.
+* L-5: a `rev_range` that names more than `max_refs` (200) commits is reported `truncated`
+  although the `git log` pass covers the whole range. This is deliberately over-conservative.
+* L-6: a `.git` *file* in `root_dir` may point to a gitdir outside `allowed_root`; only the
+  working directory is checked against `allowed_root` (recorded as R-6 in v2).
+* Untracked secret FILES (scope `worktree`) are reported by NAME only, with the rule id
+  `untracked-secret-file-name`; their content is covered by the content rules, so a file whose
+  name is not on the allowlist is still scanned by content. Ignored files are included.
+* `unquoted-credential-assignment` is a tuned heuristic: it needs a credential keyword in the
+  name, a value of 8 or more characters without whitespace, `(`, quotes, `$`, `<`, `{` or a
+  leading `=`, and a name that does not end in a non-secret word (ttl, timeout, url, ...). A
+  value shorter than 8 characters is never reported, and a code identifier such as
+  `password = args.password` is (a known false positive).
 """
 from __future__ import annotations
 
@@ -37,13 +59,46 @@ from implementation.runtime.security.git_executor import (
     run_git,
 )
 
-RULES_VERSION = "2026-10-09.2"
+RULES_VERSION = "2026-10-09.3"
 
 
 def _ci(word: str) -> str:
     """Case-insensitive ERE for a word (works in git ERE and in Python `re`)."""
     return "".join(f"[{c.upper()}{c.lower()}]" if c.isalpha() else c for c in word)
 
+
+_NAME_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789_-"
+
+
+def _name_class(chars: set[str]) -> str:
+    """Bracket expression for lower-case name characters, letters in both cases."""
+    parts = [c.upper() + c if c.isalpha() else c for c in sorted(chars) if c != "-"]
+    return "[" + "".join(parts) + ("-" if "-" in chars else "") + "]"
+
+
+def _not_ending(words: tuple[str, ...]) -> str:
+    """ERE (no lookaround) for name-character strings, empty included, that end in NONE of
+    `words` (case-insensitive). Built by peeling the last character off every word."""
+    last = {w[-1] for w in words}
+    alts = ["[A-Za-z0-9_-]*" + _name_class(set(_NAME_CHARS) - last)]
+    for c in sorted(last):
+        rest = tuple(w[:-1] for w in words if w[-1] == c)
+        if all(rest):  # a one-letter word would forbid every string ending in c
+            alts.append(_not_ending(rest) + _name_class({c}))
+    return "(" + "|".join(alts) + ")?"
+
+
+_CREDENTIAL_WORDS = "(" + "|".join([
+    _ci("password"), _ci("passwd"), _ci("pwd"), _ci("secret"),
+    _ci("api") + "[-_]?" + _ci("key"), _ci("access") + "[-_]?" + _ci("key"),
+    _ci("private") + "[-_]?" + _ci("key"), _ci("token")]) + ")"
+# Name endings that are configuration about a secret, not a secret (user decision 2026-10-09).
+NON_SECRET_NAME_ENDINGS = ("ttl", "timeout", "url", "uri", "endpoint", "path", "file", "dir",
+                           "name", "expiry", "expires", "expiration", "length", "size", "type",
+                           "header", "env", "var")
+_UNQUOTED_VALUE = (
+    "[^ \t\r\"'$<{(=][^ \t\r\"'(]{7,}([ \t\r]|$)"  # 8+ chars, no space/quote/( ; ends at space/EOL
+)
 
 # (rule_id, pattern). POSIX-ERE and Python-re compatible subset only.
 RULES: tuple[tuple[str, str], ...] = (
@@ -57,16 +112,24 @@ RULES: tuple[tuple[str, str], ...] = (
     ("bearer-token", r"[Bb]earer [A-Za-z0-9._~+/=-]{20,}"),
     ("pgp-private-key-block", r"-----BEGIN PGP PRIVATE KEY BLOCK-----"),
     ("github-fine-grained-pat", r"github_pat_[A-Za-z0-9_]{22,}"),
+    ("npm-token", r"npm_[A-Za-z0-9]{36,}"),
+    ("sendgrid-api-key", r"SG\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,}"),
+    ("jwt", r"eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]*"),
     ("sk-api-key", r"(^|[^A-Za-z0-9_])sk-(ant-|proj-)?[A-Za-z0-9_-]{20,}"),
     # URL with embedded credentials; a password starting with $ < { is a placeholder.
-    ("url-embedded-credentials", r"[a-z][a-z0-9+.-]*://[^/:@ ]+:[^/@ $<{][^/@ ]{2,}@"),
+    # The scheme is bounded ({0,31}): an unbounded run made git grep quadratic (minutes) on one
+    # very long line of scheme characters, which L-1's `-o` fix now lets reach the scanner.
+    ("url-embedded-credentials", r"[a-z][a-z0-9+.-]{0,31}://[^/:@ ]+:[^/@ $<{][^/@ ]{2,}@"),
     (
         "credential-assignment",
-        "(" + "|".join([_ci("password"), _ci("passwd"), _ci("pwd"), _ci("secret"),
-                        _ci("api") + "[-_]?" + _ci("key"), _ci("access") + "[-_]?" + _ci("key"),
-                        _ci("private") + "[-_]?" + _ci("key"), _ci("token")]) + ")"
+        _CREDENTIAL_WORDS
         # [A-Za-z0-9_-]* then an optional closing quote then : or = (JSON/YAML/.env/code)
         + "[A-Za-z0-9_-]*[\"']?[ \t]*[:=][ \t]*[\"'][^\"'$<{ ][^\"']{7,}[\"']",
+    ),
+    (
+        "unquoted-credential-assignment",
+        _CREDENTIAL_WORDS + _not_ending(NON_SECRET_NAME_ENDINGS)
+        + "[\"']?[ \t]*[:=][ \t]*" + _UNQUOTED_VALUE,
     ),
 )
 _COMPILED = tuple((rid, re.compile(pat)) for rid, pat in RULES)
@@ -77,6 +140,7 @@ TRACKED_NAME_PATTERNS = (".env", ".env.*", "credentials.json", "*.pem", "*.key",
                          "id_rsa", "secrets.yaml", "id_ed25519", "*.p12", "*.pfx",
                          ".npmrc", ".pgpass")
 TRACKED_NAME_RULE = "tracked-secret-file-name"
+UNTRACKED_NAME_RULE = "untracked-secret-file-name"
 
 SCOPES = ("worktree", "index", "stashes", "history", "tracked_names")
 _REF_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$")
@@ -148,7 +212,9 @@ def resolve_root(root_dir: object, cfg: PocAuditConfig, deadline: Deadline) -> t
         return None, ERR_NOT_TOPLEVEL
     res = run_git(git_argv(str(path), "rev-parse", "--show-toplevel"), deadline, 4096)
     if res.error == ERR_GIT_FAILED:
-        return None, ERR_NOT_TOPLEVEL
+        # L-2: only a directory with no `.git` entry is a genuine "not a repository". With one,
+        # a failing rev-parse is an old git, a SHA-256 repo, an ownership refusal ...: report it.
+        return None, (ERR_GIT_FAILED if os.path.lexists(path / ".git") else ERR_NOT_TOPLEVEL)
     if res.error:
         return None, res.error
     out = _decode(res.stdout)
@@ -221,7 +287,8 @@ class _Scan:
         """One `git grep` per rule (so each hit carries its rule_id); text never read."""
         for rule_id, pattern in RULES:
             # -a (treat as text) so a `-diff`/binary attribute cannot hide a match.
-            args = ("grep", "--no-color", *flags, "-a", "-n", "-z", "-E", "-e", pattern,
+            # -o (L-1) prints only the matched part, so a huge single line cannot fill the byte cap.
+            args = ("grep", "--no-color", *flags, "-a", "-o", "-n", "-z", "-E", "-e", pattern,
                     *trees, "--")
             res = self.run(*args, ok=(0, 1))
             if res is None:
@@ -230,7 +297,11 @@ class _Scan:
             if leftover and not res.truncated:
                 self._error(ERR_GIT_FAILED, False)  # unparseable output: fail closed
                 return
+            seen: set[tuple[bytes, int]] = set()  # -o prints one record per match, not per line
             for raw, line in records:
+                if (raw, line) in seen:
+                    continue
+                seen.add((raw, line))
                 m = _TREE_PREFIX_RE.match(raw) if trees else None
                 commit = m.group(1).decode() if m else None
                 name = _decode(raw[m.end():] if m else raw)
@@ -292,7 +363,15 @@ class _Scan:
                     return
 
     def scan_tracked_names(self) -> None:
-        res = self.run("ls-files", "-z")
+        self._name_scan(("ls-files", "-z"), TRACKED_NAME_RULE)
+
+    def scan_untracked_names(self) -> None:
+        """Names only, no content: untracked files, ignored ones included (no
+        `--exclude-standard`), against the same allowlist as `scan_tracked_names`."""
+        self._name_scan(("ls-files", "-z", "--others"), UNTRACKED_NAME_RULE)
+
+    def _name_scan(self, args: tuple[str, ...], rule_id: str) -> None:
+        res = self.run(*args)
         if res is None:
             return
         parts = res.stdout.split(b"\0")
@@ -303,7 +382,7 @@ class _Scan:
             base = name.rsplit("/", 1)[-1]
             lowered = base.lower()
             if any(fnmatch.fnmatchcase(lowered, pat) for pat in TRACKED_NAME_PATTERNS):
-                if not self.add_hit(TRACKED_NAME_RULE, name=name):
+                if not self.add_hit(rule_id, name=name):
                     return
 
     @staticmethod
@@ -337,6 +416,7 @@ def _scan_secrets(root_dir: str, scope: str, rev_range: str | None, cfg: PocAudi
     scan = _Scan(root, cfg, deadline, scope)
     if scope == "worktree":
         scan.grep(("--untracked", "--no-exclude-standard"))
+        scan.scan_untracked_names()
     elif scope == "index":
         scan.grep(("--cached",))
     elif scope == "stashes":

@@ -2,10 +2,9 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T604 | Close the T603 review residuals: unquoted-secret rule, untracked secret files, LOW findings (C-1 deadline) | backend-developer | pending | P2 | T603 | 2026-10-09 |
-| T603 | Implement the fixed-command PoC security scanner and drop execute from poc-security-engineer (L4/X5) | backend-developer | pending | P2 | T602 | 2026-10-09 |
+| T604 | Close the T603 review residuals: unquoted-secret rule, untracked secret files, LOW findings (C-1 deadline) | backend-developer | in_review | P2 | T603 | 2026-10-09 |
 
-> **1 active row (`plan-113`).** T603 builds the two-tool `poc-security-audit` server (git-config isolation, redaction, tri-state `pushed`, bounded scans) and then drops `execute` from `poc-security-engineer`, per the user's decisions. It needs a Security Engineer code review before merge. Baseline v20; root drift 0.
+> **1 active row (`plan-113`).** T604 closes condition C-1 (review PASS, awaiting merge). T603 (done, !534) built the two-tool `poc-security-audit` server (git-config isolation, redaction, tri-state `pushed`, bounded scans) and then drops `execute` from `poc-security-engineer`, per the user's decisions. It needs a Security Engineer code review before merge. Baseline v20; root drift 0.
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
