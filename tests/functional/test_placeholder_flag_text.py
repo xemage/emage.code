@@ -220,12 +220,13 @@ class PlaceholderFlagTextTests(unittest.TestCase):
     # --- V3-8 / E-P2 ------------------------------------------------------------------------------------
     def test_v3_8_e_p2_blind_spots_include_url_scheme_clause(self):
         p2 = _block(self.se, P2_HEAD, None)
-        self.assertIn("or is shorter than three characters; a URL whose scheme is 32 or more characters long or in upper case; or a secret in a format", p2)
+        self.assertIn("or is shorter than three characters; a URL whose scheme is in upper case; a credential name with more than about 64 name characters between its credential keyword and the `:` or `=`; a JWT whose first segment has more than 512 characters after its leading `eyJ`; or a secret in a format", p2)
         for needle in ("A clean scan therefore excludes those values", "State this limit in every verdict",
                        "It does not make a skipped value safe and it cannot be flagged",
                        "a secret in a format the fixed rule table does not list"):
             self.assertEqual(p2.count(needle), 1, needle)
         self.assertNotIn("blocks", p2)
+        self.assertIn("gets the label for the visible match only", p2)  # T611-5: text beyond the bounds is unjudged
         # T609 replacement: the removed leading characters are gone, the remaining blind spots are kept.
         self.assertIn("a quoted credential value that is shorter than eight characters or contains a quote character", p2)
         self.assertIn("begins with a space, tab, carriage return, quote, `(` or `=`", p2)

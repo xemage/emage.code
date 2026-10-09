@@ -19,7 +19,15 @@
     "Declared 2026-10-09 by T608 (placeholder-flag agent text, E-P1/E-O1/E-P2): 12 paths = the poc-orchestrator and poc-security-engineer projections on 6 platforms.",
     "Declared 2026-10-09 by T610 (AGENTS.md naming rulings O1-A, O2-A, O5-A and the poc-orchestrator indent cosmetic): 19 further paths = the coding-standards projections (7), the /new-project projections (6) and the /new-feature projections (6); the 6 poc-orchestrator projections were already declared by T608; root not refreshed.",
     "Declared 2026-10-09 by T609 (template-ref label and E-S2 agent text: the same 12 poc-orchestrator and poc-security-engineer projections, no new path; the scanner, server and tests are not root-installed); root not refreshed.",
-    "Emptied 2026-10-09 by the eleventh user-approved --projections-only refresh (31 paths: the T608 placeholder-flag agent text, the T609 template-ref label agent text and the T610 AGENTS.md naming edits, i.e. coding-standards on 7 platforms, /new-project and /new-feature on 6 each, and the poc-orchestrator and poc-security-engineer agents on 6)."
+    "Emptied 2026-10-09 by the eleventh user-approved --projections-only refresh (31 paths: the T608 placeholder-flag agent text, the T609 template-ref label agent text and the T610 AGENTS.md naming edits, i.e. coding-standards on 7 platforms, /new-project and /new-feature on 6 each, and the poc-orchestrator and poc-security-engineer agents on 6).",
+    "Declared 2026-10-09 by T611 (scanner residual cleanup, the T609-13 URL-scheme blind-spot wording and the SEV-1/SEV-4 blind spots in the poc-security-engineer agent text): 6 paths = the poc-security-engineer projections on 6 platforms; the scanner, server, tests and contract v4 are not root-installed; root not refreshed."
   ],
-  "drift": []
+  "drift": [
+    ".claude/agents/poc-security-engineer.md",
+    ".cursor/agents/poc-security-engineer.mdc",
+    ".gemini/agents/poc-security-engineer.md",
+    ".github/agents/poc-security-engineer.agent.md",
+    ".opencode/agents/poc-security-engineer.md",
+    ".pi/agents/poc-security-engineer.md"
+  ]
 }
