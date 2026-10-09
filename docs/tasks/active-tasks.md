@@ -2,8 +2,9 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T617 | Rule the twelve observations of the T615 ruling (O-1..O-12) | solution-architect | pending | P2 | — | 2026-10-09 |
 
-> **No active rows.** `plan-118` is complete: T615 ruled and T616 applied the task-protocol amendments to five skills. Root drift: 35 paths (the five skills on 7 platforms) declared by T616 wait for one user-approved root refresh. Baseline v20. Open, unscheduled: R-1, the other plan-112 §2 notes, the held-out check, the stale golden quote, and the further observations O-1..O-12 of the T615 ruling.
+> **1 active row (`plan-119`).** T617 is a decision-only Solution Architect task giving every observation O-1..O-12 of the T615 ruling a disposition. Baseline v20; root drift 0. Open, unscheduled: R-1, the other plan-112 §2 notes, the held-out check, the stale golden quote.
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
