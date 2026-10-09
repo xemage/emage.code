@@ -2,9 +2,9 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T613 | Rule the Scrum Master/Task Protocol conflict (P41 O2) and the third checkpoint name (T607 O7) | solution-architect | pending | P2 | — | 2026-10-09 |
+| T614 | Apply the Scrum Master and checkpoint-name rulings (S1, S2, K) | backend-developer | pending | P2 | — | 2026-10-09 |
 
-> **1 active row (`plan-117`).** T613 is a decision-only Solution Architect task ruling the two remaining same-class conflicts (`scrum-master` against the Task Protocol; the third checkpoint name in `checkpoint-protocol`). Baseline v20; root drift 0. Open, unscheduled: R-1, the other plan-112 §2 notes, the held-out check, the stale golden quote.
+> **1 active row (`plan-117`).** T613 is ruled and archived; T614 applies the user-approved edits (S1, S2, K) to `scrum-master.md` and `checkpoint-protocol/SKILL.md`, declares about 13 root-drift paths, and then one user-approved root refresh follows. Baseline v20; root drift 0. Open, unscheduled: R-1, the other plan-112 §2 notes, the held-out check, the stale golden quote.
 > record.** `plan-064` Phase 10 is done, and it is the first task executed from the v8 roadmap.
 > **5 agents promoted** (`backend-developer`, `context-retriever`, `devops-engineer`,
 > `evaluation-agent`, `solution-architect`) — the agent category moves from 20/8 to **25 `stable` /
