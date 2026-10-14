@@ -112,6 +112,19 @@ Further limits handled in T612 (contract `poc-security-engineer-tool-scoping-v5.
   `git_executor` (`_regex_selftest`); if that call fails while a trivial pattern compiles (usually a low
   `RE_DUP_MAX`) the scan ends `regex_unsupported`,
   `complete: false`, no hits and no clean claim, instead of a bare `git_failed`.
+
+Measured, not changed, in T620 (contract `poc-security-engineer-tool-scoping-v6.md`):
+
+* R-1: the cost of the `jwt` rule on `eyJ`-dense input is linear in the line length. The worst measured
+  shape (170 starts sharing a dot-free payload that itself holds one start every 3 characters) costs about
+  2 microseconds per byte on git 2.43.0 (LC_ALL=C, glibc): 4.5 s for 2 MB, 10 s for 5 MB, the 60 s deadline
+  at about 30 MB for ONE file in the index or worktree scope (extrapolated, not measured). The `history` and
+  `stashes` scopes multiply the cost by the number of tips (up to `max_refs`, 200), stashes (50) or changed
+  commits (`git log -G` has no commit cap). Beyond the deadline the scan ends `timeout` / `complete: false`,
+  a fail-closed blind spot, never a clean result; `grep()` then returns early, so the rules after `jwt` in
+  `RULES` (`sk-api-key`, `url-embedded-credentials`, `credential-assignment`,
+  `unquoted-credential-assignment`) do not run, while the hits of the earlier rules are kept.
+  No pattern changed, so `RULES_VERSION` is unchanged.
 """
 from __future__ import annotations
 

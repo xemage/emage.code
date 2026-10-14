@@ -2,12 +2,11 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T620 | Bound the aperiodic-input cost of the JWT rule (R-1) | backend-developer | pending | P1 | — | 2026-10-09 |
 | T621 | Rule the remaining task-protocol and PoC-track observations (P41 O4, P33 O1/O2/O5/O6, O-8) | solution-architect | pending | P1 | — | 2026-10-09 |
 | T622 | Plan the re-evaluation and promotion of orchestrator and tech-lead and the golden realignment under baseline v21 | solution-architect | pending | P1 | — | 2026-10-09 |
 | T623 | Release-level audit of v7.0.1..develop: breaking and behaviour changes for the v8.0.0 migration notes | tech-lead | pending | P1 | — | 2026-10-09 |
 
-> **4 active rows (`plan-120`, release readiness for v8.0.0).** T619 (CI release job) is done. Open: T620 (R-1), T621 (remaining rulings; ruled, implementation pending), T622 (promotion and golden realignment plan; plan approved, implementation tasks pending), T623 (release-level audit). Baseline v20; root drift 0.
+> **3 active rows (`plan-120`, release readiness for v8.0.0).** T619 (CI release job, !558) and T620 (R-1) are done. Open: T621 (remaining rulings; ruled, implementation pending), T622 (promotion and golden realignment plan; plan approved, implementation tasks pending), T623 (release-level audit). Baseline v20; root drift 0.
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
