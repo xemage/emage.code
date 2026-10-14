@@ -2,7 +2,7 @@
 
 **ID:** T626
 **Owner:** qa-engineer
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Tier:** standard
 **Depends on:** T625

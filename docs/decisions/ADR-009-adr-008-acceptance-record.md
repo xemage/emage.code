@@ -2,8 +2,8 @@
 
 > Filename: `ADR-009-adr-008-acceptance-record.md` (zero-padded sequential, kebab-case slug).
 
-- **Status**: Proposed. It becomes Accepted when the user approves it. The acceptance is then recorded in this line through a normal MR (`git-workflow.md`).
-- **Date**: 2026-10-14
+- **Status**: Accepted. The user approved it on 2026-10-15 ("Accept ADR-009 as written (Recommended)"). It was proposed on 2026-10-14.
+- **Date**: 2026-10-15
 - **Decider(s)**: solution-architect drafted it. Acceptance is reserved to the user.
 - **Tasks**: T634 (this draft). T581 (ADR-008 and its acceptance). T623 (release audit finding C-8).
 - **Requirements**: `docs/decisions/ADR-008-knowledge-document-authority.md` header lines 5-10 at develop `4c5b43e`; `docs/artifacts/release-v8-audit-v1.md` C-8; `AGENTS.md` § Decision Log; `docs/tasks/completed-tasks.md` T581 row.
