@@ -18,8 +18,8 @@ main         ← production releases (protected, no direct push)
 develop      ← integration branch (default branch)
 feature/*    ← from develop, MR back to develop
 bugfix/*     ← from develop, MR back to develop
-release/*    ← from develop, MR to main + back-merge to develop
-hotfix/*     ← from main, MR to main + back-merge to develop
+release/*    ← from develop, MR to develop, then to main, then tag
+hotfix/*     ← from main, MR to develop, then to main, then tag
 ```
 
 ## Commit messages

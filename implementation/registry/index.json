@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-14T19:32:12+00:00",
+  "generatedAt": "2026-10-14T22:24:41+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -297,7 +297,7 @@
       "category": "agent",
       "name": "Orchestrator",
       "path": "agents/orchestrator.md",
-      "checksum": "4bbd606e42565056b49136d9b9205665a4ca965ce07f770160de28d42f844ef0",
+      "checksum": "42c3c85b2ec86ce80cc5134d14579dbf42e40101c7041d5c759f0e367da578a5",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -521,7 +521,7 @@
       "category": "agent",
       "name": "Release Manager",
       "path": "agents/release-manager.md",
-      "checksum": "60ca50f61abfe20db6264d1ed4124e7edd39515016efdbd798b65fe4d5881865",
+      "checksum": "073a5994c5ed0c0f633f3311a1028186bee1cdfdfcd64152e3d5fcf34521b622",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1949,7 +1949,7 @@
       "category": "skill",
       "name": "release-workflow",
       "path": "skills/release-workflow/SKILL.md",
-      "checksum": "2240bec770037c39d39294c37d112561836bc69a8fd68f0c07cc55107f0bd494",
+      "checksum": "d1f1b69fcfae2f2d9d4ee96ecc2780960b821d05b484f44c46c1fb7fdf9b8aee",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [

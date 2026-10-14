@@ -130,13 +130,13 @@ When delegating to a specialist agent, always provide:
    - Before calling `glab release create`, verify that `docs/releases/vX.Y.Z.md` exists and is committed
    - Publish/update release notes from that file only: `glab release create vX.Y.Z --ref vX.Y.Z --name vX.Y.Z -F docs/releases/vX.Y.Z.md`
    - Do not pass ad-hoc inline `--notes`; it can drift from `docs/releases/vX.Y.Z.md`
-   - File must include: "Latest release: vX.Y.Z", "## Install", "## Highlights", valid install instructions
+   - File must carry what `scripts/verify-release-docs.py` requires (`Latest release: vX.Y.Z`, `## Install`, `## Highlights`, `## RELEASE VERDICT`) and the sections skill `release-workflow` § 4 prescribes, with valid install instructions (`scripts/install.sh --help` lists the `--platform` values)
    - Use `scripts/verify-release-docs.py --tag vX.Y.Z` to validate locally before tag
 
 2. **Release Task Sequencing:**
    - Release work (version bump, changelog, release notes) must be part of a release MR
-   - Tag creation happens AFTER MR is merged to develop
-   - Never tag ahead of a commit; ensure tag commit is already in origin/develop
+   - The release branch is merged to `develop` first and to `main` second, by merge request and without squash; tag creation happens AFTER both merges, because the drift gate fails a tag push while `main` is ahead of `develop`
+   - Never tag ahead of a commit; ensure the tag commit is already in origin/develop and in origin/main
 
 3. **Release Blocking Conditions:**
    - CI pipeline must be green on develop before cutting a release tag

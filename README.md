@@ -261,7 +261,7 @@ For contributor detail, see [`CONTRIBUTING.md`](CONTRIBUTING.md).
 Release publication is blocked unless documentation is updated for the tag.
 
 - Required marker in release docs: `Latest release: vX.Y.Z`
-- Required per-release brief: `docs/releases/vX.Y.Z.md` (Install + Highlights)
+- Required per-release document: `docs/releases/vX.Y.Z.md` (Install, Highlights and RELEASE VERDICT, plus the sections skill `release-workflow` § 4 prescribes)
 - GitLab release notes source of truth: publish from `docs/releases/vX.Y.Z.md` using `glab release create vX.Y.Z --ref vX.Y.Z --name vX.Y.Z -F docs/releases/vX.Y.Z.md`
 - Required files:
   - `README.md`
@@ -359,7 +359,7 @@ main         ← production-ready releases
 develop      ← integration branch for new work
 feature/*    ← branch from develop, MR back to develop
 bugfix/*     ← bug fixes, MR back to develop
-release/*    ← stabilize a release, MR to main + back-merge to develop
+release/*    ← stabilize a release, MR to develop, then to main, then tag
 hotfix/*     ← emergency fix from main
 ```
 
