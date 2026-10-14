@@ -3,7 +3,6 @@
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
 | T635 | Resolve the T625 review conditions C1-C3 (and the cheap Nice-to-Have items) for the release job | devops-engineer | pending | P1 | T625 | 2026-10-14 |
-| T624 | Apply the T621 rulings (A1: O4-a, O1-a, O2-a, O6-a; B1: O5-a; C1: O8-a) | backend-developer | pending | P1 | — | 2026-10-14 |
 | T626 | Independent check of the T625 /code-review artifact against the command text | qa-engineer | pending | P1 | T625 | 2026-10-14 |
 | T627 | Run a real /skillify interview with the user (GitLab API fallback workflow) and apply the /skillify template fix | orchestrator | pending | P1 | — | 2026-10-14 |
 | T628 | Golden realignment A under grant G-1 (items 1-10, 11 if T627 is merged, 12 only if S-HO-1 allows it) | qa-engineer | pending | P1 | T625, T626 | 2026-10-14 |
@@ -14,7 +13,7 @@
 | T633 | Release-level Security Engineer audit of the installer and the PoC scanner (audit C-6) | security-engineer | pending | P1 | — | 2026-10-14 |
 | T634 | Superseding note for ADR-008's contradictory status block and a single severity-scale reference (audit C-8) | solution-architect | pending | P1 | — | 2026-10-14 |
 
-> **11 active rows (`plan-121`, release v8.0.0 wave 2; approved by the user on 2026-10-14).** T625 (Tech Lead `/code-review` of the T619 MR) is done and produced T635 (its three conditions). Open: T624 (apply the T621 rulings), T626 (QA check of the T625 artifact), T627 (`/skillify` with the user), T628 (golden realignment under grant G-1), T629 (baseline v21), T630 (promote `tech-lead`), T631 (adopter docs), T632 (release-document ruling), T633 (release-level security audit), T634 (ADR-008 note), T635 (release-job conditions). Baseline v20; root drift 0. Item 12 of G-1 and T630 wait for the held-out read (the user adds a Bash permission rule).
+> **Active rows (`plan-121`, release v8.0.0 wave 2; approved by the user on 2026-10-14).** T624 (apply the T621 rulings) and T625 (Tech Lead `/code-review` of the T619 MR) are done. Open: T626 (QA check of the T625 artifact), T627 (`/skillify` with the user), T628 (golden realignment under grant G-1), T629 (baseline v21), T630 (promote `tech-lead`), T631 (adopter docs), T632 (release-document ruling), T633 (release-level security audit), T634 (ADR-008 note), T635 (release-job conditions). Baseline v20; root drift 33 (declared by T624, waits for one user-approved root refresh). Item 12 of G-1 and T630 wait for the held-out read (the user adds a Bash permission rule).
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)

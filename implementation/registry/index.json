@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-09T17:58:41+00:00",
+  "generatedAt": "2026-10-14T19:32:12+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -297,7 +297,7 @@
       "category": "agent",
       "name": "Orchestrator",
       "path": "agents/orchestrator.md",
-      "checksum": "dce7d1d41ee49ced99a89b58121b9007b641f2b684087ccb2057b94cfd61eac7",
+      "checksum": "4bbd606e42565056b49136d9b9205665a4ca965ce07f770160de28d42f844ef0",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -689,7 +689,7 @@
       "category": "agent",
       "name": "Technical Debt Narrator",
       "path": "agents/technical-debt-narrator.md",
-      "checksum": "30cf2e95859d7242c92d448353c36f88e69dd88be7644f0129950fc7fdca3b9b",
+      "checksum": "6182a2add0100771fb5f66a8e86c0226dff35b107c7e26b983e98b730112a551",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1753,7 +1753,7 @@
       "category": "skill",
       "name": "gitlab-management",
       "path": "skills/gitlab-management/SKILL.md",
-      "checksum": "4a834016656a64b6a5e8717b019c4d40247f584de8a07e968a1949442b9d168f",
+      "checksum": "0c17e9726a0293911079c5e2f781d1179a7e1803994d69bf90dd4e1f8b7c0f69",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1837,7 +1837,7 @@
       "category": "skill",
       "name": "poc-evaluation",
       "path": "skills/poc-evaluation/SKILL.md",
-      "checksum": "232ba7a0ef6747ed670bdd3326dcf03671c34c4e8c45b50dc8cc184f723e6bcb",
+      "checksum": "0ad3945fd45b0396d17db528803a98b1ff6d14edec57df3599c1cb3063377b48",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -2061,7 +2061,7 @@
       "category": "skill",
       "name": "technical-debt-tracking",
       "path": "skills/technical-debt-tracking/SKILL.md",
-      "checksum": "9c3b47ffd1682d1148a5bead6316f751124f7a4b3c4583676836e00920a47c98",
+      "checksum": "a8124e5e47224fdbdef6c953f1e3925ba34b4c2b9915b7e26f2bbcf34f34888b",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
