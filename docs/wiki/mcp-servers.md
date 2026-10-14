@@ -29,7 +29,9 @@ All servers are declared once in [`implementation/knowledge/mcp/servers.yaml`](h
 
 ## Extended servers (opt-in)
 
-`cwso`, `hf-mcp-server`, `context-retriever`, `security-audit`, `poc-security-audit`, `filesystem`, `github`, `git`, `supabase`, `docker`, `postgresql`, `toolradar`.
+`cwso`, `hf-mcp-server`, `context-retriever`, `security-audit`, `poc-security-audit`, `filesystem`, `github`, `git`, `supabase`, `toolradar`.
+
+The `docker` and `postgresql` servers were removed in v8.0.0 (audit SEC-002); see [Migrating an existing install](#migrating-an-existing-install-from-v7x).
 
 Most require additional credentials — see [`servers.yaml`](https://gitlab.com/em-age/emage.code/-/blob/main/implementation/knowledge/mcp/servers.yaml) for the full env-var contract. The two Python servers `security-audit` and `poc-security-audit` need no credentials; `poc-security-audit` is described [below](#poc-security-scan-server-poc-security-audit).
 
@@ -45,12 +47,31 @@ Most require additional credentials — see [`servers.yaml`](https://gitlab.com/
 | `CWSO_BEARER_TOKEN` | `cwso` (extended) | Sent as `Authorization: Bearer <value>` |
 | `CWSO_ORIGIN` | `cwso` (extended) | Sent as the `Origin` header |
 | `TOOLRADAR_API_KEY` | `toolradar` (extended) | API key |
-| `GITHUB_TOKEN` | `github` (extended) | Classic PAT or fine-grained |
-| `SUPABASE_ACCESS_TOKEN` | `supabase` (extended) | Project access token |
+| `GITHUB_PERSONAL_ACCESS_TOKEN` | `github` (extended) | Classic PAT or fine-grained. Passed into the container by name (`-e`), never on the command line |
+| `SUPABASE_ACCESS_TOKEN` | `supabase` (extended) | Project access token. Read from the environment, never from argv. The server starts with `--read-only` |
 
 Claude Code's `.mcp.json` references these as `${VAR}`; the other platforms use `${env:VAR}` (Opencode: `{env:VAR}`). Claude Code reports an unset variable in `claude mcp list` and uses the literal `${VAR}` text. Export the variables for the servers you use in the environment that starts your assistant.
 
 > **Never commit these.** Use environment variables or a secret vault. See [`SECURITY.md`](https://gitlab.com/em-age/emage.code/-/blob/main/implementation/SECURITY.md) for the full rules.
+
+## Package pins and runtime requirements of the extended servers
+
+Every `npx`, `uvx` and `docker` entry in `servers.yaml` is pinned to an exact version or digest (audit SEC-002); `@latest` and ranges are not used.
+
+| Server | Launcher | Needs |
+|--------|----------|-------|
+| `filesystem` | `npx -y @modelcontextprotocol/server-filesystem@1.0.0 .` | Node.js |
+| `git` | `uvx mcp-server-git@2026.10.10 --repository .` | `uv` on `PATH` |
+| `github` | `docker run -i --rm -e GITHUB_PERSONAL_ACCESS_TOKEN ghcr.io/github/github-mcp-server@sha256:<digest>` | Docker, daemon running, able to pull from `ghcr.io` |
+| `supabase` | `npx -y @supabase/mcp-server-supabase@0.13.0 --read-only` | Node.js |
+
+**Pin maintenance.** The devops-engineer bumps the pins at every release and at least monthly; there is no automated scheduler. Each bump is a reviewed change that edits `servers.yaml` and the `APPROVED_NPX_PINS` dict in `tests/functional/test_mcp_package_pins.py` together. Before a bump, check the package with `npm audit` or OSV, and check the registry's latest version and its provenance. `@zereight/mcp-gitlab` holds the GitLab token, has a single maintainer, and releases often with published advisories, so it is reviewed at every release.
+
+### Launch directory and what the extended servers can reach
+
+- `filesystem` (`.`) and `git` (`--repository .`) resolve the path against the directory the assistant was started from. Start the assistant from the project root. Cline's configuration is global: replace `.` with the absolute path of your project there.
+- The `filesystem` server can read every file under that directory, including `.env*` files and `.git`. Keep secrets out of the project directory or do not enable the server.
+- The `git` server exposes write tools (for example commit and branch operations), not only read tools.
 
 ## PoC security scan server (`poc-security-audit`)
 
@@ -143,8 +164,11 @@ genuinely dest-only, previously-owned, now-retired keys are ever removed.
 **Bootstrap limitation, stated honestly:** a project with no prior sidecar (every project on its
 first `--update` after this mechanism shipped, including this repo's own root before its own
 first post-fix update) has no history to diff against, so the automatic mechanism prunes
-**nothing** on that first run — behavior is identical to before this mechanism existed. Automatic
-pruning only takes effect starting from the second post-fix `--update`, once a sidecar exists.
+**nothing** on that first run — behavior is identical to before this mechanism existed. That
+run also writes the new sidecar over the (missing) old one, so the retired keys are never
+recorded as owned: a later automatic prune cannot remove a key that the first run left
+behind. Remove such keys by hand or with `--force-prune-keys` (below). Automatic pruning only
+takes effect for keys retired after a sidecar exists.
 
 **One-time bootstrap bridge:** `scripts/merge-mcp-json.py --force-prune-keys <name1,name2,...>`
 prunes exactly the named dest-only keys, with no dependency on sidecar history — used only once,
@@ -152,6 +176,17 @@ explicitly, by `docs/tasks/task-T382.md` to close the already-decided `e2b`/`red
 `notion` removal gap for already-installed roots. It is not invoked automatically by `--update`
 anywhere in this codebase, and is not a general-purpose "prune whatever" convention — every
 invocation names an explicit, already-reviewed list.
+
+## Migrating an existing install from v7.x
+
+v8.0.0 corrects and pins the MCP server entries (audit SEC-002). Four extended entries named npm packages that do not exist (the `@anthropic/mcp-filesystem` name belonged to an unrelated npm account, so a third party could have published under it); every `npx` server is now pinned to an exact version; `docker` and `postgresql` are removed. After upgrading:
+
+1. Run `scripts/install.sh --update` in your project.
+2. The `filesystem`, `git`, `github` and `supabase` entries are overwritten in place: `command` and `args` are replaced and the new `env` entry is added. A key you added yourself inside one of those entries (for example an extra `env` variable) is kept; delete it if you no longer want it. Your own server entries with other names are kept.
+3. `docker` and `postgresql` are removed automatically only if the installed file's `<file>.provenance.json` sidecar lists them as generator-owned. If the install has no sidecar (v6.9.0 or earlier), or the sidecar no longer lists them, remove both server objects from every installed MCP config by hand, or run once per file: `python3 scripts/merge-mcp-json.py --source <generated file> --dest <your file> --force-prune-keys docker,postgresql`. `install.sh` does not pass this option, so this is a direct call. The script refuses if a named key is missing from the destination or still present in the source. The files are `.mcp.json`, `.gemini/settings.json`, `.opencode/opencode.json`, `.cursor/mcp.json`, `.cline/mcp.json`, `.pi/mcp.json` and `.vscode/mcp.json`. Cline's real configuration is global (see [Cline Setup](cline-setup)): remove the two entries from it directly.
+4. If you had your own server entry named `docker` or `postgresql` and the old sidecar lists those names, the update removes it as well, because only the name is compared. Re-add it under another name.
+5. Set `GITHUB_PERSONAL_ACCESS_TOKEN` (`github`) and `SUPABASE_ACCESS_TOKEN` (`supabase`) in the environment that starts your assistant, install `uv` if you use `git`, and install Docker if you use `github`. An unset variable stops only that server.
+6. Your client may ask you to approve the changed servers again (Claude Code asks before using a project-scoped server from `.mcp.json`). Approve the new entries after checking them.
 
 ## Remote-server transport encoding differs per platform
 

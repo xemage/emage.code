@@ -18,7 +18,7 @@
       "command": "npx",
       "args": [
         "-y",
-        "@zereight/mcp-gitlab"
+        "@zereight/mcp-gitlab@2.2.5"
       ],
       "env": {
         "GITLAB_PERSONAL_ACCESS_TOKEN": "${env:GITLAB_PERSONAL_ACCESS_TOKEN}",
@@ -29,35 +29,35 @@
       "command": "npx",
       "args": [
         "-y",
-        "@playwright/mcp@latest"
+        "@playwright/mcp@0.0.83"
       ]
     },
     "fetch": {
       "command": "npx",
       "args": [
         "-y",
-        "mcp-fetch-server"
+        "mcp-fetch-server@1.1.2"
       ]
     },
     "memory": {
       "command": "npx",
       "args": [
         "-y",
-        "@modelcontextprotocol/server-memory"
+        "@modelcontextprotocol/server-memory@1.0.0"
       ]
     },
     "sequential-thinking": {
       "command": "npx",
       "args": [
         "-y",
-        "@modelcontextprotocol/server-sequential-thinking"
+        "@modelcontextprotocol/server-sequential-thinking@1.0.0"
       ]
     },
     "brave": {
       "command": "npx",
       "args": [
         "-y",
-        "@brave/brave-search-mcp-server"
+        "@brave/brave-search-mcp-server@2.1.4"
       ],
       "env": {
         "BRAVE_API_KEY": "${env:BRAVE_API_KEY}"
@@ -112,49 +112,48 @@
       "command": "npx",
       "args": [
         "-y",
-        "@anthropic/mcp-filesystem"
+        "@modelcontextprotocol/server-filesystem@1.0.0",
+        "."
       ]
     },
     "github": {
-      "command": "npx",
+      "command": "docker",
       "args": [
-        "-y",
-        "@github/mcp-github"
-      ]
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "GITHUB_PERSONAL_ACCESS_TOKEN",
+        "ghcr.io/github/github-mcp-server@sha256:ffced0d76e77428532a2ced185516992d77fd146d69eec2f244e6237d1a97796"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${env:GITHUB_PERSONAL_ACCESS_TOKEN}"
+      }
     },
     "git": {
-      "command": "npx",
+      "command": "uvx",
       "args": [
-        "-y",
-        "@modelcontextprotocol/mcp-git"
+        "mcp-server-git@2026.10.10",
+        "--repository",
+        "."
       ]
     },
     "supabase": {
       "command": "npx",
       "args": [
         "-y",
-        "@supabase/mcp"
-      ]
-    },
-    "docker": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "docker-mcp"
-      ]
-    },
-    "postgresql": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "postgres-mcp"
-      ]
+        "@supabase/mcp-server-supabase@0.13.0",
+        "--read-only"
+      ],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "${env:SUPABASE_ACCESS_TOKEN}"
+      }
     },
     "toolradar": {
       "command": "npx",
       "args": [
         "-y",
-        "toolradar-mcp"
+        "toolradar-mcp@2.1.0"
       ],
       "env": {
         "TOOLRADAR_API_KEY": "${env:TOOLRADAR_API_KEY}"
