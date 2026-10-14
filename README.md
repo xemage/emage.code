@@ -108,9 +108,79 @@ prompt block) is preserved, while every generator-known key is refreshed to
 the current generated content, recursing into nested objects (so hand-added
 fields inside a known server's config are preserved too). See
 `scripts/merge-mcp-json.py` for the exact algorithm. The rest of each
-platform's directory tree (`.github/`, `.cursor/`, `.claude/`, etc.) is still
-replaced wholesale on `--update` — only each platform's one MCP/settings file
-gets this merge treatment.
+platform's directory tree (`.github/`, `.cursor/`, `.gemini/`, `.opencode/`,
+`.pi/`, `.claude/`, `.cline/`, `.clinerules/`) is replaced on `--update`, with
+files that no longer exist upstream deleted: hand-written files inside those
+trees are lost, so keep project-specific content in `docs/`. Only each
+platform's one MCP/settings file gets the merge treatment above.
+
+**Client-owned files are spared.** `--update` does not write, merge or delete
+the project-local files that the harness never ships:
+
+| Platform tree | Spared on `--update` |
+|---------------|----------------------|
+| `.claude/` | `settings.json`, `settings.local.json` |
+| `.github/` | `workflows/`, `ISSUE_TEMPLATE/`, `PULL_REQUEST_TEMPLATE.md`, `PULL_REQUEST_TEMPLATE`, `CODEOWNERS`, `dependabot.yml`, `dependabot.yaml`, `FUNDING.yml`, `copilot-instructions.md` |
+
+Because the installer never writes these files, anything your project needs
+in them, such as the Claude Code allow rule in
+[Optional: the PoC security scan server](#optional-the-poc-security-scan-server),
+is a manual step. If an `--update` run with an installer that predates this
+behaviour deleted any of them, restore them from version control.
+
+In `docs/tasks/`, each existing task ledger (`active-tasks.md`,
+`completed-tasks.md`) is always rewritten on `--update`: rows of its task table
+that are not `T<NNN>` task rows are dropped (with a warning), line endings
+become LF and a missing final newline is added. Prose around the table is kept.
+Every other `docs/` file is seeded when missing and otherwise left alone.
+
+**Refresh only the harness projections** with `--projections-only`:
+
+```bash
+scripts/install.sh --target /path/to/your-project --platform all --projections-only
+```
+
+It refreshes the platform trees (with the same spared files as `--update`),
+their MCP/settings configs (merged, as `--update` does), `AGENTS.md`, and
+`CLAUDE.md` when Claude Code is among the selected platforms. It never writes or
+deletes anything under the target's `docs/` (the task ledgers included) or
+`implementation/`, so it does not install the MCP server runtime source and
+prints no dependency notice. It requires an existing install (`AGENTS.md` in the
+target) and is mutually exclusive with `--update`. At the emage.code repository
+root it is the only permitted mode, and only with `--platform all`; there,
+`--update` is refused, and any `--target` inside the source repository is
+refused in every mode.
+
+### Optional: the PoC security scan server
+
+The `poc-security-audit` MCP server backs the PoC security review. It exposes
+exactly two tools, `scan_secrets` and `ref_containment`; a clean result means
+"no match for the fixed rule set at the scanned refs", not "no secrets". Its
+config is generated for Claude Code, Cursor, Gemini CLI, Opencode, Pi and Cline;
+GitHub Copilot's `.vscode/mcp.json` does not carry it, so the scan has no server
+to call there, and the agent's rule is that a scan which did not complete is
+`FAIL`, never `PASS`. Setup, once per project, after a
+full install or `--update` (not `--projections-only`):
+
+1. Install the Python dependency (`mcp==2.2.0`) into a virtual environment, from
+   the project root; the installer prints this command:
+   `python3 -m venv .venv-mcp && source .venv-mcp/bin/activate && pip install -r implementation/runtime/security/requirements-mcp-server.txt`.
+   The configs launch plain `python3`, so start your assistant from an
+   environment where that `python3` can import `mcp`.
+2. Make sure `git` 2.40 or newer is on `PATH`. An older git makes every call
+   fail closed as `git_failed`.
+3. Launch the assistant from the project root: the server is started as
+   `python3 -m implementation.runtime.security.poc_audit_server --allowed-root .`.
+4. Claude Code only: add the allow rule to your own `.claude/settings.json`
+   (the installer never writes it):
+
+   ```json
+   { "permissions": { "allow": ["mcp__poc-security-audit__*"] } }
+   ```
+
+   and approve the project-scoped server when Claude Code prompts.
+
+Details, tool arguments and limits: [MCP Servers](docs/wiki/mcp-servers.md).
 
 Each platform's MCP file also carries a `<mcpfile>.provenance.json` sidecar
 recording which server keys the generator owned at last generation. On
@@ -133,8 +203,11 @@ and are embedded in [GitLab Releases](https://gitlab.com/em-age/emage.code/-/rel
 
 ## Quick start
 
-After install, set MCP env vars (`GITLAB_PERSONAL_ACCESS_TOKEN`, `BRAVE_API_KEY`, …)
-from the generated `mcp.json`, then in your AI assistant:
+After install, set the MCP env vars the generated `mcp.json` references
+(`GITLAB_PERSONAL_ACCESS_TOKEN`, `GITLAB_API_URL`, `BRAVE_API_KEY`,
+`HINDSIGHT_MCP_URL`, and for the extended servers `CWSO_MCP_URL`,
+`CWSO_BEARER_TOKEN`, `CWSO_ORIGIN`, `TOOLRADAR_API_KEY`; full table in
+[MCP Servers](docs/wiki/mcp-servers.md)), then in your AI assistant:
 
 ```
 /discover-skills "start new project"

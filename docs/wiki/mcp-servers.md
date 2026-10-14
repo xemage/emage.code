@@ -25,23 +25,89 @@ All servers are declared once in [`implementation/knowledge/mcp/servers.yaml`](h
 | `fetch` | Web content fetching | Architect, Tech Lead, Developers |
 | `brave` | Technology discovery (web search) | Technology Scout, Feasibility |
 | `context7` | Framework / API documentation lookup | Technology Scout, Integration |
+| `hindsight` | Remote MCP endpoint; its URL is read from `HINDSIGHT_MCP_URL` | Not stated in `servers.yaml` |
 
 ## Extended servers (opt-in)
 
-`hf-mcp-server`, `filesystem`, `github`, `git`, `supabase`, `docker`, `postgresql`, `toolradar`.
+`cwso`, `hf-mcp-server`, `context-retriever`, `security-audit`, `poc-security-audit`, `filesystem`, `github`, `git`, `supabase`, `docker`, `postgresql`, `toolradar`.
 
-Most require additional credentials — see [`servers.yaml`](https://gitlab.com/em-age/emage.code/-/blob/main/implementation/knowledge/mcp/servers.yaml) for the full env-var contract.
+Most require additional credentials — see [`servers.yaml`](https://gitlab.com/em-age/emage.code/-/blob/main/implementation/knowledge/mcp/servers.yaml) for the full env-var contract. The two Python servers `security-audit` and `poc-security-audit` need no credentials; `poc-security-audit` is described [below](#poc-security-scan-server-poc-security-audit).
 
 ## Required environment variables
 
 | Variable | Server | Notes |
 |----------|--------|-------|
 | `GITLAB_PERSONAL_ACCESS_TOKEN` | `gitlab` | Scopes: `api`, `read_repository`, `write_repository` |
+| `GITLAB_API_URL` | `gitlab` | Not a secret |
 | `BRAVE_API_KEY` | `brave` | Free tier: 2000 queries/month |
+| `HINDSIGHT_MCP_URL` | `hindsight` | URL of the remote endpoint |
+| `CWSO_MCP_URL` | `cwso` (extended) | URL of the remote endpoint |
+| `CWSO_BEARER_TOKEN` | `cwso` (extended) | Sent as `Authorization: Bearer <value>` |
+| `CWSO_ORIGIN` | `cwso` (extended) | Sent as the `Origin` header |
+| `TOOLRADAR_API_KEY` | `toolradar` (extended) | API key |
 | `GITHUB_TOKEN` | `github` (extended) | Classic PAT or fine-grained |
 | `SUPABASE_ACCESS_TOKEN` | `supabase` (extended) | Project access token |
 
+Claude Code's `.mcp.json` references these as `${VAR}`; the other platforms use `${env:VAR}` (Opencode: `{env:VAR}`). Claude Code reports an unset variable in `claude mcp list` and uses the literal `${VAR}` text. Export the variables for the servers you use in the environment that starts your assistant.
+
 > **Never commit these.** Use environment variables or a secret vault. See [`SECURITY.md`](https://gitlab.com/em-age/emage.code/-/blob/main/implementation/SECURITY.md) for the full rules.
+
+## PoC security scan server (`poc-security-audit`)
+
+A fixed-command, stdio MCP server for the PoC security reviewer (`@poc-security-engineer`). It runs only `git` with fixed argument lists, needs no environment variable or API key, and makes no network call.
+
+It is declared in `servers.yaml` as `tags: [extended]`, `command: python3`, `args: ["-m", "implementation.runtime.security.poc_audit_server", "--allowed-root", "."]`. The Python source is installed into your project's `implementation/runtime/security/` by `scripts/install.sh` (a full install or `--update`; `--projections-only` does not copy it).
+
+### Tools
+
+| Tool | Arguments | Returns |
+|------|-----------|---------|
+| `scan_secrets` | `root_dir` (the repository top level), `scope` (`worktree`, `index`, `stashes`, `history` or `tracked_names`), `rev_range` (optional, `history` only) | Rule ids, paths (shown as `<redacted-by-rule:ID>` when the name itself matches a rule), line numbers and commits. Never the matched text. |
+| `ref_containment` | `root_dir`, `commit` (40 hex characters) | The remote-tracking refs, tags and local branches that contain the commit, `pushed` and `last_fetch_time`. `pushed` is `true` only when a remote-tracking ref contains the commit, otherwise `"unknown"`, never `false`. It reads local refs only. |
+
+No result contains matched text, `stderr` or the command line, and the server has no free-form command tool.
+
+### What a clean result means
+
+A clean result means **no match for the fixed rule set at the scanned refs. It is not proof that no secret exists.** A secret in a format the rule table does not list, a short or unusual value (the agent text lists the blind spots), a dangling object or a reflog-only commit is not found. Always read `complete` and `truncated` first: a scan with `complete: false` proves nothing. The reviewer treats a scan that did not complete (tool unavailable, error, timeout or `truncated`) as a blocker with the verdict `FAIL`, never `PASS`.
+
+### Requirements
+
+| Requirement | Detail |
+|-------------|--------|
+| Python package `mcp` | Pinned `mcp==2.2.0` in `implementation/runtime/security/requirements-mcp-server.txt`, the same pin as the memory server. That release declares Python 3.10 or newer on PyPI; the repository itself states no minimum. Without it the client shows a generic "Connection closed" error. |
+| `git` 2.40 or newer on `PATH` | The scanner reads attributes from git's empty tree with `--attr-source`; an older git exits non-zero and every call fails closed as `git_failed`. |
+| A regex library with `RE_DUP_MAX` of at least 1024 | Used by `git grep -E` and `git log -G`. glibc has 32767. Where it is lower (some musl and BSD builds), every scope except `tracked_names` ends `regex_unsupported` with `complete: false`. |
+| Launch from the project root | The configs start the server with `--allowed-root .` and an `implementation.…` module path, both relative to its launch directory. The server accepts only repositories inside that directory. |
+| POSIX host | Paths such as `/dev/null` are assumed. Windows is not verified. |
+
+Install the dependency once per project, from the project root; the installer prints this command after a full install or `--update`:
+
+```bash
+python3 -m venv .venv-mcp && source .venv-mcp/bin/activate && pip install -r implementation/runtime/security/requirements-mcp-server.txt
+```
+
+The configs run plain `python3`, so start your assistant from an environment where that `python3` can import `mcp`. To check the dependency, run `python3 -m implementation.runtime.security.poc_audit_server --help` from the project root: it prints a usage message when `mcp` is importable and a Python `ImportError` otherwise.
+
+Cost: in the worst measured shape the `jwt` rule scales linearly with line length, about 2 microseconds per byte on the measured host (git 2.43.0, glibc). Each call has a 60 second deadline, so one file with a single line of roughly 30 MB or more of that shape (an extrapolation from a 10 MB measurement) can end the scan as `timeout` with `complete: false`. That is an incomplete scan, not a clean one.
+
+### Client-owned permission (Claude Code)
+
+The installer never writes `.claude/settings.json`. For Claude Code, add this to your own `.claude/settings.json` so the two tools are pre-approved:
+
+```json
+{
+  "permissions": {
+    "allow": ["mcp__poc-security-audit__*"]
+  }
+}
+```
+
+`mcp__<server>__*` matches every tool of one server. The PoC security reviewer's tool grant also names `mcp__security-audit__grep_content` from the separate `security-audit` server, so the same form (`mcp__security-audit__*`) applies there. Claude Code applies `permissions.allow` rules from a project's `.claude/settings.json` only after you accept the workspace trust dialog, and it asks for approval before using a project-scoped server from `.mcp.json`, so approve `poc-security-audit` when prompted. Other platforms: grant the platform's equivalent permission if it asks for one; the harness cannot do this for you.
+
+### Platform availability
+
+The entry is generated into `.mcp.json` (Claude Code), `.cursor/mcp.json`, `.gemini/settings.json`, `.opencode/opencode.json`, `.pi/mcp.json` and `.cline/mcp.json`. It is **not** in GitHub Copilot's `.vscode/mcp.json`, because `extended` servers are not emitted to the `github` platform. On Copilot the reviewer's scan has no server to call; see the `FAIL` rule above.
 
 ## Per-platform output
 
