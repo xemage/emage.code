@@ -1,20 +1,21 @@
 # Release vX.Y.Z
 
-Copy this file to `docs/releases/vX.Y.Z.md` before cutting a release tag.
-The release CI job embeds this document in GitLab Release notes (highlights +
-install). Commit messages since the previous tag are appended as a changelog
-section.
+Copy this file to `docs/releases/vX.Y.Z.md` on the `release/vX.Y.Z` branch before the tag is cut, and delete this paragraph. It is the release's one document: `scripts/verify-release-docs.py --tag vX.Y.Z` checks it, its sections follow skill `release-workflow` § 4, the release job publishes it whole as the GitLab Release description, and `/prepare-release` step 7 writes the release gate verdict into it. Keep the first line as `# Release vX.Y.Z`. Do not quote the verdict section's heading text above that section. Cite repository files as code spans or absolute URLs, not relative links.
+
+## Summary
+
+<1-3 sentences: what this release contains>
 
 ## Install
 
 Latest release: vX.Y.Z
 
-**Recommended:** use the installer from a clone of this repository:
+Install with the installer from a clone of this repository:
 
 ```bash
 git clone https://gitlab.com/em-age/emage.code.git
 cd emage.code
-scripts/install.sh --target <your-project> --platform cursor
+scripts/install.sh --target <your-project> --platform <name>
 ```
 
 | Platform | `--platform` value |
@@ -24,34 +25,13 @@ scripts/install.sh --target <your-project> --platform cursor
 | Gemini CLI | `gemini` |
 | Opencode | `opencode` |
 | Pi | `pi` |
+| Claude Code | `claude-code` |
+| Cline | `cline` |
 | All platforms | `all` |
 
-**Manual copy** from `implementation/` (alternative):
+Update an existing install: add `--update`. `scripts/install.sh --help` lists every option.
 
-```bash
-# GitHub Copilot
-cp -r implementation/.github         <your-project>/
-mkdir -p <your-project>/.vscode
-cp    implementation/.vscode/mcp.json <your-project>/.vscode/
-
-# Gemini CLI
-cp -r implementation/.gemini         <your-project>/
-
-# Opencode
-cp -r implementation/.opencode       <your-project>/
-
-# Cursor
-cp -r implementation/.cursor         <your-project>/
-
-# Pi (terminal agent)
-cp -r implementation/.pi             <your-project>/.pi/
-
-# Always include
-cp    implementation/AGENTS.md       <your-project>/
-cp -r implementation/docs            <your-project>/
-```
-
-Set MCP env vars from the generated `mcp.json` / platform config, then run
+Set the MCP environment variables named in the generated MCP config, then run
 `/new-project "Your idea"` in your assistant.
 
 ## Highlights
@@ -61,7 +41,33 @@ Set MCP env vars from the generated `mcp.json` / platform config, then run
 
 ## Breaking changes
 
-- None (or list breaking changes)
+- None (or one entry per breaking change; the verdict count equals the number of entries)
+
+## Migration Guide
+
+<if applicable — steps to upgrade from the previous version>
+
+## Changelog
+
+<one line per entry: description, task ID, artifact version references>
+
+### Features
+
+### Fixes
+
+### Internal
+
+## Known Issues
+
+- <any known issues shipping with this release>
+
+## Gate Verdicts
+
+- Architecture: <PASS/CONDITIONAL_PASS> on YYYY-MM-DD
+- Implementation: <PASS/CONDITIONAL_PASS> on YYYY-MM-DD
+- Integration: <PASS/CONDITIONAL_PASS> on YYYY-MM-DD
+- Security: <PASS/CONDITIONAL_PASS> on YYYY-MM-DD
+- Release: <PASS/CONDITIONAL_PASS> on YYYY-MM-DD (the same value as the Status below)
 
 ## RELEASE VERDICT
 
@@ -79,3 +85,7 @@ declared home for the block; fill in every field before the tag is cut.
 - **Blocker IDs**: [if FAIL — list blocking issues with owners]
 - **Release manager**: release-manager
 - **Timestamp**: <ISO-8601>
+
+## Rollback Plan
+
+<steps to roll back if critical issues are discovered after the release; state whether they were tested>

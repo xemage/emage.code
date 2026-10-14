@@ -3,7 +3,6 @@
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
 | T638 | Apply the approved MCP server package fixes: corrected and pinned entries, docker and postgresql removed (audit SEC-002) | devops-engineer | pending | P1 | — | 2026-10-15 |
-| T639 | Apply the approved release-document and release-order amendments (T632 groups A1, B1 and the text part of C3) | backend-developer | pending | P1 | — | 2026-10-15 |
 | T640 | Release body = the release document only; commit list to CHANGELOG.md only, merge commits excluded (T632 group C3, code part) | devops-engineer | pending | P1 | T635 | 2026-10-15 |
 | T635 | Resolve the T625 review conditions C1-C3 (and the cheap Nice-to-Have items) for the release job | devops-engineer | pending | P1 | T625 | 2026-10-14 |
 | T627 | Run a real /skillify interview with the user (GitLab API fallback workflow) and apply the /skillify template fix | orchestrator | pending | P1 | — | 2026-10-14 |
