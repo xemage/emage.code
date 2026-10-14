@@ -15,6 +15,7 @@ from __future__ import annotations
 import ast
 import json
 import os
+import random
 import shutil
 import stat
 import subprocess
@@ -1938,6 +1939,100 @@ class T612Tests(RepoCase):
                  if isinstance(n, ast.Attribute) and n.attr in ("Popen", "run", "system", "popen")
                  and isinstance(n.value, ast.Name) and n.value.id in ("subprocess", "os")]
         self.assertEqual(calls, [], "poc_scan.py spawns nothing itself")
+
+
+class T620Tests(RepoCase):
+    """T620 (R-1): the cost of the `jwt` rule on aperiodic, `eyJ`-dense input is linear in the line length
+    with a measured multiplier of about 2 microseconds per byte, so it needs no pattern change. These are
+    timing regressions with a wide margin (each case takes about 1 to 2.5 s on the development host; the bound
+    is 20 s, about 8 times the slowest). The shapes are the measured worst ones of contract v6 section 2."""
+
+    BOUND_SECONDS = 20.0
+    SIZE = 1_000_000
+
+    def _scan_timed(self, text: str, scope: str = "index") -> tuple[dict, float]:
+        self._n = getattr(self, "_n", 0) + 1
+        root = self.make_repo(name=f"r{self._n}", files={"f.txt": text})
+        cfg = PocAuditConfig(allowed_root=self.base, deadline_seconds=40.0)
+        t0 = time.monotonic()
+        res = self.scan(root, scope, cfg=cfg)
+        return res, time.monotonic() - t0
+
+    def _assert_fast_and_clean(self, text: str, scope: str = "index") -> None:
+        res, elapsed = self._scan_timed(text, scope)
+        self.assertLess(elapsed, self.BOUND_SECONDS)
+        self.assertTrue(res["complete"], res["errors"])
+        self.assertEqual((res["errors"], res["hits"]), ([], []))
+
+    def test_170_starts_sharing_a_dot_free_payload_of_dense_eyj(self):
+        # 170 starts reach `.eyJ`; each runs the dot-free payload to its end, and the payload holds ~333k more starts
+        self._assert_fast_and_clean("eyJ" * 170 + ".eyJ" + "eyJ" * (self.SIZE // 3) + " \n")
+
+    def test_the_same_shape_in_the_worktree_scope(self):
+        self._assert_fast_and_clean("eyJ" * 170 + ".eyJ" + "eyJ" * (self.SIZE // 3) + " \n", "worktree")
+
+    def test_aperiodic_eyj_dense_line_with_base64url_gaps_and_no_dot(self):
+        rng = random.Random(620)
+        parts, size = [], 0
+        while size < self.SIZE:
+            part = "eyJ" if rng.random() < 0.9 else "".join(rng.choice("abcXYZ019_-") for _ in range(rng.randint(1, 5)))
+            parts.append(part)
+            size += len(part)
+        self._assert_fast_and_clean("".join(parts) + "\n")
+
+    def test_repeated_groups_of_170_starts_with_random_payload_lengths(self):
+        rng = random.Random(6200)
+        groups, size = [], 0
+        while size < self.SIZE:
+            group = "eyJ" * rng.randint(100, 170) + ".eyJ" + "b" * rng.randint(0, 5000) + " "
+            groups.append(group)
+            size += len(group)
+        self._assert_fast_and_clean("".join(groups) + "\n")
+
+    def test_many_lines_each_with_170_starts_and_a_long_payload(self):
+        line = "eyJ" * 170 + ".eyJ" + "a" * 500 + "\n"
+        self._assert_fast_and_clean(line * (self.SIZE // len(line)))
+
+    def test_a_real_token_after_a_dense_prefix_is_still_found(self):
+        # no new false negative: the dense prefix (170 failing starts) does not hide a token that follows it
+        token = "eyJ" + "hbGciOiJIUzI1NiJ9" + ".eyJ" + "zdWIiOiIxMjM0NTY3ODkwIn0" + "." + "dBjftJeZ4CVPmB92K27uhbUJU1p1r"
+        text = "eyJ" * 170 + ".eyJ" + "a" * 5000 + " " + token + "\n"
+        res, elapsed = self._scan_timed(text)
+        self.assertLess(elapsed, self.BOUND_SECONDS)
+        self.assertEqual([h["rule_id"] for h in res["hits"]], ["jwt"])
+        dump = json.dumps(res)
+        self.assertNotIn(token, dump)
+        for fragment in ("hb" + "GciOi", "zdW" + "IiOi", "dBj" + "ftJeZ"):  # pieces of the token, assembled at run time
+            self.assertNotIn(fragment, dump)
+
+    def test_history_scope_with_three_tips_of_the_worst_shape(self):
+        # history multiplies the cost by the number of tips (and runs `git log -G` per rule): 3 tips of 200 KB
+        body = "eyJ" * 170 + ".eyJ" + "eyJ" * (200_000 // 3) + " "
+        root = self.make_repo(name="hist", files={"f.txt": body + "\n"})
+        for i in (1, 2):
+            self.commit_file(root, "f.txt", body + "x" * i + "\n")
+            _git(root, "branch", f"b{i}")
+        cfg = PocAuditConfig(allowed_root=self.base, deadline_seconds=40.0)
+        t0 = time.monotonic()
+        res = self.scan(root, "history", cfg=cfg)
+        self.assertLess(time.monotonic() - t0, self.BOUND_SECONDS)
+        self.assertTrue(res["complete"], res["errors"])
+        self.assertEqual((res["errors"], res["hits"]), ([], []))
+
+    def test_rules_version_and_the_jwt_pattern_are_unchanged(self):
+        self.assertEqual(poc_scan.RULES_VERSION, "2026-10-09.5")
+        jwt = dict(poc_scan.RULES)["jwt"]
+        self.assertEqual(jwt, r"eyJ[A-Za-z0-9_-]{10,512}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]*")
+
+    def test_contract_v6_exists_and_leaves_v5_alone(self):
+        v6 = (REPO_ROOT / "docs" / "artifacts" / "poc-security-engineer-tool-scoping-v6.md").read_text(encoding="utf-8")
+        for needle in ("Amends `poc-security-engineer-tool-scoping-v5.md`", "`RULES_VERSION` stays `2026-10-09.5`",
+                       "R-1", "T620", "Immutable once produced", "Fail-closed blind spot"):
+            self.assertIn(needle, v6, needle)
+        v5 = (REPO_ROOT / "docs" / "artifacts" / "poc-security-engineer-tool-scoping-v5.md").read_text(encoding="utf-8")
+        self.assertNotIn("T620", v5)
+        module_doc = " ".join(poc_scan.__doc__.split())
+        self.assertIn("T620", module_doc)
 
 
 class TextAndStructureTests(unittest.TestCase):
