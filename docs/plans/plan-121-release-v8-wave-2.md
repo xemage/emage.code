@@ -108,3 +108,7 @@ Parallel from the start: T624, T625, T627, T631, T632, T633, T634. Serial chain:
 - A command changes only by the user's decision (all command edits here were decided: `/skillify` template `maturity`, and none other).
 - Maturity is never relied on to rank a conflict (ADR-008 P4).
 - No task row for T624-T634 exists until this plan is merged and the user has approved it (`/plan` Task Creation Precondition).
+
+## Addendum (2026-10-14): T635
+
+The Tech Lead's `/code-review` of the T619 change (T625, `docs/artifacts/code-review-t619-v1.md`) returned `CONDITIONAL_PASS` with three Should Fix conditions for the release job, due before the Release gate for v8.0.0. **T635** (devops-engineer, depends on T625) resolves them and the cheap Nice-to-Have items. It joins the wave-2 chain ahead of the release gates; it adds no new decision.

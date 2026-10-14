@@ -2,7 +2,7 @@
 
 **ID:** T625
 **Owner:** tech-lead
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Tier:** judgment
 **Depends on:** —
