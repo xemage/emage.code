@@ -112,3 +112,7 @@ Parallel from the start: T624, T625, T627, T631, T632, T633, T634. Serial chain:
 ## Addendum (2026-10-14): T635
 
 The Tech Lead's `/code-review` of the T619 change (T625, `docs/artifacts/code-review-t619-v1.md`) returned `CONDITIONAL_PASS` with three Should Fix conditions for the release job, due before the Release gate for v8.0.0. **T635** (devops-engineer, depends on T625) resolves them and the cheap Nice-to-Have items. It joins the wave-2 chain ahead of the release gates; it adds no new decision.
+
+## Addendum 2 (2026-10-14): T636 and T637
+
+The release-level Security Engineer audit (T633, `docs/artifacts/security-review-release-v8-v1.md`) returned `CONDITIONAL_PASS` with three medium findings that block the release (`validation-gates` § Verdict Rules). The user decided on 2026-10-14: SEC-001 (the installer follows symlinks at managed paths; reproduced by the orchestrator) is fixed before the release: **T636** (backend-developer). SEC-002 (four MCP server entries launch npm packages that do not exist, present since v7.0.1, and the `npx` entries are unpinned) is fixed before the release in two steps: **T637** (devops-engineer) researches and proposes the exact names and pins, which come back to the user; a later task applies them and refreshes the root. SEC-003 (release token in argv) is stated by the user to be Protected and Masked with the `v*` tag pattern protected, so it stays technical debt. Both tasks join the wave-2 chain ahead of the audit addendum (`release-v8-audit-v2`) and the release gates.
