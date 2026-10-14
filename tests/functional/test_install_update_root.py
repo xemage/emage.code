@@ -157,13 +157,16 @@ class TestUpdateRefusedAtRepositoryRoot(_CopierMatrix):
 
 
 class TestSelfCopyIsANoOp(_CopierMatrix):
-    """src == dest reaches the tree writers at a target that is NOT the root.
+    """A target whose runtime links back to the installer's source is refused.
 
     The target's ``implementation/runtime`` is a symlink to the synthetic
-    repository's own, so ``$TARGET/implementation/runtime/memory`` is the
+    repository's own, so ``$TARGET/implementation/runtime/memory`` would be the
     installer's ``$IMPLEMENTATION/runtime/memory``. Before T552 the cp fallback
-    deleted the source there under --update (22 files to 0, exit 1); now the
-    writers return early, as rsync always effectively did."""
+    deleted the source there under --update (22 files to 0, exit 1); T552 made
+    the tree writers return early (``same_tree``). Since T636 (audit SEC-001) the
+    symlink guard refuses such a target first -- ``implementation/runtime`` is a
+    managed ancestor and must not be a symlink -- before anything is written.
+    ``same_tree`` stays as the second line of defence."""
 
     def _linked_target(self, repo: Path, name: str) -> Path:
         target = self.tmp / name
@@ -182,8 +185,9 @@ class TestSelfCopyIsANoOp(_CopierMatrix):
                 self.assertGreaterEqual(count_files(repo / "implementation/runtime/memory"), 20)
                 proc = run_installer(repo / "scripts" / "install.sh", target,
                                      "--platform", "all", *extra, path=path)
-                self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
-                self.assertIn("itself; nothing to copy", proc.stderr)
+                self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+                self.assertIn("refusing to write through a symlink", proc.stderr)
+                self.assertIn("Nothing was written", proc.stderr)
                 self.assertEqual(_snapshot(repo / "implementation"), source,
                                  "the installer's own source moved")
 

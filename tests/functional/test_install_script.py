@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -1245,6 +1246,463 @@ Append-only log. Entries move here after the orchestrator marks a task `done`.
                 ),
             )
             self.assertIn("ledger starts EMPTY", seeded)
+
+
+def _bash_functions(*names: str) -> str:
+    """The text of the named top-level functions of scripts/install.sh."""
+    text = (repo_root() / "scripts" / "install.sh").read_text(encoding="utf-8")
+    out = []
+    for name in names:
+        match = re.search(rf"^{re.escape(name)}\(\) \{{\n.*?^\}}\n", text, re.S | re.M)
+        assert match, f"function {name} not found in install.sh"
+        out.append(match.group(0))
+    return "\n".join(out)
+
+
+def managed_paths(projections_only: bool = False, platform: str = "all") -> list[str]:
+    """The guarded paths, from install.sh's own list_managed_paths (relative to the target)."""
+    script = (
+        "set -eu\n"
+        f"IMPLEMENTATION={repo_root() / 'implementation'}\n"
+        f"PLATFORM={platform}\nPROJECTIONS_ONLY={1 if projections_only else 0}\n"
+        "DOCS_EXCLUDES=(__pycache__)\n"
+        + _bash_functions("platform_managed_paths", "docs_managed_paths", "list_managed_paths")
+        + "\nlist_managed_paths\n"
+    )
+    proc = subprocess.run(["bash", "-c", script], capture_output=True, text=True, check=True)
+    return proc.stdout.splitlines()
+
+
+def _tree_state(root: Path) -> dict[str, tuple[str, object]]:
+    """Every path under root, symlinks NOT followed -> (kind, content).
+
+    A file's content is its bytes, a symlink's its link text, so a write through
+    a link, a deleted canary and a replaced link are all visible."""
+    state: dict[str, tuple[str, object]] = {}
+    for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
+        for name in [*dirnames, *filenames]:
+            full = Path(dirpath) / name
+            rel = full.relative_to(root).as_posix()
+            if full.is_symlink():
+                state[rel] = ("link", os.readlink(full))
+            elif full.is_dir():
+                state[rel] = ("dir", None)
+            else:
+                state[rel] = ("file", full.read_bytes())
+    return state
+
+
+class TestInstallRefusesSymlinkedManagedPaths(unittest.TestCase):
+    """SEC-001 (T636): a symlink at a managed target path is refused, not followed.
+
+    Before the guard, `--update` with `<target>/.claude` linked to a directory
+    outside the target deleted that directory's files (rsync --delete) and wrote
+    the harness into it; `docs`, `implementation`, `.vscode`, `.mcp.json`,
+    `CLAUDE.md` and the ledgers were followed the same way. Every proof runs
+    under rsync and with rsync absent from PATH, and checks the whole target and
+    the whole outside directory: nothing written, canary intact, exit non-zero."""
+
+    CANARY = "canary: must survive\n"
+
+    @classmethod
+    def setUpClass(cls):
+        cls.bash = shutil.which("bash")
+        if not cls.bash:
+            raise unittest.SkipTest("bash not available on PATH")
+        cls._tmp = tempfile.TemporaryDirectory(prefix="emage-symlink-guard-")
+        cls.tmp = Path(cls._tmp.name)
+        cls.fresh = cls.tmp / "fresh"
+        proc = cls._install(cls.fresh)
+        assert proc.returncode == 0, proc.stdout + proc.stderr
+        cls.no_rsync = TestInstallPreservesProjectLocalFiles._path_without_rsync(cls.tmp)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._tmp.cleanup()
+
+    @classmethod
+    def _install(cls, target: Path, *flags: str, platform: str = "all",
+                 path: str | None = None) -> subprocess.CompletedProcess[str]:
+        env = dict(os.environ)
+        if path is not None:
+            env["PATH"] = path
+        return subprocess.run(
+            [cls.bash, str(repo_root() / "scripts" / "install.sh"), "--target", str(target),
+             "--platform", platform, *flags],
+            cwd=repo_root(), capture_output=True, text=True, check=False, env=env,
+        )
+
+    def copiers(self):
+        out = [("cp", self.no_rsync)]
+        if shutil.which("rsync"):
+            out.insert(0, ("rsync", None))
+        return out
+
+    def _scenario(self, name: str, rel: str, kind: str) -> tuple[Path, Path]:
+        """An installed target whose `rel` is replaced by a symlink to outside."""
+        target = self.tmp / name / "target"
+        outside = self.tmp / name / "outside"
+        shutil.copytree(self.fresh, target, symlinks=True)
+        outside.mkdir(parents=True)
+        victim = target / rel
+        if victim.is_dir() and not victim.is_symlink():
+            shutil.rmtree(victim)
+        else:
+            victim.unlink()
+        if kind == "dir":
+            (outside / "canary.txt").write_text(self.CANARY)
+            (outside / "sub").mkdir()
+            (outside / "sub" / "keep.txt").write_text(self.CANARY)
+            victim.symlink_to(outside)
+        elif kind == "file":
+            (outside / "canary.txt").write_text(self.CANARY)
+            victim.symlink_to(outside / "canary.txt")
+        else:  # dangling
+            victim.symlink_to(outside / "does-not-exist")
+        return target, outside
+
+    def _assert_refused(self, case: str, rel: str, kind: str, flags: tuple[str, ...],
+                        label: str, path: str | None, platform: str = "all") -> None:
+        name = f"{case}-{label}-{'-'.join(f.strip('-') for f in flags) or 'plain'}"
+        target, outside = self._scenario(name, rel, kind)
+        before = (_tree_state(target), _tree_state(outside))
+        proc = self._install(target, *flags, platform=platform, path=path)
+        out = proc.stdout + proc.stderr
+        self.assertNotEqual(proc.returncode, 0, out)
+        self.assertIn("refusing to write through a symlink", proc.stderr, out)
+        self.assertIn(str(target / rel), proc.stderr)
+        self.assertIn("Nothing was written", proc.stderr)
+        self.assertNotIn("Updated emage.code", out)
+        self.assertNotIn("Installed emage.code", out)
+        self.assertEqual(before, (_tree_state(target), _tree_state(outside)),
+                         "the refused install changed the target or the outside directory")
+        canary = outside / "canary.txt"
+        if kind != "dangling":
+            self.assertEqual(canary.read_text(), self.CANARY)
+
+    # (case id, managed path, kind of symlink, modes that write it)
+    ALL_MODES = (("--update",), (), ("--update", "--dry-run"), ("--dry-run",))
+    HARNESS_MODES = (*ALL_MODES, ("--projections-only",), ("--projections-only", "--dry-run"))
+    CASES = (
+        ("claude-dir", ".claude", "dir", HARNESS_MODES),
+        ("claude-dangling", ".claude", "dangling", HARNESS_MODES),
+        ("docs-dir", "docs", "dir", ALL_MODES),
+        ("implementation-dir", "implementation", "dir", ALL_MODES),
+        ("runtime-dir", "implementation/runtime", "dir", ALL_MODES),
+        ("vscode-dir", ".vscode", "dir", HARNESS_MODES),
+        ("mcp-json-file", ".mcp.json", "file", HARNESS_MODES),
+        ("claude-md-file", "CLAUDE.md", "file", HARNESS_MODES),
+        ("agents-md-file", "AGENTS.md", "file", HARNESS_MODES),
+        ("ledger-file", "docs/tasks/active-tasks.md", "file", ALL_MODES),
+        ("completed-ledger-file", "docs/tasks/completed-tasks.md", "file", ALL_MODES),
+        ("cursor-mcp-file", ".cursor/mcp.json", "file", HARNESS_MODES),
+        ("mcp-sidecar-file", ".mcp.json.provenance.json", "file", HARNESS_MODES),
+    )
+
+    def test_symlinked_managed_paths_are_refused_in_every_mode_under_both_copiers(self):
+        for case, rel, kind, modes in self.CASES:
+            for label, path in self.copiers():
+                for flags in modes:
+                    with self.subTest(case=case, copier=label, flags=flags):
+                        self._assert_refused(case, rel, kind, flags, label, path)
+
+    def test_single_platform_install_checks_only_its_own_managed_paths(self):
+        # claude-code touches .claude: refused; a symlinked .cursor is not its path.
+        self._assert_refused("single", ".claude", "dir", ("--update",), "rsync", None,
+                             platform="claude-code")
+        target, outside = self._scenario("single-other", ".cursor", "dir")
+        proc = self._install(target, "--update", platform="claude-code")
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertEqual((outside / "canary.txt").read_text(), self.CANARY)
+
+    def test_refusal_on_a_fresh_target_leaves_no_partial_install(self):
+        # Install into a target that has only a symlinked .claude (plain install,
+        # nothing there yet): the up-front guard stops it before AGENTS.md or docs/.
+        target = self.tmp / "partial" / "target"
+        outside = self.tmp / "partial" / "outside"
+        target.mkdir(parents=True)
+        outside.mkdir()
+        (outside / "canary.txt").write_text(self.CANARY)
+        (target / ".claude").symlink_to(outside)
+        proc = self._install(target, platform="claude-code")
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertEqual(sorted(p.name for p in target.iterdir()), [".claude"])
+        self.assertEqual([p.name for p in outside.iterdir()], ["canary.txt"])
+
+    def test_the_canary_reproduction_from_the_audit(self):
+        """The audit's reproduction, verbatim: AGENTS.md plus .claude -> outside."""
+        for label, path in self.copiers():
+            with self.subTest(copier=label):
+                root = self.tmp / f"repro-{label}"
+                target, outside = root / "target", root / "outside"
+                target.mkdir(parents=True)
+                outside.mkdir()
+                (target / "AGENTS.md").write_text("# a\n")
+                (target / ".claude").symlink_to(Path("..") / "outside")
+                (outside / "canary.txt").write_text(self.CANARY)
+                proc = self._install(target, "--update", platform="claude-code", path=path)
+                self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+                self.assertEqual((outside / "canary.txt").read_text(), self.CANARY)
+                self.assertEqual([p.name for p in outside.iterdir()], ["canary.txt"])
+                self.assertEqual(sorted(p.name for p in target.iterdir()), [".claude", "AGENTS.md"])
+
+    def test_ordinary_target_is_unchanged(self):
+        for label, path in self.copiers():
+            with self.subTest(copier=label):
+                target = self.tmp / f"ordinary-{label}"
+                shutil.copytree(self.fresh, target, symlinks=True)
+                for flags in (("--update",), ("--projections-only",), ()):
+                    proc = self._install(target, *flags, path=path)
+                    self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+                    self.assertNotIn("refusing", proc.stderr)
+                self.assertEqual(_tree_state(target), _tree_state(self.fresh))
+
+    def test_target_reached_through_a_symlink_is_allowed(self):
+        # The caller chose the target; containment is measured against its
+        # physical path, so a symlinked --target itself is not a refusal.
+        real = self.tmp / "linked-real"
+        real.mkdir()
+        link = self.tmp / "linked-target"
+        link.symlink_to(real)
+        proc = self._install(link, platform="pi")
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertTrue((real / ".pi").is_dir())
+
+    # --- fix round (security review LOW findings) -----------------------------
+
+    def _sentinel_target(self, name: str) -> tuple[Path, Path]:
+        """An installed target whose AGENTS.md and a .cursor file differ from what the
+        installer would write: a partial write before the refusal rewrites them."""
+        target = self.tmp / name / "target"
+        outside = self.tmp / name / "outside"
+        shutil.copytree(self.fresh, target, symlinks=True)
+        outside.mkdir(parents=True)
+        (outside / "canary.txt").write_text(self.CANARY)
+        (target / "AGENTS.md").write_text("# sentinel: not the rendered file\n")
+        (target / ".cursor" / "rules" / "coding-standards.mdc").write_text("sentinel\n")
+        return target, outside
+
+    def _assert_refusal(self, target: Path, outside: Path, rel: str, flags, path=None,
+                        platform: str = "all") -> subprocess.CompletedProcess[str]:
+        before = (_tree_state(target), _tree_state(outside))
+        proc = self._install(target, *flags, platform=platform, path=path)
+        out = proc.stdout + proc.stderr
+        self.assertNotEqual(proc.returncode, 0, out)
+        self.assertIn("error:", proc.stderr)
+        self.assertIn(str(target / rel), proc.stderr)
+        self.assertNotIn("Installed emage.code", out)
+        self.assertNotIn("Updated emage.code", out)
+        self.assertEqual(before, (_tree_state(target), _tree_state(outside)),
+                         f"refused install ({flags}) changed something")
+        return proc
+
+    def test_every_guarded_path_is_refused_before_any_write(self):
+        """One list drives the matrix: install.sh's own list_managed_paths."""
+        every = managed_paths()
+        harness = set(managed_paths(projections_only=True))
+        for rel in ("docs/plans", "docs/tasks/_template.md", "docs/tasks/validate-tasks.py",
+                    "implementation/__init__.py", "implementation/runtime/handoff",
+                    ".github", ".gemini", ".opencode", ".pi", ".cline", ".clinerules", ".cursor",
+                    ".vscode/mcp.json.provenance.json"):
+            self.assertIn(rel, every)
+        self.assertNotIn("docs", harness)
+        target, outside = self._sentinel_target("every")
+        aside = self.tmp / "every" / "aside"
+        aside.mkdir()
+        exercised = 0
+        for index, rel in enumerate(every):
+            victim = target / rel
+            parked = aside / str(index)
+            existed = victim.exists()
+            if existed:
+                is_dir = victim.is_dir()
+                shutil.move(str(victim), str(parked))
+            else:
+                is_dir = True
+                self.assertTrue(victim.parent.is_dir(), rel)
+            victim.symlink_to(outside if is_dir else outside / "canary.txt")
+            try:
+                modes = [("--update",), ()]
+                if rel in harness:
+                    modes.append(("--projections-only",))
+                for flags in modes:
+                    with self.subTest(path=rel, flags=flags):
+                        self._assert_refusal(target, outside, rel, flags)
+                exercised += 1
+            finally:
+                victim.unlink()
+                if existed:
+                    shutil.move(str(parked), str(victim))
+        self.assertEqual(exercised, len(every))
+        self.assertEqual((target / "AGENTS.md").read_text(), "# sentinel: not the rendered file\n")
+
+    def test_symlinked_docs_subdirectory_is_refused_before_any_write(self):
+        # L1: docs/<sub> is a merge_tree_preserve_existing destination, written
+        # late in --update; the up-front guard must stop it before AGENTS.md.
+        for sub in ("docs/plans", "docs/wiki", "docs/artifacts", "docs/decisions", "docs/checkpoints"):
+            for label, path in self.copiers():
+                with self.subTest(sub=sub, copier=label):
+                    target, outside = self._sentinel_target(f"docsub-{sub.split('/')[1]}-{label}")
+                    shutil.rmtree(target / sub)
+                    (target / sub).symlink_to(outside)
+                    self._assert_refusal(target, outside, sub, ("--update",), path=path)
+                    self.assertEqual((target / "AGENTS.md").read_text(),
+                                     "# sentinel: not the rendered file\n")
+
+    def test_link_pointing_inside_the_target_is_refused(self):
+        target, outside = self._sentinel_target("inside")
+        shutil.rmtree(target / ".claude")
+        (target / ".claude").symlink_to(target / ".cursor")
+        self._assert_refusal(target, outside, ".claude", ("--update",))
+        target, outside = self._sentinel_target("inside-relative")
+        shutil.rmtree(target / ".pi")
+        (target / ".pi").symlink_to(Path("docs"))
+        self._assert_refusal(target, outside, ".pi", ())
+
+    def test_claude_md_linked_to_agents_md_is_refused(self):
+        # L5: the plausible real-world link; writing CLAUDE.md would rewrite AGENTS.md.
+        for label, path in self.copiers():
+            with self.subTest(copier=label):
+                target, outside = self._sentinel_target(f"claude-md-{label}")
+                (target / "CLAUDE.md").unlink()
+                (target / "CLAUDE.md").symlink_to("AGENTS.md")
+                for flags in (("--update",), (), ("--projections-only",)):
+                    self._assert_refusal(target, outside, "CLAUDE.md", flags, path=path)
+                self.assertEqual((target / "AGENTS.md").read_text(),
+                                 "# sentinel: not the rendered file\n")
+
+    def test_refusal_message_has_no_raw_control_characters(self):
+        # L2: the link text and the path come from the target tree.
+        for text in ("a\nerror: injected line\x1b[31mred\x07", "tab\there\x1b]0;title\x07"):
+            with self.subTest(link=text):
+                target, outside = self._sentinel_target("ctrl-" + str(abs(hash(text))))
+                shutil.rmtree(target / ".claude")
+                (target / ".claude").symlink_to(text)
+                proc = self._install(target, "--update")
+                self.assertNotEqual(proc.returncode, 0)
+                self.assertIn("refusing to write through a symlink", proc.stderr)
+                bad = [c for c in proc.stderr if ord(c) < 32 and c != "\n"]
+                self.assertEqual(bad, [], repr(proc.stderr))
+                self.assertNotIn("\x7f", proc.stderr)
+                self.assertNotIn("\nerror: injected line", proc.stderr)
+                self.assertIn("?", proc.stderr)
+
+    def test_unresolvable_existing_directory_fails_closed(self):
+        # L2: physical_path must refuse, not print a bare suffix, when cd -P fails.
+        if os.geteuid() == 0:
+            self.skipTest("root can enter mode-000 directories")
+        target, outside = self._sentinel_target("noperm")
+        locked = target / ".cursor"
+        locked.chmod(0o000)
+        self.addCleanup(locked.chmod, 0o755)
+        proc = self._install(target, "--update")
+        self.assertNotEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertIn("cannot resolve the physical path", proc.stderr)
+        locked.chmod(0o755)
+        self.assertEqual((target / "AGENTS.md").read_text(), "# sentinel: not the rendered file\n")
+
+    def test_help_documents_the_symlink_refusal_and_the_root_caveat(self):
+        proc = subprocess.run([self.bash, str(repo_root() / "scripts" / "install.sh"), "--help"],
+                              capture_output=True, text=True, check=False)
+        text = " ".join(proc.stdout.split())
+        self.assertIn("any symlink at a managed target path", text)
+        self.assertIn("even one that points inside the target", text)
+        self.assertIn("Do not run the installer as root into a directory that other users can write to", text)
+
+    def test_same_tree_guard_is_present_and_works(self):
+        # L3: same_tree is now behind the symlink guard for the cases the suite can
+        # build, so pin it directly: removing it, or a call site, fails here.
+        script = (repo_root() / "scripts" / "install.sh").read_text(encoding="utf-8")
+        self.assertEqual(script.count('if same_tree "$src" "$dest"; then return 0; fi'), 3)
+        a, b = self.tmp / "st-a", self.tmp / "st-b"
+        a.mkdir(), b.mkdir()
+        (self.tmp / "st-link").symlink_to(a)
+        harness = _bash_functions("same_tree")
+        for src, dest, expected in ((a, a, 0), (a, self.tmp / "st-link", 0), (a, b, 1)):
+            proc = subprocess.run(["bash", "-c", harness + '\nsame_tree "$1" "$2"', "x", str(src), str(dest)],
+                                  capture_output=True, text=True, check=False)
+            self.assertEqual(proc.returncode, expected, proc.stderr)
+            self.assertEqual("nothing to copy" in proc.stderr, expected == 0)
+
+
+    def test_shipped_implementation_tree_has_no_symlinks(self):
+        found = []
+        for dirpath, dirnames, filenames in os.walk(repo_root() / "implementation"):
+            found += [os.path.join(dirpath, n) for n in [*dirnames, *filenames]
+                      if os.path.islink(os.path.join(dirpath, n))]
+        self.assertEqual(found, [], "find implementation -type l must be empty")
+
+
+class TestMergeScriptsRefuseSymlinkedDestinations(unittest.TestCase):
+    """SEC-001 (T636): the Python writers refuse a symlinked destination."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory(prefix="emage-merge-symlink-")
+        self.addCleanup(self._tmp.cleanup)
+        self.tmp = Path(self._tmp.name)
+        self.outside = self.tmp / "outside.json"
+        self.outside.write_text('{"servers": {"keep": {}}}\n')
+
+    def _run(self, script: str, *args: str) -> subprocess.CompletedProcess[str]:
+        return subprocess.run([sys.executable, str(repo_root() / "scripts" / script), *args],
+                              capture_output=True, text=True, check=False)
+
+    def test_merge_mcp_json_refuses_symlinked_dest(self):
+        source = self.tmp / "source.json"
+        source.write_text('{"servers": {"new": {}}}\n')
+        dest = self.tmp / "dest.json"
+        dest.symlink_to(self.outside)
+        before = self.outside.read_bytes()
+        for extra in ((), ("--dry-run",)):
+            proc = self._run("merge-mcp-json.py", "--source", str(source), "--dest", str(dest), *extra)
+            self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+            self.assertIn("refusing to write through a symlink", proc.stderr)
+        self.assertEqual(self.outside.read_bytes(), before)
+
+    def test_merge_mcp_json_refuses_symlinked_sidecar(self):
+        source = self.tmp / "source.json"
+        source.write_text('{"servers": {"new": {}}}\n')
+        new_sidecar = self.tmp / "new.provenance.json"
+        new_sidecar.write_text('{"generatorOwnedKeys": ["new"]}\n')
+        dest = self.tmp / "dest.json"
+        dest.write_text('{"servers": {}}\n')
+        old_sidecar = self.tmp / "dest.json.provenance.json"
+        old_sidecar.symlink_to(self.outside)
+        before = (self.outside.read_bytes(), dest.read_bytes())
+        proc = self._run("merge-mcp-json.py", "--source", str(source), "--dest", str(dest),
+                         "--old-sidecar", str(old_sidecar), "--new-sidecar", str(new_sidecar))
+        self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+        self.assertIn("refusing to write through a symlink", proc.stderr)
+        self.assertEqual((self.outside.read_bytes(), dest.read_bytes()), before)
+
+    def test_merge_mcp_json_ordinary_dest_still_merges(self):
+        source = self.tmp / "source.json"
+        source.write_text('{"servers": {"new": {}}}\n')
+        dest = self.tmp / "dest.json"
+        dest.write_text('{"servers": {"mine": {}}}\n')
+        proc = self._run("merge-mcp-json.py", "--source", str(source), "--dest", str(dest))
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertEqual(sorted(json.loads(dest.read_text())["servers"]), ["mine", "new"])
+
+    def test_render_installed_agents_refuses_symlinked_dest(self):
+        source = repo_root() / "implementation" / "AGENTS.md"
+        dest = self.tmp / "AGENTS.md"
+        dest.symlink_to(self.outside)
+        before = self.outside.read_bytes()
+        for extra in ((), ("--dry-run",)):
+            proc = self._run("render_installed_agents.py", "--source", str(source),
+                             "--dest", str(dest), "--platform", "claude-code", *extra)
+            self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+            self.assertIn("refusing to write through a symlink", proc.stderr)
+        self.assertEqual(self.outside.read_bytes(), before)
+
+    def test_render_installed_agents_ordinary_dest_still_renders(self):
+        source = repo_root() / "implementation" / "AGENTS.md"
+        dest = self.tmp / "AGENTS.md"
+        proc = self._run("render_installed_agents.py", "--source", str(source),
+                         "--dest", str(dest), "--platform", "claude-code")
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertTrue(dest.read_text().strip())
 
 
 if __name__ == "__main__":

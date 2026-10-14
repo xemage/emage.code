@@ -129,11 +129,26 @@ def merge_ledger(template_text: str, existing_text: str) -> str:
     return "\n".join(merged) + "\n"
 
 
+class SymlinkRefused(Exception):
+    """A destination is a symlink; writing would follow it (audit SEC-001, T636)."""
+
+
+def _refuse_symlink(path: Path) -> None:
+    if path.is_symlink():
+        raise SymlinkRefused(f"refusing to write through a symlink: {path}")
+
+
 def sync_task_docs(template_dir: Path, dest_dir: Path, dry_run: bool = False) -> list[str]:
     actions: list[str] = []
+    # Every destination is checked before the first write, so a symlinked
+    # ledger or support file cannot leave earlier files already written.
+    _refuse_symlink(dest_dir)
+    templates = sorted(p for p in template_dir.iterdir() if p.is_file())
+    for template_path in templates:
+        _refuse_symlink(dest_dir / template_path.name)
     dest_dir.mkdir(parents=True, exist_ok=True)
 
-    for template_path in sorted(p for p in template_dir.iterdir() if p.is_file()):
+    for template_path in templates:
         dest_path = dest_dir / template_path.name
         if template_path.name in LEDGER_FILES and dest_path.is_file():
             merged = merge_ledger(
@@ -162,7 +177,12 @@ def main() -> int:
         print(f"merge-task-docs: missing template dir {args.template_dir}", file=sys.stderr)
         return 1
 
-    for action in sync_task_docs(args.template_dir, args.dest_dir, dry_run=args.dry_run):
+    try:
+        actions = sync_task_docs(args.template_dir, args.dest_dir, dry_run=args.dry_run)
+    except SymlinkRefused as exc:
+        print(f"merge-task-docs: {exc}", file=sys.stderr)
+        return 1
+    for action in actions:
         prefix = "DRY-RUN: " if args.dry_run else ""
         print(f"{prefix}{action}")
 

@@ -5,6 +5,7 @@ import importlib.util
 import io
 import tempfile
 import unittest
+from unittest import mock
 from contextlib import redirect_stderr
 from pathlib import Path
 
@@ -237,6 +238,69 @@ Per-task briefs live alongside this file as `task-T001.md`, `task-T002.md`, …
             merged = merge_ledger(template, existing)
         self.assertNotIn("BUG-7", merged)
         self.assertIn("warning: dropping non-conforming", stderr.getvalue())
+
+
+class TestSyncTaskDocsRefusesSymlinks(unittest.TestCase):
+    """SEC-001 (T636): nothing is written through a symlinked destination."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory(prefix="emage-task-docs-symlink-")
+        self.addCleanup(self._tmp.cleanup)
+        self.tmp = Path(self._tmp.name)
+        self.template = self.tmp / "template"
+        self.template.mkdir()
+        for name in ("active-tasks.md", "completed-tasks.md", "_template.md"):
+            (self.template / name).write_text(f"# {name}\n")
+        self.outside = self.tmp / "outside"
+        self.outside.mkdir()
+        (self.outside / "canary.txt").write_text("canary\n")
+
+    def _assert_refused(self, dest_dir: Path, victim: Path) -> None:
+        before = sorted(p.name for p in dest_dir.resolve().parent.rglob("*"))
+        for dry_run in (False, True):
+            with self.assertRaises(_merge.SymlinkRefused):
+                sync_task_docs(self.template, dest_dir, dry_run=dry_run)
+        self.assertEqual((self.outside / "canary.txt").read_text(), "canary\n")
+        self.assertEqual(sorted(p.name for p in dest_dir.resolve().parent.rglob("*")), before)
+        self.assertTrue(victim.is_symlink())
+
+    def test_symlinked_ledger_is_refused_before_any_file_is_written(self):
+        dest = self.tmp / "dest"
+        dest.mkdir()
+        target_file = self.outside / "ledger.md"
+        target_file.write_text("| outside |\n")
+        (dest / "completed-tasks.md").symlink_to(target_file)
+        self._assert_refused(dest, dest / "completed-tasks.md")
+        self.assertEqual(target_file.read_text(), "| outside |\n")
+        self.assertEqual(sorted(p.name for p in dest.iterdir()), ["completed-tasks.md"])
+
+    def test_dangling_symlink_support_file_is_refused(self):
+        dest = self.tmp / "dest"
+        dest.mkdir()
+        (dest / "_template.md").symlink_to(self.outside / "missing.md")
+        self._assert_refused(dest, dest / "_template.md")
+        self.assertFalse((self.outside / "missing.md").exists())
+
+    def test_symlinked_dest_dir_is_refused(self):
+        dest = self.tmp / "dest"
+        dest.symlink_to(self.outside)
+        self._assert_refused(dest, dest)
+        self.assertEqual([p.name for p in self.outside.iterdir()], ["canary.txt"])
+
+    def test_main_exits_one_with_a_message(self):
+        dest = self.tmp / "dest"
+        dest.symlink_to(self.outside)
+        argv = ["merge-task-docs.py", "--template-dir", str(self.template), "--dest-dir", str(dest)]
+        stderr = io.StringIO()
+        with mock.patch("sys.argv", argv), redirect_stderr(stderr):
+            self.assertEqual(_merge.main(), 1)
+        self.assertIn("refusing to write through a symlink", stderr.getvalue())
+
+    def test_ordinary_dest_is_seeded_and_merged(self):
+        dest = self.tmp / "dest"
+        actions = sync_task_docs(self.template, dest)
+        self.assertEqual(len(actions), 3)
+        self.assertTrue((dest / "active-tasks.md").is_file())
 
 
 if __name__ == "__main__":
