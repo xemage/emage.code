@@ -2,11 +2,19 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T621 | Rule the remaining task-protocol and PoC-track observations (P41 O4, P33 O1/O2/O5/O6, O-8) | solution-architect | pending | P1 | — | 2026-10-09 |
-| T622 | Plan the re-evaluation and promotion of orchestrator and tech-lead and the golden realignment under baseline v21 | solution-architect | pending | P1 | — | 2026-10-09 |
-| T623 | Release-level audit of v7.0.1..develop: breaking and behaviour changes for the v8.0.0 migration notes | tech-lead | pending | P1 | — | 2026-10-09 |
+| T624 | Apply the T621 rulings (A1: O4-a, O1-a, O2-a, O6-a; B1: O5-a; C1: O8-a) | backend-developer | pending | P1 | — | 2026-10-14 |
+| T625 | A full /code-review of the T619 MR by the Tech Lead, as an immutable artifact | tech-lead | pending | P1 | — | 2026-10-14 |
+| T626 | Independent check of the T625 /code-review artifact against the command text | qa-engineer | pending | P1 | T625 | 2026-10-14 |
+| T627 | Run a real /skillify interview with the user (GitLab API fallback workflow) and apply the /skillify template fix | orchestrator | pending | P1 | — | 2026-10-14 |
+| T628 | Golden realignment A under grant G-1 (items 1-10, 11 if T627 is merged, 12 only if S-HO-1 allows it) | qa-engineer | pending | P1 | T625, T626 | 2026-10-14 |
+| T629 | Evaluator baseline v21 | orchestrator | pending | P1 | T628 | 2026-10-14 |
+| T630 | Promote tech-lead to stable | backend-developer | pending | P1 | T629 | 2026-10-14 |
+| T631 | Adopter documentation for the new surface (audit C-7) | technical-writer | pending | P1 | — | 2026-10-14 |
+| T632 | Rule the release documents that disagree and the tag / back-merge ordering (audit C-2, C-4) | solution-architect | pending | P1 | — | 2026-10-14 |
+| T633 | Release-level Security Engineer audit of the installer and the PoC scanner (audit C-6) | security-engineer | pending | P1 | — | 2026-10-14 |
+| T634 | Superseding note for ADR-008's contradictory status block and a single severity-scale reference (audit C-8) | solution-architect | pending | P1 | — | 2026-10-14 |
 
-> **3 active rows (`plan-120`, release readiness for v8.0.0).** T619 (CI release job, !558) and T620 (R-1) are done. Open: T621 (remaining rulings; ruled, implementation pending), T622 (promotion and golden realignment plan; plan approved, implementation tasks pending), T623 (release-level audit). Baseline v20; root drift 0.
+> **11 active rows (`plan-121`, release v8.0.0 wave 2; approved by the user on 2026-10-14).** T624 (apply the T621 rulings), T625/T626 (Tech Lead `/code-review` of the T619 MR and the QA check), T627 (`/skillify` with the user), T628 (golden realignment under grant G-1), T629 (baseline v21), T630 (promote `tech-lead`), T631 (adopter docs), T632 (release-document ruling), T633 (release-level security audit), T634 (ADR-008 note). Wave 1 (T619-T623, plan-120) is done. Baseline v20; root drift 0. Item 12 of G-1 and T630 wait for the held-out read (the user adds a Bash permission rule).
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
