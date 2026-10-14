@@ -45,6 +45,8 @@ Every PoC evaluation MUST conclude with a structured verdict that integrates wit
 
 This line is the one-line rendering of the evaluation's single verdict: a PoC either validates or invalidates its hypothesis (`poc-guidelines.md` § Hypothesis-First Validation, Rule 4). When the evaluation is run through the `/evaluate-poc` command, the line accompanies, and does not replace, that command's `## POC VERDICT` block. Both record the same evaluation, so their values agree: `result=` is the block's `Status`, `evidence_strength=` its `Evidence strength`, `production_recommendation=` its `Production recommendation`, and `hypothesis=` a short form of its `Hypothesis`; `debt_count=` is the total in its `Debt items` line, and `date=` is the date of its `Timestamp`. `gate=poc-evaluation` names this PoC-track verdict. It is not one of the `validation-gates` skill's gate types, and its values are not that skill's `PASS` / `CONDITIONAL_PASS` / `FAIL`.
 
+When the evaluation is run through the `/evaluate-poc` command, each `Severity` in that command's Debt Summary table, and the three counts in its `Debt items` line, are the item's severity as the debt ledger records it, or as the `Severity` column of `POC-DEBT-SCORECARD.md` records it where there is no ledger. The command writes the tier in capitals (`CRITICAL`, `MEDIUM`, `LOW`), where the ledger writes `critical`, `medium`, `low` and the scorecard `Critical`, `Medium`, `Low`. The evaluation assigns no severity of its own to an item that either record holds. An item that neither holds is graded with the severity assignment guide of the technical-debt-tracking skill and enters the debt ledger (that skill, § POC-DEBT Tag Scanning Procedure, Step 3).
+
 **Full evaluation artifact structure:**
 
 ```markdown

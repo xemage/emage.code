@@ -174,3 +174,16 @@ In addition to the standard labels defined above, the following labels are used 
 | `gate::pending` | Awaiting validation gate result | Used for tasks gated on code-review or QA verdict |
 | `gate::passed` | Validation gate passed | Gate cleared; proceed with merge |
 | `gate::failed` | Validation gate failed | Gate blocked; requires remediation |
+
+### Priority Labels and the Ledger Priority
+
+The `priority::` labels grade an issue on four levels, and the ledger's Priority has three values, `P0`, `P1` and `P2` (`AGENTS.md` § Task Protocol). A task and its issue agree when the issue's label maps to the task's Priority as `/bug-report` § Task Creation maps a severity of the same name to a priority:
+
+| Label | Ledger Priority |
+|-------|-----------------|
+| `priority::critical` | `P0` |
+| `priority::high` | `P0` |
+| `priority::medium` | `P1` |
+| `priority::low` | `P2` |
+
+The mapping does not reverse: `P0` agrees with `priority::critical` and with `priority::high`. The orchestrator sets the ledger Priority (`AGENTS.md` § Task Protocol), and the label is chosen so that it agrees with it when the issue is created (Sync procedure, step 1). The `## Priority:` line of an issue description (for example `Must Have`) is neither a label nor a ledger value. When a human changes the label on an issue, report it to the orchestrator (Sync procedure, step 4), who changes the ledger Priority only if the new label no longer agrees with it (Conflict resolution applies).

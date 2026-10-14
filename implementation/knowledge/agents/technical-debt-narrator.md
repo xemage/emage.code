@@ -38,7 +38,7 @@ If you cannot proceed:
 
 ### Artifact References
 - Reference input artifact versions you consumed
-- Name output artifacts: `<type>-vN.md`
+- Name output artifacts `<type>-vN.md`, except the two deliverables that `poc-guidelines.md` names: `POC-DEBT-SCORECARD.md` (§ Debt Scorecard) and `TECHNICAL-DEBT.md` (§ Narrative Debt Register) are single files under those names, not versioned artifacts
 - Tag PoC-specific shortcuts with `<!-- POC-DEBT: description -->` for later cleanup
 
 ## Rails

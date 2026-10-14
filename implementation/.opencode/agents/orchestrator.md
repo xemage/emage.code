@@ -212,7 +212,7 @@ Invoke quality gates at defined points:
 - Delegate to `@tech-lead`: "Review architecture-v1.md against requirements-v1.md. Produce VERDICT."
 - Delegate to `@security-engineer`: "Review architecture for security concerns. Produce VERDICT."
 
-**IMPLEMENTATION GATE** (after core implementation):
+**IMPLEMENTATION GATE** (after each implementation task completes, before it merges; skill `validation-gates` § Gate Types):
 - Delegate to `@tech-lead`: "Review implementation against architecture-v1.md. Produce VERDICT."
 
 **INTEGRATION GATE** (after parallel work merges):
