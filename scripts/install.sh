@@ -40,6 +40,12 @@ Options:
   -n, --dry-run        Print actions without copying
   -h, --help           Show this help
 
+Symlinks: any symlink at a managed target path, or at one of its parent directories
+(.claude, docs, implementation, implementation/runtime, .vscode, .mcp.json, CLAUDE.md,
+a task ledger, ...), is refused before anything is written -- even one that points
+inside the target. Do not run the installer as root into a directory that other users
+can write to: a link planted between the check and the write is not detected.
+
 Examples:
   scripts/install.sh --target ~/projects/my-app --platform cursor
   scripts/install.sh --target ~/projects/my-app --platform pi --update
@@ -155,20 +161,34 @@ if target_is_repo_root; then
   fi
 fi
 
+# $1 with every character that is not printable replaced by `?`, for messages:
+# a path component or a link target comes from the target tree, so it may hold
+# newlines or terminal escape sequences (T636).
+printable() {
+  printf '%s' "${1//[^[:print:]]/?}"
+}
+
 # The physical path of $1 -- every symlink on it resolved -- for a path that
 # need not exist yet: its deepest existing ancestor is resolved with `cd -P`,
 # and the components below that are appended as given.
 physical_path() {
   local path="$1"
   local rest=""
-  local parent
+  local parent base
   while [[ ! -d "$path" ]]; do
     parent="$(dirname -- "$path")"
     if [[ "$parent" == "$path" ]]; then break; fi
     rest="/$(basename -- "$path")$rest"
     path="$parent"
   done
-  printf '%s%s\n' "$(CDPATH='' cd -P -- "$path" && pwd -P)" "$rest"
+  # Fails closed (T636): if the deepest existing ancestor cannot be entered
+  # (no search permission, vanished), return 1 instead of printing a bare "$rest",
+  # which a caller could take for a real path.
+  if ! base="$(CDPATH='' cd -P -- "$path" && pwd -P)"; then
+    echo "error: cannot resolve the physical path of: $(printable "$path")" >&2
+    return 1
+  fi
+  printf '%s%s\n' "$base" "$rest"
 }
 
 # True when path $1 is directory $2 or lies anywhere below it. Each ancestor of
@@ -245,6 +265,158 @@ run() {
   else
     "$@"
   fi
+}
+
+# --- Managed-path guard (T636, audit SEC-001) --------------------------------
+#
+# rsync -a, rsync --delete, cp and the Python writers all follow a symlink at a
+# managed target path. With <target>/.claude a symlink to a directory outside the
+# target, `--update` deleted that directory's files and wrote the harness into
+# it. The same holds for docs, implementation, .vscode and every single-file write
+# (.mcp.json, CLAUDE.md, AGENTS.md, the ledgers, the MCP/settings configs).
+#
+# refuse_unsafe_path is the one check. It takes a path at or below $TARGET and
+# exits 1, before writing anything, when
+#   - any component of it below $TARGET (so the managed ancestors docs,
+#     implementation, implementation/runtime and .vscode, and the path itself)
+#     is a symlink, existing or dangling; or
+#   - its physical path (every symlink resolved) is not the physical $TARGET or
+#     inside it; or
+#   - it is not under $TARGET lexically at all, or names `..` (an internal error,
+#     exit 70: the guard fails closed).
+# $TARGET itself may be a symlink: the caller chose it, and containment is
+# measured against its physical path. A path that does not exist yet passes (its
+# deepest existing ancestor is checked). Called at the top of every tree writer,
+# before every single-file write, and, for every managed path of the selected
+# platform(s), once up front (guard_managed_paths) so that a refusal leaves
+# nothing half-written.
+refuse_unsafe_path() {
+  local path="$1"
+  local rel cur comp phys_target phys
+  case "$path" in
+    "$TARGET") return 0 ;;
+    "$TARGET"/*) rel="${path#"$TARGET"/}" ;;
+    *)
+      echo "error: internal: managed path '$(printable "$path")' is not below the target '$(printable "$TARGET")'; nothing written." >&2
+      exit 70
+      ;;
+  esac
+  cur="$TARGET"
+  while [[ -n "$rel" ]]; do
+    comp="${rel%%/*}"
+    if [[ "$rel" == */* ]]; then rel="${rel#*/}"; else rel=""; fi
+    if [[ -z "$comp" || "$comp" == "." ]]; then continue; fi
+    if [[ "$comp" == ".." ]]; then
+      echo "error: internal: managed path '$(printable "$path")' contains '..'; nothing written." >&2
+      exit 70
+    fi
+    cur="$cur/$comp"
+    if [[ -L "$cur" ]]; then
+      echo "error: refusing to write through a symlink: $(printable "$cur")" >&2
+      echo "  It is a managed path of the install (or one of its parent directories) and is a symbolic" >&2
+      echo "  link to $(printable "$(readlink -- "$cur" || echo '?')")." >&2
+      echo "  rsync, cp and the merge scripts would write, and under --update delete, files at its" >&2
+      echo "  destination, which may lie outside the target. Nothing was written." >&2
+      echo "  Replace the link with a real directory or file, or point --target at the directory it" >&2
+      echo "  resolves to, and re-run." >&2
+      exit 1
+    fi
+  done
+  phys_target="$(physical_path "$TARGET")" || exit 1
+  phys="$(physical_path "$path")" || exit 1
+  phys_target="${phys_target%/}"
+  if [[ "$phys" != "$phys_target" && "$phys" != "$phys_target"/* ]]; then
+    echo "error: refusing a managed path that resolves outside the target: $(printable "$path")" >&2
+    echo "  resolves to: $(printable "$phys")" >&2
+    echo "  target:      $(printable "$phys_target")" >&2
+    echo "  Nothing was written." >&2
+    exit 1
+  fi
+}
+
+# Names never shipped from $IMPLEMENTATION/docs, at any depth (T559). Python
+# writes __pycache__/ beside any script it imports, and docs/tasks/ ships one
+# (validate-tasks.py): an authoring checkout that has run it has a gitignored
+# implementation/docs/tasks/__pycache__/, which every fresh install copied, with
+# and without rsync. On --update, docs/tasks/ goes through merge_task_docs,
+# which copies top-level files only; every other docs/ subdirectory honours
+# these names too. (Defined before the guard, which lists docs/ entries.)
+DOCS_EXCLUDES=(__pycache__)
+
+# refuse_unsafe_path for each of $1.. (paths relative to $TARGET).
+refuse_unsafe_paths() {
+  local rel
+  for rel in "$@"; do refuse_unsafe_path "$TARGET/$rel"; done
+}
+
+# Prints, one per line and relative to $TARGET, the managed paths of platform
+# $1: its tree(s) and every single file written into or beside them (the
+# MCP/settings config and its provenance sidecar, CLAUDE.md). The one list the
+# guard and the tests both use.
+platform_managed_paths() {
+  case "$1" in
+    cursor) printf '%s\n' .cursor .cursor/mcp.json .cursor/mcp.json.provenance.json ;;
+    github) printf '%s\n' .github .vscode .vscode/mcp.json .vscode/mcp.json.provenance.json ;;
+    gemini) printf '%s\n' .gemini .gemini/settings.json .gemini/settings.json.provenance.json ;;
+    opencode) printf '%s\n' .opencode .opencode/opencode.json .opencode/opencode.json.provenance.json ;;
+    pi) printf '%s\n' .pi .pi/mcp.json .pi/mcp.json.provenance.json ;;
+    claude-code) printf '%s\n' .claude .mcp.json .mcp.json.provenance.json CLAUDE.md ;;
+    cline) printf '%s\n' .cline .clinerules .cline/mcp.json .cline/mcp.json.provenance.json ;;
+  esac
+}
+
+# Prints the target-side docs/ paths a plain install or --update writes besides
+# the fixed ones: every entry of $IMPLEMENTATION/docs (a merge_tree_preserve_existing
+# or copy_tree_into destination, or a top-level file), minus DOCS_EXCLUDES, and
+# every file of docs/tasks (the ledgers and support files merge_task_docs seeds).
+docs_managed_paths() {
+  local p t name e skip
+  for p in "$IMPLEMENTATION/docs"/* "$IMPLEMENTATION/docs"/.[!.]*; do
+    [[ -e "$p" ]] || continue
+    name="${p##*/}"
+    skip=0
+    for e in "${DOCS_EXCLUDES[@]}"; do
+      if [[ "$name" == "$e" ]]; then skip=1; fi
+    done
+    if [[ "$skip" -eq 1 ]]; then continue; fi
+    printf 'docs/%s\n' "$name"
+    if [[ "$name" == "tasks" && -d "$p" ]]; then
+      for t in "$p"/* "$p"/.[!.]*; do
+        if [[ -f "$t" ]]; then printf 'docs/tasks/%s\n' "${t##*/}"; fi
+      done
+    fi
+  done
+  return 0
+}
+
+# Prints every managed path of the selected platform(s) (PLATFORM, PROJECTIONS_ONLY).
+# --projections-only never touches docs/ or implementation/, so it does not insist
+# on them.
+list_managed_paths() {
+  local p
+  printf '%s\n' AGENTS.md
+  if [[ "$PROJECTIONS_ONLY" -ne 1 ]]; then
+    printf '%s\n' docs docs/tasks docs/tasks/active-tasks.md docs/tasks/completed-tasks.md \
+      implementation implementation/__init__.py implementation/runtime \
+      implementation/runtime/memory implementation/runtime/security implementation/runtime/handoff
+    docs_managed_paths
+  fi
+  if [[ "$PLATFORM" == "all" ]]; then
+    for p in cursor github gemini opencode pi claude-code cline; do platform_managed_paths "$p"; done
+  else
+    platform_managed_paths "$PLATFORM"
+  fi
+}
+
+# Runs before the first write of any mode (plain install, --update,
+# --projections-only, and --dry-run, which reports the same refusal): checks every
+# managed path of the selected platform(s) so a symlink at the last one cannot
+# leave the first ones already written.
+guard_managed_paths() {
+  local rel
+  while IFS= read -r rel; do
+    refuse_unsafe_path "$TARGET/$rel"
+  done < <(list_managed_paths)
 }
 
 # True when src and dest are one and the same directory, however each is
@@ -552,6 +724,7 @@ copy_tree_into() {
   local dest="$2"
   local excludes=("${@:3}")
   check_exclude_names ${excludes[@]+"${excludes[@]}"}
+  refuse_unsafe_path "$dest"
   if same_tree "$src" "$dest"; then return 0; fi
   run mkdir -p "$dest"
   if command -v rsync >/dev/null 2>&1; then
@@ -601,6 +774,7 @@ sync_tree_into() {
   local excludes=("${@:3}")
   local e
   check_exclude_names ${excludes[@]+"${excludes[@]}"}
+  refuse_unsafe_path "$dest"
   if same_tree "$src" "$dest"; then return 0; fi
   if command -v rsync >/dev/null 2>&1; then
     run mkdir -p "$dest"
@@ -681,6 +855,7 @@ merge_tree_preserve_existing() {
   local dest="$2"
   local excludes=("${@:3}")
   check_exclude_names ${excludes[@]+"${excludes[@]}"}
+  refuse_unsafe_path "$dest"
   if same_tree "$src" "$dest"; then return 0; fi
   if command -v rsync >/dev/null 2>&1; then
     run mkdir -p "$dest"
@@ -815,6 +990,9 @@ validate_before_update() {
   fi
 }
 
+# Before the first write of any mode, dry-run included (T636, SEC-001).
+guard_managed_paths
+
 mkdir -p "$TARGET"
 
 if [[ "$UPDATE" -eq 1 ]]; then
@@ -824,6 +1002,7 @@ fi
 
 merge_task_docs() {
   refuse_in_projections_only merge_task_docs "$TARGET/docs/tasks"
+  refuse_unsafe_paths docs docs/tasks docs/tasks/active-tasks.md docs/tasks/completed-tasks.md
   local args=(
     "$REPO_ROOT/scripts/merge-task-docs.py"
     --template-dir "$IMPLEMENTATION/docs/tasks"
@@ -847,6 +1026,8 @@ merge_or_copy_mcp_json() {
   local dest="$2"
   local src_sidecar="${src}.provenance.json"
   local dest_sidecar="${dest}.provenance.json"
+  refuse_unsafe_path "$dest"
+  refuse_unsafe_path "$dest_sidecar"
   if [[ "$UPDATE" -eq 1 && -f "$dest" ]]; then
     local args=("$REPO_ROOT/scripts/merge-mcp-json.py" --source "$src" --dest "$dest")
     if [[ -f "$src_sidecar" ]]; then
@@ -877,17 +1058,9 @@ refuse_in_projections_only() {
   fi
 }
 
-# Names never shipped from $IMPLEMENTATION/docs, at any depth (T559). Python
-# writes __pycache__/ beside any script it imports, and docs/tasks/ ships one
-# (validate-tasks.py): an authoring checkout that has run it has a gitignored
-# implementation/docs/tasks/__pycache__/, which every fresh install copied, with
-# and without rsync. On --update, docs/tasks/ goes through merge_task_docs,
-# which copies top-level files only; every other docs/ subdirectory honours
-# these names too.
-DOCS_EXCLUDES=(__pycache__)
-
 install_docs() {
   refuse_in_projections_only install_docs "$TARGET/docs"
+  refuse_unsafe_paths docs
   run mkdir -p "$TARGET/docs"
   if [[ "$UPDATE" -eq 1 ]]; then
     local e skip
@@ -913,6 +1086,7 @@ install_docs() {
   install_agents_doc() {
     local src="$IMPLEMENTATION/AGENTS.md"
     local dest="$TARGET/AGENTS.md"
+    refuse_unsafe_path "$dest"
 
     local args=(
     "$REPO_ROOT/scripts/render_installed_agents.py"
@@ -942,6 +1116,7 @@ install_docs() {
   # project-specific generated content this installer must not touch.
   install_mcp_server_runtime() {
     refuse_in_projections_only install_mcp_server_runtime "$TARGET/implementation"
+    refuse_unsafe_paths implementation implementation/__init__.py implementation/runtime
     run mkdir -p "$TARGET/implementation"
     if [[ ! -f "$TARGET/implementation/__init__.py" ]]; then
       run touch "$TARGET/implementation/__init__.py"
@@ -977,6 +1152,7 @@ install_cursor() {
 
 install_github() {
   install_tree_into "$IMPLEMENTATION/.github" "$TARGET/.github" "${GITHUB_LOCAL_PATHS[@]}"
+  refuse_unsafe_paths .vscode
   run mkdir -p "$TARGET/.vscode"
   merge_or_copy_mcp_json "$IMPLEMENTATION/.vscode/mcp.json" "$TARGET/.vscode/mcp.json"
 }
@@ -999,6 +1175,7 @@ install_pi() {
 install_claude_code() {
   install_tree_into "$IMPLEMENTATION/.claude" "$TARGET/.claude" "${CLAUDE_LOCAL_PATHS[@]}"
   merge_or_copy_mcp_json "$IMPLEMENTATION/.mcp.json" "$TARGET/.mcp.json"
+  refuse_unsafe_paths CLAUDE.md
   run cp "$IMPLEMENTATION/CLAUDE.md" "$TARGET/CLAUDE.md"
 }
 

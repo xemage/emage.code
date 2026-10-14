@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import re
+import sys
 from pathlib import Path
 
 
@@ -164,6 +165,10 @@ def main() -> int:
 
     src = Path(args.source)
     dest = Path(args.dest)
+    # SEC-001 (T636): never write through a symlink, dry-run included.
+    if dest.is_symlink():
+        print(f"render_installed_agents: refusing to write through a symlink: {dest}", file=sys.stderr)
+        return 1
     rendered = render(src.read_text(encoding="utf-8"), args.platform)
 
     if args.dry_run:

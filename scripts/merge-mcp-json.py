@@ -109,6 +109,12 @@ def main() -> int:
                          help="Comma-separated dest-only key names to prune exactly once, explicitly")
     args = parser.parse_args()
 
+    # SEC-001 (T636): never write through a symlink, whatever it points at. The
+    # sidecar is written too, so it is held to the same rule.
+    for written in (args.dest, args.old_sidecar):
+        if written is not None and written.is_symlink():
+            print(f"merge-mcp-json: refusing to write through a symlink: {written}", file=sys.stderr)
+            return 1
     if not args.dest.is_file():
         print(f"merge-mcp-json: dest does not exist, nothing to merge: {args.dest}", file=sys.stderr)
         return 1

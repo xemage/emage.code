@@ -169,7 +169,9 @@ class TestHandoffRuntimeSurvivesSelfCopies(_CopierMatrix):
                 self.assertEqual(_snapshot(repo / HANDOFF), before)
 
     def test_survives_update_through_a_symlinked_runtime(self) -> None:
-        """src == dest at a non-root target: the self-copy guard, not the refusal."""
+        """A runtime linked back to the source is refused (T636), the source untouched.
+
+        Before T636 the self-copy guard (same_tree) turned this into a no-op."""
         for label, path in self.copiers():
             with self.subTest(copier=label):
                 repo = synthetic_repo(self.fresh, self.tmp / f"repo-linked-{label}")
@@ -181,8 +183,8 @@ class TestHandoffRuntimeSurvivesSelfCopies(_CopierMatrix):
                 before = _snapshot(repo / HANDOFF)
                 proc = run_installer(repo / "scripts" / "install.sh", target,
                                      "--platform", "all", "--update", path=path)
-                self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
-                self.assertIn(f"{HANDOFF.as_posix()} itself; nothing to copy", proc.stderr)
+                self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+                self.assertIn("refusing to write through a symlink", proc.stderr)
                 self.assertEqual(_snapshot(repo / HANDOFF), before)
                 self.assertEqual(files_under(repo / HANDOFF), SHIPPED)
 
