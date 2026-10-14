@@ -14,11 +14,19 @@
 # inline secrets in this file.
 
 servers:
+  # PIN POLICY (T638, audit SEC-002). Every npx, uvx and docker entry below is pinned to an
+  # exact version or digest; never a floating tag or a range. The devops-engineer bumps the pins
+  # at every release and at least monthly. Each bump is a reviewed change that edits this
+  # file and the APPROVED_NPX_PINS dict in tests/functional/test_mcp_package_pins.py
+  # together. Before a bump, check the package with `npm audit` or OSV, and check the
+  # registry's latest version and its provenance. @zereight/mcp-gitlab holds the GitLab
+  # PAT, has a single maintainer, and ships often with published advisories, so it is
+  # reviewed at every release. There is no automated scheduler for this.
   gitlab:
     tags: [core]
     transport: stdio
     command: npx
-    args: ["-y", "@zereight/mcp-gitlab"]
+    args: ["-y", "@zereight/mcp-gitlab@2.2.5"]
     env:
       GITLAB_PERSONAL_ACCESS_TOKEN: { fromEnv: GITLAB_PERSONAL_ACCESS_TOKEN, secret: true }
       GITLAB_API_URL: { fromEnv: GITLAB_API_URL }
@@ -27,31 +35,31 @@ servers:
     tags: [core]
     transport: stdio
     command: npx
-    args: ["-y", "@playwright/mcp@latest"]
+    args: ["-y", "@playwright/mcp@0.0.83"]
 
   fetch:
     tags: [core]
     transport: stdio
     command: npx
-    args: ["-y", "mcp-fetch-server"]
+    args: ["-y", "mcp-fetch-server@1.1.2"]
 
   memory:
     tags: [core]
     transport: stdio
     command: npx
-    args: ["-y", "@modelcontextprotocol/server-memory"]
+    args: ["-y", "@modelcontextprotocol/server-memory@1.0.0"]
 
   sequential-thinking:
     tags: [core]
     transport: stdio
     command: npx
-    args: ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    args: ["-y", "@modelcontextprotocol/server-sequential-thinking@1.0.0"]
 
   brave:
     tags: [core]
     transport: stdio
     command: npx
-    args: ["-y", "@brave/brave-search-mcp-server"]
+    args: ["-y", "@brave/brave-search-mcp-server@2.1.4"]
     env:
       BRAVE_API_KEY: { fromEnv: BRAVE_API_KEY, secret: true }
 
@@ -97,7 +105,7 @@ servers:
     # T497 -- fixed-command audit-command server for @security-engineer, per
     # docs/artifacts/security-engineer-audit-server-design-v1.md (T496) §3. `extended`,
     # not `core`: opt-in, role-specific infrastructure (only @security-engineer is ever
-    # granted its tools), same reasoning class as `filesystem`/`git`/`docker`. No `env:`
+    # granted its tools), same reasoning class as `filesystem`/`git`/`github`. No `env:`
     # block: every one of its four tools (run_npm_audit, run_pip_audit,
     # run_dotnet_list_vulnerable, grep_content) is a local CLI subprocess call against the
     # calling agent's own workspace -- no network call, no API key.
@@ -123,43 +131,40 @@ servers:
     tags: [extended]
     transport: stdio
     command: npx
-    args: ["-y", "@anthropic/mcp-filesystem"]
+    args: ["-y", "@modelcontextprotocol/server-filesystem@1.0.0", "."]
 
   github:
+    # Official GitHub MCP server, container pinned by digest (tag v2.0.2). Token is passed by
+    # name (-e VAR), never in argv. Requires Docker on PATH.
     tags: [extended]
     transport: stdio
-    command: npx
-    args: ["-y", "@github/mcp-github"]
+    command: docker
+    args: ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server@sha256:ffced0d76e77428532a2ced185516992d77fd146d69eec2f244e6237d1a97796"]
+    env:
+      GITHUB_PERSONAL_ACCESS_TOKEN: { fromEnv: GITHUB_PERSONAL_ACCESS_TOKEN, secret: true }
 
   git:
+    # PyPI package, not npm. Requires uv on PATH.
     tags: [extended]
     transport: stdio
-    command: npx
-    args: ["-y", "@modelcontextprotocol/mcp-git"]
+    command: uvx
+    args: ["mcp-server-git@2026.10.10", "--repository", "."]
 
   supabase:
+    # Token comes from the environment (the CLI also accepts --access-token; do not use it).
+    # --read-only disables writes; drop the flag to allow them.
     tags: [extended]
     transport: stdio
     command: npx
-    args: ["-y", "@supabase/mcp"]
-
-  docker:
-    tags: [extended]
-    transport: stdio
-    command: npx
-    args: ["-y", "docker-mcp"]
-
-  postgresql:
-    tags: [extended]
-    transport: stdio
-    command: npx
-    args: ["-y", "postgres-mcp"]
+    args: ["-y", "@supabase/mcp-server-supabase@0.13.0", "--read-only"]
+    env:
+      SUPABASE_ACCESS_TOKEN: { fromEnv: SUPABASE_ACCESS_TOKEN, secret: true }
 
   toolradar:
     tags: [extended]
     transport: stdio
     command: npx
-    args: ["-y", "toolradar-mcp"]
+    args: ["-y", "toolradar-mcp@2.1.0"]
     env:
       # SECURITY: never inline a real key here. Set TOOLRADAR_API_KEY in your shell
       # or your platform's secret store. v1 leaked a live key — do not repeat.

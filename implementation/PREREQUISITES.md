@@ -5,6 +5,18 @@
 - **Python 3.10+** — for `check.py`, `package.py`, and registry generation.
 - **Git 2.30+** — for worktree isolation, branch policies, and pack install from git URLs.
 
+## Optional (extended MCP servers)
+- **uv** (provides `uvx`) — launches the `git` server (`uvx mcp-server-git@<pinned version>`). Install from <https://docs.astral.sh/uv/>.
+- **Docker** — runs the `github` server as a container pinned by digest (`docker run -i --rm ghcr.io/github/github-mcp-server@sha256:...`). The Docker daemon must be running and able to pull from `ghcr.io`.
+
+Start your assistant from the project root. The `filesystem` (`.`) and `git` (`--repository .`) servers resolve the path against the launch directory; Cline's configuration is global, so use an absolute path there. The `filesystem` server can read every file in the workspace, including `.env*` files and `.git`, and the `git` server exposes write tools.
+
+### Pin-bump policy
+MCP servers launched via `npx`, `uvx` or `docker` are pinned to exact versions or digests in `implementation/knowledge/mcp/servers.yaml` (audit SEC-002); do not replace a pin with `@latest` or a range. The devops-engineer bumps the pins at every release and at least monthly; there is no automated scheduler. Each bump is a reviewed change that edits `servers.yaml` and the `APPROVED_NPX_PINS` dict in `tests/functional/test_mcp_package_pins.py` together. Before a bump, check the package with `npm audit` or OSV, and check the registry's latest version and provenance. `@zereight/mcp-gitlab` holds the GitLab token, has a single maintainer, and releases often with published advisories, so it is reviewed at every release.
+
+### Upgrading from v7.x
+After `scripts/install.sh --update`, the `filesystem`, `git`, `github` and `supabase` entries are overwritten in place. The `docker` and `postgresql` servers are removed from the generated configs; the update drops them from an installed config only if its `.provenance.json` sidecar lists them. Otherwise remove them by hand or with `python3 scripts/merge-mcp-json.py --source <generated file> --dest <your file> --force-prune-keys docker,postgresql` (per file; `install.sh` does not pass this option). A server entry of your own named `docker` or `postgresql` is removed too if the old sidecar lists those names. A run without a sidecar writes one that does not list them, so later automatic pruning cannot remove them. Client approval for the changed servers may be requested again. Full steps: `docs/wiki/mcp-servers.md`.
+
 ## Per-platform
 | Platform | Requirement |
 |----------|-------------|
@@ -25,7 +37,8 @@ Set whichever you need before launching the AI tool. See [`SECURITY.md`](SECURIT
 
 ### Extended (optional)
 - `TOOLRADAR_API_KEY`
-- platform-specific tokens for `github`, `supabase`, `postgresql`
+- `GITHUB_PERSONAL_ACCESS_TOKEN` — `github` server; passed into the container by name (`-e`), never on the command line
+- `SUPABASE_ACCESS_TOKEN` — `supabase` server (started with `--read-only`); read from the environment, never from argv
 
 ## Verifying
 
