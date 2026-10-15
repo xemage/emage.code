@@ -37,10 +37,14 @@ servers:
     # do NOT list mcp__playwright for page reading in place of the removed `fetch` server (they
     # use the platform `web` tool). --blocked-origins is NOT a security boundary: it does not
     # cover redirects, WebSockets, DNS names that resolve to internal addresses or the
-    # browser_run_code_unsafe tool. It needs the Chromium browser (`npx playwright install
-    # chromium`); see implementation/PREREQUISITES.md. The --blocked-origins value is ONE
+    # browser_run_code_unsafe tool. It needs the Chromium browser (`npx -y @playwright/mcp@0.0.83
+    # install-browser chrome-for-testing`); see implementation/PREREQUISITES.md. The list also
+    # blocks local dev servers (localhost, 127.*, 10.*, 192.168.*, 172.16-31): see the
+    # `playwright-local` note in docs/wiki/mcp-servers.md. The --blocked-origins value is ONE
     # argument (semicolon-separated glob list; `{a,b}` is brace alternation, `[` `]` are literal):
-    # it is passed to a spawned process without a shell and must never be expanded or split.
+    # it was passed to a spawned process without a shell in the T654/T655 tests (Linux, Node, a
+    # driver that spawned `node` directly); clients that route `args` through a shell, and Windows,
+    # are unverified. It must never be expanded or split.
     tags: [core]
     transport: stdio
     command: npx

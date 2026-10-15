@@ -106,16 +106,17 @@ Declared in [`knowledge/mcp/servers.yaml`](knowledge/mcp/servers.yaml). Each ser
 | Server | Purpose | Used By |
 |--------|---------|---------|
 | `gitlab` | Repository, issues, MRs, pipelines | Orchestrator, Scrum Master, DevOps, Release Manager |
-| `playwright` | Browser automation, E2E testing | QA, Frontend, Demo Agent |
+| `playwright` | Browser automation (hardened; blocks local-app URLs, see below) | QA, Frontend, Demo Agent, PoC QA |
 | `memory` | Persistent knowledge graph | Orchestrator (team memory) |
 | `sequential-thinking` | Complex problem decomposition | Architect, Orchestrator |
 | `brave` | Technology discovery | Technology Scout, Feasibility |
 | `context7` | Framework/API documentation | Technology Scout, Integration |
+| `hindsight` | Remote memory-layer endpoint (`HINDSIGHT_MCP_URL`) | No agent lists its tools; available to the session |
 
-The `fetch` server was removed in v8.0.0 (audit SEC-T646-01): it followed redirects blindly. Agents read web pages with the platform `web` tool. The `playwright` entry is hardened but is not a security boundary; see `docs/wiki/mcp-servers.md`.
+The `fetch` server was removed in v8.0.0 (audit SEC-T646-01): it followed redirects blindly. Agents read web pages with the platform `web` tool. The `playwright` entry is hardened but is not a security boundary; see `docs/wiki/mcp-servers.md`. Its `--blocked-origins` list denies `localhost`, `127.*`, `*.localhost`, `10.*`, `192.168.*` and `172.16`-`172.31`, so E2E testing of a local dev server with the shipped entry fails with `ERR_BLOCKED_BY_CLIENT`. For local apps add a user-owned second entry named `playwright-local` (unrestricted, with the warning in `implementation/PREREQUISITES.md`); `install.sh --update` keeps it because the merge keeps names the generator does not own. Installed projects should add `.playwright-mcp/` to their `.gitignore`.
 
 ### Extended servers (opt-in)
-`hf-mcp-server`, `filesystem`, `github`, `git`, `supabase`, `toolradar`. Most require additional credentials — see `servers.yaml` for the env-var contract.
+`cwso`, `hf-mcp-server`, `context-retriever`, `security-audit`, `poc-security-audit`, `filesystem`, `github`, `git`, `supabase`, `toolradar`. Most require additional credentials — see `servers.yaml` for the env-var contract.
 
 ## Token Governance
 | Phase | Budget |

@@ -5,7 +5,7 @@
 **Status:** pending
 **Priority:** P1
 **Tier:** judgment
-**Depends on:** T646, T655
+**Depends on:** T646, T657
 **Affects:** —
 **Created:** 2026-10-15
 **Completed:** —

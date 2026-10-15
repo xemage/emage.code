@@ -36,7 +36,8 @@
     "Emptied 2026-10-15 by the seventeenth user-approved --projections-only refresh (60 paths: the T624 skill and agent edits, the T638 corrected and pinned MCP configs and sidecars on every platform plus the AGENTS.md rendering, and the T639 release-document edits to the orchestrator, release-manager and release-workflow).",
     "Declared 2026-10-15 by T627 (the /skillify run: new skill gitlab-api-push-fallback on 7 platforms and the /skillify template fix `maturity: experimental` in the skillify command on 6 platforms, plus the 7 generated manifests): 20 paths; root not refreshed.",
     "Emptied 2026-10-15 by the eighteenth user-approved --projections-only refresh (20 paths: the T627 gitlab-api-push-fallback skill on 7 platforms, the /skillify template fix on 6 platforms and the 7 generated manifests).",
-    "Declared 2026-10-15 by T655 (fetch server removed, playwright entry hardened, mcp__fetch dropped from 10 agents): 64 paths = the 10 agent projections on 5 platforms (50) and the MCP config plus provenance sidecar on 7 platforms (14); root not refreshed."
+    "Declared 2026-10-15 by T655 (fetch server removed, playwright entry hardened, mcp__fetch dropped from 10 agents): 64 paths = the 10 agent projections on 5 platforms (50) and the MCP config plus provenance sidecar on 7 platforms (14); root not refreshed.",
+    "Declared 2026-10-15 by T656 (SEC-T655-01 stopped, so no agent or MCP projection changed; the edits are the sync.mjs inline-array reader, source comments in servers.yaml, documentation and tests): 0 new paths; the 64 paths declared by T655 are unchanged; root not refreshed."
   ],
   "drift": [
     ".claude/agents/backend-developer.md",
