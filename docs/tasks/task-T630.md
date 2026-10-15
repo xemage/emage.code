@@ -2,13 +2,14 @@
 
 **ID:** T630
 **Owner:** backend-developer
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Tier:** standard
 **Depends on:** T629
 **Affects:** —
 **Created:** 2026-10-14
-**Completed:** —
+**Completed:** 2026-10-15
+**Independent re-run (PG-9, 2026-10-15, top-level session):** check-maturity.py --root implementation exit 0, 79 components, 0 failing, agent/experimental 1 pass, agent/stable 27 pass, no FAIL line; diff read: only `maturity` (and the registry checksum/generatedAt, one summary row, the two snapshot lines) changed.
 **Based on:**
 - `docs/plans/plan-121-release-v8-wave-2.md` (Task Decomposition item for T630)
 - `docs/artifacts/promotion-and-golden-realignment-plan-v1.md` §10 (promotion steps), `docs/artifacts/maturity-promotion-criteria-v2.md` §3.1
