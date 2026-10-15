@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-15T06:10:58+00:00",
+  "generatedAt": "2026-10-15T06:55:51+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -1193,7 +1193,7 @@
       "category": "command",
       "name": "skillify",
       "path": "commands/skillify.md",
-      "checksum": "fa95012e7fb71340d78cb453331a6377cc268e4faa46c065355819553e400a7b",
+      "checksum": "e1613362715d956d51fa68f492ba7bb4724a0e93ed51251e3785e5a438615dca",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1726,6 +1726,34 @@
       "name": "dependency-graphing",
       "path": "skills/dependency-graphing/SKILL.md",
       "checksum": "6a1677c5f429693834360a3fc23631e8d95ba397da7add39499a132720a8ba8f",
+      "maturity": "experimental",
+      "compatibility": {
+        "supportedPlatforms": [
+          "claude-code",
+          "cline",
+          "cursor",
+          "gemini",
+          "github",
+          "opencode",
+          "pi"
+        ],
+        "projectionStatus": {
+          "claude-code": "pass",
+          "cline": "pass",
+          "cursor": "pass",
+          "gemini": "pass",
+          "github": "pass",
+          "opencode": "pass",
+          "pi": "pass"
+        }
+      }
+    },
+    {
+      "id": "gitlab-api-push-fallback",
+      "category": "skill",
+      "name": "gitlab-api-push-fallback",
+      "path": "skills/gitlab-api-push-fallback/SKILL.md",
+      "checksum": "d28e7bb9b7737bd45001b0ec39ea00a73ce03ef15c82fd1d249c3d2ad0dcd5f5",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
