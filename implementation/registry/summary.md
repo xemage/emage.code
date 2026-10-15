@@ -7,7 +7,7 @@ Generated from: implementation/knowledge
 - agents: 28
 - commands: 19
 - instructions: 6
-- skills: 26
+- skills: 27
 
 ## Entries
 
@@ -75,6 +75,7 @@ Generated from: implementation/knowledge
 | cost-token-governance | skill | experimental | skills/cost-token-governance/SKILL.md |
 | cwso-awareness | skill | experimental | skills/cwso-awareness/SKILL.md |
 | dependency-graphing | skill | experimental | skills/dependency-graphing/SKILL.md |
+| gitlab-api-push-fallback | skill | experimental | skills/gitlab-api-push-fallback/SKILL.md |
 | gitlab-management | skill | experimental | skills/gitlab-management/SKILL.md |
 | memory-management | skill | experimental | skills/memory-management/SKILL.md |
 | plan-approve-execute | skill | experimental | skills/plan-approve-execute/SKILL.md |

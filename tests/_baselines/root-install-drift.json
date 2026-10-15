@@ -33,7 +33,29 @@
     "Declared 2026-10-14 by T624 (remaining-observations rulings A1, B1, C1: O4-a orchestrator Implementation-gate timing, O1-a and O5-a technical-debt-tracking category note and scan scope, O2-a technical-debt-narrator deliverable names, O6-a poc-evaluation Debt Summary severity source, O8-a gitlab-management priority-label mapping): 33 paths = technical-debt-tracking, poc-evaluation and gitlab-management on 7 platforms and the orchestrator and technical-debt-narrator agents on 6 each; root not refreshed.",
     "Declared 2026-10-15 by T639 (release-documents ruling A1, B1, C3-text: H-A2/H-B3 orchestrator edits (already drifted by T624, no new paths), H-B4 release-manager agent on 6 platforms, H-A3/H-B5 release-workflow skill on 7 platforms): 13 new paths, 46 in total; root not refreshed.",
     "Declared 2026-10-15 by T638 (MCP server package fixes, audit SEC-002: filesystem, git, supabase and github entries replaced, every npx entry pinned to an exact version, docker and postgresql entries removed): 14 further paths = the root MCP config and its provenance sidecar on 6 platforms (.mcp.json, .gemini/settings.json, .opencode/opencode.json, .cursor/mcp.json, .cline/mcp.json, .pi/mcp.json), .vscode/mcp.json, and the installed AGENTS.md (the extended-server list no longer names docker and postgresql); the 33 T624 paths are unchanged; root not refreshed.",
-    "Emptied 2026-10-15 by the seventeenth user-approved --projections-only refresh (60 paths: the T624 skill and agent edits, the T638 corrected and pinned MCP configs and sidecars on every platform plus the AGENTS.md rendering, and the T639 release-document edits to the orchestrator, release-manager and release-workflow)."
+    "Emptied 2026-10-15 by the seventeenth user-approved --projections-only refresh (60 paths: the T624 skill and agent edits, the T638 corrected and pinned MCP configs and sidecars on every platform plus the AGENTS.md rendering, and the T639 release-document edits to the orchestrator, release-manager and release-workflow).",
+    "Declared 2026-10-15 by T627 (the /skillify run: new skill gitlab-api-push-fallback on 7 platforms and the /skillify template fix `maturity: experimental` in the skillify command on 6 platforms, plus the 7 generated manifests): 20 paths; root not refreshed."
   ],
-  "drift": []
+  "drift": [
+    ".claude/.generated-manifest.json",
+    ".claude/commands/skillify.md",
+    ".claude/skills/gitlab-api-push-fallback/SKILL.md",
+    ".cline/.generated-manifest.json",
+    ".cline/skills/gitlab-api-push-fallback/SKILL.md",
+    ".cursor/.generated-manifest.json",
+    ".cursor/commands/skillify.mdc",
+    ".cursor/skills/gitlab-api-push-fallback/SKILL.md",
+    ".gemini/.generated-manifest.json",
+    ".gemini/commands/skillify.md",
+    ".gemini/skills/gitlab-api-push-fallback/SKILL.md",
+    ".github/.generated-manifest.json",
+    ".github/prompts/skillify.prompt.md",
+    ".github/skills/gitlab-api-push-fallback/SKILL.md",
+    ".opencode/.generated-manifest.json",
+    ".opencode/commands/skillify.md",
+    ".opencode/skills/gitlab-api-push-fallback/SKILL.md",
+    ".pi/.generated-manifest.json",
+    ".pi/prompts/skillify.md",
+    ".pi/skills/gitlab-api-push-fallback/SKILL.md"
+  ]
 }

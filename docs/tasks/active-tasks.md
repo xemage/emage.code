@@ -2,7 +2,6 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T627 | Run a real /skillify interview with the user (GitLab API fallback workflow) and apply the /skillify template fix | orchestrator | pending | P1 | — | 2026-10-14 |
 
 > **Active rows (`plan-121`, release v8.0.0 wave 2; approved by the user on 2026-10-14).** T624 (apply the T621 rulings) and T625 (Tech Lead `/code-review` of the T619 MR) are done. Open: T626 (QA check of the T625 artifact), T627 (`/skillify` with the user), T628 (golden realignment under grant G-1), T629 (baseline v21), T630 (promote `tech-lead`), T631 (adopter docs), T632 (release-document ruling), T633 (release-level security audit), T634 (ADR-008 note), T635 (release-job conditions). Baseline v20; root drift 33 (declared by T624, waits for one user-approved root refresh). Item 12 of G-1 and T630 wait for the held-out read (the user adds a Bash permission rule).
 

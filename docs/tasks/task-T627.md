@@ -2,13 +2,13 @@
 
 **ID:** T627
 **Owner:** orchestrator
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Tier:** standard
 **Depends on:** —
 **Affects:** —
 **Created:** 2026-10-14
-**Completed:** —
+**Completed:** 2026-10-15
 **Based on:**
 - `docs/plans/plan-121-release-v8-wave-2.md` (Task Decomposition item for T627)
 - `implementation/knowledge/commands/skillify.md`, skill `skillify`, `implementation/knowledge/schemas/skill.schema.json`
