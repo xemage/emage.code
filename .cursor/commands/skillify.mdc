@@ -61,6 +61,7 @@ Round 3 → `## Procedure`, Round 4 → `## Success Criteria`.
 ---
 name: <skill-name>
 description: "<one-line description>"
+maturity: experimental
 ---
 
 # <Skill Name>
