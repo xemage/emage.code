@@ -164,7 +164,36 @@ function emitFrontmatter(obj, opts = { toolsFormat: 'array' }) {
 async function readServersYaml() {
   const file = path.join(KNOWLEDGE, 'mcp', 'servers.yaml');
   const raw = await fs.readFile(file, 'utf8');
-  return parseServersYaml(raw);
+  const servers = parseServersYaml(raw);
+  validateDenyTools(servers);
+  return servers;
+}
+
+// T658 (SEC-T657-01): a server may carry `denyTools: [<tool>, ...]`, the exact tool names, as the
+// server itself reports them, that the platform must refuse for this server. This is the one source
+// of truth for the server-level denial; emitMcp() renders it only for the two platforms whose
+// documentation and vendor source show an enforcing mechanism (see
+// docs/artifacts/mcp-server-denials-v1.md): Opencode (top-level `permission`) and Gemini CLI
+// (`mcpServers.<name>.excludeTools`). Names are exact on purpose: a wildcard could silently deny
+// (or, on Opencode, fail to deny) more than the list says.
+const DENY_TOOL_NAME = /^[A-Za-z0-9_]+$/;
+
+function validateDenyTools(servers) {
+  for (const [name, server] of Object.entries(servers)) {
+    if (server.denyTools === undefined) continue;
+    const list = server.denyTools;
+    if (!Array.isArray(list) || list.length === 0) {
+      throw new Error(`servers.yaml: ${name}.denyTools must be a non-empty array of tool names`);
+    }
+    for (const tool of list) {
+      if (typeof tool !== 'string' || !DENY_TOOL_NAME.test(tool)) {
+        throw new Error(`servers.yaml: ${name}.denyTools entry is not an exact tool name ([A-Za-z0-9_]+): ${String(tool).slice(0, 60)}`);
+      }
+    }
+    if (new Set(list).size !== list.length) {
+      throw new Error(`servers.yaml: ${name}.denyTools has a duplicate entry`);
+    }
+  }
 }
 
 // Block-typed (multi-line, nested) top-level server keys. `env` is the original;
@@ -302,13 +331,22 @@ function parseInlineObject(s) {
 //   pi          Pi: `mcp__<server>__<tool>` and `mcp__<server>__*` (anything outside [A-Za-z0-9_] to `_`)
 const MCP_TOOL_PREFIX = 'mcp__';
 
+// T658 (SEC-T657-09): `*` is accepted only as the whole tool part (`mcp__<server>__*`). A `*` anywhere
+// else (`mcp__srv__foo*`, `mcp__sr*v__t`) used to degrade silently to `_` in the renderers, which
+// fails closed but hides the author's mistake; it now stops the run.
 function splitMcpToolName(token) {
   if (typeof token !== 'string' || !token.startsWith(MCP_TOOL_PREFIX)) return null;
   const rest = token.slice(MCP_TOOL_PREFIX.length);
   const sep = rest.indexOf('__');
-  if (sep === -1) return rest ? { server: rest, tool: '*' } : null;
+  if (sep === -1) {
+    if (rest.includes('*')) throw new Error(`Non-terminal '*' in MCP tool token: ${token}`);
+    return rest ? { server: rest, tool: '*' } : null;
+  }
   const server = rest.slice(0, sep);
   const tool = rest.slice(sep + 2);
+  if (server.includes('*') || (tool !== '*' && tool.includes('*'))) {
+    throw new Error(`Non-terminal '*' in MCP tool token: ${token}`);
+  }
   return server && tool ? { server, tool } : null;
 }
 
@@ -327,6 +365,18 @@ const MCP_TOOL_NAME_STYLES = {
     return `mcp__${clean(server)}__${tool === '*' ? '*' : clean(tool)}`;
   },
 };
+
+// T658 (SEC-T657-09): the style is validated once, at manifest load, whether or not the platform
+// has a tools line to render. An unknown or non-string value stops the run before any file is written.
+function validateMcpToolNamesStyle(manifest) {
+  const style = manifest.frontmatter && manifest.frontmatter.agents
+    ? manifest.frontmatter.agents.mcpToolNames
+    : undefined;
+  if (style === undefined) return;
+  if (typeof style !== 'string' || !Object.prototype.hasOwnProperty.call(MCP_TOOL_NAME_STYLES, style)) {
+    throw new Error(`Unknown mcpToolNames style: ${String(style)} (platform ${manifest.platform})`);
+  }
+}
 
 function renderMcpToolName(token, style) {
   if (!style) return token;
@@ -434,6 +484,9 @@ function emitMcp(servers, tags, format) {
         mcpServers[name] = { command: s.command, args: s.args || [] };
         if (s.env) mcpServers[name].env = mapEnv(s.env, '${env:VAR}');
       }
+      // T658: documented per-server tool blocklist; applies to the main agent and to subagents
+      // (docs/artifacts/mcp-server-denials-v1.md). Gemini matches the name the server reports.
+      if (s.denyTools) mcpServers[name].excludeTools = [...s.denyTools];
     }
     const cfg = {
       hooks: {
@@ -458,7 +511,14 @@ function emitMcp(servers, tags, format) {
 
   if (format === 'opencode') {
     const mcp = {};
+    const permission = {};
     for (const [name, s] of Object.entries(filtered)) {
+      // T658: Opencode checks a permission whose action is the registered tool name
+      // `<server>_<tool>`; the same cleaning as the `underscore` tool-name style. Last match wins,
+      // and the agent-level rules come after this global one (docs/artifacts/mcp-server-denials-v1.md).
+      for (const tool of s.denyTools || []) {
+        permission[MCP_TOOL_NAME_STYLES.underscore({ server: name, tool })] = 'deny';
+      }
       if (s.transport === 'remote') {
         mcp[name] = { type: 'remote', url: mapTemplatedValue(s.url, '{env:VAR}') };
         if (s.headers) mcp[name].headers = mapEnv(s.headers, '{env:VAR}');
@@ -467,7 +527,7 @@ function emitMcp(servers, tags, format) {
         if (s.env) mcp[name].environment = mapEnv(s.env, '{env:VAR}');
       }
     }
-    return { __mcpObject: mcp };
+    return { __mcpObject: mcp, __permission: permission };
   }
 
   if (format === 'claude-code') {
@@ -646,6 +706,7 @@ async function syncPlatform(manifest, servers) {
     const outPath = path.resolve(outRoot, manifest.mcp.outputFile);
     if (manifest.mcp.format === 'opencode') {
       const cfg = { ...(manifest.mcp.extraFields || {}), mcp: mcpResult.__mcpObject };
+      if (Object.keys(mcpResult.__permission).length > 0) cfg.permission = mcpResult.__permission;
       await emitFile(outPath, JSON.stringify(cfg, null, 2) + '\n');
     } else {
       await emitFile(outPath, mcpResult);
@@ -711,6 +772,7 @@ async function main() {
 
   for (const file of platformFiles) {
     const manifest = JSON.parse(await fs.readFile(path.join(PLATFORMS, file), 'utf8'));
+    validateMcpToolNamesStyle(manifest);
     if (ONLY_PLATFORM && manifest.platform !== ONLY_PLATFORM) continue;
     const count = await syncPlatform(manifest, servers);
     console.log(`[${manifest.platform}] ${CHECK_ONLY ? 'checked' : 'wrote'} ${count} files -> ${manifest.outputDir}`);

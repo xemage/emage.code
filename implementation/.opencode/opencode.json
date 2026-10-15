@@ -171,5 +171,13 @@
         "TOOLRADAR_API_KEY": "{env:TOOLRADAR_API_KEY}"
       }
     }
+  },
+  "permission": {
+    "playwright_browser_run_code_unsafe": "deny",
+    "playwright_browser_evaluate": "deny",
+    "playwright_browser_file_upload": "deny",
+    "playwright_browser_drag": "deny",
+    "playwright_browser_drop": "deny",
+    "playwright_browser_network_request": "deny"
   }
 }

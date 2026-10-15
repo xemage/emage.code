@@ -376,6 +376,33 @@ class PlaywrightGrantSetTests(unittest.TestCase):
                     for excluded in PLAYWRIGHT_EXCLUDED:
                         self.assertFalse(token.endswith(excluded), token)
 
+    def test_server_level_denial_list_equals_the_six_excluded_tools(self):
+        """T658 (SEC-T657-01): the denial emitted for Opencode and Gemini CLI is the excluded set, pinned."""
+        servers = yaml.safe_load(SERVERS_YAML.read_text(encoding="utf-8"))["servers"]
+        deny = servers["playwright"]["denyTools"]
+        self.assertEqual(len(deny), 6)
+        self.assertEqual(len(set(deny)), 6, "no duplicate")
+        self.assertEqual(set(deny), PLAYWRIGHT_EXCLUDED)
+        self.assertLessEqual(set(deny), PLAYWRIGHT_0_0_83_DEFAULT_TOOLS)
+        for slug, granted in EXPECTED_PLAYWRIGHT_GRANTS.items():
+            self.assertFalse(granted & set(deny), f"{slug} is granted a tool that the server-level denial removes")
+        # the singular is denied, the plural stays grantable
+        self.assertIn("browser_network_request", deny)
+        self.assertNotIn("browser_network_requests", deny)
+        self.assertTrue(any("browser_network_requests" in g for g in EXPECTED_PLAYWRIGHT_GRANTS.values()))
+
+    def test_generated_denial_equals_the_list_on_opencode_and_gemini_only(self):
+        root = REPO_ROOT / "implementation"
+        gemini = json.loads((root / ".gemini" / "settings.json").read_text(encoding="utf-8"))
+        self.assertEqual(set(gemini["mcpServers"]["playwright"]["excludeTools"]), PLAYWRIGHT_EXCLUDED)
+        opencode = json.loads((root / ".opencode" / "opencode.json").read_text(encoding="utf-8"))
+        self.assertEqual(set(opencode["permission"]), {f"playwright_{t}" for t in PLAYWRIGHT_EXCLUDED})
+        self.assertEqual(set(opencode["permission"].values()), {"deny"})
+        for rel in (".mcp.json", ".cursor/mcp.json", ".vscode/mcp.json", ".pi/mcp.json", ".cline/mcp.json"):
+            text = (root / rel).read_text(encoding="utf-8")
+            self.assertNotIn("excludeTools", text, rel)
+            self.assertNotIn('"permission"', text, rel)
+
 
 class MergeScriptPruneTests(unittest.TestCase):
     """T656 (SEC-T655-10, SEC-T655-02, SEC-T655-09): merge-mcp-json.py behaviour that the docs state."""
