@@ -6,7 +6,6 @@ tools:
   search: true
   execute: true
   web: true
-  mcp__fetch: true
 ---
 
 # Feasibility Agent

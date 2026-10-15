@@ -1,7 +1,7 @@
 ---
 name: "QA Engineer"
 description: "Use when creating test plans, writing automated tests (unit, integration, e2e), performing test execution, reporting bugs, defining test strategies, checking test coverage, doing regression testing, or verifying acceptance criteria."
-tools: [read, search, edit, execute, web, mcp__playwright, mcp__gitlab]
+tools: [read, search, edit, execute, web, mcp__playwright__browser_navigate, mcp__playwright__browser_navigate_back, mcp__playwright__browser_snapshot, mcp__playwright__browser_find, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_click, mcp__playwright__browser_type, mcp__playwright__browser_fill_form, mcp__playwright__browser_select_option, mcp__playwright__browser_press_key, mcp__playwright__browser_hover, mcp__playwright__browser_handle_dialog, mcp__playwright__browser_wait_for, mcp__playwright__browser_console_messages, mcp__playwright__browser_network_requests, mcp__playwright__browser_resize, mcp__playwright__browser_tabs, mcp__playwright__browser_close, mcp__gitlab__*]
 ---
 
 # QA Engineer

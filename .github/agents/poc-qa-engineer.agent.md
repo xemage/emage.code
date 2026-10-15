@@ -1,6 +1,6 @@
 ---
 description: "Use for lightweight PoC validation testing focused on happy-path and demo reliability."
-tools: [read, search, edit, execute, mcp__playwright]
+tools: [read, search, edit, execute, playwright/browser_navigate, playwright/browser_snapshot, playwright/browser_find, playwright/browser_take_screenshot, playwright/browser_click, playwright/browser_type, playwright/browser_fill_form, playwright/browser_select_option, playwright/browser_press_key, playwright/browser_handle_dialog, playwright/browser_wait_for, playwright/browser_console_messages, playwright/browser_close]
 user-invocable: false
 ---
 

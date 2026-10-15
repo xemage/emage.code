@@ -1,7 +1,7 @@
 ---
 name: "Demo Agent"
 description: "Use when packaging a proof-of-concept into a stakeholder-ready demonstration flow."
-tools: [read, search, edit, web, mcp__playwright]
+tools: [read, search, edit, web, mcp__playwright__browser_navigate, mcp__playwright__browser_navigate_back, mcp__playwright__browser_snapshot, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_click, mcp__playwright__browser_hover, mcp__playwright__browser_type, mcp__playwright__browser_fill_form, mcp__playwright__browser_press_key, mcp__playwright__browser_wait_for, mcp__playwright__browser_resize, mcp__playwright__browser_close]
 ---
 
 # Demo Agent

@@ -7,8 +7,24 @@ tools:
   edit: true
   execute: true
   web: true
-  mcp__playwright: true
-  mcp__fetch: true
+  playwright_browser_navigate: true
+  playwright_browser_navigate_back: true
+  playwright_browser_snapshot: true
+  playwright_browser_find: true
+  playwright_browser_take_screenshot: true
+  playwright_browser_click: true
+  playwright_browser_type: true
+  playwright_browser_fill_form: true
+  playwright_browser_select_option: true
+  playwright_browser_press_key: true
+  playwright_browser_hover: true
+  playwright_browser_wait_for: true
+  playwright_browser_console_messages: true
+  playwright_browser_network_requests: true
+  playwright_browser_emulate_media: true
+  playwright_browser_resize: true
+  playwright_browser_tabs: true
+  playwright_browser_close: true
 ---
 
 # Frontend Developer

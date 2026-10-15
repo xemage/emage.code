@@ -6,7 +6,7 @@ tools:
   search: true
   edit: true
   execute: true
-  mcp__gitlab: true
+  gitlab_*: true
 ---
 
 # PoC DevOps Engineer

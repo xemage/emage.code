@@ -1,6 +1,6 @@
 ---
 description: "Use when packaging a proof-of-concept into a stakeholder-ready demonstration flow."
-tools: [read, search, edit, web, mcp__playwright]
+tools: [read, search, edit, web, playwright/browser_navigate, playwright/browser_navigate_back, playwright/browser_snapshot, playwright/browser_take_screenshot, playwright/browser_click, playwright/browser_hover, playwright/browser_type, playwright/browser_fill_form, playwright/browser_press_key, playwright/browser_wait_for, playwright/browser_resize, playwright/browser_close]
 user-invocable: false
 ---
 
