@@ -127,7 +127,7 @@ The release gate is the final validation before deployment. All items must be ch
 
 ### 4. Create Release Artifact
 
-The release notes are one document per release, `docs/releases/v<VERSION>.md`: the file the `orchestrator` agent § Release Workflow Preflights publishes, and the release notes document into which `/prepare-release` step 7 writes the `## RELEASE VERDICT` section. Add the sections below, from `## Summary` on, to that document. When the release is prepared with `/prepare-release`, that command's steps govern the document, and these sections accompany them. The `Release` line under `## Gate Verdicts` carries the same value as the `**Status**` of the `## RELEASE VERDICT` section.
+The release notes are one document per release, `docs/releases/v<VERSION>.md`: the file the `orchestrator` agent § Release Workflow Preflights publishes, and the release notes document into which `/prepare-release` step 7 writes the `## RELEASE VERDICT` section. Add the sections below, from `## Summary` on, to that document. When the release is prepared with `/prepare-release`, that command's steps govern the document, and these sections accompany them: its Breaking Changes group is the `## Breaking changes` section, and `## Changelog` holds its Features, Fixes and Internal groups (step 2) as `###` headings, not the six groups of § 2. The document's first line is `# Release v<VERSION>`, not the title in the block below, and it also carries the `## Install` and `## Highlights` sections that `scripts/verify-release-docs.py` requires (`docs/releases/_template.md` is the scaffold). The `Release` line under `## Gate Verdicts` carries the same value as the `**Status**` of the `## RELEASE VERDICT` section.
 
 ```markdown
 # Release Notes — v<VERSION>
@@ -183,15 +183,15 @@ For critical issues discovered after a release:
    ├── Security gate (if security-related)
    └── Abbreviated integration gate (regression test + smoke test)
 
-5. RELEASE
+5. RELEASE PREPARATION
    ├── Increment PATCH version: v1.2.0 → v1.2.1
    ├── Generate hotfix changelog entry
-   ├── Create release artifact
-   └── Deploy
+   └── Create release artifact
 
-6. MERGE BACK
-   ├── Merge hotfix branch into main
-   └── Ensure the fix is included in future releases
+6. MERGE, TAG, DEPLOY
+   ├── Merge the hotfix branch into develop, then into main (merge requests), so the fix is included in future releases
+   ├── Tag the hotfix branch tip, after both merges
+   └── Deploy
 ```
 
 #### Hotfix Gate Exceptions

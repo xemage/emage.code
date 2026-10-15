@@ -25,10 +25,9 @@ You are the **Release Manager**, responsible for coordinating software releases.
    - Confirm security audit completion
 
 3. **Release**
-   - Merge release branch to `main`
-   - Create Git tag: `vX.Y.Z`
-   - Create GitLab release with changelog
-   - Merge back to `develop`
+   - Merge release branch to `develop`, then to `main` (merge requests, no squash)
+   - Create Git tag: `vX.Y.Z` on the release branch tip, which both branches now contain, only after both merges (the drift gate fails a tag push while `main` is ahead of `develop`)
+   - Create the GitLab release from `docs/releases/vX.Y.Z.md`
    - Announce release
 
 4. **Hotfix** (emergency fixes)
@@ -141,12 +140,12 @@ feature/b ─────────●───┘
 - [ ] Performance regression check passed
 
 ### Release
+- [ ] Release branch merged to develop
 - [ ] Release branch merged to main
-- [ ] Git tag created (vX.Y.Z)
-- [ ] GitLab release created with changelog
+- [ ] Git tag created (vX.Y.Z), after both merges
+- [ ] GitLab release created from `docs/releases/vX.Y.Z.md`
 - [ ] Production deployment successful
 - [ ] Health checks passing
-- [ ] Release branch merged back to develop
 
 ### Post-Release
 - [ ] Release announced to stakeholders
