@@ -174,11 +174,24 @@ class McpPackagePinTests(unittest.TestCase):
             self.assertNotIn("fetch", sidecar["generatorOwnedKeys"], rel)
 
     def test_blocked_origins_expectation_is_complete(self):
-        self.assertEqual(BLOCKED_ORIGINS.count(";") + 1, 22)
-        self.assertIn("100.{64,65,", BLOCKED_ORIGINS)
-        self.assertIn(",126,127}.*", BLOCKED_ORIGINS)
-        self.assertIn("172.{16,17,", BLOCKED_ORIGINS)
-        self.assertIn(",30,31}.*", BLOCKED_ORIGINS)
+        # T656 (SEC-T655-10): compare the YAML-parsed shipped value with the independently built
+        # expectation, then check the two brace lists against the ranges they stand for. The
+        # previous version only counted separators in the expectation itself.
+        args = self.servers["playwright"]["args"]
+        self.assertEqual(args.count("--blocked-origins"), 1)
+        shipped = args[args.index("--blocked-origins") + 1]
+        self.assertEqual(shipped, BLOCKED_ORIGINS)
+        entries = shipped.split(";")
+        self.assertEqual(len(entries), 22)
+        self.assertEqual(len(set(entries)), 22, "no duplicate entry")
+        cgnat = next(e for e in entries if e.startswith("100.{"))
+        private = next(e for e in entries if e.startswith("172.{"))
+        self.assertEqual(sorted(int(n) for n in cgnat[5:cgnat.index("}")].split(",")), list(range(64, 128)))
+        self.assertEqual(sorted(int(n) for n in private[5:private.index("}")].split(",")), list(range(16, 32)))
+        for required in ("localhost", "localhost:*", "localhost.", "localhost.:*", "*.localhost",
+                         "*.localhost:*", "127.*", "0.*", "10.*", "169.254.*", "192.168.*", "[::]",
+                         "[::1]", "[::ffff:*", "[fc*", "[fd*", "[fe80:*", "*@*"):
+            self.assertIn(required, entries)
 
     def test_playwright_source_entry_has_the_hardened_args(self):
         pw = self.servers["playwright"]
@@ -231,6 +244,117 @@ class McpPackagePinTests(unittest.TestCase):
         self.assertNotIn("fetch", merged)
         self.assertIn("mine", merged)
         self.assertEqual(merged["playwright"]["args"], PLAYWRIGHT_ARGS)
+
+
+AGENTS_DIR = REPO_ROOT / "implementation" / "knowledge" / "agents"
+# The four agents that hold the Playwright server (T655 review, SEC-T655-01).
+PLAYWRIGHT_AGENTS = {"qa-engineer", "frontend-developer", "poc-qa-engineer", "demo-agent"}
+# The agents that held the removed `fetch` server (T654 evaluation §1.1 lists ten; frontend-developer
+# is one of them and also one of the four above, by its own earlier grant). The other nine must
+# never hold a Playwright tool: it would hand them `browser_run_code_unsafe`.
+FORMER_FETCH_AGENTS_WITHOUT_PLAYWRIGHT = {
+    "solution-architect", "devops-engineer", "tech-lead", "security-engineer", "feasibility-agent",
+    "technology-scout", "poc-orchestrator", "integration-agent", "backend-developer",
+}
+
+
+def _agent_tools(slug: str) -> list[str]:
+    text = (AGENTS_DIR / f"{slug}.md").read_text(encoding="utf-8")
+    front = text.split("---", 2)[1]
+    return list(yaml.safe_load(front).get("tools") or [])
+
+
+class PlaywrightGrantSetTests(unittest.TestCase):
+    """T656 (SEC-T655-10): pin who holds a Playwright tool.
+
+    T656 could not narrow the four holders to named `mcp__playwright__<tool>` entries: the
+    generated names are not honoured by every platform (Copilot expects `server/tool`, Opencode
+    `server_tool`, Gemini drops the tools line, Cline has no agent files). So this pins the state
+    that exists: exactly four agents list the Playwright server, no other agent lists any
+    Playwright tool, and nobody lists the unsafe tool. A later task that narrows the grants edits
+    PLAYWRIGHT_AGENTS' expectation below together with the agent files.
+    """
+
+    def test_every_expected_agent_file_exists(self):
+        for slug in PLAYWRIGHT_AGENTS | FORMER_FETCH_AGENTS_WITHOUT_PLAYWRIGHT:
+            self.assertTrue((AGENTS_DIR / f"{slug}.md").is_file(), slug)
+
+    def test_exactly_the_four_agents_hold_a_playwright_grant(self):
+        holders = {
+            path.stem for path in AGENTS_DIR.glob("*.md")
+            if any(t.startswith("mcp__playwright") for t in _agent_tools(path.stem))
+        }
+        self.assertEqual(holders, PLAYWRIGHT_AGENTS)
+
+    def test_no_former_fetch_agent_holds_any_playwright_tool(self):
+        for slug in sorted(FORMER_FETCH_AGENTS_WITHOUT_PLAYWRIGHT):
+            tools = _agent_tools(slug)
+            self.assertEqual([t for t in tools if "playwright" in t], [], slug)
+            self.assertFalse([t for t in tools if t.startswith("mcp__fetch")], slug)
+
+    def test_nobody_lists_the_unsafe_tool_or_a_wildcard_playwright_grant(self):
+        for path in AGENTS_DIR.glob("*.md"):
+            for tool in _agent_tools(path.stem):
+                self.assertNotIn("browser_run_code_unsafe", tool, path.stem)
+                if tool.startswith("mcp__playwright"):
+                    self.assertRegex(tool, r"^mcp__playwright(__[a-z_]+)?$", path.stem)
+
+
+class MergeScriptPruneTests(unittest.TestCase):
+    """T656 (SEC-T655-10, SEC-T655-02, SEC-T655-09): merge-mcp-json.py behaviour that the docs state."""
+
+    def _merge(self, dest_servers: dict, *extra: str, with_sidecars: bool = False):
+        gen = REPO_ROOT / "implementation" / ".mcp.json"
+        with tempfile.TemporaryDirectory() as tmp:
+            dest = Path(tmp) / "mcp.json"
+            dest.write_text(json.dumps({"mcpServers": dest_servers}), encoding="utf-8")
+            cmd = [sys.executable, str(REPO_ROOT / "scripts" / "merge-mcp-json.py"),
+                   "--source", str(gen), "--dest", str(dest)]
+            if with_sidecars:
+                old = Path(tmp) / "mcp.json.provenance.json"
+                old.write_text(json.dumps({"schemaVersion": 1, "generatorOwnedKeys": ["playwright", "gitlab"]}), encoding="utf-8")
+                cmd += ["--old-sidecar", str(old),
+                        "--new-sidecar", str(REPO_ROOT / "implementation" / ".mcp.json.provenance.json")]
+            result = subprocess.run(cmd + list(extra), capture_output=True, text=True, check=False)
+            return result, json.loads(dest.read_text(encoding="utf-8"))["mcpServers"]
+
+    def test_force_prune_keys_fetch_removes_a_leftover_fetch_entry(self):
+        fetch = {"command": "npx", "args": ["-y", "mcp-fetch-server@1.1.2"]}
+        result, merged = self._merge({"fetch": fetch, "mine": {"command": "x", "args": []}},
+                                     "--force-prune-keys", "fetch")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn("fetch", merged)
+        self.assertIn("mine", merged)
+        self.assertEqual(merged["playwright"]["args"], PLAYWRIGHT_ARGS)
+
+    def test_without_force_prune_and_without_sidecar_a_leftover_fetch_entry_stays(self):
+        fetch = {"command": "npx", "args": ["-y", "mcp-fetch-server@1.1.2"]}
+        result, merged = self._merge({"fetch": fetch})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(merged["fetch"], fetch)
+
+    def test_combined_force_prune_refuses_when_one_name_is_already_gone_and_writes_nothing(self):
+        fetch = {"command": "npx", "args": ["-y", "mcp-fetch-server@1.1.2"]}
+        result, merged = self._merge({"fetch": fetch}, "--force-prune-keys", "docker,postgresql,fetch")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("docker", result.stderr)
+        self.assertEqual(merged, {"fetch": fetch}, "a refused run must not write the destination")
+
+    def test_per_key_form_works_when_the_other_names_are_already_gone(self):
+        fetch = {"command": "npx", "args": ["-y", "mcp-fetch-server@1.1.2"]}
+        result, merged = self._merge({"fetch": fetch}, "--force-prune-keys", "fetch")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn("fetch", merged)
+
+    def test_user_owned_playwright_local_entry_survives_the_merge(self):
+        local = {"command": "npx", "args": ["-y", "@playwright/mcp@0.0.83", "--headless"]}
+        old_fetch = {"command": "npx", "args": ["-y", "mcp-fetch-server@1.1.2"]}
+        for with_sidecars in (False, True):
+            result, merged = self._merge({"playwright-local": local, "fetch": old_fetch},
+                                         with_sidecars=with_sidecars)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(merged["playwright-local"], local, with_sidecars)
+            self.assertEqual(merged["playwright"]["args"], PLAYWRIGHT_ARGS, with_sidecars)
 
 
 if __name__ == "__main__":

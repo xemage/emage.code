@@ -238,23 +238,40 @@ function parseServersYaml(raw) {
 // T655: an item may itself contain commas, semicolons, `*`, `{}` or `[]` (the Playwright
 // `--blocked-origins` value is one double-quoted argument with brace lists). Characters
 // inside quotes are kept verbatim; nothing is expanded or escaped here.
+// T656 (SEC-T655-04): this reader does not implement YAML escapes, so it refuses what it cannot
+// read faithfully instead of silently diverging from YAML: a backslash inside a quoted item, a
+// quote that is never closed, and text between a closing quote and the next comma. A quote opens
+// a quoted item only at the start of an item (an apostrophe inside a plain item is plain text).
 function splitInlineArray(inner) {
   const parts = [];
   let cur = '';
   let quote = null;
+  let closed = false;
   for (const ch of inner) {
     if (quote) {
-      if (ch === quote) quote = null;
-      cur += ch;
-    } else if (ch === '"' || ch === "'") {
-      quote = ch;
+      if (ch === '\\') {
+        throw new Error(`servers.yaml: a backslash inside a quoted array item is not supported: ${inner.slice(0, 60)}`);
+      }
+      if (ch === quote) {
+        quote = null;
+        closed = true;
+      }
       cur += ch;
     } else if (ch === ',') {
       parts.push(cur);
       cur = '';
+      closed = false;
+    } else if (closed && ch.trim() !== '') {
+      throw new Error(`servers.yaml: text after the closing quote of an array item: ${inner.slice(0, 60)}`);
+    } else if ((ch === '"' || ch === "'") && cur.trim() === '') {
+      quote = ch;
+      cur += ch;
     } else {
       cur += ch;
     }
+  }
+  if (quote) {
+    throw new Error(`servers.yaml: unclosed quote in an array item: ${inner.slice(0, 60)}`);
   }
   parts.push(cur);
   return parts;
