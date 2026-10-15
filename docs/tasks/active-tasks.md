@@ -2,8 +2,18 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T643 | Root refresh 18 (clear the T627 root drift) | orchestrator | pending | P1 | T641 | 2026-10-15 |
+| T644 | Release branch, version markers and stale claims | release-manager | pending | P1 | T643 | 2026-10-15 |
+| T645 | Write docs/releases/v8.0.0.md | release-manager | pending | P1 | T644 | 2026-10-15 |
+| T646 | Dependency audit of the pinned MCP set and mcp==2.2.0 | security-engineer | pending | P1 | T641 | 2026-10-15 |
+| T647 | Rehearse the release job's git commands in the CI image | devops-engineer | pending | P1 | T641 | 2026-10-15 |
+| T648 | QA release gate | qa-engineer | pending | P1 | T644, T645, T647 | 2026-10-15 |
+| T649 | Tech Lead review by area | tech-lead | pending | P1 | T645 | 2026-10-15 |
+| T650 | Release-level security re-check | security-engineer | pending | P1 | T646 | 2026-10-15 |
+| T651 | Release manager verdict | release-manager | pending | P1 | T648, T649, T650 | 2026-10-15 |
+| T652 | Publish v8.0.0 (release MRs, main merge, tag) | orchestrator | pending | P0 | T651 | 2026-10-15 |
 
-> **Active rows (`plan-121`, release v8.0.0 wave 2; approved by the user on 2026-10-14).** T624 (apply the T621 rulings) and T625 (Tech Lead `/code-review` of the T619 MR) are done. Open: T626 (QA check of the T625 artifact), T627 (`/skillify` with the user), T628 (golden realignment under grant G-1), T629 (baseline v21), T630 (promote `tech-lead`), T631 (adopter docs), T632 (release-document ruling), T633 (release-level security audit), T634 (ADR-008 note), T635 (release-job conditions). Baseline v20; root drift 33 (declared by T624, waits for one user-approved root refresh). Item 12 of G-1 and T630 wait for the held-out read (the user adds a Bash permission rule).
+> **Active rows (`plan-122`, release v8.0.0 wave 3; approved by the user on 2026-10-15).** T643 (root refresh 18, needs the user's approval), T644 (release branch and version markers), T645 (release document), T646 (dependency audit), T647 (CI-image rehearsal, no publish), T648 (QA gate), T649 (Tech Lead review by area), T650 (security re-check), T651 (release manager verdict), T652 (publish; each outward step needs the user's approval). Baseline v21; root drift 20 paths (declared by T627, waits for T643).
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
