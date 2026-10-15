@@ -2,13 +2,13 @@
 
 **ID:** T653
 **Owner:** devops-engineer
-**Status:** pending
+**Status:** done
 **Priority:** P0
 **Tier:** standard
 **Depends on:** T646
 **Affects:** —
 **Created:** 2026-10-15
-**Completed:** —
+**Completed:** 2026-10-15
 **Based on:**
 - `docs/artifacts/security-review-t646-dependency-audit-v1.md` (SEC-T646-01, option (d)), `docs/plans/plan-122-release-v8-wave-3.md` (T646, T650)
 - The user's decision of 2026-10-15 (AskUserQuestion, verbatim option label): "Test first, then decide (Recommended)"
