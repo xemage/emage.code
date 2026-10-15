@@ -404,6 +404,136 @@ class PlaywrightGrantSetTests(unittest.TestCase):
             self.assertNotIn('"permission"', text, rel)
 
 
+# T660 (SEC-T657-02): who holds which GitLab tool. Five agents keep the whole `gitlab` server; qa-engineer
+# and scrum-master hold the named tools below, taken from the 275 tools that `@zereight/mcp-gitlab@2.2.5`
+# registers (`build/tools/registry.js` of the npm tarball; docs/artifacts/security-review-t657-tool-name-mapping-v1.md).
+# `discover_tools` is in both: the server's default `core` toolset omits milestones, label writes, issue links
+# and pipelines, and only `discover_tools` (or GITLAB_TOOLSETS) exposes them. It changes the session's tool
+# list and no GitLab data.
+GITLAB_WHOLE_SERVER_HOLDERS = {
+    "devops-engineer", "orchestrator", "release-manager", "poc-devops-engineer", "poc-orchestrator",
+}
+EXPECTED_GITLAB_GRANTS = {
+    # sprint planning and board sync: issues, notes, links, labels, milestones, read-only MR lookups
+    "scrum-master": {
+        "create_issue", "update_issue", "list_issues", "get_issue", "list_issue_discussions", "create_issue_note",
+        "create_issue_link", "list_issue_links", "get_issue_link",
+        "list_labels", "get_label", "create_label", "update_label",
+        "list_milestones", "get_milestone", "create_milestone", "edit_milestone", "get_milestone_issue",
+        "get_milestone_merge_requests", "get_milestone_burndown_events",
+        "list_merge_requests", "get_merge_request", "list_project_members", "discover_tools"},
+    # bug reports and test reports: create issues and notes, read issues, MRs, pipelines and jobs
+    "qa-engineer": {
+        "create_issue", "create_issue_note", "get_issue", "list_issues", "list_issue_discussions", "list_labels",
+        "list_merge_requests", "get_merge_request", "list_merge_request_changed_files", "get_merge_request_file_diff",
+        "mr_discussions", "list_merge_request_pipelines",
+        "list_pipelines", "get_pipeline", "list_pipeline_jobs", "get_pipeline_job", "get_pipeline_job_output",
+        "get_pipeline_test_report", "get_pipeline_test_report_summary", "discover_tools"},
+}
+# Name patterns the two roles must never hold: merge, approval, push and file writes, delete/erase/purge,
+# branch/tag/release/repository/group creation, protection changes, pipeline trigger/retry/cancel/play/create,
+# variables, webhooks, deployments, raw API and GraphQL.
+GITLAB_FORBIDDEN_NAME = re.compile(
+    r"merge_merge_request|approve|push_files|create_or_update_file|delete|erase|purge|create_branch|create_tag|"
+    r"create_release|create_repository|create_group$|fork_repository|protect|update_default_branch|update_project$|"
+    r"trigger|retry|cancel|play_|create_pipeline|update_pipeline|variable|webhook|deployment|environment|"
+    r"gitlab_api_request|execute_graphql|upload|download|create_commit_status|create_snippet|wiki|promote|"
+    r"create_note$|move_work_item|dismiss|confirm|resolve")
+GITLAB_WHOLE_SERVER_FORMS = ("mcp__gitlab", "mcp__gitlab__*", "gitlab/*", "gitlab_*")
+
+
+def _gitlab_names(slug: str) -> set[str]:
+    """Source form: `mcp__gitlab` (whole server, returned as `*`) or `mcp__gitlab__<tool>`."""
+    names = set()
+    for token in _agent_tools(slug):
+        if token == "mcp__gitlab":
+            names.add("*")
+        elif token.startswith("mcp__gitlab__"):
+            names.add(token[len("mcp__gitlab__"):])
+    return names
+
+
+class GitLabGrantSetTests(unittest.TestCase):
+    """T660 (SEC-T657-02): exactly seven roles hold GitLab access; two of them only named, non-destructive tools."""
+
+    def test_exactly_the_seven_roles_hold_gitlab_access(self):
+        holders = {p.stem for p in AGENTS_DIR.glob("*.md") if _gitlab_names(p.stem)}
+        self.assertEqual(holders, GITLAB_WHOLE_SERVER_HOLDERS | set(EXPECTED_GITLAB_GRANTS))
+        self.assertEqual(len(holders), 7)
+
+    def test_the_five_holders_keep_exactly_the_whole_server(self):
+        for slug in sorted(GITLAB_WHOLE_SERVER_HOLDERS):
+            with self.subTest(agent=slug):
+                self.assertEqual(_gitlab_names(slug), {"*"})
+                self.assertEqual(_agent_tools(slug).count("mcp__gitlab"), 1)
+
+    def test_qa_engineer_and_scrum_master_hold_exactly_their_named_tools(self):
+        for slug, expected in EXPECTED_GITLAB_GRANTS.items():
+            with self.subTest(agent=slug):
+                tools = _agent_tools(slug)
+                self.assertEqual(len(tools), len(set(tools)), "duplicate tool entry")
+                self.assertNotIn("*", _gitlab_names(slug))
+                self.assertNotIn("mcp__gitlab", tools)
+                self.assertNotIn("mcp__gitlab__*", tools)
+                self.assertEqual(_gitlab_names(slug), expected)
+                self.assertGreaterEqual(len(expected), 15)
+
+    def test_named_tools_are_not_destructive_and_writes_are_pinned(self):
+        for slug, expected in EXPECTED_GITLAB_GRANTS.items():
+            with self.subTest(agent=slug):
+                for name in sorted(expected):
+                    self.assertRegex(name, r"^[a-z_]+$")
+                    self.assertIsNone(GITLAB_FORBIDDEN_NAME.search(name), name)
+        write_prefixes = ("create_", "update_", "edit_")
+        qa_writes = {n for n in EXPECTED_GITLAB_GRANTS["qa-engineer"] if n.startswith(write_prefixes)}
+        self.assertEqual(qa_writes, {"create_issue", "create_issue_note"})
+        sm_writes = {n for n in EXPECTED_GITLAB_GRANTS["scrum-master"] if n.startswith(write_prefixes)}
+        self.assertEqual(sm_writes, {
+            "create_issue", "update_issue", "create_issue_note", "create_issue_link", "create_label",
+            "update_label", "create_milestone", "edit_milestone"})
+
+    def test_forbidden_pattern_does_catch_the_dangerous_names(self):
+        for name in ("merge_merge_request", "push_files", "delete_branch", "delete_issue", "create_branch",
+                     "create_tag", "create_release", "gitlab_api_request", "execute_graphql", "trigger_pipeline",
+                     "retry_pipeline", "cancel_pipeline_job", "play_pipeline_job", "create_or_update_file",
+                     "approve_merge_request", "create_pipeline", "erase_pipeline_job", "download_job_artifacts"):
+            self.assertIsNotNone(GITLAB_FORBIDDEN_NAME.search(name), name)
+
+    def test_every_projection_renders_the_same_sets(self):
+        """Claude Code and Cursor keep the source form; Pi, Copilot and Opencode render it (T657 mapping)."""
+        root = REPO_ROOT / "implementation"
+        seven = GITLAB_WHOLE_SERVER_HOLDERS | set(EXPECTED_GITLAB_GRANTS)
+        # platform -> (agent file suffix, prefix of a named tool, form of the whole server)
+        platforms = {
+            ".claude": (".md", "mcp__gitlab__", "mcp__gitlab"),
+            ".cursor": (".mdc", "mcp__gitlab__", "mcp__gitlab"),
+            ".pi": (".md", "mcp__gitlab__", "mcp__gitlab__*"),
+            ".github": (".agent.md", "gitlab/", "gitlab/*"),
+            ".opencode": (".md", "gitlab_", "gitlab_*"),
+        }
+        for platform, (suffix, prefix, whole_form) in platforms.items():
+            files = sorted((root / platform / "agents").glob("*" + suffix))
+            self.assertGreaterEqual(len(files), 20, platform)
+            for path in files:
+                slug = path.name[: -len(suffix)]
+                front = path.read_text(encoding="utf-8").split("---", 2)[1]
+                tokens = set(re.findall(r"[A-Za-z0-9_./*-]+", "\n".join(
+                    l for l in front.splitlines() if not l.startswith(("name:", "description:")))))
+                whole = {t for t in tokens if t in GITLAB_WHOLE_SERVER_FORMS}
+                named = {t[len(prefix):] for t in tokens if t.startswith(prefix) and t not in GITLAB_WHOLE_SERVER_FORMS}
+                with self.subTest(platform=platform, agent=slug):
+                    if slug in GITLAB_WHOLE_SERVER_HOLDERS:
+                        self.assertEqual(whole, {whole_form})
+                        self.assertEqual(named, set())
+                    elif slug in EXPECTED_GITLAB_GRANTS:
+                        self.assertEqual(whole, set())
+                        self.assertEqual(named, EXPECTED_GITLAB_GRANTS[slug])
+                    else:
+                        self.assertEqual(whole, set())
+                        self.assertEqual(named, set())
+            self.assertEqual({p.name[: -len(suffix)] for p in files} & seven, seven, platform)
+
+
 class MergeScriptPruneTests(unittest.TestCase):
     """T656 (SEC-T655-10, SEC-T655-02, SEC-T655-09): merge-mcp-json.py behaviour that the docs state."""
 

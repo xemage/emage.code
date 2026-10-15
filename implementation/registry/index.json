@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-15T16:17:03+02:00",
+  "generatedAt": "2026-10-15T19:50:21+02:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -493,7 +493,7 @@
       "category": "agent",
       "name": "QA Engineer",
       "path": "agents/qa-engineer.md",
-      "checksum": "658d81717c738c3ad75310767910acbca69d0274a3b1ff95e39053241ef4324a",
+      "checksum": "e7fe824d5a50a04c2cca40d61868b78eedd040f0d8b4adbc2d50514da7a8cd10",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -577,7 +577,7 @@
       "category": "agent",
       "name": "Scrum Master",
       "path": "agents/scrum-master.md",
-      "checksum": "acb2c365da3601c8152d49b0c46ca7b71beb16199885bebef785af49608512af",
+      "checksum": "14def9e7b1555c2d93c9a0008e37db6b4ac4b62e6c6b836c634bb2557c2913d4",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
