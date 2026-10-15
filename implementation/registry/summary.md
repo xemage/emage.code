@@ -36,7 +36,7 @@ Generated from: implementation/knowledge
 | scrum-master | agent | stable | agents/scrum-master.md |
 | security-engineer | agent | stable | agents/security-engineer.md |
 | solution-architect | agent | stable | agents/solution-architect.md |
-| tech-lead | agent | experimental | agents/tech-lead.md |
+| tech-lead | agent | stable | agents/tech-lead.md |
 | technical-debt-narrator | agent | stable | agents/technical-debt-narrator.md |
 | technical-writer | agent | stable | agents/technical-writer.md |
 | technology-scout | agent | stable | agents/technology-scout.md |

@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-14T22:24:41+00:00",
+  "generatedAt": "2026-10-15T06:10:58+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -661,8 +661,8 @@
       "category": "agent",
       "name": "Tech Lead",
       "path": "agents/tech-lead.md",
-      "checksum": "b41383baa8057414d05c9e8f2377a464d02f26fa3feee3f9186e4965be3cab65",
-      "maturity": "experimental",
+      "checksum": "fdef8a834646b9465ea4ce37759f0153c2161d6635ca776ae4aecbad0983005f",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
