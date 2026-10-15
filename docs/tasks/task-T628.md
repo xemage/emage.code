@@ -2,13 +2,14 @@
 
 **ID:** T628
 **Owner:** qa-engineer
-**Status:** pending
+**Status:** done
+**Status note (orchestrator, 2026-10-15):** Item 12 is allowed. The orchestrator completed the read/audit step S-HO-1 on 2026-10-15 (identified by predicate only: the single held-out `/code-review` case with `status: known_failing` and `known_failing_category: tracked_defect`; no id recorded). Result: a review that follows the public `/code-review` text can satisfy the case's unchanged `check()` (the T625 review `docs/artifacts/code-review-t619-v2.md` has all eight verdict fields and an allowed status, checked on a scratch copy). The user decided on 2026-10-14, Q3, "Yes, that one case only (Recommended)", and confirmed on 2026-10-15 "Proceed with Option 1". The user's Bash permission rule is in place in the local, untracked `.claude/settings.local.json` (read-only `cat` of `case.yaml`, `brief.md`, `expect.py` and `grep` on `case.yaml` under `tests/golden/held-out/*/`). If a further command on the held-out directory (copy, delete, write) is denied, stop and report it; do not work around the denial. Item 11 stays excluded (T627 is not merged).
 **Priority:** P1
 **Tier:** judgment
 **Depends on:** T625, T626
 **Affects:** —
 **Created:** 2026-10-14
-**Completed:** —
+**Completed:** 2026-10-15
 **Based on:**
 - `docs/plans/plan-121-release-v8-wave-2.md` (Task Decomposition item for T628)
 - `docs/artifacts/promotion-and-golden-realignment-plan-v1.md` §4 (classification), §6.3 (grant G-1: the 12 items, the not-authorized list and the controls), §8 (scorecard expectations), §9 (held-out hygiene); this brief carries the grant text by reference to that table

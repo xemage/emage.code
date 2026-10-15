@@ -62,8 +62,8 @@ not satisfied by a fenced block with nodes and no dependencies, which is a list 
   artifact. The *fixture* uses all four non-terminal states, including `in_review`, so the spelling
   rule is genuinely exercised rather than nominally present — but that is a property of the fixture,
   not a requirement of the check.
-- **Step 18's artifact-versioning format (`<artifact-name>-v<major>.<minor>.md`) is deliberately
-  not touched**, and neither is step 14's `[CHECKPOINT]` line. Both are already the subject of
+- **Step 18's artifact-versioning format (`<artifact-name>-v<N>.md`, per `AGENTS.md` § Artifact
+  Versioning) is deliberately not touched**, and neither is step 14's `[CHECKPOINT]` line. Both are already the subject of
   sibling cases for other commands (`new-feature-checkpoint-line-compliant` covers the checkpoint
   contract), and duplicating an assertion across two cases means a single contract change flips two
   cases for one reason, which makes the board harder to read rather than better covered.

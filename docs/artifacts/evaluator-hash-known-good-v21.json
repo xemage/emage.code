@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "algorithm": "sha256",
+  "digests": {
+    "tests_golden": "7b58d5b181b62291c5f5d776b941f7e44c50f3520aac582f4f4428e9895bfd22",
+    "scripts_scorecard": "45346c178c7f6d92101130d898f55dfaad908aa7e5ae669ce1faac99a51192d6"
+  },
+  "computed_from_commit": "cc0b411db557a9bfb68181e5d3c2e35625655747",
+  "computed_at": "2026-10-15T05:50:29Z",
+  "protected_paths": {
+    "tests_golden": "tests/golden",
+    "scripts_scorecard": "scripts/scorecard.py"
+  },
+  "supersedes": "evaluator-hash-known-good-v20.json",
+  "reason": "T628 (plan-121) applied grant G-1 of docs/artifacts/promotion-and-golden-realignment-plan-v1.md (protected-paths-v1.md \u00a75), items 1-10 and 12; item 11 is deferred (T627 not merged). The user authorized baseline v21 on 2026-10-09 (\"4. approving baseline v21 - plan re-evaluation and steps to bring them out of experimental\") and approved G-1 and baseline v21 on 2026-10-14 (\"Approve G-1 and baseline v21 (Recommended)\"); on 2026-10-14 the user allowed touching the one held-out /code-review tracked_defect case (\"Yes, that one case only (Recommended)\") and on 2026-10-15 confirmed \"Proceed with Option 1\". Protected golden files changed: new-project-plan-doc-and-lifecycle-states/brief.md (one bullet, versioning wording); prepare-release-real-verdict-missing (case.yaml reason text, brief.md, expect.py re-targeted from fixture/docs/checkpoints to fixture/docs/releases with only the docstring and three path lines changed, fixture swapped from a release checkpoint to a byte-identical copy of docs/releases/v7.0.1.md); plan-real-doc-header-drift (case.yaml status to expected_pass, brief.md, fixture swapped for a byte-identical copy of docs/plans/plan-121-release-v8-wave-2.md, expect.py unchanged); and the held-out /code-review tracked_defect case (case.yaml status flip to expected_pass, brief.md history, fixture swapped for a byte-identical copy of docs/artifacts/code-review-t619-v2.md, expect.py unchanged, identified by predicate only). Case-result transitions: two cases False to True (plan-real-doc-header-drift and the held-out case); prepare-release-real-verdict-missing stays False (known_failing / tracked_defect). Scorecard 34 cases: 26 pass becomes 28 pass, 0 regressions. scripts_scorecard is unchanged and byte-identical to v20 and to every version back to v5. Verification: the orchestrator confirmed the diff touches only the authorized files, that the fixtures are cmp-identical to their sources and that no expect.py other than the re-targeted one changed; the full suite showed exactly the two evaluator-hash failures; tests_golden was computed through evaluator_hash.py and independently by a separate script in a second fresh worktree at commit cc0b411 (equal); held-out isolation passes. The implementing agent did not refresh the baseline.",
+  "update_policy": "Manual only, never automatic. Any future legitimate update goes through the exception path in docs/artifacts/protected-paths-v1.md \u00a75 and produces evaluator-hash-known-good-v22.json. This file (v21) is never edited in place, and v1 through v20 are kept unmodified as the historical record. See docs/artifacts/evaluator-hash-check-v1.md for the full policy."
+}
