@@ -12,6 +12,7 @@
   "frontmatter": {
     "agents": {
       "tools": "array",
+      "mcpToolNames": "pi",
       "keepKeys": ["name", "description", "tools", "agents"]
     },
     "commands": {

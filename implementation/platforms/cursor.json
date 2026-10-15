@@ -12,6 +12,7 @@
   "frontmatter": {
     "agents": {
       "tools": "array",
+      "mcpToolNames": "verbatim",
       "keepKeys": ["name", "description", "tools", "agents"]
     },
     "commands": {

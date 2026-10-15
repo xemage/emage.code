@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-15T15:13:16+02:00",
+  "generatedAt": "2026-10-15T15:30:54+02:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -129,7 +129,7 @@
       "category": "agent",
       "name": "Demo Agent",
       "path": "agents/demo-agent.md",
-      "checksum": "24ca67facb72e0a6b76f3cf7cf3405e6b1f8826eafb1658d873ba108714e5378",
+      "checksum": "502ab3393069a0e6f197f514c3a0a3931de3ae740917852734269a724f111a36",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -241,7 +241,7 @@
       "category": "agent",
       "name": "Frontend Developer",
       "path": "agents/frontend-developer.md",
-      "checksum": "304393c166087e6871e02fbdbdd19a20e35f513954b26d0e42db1ad9d37aeb9d",
+      "checksum": "3be1ec42a7cdd02e59796f6f9d37588ed91e90229d33d4d24861bc477145ad19",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -381,7 +381,7 @@
       "category": "agent",
       "name": "PoC QA Engineer",
       "path": "agents/poc-qa-engineer.md",
-      "checksum": "20cd6bc85236a849207ea5b95f5f0c1dcd7611339777a330e6882f2170b96950",
+      "checksum": "68f10b2b952082febc3b149784c28636c0c17e4323011e7927256c3f5f9b8e06",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -493,7 +493,7 @@
       "category": "agent",
       "name": "QA Engineer",
       "path": "agents/qa-engineer.md",
-      "checksum": "5d2717b53a16148c5752d354b1ca28095e82177430bab065f2314d003f636d37",
+      "checksum": "658d81717c738c3ad75310767910acbca69d0274a3b1ff95e39053241ef4324a",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [

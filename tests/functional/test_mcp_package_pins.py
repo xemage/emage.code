@@ -264,15 +264,55 @@ def _agent_tools(slug: str) -> list[str]:
     return list(yaml.safe_load(front).get("tools") or [])
 
 
-class PlaywrightGrantSetTests(unittest.TestCase):
-    """T656 (SEC-T655-10): pin who holds a Playwright tool.
+# T657 (SEC-T655-01): the named, non-"unsafe" Playwright tools each of the four agents holds. The
+# agent bodies name no Playwright tool, so each set follows the role: E2E and acceptance checks
+# (qa-engineer), responsive and accessibility checks (frontend-developer), happy-path smoke tests
+# (poc-qa-engineer), staged demo flows (demo-agent). A tool added here must be added in the agent
+# source in the same change; `browser_run_code_unsafe` (host code execution), `browser_evaluate`,
+# `browser_file_upload`, `browser_drag`, `browser_drop` and `browser_network_request` (full
+# headers and bodies) are deliberately outside every set.
+_COMMON_READ = {"browser_navigate", "browser_snapshot", "browser_take_screenshot", "browser_wait_for", "browser_close"}
+_INTERACT = {"browser_click", "browser_type", "browser_fill_form", "browser_press_key"}
+EXPECTED_PLAYWRIGHT_GRANTS = {
+    "qa-engineer": _COMMON_READ | _INTERACT | {
+        "browser_navigate_back", "browser_find", "browser_select_option", "browser_hover", "browser_handle_dialog",
+        "browser_console_messages", "browser_network_requests", "browser_resize", "browser_tabs"},
+    "frontend-developer": _COMMON_READ | _INTERACT | {
+        "browser_navigate_back", "browser_find", "browser_select_option", "browser_hover",
+        "browser_console_messages", "browser_network_requests", "browser_emulate_media", "browser_resize",
+        "browser_tabs"},
+    "poc-qa-engineer": _COMMON_READ | _INTERACT | {
+        "browser_find", "browser_select_option", "browser_handle_dialog", "browser_console_messages"},
+    "demo-agent": _COMMON_READ | _INTERACT | {"browser_navigate_back", "browser_hover", "browser_resize"},
+}
+# The 25 tools `@playwright/mcp@0.0.83` registers by default (no --caps), read from a live
+# `tools/list` and from the README at tag v0.0.83 (docs/artifacts/mcp-tool-name-mapping-v1.md).
+PLAYWRIGHT_0_0_83_DEFAULT_TOOLS = {
+    "browser_click", "browser_close", "browser_console_messages", "browser_drag", "browser_drop",
+    "browser_emulate_media", "browser_evaluate", "browser_file_upload", "browser_fill_form", "browser_find",
+    "browser_handle_dialog", "browser_hover", "browser_navigate", "browser_navigate_back",
+    "browser_network_request", "browser_network_requests", "browser_press_key", "browser_resize",
+    "browser_run_code_unsafe", "browser_select_option", "browser_snapshot", "browser_tabs",
+    "browser_take_screenshot", "browser_type", "browser_wait_for",
+}
+PLAYWRIGHT_SERVER_FORMS = ("mcp__playwright", "mcp__playwright__*", "playwright/*", "playwright_*")
+PLAYWRIGHT_EXCLUDED = {
+    "browser_run_code_unsafe", "browser_evaluate", "browser_file_upload", "browser_drag", "browser_drop",
+    "browser_network_request",
+}
 
-    T656 could not narrow the four holders to named `mcp__playwright__<tool>` entries: the
-    generated names are not honoured by every platform (Copilot expects `server/tool`, Opencode
-    `server_tool`, Gemini drops the tools line, Cline has no agent files). So this pins the state
-    that exists: exactly four agents list the Playwright server, no other agent lists any
-    Playwright tool, and nobody lists the unsafe tool. A later task that narrows the grants edits
-    PLAYWRIGHT_AGENTS' expectation below together with the agent files.
+
+def _playwright_grants(slug: str) -> set[str]:
+    prefix = "mcp__playwright__"
+    return {t[len(prefix):] for t in _agent_tools(slug) if t.startswith(prefix)}
+
+
+class PlaywrightGrantSetTests(unittest.TestCase):
+    """T656/T657 (SEC-T655-01, SEC-T655-10): pin who holds which Playwright tool.
+
+    The source form stays `mcp__playwright__<tool>`; sync.mjs renders it per platform (see
+    test_mcp_tool_name_mapping.py). Exactly four agents hold named tools, nobody holds the whole
+    server, and nobody holds an excluded tool, in the sources and in every generated projection.
     """
 
     def test_every_expected_agent_file_exists(self):
@@ -285,6 +325,7 @@ class PlaywrightGrantSetTests(unittest.TestCase):
             if any(t.startswith("mcp__playwright") for t in _agent_tools(path.stem))
         }
         self.assertEqual(holders, PLAYWRIGHT_AGENTS)
+        self.assertEqual(set(EXPECTED_PLAYWRIGHT_GRANTS), PLAYWRIGHT_AGENTS)
 
     def test_no_former_fetch_agent_holds_any_playwright_tool(self):
         for slug in sorted(FORMER_FETCH_AGENTS_WITHOUT_PLAYWRIGHT):
@@ -292,12 +333,48 @@ class PlaywrightGrantSetTests(unittest.TestCase):
             self.assertEqual([t for t in tools if "playwright" in t], [], slug)
             self.assertFalse([t for t in tools if t.startswith("mcp__fetch")], slug)
 
+    def test_nobody_holds_the_bare_playwright_server(self):
+        """The four agents must not regain the whole-server grant `mcp__playwright`."""
+        for path in AGENTS_DIR.glob("*.md"):
+            tools = _agent_tools(path.stem)
+            self.assertNotIn("mcp__playwright", tools, path.stem)
+            self.assertNotIn("mcp__playwright__*", tools, path.stem)
+
+    def test_each_agent_holds_exactly_its_named_grant_set(self):
+        for slug, expected in EXPECTED_PLAYWRIGHT_GRANTS.items():
+            with self.subTest(agent=slug):
+                tools = _agent_tools(slug)
+                self.assertEqual(len(tools), len(set(tools)), "duplicate tool entry")
+                self.assertEqual(_playwright_grants(slug), expected)
+
+    def test_grants_are_real_tools_and_exclude_the_dangerous_ones(self):
+        for slug, expected in EXPECTED_PLAYWRIGHT_GRANTS.items():
+            with self.subTest(agent=slug):
+                self.assertLessEqual(expected, PLAYWRIGHT_0_0_83_DEFAULT_TOOLS)
+                self.assertFalse(expected & PLAYWRIGHT_EXCLUDED)
+
     def test_nobody_lists_the_unsafe_tool_or_a_wildcard_playwright_grant(self):
         for path in AGENTS_DIR.glob("*.md"):
             for tool in _agent_tools(path.stem):
                 self.assertNotIn("browser_run_code_unsafe", tool, path.stem)
                 if tool.startswith("mcp__playwright"):
-                    self.assertRegex(tool, r"^mcp__playwright(__[a-z_]+)?$", path.stem)
+                    self.assertRegex(tool, r"^mcp__playwright__[a-z_]+$", path.stem)
+
+    def test_projections_hold_no_whole_server_playwright_form_and_no_excluded_tool(self):
+        """Claude Code, Copilot, Opencode, Pi and Cursor projections of every agent."""
+        root = REPO_ROOT / "implementation"
+        files = (list((root / ".claude" / "agents").glob("*.md")) + list((root / ".github" / "agents").glob("*.agent.md"))
+                 + list((root / ".opencode" / "agents").glob("*.md")) + list((root / ".pi" / "agents").glob("*.md"))
+                 + list((root / ".cursor" / "agents").glob("*.mdc")))
+        self.assertGreaterEqual(len(files), 5 * 20)
+        for path in files:
+            front = path.read_text(encoding="utf-8").split("---", 2)[1]
+            tokens = re.findall(r"[A-Za-z0-9_./*-]+", "\n".join(l for l in front.splitlines() if not l.startswith(("name:", "description:"))))
+            with self.subTest(file=path.relative_to(root).as_posix()):
+                for token in tokens:
+                    self.assertNotIn(token, PLAYWRIGHT_SERVER_FORMS)
+                    for excluded in PLAYWRIGHT_EXCLUDED:
+                        self.assertFalse(token.endswith(excluded), token)
 
 
 class MergeScriptPruneTests(unittest.TestCase):

@@ -7,7 +7,7 @@ tools:
   edit: true
   execute: true
   web: true
-  mcp__gitlab: true
+  gitlab_*: true
 ---
 
 # Release Manager

@@ -290,6 +290,59 @@ function parseInlineObject(s) {
   return out;
 }
 
+// T657 (SEC-T655-01): per-platform rendering of an MCP tool name in an agent's tool list.
+// The source form stays `mcp__<server>` (a whole server) and `mcp__<server>__<tool>` (one tool),
+// with `*` allowed as the tool part. A platform opts in with `frontmatter.agents.mcpToolNames`;
+// no key, or `verbatim`, keeps the source form. Each style is backed by vendor documentation or
+// vendor source recorded in docs/artifacts/mcp-tool-name-mapping-v1.md; a platform whose naming
+// is not verified must not opt in.
+//   slash       Copilot / VS Code: `<server>/<tool>` and `<server>/*`
+//               (server lower-cased, whitespace to `-`; `.` in the tool to `_`)
+//   underscore  Opencode: `<server>_<tool>` and `<server>_*` (anything outside [A-Za-z0-9_-] to `_`)
+//   pi          Pi: `mcp__<server>__<tool>` and `mcp__<server>__*` (anything outside [A-Za-z0-9_] to `_`)
+const MCP_TOOL_PREFIX = 'mcp__';
+
+function splitMcpToolName(token) {
+  if (typeof token !== 'string' || !token.startsWith(MCP_TOOL_PREFIX)) return null;
+  const rest = token.slice(MCP_TOOL_PREFIX.length);
+  const sep = rest.indexOf('__');
+  if (sep === -1) return rest ? { server: rest, tool: '*' } : null;
+  const server = rest.slice(0, sep);
+  const tool = rest.slice(sep + 2);
+  return server && tool ? { server, tool } : null;
+}
+
+const MCP_TOOL_NAME_STYLES = {
+  verbatim: null,
+  slash: ({ server, tool }) => {
+    const srv = server.toLowerCase().replace(/\s+/g, '-');
+    return tool === '*' ? `${srv}/*` : `${srv}/${tool.replace(/\./g, '_')}`;
+  },
+  underscore: ({ server, tool }) => {
+    const clean = (s) => s.replace(/[^a-zA-Z0-9_-]/g, '_');
+    return tool === '*' ? `${clean(server)}_*` : `${clean(server)}_${clean(tool)}`;
+  },
+  pi: ({ server, tool }) => {
+    const clean = (s) => s.replace(/[^a-zA-Z0-9_]/g, '_');
+    return `mcp__${clean(server)}__${tool === '*' ? '*' : clean(tool)}`;
+  },
+};
+
+function renderMcpToolName(token, style) {
+  if (!style) return token;
+  if (!Object.prototype.hasOwnProperty.call(MCP_TOOL_NAME_STYLES, style)) {
+    throw new Error(`Unknown mcpToolNames style: ${style}`);
+  }
+  const render = MCP_TOOL_NAME_STYLES[style];
+  const parts = render ? splitMcpToolName(token) : null;
+  return parts ? render(parts) : token;
+}
+
+function renderMcpToolList(tools, style) {
+  if (!Array.isArray(tools) || !style || style === 'verbatim') return tools;
+  return [...new Set(tools.map((t) => renderMcpToolName(t, style)))];
+}
+
 function applyAgentFrontmatter(data, name, cfg) {
   const out = {};
   for (const k of cfg.keepKeys || Object.keys(data)) {
@@ -320,6 +373,8 @@ function applyAgentFrontmatter(data, name, cfg) {
   } else {
     if (Array.isArray(tools)) out.tools = tools;
   }
+  out.tools = renderMcpToolList(out.tools, cfg.mcpToolNames);
+  if (out.tools === undefined) delete out.tools;
 
   if (cfg.addToOrchestrators && (cfg.orchestratorNames || []).includes(name)) {
     Object.assign(out, cfg.addToOrchestrators);
