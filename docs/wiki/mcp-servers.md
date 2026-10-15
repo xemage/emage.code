@@ -18,7 +18,7 @@ All servers are declared once in [`implementation/knowledge/mcp/servers.yaml`](h
 
 | Server | Purpose | Used by |
 |--------|---------|---------|
-| `gitlab` | Repository, issues, MRs, pipelines | Orchestrator, Scrum Master, DevOps, Release Manager |
+| `gitlab` | Repository, issues, MRs, pipelines | Whole server: Orchestrator, DevOps, Release Manager, PoC Orchestrator, PoC DevOps. Named tools only: Scrum Master, QA Engineer |
 | `playwright` | Browser automation, E2E testing | QA, Frontend, Demo Agent |
 | `memory` | Persistent knowledge graph | Orchestrator (team memory) |
 | `sequential-thinking` | Complex problem decomposition | Architect, Orchestrator |
@@ -96,6 +96,8 @@ Agent sources write an MCP tool as `mcp__<server>__<tool>` and a whole server as
 | Gemini CLI | none: the generator drops the tools line | No: subagents inherit every tool of the session. The six unsafe tools are excluded on the server entry (above) |
 | Cursor | unchanged; Cursor documents no per-subagent tool list | No |
 | Cline | no agent files | n/a |
+
+**GitLab grants.** Five agents (orchestrator, devops-engineer, release-manager, poc-orchestrator, poc-devops-engineer) hold the whole `gitlab` server, which at `@zereight/mcp-gitlab@2.2.5` registers 275 tools (the raw `gitlab_api_request` tool among them is opt-in through `GITLAB_TOOLSETS=api` only), including merge, push, delete and branch/tag/release creation. scrum-master (24 tools: issues, notes, labels, milestones, read-only merge request lookups) and qa-engineer (20 tools: bug issues and notes, read-only merge request, pipeline and job lookups) hold named tools only, none of which merges, pushes, writes files, deletes, creates branches, tags or releases, triggers pipelines or sends a raw API request (T660, SEC-T657-02). This narrows the agent's MCP tool list; it is not a credential boundary: an agent with shell access (qa-engineer holds `execute`) can use `GITLAB_PERSONAL_ACCESS_TOKEN` if it is exported in the environment that starts the assistant. Use a least-privilege token. By default the server exposes only its `core` toolset until `discover_tools` activates the others (`milestones`, `labels`, `pipelines`, `issues`, `merge_requests`); `discover_tools` cannot widen the two roles' allowlist on a platform that enforces one, but it changes the visible toolset for the whole session. Both lists include `discover_tools`, which the server needs to expose the non-default toolsets (`milestones`, `labels`, `pipelines`, `issues`). This holds on Claude Code and, according to the vendor documentation (not observed in a live run), on GitHub Copilot/VS Code; on Opencode, Gemini CLI and Cursor the agent tool list does not restrict MCP tools, so every agent can still call every GitLab tool there.
 
 ## Package pins and runtime requirements of the extended servers
 

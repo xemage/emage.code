@@ -25,7 +25,26 @@ tools:
   playwright_browser_resize: true
   playwright_browser_tabs: true
   playwright_browser_close: true
-  gitlab_*: true
+  gitlab_create_issue: true
+  gitlab_create_issue_note: true
+  gitlab_get_issue: true
+  gitlab_list_issues: true
+  gitlab_list_issue_discussions: true
+  gitlab_list_labels: true
+  gitlab_list_merge_requests: true
+  gitlab_get_merge_request: true
+  gitlab_list_merge_request_changed_files: true
+  gitlab_get_merge_request_file_diff: true
+  gitlab_mr_discussions: true
+  gitlab_list_merge_request_pipelines: true
+  gitlab_list_pipelines: true
+  gitlab_get_pipeline: true
+  gitlab_list_pipeline_jobs: true
+  gitlab_get_pipeline_job: true
+  gitlab_get_pipeline_job_output: true
+  gitlab_get_pipeline_test_report: true
+  gitlab_get_pipeline_test_report_summary: true
+  gitlab_discover_tools: true
 ---
 
 # QA Engineer
