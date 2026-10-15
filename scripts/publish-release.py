@@ -52,6 +52,14 @@ def validate_tag(tag: str) -> str:
     return tag
 
 
+def validate_api_target(api_v4_url: str, project_id: str) -> None:
+    """Fail closed unless the API base is https and the project id is all ASCII digits."""
+    if not api_v4_url.startswith("https://"):
+        raise ReleasePublishError("invalid --api-v4-url: must start with https://")
+    if not (project_id.isascii() and project_id.isdigit()):
+        raise ReleasePublishError("invalid --project-id: must be all ASCII digits")
+
+
 def run_git(args: list[str]) -> str:
     result = subprocess.run(
         ["git", *args],
@@ -106,7 +114,7 @@ def _revision_range(current_tag: str, previous_tag: str | None) -> str:
 
 def get_commit_subjects(current_tag: str, previous_tag: str | None) -> list[str]:
     revision = _revision_range(current_tag, previous_tag)
-    output = run_git(["log", "--pretty=%s", "--end-of-options", revision])
+    output = run_git(["log", "--pretty=%s", "--end-of-options", revision, "--"])
     subjects = [line.strip() for line in output.splitlines() if line.strip()]
     if not subjects:
         raise ReleasePublishError(f"no commits found for revision range '{revision}'")
@@ -251,6 +259,7 @@ def gitlab_request(method: str, url: str, token: str, payload: dict | None = Non
 
 
 def create_or_update_release(tag: str, api_v4_url: str, project_id: str, token: str, description: str) -> None:
+    validate_api_target(api_v4_url, project_id)
     endpoint = f"{api_v4_url}/projects/{project_id}/releases/{tag}"
     payload = {
         "name": tag,
@@ -291,6 +300,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     validate_tag(args.tag)
+    validate_api_target(args.api_v4_url, args.project_id)
     run_git(["fetch", "--tags", "--force"])
     ensure_full_history()
 
