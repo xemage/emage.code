@@ -1,6 +1,6 @@
 ---
 description: "Use to test assumptions early and identify high-risk unknowns before significant implementation effort is invested."
-tools: [read, search, execute, web, mcp__fetch]
+tools: [read, search, execute, web]
 user-invocable: false
 ---
 

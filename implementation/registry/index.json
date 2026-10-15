@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-15T06:55:51+00:00",
+  "generatedAt": "2026-10-15T14:40:38+02:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -17,7 +17,7 @@
       "category": "agent",
       "name": "Backend Developer",
       "path": "agents/backend-developer.md",
-      "checksum": "12977bfe93b857978a3a098a3df28e39921fa86c706516f568dd521b4871fa9f",
+      "checksum": "0fb19507179b49b2df15d65477b3d12f810ece184ac2e79e73ccc05e7c7525de",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -157,7 +157,7 @@
       "category": "agent",
       "name": "DevOps Engineer",
       "path": "agents/devops-engineer.md",
-      "checksum": "bff0b2f29837a85f3347d8a571960a83a7a6f512bd8aea7bd911fec874320423",
+      "checksum": "416abe5742055500eb9fa631e29ef2e4ad1344551844f02550547625a77a5c6e",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -213,7 +213,7 @@
       "category": "agent",
       "name": "Feasibility Agent",
       "path": "agents/feasibility-agent.md",
-      "checksum": "00935c9ebe2a312ae92573b6983e52374cff6c97680430ba051612ef413aa8c3",
+      "checksum": "801cf09cbba2c115c35fe7180af7de7eebfa82965581e3c2ba6da8074718669e",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -241,7 +241,7 @@
       "category": "agent",
       "name": "Frontend Developer",
       "path": "agents/frontend-developer.md",
-      "checksum": "ff37b9aac83d8284d12052270a9f442674875b18d014b8da08448c56fd31a547",
+      "checksum": "304393c166087e6871e02fbdbdd19a20e35f513954b26d0e42db1ad9d37aeb9d",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -269,7 +269,7 @@
       "category": "agent",
       "name": "Integration Agent",
       "path": "agents/integration-agent.md",
-      "checksum": "7187aa4557aa564e757b984c1882801ff8b18d777f866addd21edd0c57621beb",
+      "checksum": "4ffe78f5e6514faa81ea2783d80eac5a18e473f3d55b89cb747897ad7e5d7bae",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -353,7 +353,7 @@
       "category": "agent",
       "name": "PoC Orchestrator",
       "path": "agents/poc-orchestrator.md",
-      "checksum": "55236eb60e05244f81932bbf661689e0d624d9ba3475469293002348e3b8e064",
+      "checksum": "b3df83a8b18790084a3d90b4e3a94480ae1c45da5bf5096191f40ea9c4415d91",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -605,7 +605,7 @@
       "category": "agent",
       "name": "Security Engineer",
       "path": "agents/security-engineer.md",
-      "checksum": "94b05a9af6febb8efbffc589f57f271340a6c6fc9e20e4947a87436262c7f2d4",
+      "checksum": "ac810d8e5875478ed51cedf5f2ede9fb251f8a62ceeb82b8a56613f8ff54c19a",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -633,7 +633,7 @@
       "category": "agent",
       "name": "Solution Architect",
       "path": "agents/solution-architect.md",
-      "checksum": "3fca56ddf64bf8a3faa8e6bf1362bb2ea2e723b6075476b4665c519905ec5c54",
+      "checksum": "2b9797582ae3455ee67d96b5e0f8ebb8259887dbf14728e118b98901c34bd93b",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -661,7 +661,7 @@
       "category": "agent",
       "name": "Tech Lead",
       "path": "agents/tech-lead.md",
-      "checksum": "fdef8a834646b9465ea4ce37759f0153c2161d6635ca776ae4aecbad0983005f",
+      "checksum": "817c1f7059f24fd762d569e2fec6b32d0040086eec9b7463feb3d1ab083cc598",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -745,7 +745,7 @@
       "category": "agent",
       "name": "Technology Scout",
       "path": "agents/technology-scout.md",
-      "checksum": "804285a2d2c665120784abc5bc73eaf376c4f4dc5f919e5d8f9647fecfd1a21e",
+      "checksum": "e896bc0ec82d25bb32560b421fa731665c3acce64c1ed3ab3e6a8ebbb938dfe9",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [

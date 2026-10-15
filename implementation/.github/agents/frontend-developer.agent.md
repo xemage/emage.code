@@ -1,6 +1,6 @@
 ---
 description: "Use when implementing user interfaces, UI components, pages, styling, client-side state management, form handling, responsive design, accessibility, frontend routing, or any client-side/browser functionality."
-tools: [read, search, edit, execute, web, mcp__playwright, mcp__fetch]
+tools: [read, search, edit, execute, web, mcp__playwright]
 user-invocable: false
 ---
 

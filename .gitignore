@@ -95,3 +95,6 @@ implementation/runtime/memory/_index/
 .aider*
 .cursor-tutor/
 output.json
+
+# T655: Playwright MCP output (snapshots, downloads from visited pages); never commit page content
+.playwright-mcp/

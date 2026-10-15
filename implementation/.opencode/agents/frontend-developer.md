@@ -8,7 +8,6 @@ tools:
   execute: true
   web: true
   mcp__playwright: true
-  mcp__fetch: true
 ---
 
 # Frontend Developer

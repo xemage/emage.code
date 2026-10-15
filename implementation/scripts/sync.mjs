@@ -217,7 +217,7 @@ function parseServersYaml(raw) {
           openBlockKey = key;
           servers[current][key] = openBlock;
         } else if (rest.startsWith('[') && rest.endsWith(']')) {
-          servers[current][key] = rest.slice(1, -1).split(',').map((s) => stripQuotes(s.trim()));
+          servers[current][key] = splitInlineArray(rest.slice(1, -1)).map((s) => stripQuotes(s.trim()));
         } else if (rest.startsWith('{') && rest.endsWith('}')) {
           servers[current][key] = parseInlineObject(rest);
         } else {
@@ -232,6 +232,32 @@ function parseServersYaml(raw) {
   }
 
   return servers;
+}
+
+// Splits the inside of an inline YAML array on commas that are NOT inside a quoted item.
+// T655: an item may itself contain commas, semicolons, `*`, `{}` or `[]` (the Playwright
+// `--blocked-origins` value is one double-quoted argument with brace lists). Characters
+// inside quotes are kept verbatim; nothing is expanded or escaped here.
+function splitInlineArray(inner) {
+  const parts = [];
+  let cur = '';
+  let quote = null;
+  for (const ch of inner) {
+    if (quote) {
+      if (ch === quote) quote = null;
+      cur += ch;
+    } else if (ch === '"' || ch === "'") {
+      quote = ch;
+      cur += ch;
+    } else if (ch === ',') {
+      parts.push(cur);
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  parts.push(cur);
+  return parts;
 }
 
 function parseInlineObject(s) {

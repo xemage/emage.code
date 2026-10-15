@@ -8,7 +8,6 @@ tools:
   execute: true
   web: true
   mcp__gitlab: true
-  mcp__fetch: true
 ---
 
 # DevOps Engineer

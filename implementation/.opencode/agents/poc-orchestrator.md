@@ -12,7 +12,6 @@ tools:
   mcp__gitlab: true
   mcp__memory: true
   mcp__sequential-thinking: true
-  mcp__fetch: true
 agents: [technology-scout, feasibility-agent, scaffolding-agent, integration-agent, data-mockup-agent, demo-agent, evaluation-agent, technical-debt-narrator, poc-qa-engineer, poc-security-engineer, poc-technical-writer, poc-devops-engineer, backend-developer, frontend-developer]
 user-invocable: true
 ---

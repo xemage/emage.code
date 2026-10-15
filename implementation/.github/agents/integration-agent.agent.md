@@ -1,6 +1,6 @@
 ---
 description: "Use for quickly wiring third-party APIs, SDKs, and services into a proof-of-concept."
-tools: [read, search, edit, execute, web, mcp__fetch]
+tools: [read, search, edit, execute, web]
 user-invocable: false
 ---
 

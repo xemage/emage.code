@@ -2,13 +2,13 @@
 
 **ID:** T654
 **Owner:** devops-engineer
-**Status:** pending
+**Status:** done
 **Priority:** P0
 **Tier:** judgment
 **Depends on:** T653
 **Affects:** —
 **Created:** 2026-10-15
-**Completed:** —
+**Completed:** 2026-10-15
 **Based on:**
 - `docs/plans/plan-122-release-v8-wave-3.md` (Addendum 2: T654, T655)
 - `docs/artifacts/fetch-ssrf-test-t653-v1.md`, `docs/artifacts/security-review-t646-dependency-audit-v1.md` (SEC-T646-01), `implementation/knowledge/mcp/servers.yaml`

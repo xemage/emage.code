@@ -71,7 +71,7 @@ class TestCrossReferences(unittest.TestCase):
                     continue
                 body = m.group(1)
                 # Two token shapes both currently in use: a bare server reference
-                # (`mcp__fetch`, `mcp__sequential_thinking` -> sequential-thinking) and,
+                # (`mcp__memory`, `mcp__sequential_thinking` -> sequential-thinking) and,
                 # since T495, Claude Code's own exact-MCP-tool-name form
                 # (`mcp__<server>__<tool>`, e.g. `mcp__context-retriever__retrieve` --
                 # scoped-execution-primitive-v1.md §1.3/§1.4). Try the whole body as a

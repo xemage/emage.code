@@ -42,7 +42,7 @@ O1_BEFORE = "- **Other `SECURITY:LOW` findings**: record for debt handoff."
 SE_TOOLS = ["read", "search", "mcp__security-audit__grep_content", "mcp__poc-security-audit__scan_secrets",
             "mcp__poc-security-audit__ref_containment", "web"]
 OR_TOOLS = ["read", "search", "edit", "execute", "agent", "web", "todo", "mcp__gitlab", "mcp__memory",
-            "mcp__sequential-thinking", "mcp__fetch"]
+            "mcp__sequential-thinking"]
 FROZEN = (
     "using the secret-scan tool whose output omits matched text, never a tool that prints matched lines.",
     "(reported as pushed only when a fetched remote-tracking ref contains the commit, otherwise as unknown and unconfirmed against the remote, with the time of the last fetch; an unpushed result is reported as unknown, and the secret is treated as exposed either way)",

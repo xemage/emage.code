@@ -337,7 +337,7 @@ class ProjectedClaudeCodeAgentGrantTests(unittest.TestCase):
         self.assertIn("read", tools)
         self.assertIn("search", tools)
         self.assertIn("web", tools)
-        self.assertIn("mcp__fetch", tools)
+        self.assertNotIn("mcp__fetch", tools)  # T655: the fetch server is removed
 
     def test_projected_agent_exists(self):
         self.assertTrue(PROJECTED_CLAUDE_AGENT.is_file(),
