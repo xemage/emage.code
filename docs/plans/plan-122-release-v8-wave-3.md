@@ -84,3 +84,9 @@ Parallel from the start: T643, T646, T647. Serial: T643 -> T644 -> T645 -> (T648
 - Never open `tests/golden/held-out/`; never write a held-out id; no `.env*` or credential files; the user's local `.claude/settings*.json` and `.vscode/mcp.json` are not read or edited.
 - `git push` may fail: use the Commits API fallback (skill `gitlab-api-push-fallback`) and verify the tree.
 - Task rows are created only after this plan is merged and the user has approved it.
+
+## Addendum (2026-10-15): T653
+
+T646 (the dependency audit, `docs/artifacts/security-review-t646-dependency-audit-v1.md`) graded one finding SECURITY:MEDIUM (SEC-T646-01, `mcp-fetch-server@1.1.2`: the redirect target is checked after the request; the guard depends on an unpatched `private-ip`). A medium finding must be fixed or re-graded on evidence before the release ships. The user chose, by AskUserQuestion on 2026-10-15, the option "Test first, then decide (Recommended)".
+
+11. **T653** — Loopback redirect test of the pinned `mcp-fetch-server@1.1.2` (devops-engineer): server A on loopback answers 302 to server B on another loopback port; does B see a request? Scratch directory outside the repository; loopback and the npm registry only; one artifact `docs/artifacts/fetch-ssrf-test-t653-v1.md`. *Acceptance:* results for four cases with B's request log and the statement "B saw a request after a redirect: yes/no". If no, SEC-T646-01 is re-graded LOW (tracked debt). If yes, the MEDIUM stands and the fix options (move `fetch` to `extended`, remove it, replace it) go to the user before T650. T650 (security re-check) depends on T653 as well.
