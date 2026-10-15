@@ -8,7 +8,6 @@ tools:
   web: true
   todo: true
   mcp__sequential-thinking: true
-  mcp__fetch: true
 ---
 
 # Solution Architect

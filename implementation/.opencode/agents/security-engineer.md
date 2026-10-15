@@ -9,7 +9,6 @@ tools:
   mcp__security-audit__run_dotnet_list_vulnerable: true
   mcp__security-audit__grep_content: true
   web: true
-  mcp__fetch: true
 ---
 
 # Security Engineer

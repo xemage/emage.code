@@ -48,9 +48,9 @@ from pathlib import Path
 
 from tests._helpers.repo import implementation_root
 
-# A server name guaranteed not to collide with any of the 15 real entries in
-# implementation/knowledge/mcp/servers.yaml (7 core + 8 extended, per
-# docs/artifacts/mcp-platform-contract-v1.md §2).
+# A server name guaranteed not to collide with any of the real entries in
+# implementation/knowledge/mcp/servers.yaml (7 core + 10 extended after T655 removed `fetch`;
+# originally specified in docs/artifacts/mcp-platform-contract-v1.md §2).
 NEW_SERVER_NAME = "qa-conformance-probe"
 NEW_SERVER_YAML_BLOCK = (
     f"\n  {NEW_SERVER_NAME}:\n"

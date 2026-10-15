@@ -22,10 +22,11 @@ All servers are declared once in [`implementation/knowledge/mcp/servers.yaml`](h
 | `playwright` | Browser automation, E2E testing | QA, Frontend, Demo Agent |
 | `memory` | Persistent knowledge graph | Orchestrator (team memory) |
 | `sequential-thinking` | Complex problem decomposition | Architect, Orchestrator |
-| `fetch` | Web content fetching | Architect, Tech Lead, Developers |
 | `brave` | Technology discovery (web search) | Technology Scout, Feasibility |
 | `context7` | Framework / API documentation lookup | Technology Scout, Integration |
 | `hindsight` | Remote MCP endpoint; its URL is read from `HINDSIGHT_MCP_URL` | Not stated in `servers.yaml` |
+
+The `fetch` server was removed in v8.0.0 (audit SEC-T646-01). Agents read web pages with the platform `web` tool; no agent is granted a fetch tool any more, and no agent was given Playwright in its place. See [Migrating an existing install](#migrating-an-existing-install-from-v7x).
 
 ## Extended servers (opt-in)
 
@@ -53,6 +54,14 @@ Most require additional credentials — see [`servers.yaml`](https://gitlab.com/
 Claude Code's `.mcp.json` references these as `${VAR}`; the other platforms use `${env:VAR}` (Opencode: `{env:VAR}`). Claude Code reports an unset variable in `claude mcp list` and uses the literal `${VAR}` text. Export the variables for the servers you use in the environment that starts your assistant.
 
 > **Never commit these.** Use environment variables or a secret vault. See [`SECURITY.md`](https://gitlab.com/em-age/emage.code/-/blob/main/implementation/SECURITY.md) for the full rules.
+
+## Playwright server (`playwright`)
+
+The `playwright` entry (`@playwright/mcp@0.0.83`) is a `core` server for browser automation and E2E testing. It is launched with `--headless --isolated --browser chromium --sandbox --block-service-workers --no-webmcp` and a `--blocked-origins` list that names loopback, link-local, private and carrier-grade-NAT address ranges, `localhost` forms, IPv6 loopback and mapped forms, and user-information URLs. The list is one argument made of semicolon-separated glob patterns (`*` is a wildcard and `{a,b}` is brace alternation, so `172.{16,...,31}.*` covers 172.16 to 172.31). It is passed to the spawned process without a shell; do not split it, quote it again or expand it.
+
+It needs a browser that is not installed by `npx`: see [`implementation/PREREQUISITES.md`](https://gitlab.com/em-age/emage.code/-/blob/main/implementation/PREREQUISITES.md). Output files (snapshots, downloads from visited pages) are written to `.playwright-mcp/` in the launch directory; the repository's `.gitignore` excludes it.
+
+**Limits. This is not a security boundary.** The origin flags block a direct navigation or sub-request to a listed origin. They do not cover redirects (an allowed page that answers `302` to a blocked address still reaches it, and the page content is returned to the model), WebSockets, a DNS name that resolves to an internal address, or the `browser_run_code_unsafe` tool, which runs code on the host. The flags only narrow what the entry reaches; the Playwright `--help` text says the same. Agents that list the whole `mcp__playwright` server keep that tool. Pages the agent opens can contain prompt-injection text, and nothing here filters it. Evidence: `docs/artifacts/fetch-replacement-evaluation-v1.md`.
 
 ## Package pins and runtime requirements of the extended servers
 
@@ -186,7 +195,8 @@ v8.0.0 corrects and pins the MCP server entries (audit SEC-002). Four extended e
 3. `docker` and `postgresql` are removed automatically only if the installed file's `<file>.provenance.json` sidecar lists them as generator-owned. If the install has no sidecar (v6.9.0 or earlier), or the sidecar no longer lists them, remove both server objects from every installed MCP config by hand, or run once per file: `python3 scripts/merge-mcp-json.py --source <generated file> --dest <your file> --force-prune-keys docker,postgresql`. `install.sh` does not pass this option, so this is a direct call. The script refuses if a named key is missing from the destination or still present in the source. The files are `.mcp.json`, `.gemini/settings.json`, `.opencode/opencode.json`, `.cursor/mcp.json`, `.cline/mcp.json`, `.pi/mcp.json` and `.vscode/mcp.json`. Cline's real configuration is global (see [Cline Setup](cline-setup)): remove the two entries from it directly.
 4. If you had your own server entry named `docker` or `postgresql` and the old sidecar lists those names, the update removes it as well, because only the name is compared. Re-add it under another name.
 5. Set `GITHUB_PERSONAL_ACCESS_TOKEN` (`github`) and `SUPABASE_ACCESS_TOKEN` (`supabase`) in the environment that starts your assistant, install `uv` if you use `git`, and install Docker if you use `github`. An unset variable stops only that server.
-6. Your client may ask you to approve the changed servers again (Claude Code asks before using a project-scoped server from `.mcp.json`). Approve the new entries after checking them.
+6. The `fetch` server is removed the same way as `docker` and `postgresql` (step 3): automatically when the installed file's `<file>.provenance.json` sidecar lists it, otherwise delete the `fetch` object by hand or run the step 3 command with `--force-prune-keys fetch`. The `playwright` entry is overwritten with the hardened arguments and needs the Chromium browser (see `implementation/PREREQUISITES.md`).
+7. Your client may ask you to approve the changed servers again (Claude Code asks before using a project-scoped server from `.mcp.json`). Approve the new entries after checking them.
 
 ## Remote-server transport encoding differs per platform
 

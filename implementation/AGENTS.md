@@ -109,9 +109,10 @@ Declared in [`knowledge/mcp/servers.yaml`](knowledge/mcp/servers.yaml). Each ser
 | `playwright` | Browser automation, E2E testing | QA, Frontend, Demo Agent |
 | `memory` | Persistent knowledge graph | Orchestrator (team memory) |
 | `sequential-thinking` | Complex problem decomposition | Architect, Orchestrator |
-| `fetch` | Web content fetching | Architect, Tech Lead, Developers |
 | `brave` | Technology discovery | Technology Scout, Feasibility |
 | `context7` | Framework/API documentation | Technology Scout, Integration |
+
+The `fetch` server was removed in v8.0.0 (audit SEC-T646-01): it followed redirects blindly. Agents read web pages with the platform `web` tool. The `playwright` entry is hardened but is not a security boundary; see `docs/wiki/mcp-servers.md`.
 
 ### Extended servers (opt-in)
 `hf-mcp-server`, `filesystem`, `github`, `git`, `supabase`, `toolradar`. Most require additional credentials — see `servers.yaml` for the env-var contract.
