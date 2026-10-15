@@ -4,7 +4,7 @@ description: "Use when an agent session needs to recall prior knowledge, decisio
 tools:
   read: true
   search: true
-  mcp__context-retriever__retrieve: true
+  context-retriever_retrieve: true
 ---
 
 # Context Retriever

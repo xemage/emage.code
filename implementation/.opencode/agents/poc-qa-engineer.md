@@ -6,7 +6,19 @@ tools:
   search: true
   edit: true
   execute: true
-  mcp__playwright: true
+  playwright_browser_navigate: true
+  playwright_browser_snapshot: true
+  playwright_browser_find: true
+  playwright_browser_take_screenshot: true
+  playwright_browser_click: true
+  playwright_browser_type: true
+  playwright_browser_fill_form: true
+  playwright_browser_select_option: true
+  playwright_browser_press_key: true
+  playwright_browser_handle_dialog: true
+  playwright_browser_wait_for: true
+  playwright_browser_console_messages: true
+  playwright_browser_close: true
 ---
 
 # PoC QA Engineer

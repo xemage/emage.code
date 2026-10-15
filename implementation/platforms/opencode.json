@@ -12,6 +12,7 @@
   "frontmatter": {
     "agents": {
       "tools": "object",
+      "mcpToolNames": "underscore",
       "keepKeys": ["name", "description", "tools", "agents"],
       "addToOrchestrators": { "user-invocable": true },
       "orchestratorNames": ["orchestrator", "poc-orchestrator"]

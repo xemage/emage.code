@@ -1,7 +1,7 @@
 ---
 name: "Context Retriever"
 description: "Use when an agent session needs to recall prior knowledge, decisions, or code context from the persistent memory vault (general/project/shared scopes) before or during a task — read-only hybrid semantic+lexical+structural retrieval over T452's derived index, scoped to the calling session's own project and platform."
-tools: [read, search, mcp__context-retriever__retrieve]
+tools: [read, search, mcp__context_retriever__retrieve]
 ---
 
 # Context Retriever

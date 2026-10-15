@@ -8,6 +8,7 @@ encoding (see docs/tasks/task-T360.md § "Audit table").
 from __future__ import annotations
 
 import json
+import re
 import unittest
 from pathlib import Path
 
@@ -24,6 +25,15 @@ from tests._helpers.repo import (
 )
 
 _TARGET_PLATFORMS = ("github", "gemini", "opencode", "claude-code")
+
+
+def _opencode_name(token: str) -> str:
+    """Opencode MCP naming (vendor docs: `<server>_<tool>`, `<server>_*`; see mcp-tool-name-mapping-v1.md)."""
+    if not token.startswith("mcp__"):
+        return token
+    server, sep, tool = token[len("mcp__"):].partition("__")
+    clean = lambda s: re.sub(r"[^a-zA-Z0-9_-]", "_", s)  # noqa: E731
+    return f"{clean(server)}_{clean(tool) if sep else '*'}"
 
 
 def _load_manifest(platform: str) -> dict:
@@ -216,10 +226,12 @@ class TestPlatformProjections(unittest.TestCase):
             with self.subTest(agent=path.stem):
                 self.assertIsInstance(projected_tools, dict, f"{path.name}: tools should be object")
                 self.assertTrue(projected_tools, f"{path.name}: tools object should not be empty")
+                # T657: MCP names are rendered `<server>_<tool>` / `<server>_*` (Opencode naming);
+                # the other tokens pass through unchanged.
                 self.assertEqual(
                     set(projected_tools),
-                    set(source_tools),
-                    f"{path.name}: tools keys must match source tools list",
+                    {_opencode_name(t) for t in source_tools},
+                    f"{path.name}: tools keys must match the mapped source tools list",
                 )
                 self.assertTrue(
                     all(value is True for value in projected_tools.values()),

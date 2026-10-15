@@ -4,10 +4,10 @@ description: "Use when performing security audits, checking OWASP Top 10 complia
 tools:
   read: true
   search: true
-  mcp__security-audit__run_npm_audit: true
-  mcp__security-audit__run_pip_audit: true
-  mcp__security-audit__run_dotnet_list_vulnerable: true
-  mcp__security-audit__grep_content: true
+  security-audit_run_npm_audit: true
+  security-audit_run_pip_audit: true
+  security-audit_run_dotnet_list_vulnerable: true
+  security-audit_grep_content: true
   web: true
 ---
 

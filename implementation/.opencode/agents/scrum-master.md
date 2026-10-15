@@ -6,7 +6,7 @@ tools:
   search: true
   todo: true
   web: true
-  mcp__gitlab: true
+  gitlab_*: true
 ---
 
 # Scrum Master

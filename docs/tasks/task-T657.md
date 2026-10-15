@@ -2,13 +2,13 @@
 
 **ID:** T657
 **Owner:** devops-engineer
-**Status:** pending
+**Status:** done
 **Priority:** P0
 **Tier:** judgment
 **Depends on:** T656
 **Affects:** —
 **Created:** 2026-10-15
-**Completed:** —
+**Completed:** 2026-10-15
 **Based on:**
 - `docs/plans/plan-122-release-v8-wave-3.md` (Addendum 4: T657)
 - `docs/artifacts/security-review-t655-fetch-removal-v1.md` (SEC-T655-01), `docs/tasks/task-T656.md` and its report (platform findings: Claude Code `mcp__server__tool`, Copilot `server/tool` and `server/*`, Opencode `server_tool` with a glob-capable `tools` map, Gemini `tools: drop`, Cline no agent files, Pi no native MCP, Cursor unverified), `docs/artifacts/fetch-replacement-evaluation-v1.md` §5.3

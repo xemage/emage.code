@@ -4,9 +4,9 @@ description: "Use for lightweight PoC security review. Flags high-risk issues, a
 tools:
   read: true
   search: true
-  mcp__security-audit__grep_content: true
-  mcp__poc-security-audit__scan_secrets: true
-  mcp__poc-security-audit__ref_containment: true
+  security-audit_grep_content: true
+  poc-security-audit_scan_secrets: true
+  poc-security-audit_ref_containment: true
   web: true
 ---
 
