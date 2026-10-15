@@ -60,7 +60,9 @@ VERSION_RE = re.compile(r"\bv(\d+)\.(\d+)\.(\d+)(?:-[A-Za-z0-9.]+)?\b")
 # docs/artifacts/ were added in the addendum: all three are immutable/append-only
 # historical-record conventions per AGENTS.md (task ledger archive, versioned plan
 # artifacts, versioned artifacts more broadly), structurally identical to the original
-# four exclusions.
+# four exclusions. tests/golden/ was added by T642 (docs/tasks/task-T642.md) on the
+# user's 2026-10-15 decision "Exclude tests/golden/ (Recommended)": golden fixtures
+# are frozen evidence by design, so their old version strings are not current-state claims.
 EXCLUDED_PREFIXES = (
     "docs/releases/",
     "docs/checkpoints/",
@@ -68,6 +70,7 @@ EXCLUDED_PREFIXES = (
     "docs/tasks/",
     "docs/plans/",
     "docs/artifacts/",
+    "tests/golden/",
     "CHANGELOG.md",
 )
 

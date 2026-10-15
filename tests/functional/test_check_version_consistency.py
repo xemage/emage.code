@@ -259,6 +259,51 @@ class TestScanRepositoryFixtures(unittest.TestCase):
         self.assertEqual(target.read_bytes(), before_content)
 
 
+class TestGoldenFixtureExclusion(unittest.TestCase):
+    """T642 (audit v2 decision D-1): tests/golden/ is excluded from the scan as frozen
+    evidence; the exclusion is a prefix match and must not leak to other paths."""
+
+    STALE = "Latest release: v7.0.1\n"
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.root = Path(self._tmp.name)
+        (self.root / "README.md").write_text("Project X\n\nLatest release: v8.0.0\n")
+        self.mod = _load_module()
+
+    def _drift(self) -> dict:
+        canonical, drift = self.mod.scan_repository(self.root, self.root / "README.md")
+        self.assertEqual(canonical, "v8.0.0")
+        return drift
+
+    def _write(self, rel: str) -> Path:
+        path = self.root / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(self.STALE)
+        return Path(rel)
+
+    def test_stale_claim_under_golden_open_case_is_not_reported(self):
+        case = "tests/golden/open/some-case"
+        fixture_rel = self._write(f"{case}/fixture/docs/releases-copy.md")
+        brief_rel = self._write(f"{case}/brief.md")
+        drift = self._drift()
+        self.assertNotIn(fixture_rel, drift)
+        self.assertNotIn(brief_rel, drift)
+
+    def test_stale_claim_in_non_excluded_path_is_still_reported(self):
+        rel = self._write("docs/wiki/x.md")
+        drift = self._drift()
+        self.assertIn(rel, drift)
+        self.assertEqual(drift[rel], [(1, "v7.0.1")])
+
+    def test_path_merely_containing_tests_golden_is_still_scanned(self):
+        rel = self._write("docs/tests/golden/x.md")
+        drift = self._drift()
+        self.assertIn(rel, drift)
+        self.assertEqual(drift[rel], [(1, "v7.0.1")])
+
+
 class TestCli(unittest.TestCase):
     def test_help_exits_zero(self):
         code, out = _run_cli("--help")
