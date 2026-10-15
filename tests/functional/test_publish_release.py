@@ -7,7 +7,6 @@ import os
 import re
 import sys
 import tempfile
-import types
 import unittest
 from pathlib import Path
 
@@ -111,8 +110,10 @@ class TestSingleReleaseDocument(unittest.TestCase):
         payload = post[0]["payload"]
         self.assertEqual(payload["tag_name"], "v1.2.3")
         self.assertEqual(payload["ref"], "v1.2.3")
+        self.assertEqual(payload["description"], result["document"])  # T640 / C3: the document, whole
         self.assertIn("fixture-highlight", payload["description"])
-        self.assertIn("## Changelog", payload["description"])
+        self.assertNotIn("## Changelog", payload["description"])
+        self.assertIn("### Features", changelog)
         self.assertNotIn(self.dry_run.PLACEHOLDER_TOKEN, result["stdout"])
 
     def test_dry_run_against_real_release_document(self):
@@ -123,8 +124,8 @@ class TestSingleReleaseDocument(unittest.TestCase):
         post = [c for c in result["sent"] if c["method"] == "POST"]
         description = post[0]["payload"]["description"]
         self.assertIn("Latest release: v7.0.1", description)
-        brief = (repo_root() / "docs" / "releases" / "v7.0.1.md").read_text(encoding="utf-8")
-        self.assertIn(brief.splitlines()[-1].strip(), description)
+        brief = (repo_root() / "docs" / "releases" / "v7.0.1.md").read_bytes().decode("utf-8")
+        self.assertEqual(description, brief)
 
     def test_dry_run_does_not_write_the_repository(self):
         def digest(path: Path) -> str | None:
@@ -249,39 +250,51 @@ class TestSingleReleaseDocument(unittest.TestCase):
             self.assertEqual(self.publish_release.TAG_RE.pattern, rule)
 
 
-class TestReleaseTitleStrip(unittest.TestCase):
-    """T635 / C1: a document starting ``# Release <tag>`` yields exactly one top-level title."""
+class TestReleaseDescriptionIsTheDocument(unittest.TestCase):
+    """T640 / C3: description == release document byte-for-byte; the commit list is CHANGELOG.md only.
+
+    Builds on T635's one-title tests; the title-strip branch is gone (dead under C3).
+    """
 
     @classmethod
     def setUpClass(cls):
         cls.publish_release = _load_publish_release_module()
         cls.dry_run = _load_dry_run_module()
 
-    def _run_document(self, text: str | None) -> str:
+    def _run_document(self, text: str | None, repo: Path | None = None, tmp: str | None = None) -> dict:
         """Dry-run ``v1.2.3``; ``text`` None builds the document from docs/releases/_template.md."""
-        with tempfile.TemporaryDirectory() as tmp:
-            fixtures = Path(tmp) / "fixture-releases"
+        with tempfile.TemporaryDirectory() as made:
+            base = Path(tmp or made)
+            fixtures = base / "fixture-releases"
             if text is None:
                 self.dry_run.write_template_shaped_document(repo_root(), fixtures)
             else:
-                fixtures.mkdir()
-                (fixtures / "v1.2.3.md").write_text(text, encoding="utf-8")
-            source = self.dry_run.DryRunSource(source_dir=fixtures, copy_changelog=False)
-            result = self.dry_run.run_dry_run("v1.2.3", Path(tmp) / "work", source)
+                fixtures.mkdir(parents=True)
+                (fixtures / "v1.2.3.md").write_bytes(text.encode("utf-8"))
+            source = self.dry_run.DryRunSource(repo=repo or repo_root(), source_dir=fixtures, copy_changelog=False)
+            return self.dry_run.run_dry_run("v1.2.3", base / "work", source)
+
+    def _description(self, result: dict) -> str:
         post = [c for c in result["sent"] if c["method"] == "POST"]
         self.assertEqual(len(post), 1)
         return post[0]["payload"]["description"]
 
-    def test_title_prefixed_document_has_exactly_one_title_line(self):
-        text = "# Release v1.2.3\n\nLatest release: v1.2.3\n\n## Highlights\n\nbody-marker\n"
-        description = self._run_document(text)
-        self.assertEqual(self.dry_run.top_level_titles(description), ["# Release v1.2.3"])
-        self.assertTrue(description.startswith("# Release v1.2.3\n\nLatest release: v1.2.3"))
-        self.assertIn("body-marker", description)
+    def test_description_equals_the_document_byte_for_byte(self):
+        text = "# Release v1.2.3\r\n\nLatest release: v1.2.3\n\n## Highlights\n\nbody-marker\n\n\n  trailing  \n"
+        result = self._run_document(text)
+        self.assertEqual(self._description(result), text)
+        self.assertEqual(self.dry_run.check_result(result, "v1.2.3"), [])
+
+    def test_description_has_no_generated_section_and_no_commit_list(self):
+        description = self._description(self._run_document("# Release v1.2.3\n\nbody-marker\n"))
+        for generated in ("## Changelog", "_Commits since", "### Features", "single release document", "\n---\n"):
+            self.assertNotIn(generated, description)
 
     def test_real_template_document_has_exactly_one_title_line(self):
-        description = self._run_document(None)
-        self.assertEqual(self.dry_run.top_level_titles(description), ["# Release v1.2.3"])
+        result = self._run_document(None)
+        template = (repo_root() / "docs" / "releases" / "_template.md").read_text(encoding="utf-8")
+        self.assertEqual(self._description(result), template.replace("vX.Y.Z", "v1.2.3"))
+        self.assertEqual(self.dry_run.top_level_titles(self._description(result)), ["# Release v1.2.3"])
 
     def test_fenced_comment_lines_are_kept_but_not_counted_as_titles(self):
         """Synthetic document: independent of the content of docs/releases/_template.md."""
@@ -289,7 +302,7 @@ class TestReleaseTitleStrip(unittest.TestCase):
             "# Release v1.2.3\n\n## Install\n\n```bash\n# Cursor\ncmd-one\n# Gemini CLI\ncmd-two\n```\n\n"
             "## Highlights\n\nbody-marker\n"
         )
-        description = self._run_document(text)
+        description = self._description(self._run_document(text))
         self.assertEqual(self.dry_run.top_level_titles(description), ["# Release v1.2.3"])
         self.assertIn("# Cursor\ncmd-one\n# Gemini CLI", description)
 
@@ -297,20 +310,70 @@ class TestReleaseTitleStrip(unittest.TestCase):
         text = "# One\n\n```bash\n# comment\n```\n\n## Two\n#nospace\n"
         self.assertEqual(self.dry_run.top_level_titles(text), ["# One"])
 
-    def test_removing_the_strip_branch_fails_the_one_title_check(self):
-        """Mutation test: with the strip branch disabled the document keeps a second title."""
-        source_path = repo_root() / "scripts" / "publish-release.py"
-        original = source_path.read_text(encoding="utf-8")
-        guard = 'if brief_body.startswith(f"# Release {tag}"):'
-        self.assertEqual(original.count(guard), 1, "strip branch moved: update this mutation test")
-        mutant = types.ModuleType("publish_release_mutant")
-        mutant.__file__ = str(source_path)
-        exec(compile(original.replace(guard, "if False:"), str(source_path), "exec"), mutant.__dict__)
-        args = ("v1.2.3", None, {}, "# Release v1.2.3\n\nbody\n")
-        good = self.publish_release.render_release_description(*args)
-        bad = mutant.render_release_description(*args)
-        self.assertEqual(len(self.dry_run.top_level_titles(good)), 1)
-        self.assertEqual(len(self.dry_run.top_level_titles(bad)), 2)
+    def test_changelog_lists_no_merge_commits_and_keeps_group_headings(self):
+        result = self._run_document("# Release v1.2.3\n\nbody\n")
+        entry = self.dry_run.changelog_entry(result["changelog"], "v1.2.3")
+        for heading in ("### Features", "### Bug Fixes", "### Documentation"):
+            self.assertIn(heading, entry)
+        self.assertNotIn("## Changelog", entry)
+        for merge in self.dry_run.MERGE_SUBJECTS:
+            self.assertNotIn(merge, entry)
+        self.assertNotIn("merge feature/", entry)
+        self.assertNotIn("merge bugfix/", entry)
+
+    def test_update_changelog_drops_h1_h2_lines_and_keeps_h3_groups(self):
+        section = "## Changelog\n_Commits since v1.0.0._\n\n### Features\n- a\n- # not a heading\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            original = self.publish_release.ROOT
+            self.publish_release.ROOT = Path(tmp)
+            try:
+                text = self.publish_release.update_changelog("v1.2.3", section)
+            finally:
+                self.publish_release.ROOT = original
+        self.assertIn("### Features\n- a\n- # not a heading", text)
+        self.assertNotIn("## Changelog", text)
+
+    def _mutated_run(self, old: str, new: str) -> dict:
+        """Dry-run with scripts/publish-release.py copied into a temp repo and ``old`` replaced by ``new``."""
+        original = (repo_root() / "scripts" / "publish-release.py").read_text(encoding="utf-8")
+        self.assertEqual(original.count(old), 1, f"{old!r} moved: update this mutation test")
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp) / "repo"
+            (repo / "scripts").mkdir(parents=True)
+            (repo / "scripts" / "publish-release.py").write_text(original.replace(old, new), encoding="utf-8")
+            return self._run_document("# Release v1.2.3\n\nbody\n", repo=repo, tmp=str(Path(tmp) / "run"))
+
+    def test_unmutated_script_passes_the_dry_run_checks(self):
+        result = self._mutated_run("def update_changelog", "def update_changelog")
+        self.assertEqual(self.dry_run.check_result(result, "v1.2.3"), [])
+
+    def test_mutation_appending_the_commit_list_to_the_description_is_detected(self):
+        result = self._mutated_run(
+            "    return brief\n\n\ndef update_changelog",
+            "    return brief + '\\n---\\n'\n\n\ndef update_changelog",
+        )
+        self.assertIn("description differs from the release document", self.dry_run.check_result(result, "v1.2.3"))
+
+    def test_mutation_stripping_the_title_is_detected(self):
+        result = self._mutated_run(
+            "    return brief\n\n\ndef update_changelog",
+            "    return brief.split('\\n', 1)[1]\n\n\ndef update_changelog",
+        )
+        self.assertIn("description differs from the release document", self.dry_run.check_result(result, "v1.2.3"))
+
+    def test_mutation_dropping_no_merges_is_detected(self):
+        result = self._mutated_run('["log", "--no-merges", ', '["log", ')
+        self.assertIn("CHANGELOG.md section lists a merge commit", self.dry_run.check_result(result, "v1.2.3"))
+
+    def test_mutation_feeding_the_description_to_the_changelog_is_detected(self):
+        result = self._mutated_run(
+            "update_changelog(args.tag, render_changelog_section(previous_tag, grouped))",
+            "update_changelog(args.tag, description)",
+        )
+        self.assertIn(
+            "CHANGELOG.md section misses commit 'feat(release): single release document'",
+            self.dry_run.check_result(result, "v1.2.3"),
+        )
 
 
 class TestGuardsAndApiPaths(unittest.TestCase):
@@ -329,7 +392,7 @@ class TestGuardsAndApiPaths(unittest.TestCase):
             self.publish_release.get_commit_subjects("v1.2.3", None)
         finally:
             self.publish_release.run_git = original
-        self.assertEqual(calls, [["log", "--pretty=%s", "--end-of-options", "v1.2.3", "--"]])
+        self.assertEqual(calls, [["log", "--no-merges", "--pretty=%s", "--end-of-options", "v1.2.3", "--"]])
 
     def test_api_target_validation_fails_closed(self):
         ok = self.publish_release.validate_api_target

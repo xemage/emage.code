@@ -2,13 +2,13 @@
 
 **ID:** T640
 **Owner:** devops-engineer
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Tier:** standard
 **Depends on:** T635
 **Affects:** —
 **Created:** 2026-10-15
-**Completed:** —
+**Completed:** 2026-10-15
 **Based on:**
 - `docs/plans/plan-121-release-v8-wave-2.md` (Addendum 3: T640)
 - `docs/artifacts/release-documents-ruling-v1.md` §6.2 and §7.3 (the C3 code specification and filter F1), `docs/artifacts/code-review-t619-v2.md` (conditions C1-C3, N1-N4), `scripts/publish-release.py`, `scripts/dry-run-publish-release.py`, `tests/functional/test_publish_release.py`, `.gitlab-ci.yml`
