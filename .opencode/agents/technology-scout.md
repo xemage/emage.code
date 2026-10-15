@@ -5,7 +5,6 @@ tools:
   read: true
   search: true
   web: true
-  mcp__fetch: true
 ---
 
 # Technology Scouting Agent

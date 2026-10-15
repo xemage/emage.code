@@ -2,13 +2,13 @@
 
 **ID:** T659
 **Owner:** orchestrator
-**Status:** pending
+**Status:** done
 **Priority:** P0
 **Tier:** standard
 **Depends on:** T658
 **Affects:** —
 **Created:** 2026-10-15
-**Completed:** —
+**Completed:** 2026-10-15
 **Based on:**
 - `docs/plans/plan-122-release-v8-wave-3.md` (Addendum 5: T659)
 - `docs/artifacts/security-review-t655-fetch-removal-v1.md` (SEC-T655-03), `docs/artifacts/security-review-t657-tool-name-mapping-v1.md`

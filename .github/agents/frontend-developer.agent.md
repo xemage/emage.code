@@ -1,6 +1,6 @@
 ---
 description: "Use when implementing user interfaces, UI components, pages, styling, client-side state management, form handling, responsive design, accessibility, frontend routing, or any client-side/browser functionality."
-tools: [read, search, edit, execute, web, mcp__playwright, mcp__fetch]
+tools: [read, search, edit, execute, web, playwright/browser_navigate, playwright/browser_navigate_back, playwright/browser_snapshot, playwright/browser_find, playwright/browser_take_screenshot, playwright/browser_click, playwright/browser_type, playwright/browser_fill_form, playwright/browser_select_option, playwright/browser_press_key, playwright/browser_hover, playwright/browser_wait_for, playwright/browser_console_messages, playwright/browser_network_requests, playwright/browser_emulate_media, playwright/browser_resize, playwright/browser_tabs, playwright/browser_close]
 user-invocable: false
 ---
 

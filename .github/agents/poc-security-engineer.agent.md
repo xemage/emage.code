@@ -1,6 +1,6 @@
 ---
 description: "Use for lightweight PoC security review. Flags high-risk issues, and blocks the PoC on critical or high findings, on any omitted, removed or weakened security control, and on any Immutable Security Constraint breach, such as an exposed secret."
-tools: [read, search, mcp__security-audit__grep_content, mcp__poc-security-audit__scan_secrets, mcp__poc-security-audit__ref_containment, web]
+tools: [read, search, security-audit/grep_content, poc-security-audit/scan_secrets, poc-security-audit/ref_containment, web]
 user-invocable: false
 ---
 
