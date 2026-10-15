@@ -42,9 +42,11 @@ description: "Document PoC shortcuts and production remediation plans using a co
 This skill is responsible for scanning codebases for `POC-DEBT` tags placed by the rapid-prototyping skill. The scanning procedure:
 
 **Step 1: Discover all debt tags**
+
+Scan every text file under the PoC root (`poc-guidelines.md` § Debt Scorecard › Scorecard Format), whatever its type, because the scorecard must account for every `POC-DEBT` tag (Scorecard Rule 1) and a tag may sit in any file type. Do not scan outside the PoC root. Skip version-control and dependency directories and the PoC's own debt registers, which quote tags and would be counted a second time:
 ```bash
-# Scan all project files for POC-DEBT tags
-grep -rn "POC-DEBT:" --include="*.py" --include="*.ts" --include="*.js" --include="*.yaml" --include="*.yml" --include="*.md" --include="*.json" --include="*.html" --include="*.css" .
+# Scan every text file under the PoC root for POC-DEBT tags (substitute <poc-root>)
+grep -rIn "POC-DEBT:" --exclude-dir=.git --exclude-dir=node_modules --exclude=POC-DEBT-SCORECARD.md --exclude=TECHNICAL-DEBT.md --exclude="debt-ledger-v*.md" <poc-root>
 ```
 
 **Step 2: Parse each tag into a structured debt item**
@@ -143,7 +145,7 @@ Each version is immutable. Create a new version when items are added, resolved, 
 
 ### Technical Debt Scorecard (Enhanced)
 
-The Technical Debt Scorecard is `POC-DEBT-SCORECARD.md` in the PoC root. Write it in the structure `poc-guidelines.md` § Debt Scorecard › Scorecard Format defines — `## Hypothesis`, `## Result`, `## Debt Inventory`, `## Summary`, `## Recommendation` — unchanged and in that order. Fill the Debt Inventory's `Severity` column with each item's debt-ledger severity (capitalised as in Scorecard Rule 5), and count the `## Summary` tiers from that column (`poc-guidelines.md` Scorecard Rule 5). Then append the following sections after `## Recommendation`:
+The Technical Debt Scorecard is `POC-DEBT-SCORECARD.md` in the PoC root. Write it in the structure `poc-guidelines.md` § Debt Scorecard › Scorecard Format defines — `## Hypothesis`, `## Result`, `## Debt Inventory`, `## Summary`, `## Recommendation` — unchanged and in that order. Fill the Debt Inventory's `Severity` column with each item's debt-ledger severity (capitalised as in Scorecard Rule 5), and count the `## Summary` tiers from that column (`poc-guidelines.md` Scorecard Rule 5). Fill the Debt Inventory's `Category` column with each item's debt-ledger Category, one of the five in § Categories (the instruction leaves that column's values open, and its example values `Validation` and `Reliability` are illustrative), so that every row falls under a row of `## Summary by Category` below. Then append the following sections after `## Recommendation`:
 
 ```markdown
 ## Scorecard Source
