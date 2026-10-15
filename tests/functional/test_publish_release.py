@@ -3,9 +3,11 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
+import os
 import re
 import sys
 import tempfile
+import types
 import unittest
 from pathlib import Path
 
@@ -93,9 +95,8 @@ class TestSingleReleaseDocument(unittest.TestCase):
 
     def _run_fixture(self, tmp: str, tag: str = "v1.2.3", text: str | None = None) -> dict:
         source_dir = self._fixture_source(tmp, tag, text)
-        return self.dry_run.run_dry_run(
-            tag, Path(tmp) / "work", source_dir=source_dir, copy_changelog=False
-        )
+        source = self.dry_run.DryRunSource(source_dir=source_dir, copy_changelog=False)
+        return self.dry_run.run_dry_run(tag, Path(tmp) / "work", source)
 
     def test_dry_run_publishes_release_document_without_root_notes(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -162,7 +163,7 @@ class TestSingleReleaseDocument(unittest.TestCase):
 
     def test_empty_release_document_fails_closed_through_main(self):
         with tempfile.TemporaryDirectory() as tmp:
-            with self.assertRaises(RuntimeError):
+            with self.assertRaisesRegex(RuntimeError, "release brief is empty"):
                 self._run_fixture(tmp, text="\n  \n")
             self.assertFalse((Path(tmp) / "work" / "CHANGELOG.md").exists())
 
@@ -213,8 +214,9 @@ class TestSingleReleaseDocument(unittest.TestCase):
         for bad in ("../../x", "v1.2.3\n"):
             with self.subTest(tag=bad), tempfile.TemporaryDirectory() as tmp:
                 source_dir = self._fixture_source(tmp)
-                with self.assertRaises(RuntimeError):
-                    self.dry_run.run_dry_run(bad, Path(tmp) / "work", source_dir=source_dir, copy_changelog=False)
+                source = self.dry_run.DryRunSource(source_dir=source_dir, copy_changelog=False)
+                with self.assertRaisesRegex(RuntimeError, "invalid release tag"):
+                    self.dry_run.run_dry_run(bad, Path(tmp) / "work", source)
                 self.assertFalse((Path(tmp) / "work").exists())
 
     def test_dry_run_source_must_stay_under_release_directory(self):
@@ -223,7 +225,7 @@ class TestSingleReleaseDocument(unittest.TestCase):
             outside = Path(tmp) / "outside.md"
             outside.write_text("# outside\n", encoding="utf-8")
             (source_dir / "v2.0.0.md").symlink_to(outside)
-            with self.assertRaises(RuntimeError):
+            with self.assertRaisesRegex(RuntimeError, "release document escapes"):
                 self.dry_run.resolve_release_source(self.publish_release, "v2.0.0", source_dir)
 
     def test_ci_release_job_keeps_only_changelog_artifact(self):
@@ -238,6 +240,198 @@ class TestSingleReleaseDocument(unittest.TestCase):
         self.assertIn('needs: ["release-docs-gate", "main-develop-drift-gate"]', body)
         self.assertIn("--token \"${WIKI_TOKEN}\"", body)
         self.assertIn(r"/^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$/", body)
+
+    def test_tag_re_equals_every_ci_tag_rule(self):
+        ci = (repo_root() / ".gitlab-ci.yml").read_text(encoding="utf-8")
+        rules = re.findall(r"\$CI_COMMIT_TAG =~ /(.+)/'", ci)
+        self.assertGreaterEqual(len(rules), 3)  # release-docs-gate, drift gate, release
+        for rule in rules:
+            self.assertEqual(self.publish_release.TAG_RE.pattern, rule)
+
+
+class TestReleaseTitleStrip(unittest.TestCase):
+    """T635 / C1: a document starting ``# Release <tag>`` yields exactly one top-level title."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.publish_release = _load_publish_release_module()
+        cls.dry_run = _load_dry_run_module()
+
+    def _run_document(self, text: str | None) -> str:
+        """Dry-run ``v1.2.3``; ``text`` None builds the document from docs/releases/_template.md."""
+        with tempfile.TemporaryDirectory() as tmp:
+            fixtures = Path(tmp) / "fixture-releases"
+            if text is None:
+                self.dry_run.write_template_shaped_document(repo_root(), fixtures)
+            else:
+                fixtures.mkdir()
+                (fixtures / "v1.2.3.md").write_text(text, encoding="utf-8")
+            source = self.dry_run.DryRunSource(source_dir=fixtures, copy_changelog=False)
+            result = self.dry_run.run_dry_run("v1.2.3", Path(tmp) / "work", source)
+        post = [c for c in result["sent"] if c["method"] == "POST"]
+        self.assertEqual(len(post), 1)
+        return post[0]["payload"]["description"]
+
+    def test_title_prefixed_document_has_exactly_one_title_line(self):
+        text = "# Release v1.2.3\n\nLatest release: v1.2.3\n\n## Highlights\n\nbody-marker\n"
+        description = self._run_document(text)
+        self.assertEqual(self.dry_run.top_level_titles(description), ["# Release v1.2.3"])
+        self.assertTrue(description.startswith("# Release v1.2.3\n\nLatest release: v1.2.3"))
+        self.assertIn("body-marker", description)
+
+    def test_real_template_document_has_exactly_one_title_line(self):
+        description = self._run_document(None)
+        self.assertEqual(self.dry_run.top_level_titles(description), ["# Release v1.2.3"])
+
+    def test_fenced_comment_lines_are_kept_but_not_counted_as_titles(self):
+        """Synthetic document: independent of the content of docs/releases/_template.md."""
+        text = (
+            "# Release v1.2.3\n\n## Install\n\n```bash\n# Cursor\ncmd-one\n# Gemini CLI\ncmd-two\n```\n\n"
+            "## Highlights\n\nbody-marker\n"
+        )
+        description = self._run_document(text)
+        self.assertEqual(self.dry_run.top_level_titles(description), ["# Release v1.2.3"])
+        self.assertIn("# Cursor\ncmd-one\n# Gemini CLI", description)
+
+    def test_top_level_titles_ignores_fenced_code(self):
+        text = "# One\n\n```bash\n# comment\n```\n\n## Two\n#nospace\n"
+        self.assertEqual(self.dry_run.top_level_titles(text), ["# One"])
+
+    def test_removing_the_strip_branch_fails_the_one_title_check(self):
+        """Mutation test: with the strip branch disabled the document keeps a second title."""
+        source_path = repo_root() / "scripts" / "publish-release.py"
+        original = source_path.read_text(encoding="utf-8")
+        guard = 'if brief_body.startswith(f"# Release {tag}"):'
+        self.assertEqual(original.count(guard), 1, "strip branch moved: update this mutation test")
+        mutant = types.ModuleType("publish_release_mutant")
+        mutant.__file__ = str(source_path)
+        exec(compile(original.replace(guard, "if False:"), str(source_path), "exec"), mutant.__dict__)
+        args = ("v1.2.3", None, {}, "# Release v1.2.3\n\nbody\n")
+        good = self.publish_release.render_release_description(*args)
+        bad = mutant.render_release_description(*args)
+        self.assertEqual(len(self.dry_run.top_level_titles(good)), 1)
+        self.assertEqual(len(self.dry_run.top_level_titles(bad)), 2)
+
+
+class TestGuardsAndApiPaths(unittest.TestCase):
+    """T635 / N3, N4, N2: git log separator, API target validation, PUT path, cwd isolation."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.publish_release = _load_publish_release_module()
+        cls.dry_run = _load_dry_run_module()
+
+    def test_git_log_ends_with_double_dash_after_the_revision(self):
+        calls: list[list[str]] = []
+        original = self.publish_release.run_git
+        self.publish_release.run_git = lambda args: calls.append(args) or "feat: x"
+        try:
+            self.publish_release.get_commit_subjects("v1.2.3", None)
+        finally:
+            self.publish_release.run_git = original
+        self.assertEqual(calls, [["log", "--pretty=%s", "--end-of-options", "v1.2.3", "--"]])
+
+    def test_api_target_validation_fails_closed(self):
+        ok = self.publish_release.validate_api_target
+        ok("https://gitlab.example.com/api/v4", "12345")
+        error = self.publish_release.ReleasePublishError
+        for url in ("http://gitlab.example.com/api/v4", "file:///etc/passwd", "ftp://x", ""):
+            with self.subTest(url=url), self.assertRaisesRegex(error, "invalid --api-v4-url"):
+                ok(url, "1")
+        for pid in ("", "abc", "1/2", "12 ", "-1", "\u00b2", "1\n"):
+            with self.subTest(project_id=pid), self.assertRaisesRegex(error, "invalid --project-id"):
+                ok("https://gitlab.example.com/api/v4", pid)
+
+    def test_main_rejects_bad_api_target_before_any_git_call(self):
+        calls: list[list[str]] = []
+        original_run_git, original_argv = self.publish_release.run_git, sys.argv
+        self.publish_release.run_git = lambda args: calls.append(args) or ""
+        try:
+            for url, pid in (("http://gitlab.invalid/api/v4", "1"), ("https://gitlab.invalid/api/v4", "x")):
+                sys.argv = ["publish-release.py", "--tag", "v1.2.3", "--api-v4-url", url,
+                            "--project-id", pid, "--token", "placeholder"]
+                with self.subTest(url=url, project_id=pid), self.assertRaises(self.publish_release.ReleasePublishError):
+                    self.publish_release.main()
+        finally:
+            self.publish_release.run_git, sys.argv = original_run_git, original_argv
+        self.assertEqual(calls, [])
+
+    def _release_calls(self, get_result):
+        """Run create_or_update_release against a fake API; ``get_result`` answers the GET."""
+        sent: list[tuple[str, str, dict | None]] = []
+        error = self.publish_release.ReleasePublishError
+
+        def fake(method, url, token, payload=None):
+            sent.append((method, url, payload))
+            if method == "GET":
+                if isinstance(get_result, str):
+                    raise error(get_result)
+                return get_result
+            return {"tag_name": "v1.2.3"}
+
+        original = self.publish_release.gitlab_request
+        self.publish_release.gitlab_request = fake
+        try:
+            self.publish_release.create_or_update_release(
+                "v1.2.3", "https://gitlab.invalid/api/v4", "7", "placeholder", "desc"
+            )
+        finally:
+            self.publish_release.gitlab_request = original
+        return sent
+
+    def test_existing_release_is_updated_with_one_put(self):
+        sent = self._release_calls({"tag_name": "v1.2.3"})
+        endpoint = "https://gitlab.invalid/api/v4/projects/7/releases/v1.2.3"
+        self.assertEqual([m for m, _, _ in sent], ["GET", "PUT"])
+        self.assertEqual(sent[1][1], endpoint)
+        self.assertEqual(sent[1][2]["description"], "desc")
+        self.assertEqual(sent[1][2]["tag_name"], "v1.2.3")
+
+    def test_missing_release_is_created_with_one_post(self):
+        sent = self._release_calls("GitLab API GET u failed: 404 not found")
+        self.assertEqual([m for m, _, _ in sent], ["GET", "POST"])
+        self.assertEqual(sent[1][1], "https://gitlab.invalid/api/v4/projects/7/releases")
+
+    def test_non_404_lookup_error_is_not_swallowed(self):
+        with self.assertRaisesRegex(RuntimeError, "failed: 500 boom"):
+            self._release_calls("GitLab API GET u failed: 500 boom")
+
+    def test_dry_run_restores_cwd_and_runs_inside_the_work_dir(self):
+        seen: list[str] = []
+        original_write = self.publish_release.write_artifacts
+        before = os.getcwd()
+        with tempfile.TemporaryDirectory() as tmp:
+            fixtures = Path(tmp) / "fixture-releases"
+            self.dry_run.write_template_shaped_document(repo_root(), fixtures)
+            source = self.dry_run.DryRunSource(source_dir=fixtures, copy_changelog=False)
+            original_load = self.dry_run.load_publish_release
+
+            def load(repo):
+                module = original_load(repo)
+                real_write = module.write_artifacts
+                module.write_artifacts = lambda text: (seen.append(os.getcwd()), real_write(text))[1]
+                return module
+
+            self.dry_run.load_publish_release = load
+            try:
+                result = self.dry_run.run_dry_run("v1.2.3", Path(tmp) / "work", source)
+            finally:
+                self.dry_run.load_publish_release = original_load
+            self.assertEqual(result["exit"], 0)
+            self.assertEqual([Path(p).resolve() for p in seen], [(Path(tmp) / "work").resolve()])
+        self.assertEqual(os.getcwd(), before)
+        self.assertIs(self.publish_release.write_artifacts, original_write)
+
+    def test_dry_run_restores_cwd_when_main_fails(self):
+        before = os.getcwd()
+        with tempfile.TemporaryDirectory() as tmp:
+            fixtures = Path(tmp) / "fixture-releases"
+            fixtures.mkdir()
+            (fixtures / "v1.2.3.md").write_text("  \n", encoding="utf-8")
+            source = self.dry_run.DryRunSource(source_dir=fixtures, copy_changelog=False)
+            with self.assertRaisesRegex(RuntimeError, "release brief is empty"):
+                self.dry_run.run_dry_run("v1.2.3", Path(tmp) / "work", source)
+        self.assertEqual(os.getcwd(), before)
 
 
 if __name__ == "__main__":
