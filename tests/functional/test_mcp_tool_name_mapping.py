@@ -229,6 +229,67 @@ class GeneratorRunTests(unittest.TestCase):
         self.assertIn("Unknown mcpToolNames style", result.stderr)
 
 
+class ManifestAndTokenValidationTests(unittest.TestCase):
+    """T658 (SEC-T657-09): the style is validated at manifest load, a non-terminal `*` stops the run."""
+
+    SYNC = implementation_root() / "scripts" / "sync.mjs"
+
+    def _run(self, platform: str, edit=None, tools: list[str] | None = None) -> subprocess.CompletedProcess:
+        if shutil.which("node") is None:
+            self.skipTest("node is not installed")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            GeneratorRunTests._build(root)
+            if tools is not None:
+                fx = root / "knowledge" / "agents" / "fx.md"
+                fx.write_text("---\nname: \"Fixture\"\ndescription: \"fixture\"\ntools: [" + ", ".join(tools) + "]\n---\n\nbody\n",
+                              encoding="utf-8")
+            manifest = root / "platforms" / f"{platform}.json"
+            data = json.loads(manifest.read_text(encoding="utf-8"))
+            if edit:
+                edit(data)
+            manifest.write_text(json.dumps(data), encoding="utf-8")
+            return subprocess.run(["node", str(self.SYNC), "--root", str(root), f"--platform={platform}"],
+                                  capture_output=True, text=True, check=False)
+
+    def test_unknown_style_fails_even_when_the_platform_drops_the_tools_line(self):
+        # Gemini drops `tools`; before T658 the style was never read there, so a typo passed silently.
+        result = self._run("gemini", lambda d: d["frontmatter"]["agents"].__setitem__("mcpToolNames", "colon"))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Unknown mcpToolNames style", result.stderr)
+
+    def test_falsy_and_non_string_styles_fail(self):
+        for bad in ("", None, 0, ["slash"], {"a": 1}):
+            with self.subTest(style=bad):
+                result = self._run("github", lambda d, v=bad: d["frontmatter"]["agents"].__setitem__("mcpToolNames", v))
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("Unknown mcpToolNames style", result.stderr)
+
+    def test_a_style_on_a_platform_without_agent_files_is_still_validated(self):
+        result = self._run("cline", lambda d: d["frontmatter"].setdefault("agents", {}).__setitem__("mcpToolNames", "nope"))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Unknown mcpToolNames style", result.stderr)
+
+    def test_prototype_names_are_not_styles(self):
+        result = self._run("github", lambda d: d["frontmatter"]["agents"].__setitem__("mcpToolNames", "__proto__"))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Unknown mcpToolNames style", result.stderr)
+
+    def test_a_star_that_is_not_the_whole_tool_part_stops_the_run(self):
+        for token in ("mcp__srv__foo*", "mcp__srv__*foo", "mcp__srv__fo*o", "mcp__s*rv__tool", "mcp__s*rv", "mcp__srv*"):
+            for platform in ("github", "opencode", "pi"):
+                with self.subTest(platform=platform, token=token):
+                    result = self._run(platform, tools=["read", token])
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn("Non-terminal '*'", result.stderr)
+
+    def test_a_star_as_the_whole_tool_part_is_still_accepted(self):
+        for platform in ("github", "opencode", "pi"):
+            with self.subTest(platform=platform):
+                result = self._run(platform, tools=["read", "mcp__srv__*", "mcp__srv"])
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+
 class ProjectedAgentTests(unittest.TestCase):
     """Every shipped agent file of a mapped platform equals the mapping of its source."""
 
@@ -250,7 +311,12 @@ class ProjectedAgentTests(unittest.TestCase):
                         self.assertFalse(name.startswith("mcp__"), name)
 
     def test_no_projection_names_the_unsafe_tool(self):
-        for path in implementation_root().glob(".*/agents/*"):
+        # T658 (SEC-T657-07): a file-count floor, so an empty glob (a renamed directory) cannot pass
+        # vacuously. Six platforms project agent files (Cline has none); every source agent is projected.
+        files = [p for p in implementation_root().glob(".*/agents/*") if p.is_file()]
+        sources = len(list((knowledge_root() / "agents").glob("*.md")))
+        self.assertGreaterEqual(len(files), sources * 6)
+        for path in files:
             self.assertNotIn("browser_run_code_unsafe", path.read_text(encoding="utf-8"), str(path))
 
 
@@ -264,10 +330,20 @@ class ArtifactTests(unittest.TestCase):
         self.assertRegex(text, r"(?i)unverified")
 
     def test_artifact_never_recommends_the_unsafe_tool(self):
+        # T658 (SEC-T657-07): the earlier pattern also accepted the word "unsafe", which is part of the
+        # tool name, so it could never fail. A line that names the tool must say it is never granted,
+        # excluded, or not removable/granted (case-insensitive, whole words).
         text = ARTIFACT.read_text(encoding="utf-8")
-        for line in text.splitlines():
-            if "browser_run_code_unsafe" in line:
-                self.assertRegex(line, r"(?i)(never|not|excluded|without|removable|unsafe|host)", line)
+        named = [line for line in text.splitlines() if "browser_run_code_unsafe" in line]
+        self.assertTrue(named, "the artifact must name the unsafe tool in its exclusion list")
+        for line in named:
+            without_name = line.replace("browser_run_code_unsafe", "")
+            self.assertRegex(without_name, r"(?i)\b(never|excluded|not|no)\b", line)
+
+    def test_the_anchored_pattern_would_catch_a_recommendation(self):
+        # Self-check of the pattern above: a line that only recommends the tool must fail it.
+        bad = "Grant `browser_run_code_unsafe` to the QA agent for full control."
+        self.assertNotRegex(bad.replace("browser_run_code_unsafe", ""), r"(?i)\b(never|excluded|not|no)\b")
 
 
 if __name__ == "__main__":

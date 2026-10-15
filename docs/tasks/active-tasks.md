@@ -6,11 +6,12 @@
 | T645 | Write docs/releases/v8.0.0.md | release-manager | pending | P1 | T644 | 2026-10-15 |
 | T648 | QA release gate | qa-engineer | pending | P1 | T644, T645, T647 | 2026-10-15 |
 | T649 | Tech Lead review by area | tech-lead | pending | P1 | T645 | 2026-10-15 |
-| T650 | Release-level security re-check | security-engineer | pending | P1 | T646, T657 | 2026-10-15 |
+| T650 | Release-level security re-check | security-engineer | pending | P1 | T646, T658 | 2026-10-15 |
 | T651 | Release manager verdict | release-manager | pending | P1 | T648, T649, T650 | 2026-10-15 |
 | T652 | Publish v8.0.0 (release MRs, main merge, tag) | orchestrator | pending | P0 | T651 | 2026-10-15 |
+| T659 | Root refresh 19 (user-approved 2026-10-15, runs after T658) | orchestrator | pending | P0 | T658 | 2026-10-15 |
 
-> **Active rows (`plan-122`, release v8.0.0 wave 3; approved by the user on 2026-10-15).** T644 (release branch and version markers), T645 (release document), T648 (QA gate), T649 (Tech Lead review by area), T650 (security re-check), T651 (release manager verdict), T652 (publish; each outward step needs the user's approval). Baseline v21; root drift 0 (refresh 18 done).
+> **Active rows (`plan-122`, release v8.0.0 wave 3; approved by the user on 2026-10-15).** T644 (release branch and version markers), T645 (release document), T659 (root refresh 19), T648 (QA gate), T649 (Tech Lead review by area), T650 (security re-check), T651 (release manager verdict), T652 (publish; each outward step needs the user's approval). Baseline v21; root drift 0 (refresh 18 done).
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)

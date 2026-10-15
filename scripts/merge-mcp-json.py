@@ -15,6 +15,20 @@ Merge algorithm (recursive, JSON-key-preserving):
   - Keys present only in `dest`: preserved as-is.
   - Keys present only in `source`: added.
 
+Two server-level denial lists are merged, not replaced (T658, SEC-T657-01), with or
+without a provenance sidecar (the rule never reads one):
+  - `excludeTools` (Gemini CLI, `mcpServers.<name>.excludeTools`): when both
+    sides hold a list, the result is the union, the user's elements first in
+    their order, then the generated elements the user's list lacks. A user's own
+    entry is never dropped. An element the generator no longer ships stays until
+    the user removes it (fail closed). A non-list user value is replaced.
+  - top-level `permission` (Opencode): a user string shorthand (`"allow"`) is
+    kept as `{"*": "allow"}`; the user's other keys are kept in their order; each
+    generated key is set to the generated value and moved to the end, because
+    Opencode applies the LAST matching rule, so the generated `deny` entries must
+    come after any user wildcard such as `"playwright_*": "allow"` in the same
+    file. A user's own `deny`, `ask` or `allow` for other keys is untouched.
+
 This script never reads or interpolates real environment variable values —
 it only moves JSON data between the two files. Placeholder strings such as
 `${env:VAR}` / `${input:...}` are left untouched.
@@ -28,15 +42,41 @@ from pathlib import Path
 from typing import Any
 
 
-def merge_json(dest: Any, source: Any) -> Any:
+def merge_exclude_tools(dest_value: Any, source_value: Any) -> Any:
+    """Union of two `excludeTools` lists, dest elements first; anything else: source wins."""
+    if not isinstance(dest_value, list) or not isinstance(source_value, list):
+        return source_value
+    union = list(dest_value)
+    union += [item for item in source_value if item not in union]
+    return union
+
+
+def merge_permission(dest_value: Any, source_value: Any) -> Any:
+    """Opencode top-level `permission`: keep the user's rules, put generated rules last."""
+    if not isinstance(source_value, dict):
+        return source_value
+    if isinstance(dest_value, str):
+        dest_value = {"*": dest_value}
+    if not isinstance(dest_value, dict):
+        return source_value
+    merged = {key: value for key, value in dest_value.items() if key not in source_value}
+    merged.update(source_value)
+    return merged
+
+
+def merge_json(dest: Any, source: Any, _top: bool = True) -> Any:
     """Recursively merge `source` into `dest`, per the module-level algorithm."""
     if not isinstance(dest, dict) or not isinstance(source, dict):
         return source
 
     merged: dict[str, Any] = dict(dest)
     for key, source_value in source.items():
-        if key in merged and isinstance(merged[key], dict) and isinstance(source_value, dict):
-            merged[key] = merge_json(merged[key], source_value)
+        if key == "excludeTools" and key in merged:
+            merged[key] = merge_exclude_tools(merged[key], source_value)
+        elif key == "permission" and _top and key in merged:
+            merged[key] = merge_permission(merged[key], source_value)
+        elif key in merged and isinstance(merged[key], dict) and isinstance(source_value, dict):
+            merged[key] = merge_json(merged[key], source_value, _top=False)
         else:
             merged[key] = source_value
     return merged
