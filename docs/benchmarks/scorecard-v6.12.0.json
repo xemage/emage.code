@@ -2,17 +2,17 @@
   "content": {
     "cases": [
       {
-        "actual_result": "fail",
-        "bucket": "known_failing",
+        "actual_result": "pass",
+        "bucket": "pass",
         "case_dir": "tests/golden/held-out/<redacted>",
         "command": "/code-review",
         "error": null,
         "id": "held-out-case-1",
-        "known_failing_category": "tracked_defect",
+        "known_failing_category": null,
         "location": "held-out",
         "model_outcome": null,
         "model_tier": null,
-        "status": "known_failing"
+        "status": "expected_pass"
       },
       {
         "actual_result": "pass",
@@ -249,17 +249,17 @@
         "status": "expected_pass"
       },
       {
-        "actual_result": "fail",
-        "bucket": "known_failing",
+        "actual_result": "pass",
+        "bucket": "pass",
         "case_dir": "golden/open/plan-real-doc-header-drift",
         "command": "/plan",
         "error": null,
         "id": "plan-real-doc-header-drift",
-        "known_failing_category": "tracked_defect",
+        "known_failing_category": null,
         "location": "open",
         "model_outcome": null,
         "model_tier": null,
-        "status": "known_failing"
+        "status": "expected_pass"
       },
       {
         "actual_result": "pass",
@@ -448,36 +448,36 @@
       "by_location": {
         "held-out": {
           "capability_gap": 1,
-          "known_failing": 2,
-          "pass": 4,
+          "known_failing": 1,
+          "pass": 5,
           "regression": 0,
           "total": 6,
-          "tracked_defect": 1,
+          "tracked_defect": 0,
           "unexpected_pass": 0
         },
         "open": {
           "capability_gap": 3,
-          "known_failing": 6,
-          "pass": 22,
+          "known_failing": 5,
+          "pass": 23,
           "regression": 0,
           "total": 28,
-          "tracked_defect": 3,
+          "tracked_defect": 2,
           "unexpected_pass": 0
         }
       },
       "capability_gap": 4,
-      "known_failing": 8,
+      "known_failing": 6,
       "regressions": 0,
       "total_cases": 34,
-      "total_fail": 8,
-      "total_pass": 26,
-      "tracked_defect": 4,
+      "total_fail": 6,
+      "total_pass": 28,
+      "tracked_defect": 2,
       "unexpected_pass": 0,
       "unrecognized_status": 0
     }
   },
   "run_metadata": {
-    "generated_at": "2026-10-01T18:45:00Z",
+    "generated_at": "2026-10-15T05:39:15Z",
     "golden_version": "v6.12.0",
     "runner": "scripts/scorecard.py",
     "schema_version": "golden-scorecard-v1"

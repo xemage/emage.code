@@ -2,13 +2,13 @@
 
 **ID:** T629
 **Owner:** orchestrator
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Tier:** standard
 **Depends on:** T628
 **Affects:** —
 **Created:** 2026-10-14
-**Completed:** —
+**Completed:** 2026-10-15
 **Based on:**
 - `docs/plans/plan-121-release-v8-wave-2.md` (Task Decomposition item for T629)
 - `docs/artifacts/promotion-and-golden-realignment-plan-v1.md` §7 (the exact procedure and checks), `docs/artifacts/evaluator-hash-check-v1.md`, `docs/artifacts/evaluator-hash-known-good-v20.json`, `implementation/runtime/golden_harness/evaluator_hash.py`
