@@ -2,7 +2,6 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T640 | Release body = the release document only; commit list to CHANGELOG.md only, merge commits excluded (T632 group C3, code part) | devops-engineer | pending | P1 | T635 | 2026-10-15 |
 | T627 | Run a real /skillify interview with the user (GitLab API fallback workflow) and apply the /skillify template fix | orchestrator | pending | P1 | — | 2026-10-14 |
 | T628 | Golden realignment A under grant G-1 (items 1-10, 11 if T627 is merged, 12 only if S-HO-1 allows it) | qa-engineer | pending | P1 | T625, T626 | 2026-10-14 |
 | T629 | Evaluator baseline v21 | orchestrator | pending | P1 | T628 | 2026-10-14 |

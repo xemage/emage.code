@@ -9,9 +9,13 @@ any URL, and runs the real ``main()`` without ``--skip-api``. It then reports
 what a tag run would write and what it would send as the Release description.
 The repository tree is never written.
 
+The run fails unless the description equals the release document byte-for-byte
+(T640 / C3) and the CHANGELOG.md section lists no merge commit (filter F1: the
+fake ``git log`` returns merge subjects unless it is given ``--no-merges``).
+
 ``--template-shaped`` rehearses a document built from ``docs/releases/_template.md``
-(title ``# Release v1.2.3``) and fails unless the description has exactly one
-top-level title line (T635 / C1).
+(title ``# Release v1.2.3``) and additionally fails unless the description has
+exactly one top-level title line.
 
 Usage: python3 scripts/dry-run-publish-release.py [--tag v7.0.1 | --template-shaped]
 """
@@ -33,8 +37,11 @@ from typing import Any, NamedTuple
 
 REPO = Path(__file__).resolve().parent.parent
 TEMPLATE_TAG = "v1.2.3"
-CHANGELOG_SEPARATOR = "\n\n---\n\n"  # as joined by render_release_description
 PLACEHOLDER_TOKEN = "DRY-RUN-PLACEHOLDER"  # not a credential; never sent anywhere
+MERGE_SUBJECTS = [  # what GitLab writes for a merge; dropped only by ``git log --no-merges``
+    "Merge branch 'feature/42-sample' into 'develop'",
+    "Merge branch 'bugfix/43-sample' into 'develop'",
+]
 SAMPLE_SUBJECTS = [
     "feat(release): single release document",
     "fix(ci): drop the root release-notes artifact",
@@ -63,7 +70,8 @@ def _fake_run_git(tag: str, previous_tag: str):
         if args[:1] == ["rev-list"]:
             return str(len(SAMPLE_SUBJECTS))
         if args[:1] == ["log"]:
-            return "\n".join(SAMPLE_SUBJECTS)
+            merges = [] if "--no-merges" in args else MERGE_SUBJECTS
+            return "\n".join(merges + SAMPLE_SUBJECTS)
         return ""  # fetch and anything else: no-op
 
     return run_git
@@ -160,7 +168,12 @@ def run_dry_run(tag: str, work: Path, source: DryRunSource | None = None) -> dic
         sys.argv = argv
         urllib.request.urlopen = original_urlopen
     files = sorted(p.relative_to(work).as_posix() for p in work.rglob("*") if p.is_file())
-    return {"exit": code, "stdout": out.getvalue(), "files": files, "sent": sent, "work": work}
+    changelog = work / "CHANGELOG.md"
+    return {
+        "exit": code, "stdout": out.getvalue(), "files": files, "sent": sent, "work": work,
+        "document": document.read_bytes().decode("utf-8"),
+        "changelog": changelog.read_text(encoding="utf-8") if changelog.is_file() else "",
+    }
 
 
 def _report_calls(sent: list[dict[str, Any]]) -> None:
@@ -172,13 +185,41 @@ def _report_calls(sent: list[dict[str, Any]]) -> None:
         print(f"  description: {len(desc)} chars, {len(desc.splitlines())} lines")
         print("  first lines:\n    " + "\n    ".join(desc.splitlines()[:3]))
         print(f"  top-level title lines: {top_level_titles(desc)}")
-        changelog = desc.split(CHANGELOG_SEPARATOR)[-1].strip().splitlines()
-        print("  changelog section:\n    " + "\n    ".join(changelog))
 
 
 def _description(result: dict[str, Any]) -> str:
     posts = [c for c in result["sent"] if c["method"] == "POST"]
     return posts[0]["payload"]["description"] if posts else ""
+
+
+def changelog_entry(changelog: str, tag: str) -> str:
+    """Return the ``## [<tag>] - date`` section of ``changelog`` (up to the next ``## `` heading)."""
+    lines = changelog.splitlines()
+    start = next((i for i, line in enumerate(lines) if line.startswith(f"## [{tag}] - ")), None)
+    if start is None:
+        return ""
+    end = next((i for i in range(start + 1, len(lines)) if lines[i].startswith("## ")), len(lines))
+    return "\n".join(lines[start:end]).strip()
+
+
+def check_result(result: dict[str, Any], tag: str) -> list[str]:
+    """Return the T640 problems of a dry-run ``result`` (empty list when all hold)."""
+    problems: list[str] = []
+    if result["exit"] != 0:
+        problems.append(f"exit code {result['exit']}")
+    if "release-notes.md" in result["files"]:
+        problems.append("root release-notes.md written")
+    if _description(result) != result["document"]:
+        problems.append("description differs from the release document")
+    entry = changelog_entry(result["changelog"], tag)
+    if not entry:
+        problems.append("CHANGELOG.md has no section for the tag")
+    if "erge branch" in entry or re.search(r"^- merge ", entry, re.M):
+        problems.append("CHANGELOG.md section lists a merge commit")
+    for sample in SAMPLE_SUBJECTS:
+        if sample.split(": ", 1)[1] not in entry:
+            problems.append(f"CHANGELOG.md section misses commit {sample!r}")
+    return problems
 
 
 def main() -> int:
@@ -208,12 +249,15 @@ def main() -> int:
             print(f"  {name}")
         print(f"root release-notes.md written: {'release-notes.md' in result['files']}")
         _report_calls(result["sent"])
-        print("CHANGELOG.md head:\n  " + "\n  ".join((work / "CHANGELOG.md").read_text().splitlines()[:4]))
-        ok = result["exit"] == 0 and "release-notes.md" not in result["files"]
-        if args.template_shaped:
-            ok = ok and len(top_level_titles(_description(result))) == 1
-        print("DRY RUN " + ("OK" if ok else "FAILED"))
-        return 0 if ok else 1
+        print(f"description equals the release document byte-for-byte: {_description(result) == result['document']}")
+        print(f"CHANGELOG.md section for {tag}:\n  " + changelog_entry(result["changelog"], tag).replace("\n", "\n  "))
+        problems = check_result(result, tag)
+        if args.template_shaped and len(top_level_titles(_description(result))) != 1:
+            problems.append("description does not have exactly one top-level title line")
+        for problem in problems:
+            print(f"problem: {problem}")
+        print("DRY RUN " + ("FAILED" if problems else "OK"))
+        return 1 if problems else 0
 
 
 if __name__ == "__main__":

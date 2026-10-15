@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Regenerate CHANGELOG.md and publish a GitLab release fail-closed.
 
-The release has ONE release document, ``docs/releases/<tag>.md``. The GitLab
-Release description is built in memory from that document plus the generated
-changelog section; no root ``release-notes.md`` is written. ``CHANGELOG.md`` is
-the only file this script writes. Offline rehearsal:
-``scripts/dry-run-publish-release.py``.
+The release has ONE release document, ``docs/releases/<tag>.md`` (it starts
+``# Release <tag>``). The GitLab Release description is that document, whole and
+unchanged (T640 / ruling C3). The commit list generated from Conventional
+Commits (merge commits excluded, filter F1) goes into ``CHANGELOG.md`` only,
+which is the only file this script writes; no root ``release-notes.md`` is
+written. Offline rehearsal: ``scripts/dry-run-publish-release.py``.
 """
 
 from __future__ import annotations
@@ -114,7 +115,8 @@ def _revision_range(current_tag: str, previous_tag: str | None) -> str:
 
 def get_commit_subjects(current_tag: str, previous_tag: str | None) -> list[str]:
     revision = _revision_range(current_tag, previous_tag)
-    output = run_git(["log", "--pretty=%s", "--end-of-options", revision, "--"])
+    # Filter F1: merge commits are excluded structurally, not by subject text.
+    output = run_git(["log", "--no-merges", "--pretty=%s", "--end-of-options", revision, "--"])
     subjects = [line.strip() for line in output.splitlines() if line.strip()]
     if not subjects:
         raise ReleasePublishError(f"no commits found for revision range '{revision}'")
@@ -122,6 +124,7 @@ def get_commit_subjects(current_tag: str, previous_tag: str | None) -> list[str]
 
 
 def load_release_brief(tag: str) -> str:
+    """Return the release document of ``tag`` exactly as stored; fail closed if missing or blank."""
     validate_tag(tag)
     brief_path = ROOT / "docs" / "releases" / f"{tag}.md"
     if not brief_path.is_file():
@@ -129,10 +132,10 @@ def load_release_brief(tag: str) -> str:
             f"missing release brief: docs/releases/{tag}.md "
             "(copy docs/releases/_template.md and fill Install + Highlights)"
         )
-    brief = brief_path.read_text(encoding="utf-8").strip()
-    if not brief:
+    brief = brief_path.read_bytes().decode("utf-8")  # no newline translation: byte-for-byte
+    if not brief.strip():
         raise ReleasePublishError(f"release brief is empty: docs/releases/{tag}.md")
-    return brief + "\n"
+    return brief
 
 
 def classify_subjects(subjects: Iterable[str]) -> dict[str, list[str]]:
@@ -195,21 +198,13 @@ def render_changelog_section(previous_tag: str | None, grouped: dict[str, list[s
     return "\n".join(lines).strip() + "\n"
 
 
-def render_release_description(
-    tag: str,
-    previous_tag: str | None,
-    grouped: dict[str, list[str]],
-    brief: str,
-) -> str:
-    brief_body = brief
-    if brief_body.startswith(f"# Release {tag}"):
-        brief_body = "\n".join(brief_body.splitlines()[1:]).lstrip("\n")
-
-    changelog = render_changelog_section(previous_tag, grouped)
-    return f"# Release {tag}\n\n{brief_body}\n\n---\n\n{changelog}\n"
+def render_release_description(brief: str) -> str:
+    """The GitLab Release description is the release document, whole (no title strip, no appended list)."""
+    return brief
 
 
-def update_changelog(tag: str, notes_body: str) -> str:
+def update_changelog(tag: str, changelog_section: str) -> str:
+    """Insert the generated commit list under ``## [tag] - date``; H1/H2 lines are dropped, ``###`` groups kept."""
     today = dt.date.today().isoformat()
     heading = f"## [{tag}] - {today}"
     changelog_path = ROOT / "CHANGELOG.md"
@@ -219,8 +214,8 @@ def update_changelog(tag: str, notes_body: str) -> str:
         return existing
 
     section_lines = [heading, ""]
-    for line in notes_body.splitlines():
-        if line.startswith("#"):
+    for line in changelog_section.splitlines():
+        if line.startswith("# ") or line.startswith("## "):
             continue
         section_lines.append(line)
     section = "\n".join(section_lines).strip() + "\n\n"
@@ -310,8 +305,8 @@ def main() -> int:
     subjects = get_commit_subjects(args.tag, previous_tag)
     grouped = classify_subjects(subjects)
 
-    description = render_release_description(args.tag, previous_tag, grouped, brief)
-    changelog = update_changelog(args.tag, description)
+    description = render_release_description(brief)
+    changelog = update_changelog(args.tag, render_changelog_section(previous_tag, grouped))
     write_artifacts(changelog)
 
     if not args.skip_api:
