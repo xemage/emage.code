@@ -409,15 +409,13 @@ class PlaywrightGrantSetTests(unittest.TestCase):
             self.assertNotIn('"permission"', text, rel)
 
 
-# T660 (SEC-T657-02): who holds which GitLab tool. Five agents keep the whole `gitlab` server; qa-engineer
-# and scrum-master hold the named tools below, taken from the 275 tools that `@zereight/mcp-gitlab@2.2.5`
-# registers (`build/tools/registry.js` of the npm tarball; docs/artifacts/security-review-t657-tool-name-mapping-v1.md).
-# `discover_tools` is in both: the server's default `core` toolset omits milestones, label writes, issue links
-# and pipelines, and only `discover_tools` (or GITLAB_TOOLSETS) exposes them. It changes the session's tool
-# list and no GitLab data.
-GITLAB_WHOLE_SERVER_HOLDERS = {
-    "devops-engineer", "orchestrator", "release-manager", "poc-devops-engineer", "poc-orchestrator",
-}
+# T660/T666/T667 (SEC-T657-02, SEC-T660-04): who holds which GitLab tool. NO agent holds the whole `gitlab`
+# server any more; the seven holders below hold the named tools, taken from the 275 tools that
+# `@zereight/mcp-gitlab@2.2.5` registers (`build/tools/registry.js` of the npm tarball;
+# docs/artifacts/security-review-t657-tool-name-mapping-v1.md).
+# `discover_tools` is in all seven: the server's default `core` toolset omits milestones, label writes, issue
+# links, pipelines, the CI lint tools, tags and releases, and only `discover_tools` (or GITLAB_TOOLSETS) exposes
+# them. It changes the session's tool list and no GitLab data.
 EXPECTED_GITLAB_GRANTS = {
     # sprint planning and board sync: issues, notes, links, labels, milestones, read-only MR lookups
     "scrum-master": {
@@ -434,8 +432,58 @@ EXPECTED_GITLAB_GRANTS = {
         "mr_discussions", "list_merge_request_pipelines",
         "list_pipelines", "get_pipeline", "list_pipeline_jobs", "get_pipeline_job", "get_pipeline_job_output",
         "get_pipeline_test_report", "get_pipeline_test_report_summary", "discover_tools"},
+    # T666: coordination only. Reads: issues named in a request, MR state and approvals, pipeline status for the
+    # "CI green before a release tag / before merge" checks, branches for the branch policy. One write:
+    # `create_merge_request` (the Git workflow requires an MR for every branch). No merge (the top-level session
+    # merges after its own verification), no approve, no note or issue write, no job output, no branch/tag
+    # creation, no protection tools, no pipeline control.
+    "orchestrator": {
+        "get_issue", "list_issues", "list_issue_discussions",
+        "create_merge_request", "get_merge_request", "list_merge_requests", "get_merge_request_approval_state",
+        "list_merge_request_changed_files", "mr_discussions", "list_merge_request_pipelines",
+        "list_pipelines", "get_pipeline", "list_pipeline_jobs", "get_branch", "list_branches", "discover_tools"},
+    # T667: CI/CD authoring. Reads only: the pipelines and jobs of its own changes (status, failure reason, test
+    # report summary), the MR that carries them, and the two CI lint tools (they validate YAML and change nothing).
+    # No job output (raw traces can hold secrets, SEC-T660-02), no pipeline control, no environment, deployment,
+    # variable or runner tool, no write at all. The files are written with `edit`; nothing is pushed or merged.
+    "devops-engineer": {
+        "list_pipelines", "get_pipeline", "list_pipeline_jobs", "get_pipeline_job", "list_merge_request_pipelines",
+        "get_pipeline_test_report_summary", "validate_ci_lint", "validate_project_ci_lint",
+        "get_merge_request", "list_merge_requests", "discover_tools"},
+    # T667: release coordination. Reads: MRs and their approval state and pipelines (release gate "CI green"),
+    # open issues (unresolved critical findings), branches, tags and releases (previous tag, release branch,
+    # published release). One write: `create_merge_request` (the release branch to develop and to main, "merge
+    # requests, no squash"). No merge (the top-level session merges), no create_branch (git on the shell),
+    # no create_tag / create_release / delete_* (the top-level session cuts and publishes with the user's approval).
+    "release-manager": {
+        "create_merge_request", "get_merge_request", "list_merge_requests", "get_merge_request_approval_state",
+        "list_merge_request_pipelines", "list_pipelines", "get_pipeline", "list_pipeline_jobs",
+        "get_issue", "list_issues", "get_branch", "list_branches", "list_tags", "get_tag",
+        "list_releases", "get_release", "discover_tools"},
+    # T667: minimal PoC pipeline: lint the YAML and read the pipeline status. Strict subset of devops-engineer.
+    "poc-devops-engineer": {
+        "list_pipelines", "get_pipeline", "list_pipeline_jobs", "validate_ci_lint", "validate_project_ci_lint",
+        "discover_tools"},
+    # T666: the PoC track has no GitLab issue, branch or release duties in its body; it needs the MR flow
+    # (a handoff register counts only once merged through it) and the CI status of its MRs.
+    "poc-orchestrator": {
+        "create_merge_request", "get_merge_request", "list_merge_requests", "get_merge_request_approval_state",
+        "list_merge_request_pipelines", "get_pipeline", "list_pipeline_jobs", "discover_tools"},
 }
-# Name patterns the two roles must never hold: merge, approval, push and file writes, delete/erase/purge,
+# The writes each named holder may have; everything else it holds is a get_/list_ read, `mr_discussions`
+# (a read), a CI lint tool (validates YAML) or `discover_tools` (changes the visible toolset only).
+GITLAB_EXPECTED_WRITES = {
+    "qa-engineer": {"create_issue", "create_issue_note"},
+    "scrum-master": {
+        "create_issue", "update_issue", "create_issue_note", "create_issue_link", "create_label",
+        "update_label", "create_milestone", "edit_milestone"},
+    "orchestrator": {"create_merge_request"},
+    "poc-orchestrator": {"create_merge_request"},
+    "devops-engineer": set(),
+    "release-manager": {"create_merge_request"},
+    "poc-devops-engineer": set(),
+}
+# Name patterns no named holder may hold: merge, approval, push and file writes, delete/erase/purge,
 # branch/tag/release/repository/group creation, protection changes, pipeline trigger/retry/cancel/play/create,
 # variables, webhooks, deployments, raw API and GraphQL.
 GITLAB_FORBIDDEN_NAME = re.compile(
@@ -443,7 +491,8 @@ GITLAB_FORBIDDEN_NAME = re.compile(
     r"create_release|create_repository|create_group$|fork_repository|protect|update_default_branch|update_project$|"
     r"trigger|retry|cancel|play_|create_pipeline|update_pipeline|variable|webhook|deployment|environment|"
     r"gitlab_api_request|execute_graphql|upload|download|create_commit_status|create_snippet|wiki|promote|"
-    r"create_note$|move_work_item|dismiss|confirm|resolve")
+    r"create_note$|move_work_item|dismiss|confirm|resolve|create_merge_request_(note|thread|discussion)|"
+    r"update_merge_request|publish|rebase|revert|mark_|stop_")
 GITLAB_WHOLE_SERVER_FORMS = ("mcp__gitlab", "mcp__gitlab__*", "gitlab/*", "gitlab_*")
 
 
@@ -459,20 +508,27 @@ def _gitlab_names(slug: str) -> set[str]:
 
 
 class GitLabGrantSetTests(unittest.TestCase):
-    """T660 (SEC-T657-02): exactly seven roles hold GitLab access; two of them only named, non-destructive tools."""
+    """T660/T666/T667 (SEC-T657-02, SEC-T660-04): exactly seven roles hold GitLab access, ALL of them only named,
+    non-destructive tools; no role holds the whole server."""
 
     def test_exactly_the_seven_roles_hold_gitlab_access(self):
         holders = {p.stem for p in AGENTS_DIR.glob("*.md") if _gitlab_names(p.stem)}
-        self.assertEqual(holders, GITLAB_WHOLE_SERVER_HOLDERS | set(EXPECTED_GITLAB_GRANTS))
+        self.assertEqual(holders, set(EXPECTED_GITLAB_GRANTS))
         self.assertEqual(len(holders), 7)
+        self.assertEqual(set(EXPECTED_GITLAB_GRANTS), {
+            "qa-engineer", "scrum-master", "orchestrator", "poc-orchestrator",
+            "devops-engineer", "release-manager", "poc-devops-engineer"})
 
-    def test_the_five_holders_keep_exactly_the_whole_server(self):
-        for slug in sorted(GITLAB_WHOLE_SERVER_HOLDERS):
-            with self.subTest(agent=slug):
-                self.assertEqual(_gitlab_names(slug), {"*"})
-                self.assertEqual(_agent_tools(slug).count("mcp__gitlab"), 1)
+    def test_no_agent_holds_the_whole_gitlab_server(self):
+        """T667 (SEC-T660-04): the last three whole-server holders are narrowed; none is left."""
+        for path in sorted(AGENTS_DIR.glob("*.md")):
+            with self.subTest(agent=path.stem):
+                self.assertNotIn("*", _gitlab_names(path.stem))
+                tokens = _agent_tools(path.stem)
+                self.assertNotIn("mcp__gitlab", tokens)
+                self.assertNotIn("mcp__gitlab__*", tokens)
 
-    def test_qa_engineer_and_scrum_master_hold_exactly_their_named_tools(self):
+    def test_the_seven_named_holders_hold_exactly_their_named_tools(self):
         for slug, expected in EXPECTED_GITLAB_GRANTS.items():
             with self.subTest(agent=slug):
                 tools = _agent_tools(slug)
@@ -481,7 +537,7 @@ class GitLabGrantSetTests(unittest.TestCase):
                 self.assertNotIn("mcp__gitlab", tools)
                 self.assertNotIn("mcp__gitlab__*", tools)
                 self.assertEqual(_gitlab_names(slug), expected)
-                self.assertGreaterEqual(len(expected), 15)
+                self.assertGreaterEqual(len(expected), 6)
 
     def test_named_tools_are_not_destructive_and_writes_are_pinned(self):
         for slug, expected in EXPECTED_GITLAB_GRANTS.items():
@@ -490,32 +546,76 @@ class GitLabGrantSetTests(unittest.TestCase):
                     self.assertRegex(name, r"^[a-z_]+$")
                     self.assertIsNone(GITLAB_FORBIDDEN_NAME.search(name), name)
         write_prefixes = ("create_", "update_", "edit_")
-        qa_writes = {n for n in EXPECTED_GITLAB_GRANTS["qa-engineer"] if n.startswith(write_prefixes)}
-        self.assertEqual(qa_writes, {"create_issue", "create_issue_note"})
-        sm_writes = {n for n in EXPECTED_GITLAB_GRANTS["scrum-master"] if n.startswith(write_prefixes)}
-        self.assertEqual(sm_writes, {
-            "create_issue", "update_issue", "create_issue_note", "create_issue_link", "create_label",
-            "update_label", "create_milestone", "edit_milestone"})
+        for slug, writes in GITLAB_EXPECTED_WRITES.items():
+            with self.subTest(agent=slug):
+                found = {n for n in EXPECTED_GITLAB_GRANTS[slug] if n.startswith(write_prefixes)}
+                self.assertEqual(found, writes)
+                # everything else is a read: get_/list_, the MR discussions listing, the two CI lint tools (they
+                # validate YAML and change nothing), or discover_tools
+                others = EXPECTED_GITLAB_GRANTS[slug] - writes
+                reads = {"mr_discussions", "discover_tools", "validate_ci_lint", "validate_project_ci_lint"}
+                for name in sorted(others):
+                    self.assertTrue(name.startswith(("get_", "list_")) or name in reads, name)
+        self.assertEqual(set(GITLAB_EXPECTED_WRITES), set(EXPECTED_GITLAB_GRANTS))
+
+    def test_the_orchestrators_cannot_merge_approve_note_or_touch_branches_and_tags(self):
+        """T666 (SEC-T660-04): the project rule is that the top-level session merges, not a subagent."""
+        banned = {"merge_merge_request", "approve_merge_request", "unapprove_merge_request", "update_merge_request",
+                  "create_merge_request_note", "create_merge_request_thread", "resolve_merge_request_thread",
+                  "create_issue", "update_issue", "create_issue_note", "create_branch", "create_tag", "create_release",
+                  "push_files", "create_or_update_file", "trigger_pipeline", "retry_pipeline", "cancel_pipeline",
+                  "create_pipeline", "get_pipeline_job_output", "get_pipeline_variables", "list_protected_branches",
+                  "execute_graphql", "gitlab_api_request", "get_file_contents", "get_pipeline_job"}
+        for slug in ("orchestrator", "poc-orchestrator"):
+            with self.subTest(agent=slug):
+                self.assertFalse(EXPECTED_GITLAB_GRANTS[slug] & banned)
+        # the PoC track needs less than the production track: its set is a strict subset
+        self.assertLess(EXPECTED_GITLAB_GRANTS["poc-orchestrator"], EXPECTED_GITLAB_GRANTS["orchestrator"])
+
+    def test_devops_release_and_poc_devops_cannot_merge_tag_release_push_or_control_pipelines(self):
+        """T667 (SEC-T660-04): subagents never merge, approve, push, tag or release; the CI/CD roles hold no
+        pipeline control, no job output and nothing that touches variables, environments or deployments."""
+        banned = {"merge_merge_request", "approve_merge_request", "unapprove_merge_request", "update_merge_request",
+                  "create_merge_request_note", "create_merge_request_thread", "resolve_merge_request_thread",
+                  "create_issue", "update_issue", "create_issue_note", "create_branch", "delete_branch", "create_tag",
+                  "delete_tag", "create_release", "update_release", "delete_release", "protect_branch",
+                  "push_files", "create_or_update_file", "trigger_pipeline", "retry_pipeline", "cancel_pipeline",
+                  "retry_pipeline_job", "cancel_pipeline_job", "play_pipeline_job", "create_pipeline",
+                  "delete_pipeline", "get_pipeline_job_output", "get_pipeline_variables", "get_pipeline_test_report",
+                  "list_project_variables", "create_project_variable", "create_webhook", "list_environments",
+                  "list_deployments", "create_deployment", "list_project_runners", "download_job_artifacts",
+                  "execute_graphql", "gitlab_api_request", "get_file_contents", "create_wiki_page"}
+        for slug in ("devops-engineer", "release-manager", "poc-devops-engineer"):
+            with self.subTest(agent=slug):
+                self.assertFalse(EXPECTED_GITLAB_GRANTS[slug] & banned)
+        # only the release-manager writes (one MR), and the two CI/CD roles write nothing at all
+        self.assertEqual(GITLAB_EXPECTED_WRITES["devops-engineer"], set())
+        self.assertEqual(GITLAB_EXPECTED_WRITES["poc-devops-engineer"], set())
+        # the PoC track needs less than the production track: its set is a strict subset
+        self.assertLess(EXPECTED_GITLAB_GRANTS["poc-devops-engineer"], EXPECTED_GITLAB_GRANTS["devops-engineer"])
 
     def test_forbidden_pattern_does_catch_the_dangerous_names(self):
         for name in ("merge_merge_request", "push_files", "delete_branch", "delete_issue", "create_branch",
                      "create_tag", "create_release", "gitlab_api_request", "execute_graphql", "trigger_pipeline",
                      "retry_pipeline", "cancel_pipeline_job", "play_pipeline_job", "create_or_update_file",
-                     "approve_merge_request", "create_pipeline", "erase_pipeline_job", "download_job_artifacts"):
+                     "approve_merge_request", "create_pipeline", "erase_pipeline_job", "download_job_artifacts",
+                     "update_merge_request", "create_merge_request_note", "create_merge_request_thread",
+                     "create_merge_request_discussion_note", "publish_draft_note", "bulk_publish_draft_notes",
+                     "resolve_merge_request_thread", "mark_todo_done", "stop_environment"):
             self.assertIsNotNone(GITLAB_FORBIDDEN_NAME.search(name), name)
 
     def test_every_projection_renders_the_same_sets(self):
         """Claude Code keeps the source form; Pi, Copilot and Opencode render it (T657 mapping)."""
         root = REPO_ROOT / "implementation"
-        seven = GITLAB_WHOLE_SERVER_HOLDERS | set(EXPECTED_GITLAB_GRANTS)
-        # platform -> (agent file suffix, prefix of a named tool, form of the whole server)
+        seven = set(EXPECTED_GITLAB_GRANTS)
+        # platform -> (agent file suffix, prefix of a named tool)
         platforms = {
-            ".claude": (".md", "mcp__gitlab__", "mcp__gitlab"),
-            ".pi": (".md", "mcp__gitlab__", "mcp__gitlab__*"),
-            ".github": (".agent.md", "gitlab/", "gitlab/*"),
-            ".opencode": (".md", "gitlab_", "gitlab_*"),
+            ".claude": (".md", "mcp__gitlab__"),
+            ".pi": (".md", "mcp__gitlab__"),
+            ".github": (".agent.md", "gitlab/"),
+            ".opencode": (".md", "gitlab_"),
         }
-        for platform, (suffix, prefix, whole_form) in platforms.items():
+        for platform, (suffix, prefix) in platforms.items():
             files = sorted((root / platform / "agents").glob("*" + suffix))
             self.assertGreaterEqual(len(files), 20, platform)
             for path in files:
@@ -528,16 +628,86 @@ class GitLabGrantSetTests(unittest.TestCase):
                 whole = {t for t in tokens if t in GITLAB_WHOLE_SERVER_FORMS}
                 named = {t[len(prefix):] for t in tokens if t.startswith(prefix) and t not in GITLAB_WHOLE_SERVER_FORMS}
                 with self.subTest(platform=platform, agent=slug):
-                    if slug in GITLAB_WHOLE_SERVER_HOLDERS:
-                        self.assertEqual(whole, {whole_form})
-                        self.assertEqual(named, set())
-                    elif slug in EXPECTED_GITLAB_GRANTS:
-                        self.assertEqual(whole, set())
-                        self.assertEqual(named, EXPECTED_GITLAB_GRANTS[slug])
-                    else:
-                        self.assertEqual(whole, set())
-                        self.assertEqual(named, set())
+                    self.assertEqual(whole, set(), "no agent holds the whole server (T667)")
+                    self.assertEqual(named, EXPECTED_GITLAB_GRANTS.get(slug, set()))
             self.assertEqual({p.name[: -len(suffix)] for p in files} & seven, seven, platform)
+
+    def test_every_granted_name_exists_in_the_pinned_registry_snapshot(self):
+        """SEC-T667-04b: a misspelt or removed tool name would be a grant of nothing; the snapshot is offline."""
+        snap = json.loads((REPO_ROOT / "tests" / "_baselines" / "gitlab-mcp-tool-names.json").read_text(encoding="utf-8"))
+        servers = (REPO_ROOT / "implementation" / "knowledge" / "mcp" / "servers.yaml").read_text(encoding="utf-8")
+        self.assertIn(f'"{snap["package"]}@{snap["version"]}"', servers, "the snapshot is for the pinned version")
+        known = set(snap["tools"])
+        self.assertEqual(len(known), 275)
+        self.assertEqual(snap["tools"], sorted(known))
+        for slug, names in EXPECTED_GITLAB_GRANTS.items():
+            with self.subTest(agent=slug):
+                self.assertEqual(names - known, set())
+
+    def test_gemini_agents_carry_no_tools_line(self):
+        """SEC-T660-06: Gemini CLI does not restrict MCP tools per agent, so the generator drops the line."""
+        files = sorted((REPO_ROOT / "implementation" / ".gemini" / "agents").glob("*.md"))
+        self.assertGreaterEqual(len(files), 20)
+        for path in files:
+            front = path.read_text(encoding="utf-8").split("---", 2)[1]
+            with self.subTest(agent=path.stem):
+                self.assertFalse([l for l in front.splitlines() if l.startswith("tools:")])
+
+
+class GitLabGrantDocumentationTests(unittest.TestCase):
+    """T667 (SEC-T667-02, SEC-T667-04a, SEC-T667-05): the three documents state the grants as the sources hold them."""
+
+    DOCS = {
+        "agents-root": REPO_ROOT / "AGENTS.md",
+        "agents-impl": REPO_ROOT / "implementation" / "AGENTS.md",
+        "wiki": REPO_ROOT / "docs" / "wiki" / "mcp-servers.md",
+    }
+    NAMES = {  # as the documents write the roles in the counts sentence
+        "scrum-master": "scrum-master", "qa-engineer": "qa-engineer", "orchestrator": "orchestrator",
+        "poc-orchestrator": "poc-orchestrator", "devops-engineer": "devops-engineer",
+        "release-manager": "release-manager", "poc-devops-engineer": "poc-devops-engineer"}
+    USED_BY = ("Orchestrator", "PoC Orchestrator", "Scrum Master", "QA Engineer", "DevOps", "Release Manager", "PoC DevOps")
+
+    def _paragraph(self, path: Path) -> str:
+        lines = [l for l in path.read_text(encoding="utf-8").splitlines()
+                 if l.startswith(("GitLab grants:", "**GitLab grants.**"))]
+        self.assertEqual(len(lines), 1, path)
+        return lines[0]
+
+    def test_used_by_row_lists_the_seven_named_holders_and_no_whole_server_holder(self):
+        for label, path in self.DOCS.items():
+            rows = [l for l in path.read_text(encoding="utf-8").splitlines() if l.startswith("| `gitlab` |")]
+            with self.subTest(doc=label):
+                self.assertEqual(len(rows), 1)
+                self.assertIn("Named tools only (no agent holds the whole server)", rows[0])
+                self.assertNotIn("Whole server:", rows[0])
+                for name in self.USED_BY:
+                    self.assertIn(name, rows[0])
+
+    def test_the_counts_in_the_paragraph_equal_the_lists(self):
+        for label, path in self.DOCS.items():
+            text = self._paragraph(path)
+            with self.subTest(doc=label):
+                self.assertIn("no agent holds the whole `gitlab` server", text.lower())
+                for slug, shown in self.NAMES.items():
+                    m = re.search(re.escape(shown) + r" \((\d+) tools", text)
+                    self.assertIsNotNone(m, slug)
+                    self.assertEqual(int(m.group(1)), len(EXPECTED_GITLAB_GRANTS[slug]), slug)
+                self.assertEqual(sorted(len(v) for v in EXPECTED_GITLAB_GRANTS.values()), [6, 8, 11, 16, 17, 20, 24])
+
+    def test_the_paragraph_states_a_policy_not_an_enforcement(self):
+        """SEC-T667-05: no over-claim; the PAT scope reconciliation is left to T665."""
+        for label, path in self.DOCS.items():
+            text = self._paragraph(path)
+            with self.subTest(doc=label):
+                self.assertIn("a tool-list narrowing and a policy, not an enforcement", text)
+                self.assertIn("Six of the seven roles hold `execute`", text)
+                self.assertIn("can merge, tag, release or push with that token", text)
+                self.assertIn("T665", text)
+                self.assertNotIn("No subagent merges, tags or releases", text)
+                # SEC-T667-03 and SEC-T667-06
+                self.assertIn("`create_merge_request` can target any project and branch the token reaches", text)
+                self.assertIn("`dry_run` resolve `include:` entries server-side", text)
 
 
 class MergeScriptPruneTests(unittest.TestCase):

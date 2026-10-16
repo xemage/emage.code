@@ -40,7 +40,13 @@ O1_BEFORE = "- **Other `SECURITY:LOW` findings**: record for debt handoff."
 # Tools lists and the frozen F-8 / E1-b / E1-c texts (byte-identical to the T603/T604 state).
 SE_TOOLS = ["read", "search", "mcp__security-audit__grep_content", "mcp__poc-security-audit__scan_secrets",
             "mcp__poc-security-audit__ref_containment", "web"]
-OR_TOOLS = ["read", "search", "edit", "execute", "agent", "web", "todo", "mcp__gitlab", "mcp__memory",
+# T666: poc-orchestrator holds named GitLab tools (pinned in test_mcp_package_pins.py), not the whole server
+OR_GITLAB_TOOLS = [
+    "mcp__gitlab__create_merge_request", "mcp__gitlab__get_merge_request", "mcp__gitlab__list_merge_requests",
+    "mcp__gitlab__get_merge_request_approval_state", "mcp__gitlab__list_merge_request_pipelines",
+    "mcp__gitlab__get_pipeline", "mcp__gitlab__list_pipeline_jobs", "mcp__gitlab__discover_tools",
+]
+OR_TOOLS = ["read", "search", "edit", "execute", "agent", "web", "todo", *OR_GITLAB_TOOLS, "mcp__memory",
             "mcp__sequential-thinking"]
 FROZEN = (
     "using the secret-scan tool whose output omits matched text, never a tool that prints matched lines.",

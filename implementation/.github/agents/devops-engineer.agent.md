@@ -1,6 +1,6 @@
 ---
 description: "Use when setting up CI/CD pipelines, configuring Docker containers, writing Dockerfiles, creating Kubernetes manifests, managing infrastructure as code (Terraform, Ansible), configuring GitLab CI, setting up monitoring, or automating deployment workflows."
-tools: [read, search, edit, execute, web, gitlab/*]
+tools: [read, search, edit, execute, web, gitlab/list_pipelines, gitlab/get_pipeline, gitlab/list_pipeline_jobs, gitlab/get_pipeline_job, gitlab/list_merge_request_pipelines, gitlab/get_pipeline_test_report_summary, gitlab/validate_ci_lint, gitlab/validate_project_ci_lint, gitlab/get_merge_request, gitlab/list_merge_requests, gitlab/discover_tools]
 user-invocable: false
 ---
 

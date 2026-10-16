@@ -2,6 +2,7 @@
 name: "PoC Orchestrator"
 description: "Use when starting a proof-of-concept project. Validates a hypothesis quickly by coordinating PoC specialists with explicit debt tracking and production handoff artifacts."
 tools:
+  gitlab_*: false
   read: true
   search: true
   edit: true
@@ -9,7 +10,14 @@ tools:
   agent: true
   web: true
   todo: true
-  gitlab_*: true
+  gitlab_create_merge_request: true
+  gitlab_get_merge_request: true
+  gitlab_list_merge_requests: true
+  gitlab_get_merge_request_approval_state: true
+  gitlab_list_merge_request_pipelines: true
+  gitlab_get_pipeline: true
+  gitlab_list_pipeline_jobs: true
+  gitlab_discover_tools: true
   memory_*: true
   sequential-thinking_*: true
   playwright_*: false

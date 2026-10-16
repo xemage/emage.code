@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-16T14:05:21+02:00",
+  "generatedAt": "2026-10-16T20:10:03+02:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -146,7 +146,7 @@
       "category": "agent",
       "name": "DevOps Engineer",
       "path": "agents/devops-engineer.md",
-      "checksum": "416abe5742055500eb9fa631e29ef2e4ad1344551844f02550547625a77a5c6e",
+      "checksum": "808255dfda611aeaa9316df4f1dd8a047a1946cc18586d3ae39fc68159d3387a",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -276,7 +276,7 @@
       "category": "agent",
       "name": "Orchestrator",
       "path": "agents/orchestrator.md",
-      "checksum": "3ad7ebf466ad6deaac75e3aa83938a1d37cdeee2bd45c2563e670ef4aa87ccc1",
+      "checksum": "53e765f3aa38a732e12211e58a3c6f3770767f8e2be5e2325cca4ac24996cd8a",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -302,7 +302,7 @@
       "category": "agent",
       "name": "PoC DevOps Engineer",
       "path": "agents/poc-devops-engineer.md",
-      "checksum": "7eccf33b58ce9cc324fd0990334040085919bf8946f7eaf83e52316d34e7c479",
+      "checksum": "feb7c12b5700080619705e5008b9b3a0ab74735dd8606f5d1729a3c0d7c16d43",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -328,7 +328,7 @@
       "category": "agent",
       "name": "PoC Orchestrator",
       "path": "agents/poc-orchestrator.md",
-      "checksum": "b3df83a8b18790084a3d90b4e3a94480ae1c45da5bf5096191f40ea9c4415d91",
+      "checksum": "eef3650fed061b0535d748fcc55f433edaf6ff5b709000d4e256e5ff122dd9cc",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -484,7 +484,7 @@
       "category": "agent",
       "name": "Release Manager",
       "path": "agents/release-manager.md",
-      "checksum": "073a5994c5ed0c0f633f3311a1028186bee1cdfdfcd64152e3d5fcf34521b622",
+      "checksum": "fb3a797dec1467e52327c812f3afc549a7f23fd3987fc3eeb300425d18a59ef5",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1836,7 +1836,7 @@
       "category": "skill",
       "name": "release-workflow",
       "path": "skills/release-workflow/SKILL.md",
-      "checksum": "d1f1b69fcfae2f2d9d4ee96ecc2780960b821d05b484f44c46c1fb7fdf9b8aee",
+      "checksum": "cbdf5d594b72fee1f66d0f5716150aa7178395c60cb1761fba1a21d1b23ff555",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [

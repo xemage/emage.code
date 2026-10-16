@@ -62,17 +62,19 @@ OPENCODE_AGENTS = IMPL / ".opencode" / "agents"
 SOURCE_AGENTS = knowledge_root() / "agents"
 
 # Pinned as literals, independently of the generator: the agents that hold GitLab tools.
-GITLAB_WHOLE_SERVER = {
-    "orchestrator", "poc-orchestrator", "devops-engineer", "poc-devops-engineer", "release-manager",
+# T666/T667: no agent holds the whole `gitlab` server any more; all seven holders hold named tools only, so the
+# wildcard-first rule (`gitlab_*: false` before their named allows) applies to every one of them.
+GITLAB_NAMED_SUBSET = {
+    "qa-engineer", "scrum-master", "orchestrator", "poc-orchestrator",
+    "devops-engineer", "release-manager", "poc-devops-engineer",
 }
-GITLAB_NAMED_SUBSET = {"qa-engineer", "scrum-master"}
-GITLAB_HOLDERS = GITLAB_WHOLE_SERVER | GITLAB_NAMED_SUBSET
+GITLAB_HOLDERS = GITLAB_NAMED_SUBSET
 PLAYWRIGHT_HOLDERS = {"qa-engineer", "frontend-developer", "poc-qa-engineer", "demo-agent"}
 
 # Pinned per server: (agents holding the bare `mcp__<server>`, agents holding only named tokens).
 # Every other agent holds nothing of the server. A server that is not listed is held by nobody.
 EXPECTED_HOLDERS = {
-    "gitlab": (GITLAB_WHOLE_SERVER, GITLAB_NAMED_SUBSET),
+    "gitlab": (set(), GITLAB_NAMED_SUBSET),
     "playwright": (set(), PLAYWRIGHT_HOLDERS),
     "memory": ({"orchestrator", "poc-orchestrator"}, set()),
     "sequential-thinking": ({"orchestrator", "poc-orchestrator", "solution-architect"}, set()),
@@ -219,13 +221,23 @@ class EmittedPerAgentClassTests(unittest.TestCase):
     def falses(self, slug: str) -> list[str]:
         return [k for k, v in self.tools(slug).items() if v is False]
 
-    def test_a_whole_server_gitlab_holder_gets_no_gitlab_deny_and_no_other_held_server_deny(self):
-        for slug in sorted(GITLAB_WHOLE_SERVER):
+    def test_no_agent_holds_the_whole_gitlab_server_so_none_gets_the_allow_all_entry(self):
+        """T667: `gitlab_*: true` appears in no generated agent file; every holder has the deny first."""
+        self.assertEqual(source_holders("gitlab")[0], set())
+        for path in sorted(OPENCODE_AGENTS.glob("*.md")):
+            with self.subTest(agent=path.stem):
+                self.assertIsNot(self.tools(path.stem).get("gitlab_*"), True)
+        for slug in sorted(GITLAB_NAMED_SUBSET - PLAYWRIGHT_HOLDERS):
             with self.subTest(agent=slug):
-                self.assertTrue(self.tools(slug)["gitlab_*"] is True)
-                self.assertNotIn("gitlab_*", self.falses(slug))
                 self.assertEqual([k for k in self.falses(slug) if k.startswith("playwright_")],
                                  ["playwright_*"] + SIX_FALSE)
+
+    def test_a_whole_server_holder_of_another_server_gets_no_deny_of_that_server(self):
+        """The whole-server class still exists for memory and sequential-thinking (orchestrators)."""
+        for slug in ("orchestrator", "poc-orchestrator"):
+            with self.subTest(agent=slug):
+                self.assertTrue(self.tools(slug)["memory_*"] is True)
+                self.assertNotIn("memory_*", self.falses(slug))
 
     def test_a_named_subset_gitlab_holder_gets_the_wildcard_first_then_its_named_allows(self):
         for slug in sorted(GITLAB_NAMED_SUBSET):
@@ -235,7 +247,7 @@ class EmittedPerAgentClassTests(unittest.TestCase):
                 self.assertIn("gitlab_*", keys[:3], "the wildcard deny is in the leading deny block")
                 self.assertFalse(tools["gitlab_*"])
                 named = [k for k in keys if k.startswith("gitlab_") and k != "gitlab_*"]
-                self.assertGreaterEqual(len(named), 20)
+                self.assertGreaterEqual(len(named), 6)
                 self.assertTrue(all(tools[k] is True for k in named))
                 self.assertLess(keys.index("gitlab_*"), min(keys.index(k) for k in named))
 
@@ -491,7 +503,8 @@ class OpencodeEvaluationTests(unittest.TestCase):
     def test_a_whole_server_holder_keeps_every_tool_of_that_server(self):
         for server in OPENCODE_SERVERS:
             for slug in sorted(source_holders(server)[0]):
-                tools = GITLAB_WRITE_SAMPLE + GITLAB_READ_SAMPLE if server == "gitlab" else ["any_tool"]
+                # no whole-server GitLab holder exists (T667): this loop runs for memory and sequential-thinking
+                tools = ["any_tool"]
                 for tool in tools:
                     with self.subTest(server=server, agent=slug, tool=tool):
                         self.assertEqual(self.effect(slug, f"{cleaned(server)}_{tool}"), "allow")
@@ -547,12 +560,17 @@ class OpencodeEvaluationTests(unittest.TestCase):
                                      global_extra={"playwright_browser_click": "deny"}), "allow")
         self.assertEqual(self.effect("qa-engineer", "playwright_browser_click",
                                      global_extra={"playwright_*": "ask"}), "allow")
-        # the GitLab merge example of the five whole-server holders
-        for slug in sorted(GITLAB_WHOLE_SERVER):
+        # T667: no agent holds the whole server, so the GitLab example is a NAMED tool held by three agents
+        for slug in ("orchestrator", "poc-orchestrator", "release-manager"):
             for user_rule in ("ask", "deny"):
                 with self.subTest(agent=slug, user_rule=user_rule):
-                    self.assertEqual(self.effect(slug, "gitlab_merge_merge_request",
-                                                 global_extra={"gitlab_merge_merge_request": user_rule}), "allow")
+                    self.assertEqual(self.effect(slug, "gitlab_create_merge_request",
+                                                 global_extra={"gitlab_create_merge_request": user_rule}), "allow")
+        # ... while no agent holds the merge tool: the user's own `allow` does not reach it either
+        for slug in sorted(GITLAB_HOLDERS):
+            with self.subTest(agent=slug, tool="merge"):
+                self.assertEqual(self.effect(slug, "gitlab_merge_merge_request",
+                                             global_extra={"gitlab_merge_merge_request": "allow"}), "deny")
         # A tool the agent does not hold keeps the user's rule... except where the generator denies anyway
         self.assertEqual(self.effect("tech-lead", "playwright_browser_click",
                                      global_extra={"playwright_browser_click": "deny"}), "deny")
@@ -906,8 +924,10 @@ class DocumentationTests(unittest.TestCase):
             with self.subTest(doc=label):
                 self.assertTrue(hits)
                 line = hits[0]
-                for needle in ("five whole-server", "No supported way", "OPENCODE_CONFIG_CONTENT"):
+                for needle in ("no agent holds the whole `gitlab` server", "`gitlab_create_merge_request`",
+                               "No supported way", "OPENCODE_CONFIG_CONTENT"):
                     self.assertIn(needle, line)
+                self.assertNotIn("whole-server GitLab holders", line)
 
     def test_sec_t663_04_sentences_are_in_every_doc(self):
         for label, path in self.DOCS.items():

@@ -1,7 +1,7 @@
 ---
 name: "DevOps Engineer"
 description: "Use when setting up CI/CD pipelines, configuring Docker containers, writing Dockerfiles, creating Kubernetes manifests, managing infrastructure as code (Terraform, Ansible), configuring GitLab CI, setting up monitoring, or automating deployment workflows."
-tools: [read, search, edit, execute, web, mcp__gitlab__*]
+tools: [read, search, edit, execute, web, mcp__gitlab__list_pipelines, mcp__gitlab__get_pipeline, mcp__gitlab__list_pipeline_jobs, mcp__gitlab__get_pipeline_job, mcp__gitlab__list_merge_request_pipelines, mcp__gitlab__get_pipeline_test_report_summary, mcp__gitlab__validate_ci_lint, mcp__gitlab__validate_project_ci_lint, mcp__gitlab__get_merge_request, mcp__gitlab__list_merge_requests, mcp__gitlab__discover_tools]
 ---
 
 # DevOps Engineer

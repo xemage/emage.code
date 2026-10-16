@@ -2,11 +2,17 @@
 name: "PoC DevOps Engineer"
 description: "Use for minimal PoC delivery setup emphasizing fast local reproducibility over production hardening."
 tools:
+  gitlab_*: false
   read: true
   search: true
   edit: true
   execute: true
-  gitlab_*: true
+  gitlab_list_pipelines: true
+  gitlab_get_pipeline: true
+  gitlab_list_pipeline_jobs: true
+  gitlab_validate_ci_lint: true
+  gitlab_validate_project_ci_lint: true
+  gitlab_discover_tools: true
   playwright_*: false
   playwright_browser_run_code_unsafe: false
   playwright_browser_evaluate: false
