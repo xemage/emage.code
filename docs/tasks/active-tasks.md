@@ -2,9 +2,8 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T652 | Publish v8.0.0 (release MRs, main merge, tag) | orchestrator | pending | P0 | T651 | 2026-10-15 |
 
-> **Active rows (`plan-122`, release v8.0.0 wave 3; approved by the user on 2026-10-15).** T652 (publish: the release MRs to `develop` and `main` in the B1 order, the tag, the checkpoint; each outward step needs the user's explicit approval). The release document `docs/releases/v8.0.0.md` carries the verdict CONDITIONAL_PASS (T651). Baseline v21; root drift 0 (refresh 20 done on `release/v8.0.0`).
+> **No active rows.** Release v8.0.0 is published (tag `v8.0.0` on `release/v8.0.0` tip `6630dd0`, GitLab Release created by the tag pipeline). Baseline v21; root drift 0. Next work is the post-release follow-up list in `docs/checkpoints/checkpoint-038-release-v8.0.0.md`.
 
 > Status values: `pending` · `in_progress` · `blocked` · `in_review` · `done` · `cancelled`
 > Priority values: `P0` (critical path) · `P1` (important) · `P2` (nice-to-have)
