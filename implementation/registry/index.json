@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-16T11:15:00+02:00",
+  "generatedAt": "2026-10-16T13:50:59+02:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",

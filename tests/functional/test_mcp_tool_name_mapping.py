@@ -81,7 +81,9 @@ def _projected_tools(platform: str, slug: str) -> list[str]:
         return list(fm["tools"])
     if platform == "opencode":
         fm, _ = parse_file(root / ".opencode" / "agents" / f"{slug}.md")
-        return list(fm["tools"])
+        # T663: the map also carries generated `false` entries (per-agent denials); the grant list is
+        # the `true` entries, in order.
+        return [name for name, value in fm["tools"].items() if value is True]
     raise AssertionError(platform)
 
 
@@ -190,6 +192,9 @@ class GeneratorRunTests(unittest.TestCase):
         tools = fm["tools"]
         if isinstance(tools, str):
             return [t.strip() for t in tools.split(",")]
+        if isinstance(tools, dict):
+            # T663: Opencode's map also carries generated `false` entries (the per-agent denials)
+            return [name for name, value in tools.items() if value is True]
         return list(tools)
 
     def test_generator_succeeded(self):
@@ -317,7 +322,14 @@ class ProjectedAgentTests(unittest.TestCase):
         sources = len(list((knowledge_root() / "agents").glob("*.md")))
         self.assertGreaterEqual(len(files), sources * 6)
         for path in files:
-            self.assertNotIn("browser_run_code_unsafe", path.read_text(encoding="utf-8"), str(path))
+            text = path.read_text(encoding="utf-8")
+            if path.parent.parent.name == ".opencode":
+                # T663: an Opencode agent file names it only as the generated per-agent deny
+                for line in text.splitlines():
+                    if "browser_run_code_unsafe" in line:
+                        self.assertEqual(line, "  playwright_browser_run_code_unsafe: false", str(path))
+            else:
+                self.assertNotIn("browser_run_code_unsafe", text, str(path))
 
 
 class ArtifactTests(unittest.TestCase):

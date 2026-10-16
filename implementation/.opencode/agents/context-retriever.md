@@ -2,9 +2,26 @@
 name: "Context Retriever"
 description: "Use when an agent session needs to recall prior knowledge, decisions, or code context from the persistent memory vault (general/project/shared scopes) before or during a task — read-only hybrid semantic+lexical+structural retrieval over T452's derived index, scoped to the calling session's own project and platform."
 tools:
+  context-retriever_*: false
   read: true
   search: true
   context-retriever_retrieve: true
+  gitlab_*: false
+  playwright_*: false
+  playwright_browser_run_code_unsafe: false
+  playwright_browser_evaluate: false
+  playwright_browser_file_upload: false
+  playwright_browser_drag: false
+  playwright_browser_drop: false
+  playwright_browser_network_request: false
+  memory_*: false
+  sequential-thinking_*: false
+  security-audit_*: false
+  poc-security-audit_*: false
+  filesystem_*: false
+  github_*: false
+  git_*: false
+  supabase_*: false
 ---
 
 # Context Retriever

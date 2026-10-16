@@ -42,7 +42,37 @@
     "Declared 2026-10-15 by T658 (SEC-T657-01: the server-level denial of six Playwright tools, Opencode `permission` and Gemini CLI `excludeTools`, generated from `denyTools` in servers.yaml; the install merge rule for both): 0 new paths, because the two changed generated files (`.opencode/opencode.json`, `.gemini/settings.json`) were already declared by T655; the 97 paths declared by T657 are unchanged; root not refreshed (T659 refreshes it).",
     "Emptied 2026-10-15 by the nineteenth user-approved --projections-only refresh (97 paths declared by T655, T656, T657 and T658: the fetch removal, the hardened playwright entry, the per-platform tool names, the narrowed Playwright grants and the Opencode/Gemini server-level denials on every platform; note: in a fresh worktree rsync's size-and-mtime quick check skipped two Pi agent files of equal size, so the source mtimes were touched before the second run).",
     "Declared 2026-10-15 by T660 (SEC-T657-02: qa-engineer and scrum-master hold named, non-destructive GitLab tools instead of the whole `gitlab` server): 10 paths = the two agent projections on each of Claude Code, Cursor, GitHub Copilot, Opencode and Pi; root not refreshed.",
-    "Emptied 2026-10-15 by the twentieth user-approved --projections-only refresh, run on release/v8.0.0 (10 paths: the T660 named GitLab tools of qa-engineer and scrum-master on Claude Code, Cursor, Copilot, Opencode and Pi)."
+    "Emptied 2026-10-15 by the twentieth user-approved --projections-only refresh, run on release/v8.0.0 (10 paths: the T660 named GitLab tools of qa-engineer and scrum-master on Claude Code, Cursor, Copilot, Opencode and Pi).",
+    "Declared 2026-10-16 by T663 (SEC-T658-01: per-agent `false` entries in every Opencode agent file, the six Playwright denies for all agents and `gitlab_*` for the agents without a GitLab tool, generated from `denyTools` and `denyUnlessGranted` in servers.yaml): 28 paths = the 28 Opencode agent files (since the T663 review fix SEC-T663-01 every agent file also carries `<server>_*: false` for each non-exempt server it holds no token of (brave, context7, hindsight, cwso, hf-mcp-server and toolradar are exempt by the user's decision of 2026-10-16); agents that hold only named tools of a server get that wildcard before their named allows); root not refreshed."
   ],
-  "drift": []
+  "drift": [
+    ".opencode/agents/backend-developer.md",
+    ".opencode/agents/context-retriever.md",
+    ".opencode/agents/data-mockup-agent.md",
+    ".opencode/agents/database-engineer.md",
+    ".opencode/agents/demo-agent.md",
+    ".opencode/agents/devops-engineer.md",
+    ".opencode/agents/evaluation-agent.md",
+    ".opencode/agents/feasibility-agent.md",
+    ".opencode/agents/frontend-developer.md",
+    ".opencode/agents/integration-agent.md",
+    ".opencode/agents/orchestrator.md",
+    ".opencode/agents/poc-devops-engineer.md",
+    ".opencode/agents/poc-orchestrator.md",
+    ".opencode/agents/poc-qa-engineer.md",
+    ".opencode/agents/poc-security-engineer.md",
+    ".opencode/agents/poc-technical-writer.md",
+    ".opencode/agents/product-owner.md",
+    ".opencode/agents/qa-engineer.md",
+    ".opencode/agents/release-manager.md",
+    ".opencode/agents/scaffolding-agent.md",
+    ".opencode/agents/scrum-master.md",
+    ".opencode/agents/security-engineer.md",
+    ".opencode/agents/solution-architect.md",
+    ".opencode/agents/tech-lead.md",
+    ".opencode/agents/technical-debt-narrator.md",
+    ".opencode/agents/technical-writer.md",
+    ".opencode/agents/technology-scout.md",
+    ".opencode/agents/ux-designer.md"
+  ]
 }

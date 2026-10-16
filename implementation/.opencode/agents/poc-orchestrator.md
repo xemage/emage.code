@@ -12,6 +12,20 @@ tools:
   gitlab_*: true
   memory_*: true
   sequential-thinking_*: true
+  playwright_*: false
+  playwright_browser_run_code_unsafe: false
+  playwright_browser_evaluate: false
+  playwright_browser_file_upload: false
+  playwright_browser_drag: false
+  playwright_browser_drop: false
+  playwright_browser_network_request: false
+  context-retriever_*: false
+  security-audit_*: false
+  poc-security-audit_*: false
+  filesystem_*: false
+  github_*: false
+  git_*: false
+  supabase_*: false
 agents: [technology-scout, feasibility-agent, scaffolding-agent, integration-agent, data-mockup-agent, demo-agent, evaluation-agent, technical-debt-narrator, poc-qa-engineer, poc-security-engineer, poc-technical-writer, poc-devops-engineer, backend-developer, frontend-developer]
 user-invocable: true
 ---

@@ -1,0 +1,309 @@
+{
+  "name": "Demo Agent",
+  "mode": "all",
+  "permission": [
+    {
+      "permission": "*",
+      "action": "allow",
+      "pattern": "*"
+    },
+    {
+      "permission": "doom_loop",
+      "action": "ask",
+      "pattern": "*"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "*",
+      "action": "ask"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "/tmp/claude-1000/-home-emage-Code-emage-emage-code/00f8372f-6371-46d2-9fa7-bac00c806f40/scratchpad/t663/home/data/opencode/tool-output/*",
+      "action": "allow"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "/tmp/opencode/*",
+      "action": "allow"
+    },
+    {
+      "permission": "question",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "plan_enter",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "plan_exit",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "read",
+      "pattern": "*",
+      "action": "allow"
+    },
+    {
+      "permission": "read",
+      "pattern": "*.env",
+      "action": "ask"
+    },
+    {
+      "permission": "read",
+      "pattern": "*.env.*",
+      "action": "ask"
+    },
+    {
+      "permission": "read",
+      "pattern": "*.env.example",
+      "action": "allow"
+    },
+    {
+      "permission": "*",
+      "action": "allow",
+      "pattern": "*"
+    },
+    {
+      "permission": "gitlab_*",
+      "action": "allow",
+      "pattern": "*"
+    },
+    {
+      "permission": "brave_*",
+      "action": "allow",
+      "pattern": "*"
+    },
+    {
+      "permission": "playwright_browser_click",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "gitlab_merge_merge_request",
+      "action": "ask",
+      "pattern": "*"
+    },
+    {
+      "permission": "playwright_browser_run_code_unsafe",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "playwright_browser_evaluate",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "playwright_browser_file_upload",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "playwright_browser_drag",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "playwright_browser_drop",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "playwright_browser_network_request",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "playwright_*",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "read",
+      "action": "allow",
+      "pattern": "*"
+    },
+    {
+      "permission": "search",
+      "action": "allow",
+      "pattern": "*"
+    },
+    {
+      "permission": "edit",
+      "action": "allow",
+      "pattern": "*"
+    },
+    {
+      "permission": "web",
+      "action": "allow",
+      "pattern": "*"
+    },
+    {
+      "permission": "playwright_browser_navigate",
+      "action": "allow",
+      "pattern": "*"
+    },
+    {
+      "permission": "playwright_browser_navigate_back",
+      "action": "allow",
+      "pattern": "*"
+    },
+    {
+      "permission": "playwright_browser_snapshot",
+      "action": "allow",
+      "pattern": "*"
+    },
+    {
+      "permission": "playwright_browser_take_screenshot",
+      "action": "allow",
+      "pattern": "*"
+    },
+    {
+      "permission": "playwright_browser_click",
+      "action": "allow",
+      "pattern": "*"
+    },
+    {
+      "permission": "playwright_browser_hover",
+      "action": "allow",
+      "pattern": "*"
+    },
+    {
+      "permission": "playwright_browser_type",
+      "action": "allow",
+      "pattern": "*"
+    },
+    {
+      "permission": "playwright_browser_fill_form",
+      "action": "allow",
+      "pattern": "*"
+    },
+    {
+      "permission": "playwright_browser_press_key",
+      "action": "allow",
+      "pattern": "*"
+    },
+    {
+      "permission": "playwright_browser_wait_for",
+      "action": "allow",
+      "pattern": "*"
+    },
+    {
+      "permission": "playwright_browser_resize",
+      "action": "allow",
+      "pattern": "*"
+    },
+    {
+      "permission": "playwright_browser_close",
+      "action": "allow",
+      "pattern": "*"
+    },
+    {
+      "permission": "gitlab_*",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "playwright_browser_run_code_unsafe",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "playwright_browser_evaluate",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "playwright_browser_file_upload",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "playwright_browser_drag",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "playwright_browser_drop",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "playwright_browser_network_request",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "memory_*",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "sequential-thinking_*",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "context-retriever_*",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "security-audit_*",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "poc-security-audit_*",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "filesystem_*",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "github_*",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "git_*",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "supabase_*",
+      "action": "deny",
+      "pattern": "*"
+    },
+    {
+      "permission": "external_directory",
+      "pattern": "/tmp/claude-1000/-home-emage-Code-emage-emage-code/00f8372f-6371-46d2-9fa7-bac00c806f40/scratchpad/t663/home/data/opencode/tool-output/*",
+      "action": "allow"
+    }
+  ],
+  "options": {},
+  "native": false,
+  "prompt": "# Demo Agent\n\nTurn current PoC output into a compelling demo flow.\n\n## Deliverables\n- Scripted walkthrough\n- Sample inputs and expected outputs\n- Optional screenshots/capture checklist\n- Presenter notes (what to show and when)\n\nOptimize clarity, not completeness.\n\n## Protocol Awareness\n\n### Task Completion\nWhen you complete your work:\n1. List artifacts produced (with filenames and versions)\n2. Confirm acceptance criteria from the delegation brief are met\n3. Flag any technical debt introduced (mandatory for PoC track)\n4. Report completion to the PoC orchestrator\n\n### Blocker Reporting\nIf you cannot proceed:\n1. Describe the blocker clearly\n2. Classify it: `technical` | `dependency` | `unclear_requirements` | `external`\n3. Suggest a workaround — PoC speed matters, prefer unblocking over perfection\n4. The PoC orchestrator will handle escalation\n\n### Artifact References\n- Reference input artifact versions you consumed\n- Name output artifacts: `<type>-vN.md`\n- Tag PoC-specific shortcuts with `<!-- POC-DEBT: description -->` for later cleanup\n\n## Rails\n\n**Inputs**: The current PoC output/build and its stated hypothesis/success-signal.\n**Out of scope**: Achieving completeness or covering every edge case — optimizes only for a clear, compelling walkthrough of the behavior that was actually validated.\n**Failure mode**: If the PoC output cannot demonstrate the hypothesis at all, reports a blocker to the PoC orchestrator rather than staging a misleading demo.\n\n## Constraints\n\n- **Protected paths:** `tests/golden/**` and `scripts/scorecard.py` are out of write scope for all agents — full policy, the orchestrator's read/audit exception, and the exception process for genuine future maintenance: `docs/artifacts/protected-paths-v1.md`.",
+  "description": "Use when packaging a proof-of-concept into a stakeholder-ready demonstration flow.",
+  "tools": {
+    "invalid": true,
+    "question": true,
+    "bash": true,
+    "read": true,
+    "glob": true,
+    "grep": true,
+    "edit": true,
+    "write": true,
+    "task": true,
+    "webfetch": true,
+    "todowrite": true,
+    "skill": true
+  }
+}

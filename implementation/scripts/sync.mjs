@@ -135,11 +135,21 @@ function parseScalar(v) {
 
 function emitFrontmatter(obj, opts = { toolsFormat: 'array' }) {
   const lines = ['---'];
+  const anyDeny = (opts.denyTools || []).length + (opts.denyFirst || []).length > 0;
+  if (opts.toolsFormat === 'object' && anyDeny && !Array.isArray(obj.tools)) {
+    obj = { ...obj, tools: [] };
+  }
   for (const [key, val] of Object.entries(obj)) {
     if (val === undefined || val === null) continue;
     if (key === 'tools' && opts.toolsFormat === 'object' && Array.isArray(val)) {
       lines.push('tools:');
+      // T663: a server wildcard deny for an agent that holds only NAMED tools of that server goes
+      // FIRST; the named allows after it are then the only tools of the server it can call.
+      for (const t of opts.denyFirst || []) lines.push(`  ${t}: false`);
       for (const t of val) lines.push(`  ${t}: true`);
+      // T663: per-agent denies come LAST. Opencode applies the last matching rule, so a deny written
+      // after every allow survives any broader allow of the same agent (docs/artifacts/mcp-agent-denials-v1.md).
+      for (const t of opts.denyTools || []) lines.push(`  ${t}: false`);
       continue;
     }
     if (key === 'tools' && opts.toolsFormat === 'string' && Array.isArray(val)) {
@@ -178,8 +188,22 @@ async function readServersYaml() {
 // (or, on Opencode, fail to deny) more than the list says.
 const DENY_TOOL_NAME = /^[A-Za-z0-9_]+$/;
 
+// T663 (SEC-T663-06): a server entry may carry only these keys. A misspelling of a security key
+// (`denyUnlessGrant`, `denyTool`) used to be read as an unknown key and silently ignored, which
+// leaves the denial out; it now stops the run.
+const SERVER_KEYS = new Set([
+  'tags', 'transport', 'command', 'args', 'env', 'url', 'headers', 'denyTools', 'denyUnlessGranted',
+]);
+
 function validateDenyTools(servers) {
   for (const [name, server] of Object.entries(servers)) {
+    const unknown = Object.keys(server).filter((k) => !SERVER_KEYS.has(k));
+    if (unknown.length > 0) {
+      throw new Error(`servers.yaml: ${name} has an unknown key: ${unknown.map((k) => k.slice(0, 40)).join(', ')}`);
+    }
+    if (server.denyUnlessGranted !== undefined && typeof server.denyUnlessGranted !== 'boolean') {
+      throw new Error(`servers.yaml: ${name}.denyUnlessGranted must be the boolean true or false (or absent)`);
+    }
     if (server.denyTools === undefined) continue;
     const list = server.denyTools;
     if (!Array.isArray(list) || list.length === 0) {
@@ -195,6 +219,14 @@ function validateDenyTools(servers) {
     }
   }
 }
+
+// T663 (SEC-T658-01): `denyUnlessGranted: true` on a server asks the Opencode projection for a
+// per-agent `<server>_*: false` in every agent file whose tool list holds no token for that server
+// (no `mcp__<server>` and no `mcp__<server>__<tool>`), and a leading one for an agent that holds only
+// named tools of the server. `denyTools` (above) additionally yields one
+// per-agent `<server>_<tool>: false` per listed tool in EVERY agent file. See
+// docs/artifacts/mcp-agent-denials-v1.md. `false` is an explicit exemption (user decision 2026-10-16).
+// Other platforms ignore both.
 
 // Block-typed (multi-line, nested) top-level server keys. `env` is the original;
 // `headers` (T491) reuses the identical block-parsing mechanism.
@@ -372,10 +404,54 @@ function validateMcpToolNamesStyle(manifest) {
   const style = manifest.frontmatter && manifest.frontmatter.agents
     ? manifest.frontmatter.agents.mcpToolNames
     : undefined;
+  const denies = manifest.frontmatter && manifest.frontmatter.agents
+    ? manifest.frontmatter.agents.mcpAgentDenies
+    : undefined;
+  // T663: per-agent denies are written in the `underscore` form and only where the tools are an object
+  if (denies !== undefined && (denies !== true || style !== 'underscore' || manifest.frontmatter.agents.tools !== 'object')) {
+    throw new Error(`mcpAgentDenies needs true, mcpToolNames "underscore" and tools "object" (platform ${manifest.platform})`);
+  }
   if (style === undefined) return;
   if (typeof style !== 'string' || !Object.prototype.hasOwnProperty.call(MCP_TOOL_NAME_STYLES, style)) {
     throw new Error(`Unknown mcpToolNames style: ${String(style)} (platform ${manifest.platform})`);
   }
+}
+
+// T663: names of the per-agent `false` entries for one agent, in the Opencode `underscore` form.
+// `sourceTools` is the agent's tool list in the source form (`mcp__<server>[__<tool>]`);
+// `renderedTools` is the list that will be written as `true`. Returns `{ first, last }`:
+//   last   the exact denied names (`denyTools` of every server, for every agent), followed by the
+//          server wildcard of every `denyUnlessGranted` server this agent holds no token for;
+//          written AFTER every allow, so a deny survives any broader allow of the agent.
+//   first  the server wildcard of every `denyUnlessGranted` server this agent holds only NAMED tools
+//          of (`mcp__<server>__<tool>`, no bare `mcp__<server>`): written BEFORE the allows, so the
+//          named allows that follow it are the only tools of the server the agent can call. Here the
+//          file order, not a distinct name, is what makes the pair safe (last match wins).
+// A holder of the whole server gets neither. Throws when the agent would hold an allow and a deny of
+// the same name: the generator never writes both.
+function agentMcpDenials(sourceTools, renderedTools, servers, tags) {
+  const whole = new Set();
+  const named = new Set();
+  for (const token of Array.isArray(sourceTools) ? sourceTools : []) {
+    const parts = splitMcpToolName(token);
+    if (!parts) continue;
+    (parts.tool === '*' ? whole : named).add(parts.server);
+  }
+  const first = [];
+  const last = [];
+  for (const [server, def] of Object.entries(servers)) {
+    if (!(def.tags || []).some((t) => tags.includes(t))) continue;
+    if (def.denyUnlessGranted === true && !whole.has(server)) {
+      const wildcard = MCP_TOOL_NAME_STYLES.underscore({ server, tool: '*' });
+      (named.has(server) ? first : last).push(wildcard);
+    }
+    for (const tool of def.denyTools || []) last.push(MCP_TOOL_NAME_STYLES.underscore({ server, tool }));
+  }
+  const result = { first: [...new Set(first)], last: [...new Set(last)] };
+  const allowed = new Set(Array.isArray(renderedTools) ? renderedTools : []);
+  const clash = [...result.first, ...result.last].find((d) => allowed.has(d));
+  if (clash) throw new Error(`An agent tool list both grants and denies ${clash}`);
+  return result;
 }
 
 function renderMcpToolName(token, style) {
@@ -391,6 +467,15 @@ function renderMcpToolName(token, style) {
 function renderMcpToolList(tools, style) {
   if (!Array.isArray(tools) || !style || style === 'verbatim') return tools;
   return [...new Set(tools.map((t) => renderMcpToolName(t, style)))];
+}
+
+// The agent's tool list in the source form, as an array of names (an object form keeps its true entries).
+function sourceToolList(data) {
+  const tools = data.tools;
+  if (tools && !Array.isArray(tools) && typeof tools === 'object') {
+    return Object.entries(tools).filter(([, v]) => v).map(([k]) => k);
+  }
+  return Array.isArray(tools) ? tools : [];
 }
 
 function applyAgentFrontmatter(data, name, cfg) {
@@ -639,8 +724,13 @@ async function syncPlatform(manifest, servers) {
       const raw = await fs.readFile(file, 'utf8');
       const { data, body } = parseFrontmatter(raw);
       const newData = applyAgentFrontmatter(data, baseName, agentCfg);
+      const denies = agentCfg.mcpAgentDenies === true && manifest.mcp
+        ? agentMcpDenials(sourceToolList(data), newData.tools, servers, manifest.mcp.tags)
+        : { first: [], last: [] };
       const fm = emitFrontmatter(newData, {
         toolsFormat: agentCfg.tools === 'object' ? 'object' : agentCfg.tools === 'string' ? 'string' : 'array',
+        denyFirst: denies.first,
+        denyTools: denies.last,
       });
       const outPath = path.join(outRoot, agentMap.dir, baseName + agentMap.ext);
       await emitFile(outPath, fm + body);
@@ -770,9 +860,15 @@ async function main() {
   const servers = await readServersYaml();
   let total = 0;
 
+  // T663 (SEC-T658-07 b): every manifest is read and validated before the first file is written.
+  const manifests = [];
   for (const file of platformFiles) {
     const manifest = JSON.parse(await fs.readFile(path.join(PLATFORMS, file), 'utf8'));
     validateMcpToolNamesStyle(manifest);
+    manifests.push(manifest);
+  }
+
+  for (const manifest of manifests) {
     if (ONLY_PLATFORM && manifest.platform !== ONLY_PLATFORM) continue;
     const count = await syncPlatform(manifest, servers);
     console.log(`[${manifest.platform}] ${CHECK_ONLY ? 'checked' : 'wrote'} ${count} files -> ${manifest.outputDir}`);

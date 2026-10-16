@@ -302,6 +302,11 @@ PLAYWRIGHT_EXCLUDED = {
 }
 
 
+def _is_deny_line(line: str) -> bool:
+    """An indented `<name>: false` entry of an Opencode `tools:` map (T663 per-agent deny)."""
+    return re.fullmatch(r"\s+\S+: false", line) is not None
+
+
 def _playwright_grants(slug: str) -> set[str]:
     prefix = "mcp__playwright__"
     return {t[len(prefix):] for t in _agent_tools(slug) if t.startswith(prefix)}
@@ -369,7 +374,10 @@ class PlaywrightGrantSetTests(unittest.TestCase):
         self.assertGreaterEqual(len(files), 5 * 20)
         for path in files:
             front = path.read_text(encoding="utf-8").split("---", 2)[1]
-            tokens = re.findall(r"[A-Za-z0-9_./*-]+", "\n".join(l for l in front.splitlines() if not l.startswith(("name:", "description:"))))
+            # T663: an Opencode `name: false` line is a generated per-agent deny, not a grant; its names
+            # are pinned in test_mcp_agent_denials.py
+            tokens = re.findall(r"[A-Za-z0-9_./*-]+", "\n".join(
+                l for l in front.splitlines() if not l.startswith(("name:", "description:")) and not _is_deny_line(l)))
             with self.subTest(file=path.relative_to(root).as_posix()):
                 for token in tokens:
                     self.assertNotIn(token, PLAYWRIGHT_SERVER_FORMS)
@@ -517,8 +525,10 @@ class GitLabGrantSetTests(unittest.TestCase):
             for path in files:
                 slug = path.name[: -len(suffix)]
                 front = path.read_text(encoding="utf-8").split("---", 2)[1]
+                # T663: a generated `gitlab_*: false` (Opencode, agents without a GitLab tool) is a deny, not a grant
                 tokens = set(re.findall(r"[A-Za-z0-9_./*-]+", "\n".join(
-                    l for l in front.splitlines() if not l.startswith(("name:", "description:")))))
+                    l for l in front.splitlines()
+                    if not l.startswith(("name:", "description:")) and not _is_deny_line(l))))
                 whole = {t for t in tokens if t in GITLAB_WHOLE_SERVER_FORMS}
                 named = {t[len(prefix):] for t in tokens if t.startswith(prefix) and t not in GITLAB_WHOLE_SERVER_FORMS}
                 with self.subTest(platform=platform, agent=slug):
