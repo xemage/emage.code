@@ -3,6 +3,18 @@
 
 Checks that required documentation exists, includes the current release marker,
 contains key usage sections, and has resolvable local/internal links.
+
+The release document's ``## Gate Verdicts`` and ``## RELEASE VERDICT`` sections must
+also be filled in (TL-T649-12): a row or field that is still ``pending`` or carries a
+template placeholder (``YYYY-MM-DD``, ``<count>``, ``<ISO-8601>``,
+``<PASS/CONDITIONAL_PASS>``, the unfilled ``PASS | CONDITIONAL_PASS | FAIL``) fails
+the gate. The gate does not require the Gate Verdicts section to exist (only the
+RELEASE VERDICT section, as before) and does not check the field-level contract, which the
+golden suite encodes.
+
+This gate cannot check that ``main`` already carries the release: that duty (merge the
+release branch to ``develop`` and ``main`` before the tag) is enforced, within its
+grace window, by ``scripts/check-main-develop-drift.py`` and stated in CONTRIBUTING.md.
 """
 
 from __future__ import annotations
@@ -90,6 +102,21 @@ SECTION_REQUIREMENTS: dict[Path, list[str]] = {
     ],
 }
 
+VERDICT_SECTIONS = ("## Gate Verdicts", "## RELEASE VERDICT")
+PLACEHOLDER_MARKERS = (
+    "YYYY-MM-DD",
+    "<PASS/CONDITIONAL_PASS>",
+    "<count>",
+    "<ISO-8601>",
+    "PASS | CONDITIONAL_PASS | FAIL",
+)
+# The label cannot start or end with a space or tab, so there is exactly one way to match it
+# (linear time on a long run of spaces; a lazy label followed by `[ \t]*:` is quadratic).
+FIELD_RE = re.compile(r"^[ \t]*[-*][ \t]+(?P<label>[^:\n \t](?:[^:\n]*[^:\n \t])?)[ \t]*:[ \t]*(?P<value>.*)$")
+WORD_MARKER_RE = re.compile(r"\b(?:TBD|TODO)\b")
+TEMPLATE_PROSE_MARKERS = ("[list ", "[if FAIL")
+PENDING_ON_RE = re.compile(r"\bon\s+pending\b", re.IGNORECASE)
+
 FENCED_CODE_RE = re.compile(r"```.*?```", re.DOTALL)
 INLINE_CODE_RE = re.compile(r"`[^`\n]*`")
 LINK_RE = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
@@ -117,6 +144,55 @@ def normalize_target(current_file: Path, raw_target: str) -> Path | None:
 def strip_code(text: str) -> str:
     text = FENCED_CODE_RE.sub("", text)
     return INLINE_CODE_RE.sub("", text)
+
+
+def section_text(text: str, heading: str) -> str:
+    """The body of ``heading`` (a ``## `` line) up to the next ``## `` heading; '' when absent.
+
+    Fenced code is blanked first, so a heading or a placeholder quoted in a code block
+    neither opens a section nor counts as an unfilled value.
+    """
+    lines = [line.rstrip() for line in FENCED_CODE_RE.sub("", text).splitlines()]
+    try:
+        start = lines.index(heading)
+    except ValueError:
+        return ""
+    end = next((i for i in range(start + 1, len(lines)) if lines[i].startswith("## ")), len(lines))
+    return "\n".join(lines[start + 1 : end])
+
+
+def verdict_placeholder_problems(text: str) -> list[str]:
+    """Problems for each unfilled row or field in the Gate Verdicts / RELEASE VERDICT sections."""
+    problems: list[str] = []
+    for heading in VERDICT_SECTIONS:
+        body = section_text(text, heading)
+        if re.search(rf"^{re.escape(heading)}", text, re.M) and not body.strip():
+            problems.append(f"{heading[3:]}: the heading is present but the section is empty or only inside a code block")
+        lines = body.splitlines()
+        for i, line in enumerate(lines):
+            nested = i + 1 < len(lines) and re.match(r"[ \t]+[-*][ \t]", lines[i + 1]) is not None
+            problems.extend(_line_problems(heading[3:], line, nested))
+    return problems
+
+
+def _line_problems(section: str, line: str, nested_follows: bool = False) -> list[str]:
+    """Placeholder problems of one line of a verdict section (``nested_follows``: a sub-list item comes next)."""
+    found = [
+        f"{section}: unfilled placeholder {marker!r}: {line.strip()[:80]}"
+        for marker in (*PLACEHOLDER_MARKERS, *TEMPLATE_PROSE_MARKERS)
+        if marker in line
+    ]
+    if WORD_MARKER_RE.search(line):
+        found.append(f"{section}: unfilled placeholder TBD/TODO: {line.strip()[:80]}")
+    field = FIELD_RE.match(line)
+    if not field:
+        return found
+    value = field.group("value").replace("*", "").replace("`", "").strip()
+    if not value and not nested_follows:
+        found.append(f"{section}: field has no value: {line.strip()[:80]}")
+    if value.lower().startswith("pending") or PENDING_ON_RE.search(value):
+        found.append(f"{section}: value is still pending: {line.strip()[:80]}")
+    return found
 
 
 def check_links(file_path: Path, errors: list[str]) -> None:
@@ -218,6 +294,9 @@ def main() -> int:
     ):
         if snippet not in brief_text:
             errors.append(f"missing required content in {release_brief}: {snippet}")
+
+    for problem in verdict_placeholder_problems(brief_text):
+        errors.append(f"unfilled verdict in {release_brief}: {problem}")
 
     for relative in required_for_tag:
         check_links(ROOT / relative, errors)
