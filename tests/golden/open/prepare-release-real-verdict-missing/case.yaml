@@ -1,13 +1,4 @@
 id: prepare-release-real-verdict-missing
 command: /prepare-release
-status: known_failing
-known_failing_category: tracked_defect
-known_failing_reason: >-
-  prepare-release.md step 7 requires a "## RELEASE VERDICT" block with 11 structured fields in
-  the release notes document docs/releases/v<version>.md, which that step names as the block's
-  home (not the release checkpoint from step 6). Real fixture docs/releases/v7.0.1.md (copied
-  verbatim) has no such block anywhere. Corpus survey: grep -rl "## RELEASE VERDICT" docs/releases/
-  matches only docs/releases/_template.md, so no shipped release notes document carries the
-  block. Retargeted from the release checkpoint class to the release notes class under ADR-007
-  branch 2; the defect itself (branch 3b, omission) is unchanged.
+status: expected_pass
 tags: [prepare-release, verdict, real-artifact, format-drift]
