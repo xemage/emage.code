@@ -5,7 +5,7 @@
 **Status:** pending
 **Priority:** P2
 **Tier:** standard
-**Depends on:** T672, T675
+**Depends on:** T672, T675, T665
 **Affects:** —
 **Created:** 2026-10-16
 **Completed:** —

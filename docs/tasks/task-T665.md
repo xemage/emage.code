@@ -5,7 +5,7 @@
 **Status:** pending
 **Priority:** P1
 **Tier:** standard
-**Depends on:** T664
+**Depends on:** T664, T662
 **Affects:** —
 **Created:** 2026-10-16
 **Completed:** —
@@ -15,6 +15,8 @@
 - The user's words of 2026-10-16: "I want to drop Cursor support completely" (T661, T662); "Regarding baseline v22: approving it" (T668 to T670); the approval of plan-123 (AskUserQuestion, verbatim option label): "Approve as written (Recommended)"
 
 ## 1. What and why
+
+**Decided 2026-10-16 (AskUserQuestion, verbatim): "Adopt D and re-accept the residual (Recommended)" and "Accept the defaults (Recommended)" for `docs/artifacts/gitlab-token-handling-design-v1.md`.** Implement section 8 of that design (the exact T665 scope): the token-file `fromEnv` entry and the optional `default` in `servers.yaml`/`sync.mjs mapTemplatedValue` (rendered `${VAR:-}` on Claude Code only), the placeholder-form check and template fixes for Gemini, Pi, Cline and VS Code, merge-behaviour tests, the rewritten PREREQUISITES/wiki token section (one scope/role table, the token-type order, file mode as documented default, per-client posture with verified/unverified labels, the stated residual, migration), `GITLAB_PERMISSION_MODE=modify` as the server-side default, and the stdlib script `scripts/check-gitlab-token.py`. The three live checks need a throwaway token on a scratch project that only the user can supply; until they pass the docs say 'unverified' and the docs do not lead with the fine-grained PAT. Original scope text:
 
 Implement the T664 decision (devops-engineer; technical-writer for `PREREQUISITES.md` and the wiki). Depends on T664. *Acceptance:* per the decision; tests; a Security Engineer review.
 

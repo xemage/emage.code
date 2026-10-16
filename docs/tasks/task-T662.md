@@ -16,6 +16,8 @@
 
 ## 1. What and why
 
+**Step S1 of `docs/decisions/ADR-010-drop-cursor-platform-support.md` (accepted 2026-10-16: v9.0.0, adopter behaviour B, delete both trees, Pi format value `pi`, pack schema with the six current platforms, no golden edit).** Follow the ADR's task breakdown for S1 and its decisions D1 to D9; commit 1 is the Pi format rename, commit 2 the removal (manifest, both `.cursor` trees via `git rm -r`, installer and renderer per D3 with early `--platform` validation and the read-only notice, registry and pack schema, tests per D6 with an orphan-tree guard), plus the end-to-end scenario against a real `git archive v8.0.0` install. S2 (T678, docs) and S3 (T679, root refresh) are separate rows. Original scope text:
+
 Implement the ADR-010 outcome (devops-engineer, with technical-writer for the docs): remove Cursor from the source tree, generators, installer, tests, docs, registry and root install per the inventory; regenerate; declare the root drift. *Acceptance:* no Cursor references remain outside historical records and the migration note; all gates and the suite pass; a Security Engineer review follows. Depends on T661. If the inventory shows `tests/golden/**` edits are needed, T662 stops at that point and the orchestrator brings a grant (G-3) to the user; those goldens are then folded into a later baseline.
 
 ## 2. Output

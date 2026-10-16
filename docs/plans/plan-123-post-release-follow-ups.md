@@ -106,3 +106,12 @@ Parallel from the start: T661, T663, T664, T666, T668, T671. T662 waits for the 
 - Never open `tests/golden/held-out/`; never write a held-out id; no `.env*` or credential files; the user's local `.claude/settings*.json` and `.vscode/mcp.json` are not read or edited.
 - `git push` may fail: retry once, then the Commits API fallback (skill `gitlab-api-push-fallback`), and verify the tree.
 - Task rows are created only after this plan is merged and the user has approved it.
+
+## Addendum (2026-10-16): T678, T679 and the decisions of T661 and T664
+
+The user decided on 2026-10-16 (AskUserQuestion, option labels verbatim): ADR-010 Q1 "v9.0.0 (MAJOR), no deprecation release (Recommended)", Q2 "B: error plus read-only notice, never delete (Recommended)", Q3 "Yes, delete both trees (Recommended)", Q4 to Q7 "Accept all four defaults (Recommended)" (the ADR is accepted, including the split of T662 into three steps and the finding that no `tests/golden/**` edit, no grant G-3 and no baseline v23 are needed); T664 "Adopt D and re-accept the residual (Recommended)" and "Accept the defaults (Recommended)" (`docs/artifacts/gitlab-token-handling-design-v1.md`, decisions DEC-T664-1 to -6).
+
+18. **T678** (step S2 of ADR-010; technical-writer, the orchestrator commits and runs the generators): live docs, knowledge text and templates per ADR-010 D1: the Cursor rows and counts in `README.md`, `AGENTS.md`, `implementation/AGENTS.md`, `implementation/README.md`, `PREREQUISITES.md`, `SECURITY.md`, `CONTRIBUTING.md`, the wiki pages, the seven knowledge files, `docs/releases/_template.md`, the `.gitlab` templates and the platform-count words; the draft migration text of ADR-010 Appendix A is kept for the v9.0.0 release document. Depends on T662. *Acceptance:* the allow-list grep of ADR-010 shows no Cursor reference outside historical records and the migration text; all gates and the suite pass; a Security Engineer read of the changed security statements.
+19. **T679** (step S3 of ADR-010; orchestrator, the user's approval needed at that step): the root `--projections-only` refresh on the tip of T678, empty drift, the baseline's "Emptied" line. Depends on T678.
+
+T665 now carries the T664 decisions (option D, file mode as documented default, `GITLAB_PERMISSION_MODE=modify`, the check script, the live checks supplied by the user) and depends on T662 as well, because both touch `emitMcp`. T677 depends on T665 as well as T672 and T675.
