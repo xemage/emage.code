@@ -51,7 +51,7 @@ scripts/install.sh --target /path/to/your-project --platform cursor --projection
 | Pi | `.pi/` |
 | Claude Code | `.claude/` + `.mcp.json` + `CLAUDE.md` |
 
-Plus always: `AGENTS.md` and `docs/`.
+Plus always: `AGENTS.md`, `docs/`, and the MCP server runtime source that `install.sh` copies without `--projections-only`: `implementation/runtime/memory/`, `implementation/runtime/security/` and `implementation/runtime/handoff/`, each to the same path in your project, plus an empty `implementation/__init__.py` (leave out any `_index/` and `__pycache__/` folders). The `context-retriever`, `security-audit` and `poc-security-audit` servers launch with `python3 -m implementation.runtime...` and `/handoff` reads `implementation/runtime/handoff/`, so they do not work without it.
 
 ## 3. Set MCP env vars
 

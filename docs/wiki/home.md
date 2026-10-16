@@ -2,7 +2,7 @@
 
 Welcome to the **emage.code** wiki — the central knowledge hub for the multi-platform AI dev-team orchestration framework.
 
-Latest release: v7.0.1
+Latest release: v8.0.0
 
 ## What is emage.code?
 
@@ -14,7 +14,7 @@ emage.code projects a single canonical knowledge base into the major AI coding a
 |------|-------|
 | [Quick Start](quick-start) | Drop emage.code into a new project in 5 minutes |
 | [Architecture](architecture) | The 6-layer architecture, knowledge → platform projection |
-| [Agents Overview](agents-overview) | The 27 specialist agents and their permissions |
+| [Agents Overview](agents-overview) | The 28 specialist agents and their permissions |
 | [MCP Servers](mcp-servers) | Tool integrations: GitLab, Playwright, Memory, Brave, … |
 | [Performance Benchmarks](performance-benchmarks) | Benchmark dimensions, thresholds, and runtime diagrams |
 | [Contributing Workflow](contributing-workflow) | GitFlow + Conventional Commits + sync engine |

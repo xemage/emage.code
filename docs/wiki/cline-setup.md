@@ -30,7 +30,7 @@ integration work for this release), so no additional projection step is
 required to get workspace conventions loaded.
 
 **Scope note — subagents and slash commands are not included in this release.**
-emage.code ships 27 specialist subagents and 18 slash commands to other
+emage.code ships 28 specialist subagents and 19 slash commands to other
 platforms (Claude Code, Cursor, etc.), but **Cline support in this release
 covers only rules, skills, and the MCP staging file**. As of this writing, no
 confirmed on-disk format for Cline-native subagents (`.cline/agents/`) or

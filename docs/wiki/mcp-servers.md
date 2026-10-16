@@ -236,8 +236,9 @@ v8.0.0 corrects and pins the MCP server entries (audit SEC-002). Four extended e
 
 ## Remote-server transport encoding differs per platform
 
-Two servers in this registry use `transport: remote` (`context7`, `hf-mcp-server` — both
-hosted, streamable-HTTP MCP endpoints with no local process). Every other server uses
+Four servers in this registry use `transport: remote` (`context7`, `hindsight`, `cwso`,
+`hf-mcp-server`; the URL of `hindsight` and `cwso` comes from an environment variable) — all
+streamable-HTTP MCP endpoints with no local process. Every other server uses
 `transport: stdio` and is emitted as a `command`/`args` block, which **is** consistent across
 every platform.
 

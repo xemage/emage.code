@@ -1,6 +1,6 @@
 ---
 description: "Use when planning sprints, tracking progress, managing milestones, facilitating agile ceremonies, breaking down epics into tasks, creating GitLab issues and milestones, or resolving team impediments."
-tools: [read, search, todo, web, gitlab/*]
+tools: [read, search, todo, web, gitlab/create_issue, gitlab/update_issue, gitlab/list_issues, gitlab/get_issue, gitlab/list_issue_discussions, gitlab/create_issue_note, gitlab/create_issue_link, gitlab/list_issue_links, gitlab/get_issue_link, gitlab/list_labels, gitlab/get_label, gitlab/create_label, gitlab/update_label, gitlab/list_milestones, gitlab/get_milestone, gitlab/create_milestone, gitlab/edit_milestone, gitlab/get_milestone_issue, gitlab/get_milestone_merge_requests, gitlab/get_milestone_burndown_events, gitlab/list_merge_requests, gitlab/get_merge_request, gitlab/list_project_members, gitlab/discover_tools]
 user-invocable: false
 ---
 

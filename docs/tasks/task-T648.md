@@ -2,13 +2,13 @@
 
 **ID:** T648
 **Owner:** qa-engineer
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Tier:** judgment
 **Depends on:** T644, T645, T647
 **Affects:** —
 **Created:** 2026-10-15
-**Completed:** —
+**Completed:** 2026-10-15
 **Based on:**
 - `docs/plans/plan-122-release-v8-wave-3.md` (Task Decomposition item for T648)
 - `docs/artifacts/release-v8-audit-v2.md`, `docs/artifacts/release-documents-ruling-v1.md`

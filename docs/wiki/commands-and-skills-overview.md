@@ -7,7 +7,7 @@ skills previously had a dedicated overview page under `docs/wiki/**`, unlike
 agents (see [Agents Overview](agents-overview)). Entries below are added as
 components are promoted through the maturity ladder (`experimental` →
 `beta` → `stable`). As of T434 (Wave 2), all 19 commands have a documentation
-row here; this is not yet a complete catalogue of all 26 skills.
+row here; this is not yet a complete catalogue of all 27 skills.
 
 ## Commands
 

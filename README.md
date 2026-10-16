@@ -11,7 +11,7 @@
 emage.code brings a **structured multi-agent development team** to your
 favourite AI assistant. Every project follows the same protocol:
 
-Latest release: v7.0.1
+Latest release: v8.0.0
 
 - **Plan → Approve → Execute** lifecycle, never silent execution
 - **DAG-based task management** with explicit dependencies
@@ -188,17 +188,25 @@ recording which server keys the generator owned at last generation. On
 when it was previously generator-owned and the current source no longer emits
 it — a currently-active generator-owned key is never pruned, regardless of
 sidecar content, and a key with no sidecar history at all (e.g. a genuinely
-hand-added entry) is never pruned either. **The first `--update` run on any
-project after this mechanism shipped has no prior sidecar to diff against and
-therefore prunes nothing** — this is a deliberate, safe default, not a bug;
-automatic pruning only activates from the second post-fix `--update` onward,
-once real history exists. `scripts/merge-mcp-json.py --force-prune-keys
-<names>` is a separate, explicit, one-time bridge for closing a specific,
+hand-added entry) is never pruned either. **Whether the first `--update`
+prunes depends on whether the project already has a sidecar.** A project that
+never had one (installed with v6.9.0 or earlier and not yet updated with a
+release that writes it) has no prior sidecar to diff against, so that first run
+prunes nothing and writes the sidecar; this is a deliberate, safe default, not a
+bug, and automatic pruning starts at the next `--update`, but only for keys the
+newly written sidecar lists. A project that already has a sidecar (for example an
+install made with v7.0.1) is pruned on its first `--update`: a key the old
+sidecar lists as generator-owned and the new source no longer emits is removed,
+so a v7.0.1 install loses `fetch`, `docker` and `postgresql` on its first v8
+update. Keys that an older release installed and no sidecar ever listed (for
+example `e2b`, `redis`, `figma` and `notion` from v6.9.0 and earlier) are never
+pruned automatically; remove them with `--force-prune-keys` or by hand.
+`scripts/merge-mcp-json.py --force-prune-keys <names>` is a separate, explicit, one-time bridge for closing a specific,
 already-reviewed retirement gap on an already-installed project with no prior
 history — it is opt-in only, never invoked automatically by `--update`, and
 prunes exactly the named keys and nothing else.
 
-Per-release install steps live in [`docs/releases/v7.0.1.md`](docs/releases/v7.0.1.md)
+Per-release install steps live in [`docs/releases/v8.0.0.md`](docs/releases/v8.0.0.md)
 and are embedded in [GitLab Releases](https://gitlab.com/em-age/emage.code/-/releases).
 
 ## Quick start
@@ -283,10 +291,10 @@ and local/internal markdown link validity for core release docs.
 
 ## Architecture (6 layers)
 
-1. **Commands** — 18 slash commands, the user entry point
+1. **Commands** — 19 slash commands, the user entry point
 2. **Orchestration** — Plan-Approve-Execute engine (`@orchestrator`, `@poc-orchestrator`)
-3. **Agents** — 27 specialists (backend, frontend, qa, security, devops, …)
-4. **Skills** — 22 reusable capabilities (code-review, validation-gates, …)
+3. **Agents** — 28 specialists (backend, frontend, qa, security, devops, …)
+4. **Skills** — 27 reusable capabilities (code-review, validation-gates, …)
 5. **Memory** — `docs/` artifacts + MCP `memory` server
 6. **MCP servers** — declared once in [`implementation/knowledge/mcp/servers.yaml`](implementation/knowledge/mcp/servers.yaml)
 

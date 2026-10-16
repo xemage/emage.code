@@ -6,7 +6,30 @@ tools:
   search: true
   todo: true
   web: true
-  gitlab_*: true
+  gitlab_create_issue: true
+  gitlab_update_issue: true
+  gitlab_list_issues: true
+  gitlab_get_issue: true
+  gitlab_list_issue_discussions: true
+  gitlab_create_issue_note: true
+  gitlab_create_issue_link: true
+  gitlab_list_issue_links: true
+  gitlab_get_issue_link: true
+  gitlab_list_labels: true
+  gitlab_get_label: true
+  gitlab_create_label: true
+  gitlab_update_label: true
+  gitlab_list_milestones: true
+  gitlab_get_milestone: true
+  gitlab_create_milestone: true
+  gitlab_edit_milestone: true
+  gitlab_get_milestone_issue: true
+  gitlab_get_milestone_merge_requests: true
+  gitlab_get_milestone_burndown_events: true
+  gitlab_list_merge_requests: true
+  gitlab_get_merge_request: true
+  gitlab_list_project_members: true
+  gitlab_discover_tools: true
 ---
 
 # Scrum Master
