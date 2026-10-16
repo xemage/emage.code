@@ -30,7 +30,15 @@ Makefile shortcut: `make install TARGET=/path/to/your-project PLATFORM=cursor`
 scripts/install.sh --target /path/to/your-project --platform cursor --update
 ```
 
-On update, listed tasks in `docs/tasks/active-tasks.md` and `docs/tasks/completed-tasks.md` are preserved.
+`--update` replaces each platform tree (`.github/`, `.cursor/`, `.gemini/`, `.opencode/`, `.pi/`, `.claude/`, `.cline/`, `.clinerules/`) and keeps the files the harness never ships: `.claude/settings.json`, `.claude/settings.local.json`, and under `.github/` the `workflows/`, `ISSUE_TEMPLATE/`, `PULL_REQUEST_TEMPLATE.md`, `PULL_REQUEST_TEMPLATE`, `CODEOWNERS`, `dependabot.yml`, `dependabot.yaml`, `FUNDING.yml` and `copilot-instructions.md`. Each platform's MCP/settings config is merged. In `docs/tasks/`, the two ledgers are rewritten: `T<NNN>` task rows and the prose around the table are kept, other table rows are dropped with a warning.
+
+To refresh only the harness projections (platform trees, MCP configs, `AGENTS.md`, and `CLAUDE.md` for Claude Code) and touch nothing under `docs/` or `implementation/`:
+
+```bash
+scripts/install.sh --target /path/to/your-project --platform cursor --projections-only
+```
+
+`--projections-only` cannot be combined with `--update`, needs an existing install, and does not install the MCP server runtime source.
 
 ## 2. Manual copy (alternative)
 
@@ -43,7 +51,7 @@ On update, listed tasks in `docs/tasks/active-tasks.md` and `docs/tasks/complete
 | Pi | `.pi/` |
 | Claude Code | `.claude/` + `.mcp.json` + `CLAUDE.md` |
 
-Plus always: `AGENTS.md` and `docs/`.
+Plus always: `AGENTS.md`, `docs/`, and the MCP server runtime source that `install.sh` copies without `--projections-only`: `implementation/runtime/memory/`, `implementation/runtime/security/` and `implementation/runtime/handoff/`, each to the same path in your project, plus an empty `implementation/__init__.py` (leave out any `_index/` and `__pycache__/` folders). The `context-retriever`, `security-audit` and `poc-security-audit` servers launch with `python3 -m implementation.runtime...` and `/handoff` reads `implementation/runtime/handoff/`, so they do not work without it.
 
 ## 3. Set MCP env vars
 
@@ -51,10 +59,14 @@ The generated `mcp.json` needs credentials for the MCP servers you want active:
 
 ```bash
 export GITLAB_PERSONAL_ACCESS_TOKEN=glpat-...
+export GITLAB_API_URL=...
 export BRAVE_API_KEY=...
+export HINDSIGHT_MCP_URL=...
 ```
 
-See [MCP Servers](mcp-servers). Only `core` servers are required.
+The `extended` servers use `CWSO_MCP_URL`, `CWSO_BEARER_TOKEN`, `CWSO_ORIGIN` and `TOOLRADAR_API_KEY`. See [MCP Servers](mcp-servers) for the full table. Only `core` servers are required.
+
+Using the PoC track? Its security scan runs on the `poc-security-audit` server, which needs a one-time Python dependency install, `git` 2.40 or newer and, on Claude Code, an allow rule that you add yourself. See [MCP Servers](mcp-servers#poc-security-scan-server-poc-security-audit).
 
 ## 4. Invoke the orchestrator
 

@@ -1,0 +1,4 @@
+id: sprint-status-dag-ledger-grounded
+command: /sprint-status
+status: expected_pass
+tags: [sprint-status, task-dag, mermaid, ledger-grounding, real-ledger, color-coding]

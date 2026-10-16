@@ -8,6 +8,7 @@ encoding (see docs/tasks/task-T360.md § "Audit table").
 from __future__ import annotations
 
 import json
+import re
 import unittest
 from pathlib import Path
 
@@ -24,6 +25,15 @@ from tests._helpers.repo import (
 )
 
 _TARGET_PLATFORMS = ("github", "gemini", "opencode", "claude-code")
+
+
+def _opencode_name(token: str) -> str:
+    """Opencode MCP naming (vendor docs: `<server>_<tool>`, `<server>_*`; see mcp-tool-name-mapping-v1.md)."""
+    if not token.startswith("mcp__"):
+        return token
+    server, sep, tool = token[len("mcp__"):].partition("__")
+    clean = lambda s: re.sub(r"[^a-zA-Z0-9_-]", "_", s)  # noqa: E731
+    return f"{clean(server)}_{clean(tool) if sep else '*'}"
 
 
 def _load_manifest(platform: str) -> dict:
@@ -87,10 +97,11 @@ def _remote_server_urls(template: str = "${env:VAR}") -> dict[str, str]:
     changes, while still asserting the full per-platform field shape below.
     Since T491, `url` may be a literal string or a templated-value spec
     (`{fromEnv: VAR}`); `_render_templated_value()` renders either uniformly.
-    All current call sites in this file target platforms that share the
-    `${env:VAR}` placeholder family (cursor/pi/cline/claude-code/gemini), so
-    that is the default template; pass a different one (e.g. '{env:VAR}' for
-    opencode) if a future call site needs it.
+    The default template is the `${env:VAR}` placeholder family shared by
+    vscode/cursor/pi/cline/gemini. Pass a different one for a platform with
+    its own syntax: '{env:VAR}' for opencode, or '${VAR}' for claude-code,
+    which expands `${VAR}` / `${VAR:-default}` from the live process
+    environment and does not recognise the `env:` form at all (T517).
     """
     raw = yaml.safe_load((knowledge_root() / "mcp" / "servers.yaml").read_text(encoding="utf-8"))
     return {
@@ -105,6 +116,7 @@ def _remote_server_headers(template: str = "${env:VAR}") -> dict[str, dict[str, 
     servers.yaml (T491). Mirrors sync.mjs's `mapEnv()`, which is a thin
     per-key wrapper around `mapTemplatedValue()` applied to a server's
     `headers` block. Servers without a `headers` block map to `None`.
+    `template` follows the same per-platform rule as `_remote_server_urls()`.
     """
     raw = yaml.safe_load((knowledge_root() / "mcp" / "servers.yaml").read_text(encoding="utf-8"))
     out: dict[str, dict[str, str] | None] = {}
@@ -214,10 +226,12 @@ class TestPlatformProjections(unittest.TestCase):
             with self.subTest(agent=path.stem):
                 self.assertIsInstance(projected_tools, dict, f"{path.name}: tools should be object")
                 self.assertTrue(projected_tools, f"{path.name}: tools object should not be empty")
+                # T657: MCP names are rendered `<server>_<tool>` / `<server>_*` (Opencode naming);
+                # the other tokens pass through unchanged.
                 self.assertEqual(
                     set(projected_tools),
-                    set(source_tools),
-                    f"{path.name}: tools keys must match source tools list",
+                    {_opencode_name(t) for t in source_tools},
+                    f"{path.name}: tools keys must match the mapped source tools list",
                 )
                 self.assertTrue(
                     all(value is True for value in projected_tools.values()),
@@ -396,12 +410,19 @@ class TestPlatformProjections(unittest.TestCase):
         and only surfaced as a real runtime failure (T360). This closes that gap for
         every remaining platform, not only cline.
         """
-        urls = _remote_server_urls()
-        headers_by_server = _remote_server_headers()
         shape_by_format = {
             "cursor": lambda url: {"url": url},
             "cline": lambda url: {"type": "streamableHttp", "url": url},
             "claude-code": lambda url: {"type": "http", "url": url},
+        }
+        # Each format renders env references with its *own* placeholder syntax (T517):
+        # cursor/pi/cline use VS Code's `${env:VAR}`; claude-code expands `${VAR}` /
+        # `${VAR:-default}` from the live process environment and passes the `env:`
+        # form through as literal text, which broke hindsight/cwso at connect time.
+        template_by_format = {
+            "cursor": "${env:VAR}",
+            "cline": "${env:VAR}",
+            "claude-code": "${VAR}",
         }
         # pi.json's mcp.format is literally "cursor" (verbatim shared branch, T360).
         config_path_by_platform = {
@@ -414,7 +435,11 @@ class TestPlatformProjections(unittest.TestCase):
 
         for platform, path in config_path_by_platform.items():
             servers = json.loads(path.read_text(encoding="utf-8"))["mcpServers"]
-            expected_shape = shape_by_format[format_by_platform[platform]]
+            fmt = format_by_platform[platform]
+            expected_shape = shape_by_format[fmt]
+            template = template_by_format[fmt]
+            urls = _remote_server_urls(template)
+            headers_by_server = _remote_server_headers(template)
             for name, url in urls.items():
                 with self.subTest(platform=platform, server=name):
                     expected = expected_shape(url)

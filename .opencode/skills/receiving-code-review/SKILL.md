@@ -82,4 +82,4 @@ Push back with evidence when a suggestion is wrong for this context.
 | Security Engineer | Security gate |
 | QA Engineer | Integration gate |
 
-`FAIL` findings block merge until resolved or escalated via blocker protocol.
+`FAIL` findings block merge until resolved or escalated via blocker protocol. Escalation never lifts a `FAIL` with a security finding among its causes that skill `validation-gates` § Verdict Rules and skill `code-review` § Review as Validation Gate exclude from waiver (a security finding graded `SECURITY:CRITICAL` or `SECURITY:HIGH`, a breach of an Immutable Security Constraint, or a security control that `security-guidelines.md` requires for the code under review and that is omitted, removed, disabled or weakened): such a `FAIL` blocks merge until the finding is resolved (`security-guidelines.md` § Security Review Workflow: "`CRITICAL` and `HIGH` findings block merge until resolved"). Nor does escalation lift a `SECURITY:MEDIUM` finding's remediation plan (owner, fix, deadline), which is recorded as a tracked condition before merge (`security-guidelines.md` § Security Review Workflow).

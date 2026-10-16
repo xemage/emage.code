@@ -40,13 +40,17 @@
       "properties": {
         "maxToolCalls": {"type": "integer", "minimum": 0, "maximum": 1000},
         "writablePaths": {
+          "description": "Paths the receiving agent may write. This is a grant, so it must name at least one path: an empty grant is indistinguishable from an omitted one and leaves the receiver's write scope undefined. A receiver that may not touch product code still names where its own output goes, such as a review or findings path.",
           "type": "array",
           "items": {"type": "string", "minLength": 1},
+          "minItems": 1,
           "maxItems": 128
         },
         "forbiddenActions": {
+          "description": "Actions the receiving agent must not take, in addition to the standing rules. This is a denial list, so the empty array is a meaningful state - nothing forbidden beyond the standing rules - and minItems is deliberately 0 rather than omitted by oversight.",
           "type": "array",
           "items": {"type": "string", "minLength": 1},
+          "minItems": 0,
           "maxItems": 128
         },
         "deadlineUtc": {"type": "string", "format": "date-time"}

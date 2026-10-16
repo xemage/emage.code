@@ -152,22 +152,20 @@ The skill produces:
 All plans produced by this skill feed into the **plan-approve-execute** protocol. The workflow is:
 
 1. **Plan** — This skill produces the plan document (WBS, milestones, sprint backlogs).
-2. **Approve** — The plan is submitted for review. Approval is a validation gate that produces a verdict:
-   ```
-   [VERDICT] gate=plan-review | result=PASS|CONDITIONAL_PASS|FAIL | reviewer={role} | artifact_ref=plan-v{N} | date={YYYY-MM-DD}
-   ```
-3. **Execute** — Only after a `PASS` or `CONDITIONAL_PASS` verdict does execution begin. `CONDITIONAL_PASS` items become tracked tasks.
+2. **Approve** — The plan is presented to the user, who decides **Approve**, **Revise** or **Reject** (`plan-approve-execute` skill § The Three Phases › Phase 2: Approve). Plan approval is the user's decision, not a validation gate: it produces no `PASS` / `CONDITIONAL_PASS` / `FAIL` verdict.
+3. **Execute** — Only after the user approves does execution begin.
 
-**No work begins without an approved plan.** If a plan is rejected (`FAIL`), it must be revised and resubmitted.
+**No work begins without an approved plan.** If the user chooses Revise, update the plan per the feedback and re-present it for approval. If the user chooses Reject, set the plan's status to `rejected` and discuss alternative approaches.
 
 ### Plan Document Format and Versioning
 
-Plan documents are versioned artifacts stored under `docs/plans/`:
+Plan documents are versioned artifacts stored under `docs/plans/`, at the path skill `plan-approve-execute` § File Location defines:
 
 ```
-docs/plans/project-plan-v1.md
-docs/plans/project-plan-v2.md
+docs/plans/plan-<ID>.md
 ```
+
+Each version is its own plan document at that path, with its own `<ID>`; the `## Version` and `## Changes from v{N-1}` fields below record which version it is. A superseded version is marked as `plan-approve-execute` § Guidelines describes.
 
 **Plan document structure:**
 ```markdown
@@ -175,7 +173,7 @@ docs/plans/project-plan-v2.md
 
 ## Version: {N}
 ## Date: {YYYY-MM-DD}
-## Status: draft | approved | superseded
+## Status: draft | approved | rejected | superseded
 
 ## Changes from v{N-1}
 - [List of changes]
@@ -196,9 +194,9 @@ docs/plans/project-plan-v2.md
 [Risk content]
 
 ## Approval
-- Reviewer: {role}
-- Verdict: PASS | CONDITIONAL_PASS | FAIL
-- Conditions (if CONDITIONAL_PASS): [list]
+- Decided by: user
+- Decision: Approve | Revise | Reject
+- Changes requested (if Revise): [list]
 ```
 
 ### Task Decomposition to `docs/tasks/active-tasks.md`
@@ -207,23 +205,12 @@ When a plan is approved, the sprint backlog tasks MUST be decomposed into entrie
 
 **Decomposition procedure:**
 
-1. For each task in the approved sprint backlog, create an entry in `active-tasks.md`:
-   ```markdown
-   ### T{ID}: {Title}
-   - **Status:** pending
-   - **Assignee:** {role}
-   - **Priority:** must | should | could
-   - **Points:** {N}
-   - **Sprint:** {sprint-name}
-   - **Depends on:** [T{ID}, ...] or none
-   - **Artifact refs:** [{artifact-version}, ...]
-   - **Created:** {YYYY-MM-DD}
-   ```
+1. For each task in the approved sprint backlog, the orchestrator creates the task (`AGENTS.md` § Task Protocol: "Only orchestrators create/transition tasks"). An agent other than an orchestrator that applies this skill proposes the tasks to the orchestrator and does not write the ledger. Each task gets:
+   - a row in `active-tasks.md` with the columns `ID | Title | Owner | Status | Priority | Depends on | Last update`, Status `pending`, and a Priority of `P0`, `P1` or `P2` (`AGENTS.md` § Task Protocol), which the orchestrator sets. The sprint backlog's Must / Should / Could is not a value of that column;
+   - a brief at `docs/tasks/task-<ID>.md` (objective, inputs, outputs, acceptance criteria), which also records the task's sprint, points and artifact references, for which the row has no column.
 
 2. Assign sequential TASK IDs continuing from the last used ID.
 3. Record dependency links between tasks (e.g., frontend task depends on API contract task).
 4. Sync each new task to a GitLab issue (see gitlab-management skill).
 
-**Task lifecycle:**
-- `pending` → `in-progress` → `review` → `done` (moved to `completed-tasks.md`)
-- `pending` → `blocked` (when a `[BLOCKER]` is raised) → `in-progress` (when blocker resolved)
+**Task lifecycle:** a task's states are those of `AGENTS.md` § Lifecycle States: `pending`, `in_progress`, `blocked`, `in_review`, `done` and `cancelled`. Only an orchestrator transitions a task (`AGENTS.md` § Task Protocol). A task is set to `blocked` when a `[BLOCKER]` is raised, and back to `in_progress` when the blocker is resolved. A task that reaches `done` or `cancelled` is moved to `completed-tasks.md` in the same edit (`AGENTS.md` § Task Protocol). The allowed transitions, and the archive procedure, are those of skill `task-management` (§ Status Lifecycle, § Complete a Task).

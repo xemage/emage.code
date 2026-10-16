@@ -1,7 +1,8 @@
 ---
 description: "Get a sprint status report showing progress, blockers, completed and remaining work."
 agent: "orchestrator"
-maturity: experimental
+maturity: stable
+audience: both
 ---
 
 Generate a sprint status report for the current sprint:
@@ -29,6 +30,7 @@ graph TD
     classDef inProgress fill:#FFD700
     classDef blocked fill:#FF6347
     classDef pending fill:#D3D3D3
+    classDef inReview fill:#87CEFA
 
     class T001 done
     class T002 inProgress
@@ -39,7 +41,7 @@ graph TD
 - Read `docs/tasks/active-tasks.md` for pending/in_progress/blocked/in_review nodes
 - Read `docs/tasks/completed-tasks.md` for `done` nodes — `active-tasks.md` NEVER contains `done`
 - Reconstruct dependency edges for done nodes from the `Depends on` cells of active rows
-- Color code: done=green, in_progress=yellow, blocked=red, pending=gray
+- Color code: done=green, in_progress=yellow, blocked=red, pending=gray, in_review=blue
 
 ## Checkpoint Metrics
 

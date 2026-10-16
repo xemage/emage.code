@@ -3,6 +3,7 @@ description: "Plan-only mode: produce a task decomposition, dependency graph, an
 agent: "orchestrator"
 argument-hint: "Describe what you want to plan..."
 maturity: experimental
+audience: both
 ---
 
 You are in **Plan-Only mode**. Execute ONLY the **Plan** phase of the Plan-Approve-Execute workflow. Do NOT proceed to execution.
@@ -13,7 +14,7 @@ You are in **Plan-Only mode**. Execute ONLY the **Plan** phase of the Plan-Appro
 2. **Build a dependency graph** — identify which tasks block others. Render the graph as a Mermaid diagram.
 3. **Assign resources** — map each task to the most appropriate agent (backend, frontend, qa, devops, docs, or yourself).
 4. **Assess risks** — for each task, note complexity (S/M/L), likelihood of rework, and any unknowns.
-5. **Write the plan document** — save to `docs/plans/<slug>-plan.md` using this structure:
+5. **Write the plan document** — save to `docs/plans/plan-<ID>.md` using this structure:
    - **Goal** — one-sentence summary
    - **Task Decomposition** — numbered list with acceptance criteria
    - **Dependency Graph** — Mermaid flowchart

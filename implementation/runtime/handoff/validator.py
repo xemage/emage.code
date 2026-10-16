@@ -20,6 +20,7 @@ AGENT_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,63}$")
 TASK_RE = re.compile(r"^T[0-9]{3,}$")
 UUID_RE = re.compile(r"^[0-9a-fA-F-]{36}$")
 MAX_PAYLOAD_BYTES = 64 * 1024
+MAX_CONSTRAINT_LIST_ITEMS = 128
 
 
 class ValidationResult:
@@ -56,6 +57,25 @@ def _deep_contains_secret_keys(value: Any) -> bool:
     elif isinstance(value, list):
         return any(_deep_contains_secret_keys(item) for item in value)
     return False
+
+
+def _validate_constraint_string_list(name: str, value: Any, *, min_items: int) -> list[str]:
+    """Validate one `constraints` string array against schema-v1.json.
+
+    Mirrors the schema exactly: `type: array`, `items.minLength: 1`, `maxItems: 128`,
+    and `minItems`. `min_items=1` is used for a grant that must actually grant
+    something; `min_items=0` for a denial list, where the empty array is meaningful.
+    """
+    if not isinstance(value, list):
+        return [f"constraints.{name} must be an array of strings"]
+    errors: list[str] = []
+    if len(value) < min_items:
+        errors.append(f"constraints.{name} must list at least {min_items} entry")
+    if len(value) > MAX_CONSTRAINT_LIST_ITEMS:
+        errors.append(f"constraints.{name} must list at most {MAX_CONSTRAINT_LIST_ITEMS} entries")
+    if any(not isinstance(item, str) or not item for item in value):
+        errors.append(f"constraints.{name} entries must be non-empty strings")
+    return errors
 
 
 def validate_handoff_payload(payload: dict[str, Any], *, max_bytes: int = MAX_PAYLOAD_BYTES) -> ValidationResult:
@@ -110,6 +130,12 @@ def validate_handoff_payload(payload: dict[str, Any], *, max_bytes: int = MAX_PA
                 errors.append(f"constraints unknown keys: {unknown}")
         if not isinstance(constraints.get("maxToolCalls"), int) or constraints.get("maxToolCalls", -1) < 0:
             errors.append("constraints.maxToolCalls must be int >= 0")
+        errors += _validate_constraint_string_list(
+            "writablePaths", constraints.get("writablePaths"), min_items=1
+        )
+        errors += _validate_constraint_string_list(
+            "forbiddenActions", constraints.get("forbiddenActions"), min_items=0
+        )
 
     trace = payload.get("trace")
     if not isinstance(trace, dict):

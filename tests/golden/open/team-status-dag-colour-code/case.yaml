@@ -1,0 +1,4 @@
+id: team-status-dag-colour-code
+command: /team-status
+status: expected_pass
+tags: [team-status, task-dag, mermaid, colour-code, in-review, ledger-grounding, real-ledger-snapshot]

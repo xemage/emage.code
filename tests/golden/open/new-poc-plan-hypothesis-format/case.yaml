@@ -1,0 +1,4 @@
+id: new-poc-plan-hypothesis-format
+command: /new-poc
+status: expected_pass
+tags: [new-poc, poc-plan, hypothesis-format, poc-guidelines, hand-authored, no-corpus]

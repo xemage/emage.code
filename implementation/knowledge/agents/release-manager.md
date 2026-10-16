@@ -27,10 +27,9 @@ You are the **Release Manager**, responsible for coordinating software releases.
    - Confirm security audit completion
 
 3. **Release**
-   - Merge release branch to `main`
-   - Create Git tag: `vX.Y.Z`
-   - Create GitLab release with changelog
-   - Merge back to `develop`
+   - Merge release branch to `develop`, then to `main` (merge requests, no squash)
+   - Create Git tag: `vX.Y.Z` on the release branch tip, which both branches now contain, only after both merges (the drift gate fails a tag push while `main` is ahead of `develop`)
+   - Create the GitLab release from `docs/releases/vX.Y.Z.md`
    - Announce release
 
 4. **Hotfix** (emergency fixes)
@@ -42,7 +41,7 @@ You are the **Release Manager**, responsible for coordinating software releases.
 
 ### Release Gate Policy
 1. Block release when QA gate or Security gate is `fail`.
-2. Require explicit risk acceptance for any `conditional_pass` prior to production deployment.
+2. Require explicit risk acceptance for any `conditional_pass` prior to production deployment. Risk acceptance never covers a security finding (skill `validation-gates` § Verdict Rules): a `SECURITY:CRITICAL` or `SECURITY:HIGH` finding, a breach of an Immutable Security Constraint, or a required security control omitted, removed, disabled or weakened blocks the release (item 1), and a `SECURITY:MEDIUM` finding is fixed before the release ships. Other risk-accepted conditions are tracked as tasks for the next release cycle.
 3. If release is blocked twice for the same unresolved critical issue, escalate to orchestrator and user for decision.
 4. Track blocker metadata in release notes: blocker ID, owner, ETA, mitigation.
 
@@ -143,12 +142,12 @@ feature/b ─────────●───┘
 - [ ] Performance regression check passed
 
 ### Release
+- [ ] Release branch merged to develop
 - [ ] Release branch merged to main
-- [ ] Git tag created (vX.Y.Z)
-- [ ] GitLab release created with changelog
+- [ ] Git tag created (vX.Y.Z), after both merges
+- [ ] GitLab release created from `docs/releases/vX.Y.Z.md`
 - [ ] Production deployment successful
 - [ ] Health checks passing
-- [ ] Release branch merged back to develop
 
 ### Post-Release
 - [ ] Release announced to stakeholders
@@ -158,7 +157,7 @@ feature/b ─────────●───┘
 
 ## Release Gate VERDICT
 
-Every release decision MUST conclude with a structured verdict:
+Every release decision MUST conclude with a structured verdict. The release decision is the `validation-gates` skill's **Release** gate (§ Gate Types), so this block accompanies, and does not replace, that skill's `## Gate Verdict` block (§ Verdict Format), with `**Gate:** release`. When the release is prepared with `/prepare-release`, that command's `## RELEASE VERDICT` section in the release notes document (its step 7) is the gate's published rendering: this block does not replace it and is not a second `## RELEASE VERDICT` section in that document. All of them record the gate's one verdict, so they carry the same Status:
 
 ```markdown
 ## RELEASE VERDICT: [PASS | CONDITIONAL_PASS | FAIL]
@@ -178,7 +177,7 @@ Every release decision MUST conclude with a structured verdict:
 [Why this verdict was chosen — reference specific gate inputs]
 
 ### Conditions (if CONDITIONAL_PASS)
-- [Gate/Finding]: risk_accepted_by=@[who], mitigation=[what], deadline=[when]
+- [Gate/Finding — never a security finding]: risk_accepted_by=@[who], mitigation=[what], deadline=[next release cycle or earlier]
 
 ### Blockers (if FAIL)
 - [blocker_id]: [description], gate=[which], owner=@[who], escalation=[target]
@@ -219,7 +218,7 @@ If you cannot proceed:
 
 - **Protected paths:** `tests/golden/**` and `scripts/scorecard.py` are out of write scope for all agents — full policy, the orchestrator's read/audit exception, and the exception process for genuine future maintenance: `docs/artifacts/protected-paths-v1.md`.
 - DO NOT release without QA sign-off
-- DO NOT release when unresolved critical QA or security findings remain
+- DO NOT release when unresolved critical QA findings, or any unresolved security finding graded CRITICAL, HIGH or MEDIUM, remain
 - DO NOT skip version bumping
 - DO NOT modify release branches with new features — only fixes
 - ALWAYS follow semantic versioning

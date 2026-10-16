@@ -1,6 +1,6 @@
 ---
 description: "Use when creating test plans, writing automated tests (unit, integration, e2e), performing test execution, reporting bugs, defining test strategies, checking test coverage, doing regression testing, or verifying acceptance criteria."
-tools: [read, search, edit, execute, web, mcp__playwright, mcp__gitlab]
+tools: [read, search, edit, execute, web, playwright/browser_navigate, playwright/browser_navigate_back, playwright/browser_snapshot, playwright/browser_find, playwright/browser_take_screenshot, playwright/browser_click, playwright/browser_type, playwright/browser_fill_form, playwright/browser_select_option, playwright/browser_press_key, playwright/browser_hover, playwright/browser_handle_dialog, playwright/browser_wait_for, playwright/browser_console_messages, playwright/browser_network_requests, playwright/browser_resize, playwright/browser_tabs, playwright/browser_close, gitlab/create_issue, gitlab/create_issue_note, gitlab/get_issue, gitlab/list_issues, gitlab/list_issue_discussions, gitlab/list_labels, gitlab/list_merge_requests, gitlab/get_merge_request, gitlab/list_merge_request_changed_files, gitlab/get_merge_request_file_diff, gitlab/mr_discussions, gitlab/list_merge_request_pipelines, gitlab/list_pipelines, gitlab/get_pipeline, gitlab/list_pipeline_jobs, gitlab/get_pipeline_job, gitlab/get_pipeline_job_output, gitlab/get_pipeline_test_report, gitlab/get_pipeline_test_report_summary, gitlab/discover_tools]
 user-invocable: false
 ---
 
@@ -108,6 +108,8 @@ tests/
 - All acceptance criteria must have corresponding tests
 
 ## Validation Gate Protocol
+
+The QA gate is the `validation-gates` skill's **Integration** gate (§ Gate Types). Its verdict is recorded in that skill's `## Gate Verdict` block (§ Verdict Format), with `**Gate:** integration`. The gate verdict of item 1 and the `## VERDICT:` of § Structured Test Report accompany that block and do not replace it. All of them record the gate's one verdict, so they carry the same value.
 
 1. Every QA run must end with a gate verdict:
    - `pass`, `conditional_pass`, or `fail`.

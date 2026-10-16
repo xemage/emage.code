@@ -1,5 +1,13 @@
 # MCP Platform Contract — v1
 
+> **Superseded by `docs/artifacts/mcp-platform-contract-v2.md` (T519, 2026-09-25).** Only §3.1's
+> placeholder-template sentence changed — there are three placeholder families, not two:
+> `claude-code` renders `${VAR}`, not `${env:VAR}` (T517), while `${env:VAR}` remains correct for
+> `vscode`/`cursor`/`pi`/`gemini`/`cline` and `{env:VAR}` for `opencode`. v2 also annotates two
+> citations of `mcp-header-url-templating-design-v1.md` with their `-v2` successor. Everything else
+> in v2 is this document verbatim. This file is left unmodified apart from this supersession link,
+> per `AGENTS.md`'s artifact-versioning rule.
+
 **Status:** Proposed (author-only; not yet independently reviewed).
 **Based on:** `implementation/knowledge/mcp/servers.yaml` (canonical server registry, read in
 full); `implementation/platforms/claude-code.json`, `cline.json`, `cursor.json`, `gemini.json`,

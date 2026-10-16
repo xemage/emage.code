@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "algorithm": "sha256",
+  "digests": {
+    "tests_golden": "a6326b970500a1fb37078f51febe8076f6401c37218944b5cc3d085272cae477",
+    "scripts_scorecard": "45346c178c7f6d92101130d898f55dfaad908aa7e5ae669ce1faac99a51192d6"
+  },
+  "computed_from_commit": "a12d22d4d72d3f3268dfec3cf10e04768eb04737",
+  "computed_at": "2026-10-01T12:00:00Z",
+  "protected_paths": {
+    "tests_golden": "tests/golden",
+    "scripts_scorecard": "scripts/scorecard.py"
+  },
+  "supersedes": "evaluator-hash-known-good-v10.json",
+  "reason": "T554 repaired /discover-skills under the protected-path grant in docs/tasks/task-T554.md, per docs/artifacts/protected-paths-v1.md \u00a75. Step 1 named implementation/registry/index.json, which installed targets never receive, so the stable command could not be followed there. Per docs/artifacts/command-audience-resolution-v1.md \u00a76.2 the command was repaired rather than the registry installed: step 1 now enumerates the skills tree in both audiences (implementation/knowledge/skills/*/SKILL.md in the authoring repository, .<platform>/skills/*/SKILL.md in a target), discriminated on the registry file itself, with the registry kept as an optional accelerator. Because step 1 is the load-bearing assertion of tests/golden/open/discover-skills-registry-grounded-recommendation, its expect.py was re-derived in the same commit as the command change, and the fixture gained an installed-target row (26 verbatim frontmatter-only SKILL.md files under fixture/installed-target/.github/skills/, checked byte-for-byte against 19ab1e7) so both rows are exercised. Also corrected, brief.md only, the verbatim quote of /new-project step 1 in tests/golden/open/new-project-plan-doc-and-lifecycle-states/brief.md that T547 made stale (plan-083 P3). Independently verified by the orchestrator: every changed file lies inside the grant; check() is True for both cases; the orchestrator's own mutations show an invented skill, a fake skill planted in the target tree only, and an agent id in the Skill column are all rejected, so the no-invented-skill assertion holds under both rows; held-out isolation passes; no case outcome moved (scorecard 29/21/0); the full suite of 871 tests showed exactly the two evaluator-hash failures and nothing else. /discover-skills keeps its stable claim (check-maturity 79/0). scripts_scorecard is byte-identical to v10 through v5, the proof nothing outside the authorized directories moved -- notably not the protected scripts/scorecard.py. This closes the last open commitment of plan-083 \u00a71, under which /discover-skills and /handoff were kept stable on condition that their repairs were dispatched. The implementing agent committed locally but neither pushed nor refreshed this baseline; the orchestrator escalated it -- the eleventh such escalation in this phase and the eleventh respected -- and the user explicitly authorized it before this file was written.",
+  "update_policy": "Manual only, never automatic. A future legitimate update goes through docs/artifacts/protected-paths-v1.md \u00a75's exception path and produces evaluator-hash-known-good-v12.json -- this file (v11) is never edited in place, and v1 through v10 are retained unmodified as the historical record. See docs/artifacts/evaluator-hash-check-v1.md for the full policy."
+}

@@ -9,12 +9,12 @@ service." A user or agent runs `/plan` against this request.
 
 ## What this checks
 `implementation/knowledge/commands/plan.md` step 5 requires the plan document saved to
-`docs/plans/<slug>-plan.md` to use exactly this structure: **Goal**, **Task Decomposition**,
+`docs/plans/plan-<ID>.md` to use exactly this structure: **Goal**, **Task Decomposition**,
 **Dependency Graph** (rendered as a Mermaid diagram per step 2), **Resource Assignments**,
 **Risk Assessment**, **Open Questions**.
 
 ## Pass condition
-Exactly one file matches `fixture/docs/plans/*-plan.md`, and its content contains all six
+Exactly one file matches `fixture/docs/plans/plan-*.md`, and its content contains all six
 required `##` headers, in the declared order, with a fenced ` ```mermaid ` block appearing
 somewhere under the Dependency Graph section.
 

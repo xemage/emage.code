@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "algorithm": "sha256",
+  "digests": {
+    "tests_golden": "481c2d4cf3ee3168cb4997cc99d202d259f406e49e5e8df78fe11ba5d9b1d817",
+    "scripts_scorecard": "45346c178c7f6d92101130d898f55dfaad908aa7e5ae669ce1faac99a51192d6"
+  },
+  "computed_from_commit": "72436a15c50cb6b8364de72dd5a15e0687b29133",
+  "computed_at": "2026-10-01T20:00:00Z",
+  "protected_paths": {
+    "tests_golden": "tests/golden",
+    "scripts_scorecard": "scripts/scorecard.py"
+  },
+  "supersedes": "evaluator-hash-known-good-v12.json",
+  "reason": "T561, golden wave 3 (plan-090, completing plan-072's three waves), created five new case directories under tests/golden/open/ under the protected-path grant in docs/tasks/task-T561.md (protected-paths-v1.md \u00a75), giving every one of the 19 commands at least one golden case: team-status-dag-colour-code, new-poc-plan-hypothesis-format, poc-demo-hypothesis-status-evidence-gaps and evaluate-poc-verdict-debt-reconciliation (expected_pass) and validate-workflow-gate-verdict-sources (known_failing / tracked_defect, confirming parked finding P9: two of the six gates its step 5 names emit no VERDICT, so step 6 cannot pass). Four green and one honest red -- the same pattern as waves 1 and 2. Every case quotes a specific clause of its command verbatim (67 of 67 quoted lines verified mechanically). The scorecard was regenerated and committed: 34 cases, 25 pass, 0 regressions (was 29/21/0). Independently verified by the orchestrator: only the five new directories and the scorecard changed; every check() matches its declared status; the checkers are pure (no __file__, environment or network access); an orchestrator-designed violating mutation flipped each of the four green cases to False while an unmodified control stayed True; held-out isolation passes; the suite showed exactly the two evaluator-hash failures. scripts_scorecard is byte-identical to v12 through v5. The three PoC greens certify the content of their quoted clauses only, not output paths, which other documents contradict (recorded in plan-090 \u00a72). The implementing agent committed locally but neither pushed nor refreshed this baseline; the orchestrator escalated it -- the thirteenth such escalation in this phase and the thirteenth respected -- and the user explicitly authorized it before this file was written.",
+  "update_policy": "Manual only, never automatic. A future legitimate update goes through docs/artifacts/protected-paths-v1.md \u00a75's exception path and produces evaluator-hash-known-good-v14.json -- this file (v13) is never edited in place, and v1 through v12 are retained unmodified as the historical record. See docs/artifacts/evaluator-hash-check-v1.md for the full policy."
+}

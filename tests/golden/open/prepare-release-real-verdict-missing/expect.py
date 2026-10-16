@@ -2,7 +2,8 @@
 """expect.py for prepare-release-real-verdict-missing (known_failing / tracked_defect).
 
 Same "## RELEASE VERDICT" field contract as prepare-release-verdict-compliant/expect.py,
-applied to a real release checkpoint instead of a hand-authored one. Expected to return False
+applied to a real release notes document (docs/releases/v<version>.md, the block's home per
+prepare-release.md step 7) instead of a hand-authored one. Expected to return False
 today -- see brief.md.
 """
 from __future__ import annotations
@@ -52,10 +53,10 @@ def _verdict_section(text: str) -> str | None:
 
 
 def check(case_dir: Path) -> bool:
-    ckpt_dir = case_dir / "fixture" / "docs" / "checkpoints"
-    if not ckpt_dir.is_dir():
+    releases_dir = case_dir / "fixture" / "docs" / "releases"
+    if not releases_dir.is_dir():
         return False
-    candidates = sorted(ckpt_dir.glob("*.md"))
+    candidates = sorted(releases_dir.glob("*.md"))
     if len(candidates) != 1:
         return False
     text = candidates[0].read_text(encoding="utf-8")

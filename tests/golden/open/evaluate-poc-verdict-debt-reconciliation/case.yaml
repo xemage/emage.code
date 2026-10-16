@@ -1,0 +1,4 @@
+id: evaluate-poc-verdict-debt-reconciliation
+command: /evaluate-poc
+status: expected_pass
+tags: [evaluate-poc, poc-verdict, debt-summary, cross-section-consistency, handoff-checklist, hand-authored, no-corpus]

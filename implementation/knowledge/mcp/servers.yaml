@@ -12,46 +12,72 @@
 #
 # `secret` env vars are emitted as platform-native env-var references; never
 # inline secrets in this file.
+#
+# `denyTools` (T658, SEC-T657-01) is the ONE list of exact tool names, as the server reports them,
+# that a platform must refuse for that server. sync.mjs renders it only where the vendor
+# documentation and source show an enforcing mechanism (docs/artifacts/mcp-server-denials-v1.md):
+# Opencode (top-level `permission` deny of `<server>_<tool>`) and Gemini CLI
+# (`mcpServers.<server>.excludeTools`). Other platforms ignore it. Do not hand-edit a projection.
 
 servers:
+  # PIN POLICY (T638, audit SEC-002). Every npx, uvx and docker entry below is pinned to an
+  # exact version or digest; never a floating tag or a range. The devops-engineer bumps the pins
+  # at every release and at least monthly. Each bump is a reviewed change that edits this
+  # file and the APPROVED_NPX_PINS dict in tests/functional/test_mcp_package_pins.py
+  # together (the Playwright entry's flags are part of the approved form: a bump re-checks them
+  # against `--help` of the new version). Before a bump, check the package with `npm audit` or OSV, and check the
+  # registry's latest version and its provenance. @zereight/mcp-gitlab holds the GitLab
+  # PAT, has a single maintainer, and ships often with published advisories, so it is
+  # reviewed at every release. There is no automated scheduler for this.
   gitlab:
     tags: [core]
     transport: stdio
     command: npx
-    args: ["-y", "@zereight/mcp-gitlab"]
+    args: ["-y", "@zereight/mcp-gitlab@2.2.5"]
     env:
       GITLAB_PERSONAL_ACCESS_TOKEN: { fromEnv: GITLAB_PERSONAL_ACCESS_TOKEN, secret: true }
       GITLAB_API_URL: { fromEnv: GITLAB_API_URL }
 
   playwright:
+    # T655 -- hardened per docs/artifacts/fetch-replacement-evaluation-v1.md §5.2. The agents
+    # do NOT list mcp__playwright for page reading in place of the removed `fetch` server (they
+    # use the platform `web` tool). --blocked-origins is NOT a security boundary: it does not
+    # cover redirects, WebSockets, DNS names that resolve to internal addresses or the
+    # browser_run_code_unsafe tool. It needs the Chromium browser (`npx -y @playwright/mcp@0.0.83
+    # install-browser chrome-for-testing`); see implementation/PREREQUISITES.md. The list also
+    # blocks local dev servers (localhost, 127.*, 10.*, 192.168.*, 172.16-31): see the
+    # `playwright-local` note in docs/wiki/mcp-servers.md. The --blocked-origins value is ONE
+    # argument (semicolon-separated glob list; `{a,b}` is brace alternation, `[` `]` are literal):
+    # it was passed to a spawned process without a shell in the T654/T655 tests (Linux, Node, a
+    # driver that spawned `node` directly); clients that route `args` through a shell, and Windows,
+    # are unverified. It must never be expanded or split.
     tags: [core]
     transport: stdio
     command: npx
-    args: ["-y", "@playwright/mcp@latest"]
-
-  fetch:
-    tags: [core]
-    transport: stdio
-    command: npx
-    args: ["-y", "mcp-fetch-server"]
+    args: ["-y", "@playwright/mcp@0.0.83", "--headless", "--isolated", "--browser", "chromium", "--sandbox", "--block-service-workers", "--no-webmcp", "--blocked-origins", "localhost;localhost:*;localhost.;localhost.:*;*.localhost;*.localhost:*;127.*;0.*;10.*;100.{64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127}.*;169.254.*;172.{16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31}.*;192.168.*;[::];[::]:*;[::1];[::1]:*;[::ffff:*;[fc*;[fd*;[fe80:*;*@*"]
+    # T658 (SEC-T657-01): the six tools no agent holds (docs/artifacts/mcp-tool-name-mapping-v1.md §4).
+    # Denied server-wide on Opencode and Gemini CLI, where an agent's tool list does not restrict MCP
+    # tools. Documented, not observed in a live run. Cursor has no such mechanism and stays open.
+    # A user-owned `playwright-local` entry is another server name and is NOT covered.
+    denyTools: [browser_run_code_unsafe, browser_evaluate, browser_file_upload, browser_drag, browser_drop, browser_network_request]
 
   memory:
     tags: [core]
     transport: stdio
     command: npx
-    args: ["-y", "@modelcontextprotocol/server-memory"]
+    args: ["-y", "@modelcontextprotocol/server-memory@1.0.0"]
 
   sequential-thinking:
     tags: [core]
     transport: stdio
     command: npx
-    args: ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    args: ["-y", "@modelcontextprotocol/server-sequential-thinking@1.0.0"]
 
   brave:
     tags: [core]
     transport: stdio
     command: npx
-    args: ["-y", "@brave/brave-search-mcp-server"]
+    args: ["-y", "@brave/brave-search-mcp-server@2.1.4"]
     env:
       BRAVE_API_KEY: { fromEnv: BRAVE_API_KEY, secret: true }
 
@@ -97,7 +123,7 @@ servers:
     # T497 -- fixed-command audit-command server for @security-engineer, per
     # docs/artifacts/security-engineer-audit-server-design-v1.md (T496) §3. `extended`,
     # not `core`: opt-in, role-specific infrastructure (only @security-engineer is ever
-    # granted its tools), same reasoning class as `filesystem`/`git`/`docker`. No `env:`
+    # granted its tools), same reasoning class as `filesystem`/`git`/`github`. No `env:`
     # block: every one of its four tools (run_npm_audit, run_pip_audit,
     # run_dotnet_list_vulnerable, grep_content) is a local CLI subprocess call against the
     # calling agent's own workspace -- no network call, no API key.
@@ -106,47 +132,57 @@ servers:
     command: python3
     args: ["-m", "implementation.runtime.security.audit_server"]
 
+  poc-security-audit:
+    # T603 -- fixed-command git-scan server for @poc-security-engineer, per
+    # docs/artifacts/poc-security-engineer-tool-scoping-v2.md §3. A SEPARATE server from
+    # `security-audit` (that one stays at exactly four tools). Exactly two tools:
+    # scan_secrets and ref_containment -- fixed argv, no matched text, stderr or argv in
+    # any result. `--allowed-root .` is fixed at launch (the workspace root, the cwd the
+    # client launches from); it is never a tool parameter. No `env:` block: local git
+    # subprocess calls only, no network call, no API key.
+    tags: [extended]
+    transport: stdio
+    command: python3
+    args: ["-m", "implementation.runtime.security.poc_audit_server", "--allowed-root", "."]
+
   filesystem:
     tags: [extended]
     transport: stdio
     command: npx
-    args: ["-y", "@anthropic/mcp-filesystem"]
+    args: ["-y", "@modelcontextprotocol/server-filesystem@1.0.0", "."]
 
   github:
+    # Official GitHub MCP server, container pinned by digest (tag v2.0.2). Token is passed by
+    # name (-e VAR), never in argv. Requires Docker on PATH.
     tags: [extended]
     transport: stdio
-    command: npx
-    args: ["-y", "@github/mcp-github"]
+    command: docker
+    args: ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server@sha256:ffced0d76e77428532a2ced185516992d77fd146d69eec2f244e6237d1a97796"]
+    env:
+      GITHUB_PERSONAL_ACCESS_TOKEN: { fromEnv: GITHUB_PERSONAL_ACCESS_TOKEN, secret: true }
 
   git:
+    # PyPI package, not npm. Requires uv on PATH.
     tags: [extended]
     transport: stdio
-    command: npx
-    args: ["-y", "@modelcontextprotocol/mcp-git"]
+    command: uvx
+    args: ["mcp-server-git@2026.10.10", "--repository", "."]
 
   supabase:
+    # Token comes from the environment (the CLI also accepts --access-token; do not use it).
+    # --read-only disables writes; drop the flag to allow them.
     tags: [extended]
     transport: stdio
     command: npx
-    args: ["-y", "@supabase/mcp"]
-
-  docker:
-    tags: [extended]
-    transport: stdio
-    command: npx
-    args: ["-y", "docker-mcp"]
-
-  postgresql:
-    tags: [extended]
-    transport: stdio
-    command: npx
-    args: ["-y", "postgres-mcp"]
+    args: ["-y", "@supabase/mcp-server-supabase@0.13.0", "--read-only"]
+    env:
+      SUPABASE_ACCESS_TOKEN: { fromEnv: SUPABASE_ACCESS_TOKEN, secret: true }
 
   toolradar:
     tags: [extended]
     transport: stdio
     command: npx
-    args: ["-y", "toolradar-mcp"]
+    args: ["-y", "toolradar-mcp@2.1.0"]
     env:
       # SECURITY: never inline a real key here. Set TOOLRADAR_API_KEY in your shell
       # or your platform's secret store. v1 leaked a live key — do not repeat.

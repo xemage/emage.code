@@ -9,7 +9,7 @@ user-invocable: false
 Document all PoC shortcuts and rebuild requirements.
 
 ## Deliverables
-- TECHNICAL-DEBT.md with categorized debt
+- TECHNICAL-DEBT.md with categorized debt: the PoC's narrative debt register (`poc-guidelines.md`). It explains the items that `POC-DEBT-SCORECARD.md` inventories and, where the technical-debt-tracking skill's debt ledger (`docs/artifacts/debt-ledger-v{N}.md`) exists, the items that ledger records. Where it states an item's severity, effort or disposition, it uses the value the ledger records for that item, or the scorecard's value where there is no ledger. It is neither the scorecard nor the ledger, and it substitutes for neither.
 - Severity and remediation effort estimates
 - Production readiness checklist
 - Technical Debt Scorecard with severity, effort, risk, and ownership
@@ -36,7 +36,7 @@ If you cannot proceed:
 
 ### Artifact References
 - Reference input artifact versions you consumed
-- Name output artifacts: `<type>-vN.md`
+- Name output artifacts `<type>-vN.md`, except the two deliverables that `poc-guidelines.md` names: `POC-DEBT-SCORECARD.md` (§ Debt Scorecard) and `TECHNICAL-DEBT.md` (§ Narrative Debt Register) are single files under those names, not versioned artifacts
 - Tag PoC-specific shortcuts with `<!-- POC-DEBT: description -->` for later cleanup
 
 ## Rails

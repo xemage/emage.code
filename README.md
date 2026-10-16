@@ -11,7 +11,7 @@
 emage.code brings a **structured multi-agent development team** to your
 favourite AI assistant. Every project follows the same protocol:
 
-Latest release: v7.0.1
+Latest release: v8.0.0
 
 - **Plan → Approve → Execute** lifecycle, never silent execution
 - **DAG-based task management** with explicit dependencies
@@ -108,9 +108,79 @@ prompt block) is preserved, while every generator-known key is refreshed to
 the current generated content, recursing into nested objects (so hand-added
 fields inside a known server's config are preserved too). See
 `scripts/merge-mcp-json.py` for the exact algorithm. The rest of each
-platform's directory tree (`.github/`, `.cursor/`, `.claude/`, etc.) is still
-replaced wholesale on `--update` — only each platform's one MCP/settings file
-gets this merge treatment.
+platform's directory tree (`.github/`, `.cursor/`, `.gemini/`, `.opencode/`,
+`.pi/`, `.claude/`, `.cline/`, `.clinerules/`) is replaced on `--update`, with
+files that no longer exist upstream deleted: hand-written files inside those
+trees are lost, so keep project-specific content in `docs/`. Only each
+platform's one MCP/settings file gets the merge treatment above.
+
+**Client-owned files are spared.** `--update` does not write, merge or delete
+the project-local files that the harness never ships:
+
+| Platform tree | Spared on `--update` |
+|---------------|----------------------|
+| `.claude/` | `settings.json`, `settings.local.json` |
+| `.github/` | `workflows/`, `ISSUE_TEMPLATE/`, `PULL_REQUEST_TEMPLATE.md`, `PULL_REQUEST_TEMPLATE`, `CODEOWNERS`, `dependabot.yml`, `dependabot.yaml`, `FUNDING.yml`, `copilot-instructions.md` |
+
+Because the installer never writes these files, anything your project needs
+in them, such as the Claude Code allow rule in
+[Optional: the PoC security scan server](#optional-the-poc-security-scan-server),
+is a manual step. If an `--update` run with an installer that predates this
+behaviour deleted any of them, restore them from version control.
+
+In `docs/tasks/`, each existing task ledger (`active-tasks.md`,
+`completed-tasks.md`) is always rewritten on `--update`: rows of its task table
+that are not `T<NNN>` task rows are dropped (with a warning), line endings
+become LF and a missing final newline is added. Prose around the table is kept.
+Every other `docs/` file is seeded when missing and otherwise left alone.
+
+**Refresh only the harness projections** with `--projections-only`:
+
+```bash
+scripts/install.sh --target /path/to/your-project --platform all --projections-only
+```
+
+It refreshes the platform trees (with the same spared files as `--update`),
+their MCP/settings configs (merged, as `--update` does), `AGENTS.md`, and
+`CLAUDE.md` when Claude Code is among the selected platforms. It never writes or
+deletes anything under the target's `docs/` (the task ledgers included) or
+`implementation/`, so it does not install the MCP server runtime source and
+prints no dependency notice. It requires an existing install (`AGENTS.md` in the
+target) and is mutually exclusive with `--update`. At the emage.code repository
+root it is the only permitted mode, and only with `--platform all`; there,
+`--update` is refused, and any `--target` inside the source repository is
+refused in every mode.
+
+### Optional: the PoC security scan server
+
+The `poc-security-audit` MCP server backs the PoC security review. It exposes
+exactly two tools, `scan_secrets` and `ref_containment`; a clean result means
+"no match for the fixed rule set at the scanned refs", not "no secrets". Its
+config is generated for Claude Code, Cursor, Gemini CLI, Opencode, Pi and Cline;
+GitHub Copilot's `.vscode/mcp.json` does not carry it, so the scan has no server
+to call there, and the agent's rule is that a scan which did not complete is
+`FAIL`, never `PASS`. Setup, once per project, after a
+full install or `--update` (not `--projections-only`):
+
+1. Install the Python dependency (`mcp==2.2.0`) into a virtual environment, from
+   the project root; the installer prints this command:
+   `python3 -m venv .venv-mcp && source .venv-mcp/bin/activate && pip install -r implementation/runtime/security/requirements-mcp-server.txt`.
+   The configs launch plain `python3`, so start your assistant from an
+   environment where that `python3` can import `mcp`.
+2. Make sure `git` 2.40 or newer is on `PATH`. An older git makes every call
+   fail closed as `git_failed`.
+3. Launch the assistant from the project root: the server is started as
+   `python3 -m implementation.runtime.security.poc_audit_server --allowed-root .`.
+4. Claude Code only: add the allow rule to your own `.claude/settings.json`
+   (the installer never writes it):
+
+   ```json
+   { "permissions": { "allow": ["mcp__poc-security-audit__*"] } }
+   ```
+
+   and approve the project-scoped server when Claude Code prompts.
+
+Details, tool arguments and limits: [MCP Servers](docs/wiki/mcp-servers.md).
 
 Each platform's MCP file also carries a `<mcpfile>.provenance.json` sidecar
 recording which server keys the generator owned at last generation. On
@@ -118,23 +188,34 @@ recording which server keys the generator owned at last generation. On
 when it was previously generator-owned and the current source no longer emits
 it — a currently-active generator-owned key is never pruned, regardless of
 sidecar content, and a key with no sidecar history at all (e.g. a genuinely
-hand-added entry) is never pruned either. **The first `--update` run on any
-project after this mechanism shipped has no prior sidecar to diff against and
-therefore prunes nothing** — this is a deliberate, safe default, not a bug;
-automatic pruning only activates from the second post-fix `--update` onward,
-once real history exists. `scripts/merge-mcp-json.py --force-prune-keys
-<names>` is a separate, explicit, one-time bridge for closing a specific,
+hand-added entry) is never pruned either. **Whether the first `--update`
+prunes depends on whether the project already has a sidecar.** A project that
+never had one (installed with v6.9.0 or earlier and not yet updated with a
+release that writes it) has no prior sidecar to diff against, so that first run
+prunes nothing and writes the sidecar; this is a deliberate, safe default, not a
+bug, and automatic pruning starts at the next `--update`, but only for keys the
+newly written sidecar lists. A project that already has a sidecar (for example an
+install made with v7.0.1) is pruned on its first `--update`: a key the old
+sidecar lists as generator-owned and the new source no longer emits is removed,
+so a v7.0.1 install loses `fetch`, `docker` and `postgresql` on its first v8
+update. Keys that an older release installed and no sidecar ever listed (for
+example `e2b`, `redis`, `figma` and `notion` from v6.9.0 and earlier) are never
+pruned automatically; remove them with `--force-prune-keys` or by hand.
+`scripts/merge-mcp-json.py --force-prune-keys <names>` is a separate, explicit, one-time bridge for closing a specific,
 already-reviewed retirement gap on an already-installed project with no prior
 history — it is opt-in only, never invoked automatically by `--update`, and
 prunes exactly the named keys and nothing else.
 
-Per-release install steps live in [`docs/releases/v7.0.1.md`](docs/releases/v7.0.1.md)
+Per-release install steps live in [`docs/releases/v8.0.0.md`](docs/releases/v8.0.0.md)
 and are embedded in [GitLab Releases](https://gitlab.com/em-age/emage.code/-/releases).
 
 ## Quick start
 
-After install, set MCP env vars (`GITLAB_PERSONAL_ACCESS_TOKEN`, `BRAVE_API_KEY`, …)
-from the generated `mcp.json`, then in your AI assistant:
+After install, set the MCP env vars the generated `mcp.json` references
+(`GITLAB_PERSONAL_ACCESS_TOKEN`, `GITLAB_API_URL`, `BRAVE_API_KEY`,
+`HINDSIGHT_MCP_URL`, and for the extended servers `CWSO_MCP_URL`,
+`CWSO_BEARER_TOKEN`, `CWSO_ORIGIN`, `TOOLRADAR_API_KEY`; full table in
+[MCP Servers](docs/wiki/mcp-servers.md)), then in your AI assistant:
 
 ```
 /discover-skills "start new project"
@@ -188,7 +269,7 @@ For contributor detail, see [`CONTRIBUTING.md`](CONTRIBUTING.md).
 Release publication is blocked unless documentation is updated for the tag.
 
 - Required marker in release docs: `Latest release: vX.Y.Z`
-- Required per-release brief: `docs/releases/vX.Y.Z.md` (Install + Highlights)
+- Required per-release document: `docs/releases/vX.Y.Z.md` (Install, Highlights and RELEASE VERDICT, plus the sections skill `release-workflow` § 4 prescribes)
 - GitLab release notes source of truth: publish from `docs/releases/vX.Y.Z.md` using `glab release create vX.Y.Z --ref vX.Y.Z --name vX.Y.Z -F docs/releases/vX.Y.Z.md`
 - Required files:
   - `README.md`
@@ -210,10 +291,10 @@ and local/internal markdown link validity for core release docs.
 
 ## Architecture (6 layers)
 
-1. **Commands** — 18 slash commands, the user entry point
+1. **Commands** — 19 slash commands, the user entry point
 2. **Orchestration** — Plan-Approve-Execute engine (`@orchestrator`, `@poc-orchestrator`)
-3. **Agents** — 27 specialists (backend, frontend, qa, security, devops, …)
-4. **Skills** — 22 reusable capabilities (code-review, validation-gates, …)
+3. **Agents** — 28 specialists (backend, frontend, qa, security, devops, …)
+4. **Skills** — 27 reusable capabilities (code-review, validation-gates, …)
 5. **Memory** — `docs/` artifacts + MCP `memory` server
 6. **MCP servers** — declared once in [`implementation/knowledge/mcp/servers.yaml`](implementation/knowledge/mcp/servers.yaml)
 
@@ -286,7 +367,7 @@ main         ← production-ready releases
 develop      ← integration branch for new work
 feature/*    ← branch from develop, MR back to develop
 bugfix/*     ← bug fixes, MR back to develop
-release/*    ← stabilize a release, MR to main + back-merge to develop
+release/*    ← stabilize a release, MR to develop, then to main, then tag
 hotfix/*     ← emergency fix from main
 ```
 

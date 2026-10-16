@@ -1,0 +1,122 @@
+{
+  "retrieved_at_scope": "all",
+  "focus_area": null,
+  "entries": [
+    {
+      "key": "agent-tool-grant-check-discipline",
+      "scope": "general",
+      "title": "Before dispatching a nested Agent-tool call, check the assignee actually has the Agent tool",
+      "tags": [
+        "agent-dispatch",
+        "tool-grants"
+      ],
+      "source_path": "implementation/knowledge/memory/general/agent-tool-grant-check-discipline.md"
+    },
+    {
+      "key": "blocker-retry-limit",
+      "scope": "general",
+      "title": "This harness's own blocker escalation limit: two retries, then escalate",
+      "tags": [
+        "blocker-protocol",
+        "agent-behavior"
+      ],
+      "source_path": "implementation/knowledge/memory/general/blocker-retry-limit.md"
+    },
+    {
+      "key": "knowledge-vault-frontmatter-convention",
+      "scope": "general",
+      "title": "How to author a knowledge-vault entry this harness's indexing pipeline will actually pick up",
+      "tags": [
+        "memory-layer",
+        "vault-convention",
+        "authoring"
+      ],
+      "source_path": "implementation/knowledge/memory/general/knowledge-vault-frontmatter-convention.md"
+    },
+    {
+      "key": "protected-branch-no-direct-commit-policy",
+      "scope": "general",
+      "title": "No direct commits to the two protected branches, ever - not even a one-line docs edit",
+      "tags": [
+        "branch-protection",
+        "branch-policy"
+      ],
+      "source_path": "implementation/knowledge/memory/general/protected-branch-no-direct-commit-policy.md"
+    },
+    {
+      "key": "validation-gate-verdict-protocol",
+      "scope": "general",
+      "title": "Validation gates use exactly three verdicts, and reviewers do not fix what they are reviewing",
+      "tags": [
+        "quality-gates",
+        "review-protocol"
+      ],
+      "source_path": "implementation/knowledge/memory/general/validation-gate-verdict-protocol.md"
+    },
+    {
+      "key": "adr-005-memory-layer-decisions",
+      "scope": "project",
+      "title": "ADR-005: this repo's memory layer keeps a git-versioned canonical store and a separate, non-canonical derived index",
+      "tags": [
+        "adr",
+        "memory-layer",
+        "architecture"
+      ],
+      "source_path": "implementation/knowledge/memory/project/adr-005-memory-layer-decisions.md"
+    },
+    {
+      "key": "golden-suite-no-live-model-design",
+      "scope": "project",
+      "title": "The golden suite deliberately never invokes a live, sampling model completion",
+      "tags": [
+        "golden-suite",
+        "evaluation-design"
+      ],
+      "source_path": "implementation/knowledge/memory/project/golden-suite-no-live-model-design.md"
+    },
+    {
+      "key": "held-out-isolation-ledger-defect-sweep",
+      "scope": "project",
+      "title": "Two independent leak guards this repo runs before any push: held-out case-ID isolation and the maturity registry's self-referential ledger-defect check",
+      "tags": [
+        "golden-suite",
+        "protected-paths",
+        "maturity-registry"
+      ],
+      "source_path": "implementation/knowledge/memory/project/held-out-isolation-ledger-defect-sweep.md"
+    },
+    {
+      "key": "memory-scope-enforcement-mechanism",
+      "scope": "project",
+      "title": "One predicate, not two: how this repo's memory index makes project-scope content provably unreachable across projects",
+      "tags": [
+        "memory-layer",
+        "scope-model",
+        "architecture"
+      ],
+      "source_path": "implementation/knowledge/memory/project/memory-scope-enforcement-mechanism.md"
+    },
+    {
+      "key": "protected-golden-suite-paths",
+      "scope": "project",
+      "title": "Protected paths: tests/golden/** and scripts/scorecard.py are frozen against normal improvement-task edits",
+      "tags": [
+        "golden-suite",
+        "protected-paths",
+        "branch-protection"
+      ],
+      "source_path": "implementation/knowledge/memory/project/protected-golden-suite-paths.md"
+    },
+    {
+      "key": "terminal-bench-two-host-topology",
+      "scope": "project",
+      "title": "Terminal-Bench trial data lives on two hosts; the remote host's data is read, never copied into the repo",
+      "tags": [
+        "terminal-bench",
+        "infrastructure",
+        "evaluation"
+      ],
+      "source_path": "implementation/knowledge/memory/project/terminal-bench-two-host-topology.md"
+    }
+  ]
+}

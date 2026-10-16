@@ -11,7 +11,7 @@
 - **Quality gates passed**: [code-review, security-audit]
 - **Quality gates failed**: []
 - **Blocker IDs**: none
-- **Release manager**: orchestrator
+- **Release manager**: release-manager
 - **Timestamp**: 2026-08-13T18:00:00Z
 
 Ship pending final smoke-test sign-off from the on-call engineer; tracked informally in the

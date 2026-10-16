@@ -7,8 +7,44 @@ tools:
   edit: true
   execute: true
   web: true
-  mcp__playwright: true
-  mcp__gitlab: true
+  playwright_browser_navigate: true
+  playwright_browser_navigate_back: true
+  playwright_browser_snapshot: true
+  playwright_browser_find: true
+  playwright_browser_take_screenshot: true
+  playwright_browser_click: true
+  playwright_browser_type: true
+  playwright_browser_fill_form: true
+  playwright_browser_select_option: true
+  playwright_browser_press_key: true
+  playwright_browser_hover: true
+  playwright_browser_handle_dialog: true
+  playwright_browser_wait_for: true
+  playwright_browser_console_messages: true
+  playwright_browser_network_requests: true
+  playwright_browser_resize: true
+  playwright_browser_tabs: true
+  playwright_browser_close: true
+  gitlab_create_issue: true
+  gitlab_create_issue_note: true
+  gitlab_get_issue: true
+  gitlab_list_issues: true
+  gitlab_list_issue_discussions: true
+  gitlab_list_labels: true
+  gitlab_list_merge_requests: true
+  gitlab_get_merge_request: true
+  gitlab_list_merge_request_changed_files: true
+  gitlab_get_merge_request_file_diff: true
+  gitlab_mr_discussions: true
+  gitlab_list_merge_request_pipelines: true
+  gitlab_list_pipelines: true
+  gitlab_get_pipeline: true
+  gitlab_list_pipeline_jobs: true
+  gitlab_get_pipeline_job: true
+  gitlab_get_pipeline_job_output: true
+  gitlab_get_pipeline_test_report: true
+  gitlab_get_pipeline_test_report_summary: true
+  gitlab_discover_tools: true
 ---
 
 # QA Engineer
@@ -115,6 +151,8 @@ tests/
 - All acceptance criteria must have corresponding tests
 
 ## Validation Gate Protocol
+
+The QA gate is the `validation-gates` skill's **Integration** gate (§ Gate Types). Its verdict is recorded in that skill's `## Gate Verdict` block (§ Verdict Format), with `**Gate:** integration`. The gate verdict of item 1 and the `## VERDICT:` of § Structured Test Report accompany that block and do not replace it. All of them record the gate's one verdict, so they carry the same value.
 
 1. Every QA run must end with a gate verdict:
    - `pass`, `conditional_pass`, or `fail`.

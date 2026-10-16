@@ -1,6 +1,6 @@
 ---
 description: "Use for rapid technology scouting for PoCs. Compare APIs, SDKs, and platforms to find the fastest path to a working demo."
-tools: [read, search, web, mcp__fetch]
+tools: [read, search, web]
 user-invocable: false
 ---
 

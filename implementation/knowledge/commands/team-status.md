@@ -2,7 +2,8 @@
 description: "Report team-wide status across active streams with blockers, workload, and next actions."
 agent: "orchestrator"
 argument-hint: "Optional scope: project-id, stream, or portfolio"
-maturity: experimental
+maturity: stable
+audience: both
 ---
 
 Generate a `team-status` report.
@@ -34,6 +35,7 @@ graph TD
     classDef inProgress fill:#FFD700
     classDef blocked fill:#FF6347
     classDef pending fill:#D3D3D3
+    classDef inReview fill:#87CEFA
 
     class T001 done
     class T002 inProgress
@@ -44,6 +46,7 @@ graph TD
   - Read `docs/tasks/active-tasks.md` for pending/in_progress/blocked/in_review nodes
   - Read `docs/tasks/completed-tasks.md` for `done` nodes — `active-tasks.md` NEVER contains `done`
   - Reconstruct dependency edges for done nodes from the `Depends on` cells of active rows
+  - Color code: done=green, in_progress=yellow, blocked=red, pending=gray, in_review=blue
 - Show cross-stream dependencies
 
 ## Checkpoint Metrics
@@ -60,7 +63,7 @@ graph TD
 
 | # | Blocker ID | Severity | Owner | Age (days) | Blocked Tasks | Mitigation | Escalation |
 |---|-----------|----------|-------|------------|---------------|------------|------------|
-| 1 | ... | CRITICAL/HIGH/MEDIUM | ... | ... | [task IDs] | ... | ... |
+| 1 | ... | CRITICAL/MAJOR/MINOR | ... | ... | [task IDs] | ... | ... |
 
 ## Velocity Data
 

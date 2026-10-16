@@ -8,8 +8,10 @@
 smoke-test sign-off, mentioned only informally ("tracked in the release channel").
 
 ## What this checks
-`implementation/knowledge/commands/prepare-release.md` §"Release Steps" step 9: "If
-CONDITIONAL_PASS, list conditions that must be met before deployment." This case asks: can a
+`implementation/knowledge/commands/prepare-release.md` §"Release Steps" step 9, as amended by
+`T582` (item R5): "If CONDITIONAL_PASS, list the conditions." (formerly "If CONDITIONAL_PASS, list
+conditions that must be met before deployment"). The amendment adds when the conditions close, but
+the step 7 template still has no structured `**Conditions**:` field. This case asks: can a
 deterministic, structured check verify the conditions were actually *listed* (as opposed to
 merely alluded to in prose), given that neither step 9 nor the step 7 `## RELEASE VERDICT`
 template declares a required field name or list format for them (unlike, e.g., `**Blocker
@@ -25,7 +27,7 @@ field or a `## Conditions` section with at least one list item.
 field or section — because the command definition's own `## RELEASE VERDICT` template (step 7)
 never includes one, unlike its explicit `**Blocker IDs**:` field for the FAIL path. This
 mirrors `code-review-conditional-pass-conditions-gap`'s identical structural gap in a sibling
-command; both commands say "list conditions"/"list the conditions" without ever defining what a
+command; both commands say "list the conditions" without ever defining what a
 machine-checkable list looks like.
 
 ## Category

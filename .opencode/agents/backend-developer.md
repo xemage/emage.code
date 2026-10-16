@@ -7,7 +7,6 @@ tools:
   edit: true
   execute: true
   web: true
-  mcp__fetch: true
 ---
 
 # Backend Developer

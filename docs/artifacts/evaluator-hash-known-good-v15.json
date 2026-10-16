@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "algorithm": "sha256",
+  "digests": {
+    "tests_golden": "7408bc705257b770232acd1ef46a7120d9c2d13d8c04e06be7b779dec9c53594",
+    "scripts_scorecard": "45346c178c7f6d92101130d898f55dfaad908aa7e5ae669ce1faac99a51192d6"
+  },
+  "computed_from_commit": "c4f025fbc11bdbe5e4c6a93c68b98e04e390b624",
+  "computed_at": "2026-10-01T18:59:17Z",
+  "protected_paths": {
+    "tests_golden": "tests/golden",
+    "scripts_scorecard": "scripts/scorecard.py"
+  },
+  "supersedes": "evaluator-hash-known-good-v14.json",
+  "reason": "T568 (plan-093) realigned the golden case validate-workflow-gate-verdict-sources to /validate-workflow's step 5, which T567 amended (MR !453) per T566's ruling in docs/artifacts/validate-workflow-gate-resolution-v1.md (ADR-007 branch 1, same-file prong). The work was done under the single-directory protected-path grant in docs/tasks/task-T568.md (protected-paths-v1.md \u00a75). Changes: GATES now lists the validation-gates skill's five gate types in pipeline order. The per-gate predicate is byte-identical, verified by AST segment comparison. Two predicates were added: completeness (the row kinds equal the Verdict Format's Gate kinds) and ordered list fidelity (the fixture command's step-5 bullets equal GATES). The fixture now holds byte-identical copies of the amended command and of validation-gates; the two unused copies were removed. The case flipped from known_failing/tracked_defect to expected_pass. The orchestrator's \u00a79.2 ruling holds that the change from six to five per-gate entries is not a Validation 1 weakening: the two dropped entries were structurally unsatisfiable, and the check gains completeness and ordering. Discrimination: the implementer ran 7 perturbations plus a contrast run. The orchestrator independently ran its own on scratch copies; re-adding plan approval, swapping gate order, restoring the briefing, dropping 'architecture' from the Gate field, and deleting the Security row each return False, and an unmodified control returns True. Scorecard: exactly one row transition (ADR-007 Validation 2), giving 34 cases, 26 pass, 0 regressions. check-maturity: 79 components, 0 failing. Held-out isolation passes. The suite showed exactly the two evaluator-hash failures. scripts_scorecard is byte-identical to v14 and to every version back to v5. The implementing agent committed locally (c4f025f) but neither pushed nor refreshed this baseline. The orchestrator escalated it, the fifteenth such escalation in this phase and the fifteenth respected, and the user explicitly authorized it on 2026-10-01 before this file was written.",
+  "update_policy": "Manual only, never automatic. Any future legitimate update goes through the exception path in docs/artifacts/protected-paths-v1.md \u00a75 and produces evaluator-hash-known-good-v16.json. This file (v15) is never edited in place, and v1 through v14 are kept unmodified as the historical record. See docs/artifacts/evaluator-hash-check-v1.md for the full policy."
+}

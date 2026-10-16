@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-"""Generate release artifacts and publish a GitLab release fail-closed."""
+"""Regenerate CHANGELOG.md and publish a GitLab release fail-closed.
+
+The release has ONE release document, ``docs/releases/<tag>.md`` (it starts
+``# Release <tag>``). The GitLab Release description is that document, whole and
+unchanged (T640 / ruling C3). The commit list generated from Conventional
+Commits (merge commits excluded, filter F1) goes into ``CHANGELOG.md`` only,
+which is the only file this script writes; no root ``release-notes.md`` is
+written. Offline rehearsal: ``scripts/dry-run-publish-release.py``.
+"""
 
 from __future__ import annotations
 
@@ -30,11 +38,27 @@ RELEASE_TITLE_MAP = {
 }
 SUBJECT_RE = re.compile(r"^(?P<type>[a-z]+)(?:\([^)]+\))?(?:!)?:\s+(?P<desc>.+)$")
 MERGE_BRANCH_RE = re.compile(r"^Merge branch '([^']+)' into '([^']+)'$")
+TAG_RE = re.compile(r"^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$")  # the CI tag rule
 SIMPLE_RELEASE_BRANCH_RE = re.compile(r"^release/v\d+\.\d+\.\d+$")
 
 
 class ReleasePublishError(RuntimeError):
     """Raised when release artifact generation or publishing fails."""
+
+
+def validate_tag(tag: str) -> str:
+    """Fail closed unless ``tag`` matches the CI release-tag rule (no newline, no path parts)."""
+    if not TAG_RE.fullmatch(tag):
+        raise ReleasePublishError(f"invalid release tag {tag!r}: must match {TAG_RE.pattern}")
+    return tag
+
+
+def validate_api_target(api_v4_url: str, project_id: str) -> None:
+    """Fail closed unless the API base is https and the project id is all ASCII digits."""
+    if not api_v4_url.startswith("https://"):
+        raise ReleasePublishError("invalid --api-v4-url: must start with https://")
+    if not (project_id.isascii() and project_id.isdigit()):
+        raise ReleasePublishError("invalid --project-id: must be all ASCII digits")
 
 
 def run_git(args: list[str]) -> str:
@@ -77,9 +101,11 @@ def _revision_range(current_tag: str, previous_tag: str | None) -> str:
         return current_tag
     # Prefer merge-base range when histories diverged (non-linear GitFlow).
     try:
-        base = run_git(["merge-base", previous_tag, current_tag])
-        count = run_git(["rev-list", "--count", f"{base}..{current_tag}"])
-        direct = run_git(["rev-list", "--count", f"{previous_tag}..{current_tag}"])
+        base = run_git(["merge-base", "--end-of-options", previous_tag, current_tag])
+        count = run_git(["rev-list", "--count", "--end-of-options", f"{base}..{current_tag}"])
+        direct = run_git(
+            ["rev-list", "--count", "--end-of-options", f"{previous_tag}..{current_tag}"]
+        )
         if int(count) >= int(direct):
             return f"{base}..{current_tag}"
     except ReleasePublishError:
@@ -89,7 +115,8 @@ def _revision_range(current_tag: str, previous_tag: str | None) -> str:
 
 def get_commit_subjects(current_tag: str, previous_tag: str | None) -> list[str]:
     revision = _revision_range(current_tag, previous_tag)
-    output = run_git(["log", revision, "--pretty=%s"])
+    # Filter F1: merge commits are excluded structurally, not by subject text.
+    output = run_git(["log", "--no-merges", "--pretty=%s", "--end-of-options", revision, "--"])
     subjects = [line.strip() for line in output.splitlines() if line.strip()]
     if not subjects:
         raise ReleasePublishError(f"no commits found for revision range '{revision}'")
@@ -97,13 +124,18 @@ def get_commit_subjects(current_tag: str, previous_tag: str | None) -> list[str]
 
 
 def load_release_brief(tag: str) -> str:
+    """Return the release document of ``tag`` exactly as stored; fail closed if missing or blank."""
+    validate_tag(tag)
     brief_path = ROOT / "docs" / "releases" / f"{tag}.md"
     if not brief_path.is_file():
         raise ReleasePublishError(
             f"missing release brief: docs/releases/{tag}.md "
             "(copy docs/releases/_template.md and fill Install + Highlights)"
         )
-    return brief_path.read_text(encoding="utf-8").strip() + "\n"
+    brief = brief_path.read_bytes().decode("utf-8")  # no newline translation: byte-for-byte
+    if not brief.strip():
+        raise ReleasePublishError(f"release brief is empty: docs/releases/{tag}.md")
+    return brief
 
 
 def classify_subjects(subjects: Iterable[str]) -> dict[str, list[str]]:
@@ -166,21 +198,13 @@ def render_changelog_section(previous_tag: str | None, grouped: dict[str, list[s
     return "\n".join(lines).strip() + "\n"
 
 
-def render_release_notes(
-    tag: str,
-    previous_tag: str | None,
-    grouped: dict[str, list[str]],
-    brief: str,
-) -> str:
-    brief_body = brief
-    if brief_body.startswith(f"# Release {tag}"):
-        brief_body = "\n".join(brief_body.splitlines()[1:]).lstrip("\n")
-
-    changelog = render_changelog_section(previous_tag, grouped)
-    return f"# Release {tag}\n\n{brief_body}\n\n---\n\n{changelog}\n"
+def render_release_description(brief: str) -> str:
+    """The GitLab Release description is the release document, whole (no title strip, no appended list)."""
+    return brief
 
 
-def update_changelog(tag: str, notes_body: str) -> str:
+def update_changelog(tag: str, changelog_section: str) -> str:
+    """Insert the generated commit list under ``## [tag] - date``; H1/H2 lines are dropped, ``###`` groups kept."""
     today = dt.date.today().isoformat()
     heading = f"## [{tag}] - {today}"
     changelog_path = ROOT / "CHANGELOG.md"
@@ -190,8 +214,8 @@ def update_changelog(tag: str, notes_body: str) -> str:
         return existing
 
     section_lines = [heading, ""]
-    for line in notes_body.splitlines():
-        if line.startswith("#"):
+    for line in changelog_section.splitlines():
+        if line.startswith("# ") or line.startswith("## "):
             continue
         section_lines.append(line)
     section = "\n".join(section_lines).strip() + "\n\n"
@@ -207,13 +231,9 @@ def update_changelog(tag: str, notes_body: str) -> str:
     return "# Changelog\n\n" + section + existing
 
 
-def write_artifacts(release_notes: str, changelog: str) -> None:
-    (ROOT / "release-notes.md").write_text(release_notes, encoding="utf-8")
+def write_artifacts(changelog: str) -> None:
+    """Write CHANGELOG.md, the only file this script produces."""
     (ROOT / "CHANGELOG.md").write_text(changelog, encoding="utf-8")
-
-    notes_size = (ROOT / "release-notes.md").stat().st_size
-    if notes_size == 0:
-        raise ReleasePublishError("release-notes.md is empty")
 
 
 def gitlab_request(method: str, url: str, token: str, payload: dict | None = None) -> dict:
@@ -234,6 +254,7 @@ def gitlab_request(method: str, url: str, token: str, payload: dict | None = Non
 
 
 def create_or_update_release(tag: str, api_v4_url: str, project_id: str, token: str, description: str) -> None:
+    validate_api_target(api_v4_url, project_id)
     endpoint = f"{api_v4_url}/projects/{project_id}/releases/{tag}"
     payload = {
         "name": tag,
@@ -273,6 +294,8 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    validate_tag(args.tag)
+    validate_api_target(args.api_v4_url, args.project_id)
     run_git(["fetch", "--tags", "--force"])
     ensure_full_history()
 
@@ -282,9 +305,9 @@ def main() -> int:
     subjects = get_commit_subjects(args.tag, previous_tag)
     grouped = classify_subjects(subjects)
 
-    release_notes = render_release_notes(args.tag, previous_tag, grouped, brief)
-    changelog = update_changelog(args.tag, release_notes)
-    write_artifacts(release_notes, changelog)
+    description = render_release_description(brief)
+    changelog = update_changelog(args.tag, render_changelog_section(previous_tag, grouped))
+    write_artifacts(changelog)
 
     if not args.skip_api:
         create_or_update_release(
@@ -292,10 +315,10 @@ def main() -> int:
             api_v4_url=args.api_v4_url,
             project_id=args.project_id,
             token=args.token,
-            description=release_notes,
+            description=description,
         )
 
-    print(f"release-publish: generated artifacts for {args.tag}")
+    print(f"release-publish: regenerated CHANGELOG.md for {args.tag}")
     if args.skip_api:
         print("release-publish: skipped GitLab API publish by request")
     else:

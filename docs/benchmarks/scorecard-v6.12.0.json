@@ -2,15 +2,17 @@
   "content": {
     "cases": [
       {
-        "actual_result": "fail",
-        "bucket": "known_failing",
+        "actual_result": "pass",
+        "bucket": "pass",
         "case_dir": "tests/golden/held-out/<redacted>",
         "command": "/code-review",
         "error": null,
         "id": "held-out-case-1",
-        "known_failing_category": "tracked_defect",
+        "known_failing_category": null,
         "location": "held-out",
-        "status": "known_failing"
+        "model_outcome": null,
+        "model_tier": null,
+        "status": "expected_pass"
       },
       {
         "actual_result": "pass",
@@ -21,18 +23,22 @@
         "id": "held-out-case-2",
         "known_failing_category": null,
         "location": "held-out",
+        "model_outcome": null,
+        "model_tier": null,
         "status": "expected_pass"
       },
       {
-        "actual_result": "fail",
-        "bucket": "known_failing",
+        "actual_result": "pass",
+        "bucket": "pass",
         "case_dir": "tests/golden/held-out/<redacted>",
         "command": "/new-feature",
         "error": null,
         "id": "held-out-case-3",
-        "known_failing_category": "tracked_defect",
+        "known_failing_category": null,
         "location": "held-out",
-        "status": "known_failing"
+        "model_outcome": null,
+        "model_tier": null,
+        "status": "expected_pass"
       },
       {
         "actual_result": "fail",
@@ -43,6 +49,8 @@
         "id": "held-out-case-4",
         "known_failing_category": "capability_gap",
         "location": "held-out",
+        "model_outcome": null,
+        "model_tier": null,
         "status": "known_failing"
       },
       {
@@ -54,6 +62,8 @@
         "id": "held-out-case-5",
         "known_failing_category": null,
         "location": "held-out",
+        "model_outcome": null,
+        "model_tier": null,
         "status": "expected_pass"
       },
       {
@@ -65,6 +75,34 @@
         "id": "held-out-case-6",
         "known_failing_category": null,
         "location": "held-out",
+        "model_outcome": null,
+        "model_tier": null,
+        "status": "expected_pass"
+      },
+      {
+        "actual_result": "pass",
+        "bucket": "pass",
+        "case_dir": "golden/open/batch-manifest-ledger-schema-conflict",
+        "command": "/batch",
+        "error": null,
+        "id": "batch-manifest-ledger-schema-conflict",
+        "known_failing_category": null,
+        "location": "open",
+        "model_outcome": null,
+        "model_tier": null,
+        "status": "expected_pass"
+      },
+      {
+        "actual_result": "pass",
+        "bucket": "pass",
+        "case_dir": "golden/open/bug-report-severity-priority-ledger-row",
+        "command": "/bug-report",
+        "error": null,
+        "id": "bug-report-severity-priority-ledger-row",
+        "known_failing_category": null,
+        "location": "open",
+        "model_outcome": null,
+        "model_tier": null,
         "status": "expected_pass"
       },
       {
@@ -76,6 +114,8 @@
         "id": "code-review-conditional-pass-conditions-gap",
         "known_failing_category": "capability_gap",
         "location": "open",
+        "model_outcome": null,
+        "model_tier": null,
         "status": "known_failing"
       },
       {
@@ -87,6 +127,60 @@
         "id": "code-review-fail-blocker-details",
         "known_failing_category": null,
         "location": "open",
+        "model_outcome": null,
+        "model_tier": null,
+        "status": "expected_pass"
+      },
+      {
+        "actual_result": "pass",
+        "bucket": "pass",
+        "case_dir": "golden/open/consolidate-memory-recommendation-table-grounded",
+        "command": "/consolidate-memory",
+        "error": null,
+        "id": "consolidate-memory-recommendation-table-grounded",
+        "known_failing_category": null,
+        "location": "open",
+        "model_outcome": null,
+        "model_tier": null,
+        "status": "expected_pass"
+      },
+      {
+        "actual_result": "pass",
+        "bucket": "pass",
+        "case_dir": "golden/open/discover-skills-registry-grounded-recommendation",
+        "command": "/discover-skills",
+        "error": null,
+        "id": "discover-skills-registry-grounded-recommendation",
+        "known_failing_category": null,
+        "location": "open",
+        "model_outcome": null,
+        "model_tier": null,
+        "status": "expected_pass"
+      },
+      {
+        "actual_result": "pass",
+        "bucket": "pass",
+        "case_dir": "golden/open/evaluate-poc-verdict-debt-reconciliation",
+        "command": "/evaluate-poc",
+        "error": null,
+        "id": "evaluate-poc-verdict-debt-reconciliation",
+        "known_failing_category": null,
+        "location": "open",
+        "model_outcome": null,
+        "model_tier": null,
+        "status": "expected_pass"
+      },
+      {
+        "actual_result": "pass",
+        "bucket": "pass",
+        "case_dir": "golden/open/handoff-payload-schema-fields-real",
+        "command": "/handoff",
+        "error": null,
+        "id": "handoff-payload-schema-fields-real",
+        "known_failing_category": null,
+        "location": "open",
+        "model_outcome": null,
+        "model_tier": null,
         "status": "expected_pass"
       },
       {
@@ -98,6 +192,8 @@
         "id": "new-feature-checkpoint-line-compliant",
         "known_failing_category": null,
         "location": "open",
+        "model_outcome": null,
+        "model_tier": null,
         "status": "expected_pass"
       },
       {
@@ -109,29 +205,61 @@
         "id": "new-feature-plan-doc-compliant",
         "known_failing_category": null,
         "location": "open",
+        "model_outcome": null,
+        "model_tier": null,
         "status": "expected_pass"
       },
       {
-        "actual_result": "fail",
-        "bucket": "known_failing",
+        "actual_result": "pass",
+        "bucket": "pass",
         "case_dir": "golden/open/new-feature-real-checkpoint-format-drift",
         "command": "/new-feature",
         "error": null,
         "id": "new-feature-real-checkpoint-format-drift",
-        "known_failing_category": "tracked_defect",
+        "known_failing_category": null,
         "location": "open",
-        "status": "known_failing"
+        "model_outcome": null,
+        "model_tier": null,
+        "status": "expected_pass"
       },
       {
-        "actual_result": "fail",
-        "bucket": "known_failing",
+        "actual_result": "pass",
+        "bucket": "pass",
+        "case_dir": "golden/open/new-poc-plan-hypothesis-format",
+        "command": "/new-poc",
+        "error": null,
+        "id": "new-poc-plan-hypothesis-format",
+        "known_failing_category": null,
+        "location": "open",
+        "model_outcome": null,
+        "model_tier": null,
+        "status": "expected_pass"
+      },
+      {
+        "actual_result": "pass",
+        "bucket": "pass",
+        "case_dir": "golden/open/new-project-plan-doc-and-lifecycle-states",
+        "command": "/new-project",
+        "error": null,
+        "id": "new-project-plan-doc-and-lifecycle-states",
+        "known_failing_category": null,
+        "location": "open",
+        "model_outcome": null,
+        "model_tier": null,
+        "status": "expected_pass"
+      },
+      {
+        "actual_result": "pass",
+        "bucket": "pass",
         "case_dir": "golden/open/plan-real-doc-header-drift",
         "command": "/plan",
         "error": null,
         "id": "plan-real-doc-header-drift",
-        "known_failing_category": "tracked_defect",
+        "known_failing_category": null,
         "location": "open",
-        "status": "known_failing"
+        "model_outcome": null,
+        "model_tier": null,
+        "status": "expected_pass"
       },
       {
         "actual_result": "pass",
@@ -142,6 +270,8 @@
         "id": "plan-required-sections-compliant",
         "known_failing_category": null,
         "location": "open",
+        "model_outcome": null,
+        "model_tier": null,
         "status": "expected_pass"
       },
       {
@@ -153,6 +283,21 @@
         "id": "plan-task-creation-precondition-real",
         "known_failing_category": null,
         "location": "open",
+        "model_outcome": null,
+        "model_tier": null,
+        "status": "expected_pass"
+      },
+      {
+        "actual_result": "pass",
+        "bucket": "pass",
+        "case_dir": "golden/open/poc-demo-hypothesis-status-evidence-gaps",
+        "command": "/poc-demo",
+        "error": null,
+        "id": "poc-demo-hypothesis-status-evidence-gaps",
+        "known_failing_category": null,
+        "location": "open",
+        "model_outcome": null,
+        "model_tier": null,
         "status": "expected_pass"
       },
       {
@@ -164,6 +309,8 @@
         "id": "prepare-release-changelog-grouping-compliant",
         "known_failing_category": null,
         "location": "open",
+        "model_outcome": null,
+        "model_tier": null,
         "status": "expected_pass"
       },
       {
@@ -175,6 +322,8 @@
         "id": "prepare-release-conditional-pass-conditions-gap",
         "known_failing_category": "capability_gap",
         "location": "open",
+        "model_outcome": null,
+        "model_tier": null,
         "status": "known_failing"
       },
       {
@@ -186,6 +335,8 @@
         "id": "prepare-release-real-verdict-missing",
         "known_failing_category": "tracked_defect",
         "location": "open",
+        "model_outcome": null,
+        "model_tier": null,
         "status": "known_failing"
       },
       {
@@ -197,6 +348,8 @@
         "id": "security-audit-coverage-consistency",
         "known_failing_category": null,
         "location": "open",
+        "model_outcome": null,
+        "model_tier": null,
         "status": "expected_pass"
       },
       {
@@ -206,8 +359,10 @@
         "command": "/security-audit",
         "error": null,
         "id": "security-audit-critical-not-fail",
-        "known_failing_category": "tracked_defect",
+        "known_failing_category": "capability_gap",
         "location": "open",
+        "model_outcome": null,
+        "model_tier": null,
         "status": "known_failing"
       },
       {
@@ -219,6 +374,73 @@
         "id": "security-audit-verdict-fields-compliant",
         "known_failing_category": null,
         "location": "open",
+        "model_outcome": null,
+        "model_tier": null,
+        "status": "expected_pass"
+      },
+      {
+        "actual_result": "fail",
+        "bucket": "known_failing",
+        "case_dir": "golden/open/skillify-skill-file-template-drift",
+        "command": "/skillify",
+        "error": null,
+        "id": "skillify-skill-file-template-drift",
+        "known_failing_category": "tracked_defect",
+        "location": "open",
+        "model_outcome": null,
+        "model_tier": null,
+        "status": "known_failing"
+      },
+      {
+        "actual_result": "pass",
+        "bucket": "pass",
+        "case_dir": "golden/open/sprint-status-dag-ledger-grounded",
+        "command": "/sprint-status",
+        "error": null,
+        "id": "sprint-status-dag-ledger-grounded",
+        "known_failing_category": null,
+        "location": "open",
+        "model_outcome": null,
+        "model_tier": null,
+        "status": "expected_pass"
+      },
+      {
+        "actual_result": "pass",
+        "bucket": "pass",
+        "case_dir": "golden/open/team-status-dag-colour-code",
+        "command": "/team-status",
+        "error": null,
+        "id": "team-status-dag-colour-code",
+        "known_failing_category": null,
+        "location": "open",
+        "model_outcome": null,
+        "model_tier": null,
+        "status": "expected_pass"
+      },
+      {
+        "actual_result": "pass",
+        "bucket": "pass",
+        "case_dir": "golden/open/validate-tasks-fail-lines-verbatim",
+        "command": "/validate-tasks",
+        "error": null,
+        "id": "validate-tasks-fail-lines-verbatim",
+        "known_failing_category": null,
+        "location": "open",
+        "model_outcome": null,
+        "model_tier": null,
+        "status": "expected_pass"
+      },
+      {
+        "actual_result": "pass",
+        "bucket": "pass",
+        "case_dir": "golden/open/validate-workflow-gate-verdict-sources",
+        "command": "/validate-workflow",
+        "error": null,
+        "id": "validate-workflow-gate-verdict-sources",
+        "known_failing_category": null,
+        "location": "open",
+        "model_outcome": null,
+        "model_tier": null,
         "status": "expected_pass"
       }
     ],
@@ -226,36 +448,36 @@
       "by_location": {
         "held-out": {
           "capability_gap": 1,
-          "known_failing": 3,
-          "pass": 3,
+          "known_failing": 1,
+          "pass": 5,
           "regression": 0,
           "total": 6,
-          "tracked_defect": 2,
+          "tracked_defect": 0,
           "unexpected_pass": 0
         },
         "open": {
-          "capability_gap": 2,
-          "known_failing": 6,
-          "pass": 8,
+          "capability_gap": 3,
+          "known_failing": 5,
+          "pass": 23,
           "regression": 0,
-          "total": 14,
-          "tracked_defect": 4,
+          "total": 28,
+          "tracked_defect": 2,
           "unexpected_pass": 0
         }
       },
-      "capability_gap": 3,
-      "known_failing": 9,
+      "capability_gap": 4,
+      "known_failing": 6,
       "regressions": 0,
-      "total_cases": 20,
-      "total_fail": 9,
-      "total_pass": 11,
-      "tracked_defect": 6,
+      "total_cases": 34,
+      "total_fail": 6,
+      "total_pass": 28,
+      "tracked_defect": 2,
       "unexpected_pass": 0,
       "unrecognized_status": 0
     }
   },
   "run_metadata": {
-    "generated_at": "2026-08-13T20:40:53Z",
+    "generated_at": "2026-10-15T05:39:15Z",
     "golden_version": "v6.12.0",
     "runner": "scripts/scorecard.py",
     "schema_version": "golden-scorecard-v1"

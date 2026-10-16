@@ -2,7 +2,8 @@
 description: "Start a new software project from an idea. Triggers the full orchestration workflow: planning, architecture, setup, development, testing, and deployment."
 agent: "orchestrator"
 argument-hint: "Describe your project idea in detail..."
-maturity: experimental
+maturity: stable
+audience: both
 ---
 
 I have a new project idea. Please orchestrate the full team to turn this into a real software product:
@@ -10,9 +11,9 @@ I have a new project idea. Please orchestrate the full team to turn this into a 
 ## Phase 1: Plan-Approve-Execute
 
 1. **Create a plan document** with task decomposition and dependency graph
-   - Write the plan to `docs/plans/plan-<project-slug>.md`
+   - Write the plan to `docs/plans/plan-<ID>.md`, with `<ID>` as the `plan-approve-execute` skill § File Location defines it
    - Include: objective, scope, task DAG (Mermaid), risk assessment, estimated phases
-   - Reference protocol: `04-protocols.md § Plan-Approve-Execute`
+   - Reference protocol: `plan-approve-execute` skill § The Three Phases › Phase 1: Plan (Plan Document Format)
 2. **Present the plan for my approval before executing**
    - Show the plan summary, task count, estimated phases, and identified risks
    - Wait for explicit approval (`APPROVED`, `APPROVED_WITH_CHANGES`, or `REJECTED`)
@@ -39,15 +40,15 @@ I have a new project idea. Please orchestrate the full team to turn this into a 
 13. Use progressive context loading for delegations (only objective, dependency slice, artifact refs, blockers)
 14. After each phase, publish a compact checkpoint summary:
 	- `[CHECKPOINT] id=<phase_or_gate> | done=[...] | in_flight=[...] | blocked=[...] | decisions=[...] | artifact_refs=[...] | next=[...]`
-	- Write checkpoint to `docs/checkpoints/checkpoint-<phase>.md`
+	- Write checkpoint per `AGENTS.md` § Checkpoint Protocol: store at `docs/checkpoints/checkpoint-<SEQ>-<phase>.md`, with `<phase>` naming the phase
 15. Apply per-phase token budgets, model routing by complexity, and caching of repeated references
 16. Include spend telemetry (`used`, `projected`, `variance`) in each phase checkpoint
 
 ## Phase 5: Validation & Artifacts
 
-17. Run validation gates before phase transitions (reference: `04-protocols.md § Validation Gates`)
+17. Run validation gates before phase transitions (reference: `validation-gates` skill § Gate Types and § Verdict Format)
 18. Produce versioned artifacts for all deliverables:
-    - Format: `<artifact-name>-v<major>.<minor>.md`
+    - Format: `<artifact-name>-v<N>.md`, per `AGENTS.md` § Artifact Versioning
     - Store in `docs/artifacts/`
     - Include artifact manifest in checkpoint summaries
 19. Build an initial task dependency graph with lifecycle states

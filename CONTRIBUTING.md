@@ -152,17 +152,26 @@ The project uses **Semantic Versioning** (`vMAJOR.MINOR.PATCH`) and
 
 1. Branch from `develop`: `release/vX.Y.Z`
 2. Bump versions / finalise documentation as needed
-3. Create the per-release brief `docs/releases/vX.Y.Z.md` (copy
-   `docs/releases/_template.md`) with **Install** and **Highlights** sections.
+3. Create the per-release document `docs/releases/vX.Y.Z.md` (copy
+   `docs/releases/_template.md`). It is the release's one document: it carries the **Install**,
+   **Highlights** and **RELEASE VERDICT** sections that step 4's gate checks, and the sections
+   skill `release-workflow` § 4 prescribes (Summary, Migration Guide, Changelog, Known Issues,
+   Gate Verdicts, Rollback Plan). The `## RELEASE VERDICT` block is the release gate outcome
+   required by step 7 of `/prepare-release`; the release notes document is its declared home.
 4. Run the local docs verification gate for the target tag:
    ```bash
    python3 scripts/verify-release-docs.py --tag vX.Y.Z
    ```
    This must pass before opening the release MR.
-5. Open MR `release/vX.Y.Z → main` using the **Release** MR template
-6. Merge it. For `release/*→main` merges specifically (not the generic squash-and-merge
-   convention used for `feature/*`/`bugfix/* → develop` MRs elsewhere in this doc), use this
-   PUT-first sequence as the standard merge step:
+5. Open two MRs from `release/vX.Y.Z`: first `release/vX.Y.Z → develop`, then
+   `release/vX.Y.Z → main` using the **Release** MR template. Both are merged (step 6) before
+   the tag is created, `develop` first, because the `main-develop-drift-gate` fails a tag push
+   while `main` is ahead of `develop`.
+6. Merge the `develop` MR first, then the `main` MR. Neither is squashed: use the PUT-first
+   sequence below for both, with `should_remove_source_branch=false` on the `develop` MR (the
+   `main` MR still needs the branch) and `true` on the `main` MR. For `release/*→main` merges
+   specifically (not the generic squash-and-merge convention used for `feature/*`/`bugfix/* →
+   develop` MRs elsewhere in this doc), use this PUT-first sequence as the standard merge step:
    ```bash
    # Update the MR resource's own persisted squash attribute BEFORE merging — confirm the
    # response shows "squash": false.
@@ -182,19 +191,24 @@ The project uses **Semantic Versioning** (`vMAJOR.MINOR.PATCH`) and
    (the `/merge` endpoint appears to read the MR's persisted `squash` field rather than honoring a
    same-call body override). See `docs/tasks/task-T348.md` § Outcome, Steps 5–7 for the full
    evidence trail.
-7. After merge to `main`:
+7. After both merges, tag the release branch's tip. It is an ancestor of `origin/develop` and
+   of `origin/main` and has the same tree as `origin/main`; check that, then push the tag.
+   There is no separate back-merge: `main` and `develop` are protected (`git-workflow.md`),
+   and the release content reached `develop` in step 6.
    ```bash
-   git checkout main && git pull
-   git tag -a vX.Y.Z -m "Release vX.Y.Z"
+   git fetch origin
+   sha=$(git rev-parse origin/main^2)   # the release branch tip, when step 6 did not squash
+   git merge-base --is-ancestor "$sha" origin/develop && git merge-base --is-ancestor "$sha" origin/main
+   git diff --exit-code "$sha" origin/main
+   git tag -a vX.Y.Z -m "Release vX.Y.Z" "$sha"
    git push origin vX.Y.Z
-   git checkout develop && git merge --no-ff main && git push   # back-merge
    ```
 8. The tag push triggers the `release` CI job which:
    - Runs `release-docs-gate` and `scripts/verify-release-docs.py` to verify required docs, marker alignment (`Latest release: vX.Y.Z`), per-release brief (`docs/releases/vX.Y.Z.md`), required content sections, local/internal links, and repo-wide version consistency (via `scripts/check-version-consistency.py`, Gate G0 — fails the tag if any non-archived doc still references a stale release)
    - Verifies the implementation documentation surface (`docs/wiki/implementation-guide.md`, `implementation/README.md`, `scripts/install.sh`) alongside the root and wiki release docs
-   - Embeds **Install + Highlights** from `docs/releases/vX.Y.Z.md` in GitLab Release notes
-   - Appends a **Changelog** section from Conventional Commits since the previous tag (full git history; `GIT_DEPTH: 0` on release job)
-   - Regenerates [`CHANGELOG.md`](CHANGELOG.md) and creates a [GitLab Release](https://gitlab.com/em-age/emage.code/-/releases)
+   - Publishes `docs/releases/vX.Y.Z.md`, whole, as the GitLab Release description (the same text the `glab release create ... -F` command below publishes; the body starts with `# Release vX.Y.Z`)
+   - Regenerates [`CHANGELOG.md`](CHANGELOG.md) as a job artifact (not committed) from Conventional Commits since the previous tag, merge commits excluded (full git history; `GIT_DEPTH: 0` on release job)
+   - Creates the [GitLab Release](https://gitlab.com/em-age/emage.code/-/releases)
 
 If you must manually create or repair a GitLab release entry, always source notes from the release brief file:
 
@@ -211,8 +225,9 @@ Do not use ad-hoc inline `--notes`, as that can drift from `docs/releases/vX.Y.Z
 `Latest release: vX.Y.Z` marker in `README.md` on each branch and counts how many tagged
 releases separate them.
 
-- **Grace window:** `main` may lag `develop` by up to 1 release — the normal transient state
-  between a release being tagged and its `release/vX.Y.Z → main` sync MR landing.
+- **Grace window:** `main` may lag `develop` by up to 1 release. In the order of "Cutting a
+  release" both branches carry the release before the tag, so the window is a tolerance, not a
+  step. `main` ahead of `develop` is always a failure.
 - **Blocking gate (`main-develop-drift-gate`, `release` stage):** runs on every tag push. If
   `main` is already more than 1 release behind at the moment a new release is tagged, this job
   fails and blocks the `release` job (CHANGELOG + GitLab Release publish) until the outstanding
@@ -288,8 +303,9 @@ is shown insufficient on a real sync.
 ### Hotfixes
 
 1. Branch from `main`: `hotfix/vX.Y.Z+1`
-2. Fix, test, MR to `main`
-3. After merge: tag `vX.Y.Z+1`, then back-merge `main → develop`
+2. Fix, test; bump the `Latest release:` marker and write `docs/releases/vX.Y.Z+1.md`
+3. MR to `develop` first, then MR to `main`, merged as in "Cutting a release" step 6
+4. Tag `vX.Y.Z+1` as in step 7 (the same gates run: `main` must not be ahead of `develop`)
 
 ### What goes in the changelog
 

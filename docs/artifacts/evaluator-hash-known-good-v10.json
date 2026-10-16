@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "algorithm": "sha256",
+  "digests": {
+    "tests_golden": "6f2db43feab8415e88e995b9a044c10e09e18a4e1c292cad69764a38f9752be2",
+    "scripts_scorecard": "45346c178c7f6d92101130d898f55dfaad908aa7e5ae669ce1faac99a51192d6"
+  },
+  "computed_from_commit": "1aa60a4e5e1f99a7f4a6481d4e27a534e95ab485",
+  "computed_at": "2026-09-30T12:00:00Z",
+  "protected_paths": {
+    "tests_golden": "tests/golden",
+    "scripts_scorecard": "scripts/scorecard.py"
+  },
+  "supersedes": "evaluator-hash-known-good-v9.json",
+  "reason": "One authorization covering three batched tasks (plan-083 \u00a72), each under its own file-scoped protected-path grant per docs/artifacts/protected-paths-v1.md \u00a75. T539: tests/golden/open/handoff-payload-schema-fields-real/expect.py's schema-matching helper now enforces minItems, maxItems and items (plus type and minLength/maxLength, without which items is meaningless), closing the gap in which no golden case could detect an empty or malformed array; Route A chosen over a new case because golden-suite-format-v1.md \u00a74.2 requires check() to be a pure function of bytes under case_dir. Cross-checked by the implementer against jsonschema Draft202012Validator over 8,000 random mutations: zero cases where the new checker rejects what the reference accepts; the only disagreements come from minimum, which is deliberately unimplemented. Independently confirmed by the orchestrator: writablePaths set to a bare string passes the old checker and fails the new one. T544: the /batch case's fixture Titles lose their U<n> residue, LEDGER_TITLE_RE tightens to a kebab-case slug, the stale contract-drift tag is removed, and the case id is deliberately kept because 13 tracked files cite it, including v8's reason field. T548: the skillify checker is widened to the output-path set T532 declared, with uniqueness scoped per declared directory -- the orchestrator overruled a first version that required exactly one SKILL.md across ALL directories, because that rejected a correct multi-platform output the contract itself prescribes; and the consolidate-memory case's brief.md (brief.md only, by a grant the orchestrator extended before dispatch) now quotes the command as T549 left it. Independently verified by the orchestrator: every changed file lies inside its task's grant; check() is True for the handoff, batch and consolidate-memory cases and False for the skillify case, all unchanged; no case outcome moved (scorecard 29 cases, 21 pass, 0 regressions, and the regeneration was timestamp-only so it was reverted); held-out isolation passes; the full suite of 846 tests shows exactly the two evaluator-hash failures and nothing else. scripts_scorecard is byte-identical to v9 through v5, the proof that nothing outside the authorized case directories moved -- notably not the protected scripts/scorecard.py. No component's maturity moves. The implementing agent committed locally but neither pushed nor refreshed this baseline; the orchestrator escalated it for human sanction -- the tenth such escalation in this phase and the tenth respected -- and the user explicitly authorized it before this file was written.",
+  "update_policy": "Manual only, never automatic. A future legitimate update goes through docs/artifacts/protected-paths-v1.md \u00a75's exception path and produces evaluator-hash-known-good-v11.json -- this file (v10) is never edited in place, and v1 through v9 are retained unmodified as the historical record. See docs/artifacts/evaluator-hash-check-v1.md for the full policy."
+}

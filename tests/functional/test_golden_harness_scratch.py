@@ -52,8 +52,8 @@ class TestCandidateFileHelpers(unittest.TestCase):
     def test_write_candidate_file_creates_nested_path(self):
         with tempfile.TemporaryDirectory() as tmp:
             case_dir = create_scratch_case_dir("case-d", "control", 1, Path(tmp))
-            written = write_candidate_file(case_dir, "docs/plans/feature-x.md", "## Objective\n")
-            self.assertEqual(written, case_dir / "fixture" / "docs" / "plans" / "feature-x.md")
+            written = write_candidate_file(case_dir, "docs/plans/plan-001-x.md", "## Objective\n")
+            self.assertEqual(written, case_dir / "fixture" / "docs" / "plans" / "plan-001-x.md")
             self.assertEqual(written.read_text(encoding="utf-8"), "## Objective\n")
 
     def test_copy_candidate_file_preserves_content(self):

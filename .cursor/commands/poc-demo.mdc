@@ -20,9 +20,9 @@ Please provide:
 
 7. **Reference all relevant artifacts in the demo**:
    - List artifact versions used/demonstrated (e.g., `poc-api-v0.3.md`, `poc-ui-v0.2.md`)
-   - Link to the PoC plan document (`docs/plans/poc-<slug>.md`)
-   - Link to the latest checkpoint (`docs/checkpoints/checkpoint-poc-<gate>.md`)
-   - Reference the Technical Debt Scorecard (`docs/decisions/poc-debt-<slug>.md`)
+   - Link to the PoC plan document (`docs/plans/plan-<ID>.md`)
+   - Link to the latest checkpoint (`docs/checkpoints/checkpoint-<SEQ>-<phase>.md`, per `AGENTS.md` § Checkpoint Protocol, with `<phase>` naming the PoC gate)
+   - Reference the Technical Debt Scorecard (`POC-DEBT-SCORECARD.md` in the PoC root, per `poc-guidelines.md` § Debt Scorecard)
 
 ## Hypothesis Validation Status
 
@@ -32,7 +32,7 @@ Please provide:
 ## Hypothesis Status
 
 - **Hypothesis**: <restated hypothesis>
-- **Validation status**: VALIDATED | INVALIDATED | INCONCLUSIVE | IN_PROGRESS
+- **Validation status**: VALIDATED | INVALIDATED | IN_PROGRESS
 - **Key evidence demonstrated**: [list what the demo proves]
 - **Evidence gaps**: [list what the demo does NOT prove]
 - **Confidence level**: HIGH | MEDIUM | LOW

@@ -312,11 +312,14 @@ class ServersYamlEntryTests(unittest.TestCase):
 
     def test_other_entries_untouched_sample(self):
         # Spot-check a couple of pre-existing entries to catch an accidental drive-by
-        # edit (the disclosed filesystem/git package-name defects must remain as-is).
+        # edit. The filesystem/git entries carry the T638 corrected, pinned launchers
+        # (docs/artifacts/mcp-server-packages-v1.md, audit SEC-002).
         fs = self.data["servers"]["filesystem"]
-        self.assertEqual(fs["args"], ["-y", "@anthropic/mcp-filesystem"])
+        self.assertEqual(fs["command"], "npx")
+        self.assertEqual(fs["args"], ["-y", "@modelcontextprotocol/server-filesystem@1.0.0", "."])
         git = self.data["servers"]["git"]
-        self.assertEqual(git["args"], ["-y", "@modelcontextprotocol/mcp-git"])
+        self.assertEqual(git["command"], "uvx")
+        self.assertEqual(git["args"], ["mcp-server-git@2026.10.10", "--repository", "."])
         ctx = self.data["servers"]["context-retriever"]
         self.assertEqual(ctx["command"], "python3")
 
@@ -334,7 +337,7 @@ class ProjectedClaudeCodeAgentGrantTests(unittest.TestCase):
         self.assertIn("read", tools)
         self.assertIn("search", tools)
         self.assertIn("web", tools)
-        self.assertIn("mcp__fetch", tools)
+        self.assertNotIn("mcp__fetch", tools)  # T655: the fetch server is removed
 
     def test_projected_agent_exists(self):
         self.assertTrue(PROJECTED_CLAUDE_AGENT.is_file(),

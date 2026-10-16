@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "algorithm": "sha256",
+  "digests": {
+    "tests_golden": "5b4864e4a6797ca270c67d63a7e01023b9689dbdb4317174c84ce469686e4ad8",
+    "scripts_scorecard": "e1a93fa51093ee8665a3ae5ad35b11cf8153653d9f1bed488cfe7d494ae23b20"
+  },
+  "computed_from_commit": "ddeaf51895de6cffd799aad64652af26a16af010",
+  "computed_at": "2026-09-25T18:40:00Z",
+  "protected_paths": {
+    "tests_golden": "tests/golden",
+    "scripts_scorecard": "scripts/scorecard.py"
+  },
+  "supersedes": "evaluator-hash-known-good-v3.json",
+  "reason": "T525 authored golden-suite coverage wave 1 under the file-scoped protected-path authorization in docs/tasks/task-T525.md SS1 -- four NEW case directories under tests/golden/open/ for /handoff, /validate-tasks, /discover-skills and /skillify. This is the third authorized change to tests/golden/** since v1 was bootstrapped at commit 49415a3, and the first that adds cases rather than amending one. No existing case directory was modified and nothing under tests/golden/held-out/ was touched. Three cases are expected_pass and one (/skillify) is known_failing / tracked_defect: the command declares a five-section SKILL.md template that 0 of 26 real skill files satisfy, because the corpus uniformly follows the template declared by the skillify SKILL instead -- a contract-vs-corpus conflict needing ADR-007 adjudication, deliberately shipped red rather than made green by a hand-authored fixture. Only tests_golden drifts; scripts_scorecard is byte-identical to v3, v2 and v1, which is itself cryptographic evidence scripts/scorecard.py was not touched. The refresh was escalated for human sanction by the implementing agent rather than performed by it -- the agent noted it could have argued docs/artifacts/ is unprotected and therefore in scope, and declined -- per the precedent set in T520 and T523, and was explicitly authorized by the user before this file was written.",
+  "update_policy": "Manual only, never automatic. A future legitimate update goes through docs/artifacts/protected-paths-v1.md SS5's exception path and produces evaluator-hash-known-good-v5.json -- this file (v4) is never edited in place, and v1, v2 and v3 are retained unmodified as the historical record. See docs/artifacts/evaluator-hash-check-v1.md for the full policy."
+}

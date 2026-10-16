@@ -1,0 +1,4 @@
+id: validate-workflow-gate-verdict-sources
+command: /validate-workflow
+status: expected_pass
+tags: [validate-workflow, gate-verdicts, p9, real-artifact]

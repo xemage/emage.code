@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import json
 import re
 import sys
 from collections import Counter
@@ -15,6 +16,72 @@ EXACT_BRIEF_RE = re.compile(r"^task-(T\d{3,})\.md$")
 ANY_BRIEF_RE = re.compile(r"^task-(T\d{3,}).*\.md$")
 STATUS_LINE_RE = re.compile(r"^\*\*Status:\*\*\s*([A-Za-z_]+)\s*$", re.MULTILINE)
 ALT_STATUS_LINE_RE = re.compile(r"^\*\*Status\*\*:\s*([A-Za-z_]+)\s*$", re.MULTILINE)
+
+# C11 -- declared `**Affects:**` field (T516).
+#
+# `maturity-promotion-criteria-v2.md` section 3.5 decides whether a component
+# has an open defect by reading this field, and nothing else. It is mandatory
+# on every active P0/P1 brief: an absent field must never be read as "this
+# task affects nothing", because that turns a loud false positive (a component
+# wrongly blocked) into a silent false negative (a component with a real open
+# defect promoted while the gate still prints PASS).
+#
+# Kept deliberately in sync with, but independent of, the same parsing in
+# implementation/scripts/check-maturity.py -- this validator ships standalone
+# into target repos that have no copy of that script.
+AFFECTS_LINE_RE = re.compile(r"^\*\*Affects:\*\*[ \t]*(.*)$", re.MULTILINE)
+ALT_AFFECTS_LINE_RE = re.compile(r"^\*\*Affects\*\*:[ \t]*(.*)$", re.MULTILINE)
+AFFECTS_NONE_TOKENS = {"—", "–", "-", "--"}
+AFFECTS_CATEGORIES = ("agent", "command", "instruction", "skill")
+AFFECTS_ENTRY_RE = re.compile(
+    r"^(" + "|".join(AFFECTS_CATEGORIES) + r")/([A-Za-z0-9][A-Za-z0-9._-]*)$"
+)
+AFFECTS_REQUIRED_PRIORITIES = {"P0", "P1"}
+
+# C12 -- a declared `Depends on` must resolve to a real task (T537).
+#
+# Before T537 the sixth cell of an active row was destructured into `_` and
+# never read, so a row declaring a dependency on a task present in *neither*
+# ledger passed `TASK LEDGER: PASS` in silence. Those edges are what
+# `/sprint-status` reconstructs its dependency DAG from, and queue ordering has
+# leaned on them: an unvalidated edge is a dependency nobody is checking.
+#
+# Resolution is against the union of BOTH ledgers. A *satisfied* dependency
+# normally points into `completed-tasks.md` -- resolving against the active
+# ledger alone would flag every satisfied dependency as dangling and make the
+# check worse than useless.
+#
+# Extraction is deliberately token-based rather than shape-based. The corpus
+# writes this cell as the `—` em-dash placeholder, as a bare `T531`, and
+# historically also as `None`, `none`, `T454 (done), T455 (done), T458
+# (pending)`, and prose such as `none (soft: T505)`. Only ID-shaped tokens are
+# resolved and every other character is ignored, so the check fires on exactly
+# the defect it names -- an ID that resolves to nothing -- and never on the
+# annotation style wrapped around it.
+DEPENDS_ID_RE = re.compile(r"\bT\d{3,}\b")
+
+# C13 -- no active row declares a dependency on itself (T540).
+#
+# A self-dependency satisfies C12: the ID resolves, because the row's own ID is
+# in `active_ids`. It is still never a real edge -- it is a length-one cycle
+# that leaves the row permanently unschedulable, and in practice it reads as the
+# ID cell copied into the dependency cell. It gets its own code rather than an
+# extension of C12 because the operator's fix differs (delete the edge, not
+# correct its target) and because C12 carries exactly one message -- "exists in
+# neither ledger" -- which is actively false for this defect.
+#
+# C14 -- the active dependency graph is acyclic (T540).
+#
+# `/sprint-status` reconstructs a DAG from these edges and orders the queue from
+# it. A cycle has no topological order, so it breaks that consumer outright
+# rather than merely misinforming it. Its own code, because the failure belongs
+# to a set of rows rather than to one row: the message names the whole chain,
+# since no single row in a cycle is the one at fault.
+#
+# The search covers active rows only. `completed-tasks.md` has no dependency
+# column, so an edge pointing into it is a leaf and can never close a cycle.
+# Self-edges are excluded here and left to C13, so each defect is reported once,
+# under the more specific of the two codes.
 
 
 class Row:
@@ -81,6 +148,115 @@ def get_brief_status(path: Path) -> str | None:
 
 
 
+def get_brief_affects(path: Path) -> str | None:
+    """Return the raw right-hand side of a brief's `**Affects:**` line."""
+    text = path.read_text(encoding="utf-8")
+    m = AFFECTS_LINE_RE.search(text) or ALT_AFFECTS_LINE_RE.search(text)
+    return m.group(1).strip() if m else None
+
+
+def known_component_keys(base: Path) -> set[str]:
+    """`{"<category>/<id>", ...}` from the registry index, when one is present.
+
+    Best effort on purpose: this validator also ships into target repos that
+    carry no registry. When the set comes back empty, C11 still enforces the
+    field's presence and shape; `check-maturity.py` remains authoritative for
+    rejecting entries that name a component which does not exist.
+    """
+    for candidate in (base, *base.parents):
+        index = candidate / "implementation" / "registry" / "index.json"
+        if not index.is_file():
+            continue
+        try:
+            data = json.loads(index.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return set()
+        keys = set()
+        for entry in data.get("entries", []):
+            category, ident = entry.get("category"), entry.get("id")
+            if category and ident:
+                keys.add(f"{category}/{ident}")
+        return keys
+    return set()
+
+
+def affects_errors(raw: str, known: set[str]) -> list[str]:
+    """Validate one `**Affects:**` value; returns a list of human-readable errors."""
+    if not raw:
+        return ["`**Affects:**` is present but empty (use `—` for 'no component')"]
+    if raw in AFFECTS_NONE_TOKENS:
+        return []
+
+    errors: list[str] = []
+    declared = 0
+    for part in raw.split(","):
+        entry = part.strip().strip("`")
+        if not entry:
+            continue
+        if entry in AFFECTS_NONE_TOKENS:
+            errors.append("`—` cannot be combined with other entries")
+            continue
+        if not AFFECTS_ENTRY_RE.match(entry):
+            errors.append(
+                f"malformed `**Affects:**` entry '{entry}' (expected `<category>/<id>` with "
+                f"category one of {'/'.join(AFFECTS_CATEGORIES)}, or `—`)"
+            )
+            continue
+        if known and entry not in known:
+            errors.append(f"`**Affects:**` entry '{entry}' names no existing component")
+            continue
+        declared += 1
+    if not declared and not errors:
+        errors.append(f"`**Affects:**` value '{raw}' declares nothing (use `—` for 'no component')")
+    return errors
+
+
+def dependency_cycles(edges: dict[str, set[str]]) -> list[list[str]]:
+    """Return every dependency cycle in `edges` as an ordered list of node IDs.
+
+    Iterative depth-first search. On a back edge into the current path, the path
+    is sliced from the revisited node onward, which yields the actual chain an
+    operator has to break rather than an unordered component. Roots and
+    neighbours are walked in sorted order and each cycle is keyed on its node
+    set, so repeated runs over one ledger report the same cycles in the same
+    order, and report each of them once.
+    """
+    cycles: list[list[str]] = []
+    reported: set[frozenset[str]] = set()
+    done: set[str] = set()
+
+    for root in sorted(edges):
+        if root in done:
+            continue
+        path = [root]
+        on_path = {root}
+        stack = [(root, iter(sorted(edges[root])))]
+        while stack:
+            node, pending = stack[-1]
+            descended = False
+            for nxt in pending:
+                if nxt == node or nxt not in edges or nxt in done:
+                    continue
+                if nxt in on_path:
+                    cycle = path[path.index(nxt):]
+                    key = frozenset(cycle)
+                    if key not in reported:
+                        reported.add(key)
+                        cycles.append(cycle)
+                    continue
+                stack.append((nxt, iter(sorted(edges[nxt]))))
+                path.append(nxt)
+                on_path.add(nxt)
+                descended = True
+                break
+            if not descended:
+                stack.pop()
+                done.add(node)
+                on_path.discard(node)
+                path.pop()
+    return cycles
+
+
 def add_fail(fails: list[tuple[str, str]], code: str, msg: str) -> None:
     fails.append((code, msg))
 
@@ -103,6 +279,8 @@ def main() -> int:
 
     active_ids: list[str] = []
     completed_ids: list[str] = []
+    active_priorities: list[tuple[int, str, str]] = []
+    active_depends: list[tuple[int, str, str]] = []
 
     # C1, C2, C3, C4, C10 for active
     for row in active_rows:
@@ -114,8 +292,10 @@ def main() -> int:
             )
             continue
 
-        task_id, _, _, status, priority, _, last_update = row.cells
+        task_id, _, _, status, priority, depends_on, last_update = row.cells
         active_ids.append(task_id)
+        active_priorities.append((row.line_no, task_id, priority))
+        active_depends.append((row.line_no, task_id, depends_on))
 
         if status in {"done", "cancelled"}:
             add_fail(
@@ -231,6 +411,32 @@ def main() -> int:
                 f"completed ID {task_id} has brief status '{status}' (expected done or cancelled)",
             )
 
+    # C11 every active P0/P1 brief declares a well-formed `**Affects:**` field
+    known = known_component_keys(base)
+    for line_no, task_id, priority in active_priorities:
+        brief = base / f"task-{task_id}.md"
+        if not brief.is_file():
+            if priority in AFFECTS_REQUIRED_PRIORITIES:
+                add_fail(
+                    fails,
+                    "C11",
+                    f"active-tasks.md:{line_no} {task_id} is {priority} but task-{task_id}.md "
+                    "is missing, so its `**Affects:**` field cannot be read",
+                )
+            continue
+        raw = get_brief_affects(brief)
+        if raw is None:
+            if priority in AFFECTS_REQUIRED_PRIORITIES:
+                add_fail(
+                    fails,
+                    "C11",
+                    f"task-{task_id}.md has no `**Affects:**` field; it is mandatory for "
+                    f"{priority} briefs (declare `—` if the task indicts no component)",
+                )
+            continue
+        for err in affects_errors(raw, known):
+            add_fail(fails, "C11", f"task-{task_id}.md: {err}")
+
     # C9 completed done_on non-decreasing
     prev_date: dt.date | None = None
     prev_raw: str | None = None
@@ -247,6 +453,44 @@ def main() -> int:
         prev_date = parsed
         prev_raw = raw
         prev_line = line_no
+
+    # C12 every ID named in an active row's `Depends on` exists in some ledger
+    # C13 no active row declares a dependency on itself
+    known_ids = set(active_ids) | set(completed_ids)
+    active_id_set = set(active_ids)
+    first_line: dict[str, int] = {}
+    edges: dict[str, set[str]] = {task_id: set() for task_id in active_id_set}
+    for line_no, task_id, raw_depends in active_depends:
+        first_line.setdefault(task_id, line_no)
+        for dep in DEPENDS_ID_RE.findall(raw_depends):
+            if dep == task_id:
+                add_fail(
+                    fails,
+                    "C13",
+                    f"active-tasks.md:{line_no} {task_id} declares Depends on itself",
+                )
+                continue
+            if dep in active_id_set:
+                edges[task_id].add(dep)
+                continue
+            if dep in known_ids:
+                continue
+            add_fail(
+                fails,
+                "C12",
+                f"active-tasks.md:{line_no} {task_id} declares Depends on '{dep}', "
+                "which exists in neither ledger",
+            )
+
+    # C14 the active dependency graph is acyclic
+    for cycle in dependency_cycles(edges):
+        chain = " \u2192 ".join([*cycle, cycle[0]])
+        add_fail(
+            fails,
+            "C14",
+            f"active-tasks.md:{first_line[cycle[0]]} dependency cycle {chain} "
+            "has no order that satisfies it; one of its edges must be removed",
+        )
 
     if fails:
         for code, msg in fails:

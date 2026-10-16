@@ -1,0 +1,4 @@
+id: validate-tasks-fail-lines-verbatim
+command: /validate-tasks
+status: expected_pass
+tags: [validate-tasks, verbatim-reporting, exit-code-branching, real-validator-output]

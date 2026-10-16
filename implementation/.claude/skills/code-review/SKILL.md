@@ -36,6 +36,7 @@ Skill for performing thorough, structured code reviews following best practices.
 - [ ] Authentication/authorization checks present
 - [ ] Sensitive data not logged or exposed
 - [ ] No hardcoded secrets or credentials
+- [ ] The review states whether the merge request touches security-sensitive code. For one that does: the `security-guidelines.md` § OWASP Top 10 Checklist Reference run against the change, all ten categories (A01 to A10), as that instruction's § Security Review Workflow step 1 requires, with each category's result (findings, none, or not applicable) noted in the review; each security finding recorded with its grade (skill `validation-gates` § Verdict Rules, § Severity Definitions). This run does not replace the Security gate before release (skill `validation-gates` § Gate Types).
 
 #### Performance
 - [ ] No N+1 query issues
@@ -64,10 +65,12 @@ Skill for performing thorough, structured code reviews following best practices.
 
 ### 3. Feedback Format
 
+The `### Verdict:` below is the review's one gate verdict (§ VERDICT Format for Validation Gates), so it takes one of the values `AGENTS.md` § Validation Gates allows, `PASS`, `CONDITIONAL_PASS` or `FAIL`, and the same value as the concluding `[VERDICT]` line. An open point that is a defect is a finding: grade it on § Severity Guide, and the verdict follows from the findings. A review that cannot conclude because a question stays open issues no verdict until the question is answered: the reviewer reports a blocker (`AGENTS.md` § Blocker Protocol) rather than fabricating a `PASS` (skill `validation-gates` § Rails, Failure mode), and no merge is approved without the verdict (§ Rails).
+
 ```markdown
 ## Review: [MR Title]
 
-### Verdict: [Approved | Changes Requested | Needs Discussion]
+### Verdict: [PASS | CONDITIONAL_PASS | FAIL]
 
 ### Summary
 [1-2 sentence overall assessment]
@@ -116,13 +119,17 @@ Code review is a **validation gate** in the emage.code workflow. Every review MU
 [VERDICT] gate=code-review | result=PASS|CONDITIONAL_PASS|FAIL | reviewer={role} | artifact_ref={artifact-version} | date={YYYY-MM-DD}
 ```
 
+Code review is the `validation-gates` skill's **Implementation** gate (§ Gate Types: Tech Lead, after code complete, before merge). This line accompanies, and does not replace, the `## Gate Verdict` block that skill's § Verdict Format requires of every gate, with `**Gate:** implementation`. Both record the gate's one verdict, so `result=` carries the same value as the block's `### Verdict:`.
+
 **Verdict definitions:**
 
 | Verdict | Meaning | Pipeline Effect |
 |---------|---------|-----------------|
 | `PASS` | No must-fix findings. Code is merge-ready. | Pipeline proceeds. |
-| `CONDITIONAL_PASS` | Only should-fix findings. Code may merge with tracked follow-ups. | Pipeline proceeds; follow-up items logged to `docs/tasks/active-tasks.md`. |
+| `CONDITIONAL_PASS` | Only should-fix findings. Code may merge with tracked follow-ups. | Pipeline proceeds; follow-up items are proposed to the orchestrator, who logs them in `docs/tasks/active-tasks.md` (`AGENTS.md` § Task Protocol). |
 | `FAIL` | One or more must-fix findings. Code must not merge. | Pipeline halts. Re-review required after fixes. |
+
+These definitions apply together with skill `validation-gates` § Verdict Rules, which applies to the same verdict (the paragraph "Criteria from the executor's own documents" there). Grade each finding on both scales, this skill's § Severity Guide and that skill's § Severity Definitions, and give the most restrictive verdict either requires. A Must Fix finding is `FAIL` even where that skill would admit `CONDITIONAL_PASS` for a high finding outside the security category with a documented mitigation, and a high finding without a documented mitigation is `FAIL` even when it is graded Should Fix here.
 
 ### Artifact Version Awareness
 
@@ -144,8 +151,8 @@ Include artifact references in the review output:
 
 The code-review verdict is consumed by the CI/CD pipeline at the `approve` stage. The following rules apply:
 
-1. A `FAIL` verdict blocks the merge request — no override without Tech Lead waiver (documented as a decision artifact).
-2. A `CONDITIONAL_PASS` verdict allows merge but **requires** that each should-fix item is logged as a task in `docs/tasks/active-tasks.md` with an assigned owner and target sprint.
+1. A `FAIL` verdict blocks the merge request — no override without Tech Lead waiver (documented as a decision artifact). No waiver applies to a security finding graded `SECURITY:CRITICAL` or `SECURITY:HIGH`, whoever raised it, to a breach of an Immutable Security Constraint, or to a security control that `security-guidelines.md` requires for the code under review and that is omitted, removed, disabled or weakened: `security-guidelines.md` says "`CRITICAL` and `HIGH` findings block merge until resolved" (§ Security Review Workflow), and that its Immutable Security Constraints "cannot be overridden by any agent, configuration, or runtime decision". A waiver that lifts a `FAIL` with a security finding graded `SECURITY:MEDIUM` among its causes does not lift that finding's remediation plan (owner, fix, deadline), which is recorded as a tracked condition before merge (`security-guidelines.md` § Security Review Workflow).
+2. A `CONDITIONAL_PASS` verdict allows merge but **requires** that each should-fix item is logged by the orchestrator as a task in `docs/tasks/active-tasks.md` with an assigned owner (`AGENTS.md` § Task Protocol); the ledger has no sprint column, so any target sprint is recorded in the task brief or the GitLab issue. On the production track the item is resolved before the next gate; on the PoC track it becomes a debt item, recorded in the debt ledger and the debt scorecard by the production handoff and fixed in production (`poc-guidelines.md` § Mandatory Debt Tracking, § Debt Scorecard), unless `poc-orchestrator` § Security Findings sets a security finding's fix deadline no later than the production handoff, which governs.
 3. A `PASS` verdict allows merge with no additional conditions.
 4. Every verdict must be recorded in the next checkpoint summary under `decisions=[...]`.
 
@@ -153,4 +160,4 @@ The code-review verdict is consumed by the CI/CD pipeline at the `approve` stage
 
 **Inputs**: The MR/PR diff or worktree changes, the linked issue/task brief and its acceptance criteria, the architecture/coding-standards constraints the change must respect.
 **Out of scope**: Editing the code under review (read-only during review), making architecture or requirements decisions, approving a merge without producing the structured VERDICT block.
-**Failure mode**: A `FAIL` verdict halts the pipeline and requires re-review after fixes; a `FAIL` may not be overridden without a documented Tech Lead waiver decision artifact.
+**Failure mode**: A `FAIL` verdict halts the pipeline and requires re-review after fixes; a `FAIL` may not be overridden without a documented Tech Lead waiver decision artifact, and a `FAIL` for a security finding graded `SECURITY:CRITICAL` or `SECURITY:HIGH`, whoever raised it, for a breach of an Immutable Security Constraint, or for a security control that `security-guidelines.md` requires for the code under review and that is omitted, removed, disabled or weakened, may not be overridden at all (§ Review as Validation Gate).

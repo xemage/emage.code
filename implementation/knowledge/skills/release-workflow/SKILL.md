@@ -50,10 +50,10 @@ For release candidates: `MAJOR.MINOR.PATCH-rc.N` (e.g., `2.0.0-rc.1`)
 1. **Determine the version number** using the semantic versioning rules above.
 2. **Verify all planned tasks are complete:**
    - Check `docs/tasks/active-tasks.md` — no tasks for this release should be `in_progress` or `blocked`.
-   - All planned tasks should be `done` or archived.
+   - All planned tasks should be `done` and archived in `docs/tasks/completed-tasks.md`: `active-tasks.md` never holds a `done` row (`AGENTS.md` § Task Protocol), so none should be left there.
 3. **Generate the changelog** (see procedure below).
 4. **Run the release gate** (see gate checklist below).
-5. **Create the release artifact** at `docs/artifacts/release-notes-v<VERSION>.md`.
+5. **Write the release notes** to `docs/releases/v<VERSION>.md` (§ 4).
 
 ### 2. Generate Changelog
 
@@ -128,6 +128,8 @@ The release gate is the final validation before deployment. All items must be ch
 
 ### 4. Create Release Artifact
 
+The release notes are one document per release, `docs/releases/v<VERSION>.md`: the file the `orchestrator` agent § Release Workflow Preflights publishes, and the release notes document into which `/prepare-release` step 7 writes the `## RELEASE VERDICT` section. Add the sections below, from `## Summary` on, to that document. When the release is prepared with `/prepare-release`, that command's steps govern the document, and these sections accompany them: its Breaking Changes group is the `## Breaking changes` section, and `## Changelog` holds its Features, Fixes and Internal groups (step 2) as `###` headings, not the six groups of § 2. The document's first line is `# Release v<VERSION>`, not the title in the block below, and it also carries the `## Install` and `## Highlights` sections that `scripts/verify-release-docs.py` requires (`docs/releases/_template.md` is the scaffold). The `Release` line under `## Gate Verdicts` carries the same value as the `**Status**` of the `## RELEASE VERDICT` section.
+
 ```markdown
 # Release Notes — v<VERSION>
 
@@ -157,7 +159,7 @@ The release gate is the final validation before deployment. All items must be ch
 <steps to roll back if critical issues are discovered post-release>
 ```
 
-File location: `docs/artifacts/release-notes-v<VERSION>.md`
+File location: `docs/releases/v<VERSION>.md`, one document per release (above).
 
 ### 5. Hotfix Workflow
 
@@ -182,15 +184,15 @@ For critical issues discovered after a release:
    ├── Security gate (if security-related)
    └── Abbreviated integration gate (regression test + smoke test)
 
-5. RELEASE
+5. RELEASE PREPARATION
    ├── Increment PATCH version: v1.2.0 → v1.2.1
    ├── Generate hotfix changelog entry
-   ├── Create release artifact
-   └── Deploy
+   └── Create release artifact
 
-6. MERGE BACK
-   ├── Merge hotfix branch into main
-   └── Ensure the fix is included in future releases
+6. MERGE, TAG, DEPLOY
+   ├── Merge the hotfix branch into develop, then into main (merge requests), so the fix is included in future releases
+   ├── Tag the hotfix branch tip, after both merges
+   └── Deploy
 ```
 
 #### Hotfix Gate Exceptions

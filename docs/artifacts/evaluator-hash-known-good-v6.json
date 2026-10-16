@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "algorithm": "sha256",
+  "digests": {
+    "tests_golden": "cc7465fa1ec63e53a01e0c61f871c6cfb0860aee2c76b15de5f7fc3d19c71123",
+    "scripts_scorecard": "45346c178c7f6d92101130d898f55dfaad908aa7e5ae669ce1faac99a51192d6"
+  },
+  "computed_from_commit": "eff2e35cb91914df88c7c50d68640a9026d980a2",
+  "computed_at": "2026-09-26T09:30:00Z",
+  "protected_paths": {
+    "tests_golden": "tests/golden",
+    "scripts_scorecard": "scripts/scorecard.py"
+  },
+  "supersedes": "evaluator-hash-known-good-v5.json",
+  "reason": "T533 added an additive, read-only `--check` drift-gate mode to scripts/scorecard.py under the narrow file-scoped protected-path authorization in docs/tasks/task-T533.md SS4, citing protected-paths-v1.md SS5.2, and regenerated docs/benchmarks/scorecard-v6.12.0.{json,md}, which had been landed once at T410-T415 and never refreshed while the suite grew from 20 cases to 24. READ THIS PARAGRAPH BEFORE CONCLUDING ANYTHING FROM THE DIGESTS: unlike v2, v3, v4 and v5 -- every one of which moved only tests_golden -- this version is the FIRST to move scripts_scorecard since v1 was bootstrapped at commit 49415a3. That digest's constancy across v1 through v5 was explicitly cited as evidence in five separate completed-tasks.md closure records that scripts/scorecard.py had not been touched. That evidence chain ends here, deliberately, under a named authorization, and with the user's explicit sanction obtained before this file was written. A future reader comparing v5 to v6 will see the protected evaluator script's digest change and must not read it as tampering. Conversely tests_golden is byte-identical to v5, which is the positive cryptographic proof that T533 touched no golden case -- the inverse of the evidence pattern used in the five prior records. The authorization covered an additive check mode only; what the script measures, how it classifies cases, its discovery logic, its redaction behaviour and its output schema are all unchanged. Two disclosed line-level departures from strict additivity, both reviewed and accepted: main() was split into run_write() plus an argv dispatcher with the two artifact paths hoisted into an output_paths() helper (identical values and behaviour for the argument-free invocation, verified by running it), and main() now rejects unrecognized arguments with exit 2 where previously argv was ignored entirely -- deliberate, because a gate invoked with a typo'd flag must not silently pass. The implementing agent escalated this refresh for human sanction rather than performing it, the sixth such occurrence and the sixth to be respected, having noted it could have argued docs/artifacts/ is unprotected and declining anyway.",
+  "update_policy": "Manual only, never automatic. A future legitimate update goes through docs/artifacts/protected-paths-v1.md SS5's exception path and produces evaluator-hash-known-good-v7.json -- this file (v6) is never edited in place, and v1 through v5 are retained unmodified as the historical record. See docs/artifacts/evaluator-hash-check-v1.md for the full policy."
+}

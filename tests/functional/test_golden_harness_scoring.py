@@ -74,13 +74,13 @@ class TestScoreScratchDirAgainstRealExpectPy(unittest.TestCase):
 
     def test_compliant_synthetic_plan_doc_scores_true(self):
         scratch = create_scratch_case_dir(REAL_CASE_ID, "control", 1, self.base_dir)
-        write_candidate_file(scratch, "docs/plans/feature-audit-log.md", REQUIRED_HEADERS_TEXT)
+        write_candidate_file(scratch, "docs/plans/plan-001-audit-log.md", REQUIRED_HEADERS_TEXT)
         self.assertTrue(score_scratch_dir(self.golden_case_dir, scratch))
 
     def test_plan_doc_missing_a_required_header_scores_false(self):
         scratch = create_scratch_case_dir(REAL_CASE_ID, "treatment", 1, self.base_dir)
         incomplete = "## Objective\n\n## Affected Components\n"  # missing Task Breakdown / Dependency Impact
-        write_candidate_file(scratch, "docs/plans/feature-audit-log.md", incomplete)
+        write_candidate_file(scratch, "docs/plans/plan-001-audit-log.md", incomplete)
         self.assertFalse(score_scratch_dir(self.golden_case_dir, scratch))
 
     def test_missing_fixture_output_entirely_scores_false(self):

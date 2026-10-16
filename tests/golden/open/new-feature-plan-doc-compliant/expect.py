@@ -2,8 +2,9 @@
 """expect.py for new-feature-plan-doc-compliant.
 
 Contract under test: implementation/knowledge/commands/new-feature.md Phase 1 step 1 -- a plan
-doc at docs/plans/feature-<slug>.md with Objective/Affected Components/Task Breakdown/
-Dependency Impact sections.
+doc, "Write to `docs/plans/plan-<ID>.md`, with `<ID>` as the `plan-approve-execute` skill § File Location defines it",
+with Objective/Affected Components/Task Breakdown/Dependency Impact sections. The glob matches
+the form's fixed `plan-` prefix and `.md` suffix; it does not parse <ID>.
 """
 from __future__ import annotations
 
@@ -22,7 +23,7 @@ def check(case_dir: Path) -> bool:
     plans_dir = case_dir / "fixture" / "docs" / "plans"
     if not plans_dir.is_dir():
         return False
-    candidates = sorted(plans_dir.glob("feature-*.md"))
+    candidates = sorted(plans_dir.glob("plan-*.md"))
     if len(candidates) != 1:
         return False
     text = candidates[0].read_text(encoding="utf-8")

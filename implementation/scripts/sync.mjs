@@ -164,7 +164,36 @@ function emitFrontmatter(obj, opts = { toolsFormat: 'array' }) {
 async function readServersYaml() {
   const file = path.join(KNOWLEDGE, 'mcp', 'servers.yaml');
   const raw = await fs.readFile(file, 'utf8');
-  return parseServersYaml(raw);
+  const servers = parseServersYaml(raw);
+  validateDenyTools(servers);
+  return servers;
+}
+
+// T658 (SEC-T657-01): a server may carry `denyTools: [<tool>, ...]`, the exact tool names, as the
+// server itself reports them, that the platform must refuse for this server. This is the one source
+// of truth for the server-level denial; emitMcp() renders it only for the two platforms whose
+// documentation and vendor source show an enforcing mechanism (see
+// docs/artifacts/mcp-server-denials-v1.md): Opencode (top-level `permission`) and Gemini CLI
+// (`mcpServers.<name>.excludeTools`). Names are exact on purpose: a wildcard could silently deny
+// (or, on Opencode, fail to deny) more than the list says.
+const DENY_TOOL_NAME = /^[A-Za-z0-9_]+$/;
+
+function validateDenyTools(servers) {
+  for (const [name, server] of Object.entries(servers)) {
+    if (server.denyTools === undefined) continue;
+    const list = server.denyTools;
+    if (!Array.isArray(list) || list.length === 0) {
+      throw new Error(`servers.yaml: ${name}.denyTools must be a non-empty array of tool names`);
+    }
+    for (const tool of list) {
+      if (typeof tool !== 'string' || !DENY_TOOL_NAME.test(tool)) {
+        throw new Error(`servers.yaml: ${name}.denyTools entry is not an exact tool name ([A-Za-z0-9_]+): ${String(tool).slice(0, 60)}`);
+      }
+    }
+    if (new Set(list).size !== list.length) {
+      throw new Error(`servers.yaml: ${name}.denyTools has a duplicate entry`);
+    }
+  }
 }
 
 // Block-typed (multi-line, nested) top-level server keys. `env` is the original;
@@ -217,7 +246,7 @@ function parseServersYaml(raw) {
           openBlockKey = key;
           servers[current][key] = openBlock;
         } else if (rest.startsWith('[') && rest.endsWith(']')) {
-          servers[current][key] = rest.slice(1, -1).split(',').map((s) => stripQuotes(s.trim()));
+          servers[current][key] = splitInlineArray(rest.slice(1, -1)).map((s) => stripQuotes(s.trim()));
         } else if (rest.startsWith('{') && rest.endsWith('}')) {
           servers[current][key] = parseInlineObject(rest);
         } else {
@@ -234,6 +263,49 @@ function parseServersYaml(raw) {
   return servers;
 }
 
+// Splits the inside of an inline YAML array on commas that are NOT inside a quoted item.
+// T655: an item may itself contain commas, semicolons, `*`, `{}` or `[]` (the Playwright
+// `--blocked-origins` value is one double-quoted argument with brace lists). Characters
+// inside quotes are kept verbatim; nothing is expanded or escaped here.
+// T656 (SEC-T655-04): this reader does not implement YAML escapes, so it refuses what it cannot
+// read faithfully instead of silently diverging from YAML: a backslash inside a quoted item, a
+// quote that is never closed, and text between a closing quote and the next comma. A quote opens
+// a quoted item only at the start of an item (an apostrophe inside a plain item is plain text).
+function splitInlineArray(inner) {
+  const parts = [];
+  let cur = '';
+  let quote = null;
+  let closed = false;
+  for (const ch of inner) {
+    if (quote) {
+      if (ch === '\\') {
+        throw new Error(`servers.yaml: a backslash inside a quoted array item is not supported: ${inner.slice(0, 60)}`);
+      }
+      if (ch === quote) {
+        quote = null;
+        closed = true;
+      }
+      cur += ch;
+    } else if (ch === ',') {
+      parts.push(cur);
+      cur = '';
+      closed = false;
+    } else if (closed && ch.trim() !== '') {
+      throw new Error(`servers.yaml: text after the closing quote of an array item: ${inner.slice(0, 60)}`);
+    } else if ((ch === '"' || ch === "'") && cur.trim() === '') {
+      quote = ch;
+      cur += ch;
+    } else {
+      cur += ch;
+    }
+  }
+  if (quote) {
+    throw new Error(`servers.yaml: unclosed quote in an array item: ${inner.slice(0, 60)}`);
+  }
+  parts.push(cur);
+  return parts;
+}
+
 function parseInlineObject(s) {
   const trimmed = s.trim();
   if (!trimmed.startsWith('{')) return stripQuotes(trimmed);
@@ -245,6 +317,80 @@ function parseInlineObject(s) {
     out[k.trim()] = parseScalar(stripQuotes(rest.join(':').trim()));
   }
   return out;
+}
+
+// T657 (SEC-T655-01): per-platform rendering of an MCP tool name in an agent's tool list.
+// The source form stays `mcp__<server>` (a whole server) and `mcp__<server>__<tool>` (one tool),
+// with `*` allowed as the tool part. A platform opts in with `frontmatter.agents.mcpToolNames`;
+// no key, or `verbatim`, keeps the source form. Each style is backed by vendor documentation or
+// vendor source recorded in docs/artifacts/mcp-tool-name-mapping-v1.md; a platform whose naming
+// is not verified must not opt in.
+//   slash       Copilot / VS Code: `<server>/<tool>` and `<server>/*`
+//               (server lower-cased, whitespace to `-`; `.` in the tool to `_`)
+//   underscore  Opencode: `<server>_<tool>` and `<server>_*` (anything outside [A-Za-z0-9_-] to `_`)
+//   pi          Pi: `mcp__<server>__<tool>` and `mcp__<server>__*` (anything outside [A-Za-z0-9_] to `_`)
+const MCP_TOOL_PREFIX = 'mcp__';
+
+// T658 (SEC-T657-09): `*` is accepted only as the whole tool part (`mcp__<server>__*`). A `*` anywhere
+// else (`mcp__srv__foo*`, `mcp__sr*v__t`) used to degrade silently to `_` in the renderers, which
+// fails closed but hides the author's mistake; it now stops the run.
+function splitMcpToolName(token) {
+  if (typeof token !== 'string' || !token.startsWith(MCP_TOOL_PREFIX)) return null;
+  const rest = token.slice(MCP_TOOL_PREFIX.length);
+  const sep = rest.indexOf('__');
+  if (sep === -1) {
+    if (rest.includes('*')) throw new Error(`Non-terminal '*' in MCP tool token: ${token}`);
+    return rest ? { server: rest, tool: '*' } : null;
+  }
+  const server = rest.slice(0, sep);
+  const tool = rest.slice(sep + 2);
+  if (server.includes('*') || (tool !== '*' && tool.includes('*'))) {
+    throw new Error(`Non-terminal '*' in MCP tool token: ${token}`);
+  }
+  return server && tool ? { server, tool } : null;
+}
+
+const MCP_TOOL_NAME_STYLES = {
+  verbatim: null,
+  slash: ({ server, tool }) => {
+    const srv = server.toLowerCase().replace(/\s+/g, '-');
+    return tool === '*' ? `${srv}/*` : `${srv}/${tool.replace(/\./g, '_')}`;
+  },
+  underscore: ({ server, tool }) => {
+    const clean = (s) => s.replace(/[^a-zA-Z0-9_-]/g, '_');
+    return tool === '*' ? `${clean(server)}_*` : `${clean(server)}_${clean(tool)}`;
+  },
+  pi: ({ server, tool }) => {
+    const clean = (s) => s.replace(/[^a-zA-Z0-9_]/g, '_');
+    return `mcp__${clean(server)}__${tool === '*' ? '*' : clean(tool)}`;
+  },
+};
+
+// T658 (SEC-T657-09): the style is validated once, at manifest load, whether or not the platform
+// has a tools line to render. An unknown or non-string value stops the run before any file is written.
+function validateMcpToolNamesStyle(manifest) {
+  const style = manifest.frontmatter && manifest.frontmatter.agents
+    ? manifest.frontmatter.agents.mcpToolNames
+    : undefined;
+  if (style === undefined) return;
+  if (typeof style !== 'string' || !Object.prototype.hasOwnProperty.call(MCP_TOOL_NAME_STYLES, style)) {
+    throw new Error(`Unknown mcpToolNames style: ${String(style)} (platform ${manifest.platform})`);
+  }
+}
+
+function renderMcpToolName(token, style) {
+  if (!style) return token;
+  if (!Object.prototype.hasOwnProperty.call(MCP_TOOL_NAME_STYLES, style)) {
+    throw new Error(`Unknown mcpToolNames style: ${style}`);
+  }
+  const render = MCP_TOOL_NAME_STYLES[style];
+  const parts = render ? splitMcpToolName(token) : null;
+  return parts ? render(parts) : token;
+}
+
+function renderMcpToolList(tools, style) {
+  if (!Array.isArray(tools) || !style || style === 'verbatim') return tools;
+  return [...new Set(tools.map((t) => renderMcpToolName(t, style)))];
 }
 
 function applyAgentFrontmatter(data, name, cfg) {
@@ -277,6 +423,8 @@ function applyAgentFrontmatter(data, name, cfg) {
   } else {
     if (Array.isArray(tools)) out.tools = tools;
   }
+  out.tools = renderMcpToolList(out.tools, cfg.mcpToolNames);
+  if (out.tools === undefined) delete out.tools;
 
   if (cfg.addToOrchestrators && (cfg.orchestratorNames || []).includes(name)) {
     Object.assign(out, cfg.addToOrchestrators);
@@ -336,6 +484,9 @@ function emitMcp(servers, tags, format) {
         mcpServers[name] = { command: s.command, args: s.args || [] };
         if (s.env) mcpServers[name].env = mapEnv(s.env, '${env:VAR}');
       }
+      // T658: documented per-server tool blocklist; applies to the main agent and to subagents
+      // (docs/artifacts/mcp-server-denials-v1.md). Gemini matches the name the server reports.
+      if (s.denyTools) mcpServers[name].excludeTools = [...s.denyTools];
     }
     const cfg = {
       hooks: {
@@ -360,7 +511,14 @@ function emitMcp(servers, tags, format) {
 
   if (format === 'opencode') {
     const mcp = {};
+    const permission = {};
     for (const [name, s] of Object.entries(filtered)) {
+      // T658: Opencode checks a permission whose action is the registered tool name
+      // `<server>_<tool>`; the same cleaning as the `underscore` tool-name style. Last match wins,
+      // and the agent-level rules come after this global one (docs/artifacts/mcp-server-denials-v1.md).
+      for (const tool of s.denyTools || []) {
+        permission[MCP_TOOL_NAME_STYLES.underscore({ server: name, tool })] = 'deny';
+      }
       if (s.transport === 'remote') {
         mcp[name] = { type: 'remote', url: mapTemplatedValue(s.url, '{env:VAR}') };
         if (s.headers) mcp[name].headers = mapEnv(s.headers, '{env:VAR}');
@@ -369,18 +527,23 @@ function emitMcp(servers, tags, format) {
         if (s.env) mcp[name].environment = mapEnv(s.env, '{env:VAR}');
       }
     }
-    return { __mcpObject: mcp };
+    return { __mcpObject: mcp, __permission: permission };
   }
 
   if (format === 'claude-code') {
+    // Claude Code expands `${VAR}` / `${VAR:-default}` from the live process environment in
+    // `command`, `args`, `env`, `url` and `headers` — it does NOT recognise VS Code's
+    // `${env:VAR}` form and passes such text through literally (T517; see
+    // docs/artifacts/mcp-header-url-templating-design-v2.md §3 and
+    // https://code.claude.com/docs/en/mcp#environment-variable-expansion-in-mcp-json).
     const mcpServers = {};
     for (const [name, s] of Object.entries(filtered)) {
       if (s.transport === 'remote') {
-        mcpServers[name] = { type: 'http', url: mapTemplatedValue(s.url, '${env:VAR}') };
-        if (s.headers) mcpServers[name].headers = mapEnv(s.headers, '${env:VAR}');
+        mcpServers[name] = { type: 'http', url: mapTemplatedValue(s.url, '${VAR}') };
+        if (s.headers) mcpServers[name].headers = mapEnv(s.headers, '${VAR}');
       } else {
         mcpServers[name] = { command: s.command, args: s.args || [] };
-        if (s.env) mcpServers[name].env = mapEnv(s.env, '${env:VAR}');
+        if (s.env) mcpServers[name].env = mapEnv(s.env, '${VAR}');
       }
     }
     return JSON.stringify({ mcpServers }, null, 2) + '\n';
@@ -408,7 +571,8 @@ function emitMcp(servers, tags, format) {
 //   spec: a plain literal (string/number/bool) -> returned unchanged (String(spec))
 //         OR { fromEnv: VAR }                   -> template.replace('VAR', VAR)
 //         OR { fromEnv: VAR, wrap: "X{VAR}Y" }   -> wrap.replace('{VAR}', <rendered above>)
-//   template: the platform's own placeholder pattern, e.g. '${env:VAR}' or '{env:VAR}'
+//   template: the platform's own placeholder pattern, e.g. '${env:VAR}' (vscode/cursor/gemini/
+//             pi/cline), '{env:VAR}' (opencode) or '${VAR}' (claude-code)
 function mapTemplatedValue(spec, template) {
   if (spec && typeof spec === 'object' && spec.fromEnv) {
     const rendered = template.replace('VAR', spec.fromEnv);
@@ -542,6 +706,7 @@ async function syncPlatform(manifest, servers) {
     const outPath = path.resolve(outRoot, manifest.mcp.outputFile);
     if (manifest.mcp.format === 'opencode') {
       const cfg = { ...(manifest.mcp.extraFields || {}), mcp: mcpResult.__mcpObject };
+      if (Object.keys(mcpResult.__permission).length > 0) cfg.permission = mcpResult.__permission;
       await emitFile(outPath, JSON.stringify(cfg, null, 2) + '\n');
     } else {
       await emitFile(outPath, mcpResult);
@@ -607,6 +772,7 @@ async function main() {
 
   for (const file of platformFiles) {
     const manifest = JSON.parse(await fs.readFile(path.join(PLATFORMS, file), 'utf8'));
+    validateMcpToolNamesStyle(manifest);
     if (ONLY_PLATFORM && manifest.platform !== ONLY_PLATFORM) continue;
     const count = await syncPlatform(manifest, servers);
     console.log(`[${manifest.platform}] ${CHECK_ONLY ? 'checked' : 'wrote'} ${count} files -> ${manifest.outputDir}`);

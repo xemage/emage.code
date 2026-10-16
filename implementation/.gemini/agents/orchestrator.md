@@ -18,7 +18,7 @@ For every non-trivial request, follow the Plan-Approve-Execute cycle:
 1. Analyze the user's request
 2. Identify which agents are needed
 3. Decompose into tasks with dependencies (use `mcp__sequential-thinking` for complex decomposition)
-4. Write a plan document to `docs/plans/plan-<ID>.md` with:
+4. Write a plan document to `docs/plans/plan-<ID>.md` (`<ID>`: skill `plan-approve-execute` § File Location) with:
    - Goal (1 paragraph)
    - Task graph (Mermaid diagram)
    - Agent assignments with estimated scope
@@ -86,19 +86,31 @@ When delegating to a specialist agent, always provide:
 
 ## Git Workflow Enforcement (Branch Policy)
 
-**MANDATORY** before any code commit or delegation to a developer agent:
+**MANDATORY** before any commit or delegation to a developer agent:
 
 1. **Branch Routing by Work Type:**
    - New features (feat) → create `feature/<issue-id>-short-name` branch from develop
    - Bug fixes (fix/bugfix) → create `bugfix/<issue-id>-short-name` branch from develop
    - Refactoring (refactor) → create `refactor/<issue-id>-short-name` branch from develop
    - Tests (test) → create `test/<issue-id>-short-name` branch from develop
-   - Docs (docs) → commit directly to develop (docs-only changes exempt)
-   - Chore (chore) → commit directly to develop (maintenance-only changes exempt)
+   - Docs (docs) → branch + merge request, exactly like every other change class
+   - Chore (chore) → branch + merge request, exactly like every other change class
+   - There is **no docs-only, ledger-only or maintenance-only exemption**, and none for your
+     own ledger, checkpoint or task-brief edits. See `git-workflow.md`
+     § "Protected Branches — No Direct Commits, Ever", which is `maturity: stable` and
+     `applyTo: "**"`. `develop` and `main` are protected on the remote, so a direct commit
+     cannot be pushed at all — it is rejected with "You are not allowed to push code to
+     protected branches on this project."
+   - For a change class with no declared prefix (docs, chore), use a descriptive branch name;
+     `git-workflow.md` declares `feature/*`, `bugfix/*`, `release/*`, `hotfix/*` and
+     `agent/<agent-name>/<task-id>`, and does not define a `docs/*` or `chore/*` namespace
 
 2. **Implementation Guard:**
-   - NEVER commit to `develop` or `main` directly for feat/fix/refactor/test work
-   - Work must go through `feature/*`, `bugfix/*`, `refactor/*`, or `test/*` branches
+   - NEVER commit to `develop` or `main` directly, for **any** work type — docs and chore
+     included, and including edits you make in your own primary checkout rather than
+     delegating to an agent worktree
+   - Work must go through a branch and a merge request: `feature/*`, `bugfix/*`,
+     `refactor/*`, `test/*`, `agent/<agent-name>/<task-id>`, or a descriptive branch
    - Merge to develop requires: ✅ green pipeline, ✅ ≥1 approval, ✅ up-to-date with develop
 
 3. **Merge Request Template:**
@@ -118,18 +130,18 @@ When delegating to a specialist agent, always provide:
    - Before calling `glab release create`, verify that `docs/releases/vX.Y.Z.md` exists and is committed
    - Publish/update release notes from that file only: `glab release create vX.Y.Z --ref vX.Y.Z --name vX.Y.Z -F docs/releases/vX.Y.Z.md`
    - Do not pass ad-hoc inline `--notes`; it can drift from `docs/releases/vX.Y.Z.md`
-   - File must include: "Latest release: vX.Y.Z", "## Install", "## Highlights", valid install instructions
+   - File must carry what `scripts/verify-release-docs.py` requires (`Latest release: vX.Y.Z`, `## Install`, `## Highlights`, `## RELEASE VERDICT`) and the sections skill `release-workflow` § 4 prescribes, with valid install instructions (`scripts/install.sh --help` lists the `--platform` values)
    - Use `scripts/verify-release-docs.py --tag vX.Y.Z` to validate locally before tag
 
 2. **Release Task Sequencing:**
    - Release work (version bump, changelog, release notes) must be part of a release MR
-   - Tag creation happens AFTER MR is merged to develop
-   - Never tag ahead of a commit; ensure tag commit is already in origin/develop
+   - The release branch is merged to `develop` first and to `main` second, by merge request and without squash; tag creation happens AFTER both merges, because the drift gate fails a tag push while `main` is ahead of `develop`
+   - Never tag ahead of a commit; ensure the tag commit is already in origin/develop and in origin/main
 
 3. **Release Blocking Conditions:**
    - CI pipeline must be green on develop before cutting a release tag
    - Security Gate must pass if security changes are in the release
-   - All task statuses in `docs/tasks/active-tasks.md` matching the release scope must be `done`
+   - No task matching the release scope remains in `docs/tasks/active-tasks.md`: each is `done` and archived in `docs/tasks/completed-tasks.md` (`AGENTS.md` § Task Protocol: `active-tasks.md` never holds a `done` row)
 
 ## Checkpoint Management
 
@@ -188,7 +200,7 @@ Invoke quality gates at defined points:
 - Delegate to `@tech-lead`: "Review architecture-v1.md against requirements-v1.md. Produce VERDICT."
 - Delegate to `@security-engineer`: "Review architecture for security concerns. Produce VERDICT."
 
-**IMPLEMENTATION GATE** (after core implementation):
+**IMPLEMENTATION GATE** (after each implementation task completes, before it merges; skill `validation-gates` § Gate Types):
 - Delegate to `@tech-lead`: "Review implementation against architecture-v1.md. Produce VERDICT."
 
 **INTEGRATION GATE** (after parallel work merges):
@@ -232,7 +244,7 @@ When the user provides a project idea, follow this process:
    - **@backend-developer** — API endpoints, business logic, services
    - **@frontend-developer** — UI components, pages, client-side logic
    - **@database-engineer** — Complex queries, stored procedures
-3. After each completion, delegate to **@tech-lead** for code review
+3. After each completion, run the **Implementation Gate**: delegate to **@tech-lead** for code review (see § Validation Gates)
 4. Run **Integration Gate** after all parallel work completes
 
 ### Phase 4: Quality Assurance

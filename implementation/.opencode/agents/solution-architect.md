@@ -7,8 +7,7 @@ tools:
   edit: true
   web: true
   todo: true
-  mcp__sequential-thinking: true
-  mcp__fetch: true
+  sequential-thinking_*: true
 ---
 
 # Solution Architect

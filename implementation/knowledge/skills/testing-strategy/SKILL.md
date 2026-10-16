@@ -216,6 +216,8 @@ The QA validation gate consumes test results and produces a verdict:
 [VERDICT] gate=qa-validation | result=PASS|CONDITIONAL_PASS|FAIL | coverage={N}% | failed_tests={count} | critical_failures={count} | artifact_ref=test-plan-v{N} | date={YYYY-MM-DD}
 ```
 
+The QA validation gate is the integration validation gate named above: the `validation-gates` skill's **Integration** gate (§ Gate Types: QA Agent, after feature merge, before release). As with code review, this line accompanies, and does not replace, the `## Gate Verdict` block that skill's § Verdict Format requires of every gate, with `**Gate:** integration`, and `result=` carries the same value as the block's `### Verdict:`. This skill supplies the thresholds that verdict is judged against (§ Coverage Thresholds That Determine Gate Outcome).
+
 ### VERDICT Format for QA Gate
 
 The QA gate uses the same VERDICT protocol as code review, ensuring consistent gate behavior across the workflow:
@@ -223,19 +225,19 @@ The QA gate uses the same VERDICT protocol as code review, ensuring consistent g
 | Verdict | Criteria | Pipeline Effect |
 |---------|----------|-----------------|
 | `PASS` | All tests pass, coverage thresholds met, no critical defects. | Pipeline proceeds to next stage. |
-| `CONDITIONAL_PASS` | Minor test failures (non-critical paths), coverage within 5% of threshold. | Pipeline proceeds; failures logged as tasks in `docs/tasks/active-tasks.md`. |
+| `CONDITIONAL_PASS` | Minor test failures (non-critical paths), coverage within 5% of threshold. | Pipeline proceeds; failures are proposed to the orchestrator, who logs them as tasks in `docs/tasks/active-tasks.md` (`AGENTS.md` § Task Protocol). |
 | `FAIL` | Critical test failures, coverage below threshold by >5%, or security test failures. | Pipeline halts. Defects must be fixed and tests re-run. |
 
 ### Coverage Thresholds That Determine Gate Outcome
 
-The following coverage thresholds directly determine the QA gate verdict:
+The following coverage thresholds directly determine the QA gate verdict, together with skill `validation-gates` § Verdict Rules and the executing agent's own gate criteria; the verdict is the most restrictive that any of them requires (`validation-gates` § Verdict Rules, the paragraph "Criteria from the executor's own documents"):
 
 | Metric | PASS Threshold | CONDITIONAL_PASS Range | FAIL Threshold |
 |--------|---------------|----------------------|----------------|
 | **Unit test coverage** | ≥ 80% | 75–79% | < 75% |
 | **Integration test pass rate** | 100% | ≥ 95% (no critical failures) | < 95% or any critical failure |
 | **E2E critical path pass rate** | 100% | N/A (critical paths must pass) | < 100% |
-| **Security scan** | No critical/high findings | No critical; high findings have mitigations | Any critical finding |
+| **Security scan** | No critical, high or medium findings, and nothing in the FAIL column | No critical or high findings and nothing in the FAIL column; each medium finding has a remediation plan (`security-guidelines.md` § Security Review Workflow) | Any critical or high finding, any breach of an Immutable Security Constraint (`security-guidelines.md`), or any security control that `security-guidelines.md` requires for the code under review and that is omitted, removed, disabled or weakened, whatever its grade (a control missing only from code outside the change is graded at its own severity; a change that adds or alters code which the missing control should protect is code under review for that control) |
 | **Performance** | All targets met | ≤ 10% deviation on non-critical endpoints | > 10% deviation on critical endpoints |
 
 **Important:** These thresholds are defaults. Project-specific overrides can be documented in the test plan artifact (`test-plan-vN.md`), but overrides require Tech Lead approval recorded as a decision artifact.

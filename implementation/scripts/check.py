@@ -571,8 +571,14 @@ def _check_maturity(root: Path, result: GateResult) -> None:
         capture_output=True,
         text=True,
     )
-    if proc.returncode != 0:
-        output = (proc.stdout + proc.stderr).strip()
+    output = (proc.stdout + proc.stderr).strip()
+    if proc.returncode == 2:
+        # Exit 2 means the checker refused to adjudicate anything: an active
+        # P0/P1 brief carries no usable `**Affects:**` declaration (T516). That
+        # is a ledger defect, not an unearned claim -- say so, so the operator
+        # goes to the brief instead of hunting for a bad `maturity:` value.
+        result.err(f"maturity: task ledger unreadable, no claim was checked\n{output}")
+    elif proc.returncode != 0:
         result.err(f"maturity: unearned promotion claim(s) detected\n{output}")
 
 

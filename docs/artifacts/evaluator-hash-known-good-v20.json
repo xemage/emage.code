@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "algorithm": "sha256",
+  "digests": {
+    "tests_golden": "414590625486e1e898df9591f47f8d5e37a26177749057ca9ab85affcb17e735",
+    "scripts_scorecard": "45346c178c7f6d92101130d898f55dfaad908aa7e5ae669ce1faac99a51192d6"
+  },
+  "computed_from_commit": "01cf7d964284021dcb11f2fdde39c78bbf924b7f",
+  "computed_at": "2026-10-08T19:33:38Z",
+  "protected_paths": {
+    "tests_golden": "tests/golden",
+    "scripts_scorecard": "scripts/scorecard.py"
+  },
+  "supersedes": "evaluator-hash-known-good-v19.json",
+  "reason": "T601 (plan-112) cleaned up five mechanical parked notes under the file-scoped grant in docs/tasks/task-T601.md (protected-paths-v1.md \u00a75). Protected golden files changed: evaluate-poc-verdict-debt-reconciliation/brief.md (the discrimination section gains the T600 table probes, with results re-measured at T601), validate-workflow-gate-verdict-sources/brief.md (the provenance grep restated truthfully: 1 match, docs/tasks/task-T572.md, at develop ea9a8a2 plus T601), and prepare-release-conditional-pass-conditions-gap/fixture/release-notes.md (one stale 'Release manager: orchestrator' field now 'release-manager', matching docs/releases/_template.md; no check() reads it). Non-protected, outside the digest: tests/functional/test_golden_held_out_isolation.py (removed a docstring clause that no longer holds) and tests/functional/test_golden_harness_scratch.py (a helper-only filename literal). No expect.py and no case.yaml changed. The orchestrator independently confirmed the diff touches only those files, re-ran the brief's exact provenance grep, confirmed the template value, and confirmed that case results are unchanged (evaluate-poc True, validate-workflow True, prepare-release gap False), scorecard --check OK at 34 cases, 26 pass, 0 regressions, held-out isolation passes, and the suite showed exactly the two evaluator-hash failures. scripts_scorecard is byte-identical to v19 and to every version back to v5. The implementing agent committed locally (01cf7d9) but neither pushed nor refreshed this baseline. The user explicitly approved this v20 on 2026-10-08 ('Approving v20 baseline'), the twentieth escalation and the twentieth respected; the orchestrator wrote it only after independent verification.",
+  "update_policy": "Manual only, never automatic. Any future legitimate update goes through the exception path in docs/artifacts/protected-paths-v1.md \u00a75 and produces evaluator-hash-known-good-v21.json. This file (v20) is never edited in place, and v1 through v19 are kept unmodified as the historical record. See docs/artifacts/evaluator-hash-check-v1.md for the full policy."
+}

@@ -1,7 +1,7 @@
 ---
 name: "Frontend Developer"
 description: "Use when implementing user interfaces, UI components, pages, styling, client-side state management, form handling, responsive design, accessibility, frontend routing, or any client-side/browser functionality."
-tools: Read, Edit, Write, Bash, WebFetch, WebSearch, mcp__playwright, mcp__fetch
+tools: Read, Edit, Write, Bash, WebFetch, WebSearch, mcp__playwright__browser_navigate, mcp__playwright__browser_navigate_back, mcp__playwright__browser_snapshot, mcp__playwright__browser_find, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_click, mcp__playwright__browser_type, mcp__playwright__browser_fill_form, mcp__playwright__browser_select_option, mcp__playwright__browser_press_key, mcp__playwright__browser_hover, mcp__playwright__browser_wait_for, mcp__playwright__browser_console_messages, mcp__playwright__browser_network_requests, mcp__playwright__browser_emulate_media, mcp__playwright__browser_resize, mcp__playwright__browser_tabs, mcp__playwright__browser_close
 ---
 
 # Frontend Developer

@@ -205,7 +205,17 @@ def main() -> int:
                 errors.append(f"missing required content in {relative}: {snippet}")
 
     brief_text = (ROOT / release_brief).read_text(encoding="utf-8", errors="ignore")
-    for snippet in ("## Install", "## Highlights", f"Latest release: {args.tag}"):
+    for snippet in (
+        "## Install",
+        "## Highlights",
+        # Placement of the release gate VERDICT, declared by step 7 of
+        # implementation/knowledge/commands/prepare-release.md: the release notes
+        # document is the block's home. Presence of the section is checked here; the
+        # field-level contract (11 fields, Status enum) is encoded once, in the golden
+        # suite, and is deliberately not duplicated in this gate.
+        "## RELEASE VERDICT",
+        f"Latest release: {args.tag}",
+    ):
         if snippet not in brief_text:
             errors.append(f"missing required content in {release_brief}: {snippet}")
 

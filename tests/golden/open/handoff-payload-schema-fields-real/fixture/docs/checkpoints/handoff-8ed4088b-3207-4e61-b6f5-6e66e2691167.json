@@ -1,0 +1,85 @@
+{
+  "schema": "emage.code/v3/runtime/handoff/schema-v1.json",
+  "schemaVersion": "1.0.0",
+  "handoffId": "8ed4088b-3207-4e61-b6f5-6e66e2691167",
+  "timestamp": "2026-09-11T08:12:07Z",
+  "fromAgent": "orchestrator",
+  "toAgent": "orchestrator",
+  "taskId": "T458",
+  "intent": "delegate",
+  "payload": {
+    "objective": "Resume the emage.code v7.0 roadmap (plan-035) session. This supersedes handoff-725b7925-6b66-47d2-b05b-b7c2e25a3bfb (still present in docs/checkpoints/, kept for its operational-lessons section, but its ledger/state snapshot is now stale). Since that handoff: the .mcp.json secrets issue was fixed by the user directly (hindsight/cwso now use proper env-var interpolation) and committed; a new task T483 was created and executed (hindsight/cwso registered as managed MCP servers -- done for the servers.yaml/sync.mjs source-of-truth layer, but the actual cross-platform propagation work T483's own brief scopes was recorded, not yet dispatched -- verify its real status before assuming); the local repo/worktrees were synchronized and cleaned of ~35 stale merged branches and 2 leftover worktrees. Four open items remain, still none prescribed as the single next step: T456/T458 (golden-suite ship gate, infrastructure documented but not built), T457 (agent tool-scoping), Phase 4 planning (still not started), feature/T475-codex-platform-integration reconciliation (growing more overdue).",
+    "roadmap_context": {
+      "plan": "docs/plans/plan-035-roadmap-v7-ground-up.md",
+      "status": "Phases 0, 1, 2, 3 done. Phase 5 6/7 done, T456 blocked on T458. Phase 4 gate-unblocked, zero planning. Unchanged since handoff-725b7925 except: T483 (new, MCP server registration) recorded and partially executed 2026-09-11."
+    },
+    "t458_infrastructure_summary": {
+      "artifact": "docs/artifacts/t458-infrastructure-requirements-v1.md (new this handoff, synthesized from task-T458.md and plan-040 directly, neither modified)",
+      "headline": "T458 needs no new hosts, no Docker, no paid API access -- it deliberately reuses this repo's existing Claude Code agent-dispatch mechanism, not a Terminal-Bench-shaped harness. What it needs is new software: a two-arm (control/treatment) session dispatcher using the existing dispatch primitive twice per case with @context-retriever selectively available, git-worktree-style per-trial isolation (same pattern every subagent this session already used), a brief.md-to-live-session-to-candidate-output pipeline, a bridge into expect.py's existing check(case_dir) contract pointed at the live candidate directory instead of the checked-in fixture (a protected-path exception request if expect.py's signature can't cleanly take an alternate directory -- pre-approval required, not a silent workaround), and a pre-registered 'measurably improve' threshold written before any comparison run.",
+      "explicit_non_requirements": "No Docker daemon, no container runtime, no host provisioning/resizing, no metered model API (a genuine need for one would be a type:external/severity:critical blocker requiring explicit cost authorization first, mirroring T407's money gate), no changes to tests/golden/**, scripts/scorecard.py, or tb-subset.*, no .mcp.json involvement.",
+      "honest_scope_risk": "Both task-T458.md and plan-040 explicitly refuse to pre-commit to 'medium' scope -- T407's own mid-flight re-scoping into 'Design A' is the named precedent for what might need to happen here too. Report a real need for multi-task re-sequencing as an expected outcome, not a failure, if that's what investigation finds."
+    },
+    "open_items_not_prescribed": [
+      {
+        "id": "T456/T458",
+        "description": "See t458_infrastructure_summary above and docs/artifacts/t458-infrastructure-requirements-v1.md for the full detail. Not dispatched as of this handoff."
+      },
+      {
+        "id": "T457",
+        "description": "Give @security-engineer and @context-retriever a genuinely scoped, non-Bash execution/read primitive -- prose-only enforcement accepted for now, real fix needs .mcp.json changes, backlog P1, not dispatched."
+      },
+      {
+        "id": "T483 follow-through",
+        "description": "T483 (register hindsight/cwso in servers.yaml, regenerate all platform projections) was created and had at least one execution round this session (fixing CI failures from a 5th self-referential-regression variant plus a missing plan-coverage reference). Re-verify its actual current ledger status fresh -- 'done', 'in_progress', or still 'pending' -- before assuming any particular state; the last confirmed fact was the ledger row existed as 'pending' with owner solution-architect after MR !280 merged, but whether the real servers.yaml/sync.mjs implementation work has since been dispatched and completed was not independently re-verified as part of this handoff."
+      },
+      {
+        "id": "Phase 4 planning",
+        "description": "Still zero task briefs, no plan-04x document, as of this handoff -- unchanged from handoff-725b7925."
+      },
+      {
+        "id": "feature/T475-codex-platform-integration",
+        "description": "Still untouched, per instruction. Was ~86 commits behind develop at the last handoff; now further behind still (develop has advanced through T483's merge since). The ledger merge-conflict risk on reconciliation is only growing. Read-only investigation only without explicit user instruction."
+      }
+    ],
+    "environment_cleanup_this_session": {
+      "local_repo": "Fetched, pruned, and synchronized: local develop fast-forwarded to origin/develop (08fbc7f). Deleted ~35 local branches whose remote counterparts were already deleted after squash-merge (all independently confirmed already on develop before deletion via this whole session's own fresh-clone verification practice, not deleted blind). Removed 2 leftover worktrees (t483-dispatch, and a stray .claude/worktrees/agent-* directory from an earlier T453 dispatch), both already merged. The t407-tb-delta worktree (holding real Terminal-Bench trial history/evidence from Phase 1) was deliberately preserved, not touched.",
+      "main_checkout": "Confirmed untouched throughout -- still on feature/T475-codex-platform-integration, with its original pre-existing .mcp.json local modification (now superseded by the real committed fix on develop) and the two untracked handoff files from the session's original starting state (handoff-5a78fb9c-*) still present, not deleted."
+    },
+    "key_operational_lessons_from_this_session": [
+      "Same as handoff-725b7925 -- see that document's 'key_operational_lessons_from_this_session' payload field, unchanged and not re-derived here. Read it, don't skip it just because this handoff is newer.",
+      "New this round: T483 hit a 5th occurrence of the self-referential ledger-defect regression (a task's own brief text naming an already-stable component by literal id). The fix pattern is now well-established (placeholder/generic references instead of literal ids, swept against all currently-stable ids before pushing) -- if a 6th occurrence appears, apply the same fix, don't re-investigate from scratch.",
+      "Also new: dispatching implementation work under an assumption of 'this looks mechanical' is itself a risk -- T483 initially looked like simple data entry (add two servers to a YAML file) but investigation found real gaps in the existing sync.mjs generator (no support for HTTP headers on remote MCP servers, no support for env-templated URLs) and a blind spot in the secret-guard test (doesn't scan headers blocks). Always read the actual generator/checker code before assuming a task is trivial, even when the task's own description sounds like it should be."
+    ],
+    "verified_current_state": {
+      "develop_head": "08fbc7f8bebd510fcca178656c489c8ff03372b7 (T483's merge) as of this handoff -- re-fetch and re-verify before trusting, state moves fast in this session.",
+      "active_tasks": "T456 (blocked, P0), T457 (pending, P1), T458 (pending, P1), T483 (pending, P1) as of this handoff."
+    }
+  },
+  "constraints": {
+    "maxToolCalls": 1000,
+    "writablePaths": [
+      "docs/**",
+      "implementation/**",
+      "tests/**",
+      "scripts/**",
+      "deploy/**"
+    ],
+    "forbiddenActions": [
+      "edit tests/golden/**",
+      "edit scripts/scorecard.py",
+      "edit docs/benchmarks/tb-subset.json",
+      "edit docs/benchmarks/tb-subset.md",
+      "checkout, merge, rebase, or modify feature/T475-codex-platform-integration",
+      "commit directly to develop or main",
+      "force-push any branch",
+      "dispatch any new paid/recurring-cost API work without explicit user authorization first",
+      "start Phase 4 task-brief authoring without a dedicated Plan-Approve-Execute planning pass first"
+    ],
+    "deadlineUtc": "2026-10-02T08:12:07Z"
+  },
+  "trace": {
+    "correlationId": "96b2ad11-bca4-4adb-8c4f-f5a69d723e51",
+    "parentStepId": "t483-mcp-registration-and-repo-sync",
+    "checkpointRef": "docs/checkpoints/handoff-725b7925-6b66-47d2-b05b-b7c2e25a3bfb.json"
+  }
+}

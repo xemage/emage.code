@@ -1,6 +1,6 @@
 ---
 description: "Use when setting up CI/CD pipelines, configuring Docker containers, writing Dockerfiles, creating Kubernetes manifests, managing infrastructure as code (Terraform, Ansible), configuring GitLab CI, setting up monitoring, or automating deployment workflows."
-tools: [read, search, edit, execute, web, mcp__gitlab, mcp__fetch]
+tools: [read, search, edit, execute, web, gitlab/*]
 user-invocable: false
 ---
 

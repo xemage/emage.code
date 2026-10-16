@@ -2,7 +2,8 @@
 """expect.py for code-review-conditional-pass-conditions-gap (known_failing / capability_gap).
 
 Contract under test: implementation/knowledge/commands/code-review.md -- "If CONDITIONAL_PASS,
-list the conditions that must be met before merge." Checks for a structured "**Conditions**:"
+list the conditions, each with an owner and a due point." (as amended by T582, A4). The command
+still defines no structured "**Conditions**:" field. Checks for a structured "**Conditions**:"
 field or a "## Conditions" section. Expected to return False today -- see brief.md.
 """
 from __future__ import annotations

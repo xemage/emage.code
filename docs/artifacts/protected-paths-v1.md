@@ -105,11 +105,23 @@ having to invent one under time pressure.
 
 ## 6. Verification
 
-- `tests/functional/test_protected_paths_declared.py` confirms every one of the 27
-  `implementation/knowledge/agents/*.md` source files contains the protected-paths pointer, and
-  that both protected paths exist on disk (`tests/golden/` as a directory, `scripts/scorecard.py`
-  as a file) — see that file for the synthetic-fixture and real-tree test coverage.
-- `implementation/scripts/sync.mjs` regenerates every platform's agent projection from the 27
-  source files; the pointer therefore appears in every platform projection folder
-  (`.claude/agents/`, `.cursor/`, `.gemini/`, `.opencode/`, `.pi/`, `.github/`, `.cline/`) without
-  hand-editing any of them.
+- `tests/functional/test_protected_paths_declared.py` confirms every
+  `implementation/knowledge/agents/*.md` source file contains the protected-paths pointer, and that
+  both protected paths exist on disk (`tests/golden/` as a directory, `scripts/scorecard.py` as a
+  file) — see that file for the synthetic-fixture and real-tree test coverage. The check globs the
+  agents directory rather than asserting a fixed count (28 source files as of T545, up from 27 when
+  this document was written), so an agent added later without the pointer fails it loudly and is
+  named in the failure.
+- `node implementation/scripts/sync.mjs --root implementation` regenerates each platform's agent
+  projection from those source files, so the pointer reaches every projection without hand-editing
+  any of them. Two precisions matter when re-running it:
+  - `sync.mjs` writes **under `implementation/.<platform>/`**, *not* to this repository's top-level
+    platform folders. The top-level folders are written from `implementation/.<platform>/` by
+    `scripts/install.sh`, whose `--update` replaces each one wholesale with `rsync -a --delete` — so
+    a hand-edit to a top-level projection is deleted, not merged. Regenerating the registry
+    (`python3 implementation/scripts/generate-registry.py`) is a separate, also-required step,
+    because `implementation/registry/index.json` carries a per-entry `checksum`.
+  - The agent projection exists for `.github/agents/`, `.cursor/agents/`, `.gemini/agents/`,
+    `.opencode/agents/`, `.pi/agents/` and `.claude/agents/` only. `.cline/` receives skills and MCP
+    config but no agent projection, and `.clinerules/` receives instructions only, so neither of
+    those two carries the pointer.

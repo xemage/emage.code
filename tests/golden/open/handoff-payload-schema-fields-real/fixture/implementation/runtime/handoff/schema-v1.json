@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "v3/runtime/handoff/schema-v1.json",
+  "title": "emage.code v3 handoff payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schemaVersion",
+    "handoffId",
+    "timestamp",
+    "fromAgent",
+    "toAgent",
+    "taskId",
+    "intent",
+    "payload",
+    "constraints",
+    "trace"
+  ],
+  "properties": {
+    "schema": {"type": "string", "minLength": 1},
+    "schemaVersion": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "handoffId": {"type": "string", "pattern": "^[0-9a-fA-F-]{36}$"},
+    "timestamp": {"type": "string", "format": "date-time"},
+    "fromAgent": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,63}$"},
+    "toAgent": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,63}$"},
+    "taskId": {"type": "string", "pattern": "^T[0-9]{3,}$"},
+    "intent": {
+      "type": "string",
+      "enum": ["delegate", "request-review", "request-data", "escalate"]
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["maxToolCalls", "writablePaths", "forbiddenActions", "deadlineUtc"],
+      "properties": {
+        "maxToolCalls": {"type": "integer", "minimum": 0, "maximum": 1000},
+        "writablePaths": {
+          "description": "Paths the receiving agent may write. This is a grant, so it must name at least one path: an empty grant is indistinguishable from an omitted one and leaves the receiver's write scope undefined. A receiver that may not touch product code still names where its own output goes, such as a review or findings path.",
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "minItems": 1,
+          "maxItems": 128
+        },
+        "forbiddenActions": {
+          "description": "Actions the receiving agent must not take, in addition to the standing rules. This is a denial list, so the empty array is a meaningful state - nothing forbidden beyond the standing rules - and minItems is deliberately 0 rather than omitted by oversight.",
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "minItems": 0,
+          "maxItems": 128
+        },
+        "deadlineUtc": {"type": "string", "format": "date-time"}
+      }
+    },
+    "trace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["correlationId", "parentStepId", "checkpointRef"],
+      "properties": {
+        "correlationId": {"type": "string", "pattern": "^[0-9a-fA-F-]{36}$"},
+        "parentStepId": {"type": "string", "minLength": 1, "maxLength": 200},
+        "checkpointRef": {"type": "string", "minLength": 1, "maxLength": 400}
+      }
+    }
+  }
+}

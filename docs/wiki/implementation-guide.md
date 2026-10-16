@@ -2,7 +2,7 @@
 
 emage.code uses an `implementation/` tree at the repository root. It provides
 schema-first canonical knowledge, managed cookbooks, trigger workflows, packaging,
-and validation super-gates (current release: v7.0.1).
+and validation super-gates (current release: v8.0.0).
 
 ## What to use it for
 
@@ -28,9 +28,17 @@ Update an existing project:
 scripts/install.sh --target <your-project> --platform cursor --update
 ```
 
-Task ledgers in `docs/tasks/` keep their rows on `--update`; only format headers/footers refresh.
+`--update` replaces the platform trees but spares the client-owned files `.claude/settings.json`, `.claude/settings.local.json` and, under `.github/`, `workflows/`, `ISSUE_TEMPLATE/`, `PULL_REQUEST_TEMPLATE.md`, `PULL_REQUEST_TEMPLATE`, `CODEOWNERS`, `dependabot.yml`, `dependabot.yaml`, `FUNDING.yml` and `copilot-instructions.md`; each platform's MCP/settings config is merged. The task ledgers in `docs/tasks/` keep their `T<NNN>` rows and the prose around the table; other table rows are dropped with a warning.
 
-Or see [Quick Start](quick-start) and [`docs/releases/v7.0.1.md`](https://gitlab.com/em-age/emage.code/-/blob/main/docs/releases/v7.0.1.md).
+Refresh only the harness projections, leaving `docs/` and `implementation/` untouched (mutually exclusive with `--update`):
+
+```bash
+scripts/install.sh --target <your-project> --platform cursor --projections-only
+```
+
+The PoC security scan runs on the `poc-security-audit` MCP server, which needs `mcp` (Python), `git` 2.40 or newer and, on Claude Code, an allow rule you add to your own `.claude/settings.json`: see [MCP Servers](mcp-servers#poc-security-scan-server-poc-security-audit).
+
+Or see [Quick Start](quick-start) and [`docs/releases/v8.0.0.md`](https://gitlab.com/em-age/emage.code/-/blob/main/docs/releases/v8.0.0.md).
 
 Supported projections: GitHub Copilot, Gemini CLI, Opencode, Cursor, Pi.
 

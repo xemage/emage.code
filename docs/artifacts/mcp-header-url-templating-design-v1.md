@@ -1,5 +1,12 @@
 # MCP Header/URL Templating Design — v1
 
+> **Superseded by `docs/artifacts/mcp-header-url-templating-design-v2.md` (T517, 2026-09-25).**
+> Only the `claude-code` placeholder template changed — it is `${VAR}`, not `${env:VAR}`, because
+> Claude Code expands `${VAR}` / `${VAR:-default}` from the live process environment and passes the
+> `env:` form through as literal text. Everything else in v2 is this document verbatim, apart from
+> the passages that quote or hand-trace that template. This file is left unmodified apart from this
+> supersession link, per `AGENTS.md`'s artifact-versioning rule.
+
 **Status:** Final (ratified this session — independently re-verified, one citation correction
 applied; see "Ratification note" below).
 **Owner:** solution-architect

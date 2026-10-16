@@ -2,6 +2,12 @@
 
 > Filename: `maturity-promotion-criteria-v1.md`. Immutable once produced; revisions bump `<N>`.
 
+> **Superseded by `docs/artifacts/maturity-promotion-criteria-v2.md` (T516, 2026-09-24).** Only
+> §3.5's ledger half changed — it now reads a brief's declared `**Affects:**` field instead of
+> free-text scanning brief bodies and ledger titles for component ids. Everything else in v2 is
+> this document verbatim. This file is left unmodified apart from this supersession link, per
+> `AGENTS.md`'s artifact-versioning rule.
+
 ## Metadata
 - **Producer agent**: tech-lead
 - **Task**: T431
