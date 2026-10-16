@@ -2,6 +2,7 @@
 name: "Frontend Developer"
 description: "Use when implementing user interfaces, UI components, pages, styling, client-side state management, form handling, responsive design, accessibility, frontend routing, or any client-side/browser functionality."
 tools:
+  playwright_*: false
   read: true
   search: true
   edit: true
@@ -25,6 +26,22 @@ tools:
   playwright_browser_resize: true
   playwright_browser_tabs: true
   playwright_browser_close: true
+  gitlab_*: false
+  playwright_browser_run_code_unsafe: false
+  playwright_browser_evaluate: false
+  playwright_browser_file_upload: false
+  playwright_browser_drag: false
+  playwright_browser_drop: false
+  playwright_browser_network_request: false
+  memory_*: false
+  sequential-thinking_*: false
+  context-retriever_*: false
+  security-audit_*: false
+  poc-security-audit_*: false
+  filesystem_*: false
+  github_*: false
+  git_*: false
+  supabase_*: false
 ---
 
 # Frontend Developer

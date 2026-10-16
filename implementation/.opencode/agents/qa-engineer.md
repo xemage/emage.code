@@ -2,6 +2,8 @@
 name: "QA Engineer"
 description: "Use when creating test plans, writing automated tests (unit, integration, e2e), performing test execution, reporting bugs, defining test strategies, checking test coverage, doing regression testing, or verifying acceptance criteria."
 tools:
+  gitlab_*: false
+  playwright_*: false
   read: true
   search: true
   edit: true
@@ -45,6 +47,21 @@ tools:
   gitlab_get_pipeline_test_report: true
   gitlab_get_pipeline_test_report_summary: true
   gitlab_discover_tools: true
+  playwright_browser_run_code_unsafe: false
+  playwright_browser_evaluate: false
+  playwright_browser_file_upload: false
+  playwright_browser_drag: false
+  playwright_browser_drop: false
+  playwright_browser_network_request: false
+  memory_*: false
+  sequential-thinking_*: false
+  context-retriever_*: false
+  security-audit_*: false
+  poc-security-audit_*: false
+  filesystem_*: false
+  github_*: false
+  git_*: false
+  supabase_*: false
 ---
 
 # QA Engineer

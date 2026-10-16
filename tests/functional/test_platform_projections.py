@@ -228,15 +228,21 @@ class TestPlatformProjections(unittest.TestCase):
                 self.assertTrue(projected_tools, f"{path.name}: tools object should not be empty")
                 # T657: MCP names are rendered `<server>_<tool>` / `<server>_*` (Opencode naming);
                 # the other tokens pass through unchanged.
+                # T663: the `true` entries are the mapped source list; the `false` entries are the
+                # generated per-agent denials (test_mcp_agent_denials.py pins which ones).
+                allowed = {k for k, v in projected_tools.items() if v is True}
+                denied = {k for k, v in projected_tools.items() if v is False}
                 self.assertEqual(
-                    set(projected_tools),
+                    allowed,
                     {_opencode_name(t) for t in source_tools},
-                    f"{path.name}: tools keys must match the mapped source tools list",
+                    f"{path.name}: tools keys set to true must match the mapped source tools list",
                 )
-                self.assertTrue(
-                    all(value is True for value in projected_tools.values()),
-                    f"{path.name}: all tool values should be true",
+                self.assertEqual(
+                    allowed | denied,
+                    set(projected_tools),
+                    f"{path.name}: every tool value must be true or false",
                 )
+                self.assertFalse(allowed & denied, f"{path.name}: a name is both allowed and denied")
 
         for orchestrator in ("orchestrator", "poc-orchestrator"):
             fm, _ = parse_file(opencode_agents / f"{orchestrator}.md")

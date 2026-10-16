@@ -109,10 +109,12 @@ def opencode_rules(permission) -> list[tuple[str, str]]:
     return out
 
 
-# Opencode's built-in agents start from `"*": "allow"`; the global config rules are appended after
-# them and each agent's own rules after those (core/src/plugin/agent.ts and
-# core/src/config/plugin/agent.ts at the commit named in the artifact).
-OPENCODE_DEFAULTS = [("*", "allow")]
+# Two default behaviours for a name that no rule matches, both read from the vendor source (SEC-T663-05):
+# the legacy runtime (v1.19.0 agent/agent.ts) starts an agent from `"*": "allow"`; the current core has no
+# such default and `evaluate` falls back to `ask` (core/src/permission.ts). The global config rules are
+# appended after the defaults and each agent's own rules after those. Deny assertions below run under both.
+OPENCODE_DEFAULT_VARIANTS = ([("*", "allow")], [])
+OPENCODE_DEFAULTS = OPENCODE_DEFAULT_VARIANTS[0]
 
 
 class SourceListTests(unittest.TestCase):
@@ -193,7 +195,10 @@ class OpencodeEvaluationTests(unittest.TestCase):
             cls.agents[path.stem] = opencode_rules(fm.get("tools"))
 
     def effect(self, agent_rules, tool: str, server: str = "playwright") -> str:
-        return opencode_effect(f"{server}_{tool}", OPENCODE_DEFAULTS, self.global_rules, agent_rules)
+        """The effect under both default behaviours; a single word when they agree, else `a/b`."""
+        found = sorted({opencode_effect(f"{server}_{tool}", d, self.global_rules, agent_rules)
+                        for d in OPENCODE_DEFAULT_VARIANTS})
+        return "/".join(found)
 
     def test_wildcard_model_matches_the_vendor_examples(self):
         self.assertTrue(opencode_wildcard("mymcp_search", "mymcp_*"))
@@ -215,10 +220,13 @@ class OpencodeEvaluationTests(unittest.TestCase):
             self.assertEqual(self.effect([], tool), "deny", tool)
 
     def test_no_shipped_agent_rule_can_override_the_denial(self):
-        # An agent rule that matches a denied name would come later than the global deny and win.
+        # An agent rule that matches a denied name would come later than the global deny and win,
+        # unless it is itself a deny (T663: the generated per-agent `false` entries are).
         for agent, rules in self.agents.items():
-            for pattern, _effect in rules:
+            for pattern, effect in rules:
                 for tool in DENIED:
+                    if effect == "deny":
+                        continue
                     with self.subTest(agent=agent, pattern=pattern, tool=tool):
                         self.assertFalse(opencode_wildcard(f"playwright_{tool}", pattern),
                                          f"{agent} has a rule `{pattern}` that matches a denied tool")
@@ -251,9 +259,9 @@ class OpencodeEvaluationTests(unittest.TestCase):
     def test_a_user_owned_playwright_local_server_is_not_denied(self):
         for tool in DENIED:
             with self.subTest(tool=tool):
-                self.assertEqual(self.effect([], tool, server="playwright-local"), "allow")
+                self.assertNotIn("deny", self.effect([], tool, server="playwright-local"))
                 for agent, rules in self.agents.items():
-                    self.assertNotEqual(self.effect(rules, tool, server="playwright-local"), "deny", agent)
+                    self.assertNotIn("deny", self.effect(rules, tool, server="playwright-local"), agent)
 
     def test_the_generated_agent_files_never_allow_a_denied_tool(self):
         for agent, rules in self.agents.items():

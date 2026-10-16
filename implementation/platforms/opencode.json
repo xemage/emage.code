@@ -13,6 +13,7 @@
     "agents": {
       "tools": "object",
       "mcpToolNames": "underscore",
+      "mcpAgentDenies": true,
       "keepKeys": ["name", "description", "tools", "agents"],
       "addToOrchestrators": { "user-invocable": true },
       "orchestratorNames": ["orchestrator", "poc-orchestrator"]

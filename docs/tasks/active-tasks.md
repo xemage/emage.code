@@ -5,7 +5,6 @@
 | T662 | Cursor removal step S1 (ADR-010): generator, installer, registry, tests, trees | devops-engineer | pending | P1 | T661 | 2026-10-16 |
 | T678 | Cursor removal step S2: live docs, knowledge text and templates (ADR-010) | technical-writer | pending | P1 | T662 | 2026-10-16 |
 | T679 | Cursor removal step S3: root refresh (ADR-010; needs the user's approval) | orchestrator | pending | P1 | T678 | 2026-10-16 |
-| T663 | Opencode per-agent denies (SEC-T658-01 fixable part) | devops-engineer | pending | P1 | — | 2026-10-16 |
 | T665 | Implement the T664 token-scope decision | devops-engineer | pending | P1 | T664, T662 | 2026-10-16 |
 | T666 | Named GitLab tool sets for orchestrator and poc-orchestrator (SEC-T660-04) | devops-engineer | pending | P1 | — | 2026-10-16 |
 | T667 | Named GitLab tool sets for devops-engineer, release-manager and poc-devops-engineer | devops-engineer | pending | P2 | T666 | 2026-10-16 |
