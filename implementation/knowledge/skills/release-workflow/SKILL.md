@@ -190,8 +190,8 @@ For critical issues discovered after a release:
    └── Create release artifact
 
 6. MERGE, TAG, DEPLOY
-   ├── Merge the hotfix branch into develop, then into main (merge requests), so the fix is included in future releases
-   ├── Tag the hotfix branch tip, after both merges
+   ├── The release manager opens the merge requests of the hotfix branch to develop and to main; the top-level session merges them, develop first and main second (no squash), after its own verification, so the fix is included in future releases
+   ├── The top-level session tags the hotfix branch tip, after both merges, with the user's approval
    └── Deploy
 ```
 
@@ -233,5 +233,5 @@ Merged back to main
 - Hotfixes must be minimal — fix the issue and nothing else.
 - Always merge hotfixes back to main to prevent regression in future releases.
 - Keep release notes user-facing. Internal changes go in the "Internal" changelog section.
-- Tag releases in git: `git tag -a v<VERSION> -m "Release v<VERSION>"`.
-- The release manager is responsible for the full release workflow, including gate coordination.
+- The top-level session tags releases in git, with the user's approval and only after both merges, on the release branch tip: `git tag -a v<VERSION> -m "Release v<VERSION>"`.
+- The release manager prepares and verifies the release workflow, including gate coordination; the top-level session merges, tags and publishes with the user's approval.

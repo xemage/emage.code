@@ -5,8 +5,6 @@
 | T678 | Cursor removal step S2: live docs, knowledge text and templates (ADR-010) | technical-writer | pending | P1 | T662 | 2026-10-16 |
 | T679 | Cursor removal step S3: root refresh (ADR-010; needs the user's approval) | orchestrator | pending | P1 | T678 | 2026-10-16 |
 | T665 | Implement the T664 token-scope decision | devops-engineer | pending | P1 | T664, T662 | 2026-10-16 |
-| T666 | Named GitLab tool sets for orchestrator and poc-orchestrator (SEC-T660-04) | devops-engineer | pending | P1 | — | 2026-10-16 |
-| T667 | Named GitLab tool sets for devops-engineer, release-manager and poc-devops-engineer | devops-engineer | pending | P2 | T666 | 2026-10-16 |
 | T672 | Installer and generator robustness (tracked debt) | devops-engineer | pending | P2 | T671 | 2026-10-16 |
 | T673 | Test quality (tracked debt) | qa-engineer | pending | P2 | T671 | 2026-10-16 |
 | T674 | Documentation corrections (tracked debt) | technical-writer | pending | P2 | T671 | 2026-10-16 |

@@ -2,13 +2,13 @@
 
 **ID:** T666
 **Owner:** devops-engineer
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Tier:** judgment
 **Depends on:** —
 **Affects:** —
 **Created:** 2026-10-16
-**Completed:** —
+**Completed:** 2026-10-16
 **Based on:**
 - `docs/plans/plan-123-post-release-follow-ups.md` (Task Decomposition item for T666; the section "Grant G-2" for T668 and T669)
 - `docs/checkpoints/checkpoint-038-release-v8.0.0.md` (section 3), `docs/releases/v8.0.0.md` (Known issues), the review artifacts named in the item

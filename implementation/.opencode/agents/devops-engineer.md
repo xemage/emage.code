@@ -2,12 +2,23 @@
 name: "DevOps Engineer"
 description: "Use when setting up CI/CD pipelines, configuring Docker containers, writing Dockerfiles, creating Kubernetes manifests, managing infrastructure as code (Terraform, Ansible), configuring GitLab CI, setting up monitoring, or automating deployment workflows."
 tools:
+  gitlab_*: false
   read: true
   search: true
   edit: true
   execute: true
   web: true
-  gitlab_*: true
+  gitlab_list_pipelines: true
+  gitlab_get_pipeline: true
+  gitlab_list_pipeline_jobs: true
+  gitlab_get_pipeline_job: true
+  gitlab_list_merge_request_pipelines: true
+  gitlab_get_pipeline_test_report_summary: true
+  gitlab_validate_ci_lint: true
+  gitlab_validate_project_ci_lint: true
+  gitlab_get_merge_request: true
+  gitlab_list_merge_requests: true
+  gitlab_discover_tools: true
   playwright_*: false
   playwright_browser_run_code_unsafe: false
   playwright_browser_evaluate: false

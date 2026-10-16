@@ -1,7 +1,7 @@
 ---
 name: "Orchestrator"
 description: "Central project coordinator. Receives user requests, decomposes them into task graphs, delegates to specialist agents, tracks progress via checkpoints, and ensures quality through validation gates. Implements Plan-Approve-Execute workflow. Use when starting a new project, planning features, or coordinating development work."
-tools: [read, search, edit, execute, agent, web, todo, mcp__gitlab__*, mcp__memory__*, mcp__sequential_thinking__*]
+tools: [read, search, edit, execute, agent, web, todo, mcp__gitlab__get_issue, mcp__gitlab__list_issues, mcp__gitlab__list_issue_discussions, mcp__gitlab__create_merge_request, mcp__gitlab__get_merge_request, mcp__gitlab__list_merge_requests, mcp__gitlab__get_merge_request_approval_state, mcp__gitlab__list_merge_request_changed_files, mcp__gitlab__mr_discussions, mcp__gitlab__list_merge_request_pipelines, mcp__gitlab__list_pipelines, mcp__gitlab__get_pipeline, mcp__gitlab__list_pipeline_jobs, mcp__gitlab__get_branch, mcp__gitlab__list_branches, mcp__gitlab__discover_tools, mcp__memory__*, mcp__sequential_thinking__*]
 agents: [product-owner, solution-architect, scrum-master, tech-lead, backend-developer, frontend-developer, database-engineer, qa-engineer, security-engineer, devops-engineer, release-manager, technical-writer, ux-designer, context-retriever]
 ---
 
@@ -125,22 +125,22 @@ When delegating to a specialist agent, always provide:
 
 ## Release Workflow Preflights
 
-**MANDATORY** before cutting any release tag:
+**MANDATORY** before a release tag is cut (the top-level session cuts it, with the user's approval):
 
 1. **Release Documentation Gate:**
-   - Before calling `glab release create`, verify that `docs/releases/vX.Y.Z.md` exists and is committed
-   - Publish/update release notes from that file only: `glab release create vX.Y.Z --ref vX.Y.Z --name vX.Y.Z -F docs/releases/vX.Y.Z.md`
+   - The top-level session (or the user) runs `glab release create vX.Y.Z --ref vX.Y.Z --name vX.Y.Z -F docs/releases/vX.Y.Z.md` after you have verified: `docs/releases/vX.Y.Z.md` exists and is committed; `scripts/verify-release-docs.py --tag vX.Y.Z` passes
+   - Release notes are published from that file only; you do not run `glab release create` yourself
    - Do not pass ad-hoc inline `--notes`; it can drift from `docs/releases/vX.Y.Z.md`
    - File must carry what `scripts/verify-release-docs.py` requires (`Latest release: vX.Y.Z`, `## Install`, `## Highlights`, `## RELEASE VERDICT`) and the sections skill `release-workflow` § 4 prescribes, with valid install instructions (`scripts/install.sh --help` lists the `--platform` values)
-   - Use `scripts/verify-release-docs.py --tag vX.Y.Z` to validate locally before tag
+   - Run `scripts/verify-release-docs.py --tag vX.Y.Z` locally before the tag is cut
 
 2. **Release Task Sequencing:**
    - Release work (version bump, changelog, release notes) must be part of a release MR
-   - The release branch is merged to `develop` first and to `main` second, by merge request and without squash; tag creation happens AFTER both merges, because the drift gate fails a tag push while `main` is ahead of `develop`
+   - The release branch is merged to `develop` first and to `main` second, by merge request and without squash; tag creation (by the top-level session) happens AFTER both merges, because the drift gate fails a tag push while `main` is ahead of `develop`
    - Never tag ahead of a commit; ensure the tag commit is already in origin/develop and in origin/main
 
 3. **Release Blocking Conditions:**
-   - CI pipeline must be green on develop before cutting a release tag
+   - CI pipeline must be green on develop before the top-level session cuts a release tag
    - Security Gate must pass if security changes are in the release
    - No task matching the release scope remains in `docs/tasks/active-tasks.md`: each is `done` and archived in `docs/tasks/completed-tasks.md` (`AGENTS.md` § Task Protocol: `active-tasks.md` never holds a `done` row)
 
