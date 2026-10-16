@@ -9,9 +9,6 @@
 | T665 | Implement the T664 token-scope decision | devops-engineer | pending | P1 | T664 | 2026-10-16 |
 | T666 | Named GitLab tool sets for orchestrator and poc-orchestrator (SEC-T660-04) | devops-engineer | pending | P1 | — | 2026-10-16 |
 | T667 | Named GitLab tool sets for devops-engineer, release-manager and poc-devops-engineer | devops-engineer | pending | P2 | T666 | 2026-10-16 |
-| T668 | Golden realignment B under grant G-2 (prepare-release and /skillify cases) | qa-engineer | pending | P1 | — | 2026-10-16 |
-| T669 | Evaluator baseline v22 | orchestrator | pending | P1 | T668 | 2026-10-16 |
-| T670 | Promote orchestrator to stable | backend-developer | pending | P1 | T669 | 2026-10-16 |
 | T671 | Tracked-debt register | tech-lead | pending | P1 | — | 2026-10-16 |
 | T672 | Installer and generator robustness (tracked debt) | devops-engineer | pending | P2 | T671 | 2026-10-16 |
 | T673 | Test quality (tracked debt) | qa-engineer | pending | P2 | T671 | 2026-10-16 |

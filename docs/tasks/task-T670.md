@@ -2,13 +2,14 @@
 
 **ID:** T670
 **Owner:** backend-developer
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Tier:** standard
 **Depends on:** T669
 **Affects:** —
 **Created:** 2026-10-16
-**Completed:** —
+**Completed:** 2026-10-16
+**Independent re-run (plan §10 step 8, 2026-10-16, top-level session):** check-maturity.py --root implementation exit 0, 80 components, 0 failing, PASS agent/orchestrator (stable), agent/stable 28, no agent/experimental line; diff read: orchestrator.md changes only the maturity line; scorecard 34/30/0 and the evaluator hash (v22) clean.
 **Based on:**
 - `docs/plans/plan-123-post-release-follow-ups.md` (Task Decomposition item for T670; the section "Grant G-2" for T668 and T669)
 - `docs/checkpoints/checkpoint-038-release-v8.0.0.md` (section 3), `docs/releases/v8.0.0.md` (Known issues), the review artifacts named in the item

@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-15T19:50:21+02:00",
+  "generatedAt": "2026-10-16T11:15:00+02:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -297,8 +297,8 @@
       "category": "agent",
       "name": "Orchestrator",
       "path": "agents/orchestrator.md",
-      "checksum": "42c3c85b2ec86ce80cc5134d14579dbf42e40101c7041d5c759f0e367da578a5",
-      "maturity": "experimental",
+      "checksum": "3ad7ebf466ad6deaac75e3aa83938a1d37cdeee2bd45c2563e670ef4aa87ccc1",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
