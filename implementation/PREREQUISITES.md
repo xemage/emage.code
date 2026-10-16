@@ -3,7 +3,7 @@
 ## Required
 - **Node.js 18+** — for `scripts/sync.mjs` and for MCP servers launched via `npx`.
 - **Python 3.10+** — for `check.py`, `package.py`, and registry generation.
-- **Git 2.30+** — for worktree isolation, branch policies, and pack install from git URLs.
+- **Git 2.30+** — for worktree isolation, branch policies, and pack install from git URLs. The optional `poc-security-audit` server needs **Git 2.40+** (see below).
 
 ## Browser for the `playwright` server
 The `playwright` MCP server (`@playwright/mcp`) does not bundle a browser and does not download one on first use. Without it the first browser tool call fails (`Chromium distribution ... is not found`). Install the browser once, with the command pinned to the same version as the server entry:
@@ -35,6 +35,8 @@ If you need to test a local app, add a second entry of your own, named `playwrig
 ## Optional (extended MCP servers)
 - **uv** (provides `uvx`) — launches the `git` server (`uvx mcp-server-git@<pinned version>`). Install from <https://docs.astral.sh/uv/>.
 - **Docker** — runs the `github` server as a container pinned by digest (`docker run -i --rm ghcr.io/github/github-mcp-server@sha256:...`). The Docker daemon must be running and able to pull from `ghcr.io`.
+
+- **`poc-security-audit` server (PoC security scan; optional)** — needs Python `mcp==2.2.0` (`pip install -r implementation/runtime/security/requirements-mcp-server.txt`, in a virtual environment that the `python3` your assistant launches can use; the installer prints the command) and **Git 2.40 or newer** on `PATH`: an older git makes every call fail closed as `git_failed`. Its config is generated for every platform except GitHub Copilot (Claude Code also needs an allow rule in your own `.claude/settings.json`). Setup steps: the "Optional: the PoC security scan server" section of `README.md`.
 
 Start your assistant from the project root. The `filesystem` (`.`) and `git` (`--repository .`) servers resolve the path against the launch directory; Cline's configuration is global, so use an absolute path there. The `filesystem` server can read every file in the workspace, including `.env*` files and `.git`, and the `git` server exposes write tools.
 
@@ -74,7 +76,7 @@ From the repository root:
 ```bash
 node --version           # ≥ 18
 python3 --version        # ≥ 3.10
-git --version            # ≥ 2.30
+git --version            # ≥ 2.30 (≥ 2.40 for the poc-security-audit server)
 make sync && make verify
 ```
 

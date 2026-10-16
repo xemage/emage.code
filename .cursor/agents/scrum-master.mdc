@@ -1,7 +1,7 @@
 ---
 name: "Scrum Master"
 description: "Use when planning sprints, tracking progress, managing milestones, facilitating agile ceremonies, breaking down epics into tasks, creating GitLab issues and milestones, or resolving team impediments."
-tools: [read, search, todo, web, mcp__gitlab]
+tools: [read, search, todo, web, mcp__gitlab__create_issue, mcp__gitlab__update_issue, mcp__gitlab__list_issues, mcp__gitlab__get_issue, mcp__gitlab__list_issue_discussions, mcp__gitlab__create_issue_note, mcp__gitlab__create_issue_link, mcp__gitlab__list_issue_links, mcp__gitlab__get_issue_link, mcp__gitlab__list_labels, mcp__gitlab__get_label, mcp__gitlab__create_label, mcp__gitlab__update_label, mcp__gitlab__list_milestones, mcp__gitlab__get_milestone, mcp__gitlab__create_milestone, mcp__gitlab__edit_milestone, mcp__gitlab__get_milestone_issue, mcp__gitlab__get_milestone_merge_requests, mcp__gitlab__get_milestone_burndown_events, mcp__gitlab__list_merge_requests, mcp__gitlab__get_merge_request, mcp__gitlab__list_project_members, mcp__gitlab__discover_tools]
 ---
 
 # Scrum Master

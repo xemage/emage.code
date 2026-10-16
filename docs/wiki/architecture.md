@@ -6,15 +6,15 @@ emage.code v2 is built on **six layers**, each with a clear responsibility.
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  1. Commands              16 slash commands (user entrypoint) │
+│  1. Commands              19 slash commands (user entrypoint) │
 ├──────────────────────────────────────────────────────────────┤
 │  2. Orchestration         @orchestrator + @poc-orchestrator   │
 │                           Plan → Approve → Execute lifecycle  │
 ├──────────────────────────────────────────────────────────────┤
-│  3. Agents                27 specialists                      │
+│  3. Agents                28 specialists                      │
 │                           backend / frontend / qa / sec / …   │
 ├──────────────────────────────────────────────────────────────┤
-│  4. Skills                22 reusable capabilities            │
+│  4. Skills                27 reusable capabilities            │
 │                           code-review, validation-gates, …    │
 ├──────────────────────────────────────────────────────────────┤
 │  5. Memory                docs/* (artifacts, ADRs, tasks) +   │

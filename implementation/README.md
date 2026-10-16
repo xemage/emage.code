@@ -1,9 +1,9 @@
 # emage.code implementation
 
 Canonical knowledge and platform projections for the current release stream
-(**v7.0.1**).
+(**v8.0.0**).
 
-Latest release: v7.0.1
+Latest release: v8.0.0
 
 ## Install
 
@@ -51,9 +51,14 @@ installer never writes. Details:
 cp -r implementation/.cursor         <your-project>/.cursor/   # example: Cursor
 cp    implementation/AGENTS.md         <your-project>/
 cp -r implementation/docs            <your-project>/docs/
+# MCP server runtime source (the installer skips it only under --projections-only);
+# leave out any _index/ and __pycache__/ folders
+mkdir -p <your-project>/implementation/runtime && touch <your-project>/implementation/__init__.py
+cp -r implementation/runtime/memory   implementation/runtime/security \
+      implementation/runtime/handoff  <your-project>/implementation/runtime/
 ```
 
-Per-release notes: [`docs/releases/v7.0.1.md`](../docs/releases/v7.0.1.md).
+Per-release notes: [`docs/releases/v8.0.0.md`](../docs/releases/v8.0.0.md).
 
 ## Validation commands
 
