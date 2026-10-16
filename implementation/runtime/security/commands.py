@@ -39,16 +39,25 @@ silently fix, a real gap in the design document:
 """
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
 
-from implementation.runtime.security.validation import resolve_and_validate_path
+from implementation.runtime.security.validation import SENSITIVE_NAME_GLOBS, resolve_and_validate_path
 
 MAX_PATTERN_LENGTH = 512
 MAX_GLOB_LENGTH = 256
 
+# T675 (SEC-T650-05, SEC-T675-01): `grep_content` never reads environment, key or credential
+# files or `.git` (`validation.SENSITIVE_NAME_GLOBS`). These globs follow the caller's
+# `--glob` on the command line, and a later `rg` glob takes precedence, so no `path_glob`
+# (not even `**/*`, which would otherwise whitelist an ignored `.env`) can bring such a file
+# or directory back; `--iglob` makes the match case-blind. `validation.py` refuses the same
+# names in the resolved path itself, so a `root_dir` inside such a directory is rejected too.
+DENY_GLOBS = [arg for glob in SENSITIVE_NAME_GLOBS for arg in ("--iglob", f"!**/{glob}")]
+
 
 def build_npm_audit_argv(
-    package_json_dir: str, *, allowed_root: Path
+    package_json_dir: str, *, allowed_root: Path, extra_roots: Sequence[Path] = ()
 ) -> tuple[list[str], str]:
     """§2.1: `npm audit --json`, run with `cwd=<validated package_json_dir>`.
 
@@ -61,6 +70,7 @@ def build_npm_audit_argv(
     validated_dir = resolve_and_validate_path(
         package_json_dir,
         allowed_root=allowed_root,
+        extra_roots=extra_roots,
         must_be_dir=True,
         must_contain="package.json",
     )
@@ -68,7 +78,9 @@ def build_npm_audit_argv(
     return argv, str(validated_dir)
 
 
-def build_pip_audit_argv(requirements_path: str, *, allowed_root: Path) -> list[str]:
+def build_pip_audit_argv(
+    requirements_path: str, *, allowed_root: Path, extra_roots: Sequence[Path] = ()
+) -> list[str]:
     """§2.2: `pip-audit --format json -r <requirements_path>`.
 
     `requirements_path` occupies exactly the fifth element of this five-element `argv`
@@ -77,13 +89,14 @@ def build_pip_audit_argv(requirements_path: str, *, allowed_root: Path) -> list[
     validated_path = resolve_and_validate_path(
         requirements_path,
         allowed_root=allowed_root,
+        extra_roots=extra_roots,
         must_be_file=True,
     )
     return ["pip-audit", "--format", "json", "-r", str(validated_path)]
 
 
 def build_dotnet_list_vulnerable_argv(
-    project_or_solution_path: str, *, allowed_root: Path
+    project_or_solution_path: str, *, allowed_root: Path, extra_roots: Sequence[Path] = ()
 ) -> list[str]:
     """§2.3: `dotnet list <path> package --vulnerable --format json`.
 
@@ -93,6 +106,7 @@ def build_dotnet_list_vulnerable_argv(
     validated_path = resolve_and_validate_path(
         project_or_solution_path,
         allowed_root=allowed_root,
+        extra_roots=extra_roots,
         must_be_file=True,
         allowed_suffixes={".csproj", ".fsproj", ".vbproj", ".sln"},
     )
@@ -105,9 +119,10 @@ def build_grep_content_argv(
     root_dir: str = ".",
     *,
     allowed_root: Path,
+    extra_roots: Sequence[Path] = (),
 ) -> tuple[list[str], str]:
     """§2.4: `rg --json --no-follow --max-filesize 5M -e <pattern> --glob <path_glob>
-    <root_dir>`.
+    <DENY_GLOBS> <root_dir>` (`DENY_GLOBS`: no `.env*` file or directory is ever searched).
 
     `pattern` and `path_glob` each occupy exactly one `argv` element (following the `-e`
     and `--glob` flags respectively) -- neither is ever concatenated into a string later
@@ -124,6 +139,7 @@ def build_grep_content_argv(
     validated_dir = resolve_and_validate_path(
         root_dir,
         allowed_root=allowed_root,
+        extra_roots=extra_roots,
         must_exist=True,
         must_be_dir=True,
     )
@@ -131,6 +147,7 @@ def build_grep_content_argv(
         "rg", "--json", "--no-follow", "--max-filesize", "5M",
         "-e", pattern,
         "--glob", path_glob,
+        *DENY_GLOBS,
         str(validated_dir),
     ]
     return argv, str(validated_dir)

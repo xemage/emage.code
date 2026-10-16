@@ -26,6 +26,7 @@ runs in three tiers:
 from __future__ import annotations
 
 import ast
+import os
 import shutil
 import sys
 import tempfile
@@ -94,6 +95,17 @@ def _mcp_sdk_available() -> bool:
 
 
 MCP_AVAILABLE = _mcp_sdk_available()
+
+
+def _required_unless_missing(condition: bool, reason: str):
+    """`skipUnless` locally; under CI (env `CI` set) a missing dependency FAILS the test.
+
+    The CI `unit-tests` job installs ripgrep and `mcp==2.2.0`, so these tests must run
+    there; a silent skip would hide a broken job image (SEC-T675-04).
+    """
+    if os.environ.get("CI"):
+        return lambda item: item
+    return unittest.skipUnless(condition, reason)
 
 
 # ---------------------------------------------------------------------------
@@ -167,6 +179,9 @@ class CommandsArgvUnitTests(unittest.TestCase):
                 "rg", "--json", "--no-follow", "--max-filesize", "5M",
                 "-e", "TODO",
                 "--glob", "*.py",
+                "--iglob", "!**/.env*", "--iglob", "!**/*.env", "--iglob", "!**/*.pem",
+                "--iglob", "!**/*.key", "--iglob", "!**/id_rsa*", "--iglob", "!**/id_ed25519*",
+                "--iglob", "!**/credentials.json", "--iglob", "!**/secrets.y*ml", "--iglob", "!**/.git",
                 str(self.root.resolve()),
             ],
         )
@@ -362,7 +377,7 @@ class ProjectedClaudeCodeAgentGrantTests(unittest.TestCase):
 # 3. Live adversarial subprocess-over-stdio proof.
 # ---------------------------------------------------------------------------
 
-@unittest.skipUnless(
+@_required_unless_missing(
     MCP_AVAILABLE,
     "mcp SDK not installed -- see implementation/runtime/security/requirements-mcp-server.txt",
 )
@@ -431,7 +446,7 @@ class AdversarialToolScopingProbeTests(unittest.TestCase):
     # -- (b) a malicious parameter value reaches the real command as one literal argv
     #    element, never shell-interpreted -- proved via a real rg subprocess. --
 
-    @unittest.skipUnless(_which("rg"), "rg binary not installed in this environment")
+    @_required_unless_missing(_which("rg"), "rg binary not installed in this environment")
     def test_malicious_grep_pattern_never_shell_interpreted(self):
         (self.workspace / "f.txt").write_text("hello world\n")
         marker = Path(tempfile.gettempdir()) / f"t497-proof-marker-{uuid.uuid4().hex}.txt"
@@ -463,7 +478,7 @@ class AdversarialToolScopingProbeTests(unittest.TestCase):
         self.assertFalse(result.is_error, msg=f"grep_content call unexpectedly errored: "
                                                f"{result}")
 
-    @unittest.skipUnless(_which("rg"), "rg binary not installed in this environment")
+    @_required_unless_missing(_which("rg"), "rg binary not installed in this environment")
     def test_grep_content_still_answers_a_real_legitimate_query(self):
         """Sanity check: the rejections/non-injection above are real scoping/safety
         behavior, not the server being broken outright."""
@@ -504,6 +519,44 @@ class AdversarialToolScopingProbeTests(unittest.TestCase):
         result = self._run(run)
         self.assertTrue(result.is_error,
                          msg="root_dir='/etc' (outside allowed_root) was NOT rejected")
+
+    @_required_unless_missing(_which("rg"), "rg binary not installed in this environment")
+    def test_extra_root_flag_lets_the_live_server_scan_a_worktree_but_not_its_env_file(self):
+        """T675: a root given at launch (`--extra-root`) is searchable; its `.env` is not; a
+        third directory is still rejected."""
+        from mcp import ClientSession, StdioServerParameters
+        from mcp.client.stdio import stdio_client
+
+        worktree = Path(self.tmp.name).resolve().parent / f"audit-worktree-{uuid.uuid4().hex}"
+        worktree.mkdir()
+        self.addCleanup(shutil.rmtree, worktree, True)
+        (worktree / "code.txt").write_text("needle\n")
+        (worktree / ".env").write_text("needle\n")
+        params = StdioServerParameters(
+            command=sys.executable,
+            args=["-m", "implementation.runtime.security.audit_server",
+                  "--allowed-root", str(self.workspace), "--extra-root", str(worktree)],
+            cwd=str(REPO_ROOT),
+        )
+
+        async def run():
+            async with stdio_client(params) as (read, write):
+                async with ClientSession(read, write) as session:
+                    await session.initialize()
+                    ok = await session.call_tool(
+                        "grep_content",
+                        {"pattern": "needle", "path_glob": "**/*", "root_dir": str(worktree)})
+                    denied = await session.call_tool(
+                        "grep_content",
+                        {"pattern": "needle", "path_glob": "**/*", "root_dir": "/etc"})
+                    return ok, denied
+
+        ok, denied = self._run(run)
+        self.assertFalse(ok.is_error, msg=f"{ok}")
+        stdout = _tool_result_dict(ok).get("stdout") or ""
+        self.assertIn("code.txt", stdout)
+        self.assertNotIn(".env", stdout)
+        self.assertTrue(denied.is_error)
 
     # -- Real end-to-end exercise of the other three tools where binaries are present. --
 
@@ -597,6 +650,451 @@ class AdversarialToolScopingProbeTests(unittest.TestCase):
         inner = _tool_result_dict(result)
         self.assertIn("error", inner)
         self.assertIn("executable not found", inner.get("error") or "")
+
+
+# ---------------------------------------------------------------------------
+# 4. T675 (SEC-T650-05): extra roots for a git worktree, and no `.env*` search.
+# ---------------------------------------------------------------------------
+
+import json  # noqa: E402
+import subprocess  # noqa: E402
+
+from implementation.runtime.security import executor  # noqa: E402
+from implementation.runtime.security.validation import (  # noqa: E402
+    parse_extra_roots,
+    parse_worktree_list,
+)
+
+
+def _rg_paths(argv: list[str]) -> set[str]:
+    """Run the built `argv` for real and return the matched file names."""
+    out = executor.run_fixed_argv(argv)
+    names = set()
+    for line in (out.get("stdout") or "").splitlines():
+        event = json.loads(line)
+        if event.get("type") == "match":
+            names.add(Path(event["data"]["path"]["text"]).name)
+    return names
+
+
+@_required_unless_missing(_which("rg"), "rg binary not installed in this environment")
+class GrepContentNeverSearchesEnvFilesTests(unittest.TestCase):
+    """The deny globs keep every `.env*` file out of `grep_content`, whatever `path_glob` says."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name).resolve()
+        (self.root / "sub").mkdir()
+        (self.root / ".gitignore").write_text(".env*\n")  # ignored, like a local .env
+        for name in (".env", ".env.local", "sub/.ENV", "sub/.env.production", "sub/ok.txt"):
+            (self.root / name).write_text("MARKER=1\n")
+        (self.root / ".envdir").mkdir()
+        (self.root / ".envdir" / "inside.txt").write_text("MARKER=1\n")
+
+    def _grep(self, glob: str) -> set[str]:
+        argv, _ = commands.build_grep_content_argv("MARKER", glob, str(self.root), allowed_root=self.root)
+        return _rg_paths(argv)
+
+    def test_wildcard_glob_finds_only_the_non_env_file(self):
+        for glob in ("**/*", "*", ".env*", ".env", "**/.env.*", "!nothing"):
+            with self.subTest(glob=glob):
+                self.assertEqual(self._grep(glob) - {"ok.txt"}, set())
+
+    def test_the_search_itself_works(self):
+        self.assertEqual(self._grep("**/*"), {"ok.txt"})
+
+    def test_deny_globs_come_after_the_callers_glob(self):
+        argv, _ = commands.build_grep_content_argv("x", "**/*", str(self.root), allowed_root=self.root)
+        self.assertGreater(argv.index("--iglob"), argv.index("--glob"))
+        self.assertEqual(argv[-1], str(self.root))
+
+
+class ExtraRootsTests(unittest.TestCase):
+    """Launch-time extra roots (a worktree) are accepted; escapes from any root are not."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        base = Path(self.tmp.name).resolve()
+        self.root = base / "primary"
+        self.worktree = base / "worktrees" / "agent-x"
+        self.other = base / "elsewhere"
+        for d in (self.root, self.worktree, self.other):
+            d.mkdir(parents=True)
+
+    def test_a_directory_outside_the_primary_root_is_rejected_without_extra_roots(self):
+        with self.assertRaises(PathValidationError):
+            commands.build_grep_content_argv("x", "*", str(self.worktree), allowed_root=self.root)
+
+    def test_a_worktree_extra_root_is_accepted(self):
+        argv, cwd = commands.build_grep_content_argv(
+            "x", "*", str(self.worktree), allowed_root=self.root, extra_roots=[self.worktree]
+        )
+        self.assertEqual(Path(cwd), self.worktree)
+        self.assertEqual(argv[-1], str(self.worktree))
+
+    def test_a_sibling_of_the_extra_root_is_still_rejected(self):
+        with self.assertRaises(PathValidationError):
+            commands.build_grep_content_argv(
+                "x", "*", str(self.other), allowed_root=self.root, extra_roots=[self.worktree]
+            )
+
+    def test_traversal_and_symlink_escapes_from_an_extra_root_are_rejected(self):
+        with self.assertRaises(PathValidationError):
+            commands.build_grep_content_argv(
+                "x", "*", str(self.worktree / ".." / "elsewhere"),
+                allowed_root=self.root, extra_roots=[self.worktree],
+            )
+        (self.worktree / "link").symlink_to(self.other)
+        with self.assertRaises(PathValidationError):
+            commands.build_grep_content_argv(
+                "x", "*", str(self.worktree / "link"), allowed_root=self.root, extra_roots=[self.worktree],
+            )
+
+    def test_the_other_three_builders_accept_the_extra_root_too(self):
+        (self.worktree / "package.json").write_text("{}")
+        (self.worktree / "r.txt").write_text("")
+        (self.worktree / "a.csproj").write_text("")
+        kwargs = {"allowed_root": self.root, "extra_roots": [self.worktree]}
+        self.assertEqual(commands.build_npm_audit_argv(str(self.worktree), **kwargs)[1], str(self.worktree))
+        self.assertIn(str(self.worktree / "r.txt"), commands.build_pip_audit_argv(str(self.worktree / "r.txt"), **kwargs))
+        self.assertIn(
+            str(self.worktree / "a.csproj"),
+            commands.build_dotnet_list_vulnerable_argv(str(self.worktree / "a.csproj"), **kwargs),
+        )
+
+    def test_parse_extra_roots_refuses_the_filesystem_root_and_missing_directories(self):
+        self.assertEqual(parse_extra_roots([str(self.worktree), ""]), [self.worktree])
+        for bad in ("/", str(self.worktree / "missing")):
+            with self.subTest(root=bad), self.assertRaises(PathValidationError):
+                parse_extra_roots([bad])
+
+    def test_parse_worktree_list_keeps_only_existing_absolute_directories(self):
+        porcelain = (
+            f"worktree {self.root}\nHEAD abc\nbranch refs/heads/develop\n\n"
+            f"worktree {self.worktree}\nHEAD def\ndetached\n\n"
+            f"worktree {self.root / 'gone'}\nHEAD 000\nprunable gitdir file points to non-existent location\n\n"
+            'worktree "/odd\\nname"\n\nworktree relative/path\n'
+        )
+        self.assertEqual(parse_worktree_list(porcelain), [self.root, self.worktree])
+
+
+@_required_unless_missing(MCP_AVAILABLE and _which("git"), "needs the mcp SDK and git")
+class GitWorktreeRootsTests(unittest.TestCase):
+    """`--allow-git-worktrees` reads the worktree list of the allowed root's repository."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        base = Path(self.tmp.name).resolve()
+        self.repo = base / "repo"
+        self.repo.mkdir()
+        env_free = ["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid"]
+        for args in (["init", "-q", "-b", "main"], ["commit", "-q", "--allow-empty", "-m", "init"]):
+            subprocess.run([*env_free, "-C", str(self.repo), *args], check=True, capture_output=True)
+        self.worktree = base / "worktrees" / "wt"
+        subprocess.run(
+            [*env_free, "-C", str(self.repo), "worktree", "add", "-q", "--detach", str(self.worktree)],
+            check=True, capture_output=True,
+        )
+
+    def test_git_worktree_roots_lists_the_linked_worktree(self):
+        from implementation.runtime.security import audit_server
+        self.assertIn(self.worktree, audit_server.git_worktree_roots(self.repo))
+
+    def test_a_subdirectory_as_allowed_root_does_not_admit_the_repository_root(self):
+        """SEC-T675-02: the main worktree (an ancestor of the allowed root) is never a root."""
+        from implementation.runtime.security import audit_server
+        sub = self.repo / "sub"
+        sub.mkdir()
+        roots = audit_server.git_worktree_roots(sub)
+        self.assertNotIn(self.repo, roots)
+        self.assertIn(self.worktree, roots)
+
+    def test_not_a_repository_yields_no_roots(self):
+        from implementation.runtime.security import audit_server
+        outside = Path(self.tmp.name).resolve() / "plain"
+        outside.mkdir()
+        self.assertEqual(audit_server.git_worktree_roots(outside), [])
+
+
+# ---------------------------------------------------------------------------
+# 5. T675 review round (SEC-T675-01, -02, -04): sensitive names, broad roots, server wiring.
+# ---------------------------------------------------------------------------
+
+from unittest import mock  # noqa: E402
+
+from implementation.runtime.security.validation import (  # noqa: E402
+    SENSITIVE_NAME_GLOBS,
+    root_is_too_broad,
+)
+
+SENSITIVE_PATHS = (
+    ".env", ".env.example", ".envs/.production", "prod.env", "keys/server.pem", "keys/tls.KEY",
+    "ssh/id_rsa", "ssh/id_rsa.pub", "ssh/id_ed25519", "cloud/credentials.json", "cfg/secrets.yaml",
+    "cfg/secrets.yml", ".git/config", ".ENV",
+)
+
+
+class SensitivePathTests(unittest.TestCase):
+    """Every tool refuses a path that passes through a sensitive name below the matched root."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name).resolve()
+        for rel in SENSITIVE_PATHS:
+            (self.root / rel).parent.mkdir(parents=True, exist_ok=True)
+            (self.root / rel).write_text("x\n")
+        (self.root / ".envs" / ".production").unlink()
+        (self.root / ".envs" / ".production").mkdir()
+        (self.root / ".envs" / ".production" / "package.json").write_text("{}")
+        (self.root / "ok").mkdir()
+        (self.root / "ok" / "requirements.txt").write_text("")
+        (self.root / "ok" / "package.json").write_text("{}")
+        (self.root / "ok" / "app.csproj").write_text("")
+
+    def test_the_globs_cover_the_documented_names(self):
+        self.assertEqual(
+            set(SENSITIVE_NAME_GLOBS),
+            {".env*", "*.env", "*.pem", "*.key", "id_rsa*", "id_ed25519*",
+             "credentials.json", "secrets.y*ml", ".git"},
+        )
+
+    def test_grep_root_dir_in_or_below_a_sensitive_directory_is_refused(self):
+        for rel in (".envs", ".envs/.production", ".git"):
+            with self.subTest(root_dir=rel), self.assertRaisesRegex(PathValidationError, "sensitive name"):
+                commands.build_grep_content_argv("x", "*", str(self.root / rel), allowed_root=self.root)
+
+    def test_the_envs_production_layout_is_refused_by_every_tool(self):
+        production = self.root / ".envs" / ".production"
+        kwargs = {"allowed_root": self.root}
+        with self.assertRaisesRegex(PathValidationError, "sensitive name"):
+            commands.build_npm_audit_argv(str(production), **kwargs)
+        with self.assertRaisesRegex(PathValidationError, "sensitive name"):
+            commands.build_pip_audit_argv(str(production / "package.json"), **kwargs)
+        with self.assertRaisesRegex(PathValidationError, "sensitive name"):
+            commands.build_dotnet_list_vulnerable_argv(str(production / "package.json"), **kwargs)
+
+    def test_a_file_that_is_itself_sensitive_is_refused_by_the_file_tools(self):
+        for rel in ("prod.env", "keys/server.pem", "cfg/secrets.yaml", "ssh/id_rsa"):
+            with self.subTest(path=rel), self.assertRaisesRegex(PathValidationError, "sensitive name"):
+                commands.build_pip_audit_argv(str(self.root / rel), allowed_root=self.root)
+
+    def test_a_symlink_into_a_sensitive_directory_is_refused(self):
+        (self.root / "innocent").symlink_to(self.root / ".envs")
+        with self.assertRaisesRegex(PathValidationError, "sensitive name"):
+            commands.build_grep_content_argv("x", "*", str(self.root / "innocent"), allowed_root=self.root)
+
+    def test_the_match_is_case_blind(self):
+        for rel in ("Keys", "ID_RSA_DIR", "Prod.ENV"):
+            (self.root / rel).mkdir()
+        (self.root / "Keys" / "TLS.PEM").write_text("x")
+        for rel in ("Keys/TLS.PEM", "ID_RSA_DIR", "Prod.ENV"):
+            with self.subTest(path=rel), self.assertRaisesRegex(PathValidationError, "sensitive name"):
+                commands.build_pip_audit_argv(str(self.root / rel), allowed_root=self.root) if rel.endswith("PEM") \
+                    else commands.build_grep_content_argv("x", "*", str(self.root / rel), allowed_root=self.root)
+
+    def test_ordinary_paths_still_pass(self):
+        kwargs = {"allowed_root": self.root}
+        commands.build_grep_content_argv("x", "*", str(self.root / "ok"), **kwargs)
+        commands.build_npm_audit_argv(str(self.root / "ok"), **kwargs)
+        commands.build_pip_audit_argv(str(self.root / "ok" / "requirements.txt"), **kwargs)
+        commands.build_dotnet_list_vulnerable_argv(str(self.root / "ok" / "app.csproj"), **kwargs)
+
+    def test_only_components_below_the_matched_root_count(self):
+        """A workspace that itself lives under a `.envs` or `.git` directory is not refused."""
+        nested = self.root / ".envs" / "work"
+        (nested / "src").mkdir(parents=True)
+        commands.build_grep_content_argv("x", "*", str(nested / "src"), allowed_root=nested)
+        with self.assertRaisesRegex(PathValidationError, "outside the allowed root"):
+            commands.build_grep_content_argv("x", "*", str(self.root), allowed_root=nested)
+
+    def test_an_extra_root_is_matched_before_the_check(self):
+        extra = self.root / "ok"
+        with self.assertRaisesRegex(PathValidationError, "sensitive name"):
+            commands.build_grep_content_argv(
+                "x", "*", str(self.root / ".envs"), allowed_root=self.root, extra_roots=[extra])
+
+
+@_required_unless_missing(_which("rg"), "rg binary not installed in this environment")
+class GrepDenyGlobsLiveTests(unittest.TestCase):
+    """The rg deny globs hide every sensitive name even when the validation sees only the root."""
+
+    def test_no_sensitive_file_is_ever_matched(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            for rel in SENSITIVE_PATHS:
+                (root / rel).parent.mkdir(parents=True, exist_ok=True)
+                (root / rel).write_text("MARKER\n")
+            (root / "visible.txt").write_text("MARKER\n")
+            for glob in ("**/*", "*", "!nothing", ".env*", "**/.git/**"):
+                with self.subTest(glob=glob):
+                    argv, _ = commands.build_grep_content_argv("MARKER", glob, str(root), allowed_root=root)
+                    self.assertEqual(_rg_paths(argv) - {"visible.txt"}, set())
+            argv, _ = commands.build_grep_content_argv("MARKER", "**/*", str(root), allowed_root=root)
+            self.assertEqual(_rg_paths(argv), {"visible.txt"})
+
+
+class BroadRootTests(unittest.TestCase):
+    """SEC-T675-02: `/`, `$HOME`, its ancestors and ancestors of the allowed root are never extra roots."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.base = Path(self.tmp.name).resolve()
+        self.home = self.base / "home" / "user"
+        self.allowed = self.home / "code" / "repo"
+        self.sibling = self.home / "code" / "worktrees" / "wt"
+        for d in (self.allowed, self.sibling):
+            d.mkdir(parents=True)
+        patcher = mock.patch.object(Path, "home", return_value=self.home)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_root_is_too_broad(self):
+        for broad in (Path("/"), self.home, self.home.parent, self.base, self.allowed.parent):
+            with self.subTest(path=str(broad)):
+                self.assertTrue(root_is_too_broad(broad, self.allowed))
+        for fine in (self.allowed, self.sibling, self.home / "code" / "worktrees"):
+            with self.subTest(path=str(fine)):
+                self.assertFalse(root_is_too_broad(fine, self.allowed))
+
+    def test_home_and_the_filesystem_root_are_broad_whatever_the_allowed_root(self):
+        elsewhere = self.base / "elsewhere" / "repo"
+        elsewhere.mkdir(parents=True)
+        for broad in (Path("/"), self.home, self.home.parent):
+            with self.subTest(path=str(broad)):
+                self.assertTrue(root_is_too_broad(broad, elsewhere))
+                self.assertTrue(root_is_too_broad(broad, None))
+        self.assertFalse(root_is_too_broad(self.sibling, elsewhere))
+
+    def test_parse_extra_roots_refuses_broad_roots(self):
+        for broad in (self.home, self.home.parent, self.allowed.parent, "/"):
+            with self.subTest(root=str(broad)), self.assertRaisesRegex(PathValidationError, "not /, \\$HOME"):
+                parse_extra_roots([str(broad)], self.allowed)
+        self.assertEqual(parse_extra_roots([str(self.sibling)], self.allowed), [self.sibling])
+
+    def test_parse_worktree_list_skips_broad_roots(self):
+        porcelain = "".join(f"worktree {p}\nHEAD abc\n\n" for p in (self.allowed.parent, self.home, self.sibling))
+        self.assertEqual(parse_worktree_list(porcelain, self.allowed), [self.sibling])
+
+    def test_a_worktree_list_naming_an_ancestor_does_not_widen_the_server(self):
+        """The end-to-end shape of the finding: git reports `/`-like roots, grep_content still refuses."""
+        porcelain = f"worktree {self.allowed.parent}\nHEAD abc\n\nworktree {self.sibling}\nHEAD def\n\n"
+        roots = parse_worktree_list(porcelain, self.allowed)
+        with self.assertRaises(PathValidationError):
+            commands.build_grep_content_argv("x", "*", str(self.allowed.parent), allowed_root=self.allowed, extra_roots=roots)
+        commands.build_grep_content_argv("x", "*", str(self.sibling), allowed_root=self.allowed, extra_roots=roots)
+
+
+@_required_unless_missing(MCP_AVAILABLE and _which("git") and _which("rg"), "needs the mcp SDK, git and rg")
+class ServerWiringTests(unittest.TestCase):
+    """A real server process: `--allow-git-worktrees` and `SECURITY_AUDIT_EXTRA_ROOTS` take effect."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        base = Path(self.tmp.name).resolve()
+        self.repo = base / "repo"
+        self.repo.mkdir()
+        git = ["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid", "-C", str(self.repo)]
+        for args in (["init", "-q", "-b", "main"], ["commit", "-q", "--allow-empty", "-m", "init"]):
+            subprocess.run([*git, *args], check=True, capture_output=True)
+        self.worktree = base / "worktrees" / "wt"
+        subprocess.run([*git, "worktree", "add", "-q", "--detach", str(self.worktree)], check=True, capture_output=True)
+        (self.worktree / "code.txt").write_text("needle\n")
+        (self.worktree / ".env").write_text("needle\n")
+        self.plain = base / "plain"
+        self.plain.mkdir()
+        (self.plain / "code.txt").write_text("needle\n")
+
+    def _call(self, extra_args: list[str], root_dir: Path, env: dict[str, str] | None = None):
+        import anyio
+        from mcp import ClientSession, StdioServerParameters
+        from mcp.client.stdio import stdio_client
+
+        params = StdioServerParameters(
+            command=sys.executable,
+            args=["-m", "implementation.runtime.security.audit_server", "--allowed-root", str(self.repo), *extra_args],
+            cwd=str(REPO_ROOT),
+            env={**os.environ, **(env or {})},
+        )
+
+        async def run():
+            async with stdio_client(params) as (read, write):
+                async with ClientSession(read, write) as session:
+                    await session.initialize()
+                    return await session.call_tool(
+                        "grep_content", {"pattern": "needle", "path_glob": "**/*", "root_dir": str(root_dir)})
+
+        return anyio.run(run)
+
+    def test_without_options_a_worktree_is_refused(self):
+        self.assertTrue(self._call([], self.worktree).is_error)
+
+    def test_allow_git_worktrees_accepts_the_worktree_but_not_an_unlisted_directory(self):
+        ok = self._call(["--allow-git-worktrees"], self.worktree)
+        self.assertFalse(ok.is_error, msg=str(ok))
+        stdout = _tool_result_dict(ok).get("stdout") or ""
+        self.assertIn("code.txt", stdout)
+        self.assertNotIn(".env", stdout)
+        self.assertTrue(self._call(["--allow-git-worktrees"], self.plain).is_error)
+
+    def test_the_repository_root_above_a_subdirectory_allowed_root_is_not_admitted(self):
+        sub = self.repo / "sub"
+        sub.mkdir()
+        (self.repo / "top.txt").write_text("needle\n")
+        import anyio
+        from mcp import ClientSession, StdioServerParameters
+        from mcp.client.stdio import stdio_client
+
+        params = StdioServerParameters(
+            command=sys.executable,
+            args=["-m", "implementation.runtime.security.audit_server", "--allowed-root", str(sub),
+                  "--allow-git-worktrees"],
+            cwd=str(REPO_ROOT),
+        )
+
+        async def run():
+            async with stdio_client(params) as (read, write):
+                async with ClientSession(read, write) as session:
+                    await session.initialize()
+                    return await session.call_tool(
+                        "grep_content", {"pattern": "needle", "path_glob": "**/*", "root_dir": str(self.repo)})
+
+        self.assertTrue(anyio.run(run).is_error)
+
+    def test_the_environment_variable_adds_a_root(self):
+        env = {"SECURITY_AUDIT_EXTRA_ROOTS": os.pathsep.join(["", str(self.plain)])}
+        ok = self._call([], self.plain, env)
+        self.assertFalse(ok.is_error, msg=str(ok))
+        self.assertIn("code.txt", _tool_result_dict(ok).get("stdout") or "")
+        self.assertTrue(self._call([], self.worktree, env).is_error)  # only the listed root was added
+
+    def test_an_environment_root_that_is_too_broad_stops_the_server_at_launch(self):
+        for broad in ("/", str(self.repo.parent)):
+            with self.subTest(root=broad):
+                done = subprocess.run(
+                    [sys.executable, "-m", "implementation.runtime.security.audit_server",
+                     "--allowed-root", str(self.repo)],
+                    cwd=str(REPO_ROOT), env={**os.environ, "SECURITY_AUDIT_EXTRA_ROOTS": broad},
+                    input="", capture_output=True, text=True, timeout=60,
+                )
+                self.assertNotEqual(done.returncode, 0)
+                self.assertIn("PathValidationError", done.stderr)
+
+
+class CiFailsInsteadOfSkippingTests(unittest.TestCase):
+    def test_under_ci_a_missing_dependency_is_not_a_skip(self):
+        with mock.patch.dict(os.environ, {"CI": "true"}):
+            decorated = _required_unless_missing(False, "missing")(lambda: None)
+        self.assertFalse(getattr(decorated, "__unittest_skip__", False))
+        with mock.patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("CI", None)
+            skipped = _required_unless_missing(False, "missing")(lambda: None)
+        self.assertTrue(getattr(skipped, "__unittest_skip__", False))
 
 
 if __name__ == "__main__":

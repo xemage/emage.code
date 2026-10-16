@@ -9,6 +9,20 @@ drift signal: GitLab's merge-via-API can materialize a new commit object with an
 tree/message rather than reusing the source branch's tip commit as a direct parent, producing a
 false "not an ancestor" result even for a content-correct, freshly performed release/* -> main
 merge. See docs/tasks/task-T331.md and docs/plans/plan-019-main-develop-drift-detection.md §3.1.
+
+Limits (T675, QA-T648-03 / TL-T649-13):
+
+* The check compares what the two refs *contain*. Run offline, or with two refs that
+  hold the same README.md (a fresh clone whose ``origin/main`` and ``origin/develop`` were
+  not fetched, or the same ref twice), it reports ``releases_behind=0`` and passes
+  without having looked at the real remote ``main``: such a run proves nothing. Fetch
+  both branches first (the CI jobs do: ``git fetch origin main develop``).
+* ``GRACE_RELEASES = 1`` is unchanged: a tag pushed while ``main`` is exactly one release
+  behind still passes. That is a tolerance for the window between the two release MRs,
+  not a step of the procedure: the duty is that the release branch is merged to
+  ``develop`` and then to ``main`` BEFORE the tag is pushed (CONTRIBUTING.md § Cutting a
+  release, steps 5 to 7). The gate prints a NOTE whenever ``main`` is behind, so the
+  tag pipeline's output shows it.
 """
 
 from __future__ import annotations
@@ -108,6 +122,12 @@ def evaluate(
         )
         return 1, lines
 
+    if behind > 0:
+        lines.append(
+            f"drift-check: NOTE — main is {behind} release behind develop (grace={GRACE_RELEASES}). "
+            "Duty: merge release/vX.Y.Z to develop and to main BEFORE pushing the tag; this PASS "
+            "is a tolerance, not a confirmation that main carries the release."
+        )
     lines.append("drift-check: PASS — main is within the allowed 1-release grace window")
     return 0, lines
 

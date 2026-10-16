@@ -17,7 +17,12 @@ fake ``git log`` returns merge subjects unless it is given ``--no-merges``).
 (title ``# Release v1.2.3``) and additionally fails unless the description has
 exactly one top-level title line.
 
-Usage: python3 scripts/dry-run-publish-release.py [--tag v7.0.1 | --template-shaped]
+The token travels as the CI job passes it: through an environment variable named by
+``--token-env`` (set for the run only, restored afterwards), never in argv.
+
+Usage: python3 scripts/dry-run-publish-release.py [--tag vX.Y.Z | --template-shaped]
+``--tag`` defaults to the ``Latest release: vX.Y.Z`` marker of README.md; the run is
+refused when there is neither.
 """
 
 from __future__ import annotations
@@ -38,6 +43,8 @@ from typing import Any, NamedTuple
 REPO = Path(__file__).resolve().parent.parent
 TEMPLATE_TAG = "v1.2.3"
 PLACEHOLDER_TOKEN = "DRY-RUN-PLACEHOLDER"  # not a credential; never sent anywhere
+TOKEN_ENV = "DRY_RUN_RELEASE_TOKEN"  # the variable the rehearsal reads the placeholder from
+MARKER_RE = re.compile(r"^Latest release:\s*(v\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?)\s*$", re.M)
 MERGE_SUBJECTS = [  # what GitLab writes for a merge; dropped only by ``git log --no-merges``
     "Merge branch 'feature/42-sample' into 'develop'",
     "Merge branch 'bugfix/43-sample' into 'develop'",
@@ -81,6 +88,13 @@ def _refuse_network(*_args: object, **_kwargs: object) -> None:
     raise AssertionError("dry run attempted network access")
 
 
+class _RefusingOpener:
+    """Stands in for the module's redirect-refusing OPENER: any ``open`` is a failed rehearsal."""
+
+    def open(self, *_args: object, **_kwargs: object) -> None:
+        raise AssertionError("dry run attempted network access (OPENER)")
+
+
 def resolve_release_source(module: Any, tag: str, source_dir: Path) -> Path:
     """Validate ``tag`` against the CI tag rule and keep the source under ``source_dir``."""
     module.validate_tag(tag)
@@ -119,6 +133,7 @@ def top_level_titles(description: str) -> list[str]:
 
 def write_template_shaped_document(repo: Path, source_dir: Path, tag: str = TEMPLATE_TAG) -> Path:
     """Write ``<tag>.md`` into ``source_dir`` from the release template (vX.Y.Z -> tag)."""
+    load_publish_release(repo).validate_tag(tag)  # the tag becomes a file name: same rule as the CI tag
     template = (repo / "docs" / "releases" / "_template.md").read_text(encoding="utf-8")
     source_dir.mkdir(parents=True, exist_ok=True)
     document = source_dir / f"{tag}.md"
@@ -143,30 +158,39 @@ def run_dry_run(tag: str, work: Path, source: DryRunSource | None = None) -> dic
     def fake_gitlab_request(method, url, token, payload=None):
         sent.append({"method": method, "url": url, "payload": payload})
         if method == "GET":
-            raise module.ReleasePublishError(f"GitLab API GET {url} failed: 404 fake")
+            raise module.ReleasePublishError(f"GitLab API GET {url} failed: 404 fake", 404)
         return {"tag_name": tag}
 
     module.ROOT = work
     module.run_git = _fake_run_git(tag, "v0.0.0")
     module.gitlab_request = fake_gitlab_request
+    module.OPENER = _RefusingOpener()
     original_urlopen = urllib.request.urlopen
     urllib.request.urlopen = _refuse_network
     argv = sys.argv
     sys.argv = [
         "publish-release.py", "--tag", tag,
-        "--api-v4-url", "https://gitlab.invalid/api/v4",
-        "--project-id", "0", "--token", PLACEHOLDER_TOKEN,
+        "--api-v4-url", "https://gitlab.invalid/api/v4", "--expected-host", "gitlab.invalid",
+        "--project-id", "0", "--token-env", TOKEN_ENV,
     ]
+    previous_token = os.environ.get(TOKEN_ENV)
     out = io.StringIO()
-    cwd = os.getcwd()
-    os.chdir(work)  # a stray relative-path write lands in the temp root, not the caller's cwd
-    try:
+    cwd = None
+    try:  # everything that changes process state is inside the try: the finally undoes it
+        os.environ[TOKEN_ENV] = PLACEHOLDER_TOKEN
+        cwd = os.getcwd()
+        os.chdir(work)  # a stray relative-path write lands in the temp root, not the caller's cwd
         with contextlib.redirect_stdout(out):
             code = module.main()
     finally:
-        os.chdir(cwd)
+        if cwd is not None:
+            os.chdir(cwd)
         sys.argv = argv
         urllib.request.urlopen = original_urlopen
+        if previous_token is None:
+            os.environ.pop(TOKEN_ENV, None)
+        else:
+            os.environ[TOKEN_ENV] = previous_token
     files = sorted(p.relative_to(work).as_posix() for p in work.rglob("*") if p.is_file())
     changelog = work / "CHANGELOG.md"
     return {
@@ -222,13 +246,25 @@ def check_result(result: dict[str, Any], tag: str) -> list[str]:
     return problems
 
 
+def current_release_tag(repo: Path = REPO) -> str | None:
+    """The ``Latest release: vX.Y.Z`` marker of README.md, or None when it is absent."""
+    readme = repo / "README.md"
+    if not readme.is_file():
+        return None
+    match = MARKER_RE.search(readme.read_text(encoding="utf-8", errors="ignore"))
+    return match.group(1) if match else None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--tag", default="v7.0.1")
+    parser.add_argument("--tag", default=None, help="release tag (default: the README.md 'Latest release' marker)")
     parser.add_argument("--template-shaped", action="store_true",
                         help=f"rehearse a template-shaped document ({TEMPLATE_TAG}); needs exactly one title line")
     args = parser.parse_args()
-    tag = TEMPLATE_TAG if args.template_shaped else args.tag
+    tag = TEMPLATE_TAG if args.template_shaped else (args.tag or current_release_tag())
+    if tag is None:
+        print("dry run refused: no --tag and no 'Latest release: vX.Y.Z' marker in README.md")
+        return 2
     try:
         load_publish_release().validate_tag(tag)
     except Exception as exc:  # ReleasePublishError from the loaded module

@@ -210,6 +210,11 @@ The project uses **Semantic Versioning** (`vMAJOR.MINOR.PATCH`) and
    - Regenerates [`CHANGELOG.md`](CHANGELOG.md) as a job artifact (not committed) from Conventional Commits since the previous tag, merge commits excluded (full git history; `GIT_DEPTH: 0` on release job)
    - Creates the [GitLab Release](https://gitlab.com/em-age/emage.code/-/releases)
 
+   The `release-docs-gate` fails when the release document's Gate Verdicts or RELEASE VERDICT section
+   still holds `pending`, `YYYY-MM-DD` or another template placeholder (fill every row and field before
+   the tag). The `release` job reads the GitLab token from the CI variable `WIKI_TOKEN` through
+   `--token-env WIKI_TOKEN`, so the value is never in argv, and pins the API host to `CI_SERVER_HOST`.
+
 If you must manually create or repair a GitLab release entry, always source notes from the release brief file:
 
 ```bash
@@ -227,7 +232,13 @@ releases separate them.
 
 - **Grace window:** `main` may lag `develop` by up to 1 release. In the order of "Cutting a
   release" both branches carry the release before the tag, so the window is a tolerance, not a
-  step. `main` ahead of `develop` is always a failure.
+  step. `main` ahead of `develop` is always a failure. **The duty is yours, not the gate's:**
+  merge `release/vX.Y.Z` to `develop` and to `main` before you push the tag. A tag pushed while
+  `main` is exactly one release behind still passes the gate (the grace window is unchanged);
+  the gate prints a `NOTE` line in that case, and you check that line in the tag pipeline.
+- **An offline run proves nothing:** the check compares the `Latest release` marker on the two
+  refs it is given. Without `git fetch origin main develop` first (or with the same ref twice) it
+  reports `releases_behind=0` and passes without having seen the real `main`.
 - **Blocking gate (`main-develop-drift-gate`, `release` stage):** runs on every tag push. If
   `main` is already more than 1 release behind at the moment a new release is tagged, this job
   fails and blocks the `release` job (CHANGELOG + GitLab Release publish) until the outstanding

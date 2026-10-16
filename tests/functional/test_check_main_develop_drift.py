@@ -101,6 +101,23 @@ class TestEvaluate(unittest.TestCase):
         self.assertTrue(any("FAIL" in line for line in lines))
         self.assertTrue(any("v6.4.3" in line and "v6.5.0" in line for line in lines))
 
+    def test_one_release_behind_passes_but_states_the_merge_before_tag_duty(self):
+        """TL-T649-13: GRACE_RELEASES stays 1 (unchanged); the PASS carries a NOTE."""
+        self.assertEqual(self.mod.GRACE_RELEASES, 1)
+        code, lines = self.mod.evaluate("v6.4.3", "v6.5.0", TAGS)
+        self.assertEqual(code, 0)
+        notes = [line for line in lines if "NOTE" in line]
+        self.assertEqual(len(notes), 1)
+        self.assertIn("BEFORE pushing the tag", notes[0])
+        self.assertIn("tolerance", notes[0])
+
+    def test_in_sync_has_no_note(self):
+        _code, lines = self.mod.evaluate("v6.5.0", "v6.5.0", TAGS)
+        self.assertFalse(any("NOTE" in line for line in lines))
+
+    def test_the_offline_limit_is_documented_in_the_script(self):
+        self.assertIn("proves nothing", self.mod.__doc__)
+
     def test_fail_when_main_marker_missing(self):
         code, _lines = self.mod.evaluate(None, "v6.5.0", TAGS)
         self.assertEqual(code, 1)
