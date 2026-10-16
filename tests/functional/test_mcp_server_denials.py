@@ -1,7 +1,7 @@
 """T658 (SEC-T657-01) -- server-level denial of the unsafe Playwright tools on Opencode and Gemini CLI.
 
-Opencode, Gemini CLI and Cursor do not restrict MCP tools by an agent's tool list, so the narrowed
-Playwright grants (T657) are not enforced there. Two of the three platforms document a server-level
+Opencode and Gemini CLI do not restrict MCP tools by an agent's tool list, so the narrowed
+Playwright grants (T657) are not enforced there. Both platforms document a server-level
 denial, and `sync.mjs` now emits it from ONE list (`denyTools` of the `playwright` entry in
 knowledge/mcp/servers.yaml):
 
@@ -9,7 +9,7 @@ knowledge/mcp/servers.yaml):
 * Gemini CLI: `mcpServers.playwright.excludeTools` in `.gemini/settings.json`.
 
 Mechanism, sources and verified/unverified status: docs/artifacts/mcp-server-denials-v1.md.
-Cursor documents no such mechanism and stays open. This file pins:
+This file pins:
 
 - the single source list and its six names;
 - the generator output per platform, with literal examples from the vendor documentation;
@@ -62,7 +62,6 @@ GRANTED_LOOKALIKE = "browser_network_requests"
 
 GENERATED_MCP = {
     "claude-code": (".mcp.json", "mcpServers"),
-    "cursor": (".cursor/mcp.json", "mcpServers"),
     "github": (".vscode/mcp.json", "servers"),
     "pi": (".pi/mcp.json", "mcpServers"),
     "cline": (".cline/mcp.json", "mcpServers"),
@@ -159,7 +158,7 @@ class ShippedProjectionTests(unittest.TestCase):
             self.assertFalse(tool.startswith("mcp_"), tool)
 
     def test_other_platforms_carry_no_denial_and_are_documented_as_open_or_enforced_elsewhere(self):
-        for platform in ("claude-code", "cursor", "github", "pi", "cline"):
+        for platform in ("claude-code", "github", "pi", "cline"):
             rel, wrapper = GENERATED_MCP[platform]
             text = (IMPL / rel).read_text(encoding="utf-8")
             with self.subTest(platform=platform):
@@ -339,7 +338,7 @@ class GeneratorFixtureTests(unittest.TestCase):
     def test_other_platforms_ignore_the_list(self):
         root, result = self.run_sync(self.SERVERS)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        for platform in ("claude-code", "cursor", "github", "pi", "cline"):
+        for platform in ("claude-code", "github", "pi", "cline"):
             rel, _ = GENERATED_MCP[platform]
             self.assertNotIn("dangerous_tool", (root / rel).read_text(encoding="utf-8"), platform)
 
@@ -610,7 +609,7 @@ class DocumentationTests(unittest.TestCase):
     def test_artifact_records_both_platforms_with_status_and_sources(self):
         text = ARTIFACT.read_text(encoding="utf-8")
         self.assertIn("Based on: security-review-t657-tool-name-mapping-v1.md", text)
-        for needle in ("Opencode", "Gemini CLI", "Cursor", "**verified**", "unverified", "permission",
+        for needle in ("Opencode", "Gemini CLI", "**verified**", "unverified", "permission",
                        "excludeTools", "last matching rule", "anomalyco/opencode@81200db2a3a8",
                        "google-gemini/gemini-cli@06d329873703", "https://opencode.ai/docs/permissions",
                        "https://geminicli.com/docs/tools/mcp-server"):
@@ -636,7 +635,6 @@ class DocumentationTests(unittest.TestCase):
                 self.assertIn("excludeTools", text)
                 self.assertRegex(text, r"`permission`")
                 self.assertRegex(text, r"(?i)not (been )?observed")
-                self.assertRegex(text, r"(?i)cursor")
                 for tool in DENIED:
                     self.assertIn(tool, text)
 

@@ -32,7 +32,7 @@ import tests.functional.test_root_install_parity as parity
 from tests._helpers.repo import repo_root
 
 INSTALLER = repo_root() / "scripts" / "install.sh"
-HARNESS_TREES = (".claude", ".cursor", ".gemini", ".github", ".opencode", ".pi",
+HARNESS_TREES = (".claude", ".gemini", ".github", ".opencode", ".pi",
                  ".cline", ".clinerules")
 HARNESS_FILES = ("AGENTS.md", "CLAUDE.md")
 # Harness-tree paths the installer declares project-local (parsed from
@@ -82,7 +82,7 @@ PROJECT_OWNED = {
 # Harness paths made stale in the synthetic root, and removed-upstream files.
 STALE_EDITS = (
     ".claude/agents/orchestrator.md",
-    ".cursor/commands/plan.mdc",
+    ".pi/prompts/code-review.md",
     ".github/prompts/plan.prompt.md",
     ".cline/skills/skillify/SKILL.md",
     "AGENTS.md",
@@ -332,10 +332,10 @@ class TestProjectionsOnlyContract(_FreshInstallFixture):
         self.assertEqual([p for p in target.rglob("*")], [])
 
     def test_merge_owned_config_set_is_complete(self) -> None:
-        """Guard against a vacuous classifier: all seven MCP configs are found."""
+        """Guard against a vacuous classifier: all six MCP configs are found."""
         self.assertEqual(
             {c for c in self.merge_owned if not c.endswith(parity.SIDECAR_SUFFIX)},
-            {".mcp.json", ".vscode/mcp.json", ".cursor/mcp.json", ".gemini/settings.json",
+            {".mcp.json", ".vscode/mcp.json", ".gemini/settings.json",
              ".opencode/opencode.json", ".pi/mcp.json", ".cline/mcp.json"},
         )
 

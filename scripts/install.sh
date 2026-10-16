@@ -15,7 +15,7 @@ Options:
   --target <dir>       Destination project root (created if missing). Not the emage.code
                        repository: its root accepts only --projections-only, and any
                        directory below its root is refused in every mode.
-  --platform <name>    cursor | github | gemini | opencode | pi | claude-code | cline | all (default: all)
+  --platform <name>    github | gemini | opencode | pi | claude-code | cline | all (default: all)
   -u, --update         Update an existing install. Replaces the platform trees, EXCEPT
                        project-local files the harness never ships and therefore does not
                        own: each platform's MCP/settings config, .claude/settings.json and
@@ -47,7 +47,7 @@ inside the target. Do not run the installer as root into a directory that other 
 can write to: a link planted between the check and the write is not detected.
 
 Examples:
-  scripts/install.sh --target ~/projects/my-app --platform cursor
+  scripts/install.sh --target ~/projects/my-app --platform claude-code
   scripts/install.sh --target ~/projects/my-app --platform pi --update
   scripts/install.sh --target . --platform all
 
@@ -89,6 +89,31 @@ while [[ $# -gt 0 ]]; do
     *) echo "Unknown option: $1" >&2; usage >&2; exit 1 ;;
   esac
 done
+
+# $1 for an error message, byte-wise: in the C locale every byte outside printable
+# ASCII (controls, ESC, newline, and each byte of a multi-byte character such as the
+# bidi override U+202E) becomes `?`, whatever locale the caller runs in.
+ascii_printable() {
+  local LC_ALL=C
+  printf '%s' "${1//[^ -~]/?}"
+}
+
+# Validate --platform before anything is resolved, created or written (ADR-010 D3):
+# a typo or the removed value must not create $TARGET or reach any guard first.
+# The removed value is matched in any letter case.
+case "$PLATFORM" in
+  github|gemini|opencode|pi|claude-code|cline|all) ;;
+  [Cc][Uu][Rr][Ss][Oo][Rr])
+    echo "error: platform 'cursor' was removed in v9.0.0 (see the Cursor migration item in docs/releases/v9.0.0.md; the v8.x releases are the last that support it)." >&2
+    echo "  Existing .cursor/ files in your project are not touched. Nothing was written." >&2
+    exit 1
+    ;;
+  *)
+    echo "error: unknown platform '$(ascii_printable "$PLATFORM")'" >&2
+    echo "  supported: github, gemini, opencode, pi, claude-code, cline, all. Nothing was written." >&2
+    exit 1
+    ;;
+esac
 
 if [[ -z "$TARGET" ]]; then
   echo "error: --target is required" >&2
@@ -214,8 +239,8 @@ path_within() {
 #     so the install is written from itself. Measured on the pre-T559 script:
 #     --update re-rendered AGENTS.md over its own source, created
 #     implementation/implementation/ and exited 1 at the CLAUDE.md self-copy;
-#     --target implementation/.cursor under rsync copied .cursor into its own
-#     subdirectory, several levels deep; --target implementation/new-dir
+#     --target implementation/.<platform> (a generated tree) under rsync copied
+#     the tree into its own subdirectory, several levels deep; --target implementation/new-dir
 #     exited 0 after writing a second harness into the source tree.
 #   - Anywhere else in the repository, an install writes a second copy of the
 #     harness (AGENTS.md, CLAUDE.md, the platform trees, docs/ with its task
@@ -355,7 +380,6 @@ refuse_unsafe_paths() {
 # guard and the tests both use.
 platform_managed_paths() {
   case "$1" in
-    cursor) printf '%s\n' .cursor .cursor/mcp.json .cursor/mcp.json.provenance.json ;;
     github) printf '%s\n' .github .vscode .vscode/mcp.json .vscode/mcp.json.provenance.json ;;
     gemini) printf '%s\n' .gemini .gemini/settings.json .gemini/settings.json.provenance.json ;;
     opencode) printf '%s\n' .opencode .opencode/opencode.json .opencode/opencode.json.provenance.json ;;
@@ -402,7 +426,7 @@ list_managed_paths() {
     docs_managed_paths
   fi
   if [[ "$PLATFORM" == "all" ]]; then
-    for p in cursor github gemini opencode pi claude-code cline; do platform_managed_paths "$p"; done
+    for p in github gemini opencode pi claude-code cline; do platform_managed_paths "$p"; done
   else
     platform_managed_paths "$PLATFORM"
   fi
@@ -968,14 +992,37 @@ validate_github_agents() {
   done
 }
 
+# Read-only notice (ADR-010 D3): Cursor support was removed in v9.0.0, so a
+# .cursor/ that an earlier release generated is no longer written, pruned or
+# checked here -- and is never deleted. Detection looks at, and never writes,
+# the generator's own markers; a symlinked .cursor or marker is not read.
+notice_previous_cursor_install() {
+  local dir="$TARGET/.cursor"
+  local found=0
+  if [[ ! -d "$dir" || -L "$dir" ]]; then return 0; fi
+  if [[ -f "$dir/.generated-manifest.json" && ! -L "$dir/.generated-manifest.json" ]] \
+     && grep -Eq '"platform"[[:space:]]*:[[:space:]]*"cursor"' "$dir/.generated-manifest.json"; then
+    found=1
+  elif [[ -f "$dir/mcp.json.provenance.json" && ! -L "$dir/mcp.json.provenance.json" ]]; then
+    found=1
+  fi
+  if [[ "$found" -ne 1 ]]; then return 0; fi
+  echo "warning: $(printable "$dir") holds a Cursor install written by an earlier emage.code release." >&2
+  echo "  Cursor support was removed in v9.0.0: that folder is no longer updated, pruned or checked, and this installer does not delete it." >&2
+  echo "  Its MCP server versions are frozen at the version that wrote it, and nothing prunes it." >&2
+  echo "  An install from v7.x or older can still contain unpinned or non-existent launchers (for example 'npx -y @anthropic/mcp-filesystem', see M-9 of the v8.0.0 release notes)." >&2
+  echo "  Open .cursor/mcp.json and remove the 'filesystem' entry if it runs @anthropic/mcp-filesystem, and the keys e2b, redis, figma and notion if present (M-9 of the v8.0.0 release notes). --force-prune-keys exists only in the v8.0.0 installer." >&2
+  echo "  Remove the folder or edit it by hand; see the Cursor migration item in docs/releases/v9.0.0.md." >&2
+}
+
 validate_before_update() {
   # Pre-flight checks before --update to prevent propagating corrupted state.
   if [[ "$UPDATE" -eq 1 ]]; then
-    for d in .github .cursor .gemini .opencode .pi .claude .cline .clinerules; do
+    notice_previous_cursor_install
+    for d in .github .gemini .opencode .pi .claude .cline .clinerules; do
       if [[ -d "$TARGET/$d" ]]; then
         local exception=""
         case "$d" in
-          .cursor) exception=" (except $d/mcp.json, which is merged, not overwritten)" ;;
           .gemini) exception=" (except $d/settings.json, which is merged, not overwritten)" ;;
           .opencode) exception=" (except $d/opencode.json, which is merged, not overwritten)" ;;
           .pi) exception=" (except $d/mcp.json, which is merged, not overwritten)" ;;
@@ -1145,11 +1192,6 @@ install_common() {
   install_mcp_server_runtime
 }
 
-install_cursor() {
-  install_tree_into "$IMPLEMENTATION/.cursor" "$TARGET/.cursor" "mcp.json" "mcp.json.provenance.json"
-  merge_or_copy_mcp_json "$IMPLEMENTATION/.cursor/mcp.json" "$TARGET/.cursor/mcp.json"
-}
-
 install_github() {
   install_tree_into "$IMPLEMENTATION/.github" "$TARGET/.github" "${GITHUB_LOCAL_PATHS[@]}"
   refuse_unsafe_paths .vscode
@@ -1186,7 +1228,6 @@ install_cline() {
 }
 
 case "$PLATFORM" in
-  cursor) install_common; install_cursor ;;
   github) install_common; install_github ;;
   gemini) install_common; install_gemini ;;
   opencode) install_common; install_opencode ;;
@@ -1195,7 +1236,6 @@ case "$PLATFORM" in
   cline) install_common; install_cline ;;
   all)
     install_common
-    install_cursor
     install_github
     install_gemini
     install_opencode

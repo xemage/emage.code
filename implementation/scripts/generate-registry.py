@@ -116,7 +116,7 @@ def _collect_entries(source_root: Path, platforms: list[str]) -> list[dict]:
 def _detect_platforms(repo_root: Path) -> list[str]:
     platform_dir = repo_root / "implementation" / "platforms"
     if not platform_dir.is_dir():
-        return ["github", "gemini", "opencode", "cursor"]
+        return ["claude-code", "cline", "gemini", "github", "opencode", "pi"]
     return sorted([item.stem for item in platform_dir.glob("*.json")])
 
 

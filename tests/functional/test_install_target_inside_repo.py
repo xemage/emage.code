@@ -8,8 +8,8 @@ two kinds of target did damage:
   Measured on the pre-T559 script against a synthetic repository:
   ``--target <repo>/implementation --update`` re-rendered ``AGENTS.md`` over its
   own source, created ``implementation/implementation/`` and exited 1 at the
-  ``CLAUDE.md`` self-copy; ``--target <repo>/implementation/.cursor`` under
-  ``rsync`` copied ``.cursor`` into its own subdirectory, several levels deep;
+  ``CLAUDE.md`` self-copy; ``--target <repo>/implementation/.pi`` under
+  ``rsync`` copied ``.pi`` into its own subdirectory, several levels deep;
   ``--target <repo>/implementation/new-dir`` exited 0 having written a second
   harness into the source tree.
 * Anywhere else below the root, an install writes a second copy of the harness
@@ -85,8 +85,8 @@ class TestTargetInsideRepositoryIsRefused(_CopierMatrix):
                              ("--platform", "all", "--update", "--dry-run"), SOURCE_TREE)
 
     def test_a_platform_tree_inside_implementation_is_refused(self) -> None:
-        """Under rsync this nested .cursor inside itself before T559."""
-        self._assert_refused("implementation/.cursor", ("--platform", "cursor"), SOURCE_TREE)
+        """Under rsync this nested .pi inside itself before T559."""
+        self._assert_refused("implementation/.pi", ("--platform", "pi"), SOURCE_TREE)
 
     def test_a_new_directory_inside_implementation_is_refused(self) -> None:
         """Exited 0 before T559, writing a whole harness into the source."""

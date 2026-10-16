@@ -319,7 +319,7 @@ class EmittedPerAgentClassTests(unittest.TestCase):
 
     def test_other_platforms_carry_no_false_tool_entry_and_no_gitlab_wildcard(self):
         for platform, pattern in ((".github", "*.agent.md"), (".pi", "*.md"), (".claude", "*.md"),
-                                  (".cursor", "*.mdc"), (".gemini", "*.md")):
+                                  (".gemini", "*.md")):
             files = sorted((IMPL / platform / "agents").glob(pattern))
             self.assertGreaterEqual(len(files), 28, platform)
             for path in files:
@@ -665,8 +665,7 @@ class GeneratorFixtureTests(unittest.TestCase):
     def test_other_platforms_are_unchanged_by_the_flags(self):
         root, result = self.run_sync()
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        for rel in (".github/agents/plain.agent.md", ".pi/agents/plain.md", ".claude/agents/plain.md",
-                    ".cursor/agents/plain.mdc"):
+        for rel in (".github/agents/plain.agent.md", ".pi/agents/plain.md", ".claude/agents/plain.md"):
             text = (root / rel).read_text(encoding="utf-8")
             with self.subTest(file=rel):
                 self.assertNotIn("false", text)
@@ -752,7 +751,7 @@ class GeneratorFixtureTests(unittest.TestCase):
         root, result = self.run_sync(mutate_platform=lambda d: d["frontmatter"]["agents"].__setitem__("mcpAgentDenies", "yes"))
         self.assertNotEqual(result.returncode, 0)
         # claude-code sorts before opencode and used to be written before the bad manifest was read
-        for folder in (".claude", ".cursor", ".github", ".gemini", ".opencode", ".pi"):
+        for folder in (".claude", ".github", ".gemini", ".opencode", ".pi"):
             self.assertFalse((root / folder).exists(), folder)
 
     def test_the_shipped_servers_yaml_passes_the_key_check(self):
@@ -860,7 +859,7 @@ class DocumentationTests(unittest.TestCase):
 
     def test_artifact_names_the_residuals(self):
         lower = self.artifact.lower()
-        for needle in ("qa-engineer", "scrum-master", "gitlab_*", "user-owned agent file", "cursor",
+        for needle in ("qa-engineer", "scrum-master", "gitlab_*", "user-owned agent file",
                        "named-subset rule", "opencode debug agent", "built-in agents", "hindsight",
                        "tracked debt", "every server"):
             self.assertIn(needle, lower, needle)

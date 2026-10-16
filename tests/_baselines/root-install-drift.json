@@ -43,7 +43,8 @@
     "Emptied 2026-10-15 by the nineteenth user-approved --projections-only refresh (97 paths declared by T655, T656, T657 and T658: the fetch removal, the hardened playwright entry, the per-platform tool names, the narrowed Playwright grants and the Opencode/Gemini server-level denials on every platform; note: in a fresh worktree rsync's size-and-mtime quick check skipped two Pi agent files of equal size, so the source mtimes were touched before the second run).",
     "Declared 2026-10-15 by T660 (SEC-T657-02: qa-engineer and scrum-master hold named, non-destructive GitLab tools instead of the whole `gitlab` server): 10 paths = the two agent projections on each of Claude Code, Cursor, GitHub Copilot, Opencode and Pi; root not refreshed.",
     "Emptied 2026-10-15 by the twentieth user-approved --projections-only refresh, run on release/v8.0.0 (10 paths: the T660 named GitLab tools of qa-engineer and scrum-master on Claude Code, Cursor, Copilot, Opencode and Pi).",
-    "Declared 2026-10-16 by T663 (SEC-T658-01: per-agent `false` entries in every Opencode agent file, the six Playwright denies for all agents and `gitlab_*` for the agents without a GitLab tool, generated from `denyTools` and `denyUnlessGranted` in servers.yaml): 28 paths = the 28 Opencode agent files (since the T663 review fix SEC-T663-01 every agent file also carries `<server>_*: false` for each non-exempt server it holds no token of (brave, context7, hindsight, cwso, hf-mcp-server and toolradar are exempt by the user's decision of 2026-10-16); agents that hold only named tools of a server get that wildcard before their named allows); root not refreshed."
+    "Declared 2026-10-16 by T663 (SEC-T658-01: per-agent `false` entries in every Opencode agent file, the six Playwright denies for all agents and `gitlab_*` for the agents without a GitLab tool, generated from `denyTools` and `denyUnlessGranted` in servers.yaml): 28 paths = the 28 Opencode agent files (since the T663 review fix SEC-T663-01 every agent file also carries `<server>_*: false` for each non-exempt server it holds no token of (brave, context7, hindsight, cwso, hf-mcp-server and toolradar are exempt by the user's decision of 2026-10-16); agents that hold only named tools of a server get that wildcard before their named allows); root not refreshed.",
+    "Declared 2026-10-16 by T662 (ADR-010 step S1: Cursor support removed; the tracked root `.cursor/` and `implementation/.cursor/` are deleted and the generator, installer and registry no longer name Cursor): 1 new path = the installed AGENTS.md (the `all` platform map no longer lists the `.cursor` paths); the root `.cursor/` is simply gone and adds no drift; the 28 T663 paths are unchanged; root not refreshed (T679 refreshes it)."
   ],
   "drift": [
     ".opencode/agents/backend-developer.md",
@@ -73,6 +74,7 @@
     ".opencode/agents/technical-debt-narrator.md",
     ".opencode/agents/technical-writer.md",
     ".opencode/agents/technology-scout.md",
-    ".opencode/agents/ux-designer.md"
+    ".opencode/agents/ux-designer.md",
+    "AGENTS.md"
   ]
 }

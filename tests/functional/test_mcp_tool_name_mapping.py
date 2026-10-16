@@ -31,10 +31,9 @@ PLATFORMS_DIR = implementation_root() / "platforms"
 ARTIFACT = repo_root() / "docs" / "artifacts" / "mcp-tool-name-mapping-v1.md"
 
 # platform -> mcpToolNames in the manifest. Gemini drops the tools line, Cline has no agent
-# files, so neither can carry the key; Cursor and Claude Code render verbatim.
+# files, so neither can carry the key; Claude Code renders verbatim.
 EXPECTED_STYLE = {
     "claude-code": "verbatim",
-    "cursor": "verbatim",
     "github": "slash",
     "opencode": "underscore",
     "pi": "pi",
@@ -205,7 +204,6 @@ class GeneratorRunTests(unittest.TestCase):
             "github": (".github/agents/fx.agent.md", "slash"),
             "opencode": (".opencode/agents/fx.md", "underscore"),
             "pi": (".pi/agents/fx.md", "pi"),
-            "cursor": (".cursor/agents/fx.mdc", "verbatim"),
         }
         for platform, (rel, style) in cases.items():
             with self.subTest(platform=platform):
@@ -317,10 +315,10 @@ class ProjectedAgentTests(unittest.TestCase):
 
     def test_no_projection_names_the_unsafe_tool(self):
         # T658 (SEC-T657-07): a file-count floor, so an empty glob (a renamed directory) cannot pass
-        # vacuously. Six platforms project agent files (Cline has none); every source agent is projected.
+        # vacuously. Five platforms project agent files (Cline has none); every source agent is projected.
         files = [p for p in implementation_root().glob(".*/agents/*") if p.is_file()]
         sources = len(list((knowledge_root() / "agents").glob("*.md")))
-        self.assertGreaterEqual(len(files), sources * 6)
+        self.assertGreaterEqual(len(files), sources * 5)
         for path in files:
             text = path.read_text(encoding="utf-8")
             if path.parent.parent.name == ".opencode":
@@ -336,7 +334,7 @@ class ArtifactTests(unittest.TestCase):
     def test_artifact_exists_and_records_every_platform(self):
         text = ARTIFACT.read_text(encoding="utf-8")
         self.assertIn("Based on: security-review-t655-fetch-removal-v1.md", text)
-        for platform in ("Claude Code", "GitHub Copilot", "Opencode", "Gemini CLI", "Cursor", "Cline", "Pi"):
+        for platform in ("Claude Code", "GitHub Copilot", "Opencode", "Gemini CLI", "Cline", "Pi"):
             self.assertIn(platform, text)
         self.assertRegex(text, r"(?i)verified")
         self.assertRegex(text, r"(?i)unverified")

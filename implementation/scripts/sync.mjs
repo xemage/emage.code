@@ -538,8 +538,8 @@ function emitMcp(servers, tags, format) {
     Object.entries(servers).filter(([, s]) => (s.tags || []).some((t) => tags.includes(t)))
   );
 
-  if (format === 'vscode' || format === 'cursor') {
-    const out = { servers: format === 'vscode' ? {} : undefined, mcpServers: format === 'cursor' ? {} : undefined };
+  if (format === 'vscode' || format === 'pi') {
+    const out = { servers: format === 'vscode' ? {} : undefined, mcpServers: format === 'pi' ? {} : undefined };
     const target = format === 'vscode' ? out.servers : out.mcpServers;
     for (const [name, s] of Object.entries(filtered)) {
       if (s.transport === 'remote') {
@@ -656,7 +656,7 @@ function emitMcp(servers, tags, format) {
 //   spec: a plain literal (string/number/bool) -> returned unchanged (String(spec))
 //         OR { fromEnv: VAR }                   -> template.replace('VAR', VAR)
 //         OR { fromEnv: VAR, wrap: "X{VAR}Y" }   -> wrap.replace('{VAR}', <rendered above>)
-//   template: the platform's own placeholder pattern, e.g. '${env:VAR}' (vscode/cursor/gemini/
+//   template: the platform's own placeholder pattern, e.g. '${env:VAR}' (vscode/gemini/
 //             pi/cline), '{env:VAR}' (opencode) or '${VAR}' (claude-code)
 function mapTemplatedValue(spec, template) {
   if (spec && typeof spec === 'object' && spec.fromEnv) {

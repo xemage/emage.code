@@ -396,11 +396,10 @@ class TestCli(unittest.TestCase):
             "SKILL.md",
             "release-manager.md",
             "release-manager.agent.md",
-            "release-manager.mdc",
         }
         checked_any_mirror = False
         for path in mirrors:
-            if not path.is_file() or path.suffix != ".md" and path.suffix != ".mdc":
+            if not path.is_file() or path.suffix != ".md":
                 continue
             if path.name not in example_basenames:
                 continue

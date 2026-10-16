@@ -32,7 +32,7 @@ def _is_skipped(path: Path) -> bool:
     # Root-level platform mirror dirs are downstream copies of the canonical
     # mirrors under archive/v2/implementation/. Auditing them would just duplicate
     # findings against the source-of-truth mirrors. Skip.
-    if parts and parts[0] in {".github", ".gemini", ".opencode", ".cursor"}:
+    if parts and parts[0] in {".github", ".gemini", ".opencode"}:
         return True
     return False
 

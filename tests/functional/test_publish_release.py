@@ -305,12 +305,12 @@ class TestReleaseDescriptionIsTheDocument(unittest.TestCase):
     def test_fenced_comment_lines_are_kept_but_not_counted_as_titles(self):
         """Synthetic document: independent of the content of docs/releases/_template.md."""
         text = (
-            "# Release v1.2.3\n\n## Install\n\n```bash\n# Cursor\ncmd-one\n# Gemini CLI\ncmd-two\n```\n\n"
+            "# Release v1.2.3\n\n## Install\n\n```bash\n# Pi\ncmd-one\n# Gemini CLI\ncmd-two\n```\n\n"
             "## Highlights\n\nbody-marker\n"
         )
         description = self._description(self._run_document(text))
         self.assertEqual(self.dry_run.top_level_titles(description), ["# Release v1.2.3"])
-        self.assertIn("# Cursor\ncmd-one\n# Gemini CLI", description)
+        self.assertIn("# Pi\ncmd-one\n# Gemini CLI", description)
 
     def test_top_level_titles_ignores_fenced_code(self):
         text = "# One\n\n```bash\n# comment\n```\n\n## Two\n#nospace\n"

@@ -32,7 +32,6 @@ PROJECTIONS = [
         ".mcp.json",
         ".gemini/settings.json",
         ".opencode/opencode.json",
-        ".cursor/mcp.json",
         ".cline/mcp.json",
         ".pi/mcp.json",
         ".vscode/mcp.json",
@@ -67,7 +66,6 @@ PLAYWRIGHT_ARGS = [
 ]
 PLAYWRIGHT_ENTRY_PATHS = {
     ".mcp.json": ("mcpServers", "str"),
-    ".cursor/mcp.json": ("mcpServers", "str"),
     ".vscode/mcp.json": ("servers", "str"),
     ".gemini/settings.json": ("mcpServers", "str"),
     ".opencode/opencode.json": ("mcp", "list"),
@@ -216,7 +214,7 @@ class McpPackagePinTests(unittest.TestCase):
             self.assertNotIn("env", entry, rel)  # no secret, no variable reference in this entry
 
     def test_blocked_origins_has_no_placeholder_syntax_a_client_would_expand(self):
-        # Claude Code and Gemini expand ${VAR}; Cursor and VS Code expand ${env:VAR}; Opencode
+        # Claude Code and Gemini expand ${VAR}; VS Code expands ${env:VAR}; Opencode
         # expands {env:VAR} and {file:path}. The value must contain none of these openers.
         for opener in ("${", "$(", "{env:", "{file:", "`", "~"):
             self.assertNotIn(opener, BLOCKED_ORIGINS)
@@ -366,12 +364,11 @@ class PlaywrightGrantSetTests(unittest.TestCase):
                     self.assertRegex(tool, r"^mcp__playwright__[a-z_]+$", path.stem)
 
     def test_projections_hold_no_whole_server_playwright_form_and_no_excluded_tool(self):
-        """Claude Code, Copilot, Opencode, Pi and Cursor projections of every agent."""
+        """Claude Code, Copilot, Opencode and Pi projections of every agent."""
         root = REPO_ROOT / "implementation"
         files = (list((root / ".claude" / "agents").glob("*.md")) + list((root / ".github" / "agents").glob("*.agent.md"))
-                 + list((root / ".opencode" / "agents").glob("*.md")) + list((root / ".pi" / "agents").glob("*.md"))
-                 + list((root / ".cursor" / "agents").glob("*.mdc")))
-        self.assertGreaterEqual(len(files), 5 * 20)
+                 + list((root / ".opencode" / "agents").glob("*.md")) + list((root / ".pi" / "agents").glob("*.md")))
+        self.assertGreaterEqual(len(files), 4 * 20)
         for path in files:
             front = path.read_text(encoding="utf-8").split("---", 2)[1]
             # T663: an Opencode `name: false` line is a generated per-agent deny, not a grant; its names
@@ -406,7 +403,7 @@ class PlaywrightGrantSetTests(unittest.TestCase):
         opencode = json.loads((root / ".opencode" / "opencode.json").read_text(encoding="utf-8"))
         self.assertEqual(set(opencode["permission"]), {f"playwright_{t}" for t in PLAYWRIGHT_EXCLUDED})
         self.assertEqual(set(opencode["permission"].values()), {"deny"})
-        for rel in (".mcp.json", ".cursor/mcp.json", ".vscode/mcp.json", ".pi/mcp.json", ".cline/mcp.json"):
+        for rel in (".mcp.json", ".vscode/mcp.json", ".pi/mcp.json", ".cline/mcp.json"):
             text = (root / rel).read_text(encoding="utf-8")
             self.assertNotIn("excludeTools", text, rel)
             self.assertNotIn('"permission"', text, rel)
@@ -508,13 +505,12 @@ class GitLabGrantSetTests(unittest.TestCase):
             self.assertIsNotNone(GITLAB_FORBIDDEN_NAME.search(name), name)
 
     def test_every_projection_renders_the_same_sets(self):
-        """Claude Code and Cursor keep the source form; Pi, Copilot and Opencode render it (T657 mapping)."""
+        """Claude Code keeps the source form; Pi, Copilot and Opencode render it (T657 mapping)."""
         root = REPO_ROOT / "implementation"
         seven = GITLAB_WHOLE_SERVER_HOLDERS | set(EXPECTED_GITLAB_GRANTS)
         # platform -> (agent file suffix, prefix of a named tool, form of the whole server)
         platforms = {
             ".claude": (".md", "mcp__gitlab__", "mcp__gitlab"),
-            ".cursor": (".mdc", "mcp__gitlab__", "mcp__gitlab"),
             ".pi": (".md", "mcp__gitlab__", "mcp__gitlab__*"),
             ".github": (".agent.md", "gitlab/", "gitlab/*"),
             ".opencode": (".md", "gitlab_", "gitlab_*"),
