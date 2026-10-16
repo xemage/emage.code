@@ -36,7 +36,7 @@ from tests.functional.test_install_target_inside_repo import _paths
 from tests.functional.test_install_update_root import _CopierMatrix
 
 INSTALLER = repo_root() / "scripts" / "install.sh"
-SHIPPED_FILE = ".cursor/rules/coding-standards.mdc"
+SHIPPED_FILE = ".pi/instructions/coding-standards.md"
 SHIPPED_DIR = ".claude/skills/api-design"
 OUTSIDE_TEXT = "outside the target; never written\n"
 
@@ -102,9 +102,9 @@ class TestConflictsResolvedAsRsyncDoes(_CopierMatrix):
                 (target / SHIPPED_FILE).mkdir()
                 (target / SHIPPED_FILE / "own.md").write_text("the project's own\n")
                 # A stale shipped file in the same tree: rewritten only if the
-                # copy into .cursor/ started.
-                (target / ".cursor/commands/plan.mdc").write_text("stale\n")
-                tree = target / ".cursor"
+                # copy into .pi/ started.
+                (target / ".pi/prompts/code-review.md").write_text("stale\n")
+                tree = target / ".pi"
                 before, paths = _snapshot(tree), _paths(tree)
                 proc = run_installer(INSTALLER, target, "--platform", "all", path=path)
                 self.assertNotEqual(proc.returncode, 0, proc.stdout + proc.stderr)
@@ -113,7 +113,7 @@ class TestConflictsResolvedAsRsyncDoes(_CopierMatrix):
                 if label == "cp":
                     self.assertIn("the target has a directory that is not empty", proc.stderr)
                     self.assertIn(str(target / SHIPPED_FILE), proc.stderr)
-                    self.assertEqual(_snapshot(tree), before, "the fallback wrote to .cursor/")
+                    self.assertEqual(_snapshot(tree), before, "the fallback wrote to .pi/")
                     self.assertEqual(_paths(tree), paths)
 
     def test_dry_run_writes_nothing(self) -> None:
@@ -135,14 +135,14 @@ class TestConflictsResolvedAsRsyncDoes(_CopierMatrix):
     def test_update_refuses_a_kept_path_below_a_shipped_file(self) -> None:
         """sync_tree_into: the target's own mcp.json (excluded, so kept) sits in
         a directory where the source ships a file. rsync refuses; the fallback
-        used to delete .cursor/ and then fail, losing the kept file."""
+        used to delete .pi/ and then fail, losing the kept file."""
         for label, path in self.copiers():
             with self.subTest(copier=label):
                 target, _ = self._target(f"kept-{label}")
                 (target / SHIPPED_FILE).unlink()
                 (target / SHIPPED_FILE).mkdir()
                 (target / SHIPPED_FILE / "mcp.json").write_text('{"own": true}\n')
-                tree = target / ".cursor"
+                tree = target / ".pi"
                 before, paths = _snapshot(tree), _paths(tree)
                 proc = run_installer(INSTALLER, target, "--platform", "all", "--update",
                                      path=path)
@@ -151,7 +151,7 @@ class TestConflictsResolvedAsRsyncDoes(_CopierMatrix):
                                  '{"own": true}\n')
                 if label == "cp":
                     self.assertIn("the target has a directory that is not empty", proc.stderr)
-                    self.assertEqual(_snapshot(tree), before, "the fallback wrote to .cursor/")
+                    self.assertEqual(_snapshot(tree), before, "the fallback wrote to .pi/")
                     self.assertEqual(_paths(tree), paths)
 
 

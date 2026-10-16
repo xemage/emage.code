@@ -354,61 +354,8 @@ class TestInstallScript(unittest.TestCase):
                 "generator-known server key must be refreshed to match the generated source on --update",
             )
 
-    # -- .cursor/mcp.json / .gemini/settings.json / .opencode/opencode.json /
+    # -- .gemini/settings.json / .opencode/opencode.json /
     #    .pi/mcp.json / .cline/mcp.json merge-on-update (T377) --
-
-    def test_cursor_mcp_json_merge_on_update(self):
-        implementation_mcp = repo_root() / "implementation" / ".cursor" / "mcp.json"
-        source_data = json.loads(implementation_mcp.read_text(encoding="utf-8"))
-        source_context7 = source_data["mcpServers"]["context7"]
-
-        with tempfile.TemporaryDirectory() as tmp:
-            target = Path(tmp) / "project"
-            target.mkdir()
-
-            # (a) fresh install: byte-identical plain copy
-            proc = self._run_install(target, platform="cursor")
-            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
-            mcp_path = target / ".cursor" / "mcp.json"
-            self.assertEqual(
-                mcp_path.read_text(encoding="utf-8"),
-                implementation_mcp.read_text(encoding="utf-8"),
-                "fresh (non --update) install must plain-copy .cursor/mcp.json byte-for-byte",
-            )
-
-            # inject an unknown server key + corrupt a generator-known key
-            data = json.loads(mcp_path.read_text(encoding="utf-8"))
-            data["mcpServers"]["my-custom-server"] = {"url": "https://example.invalid/mcp"}
-            data["mcpServers"]["context7"] = {"url": "https://stale.example.invalid/mcp"}
-            mcp_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
-
-            # (d) a stale non-MCP file elsewhere in the same tree
-            stale = target / ".cursor" / "stale-agent-that-should-be-deleted.md"
-            stale.write_text("remove me", encoding="utf-8")
-
-            proc2 = self._run_install(target, platform="cursor", update=True)
-            self.assertEqual(proc2.returncode, 0, proc2.stdout + proc2.stderr)
-
-            updated = json.loads(mcp_path.read_text(encoding="utf-8"))
-            # (b) unknown key survives
-            self.assertEqual(
-                updated["mcpServers"].get("my-custom-server"),
-                {"url": "https://example.invalid/mcp"},
-                "unknown pre-existing server key must survive --update merge",
-            )
-            # (c) generator-known key refreshed
-            self.assertEqual(
-                updated["mcpServers"]["context7"],
-                source_context7,
-                "generator-known server key must be refreshed to match the generated source on --update",
-            )
-            # (d) stale non-MCP file in the same tree still correctly deleted —
-            # proves the exclude is scoped to exactly mcp.json, not the whole tree
-            self.assertFalse(
-                stale.exists(),
-                "--update must still stale-clean the rest of .cursor/ via rsync --delete; "
-                "only mcp.json is exempted",
-            )
 
     def test_gemini_settings_json_merge_on_update(self):
         implementation_mcp = repo_root() / "implementation" / ".gemini" / "settings.json"
@@ -793,12 +740,6 @@ class TestInstallScript(unittest.TestCase):
                 "with no prior sidecar at all (bootstrap default), every dest-only key must "
                 "survive --update exactly as it did before this mechanism existed",
             )
-
-    def test_update_prunes_retired_generator_owned_key_via_sidecar_history_cursor(self):
-        """Proof class (b), platform cursor. Also one of the 5 required
-        per-tree-platform sidecar-survival assertions (ADR-002 "Risks
-        introduced")."""
-        self._assert_retired_key_pruned_and_sidecar_survives("cursor", ".cursor/mcp.json", "mcpServers")
 
     def test_update_prunes_retired_generator_owned_key_via_sidecar_history_gemini(self):
         """Sidecar-survival assertion for platform gemini (ADR-002 "Risks introduced")."""
@@ -1395,7 +1336,7 @@ class TestInstallRefusesSymlinkedManagedPaths(unittest.TestCase):
         ("agents-md-file", "AGENTS.md", "file", HARNESS_MODES),
         ("ledger-file", "docs/tasks/active-tasks.md", "file", ALL_MODES),
         ("completed-ledger-file", "docs/tasks/completed-tasks.md", "file", ALL_MODES),
-        ("cursor-mcp-file", ".cursor/mcp.json", "file", HARNESS_MODES),
+        ("pi-mcp-file", ".pi/mcp.json", "file", HARNESS_MODES),
         ("mcp-sidecar-file", ".mcp.json.provenance.json", "file", HARNESS_MODES),
     )
 
@@ -1407,10 +1348,10 @@ class TestInstallRefusesSymlinkedManagedPaths(unittest.TestCase):
                         self._assert_refused(case, rel, kind, flags, label, path)
 
     def test_single_platform_install_checks_only_its_own_managed_paths(self):
-        # claude-code touches .claude: refused; a symlinked .cursor is not its path.
+        # claude-code touches .claude: refused; a symlinked .pi is not its path.
         self._assert_refused("single", ".claude", "dir", ("--update",), "rsync", None,
                              platform="claude-code")
-        target, outside = self._scenario("single-other", ".cursor", "dir")
+        target, outside = self._scenario("single-other", ".pi", "dir")
         proc = self._install(target, "--update", platform="claude-code")
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         self.assertEqual((outside / "canary.txt").read_text(), self.CANARY)
@@ -1471,7 +1412,7 @@ class TestInstallRefusesSymlinkedManagedPaths(unittest.TestCase):
     # --- fix round (security review LOW findings) -----------------------------
 
     def _sentinel_target(self, name: str) -> tuple[Path, Path]:
-        """An installed target whose AGENTS.md and a .cursor file differ from what the
+        """An installed target whose AGENTS.md and a .pi file differ from what the
         installer would write: a partial write before the refusal rewrites them."""
         target = self.tmp / name / "target"
         outside = self.tmp / name / "outside"
@@ -1479,7 +1420,7 @@ class TestInstallRefusesSymlinkedManagedPaths(unittest.TestCase):
         outside.mkdir(parents=True)
         (outside / "canary.txt").write_text(self.CANARY)
         (target / "AGENTS.md").write_text("# sentinel: not the rendered file\n")
-        (target / ".cursor" / "rules" / "coding-standards.mdc").write_text("sentinel\n")
+        (target / ".pi" / "instructions" / "coding-standards.md").write_text("sentinel\n")
         return target, outside
 
     def _assert_refusal(self, target: Path, outside: Path, rel: str, flags, path=None,
@@ -1502,7 +1443,7 @@ class TestInstallRefusesSymlinkedManagedPaths(unittest.TestCase):
         harness = set(managed_paths(projections_only=True))
         for rel in ("docs/plans", "docs/tasks/_template.md", "docs/tasks/validate-tasks.py",
                     "implementation/__init__.py", "implementation/runtime/handoff",
-                    ".github", ".gemini", ".opencode", ".pi", ".cline", ".clinerules", ".cursor",
+                    ".github", ".gemini", ".opencode", ".pi", ".cline", ".clinerules",
                     ".vscode/mcp.json.provenance.json"):
             self.assertIn(rel, every)
         self.assertNotIn("docs", harness)
@@ -1552,7 +1493,7 @@ class TestInstallRefusesSymlinkedManagedPaths(unittest.TestCase):
     def test_link_pointing_inside_the_target_is_refused(self):
         target, outside = self._sentinel_target("inside")
         shutil.rmtree(target / ".claude")
-        (target / ".claude").symlink_to(target / ".cursor")
+        (target / ".claude").symlink_to(target / ".pi")
         self._assert_refusal(target, outside, ".claude", ("--update",))
         target, outside = self._sentinel_target("inside-relative")
         shutil.rmtree(target / ".pi")
@@ -1592,7 +1533,7 @@ class TestInstallRefusesSymlinkedManagedPaths(unittest.TestCase):
         if os.geteuid() == 0:
             self.skipTest("root can enter mode-000 directories")
         target, outside = self._sentinel_target("noperm")
-        locked = target / ".cursor"
+        locked = target / ".pi"
         locked.chmod(0o000)
         self.addCleanup(locked.chmod, 0o755)
         proc = self._install(target, "--update")

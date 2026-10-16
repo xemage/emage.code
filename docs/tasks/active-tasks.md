@@ -2,7 +2,6 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T662 | Cursor removal step S1 (ADR-010): generator, installer, registry, tests, trees | devops-engineer | pending | P1 | T661 | 2026-10-16 |
 | T678 | Cursor removal step S2: live docs, knowledge text and templates (ADR-010) | technical-writer | pending | P1 | T662 | 2026-10-16 |
 | T679 | Cursor removal step S3: root refresh (ADR-010; needs the user's approval) | orchestrator | pending | P1 | T678 | 2026-10-16 |
 | T665 | Implement the T664 token-scope decision | devops-engineer | pending | P1 | T664, T662 | 2026-10-16 |

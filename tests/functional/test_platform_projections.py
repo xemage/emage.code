@@ -1,7 +1,7 @@
 """Cross-platform projection integrity checks.
 
 These tests ensure the generated outputs for GitHub Copilot, Gemini, Opencode,
-Claude Code, Cursor, Cline, and Pi stay consistent with canonical knowledge and
+Claude Code, Cline, and Pi stay consistent with canonical knowledge and
 manifest contracts, including each platform's audited remote MCP transport
 encoding (see docs/tasks/task-T360.md § "Audit table").
 """
@@ -98,7 +98,7 @@ def _remote_server_urls(template: str = "${env:VAR}") -> dict[str, str]:
     Since T491, `url` may be a literal string or a templated-value spec
     (`{fromEnv: VAR}`); `_render_templated_value()` renders either uniformly.
     The default template is the `${env:VAR}` placeholder family shared by
-    vscode/cursor/pi/cline/gemini. Pass a different one for a platform with
+    vscode/pi/cline/gemini. Pass a different one for a platform with
     its own syntax: '{env:VAR}' for opencode, or '${VAR}' for claude-code,
     which expands `${VAR}` / `${VAR:-default}` from the live process
     environment and does not recognise the `env:` form at all (T517).
@@ -409,7 +409,7 @@ class TestPlatformProjections(unittest.TestCase):
         )
 
     def test_remote_mcp_transport_shape_for_previously_uncovered_platforms(self):
-        """Regression coverage for T360: cursor, pi, cline, and claude-code emit remote
+        """Regression coverage for T360: pi, cline, and claude-code emit remote
         MCP servers (context7, hf-mcp-server) but had zero test coverage of their
         transport shape before this task. Cline's stale `"type": "http"` — not a
         recognized Cline transport identifier — shipped undetected by the test suite
@@ -417,27 +417,26 @@ class TestPlatformProjections(unittest.TestCase):
         every remaining platform, not only cline.
         """
         shape_by_format = {
-            "cursor": lambda url: {"url": url},
+            "pi": lambda url: {"url": url},
             "cline": lambda url: {"type": "streamableHttp", "url": url},
             "claude-code": lambda url: {"type": "http", "url": url},
         }
         # Each format renders env references with its *own* placeholder syntax (T517):
-        # cursor/pi/cline use VS Code's `${env:VAR}`; claude-code expands `${VAR}` /
+        # pi/cline use VS Code's `${env:VAR}`; claude-code expands `${VAR}` /
         # `${VAR:-default}` from the live process environment and passes the `env:`
         # form through as literal text, which broke hindsight/cwso at connect time.
         template_by_format = {
-            "cursor": "${env:VAR}",
+            "pi": "${env:VAR}",
             "cline": "${env:VAR}",
             "claude-code": "${VAR}",
         }
-        # pi.json's mcp.format is literally "cursor" (verbatim shared branch, T360).
+        # pi.json's mcp.format is "pi" (the format is named after its only user, ADR-010 D2).
         config_path_by_platform = {
-            "cursor": implementation_root() / ".cursor" / "mcp.json",
             "pi": implementation_root() / ".pi" / "mcp.json",
             "cline": implementation_root() / ".cline" / "mcp.json",
             "claude-code": implementation_root() / ".mcp.json",
         }
-        format_by_platform = {"cursor": "cursor", "pi": "cursor", "cline": "cline", "claude-code": "claude-code"}
+        format_by_platform = {"pi": "pi", "cline": "cline", "claude-code": "claude-code"}
 
         for platform, path in config_path_by_platform.items():
             servers = json.loads(path.read_text(encoding="utf-8"))["mcpServers"]

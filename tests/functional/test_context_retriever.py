@@ -316,11 +316,11 @@ class RequestingContextDerivationTests(unittest.TestCase):
     def test_resolve_platform_differs_per_platform_root(self):
         with tempfile.TemporaryDirectory() as tmp:
             claude_root = Path(tmp) / ".claude"
-            cursor_root = Path(tmp) / ".cursor"
+            pi_root = Path(tmp) / ".pi"
             _write_generated_manifest(claude_root, "claude-code")
-            _write_generated_manifest(cursor_root, "cursor")
+            _write_generated_manifest(pi_root, "pi")
             self.assertEqual(cr.resolve_platform(claude_root), "claude-code")
-            self.assertEqual(cr.resolve_platform(cursor_root), "cursor")
+            self.assertEqual(cr.resolve_platform(pi_root), "pi")
 
     def test_resolve_platform_raises_when_manifest_missing(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -93,6 +93,9 @@ unit-tests:
     - apk add --no-cache 'git~=2.54' 'bash~=5.3' 'nodejs~=24' 'docker-cli~=29' 'ripgrep~=15.1'
     # ripgrep and mcp==2.2.0 (the version in implementation/runtime/security/requirements-mcp-server.txt)
     # let the grep_content and live audit-server tests run here; with CI set they fail instead of skipping.
+    # test_install_cursor_removal installs a real `git archive v8.0.0` tree; GIT_DEPTH is shallow and
+    # tags are not fetched by default (the test FAILS in CI when the tag is missing).
+    - git fetch --depth=1 origin tag v8.0.0
     - python3 -m pip install --no-cache-dir pyyaml jsonschema requests pyarrow "cryptography>=43.0.1" "mcp==2.2.0"
   script:
     - python3 tests/run.py

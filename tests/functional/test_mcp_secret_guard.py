@@ -17,7 +17,7 @@ from pathlib import Path
 from tests._helpers.repo import repo_root
 
 # Three generator placeholder families, one per platform group (T517):
-#   ${env:VAR}  vscode/cursor/gemini/pi/cline
+#   ${env:VAR}  vscode/gemini/pi/cline
 #   {env:VAR}   opencode
 #   ${VAR}      claude-code -- it expands `${VAR}` / `${VAR:-default}` from the live
 #               process environment and passes the `env:` form through as literal text.
@@ -79,14 +79,12 @@ HEADER_VALUE_ALLOWLIST: dict[tuple[str, str], str] = {
 
 GENERATED_MCP_FILES = [
     "implementation/.vscode/mcp.json",
-    "implementation/.cursor/mcp.json",
     "implementation/.gemini/settings.json",
     "implementation/.opencode/opencode.json",
     "implementation/.pi/mcp.json",
     "implementation/.cline/mcp.json",
     "implementation/.mcp.json",
     ".vscode/mcp.json",
-    ".cursor/mcp.json",
     ".gemini/settings.json",
     ".opencode/opencode.json",
     ".pi/mcp.json",
@@ -277,7 +275,7 @@ class TestMcpSecretGuard(unittest.TestCase):
         other_file_fixture = {
             "mcpServers": {"cwso": {"headers": {"Authorization": "Bearer ${input:cwso_jwt_token}"}}}
         }
-        violations = find_literal_env_values(other_file_fixture, rel_path=".cursor/mcp.json")
+        violations = find_literal_env_values(other_file_fixture, rel_path=".pi/mcp.json")
         self.assertEqual(
             violations,
             [("Authorization", "Bearer ${input:cwso_jwt_token}")],

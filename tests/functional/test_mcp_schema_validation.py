@@ -20,7 +20,7 @@ the schema directly (not from training-data memory) and cross-checking it define
   (`McpLocalConfig` / `McpRemoteConfig`) defines the `{"type": "local", "command": [...]}`
   and `{"type": "remote", "url": "…"}` shapes this repo emits.
 
-Every other platform (`vscode`/`github`, `cursor`, `pi`, `claude-code`, `cline`) was
+Every other platform (`vscode`/`github`, `pi`, `claude-code`, `cline`) was
 researched and found to have no officially published, citable JSON Schema for its
 MCP/settings config file — see the "Runtime verification checklist" section of
 `docs/wiki/mcp-servers.md` for the documented manual verification steps used there

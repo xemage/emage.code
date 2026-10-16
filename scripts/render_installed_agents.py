@@ -16,12 +16,6 @@ PLATFORM_MAP = {
         "security": ".github/instructions/security-guidelines.instructions.md",
         "mcp": ".vscode/mcp.json",
     },
-    "cursor": {
-        "skills": ".cursor/skills/",
-        "standards": ".cursor/rules/coding-standards.mdc",
-        "security": ".cursor/rules/security-guidelines.mdc",
-        "mcp": ".cursor/mcp.json",
-    },
     "gemini": {
         "skills": ".gemini/skills/",
         "standards": ".gemini/instructions/coding-standards.md",
@@ -159,7 +153,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", required=True)
     parser.add_argument("--dest", required=True)
-    parser.add_argument("--platform", required=True, choices=["github", "cursor", "gemini", "opencode", "pi", "claude-code", "cline", "all"])
+    parser.add_argument("--platform", required=True, choices=["github", "gemini", "opencode", "pi", "claude-code", "cline", "all"])
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
