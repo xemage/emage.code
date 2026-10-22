@@ -32,7 +32,7 @@ Servers in `knowledge/mcp/servers.yaml` reference credentials via a per-platform
 **Required env vars (extended; only if you enable those servers):**
 - `CWSO_MCP_URL`, `CWSO_BEARER_TOKEN`, `CWSO_ORIGIN` (the bearer token is sent as `Authorization: Bearer <value>`)
 - `TOOLRADAR_API_KEY` — see warning below.
-- `GITHUB_PERSONAL_ACCESS_TOKEN` (`github`, passed into its container by name, never in argv) and `SUPABASE_ACCESS_TOKEN` (`supabase`, started with `--read-only`, read from the environment, never from argv). The Supabase token is account-wide: `--read-only` limits the server's tools, not the token. Scoping to one project and the hosted OAuth alternative: `PREREQUISITES.md`, "MCP server credentials".
+- `SUPABASE_ACCESS_TOKEN` (`supabase`, started with `--read-only`, read from the environment, never from argv). The Supabase token is account-wide: `--read-only` limits the server's tools, not the token. Scoping to one project and the hosted OAuth alternative: `PREREQUISITES.md`, "MCP server credentials".
 
 The extended Python servers `security-audit` and `poc-security-audit` need no environment variable and no API key; they make local calls only.
 
@@ -47,11 +47,11 @@ Set credentials via:
 
 ## 3. MCP server reachability
 
-`extended` servers reach external infrastructure (Hugging Face, Supabase, GitHub, the local file system and git repositories). Enabling them in your platform manifest grants the AI access to those systems via MCP. Audit each server before use.
+`extended` servers reach external infrastructure (Hugging Face, Supabase, the local file system and git repositories). Enabling them in your platform manifest grants the AI access to those systems via MCP. Audit each server before use.
 
-The `filesystem` MCP reads every file under the directory it is launched in (`.`), including `.env*` files and `.git`; start the assistant from the project root and keep secrets out of that directory. The `git` MCP exposes write tools. The `github` MCP runs as a container (`docker run`), so it needs Docker and your GitHub token; restrict the token's scopes. Restrict their configuration at the host level.
+The `filesystem` MCP reads every file under the directory it is launched in (`.`), including `.env*` files and `.git`; start the assistant from the project root and keep secrets out of that directory. The `git` MCP exposes write tools. Restrict their configuration at the host level.
 
-Every `npx`, `uvx` and `docker` server is pinned to an exact version or digest, and the pins are reviewed at every release and at least monthly. See "Pin-bump policy" in `PREREQUISITES.md`; do not replace a pin with `@latest`.
+Every `npx` and `uvx` server is pinned to an exact version, and the pins are reviewed at every release and at least monthly. See "Pin-bump policy" in `PREREQUISITES.md`; do not replace a pin with `@latest`.
 
 ---
 

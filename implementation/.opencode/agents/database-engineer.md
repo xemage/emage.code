@@ -21,7 +21,6 @@ tools:
   security-audit_*: false
   poc-security-audit_*: false
   filesystem_*: false
-  github_*: false
   git_*: false
   supabase_*: false
 ---

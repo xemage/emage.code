@@ -78,7 +78,7 @@ def _fake_run_git(tag: str, previous_tag: str):
             return str(len(SAMPLE_SUBJECTS))
         if args[:1] == ["log"]:
             merges = [] if "--no-merges" in args else MERGE_SUBJECTS
-            return "\n".join(merges + SAMPLE_SUBJECTS)
+            return "\x00".join(merges + SAMPLE_SUBJECTS) + "\x00"  # the real log is NUL-framed (SEC-T676-05)
         return ""  # fetch and anything else: no-op
 
     return run_git

@@ -39,7 +39,6 @@ tools:
   security-audit_*: false
   poc-security-audit_*: false
   filesystem_*: false
-  github_*: false
   git_*: false
   supabase_*: false
 agents: [product-owner, solution-architect, scrum-master, tech-lead, backend-developer, frontend-developer, database-engineer, qa-engineer, security-engineer, devops-engineer, release-manager, technical-writer, ux-designer, context-retriever]

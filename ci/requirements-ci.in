@@ -1,0 +1,16 @@
+# Direct dependencies of the `unit-tests` job in .gitlab-ci.yml (T676, SEC-T675-09). That job
+# binds the host Docker socket, so nothing in it may float: this file is the human-edited
+# input, `requirements-ci.txt` is the hash-locked output and the only file the job installs
+# (`pip install --require-hashes --only-binary=:all: -r ci/requirements-ci.txt`).
+#
+# To change a dependency: edit this file, then regenerate the lock (see docs/wiki/mcp-pin-bump-checklist.md,
+# section "CI Python lock files"):
+#   uv pip compile ci/requirements-ci.in --universal --python-version 3.12 --generate-hashes --exclude-newer <UTC timestamp> -o ci/requirements-ci.txt
+# tests/functional/test_ci_hash_pins.py fails when an input has no locked version or the two files drift.
+pyyaml
+jsonschema
+requests
+pyarrow
+cryptography>=43.0.1
+# Same version as implementation/runtime/security/requirements-mcp-server.txt (test-enforced).
+mcp==2.2.0

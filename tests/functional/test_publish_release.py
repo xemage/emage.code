@@ -398,7 +398,7 @@ class TestGuardsAndApiPaths(unittest.TestCase):
             self.publish_release.get_commit_subjects("v1.2.3", None)
         finally:
             self.publish_release.run_git = original
-        self.assertEqual(calls, [["log", "--no-merges", "--pretty=%s", "--end-of-options", "v1.2.3", "--"]])
+        self.assertEqual(calls, [["log", "--no-merges", "--pretty=%s%x00", "--end-of-options", "v1.2.3", "--"]])
 
     def test_api_target_validation_fails_closed(self):
         ok = self.publish_release.validate_api_target
@@ -898,7 +898,7 @@ class TestReleaseBriefAndTagGuards(unittest.TestCase):
         self.assertEqual(self.pr.resolve_previous_tag("v2.0.0", tags), "v1.9.0")
 
     def test_commit_subjects_lose_control_characters(self):
-        log = "feat: ok\x1b[31m red\nfix(x): tab\there\x00 end\n  \x07\n"
+        log = "feat: ok\x1b[31m red\x00fix(x): tab\there end\x00  \x07\x00"
         calls = {"log": log}
         with mock.patch.object(self.pr, "run_git", lambda args: calls.get(args[0], "1")):
             subjects = self.pr.get_commit_subjects("v1.2.3", None)
@@ -906,7 +906,7 @@ class TestReleaseBriefAndTagGuards(unittest.TestCase):
 
     def test_git_runs_without_the_token_variable_but_with_the_rest_of_the_environment(self):
         seen: list[dict] = []
-        fake = mock.Mock(returncode=0, stdout="ok\n", stderr="")
+        fake = mock.Mock(returncode=0, stdout=b"ok\n", stderr=b"")
 
         def run(argv, **kwargs):
             seen.append(kwargs)
@@ -1113,7 +1113,8 @@ class TestCiSupplyChainPins(unittest.TestCase):
 
     def test_every_apk_add_package_is_version_pinned(self):
         invocations = self.apk_invocations(self.ci)
-        self.assertGreaterEqual(len(invocations), 8)
+        # T676 removed four `apk add` lines (jobs that only needed python moved to the python image).
+        self.assertGreaterEqual(len(invocations), 5)
         for tokens in invocations:
             with self.subTest(tokens=tokens):
                 self.assertEqual(tokens[0], "add")
@@ -1147,7 +1148,11 @@ class TestCiSupplyChainPins(unittest.TestCase):
         self.assertIn("'ripgrep~=", job)
         pin = re.search(r"^mcp==(\S+)$", (repo_root() / "implementation/runtime/security/requirements-mcp-server.txt")
                         .read_text(encoding="utf-8"), re.M).group(1)
-        self.assertIn(f'"mcp=={pin}"', job)
+        # T676 (SEC-T675-09): the SDK is installed from the hash-locked file, which holds the same pin.
+        self.assertIn("--require-hashes --only-binary=:all: -r ci/requirements-ci.txt", job)
+        for name in ("requirements-ci.in", "requirements-ci.txt"):
+            text = (repo_root() / "ci" / name).read_text(encoding="utf-8")
+            self.assertRegex(text, rf"(?m)^mcp=={re.escape(pin)}(\s|$)", name)
 
     def test_the_release_job_pins_the_host_and_never_puts_the_token_in_argv(self):
         job = re.search(r"^release:\n(?:[ \t].*\n|\n)+", self.ci, re.M).group(0)

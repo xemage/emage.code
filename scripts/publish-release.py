@@ -55,6 +55,12 @@ SIMPLE_RELEASE_BRANCH_RE = re.compile(r"^release/v\d+\.\d+\.\d+$")
 API_PATH_RE = re.compile(r"(/(?!\.{1,2}(?:/|$))[A-Za-z0-9._~-]+)*/api/v4")
 ENV_NAME_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 CONTROL_CHARS_RE = re.compile(r"[\x00-\x1f\x7f]")
+# T676 (SEC-T675-10): a commit subject also loses C1 controls and the invisible/bidirectional formatting characters
+# (zero-width, LRM/RLM, ALM, LS/PS, LRE..RLO, LRI..PDI, BOM, soft hyphen, Hangul and braille fillers, variation
+# selectors, Unicode tag characters) that make a changelog line read differently from its bytes.
+# Markdown characters are NOT escaped: subjects use backticks and underscores legitimately, and the authors of
+# the tagged history are the maintainers.
+SUBJECT_UNSAFE_RE = re.compile("[\x00-\x1f\x7f-\x9f\u061c\u200b-\u200f\u202a-\u202e\u2028\u2029\u2060-\u2069\ufeff\u00ad\u115f\u1160\u3164\uffa0\u2800\ufe00-\ufe0f\U000e0000-\U000e007f\U000e0100-\U000e01ef]")
 HTTP_TIMEOUT_SECONDS = 30
 WITHHELD_ENV_NAMES = {"WIKI_TOKEN"}  # never passed to git: main() adds the --token-env name
 
@@ -166,19 +172,18 @@ def child_environment() -> dict[str, str]:
 
 
 def run_git(args: list[str]) -> str:
+    """Stdout of git, decoded from bytes: text mode would turn a lone CR in a commit subject into a line break."""
     result = subprocess.run(
         ["git", *args],
         cwd=ROOT,
         check=False,
         capture_output=True,
-        text=True,
         env=child_environment(),
     )
     if result.returncode != 0:
-        raise ReleasePublishError(
-            f"git {' '.join(args)} failed: {result.stderr.strip() or result.stdout.strip()}"
-        )
-    return result.stdout.strip()
+        detail = (result.stderr or result.stdout).decode("utf-8", "replace").strip()
+        raise ReleasePublishError(f"git {' '.join(args)} failed: {detail}")
+    return result.stdout.decode("utf-8", "replace").strip()
 
 
 def ensure_full_history() -> None:
@@ -223,8 +228,11 @@ def _revision_range(current_tag: str, previous_tag: str | None) -> str:
 def get_commit_subjects(current_tag: str, previous_tag: str | None) -> list[str]:
     revision = _revision_range(current_tag, previous_tag)
     # Filter F1: merge commits are excluded structurally, not by subject text.
-    output = run_git(["log", "--no-merges", "--pretty=%s", "--end-of-options", revision, "--"])
-    subjects = [CONTROL_CHARS_RE.sub("", line).strip() for line in output.splitlines()]
+    # Framed by NUL characters and decoded from bytes (SEC-T676-05): neither a lone CR (text mode would turn it into "\n"), nor
+    # \x0b, \x0c, \x1c-\x1e, \x85, \u2028, \u2029 (str.splitlines()), nor "\n" can split one subject into several
+    # changelog entries; git never puts a NUL inside a subject.
+    output = run_git(["log", "--no-merges", "--pretty=%s%x00", "--end-of-options", revision, "--"])
+    subjects = [SUBJECT_UNSAFE_RE.sub("", chunk).strip() for chunk in output.split("\x00")]
     subjects = [line for line in subjects if line]
     if not subjects:
         raise ReleasePublishError(f"no commits found for revision range '{revision}'")

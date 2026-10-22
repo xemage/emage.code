@@ -140,3 +140,9 @@ The user decided on 2026-10-22 (AskUserQuestion, option labels verbatim) on T681
 The review of T682 (`docs/artifacts/security-review-t682-installer-residuals-v1.md`) passed and left three LOW findings that are deferred.
 
 24. **T684** (devops-engineer): fix SEC-T682-03, -04 and -06 (stale-sibling hint and display hardening, `mcp.outputFile` against the generator inputs, a complete preflight in `merge-task-docs.py`), with tests and mutation proofs. Depends on T682. *Acceptance:* the three findings closed; all gates and the suite pass; a Security Engineer delta review.
+
+## Addendum (2026-10-22): the decisions of T676 and T685
+
+The user decided on 2026-10-22 (AskUserQuestion, option labels verbatim) on the T676 review: the Brave audit risk "Accept with conditions (Recommended)" (`docs/artifacts/brave-audit-acceptance-v1.md`, expiry the first brave release above 2.1.4 or 2026-11-21) and, for the GitHub MCP server, "Remove GitHub MCP server" (the shipped `github` entry is removed; a breaking change for the v9.0.0 notes, `docs/tasks/task-T679.md` section 3a).
+
+25. **T685** (devops-engineer): close the open items of the T676 review (SEC-T676-11 to -14, the ancestor check of the release tag, the `WIKI_TOKEN` question, the knowledge templates with end-of-life images). Depends on T676. *Acceptance:* the items closed or reported; all gates and the suite pass; a Security Engineer delta review.

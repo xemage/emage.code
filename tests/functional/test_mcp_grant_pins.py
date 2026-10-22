@@ -505,7 +505,7 @@ class DocumentedPlaywrightAndOpencodeCountTests(unittest.TestCase):
             self.assertIn(old, self.wiki)
             self.assertTrue(playwright_count_findings(self.wiki.replace(old, new, 1)), new)
         carried, holders = len(self.servers), len(actual_gitlab_counts(self.tokens))
-        for old, new in (("the 17 servers the Opencode manifest carries", "the 16 servers the Opencode manifest carries"),
+        for old, new in (("the 16 servers the Opencode manifest carries", "the 17 servers the Opencode manifest carries"),
                          ("For `gitlab` that is 21 of the 28 agents", "For `gitlab` that is 22 of the 28 agents")):
             self.assertIn(old, self.wiki)
             self.assertTrue(server_and_agent_count_findings(self.wiki.replace(old, new, 1), carried, len(self.tokens), holders), new)

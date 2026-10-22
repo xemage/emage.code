@@ -26,7 +26,7 @@
         "--block-service-workers",
         "--no-webmcp",
         "--blocked-origins",
-        "localhost;localhost:*;localhost.;localhost.:*;*.localhost;*.localhost:*;127.*;0.*;10.*;100.{64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127}.*;169.254.*;172.{16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31}.*;192.168.*;[::];[::]:*;[::1];[::1]:*;[::ffff:*;[fc*;[fd*;[fe80:*;*@*"
+        "localhost;localhost:*;localhost.;localhost.:*;*.localhost;*.localhost:*;127.*;0.*;10.*;100.{64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127}.*;169.254.*;172.{16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31}.*;192.168.*;[::];[::]:*;[::1];[::1]:*;[::ffff:*;[fc*;[fd*;[fe80:*;[64:ff9b:*;[2002:*;168.63.129.*;192.0.0.*;198.18.*;198.19.*;{224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239}.*;*.internal;*.internal:*;*.local;*.local:*;*.{nip.io,sslip.io,localtest.me,lvh.me};*.{nip.io,sslip.io,localtest.me,lvh.me}:*;localtest.me;localtest.me:*;lvh.me;lvh.me:*;*@*"
       ]
     },
     "memory": {
@@ -109,20 +109,6 @@
         "@modelcontextprotocol/server-filesystem@1.0.0",
         "."
       ]
-    },
-    "github": {
-      "command": "docker",
-      "args": [
-        "run",
-        "-i",
-        "--rm",
-        "-e",
-        "GITHUB_PERSONAL_ACCESS_TOKEN",
-        "ghcr.io/github/github-mcp-server@sha256:ffced0d76e77428532a2ced185516992d77fd146d69eec2f244e6237d1a97796"
-      ],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
-      }
     },
     "git": {
       "command": "uvx",
