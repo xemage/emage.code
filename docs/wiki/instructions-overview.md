@@ -1,7 +1,10 @@
 # Instructions Overview
 
-This page documents the 4 passive, cross-cutting `instruction` components,
-filling a documentation gap noted directly in
+This page documents 4 of the 6 `instruction` components (`coding-standards`,
+`git-workflow`, `poc-guidelines`, `security-guidelines`); the two `experimental`
+ones, `mechanical-tier-escalation-policy` and `model-routing-policy`, have no
+row here yet (registry count: `implementation/registry/summary.md`). It fills a
+documentation gap noted directly in
 `docs/artifacts/maturity-promotion-criteria-v1.md`: instructions previously
 had no dedicated overview page under `docs/wiki/**`, unlike agents (see
 [Agents Overview](agents-overview)) or commands/skills (see

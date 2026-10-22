@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-22T10:02:51+02:00",
+  "generatedAt": "2026-10-22T09:23:12+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -1836,7 +1836,7 @@
       "category": "skill",
       "name": "release-workflow",
       "path": "skills/release-workflow/SKILL.md",
-      "checksum": "cbdf5d594b72fee1f66d0f5716150aa7178395c60cb1761fba1a21d1b23ff555",
+      "checksum": "a29df4cf2d51a45cb8e1b96c5ca59728d31f51affdec072ce3e40b4a59671989",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [

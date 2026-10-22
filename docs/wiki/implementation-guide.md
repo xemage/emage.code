@@ -28,7 +28,7 @@ Update an existing project:
 scripts/install.sh --target <your-project> --platform claude-code --update
 ```
 
-`--update` replaces the platform trees but spares the client-owned files `.claude/settings.json`, `.claude/settings.local.json` and, under `.github/`, `workflows/`, `ISSUE_TEMPLATE/`, `PULL_REQUEST_TEMPLATE.md`, `PULL_REQUEST_TEMPLATE`, `CODEOWNERS`, `dependabot.yml`, `dependabot.yaml`, `FUNDING.yml` and `copilot-instructions.md`; each platform's MCP/settings config is merged. The task ledgers in `docs/tasks/` keep their `T<NNN>` rows and the prose around the table; other table rows are dropped with a warning.
+`--update` replaces the platform trees but spares the client-owned files `.claude/settings.json`, `.claude/settings.local.json` and, under `.github/`, `workflows/`, `ISSUE_TEMPLATE/`, `PULL_REQUEST_TEMPLATE.md`, `PULL_REQUEST_TEMPLATE`, `CODEOWNERS`, `dependabot.yml`, `dependabot.yaml`, `FUNDING.yml` and `copilot-instructions.md`; each platform's MCP/settings config is merged (a plain install over an existing config merges it too). The task ledgers in `docs/tasks/` keep their `T<NNN>` rows and the prose around the table; other table rows are dropped with a warning, after a copy of the ledger is saved as `<ledger>.bak`. The files the installer can leave next to yours and the notes it prints are listed in [Quick Start](quick-start#files-and-notes-the-installer-produces).
 
 Refresh only the harness projections, leaving `docs/` and `implementation/` untouched (mutually exclusive with `--update`):
 
