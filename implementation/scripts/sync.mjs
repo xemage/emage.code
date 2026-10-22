@@ -196,8 +196,18 @@ const DENY_TOOL_NAME = /^[A-Za-z0-9_]+$/;
 // (`denyUnlessGrant`, `denyTool`) used to be read as an unknown key and silently ignored, which
 // leaves the denial out; it now stops the run.
 const SERVER_KEYS = new Set([
-  'tags', 'transport', 'command', 'args', 'env', 'url', 'headers', 'denyTools', 'denyUnlessGranted',
+  'tags', 'transport', 'command', 'args', 'env', 'url', 'headers', 'denyTools', 'denyUnlessGranted', 'skipFormats',
 ]);
+
+// T680 (SEC-T680-03): `skipFormats: [<format>, ...]` leaves a server out of the MCP config of the named
+// formats (the `mcp.format` of a platform manifest) because the client cannot use it, for example Pi 1.x
+// rejects a templated `url`. The provenance sidecar leaves it out too, so `--update` prunes an entry that an
+// older release generated. Only known format names are accepted: a misspelling would keep the entry.
+const MCP_FORMATS = ['vscode', 'gemini', 'opencode', 'pi', 'claude-code', 'cline'];
+
+function emittedFor(server, tags, format) {
+  return (server.tags || []).some((t) => tags.includes(t)) && !(server.skipFormats || []).includes(format);
+}
 
 function validateDenyTools(servers) {
   for (const [name, server] of Object.entries(servers)) {
@@ -207,6 +217,13 @@ function validateDenyTools(servers) {
     }
     if (server.denyUnlessGranted !== undefined && typeof server.denyUnlessGranted !== 'boolean') {
       throw new Error(`servers.yaml: ${name}.denyUnlessGranted must be the boolean true or false (or absent)`);
+    }
+    if (server.skipFormats !== undefined) {
+      const formats = server.skipFormats;
+      if (!Array.isArray(formats) || formats.length === 0 || formats.some((f) => !MCP_FORMATS.includes(f))
+          || new Set(formats).size !== formats.length) {
+        throw new Error(`servers.yaml: ${name}.skipFormats must be a non-empty array of distinct format names (${MCP_FORMATS.join(', ')})`);
+      }
     }
     if (server.denyTools === undefined) continue;
     const list = server.denyTools;
@@ -228,8 +245,10 @@ function validateDenyTools(servers) {
 // object) may carry only these keys. As with SERVER_KEYS, an unknown key (a misspelled `default`,
 // `secret` or `wrap`) stops the run instead of being ignored, because a dropped `secret` or `default`
 // changes what is rendered into a credential entry. `default` is deliberate and new: it is rendered
-// only for the claude-code format (see mapTemplatedValue).
-const SPEC_KEYS = new Set(['fromEnv', 'secret', 'wrap', 'default']);
+// only for the claude-code format (see mapTemplatedValue). T680 adds `optional`: the `env` variable may be
+// unset. claude-code renders the empty default `${VAR:-}`; pi (which throws for an unset or empty
+// variable) leaves the entry out; the other formats render as before (see mapEnvOmitOptional).
+const SPEC_KEYS = new Set(['fromEnv', 'secret', 'wrap', 'default', 'optional']);
 const ENV_VAR_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
 // A default is literal text inside `${VAR:-<default>}`: no `$`, `{` or `}` that could end or nest the
 // expansion, no control character.
@@ -254,6 +273,14 @@ function validateSpec(where, spec) {
   if (spec.wrap !== undefined && !SPEC_WRAP.test(spec.wrap)) {
     throw new Error(`servers.yaml: ${where}.wrap must contain exactly one {VAR} and otherwise only letters, digits, space and _ . : / -`);
   }
+  // T680: `optional` is read as a boolean guard like `secret`; an optional variable has no value to
+  // fall back to on the platforms that cannot express a default, so its default is absent or "".
+  if (spec.optional !== undefined && typeof spec.optional !== 'boolean') {
+    throw new Error(`servers.yaml: ${where}.optional must be the boolean true or false (or absent)`);
+  }
+  if (spec.optional === true && spec.default !== undefined && spec.default !== '') {
+    throw new Error(`servers.yaml: ${where}.default of an optional value must be the empty string (or absent)`);
+  }
   if (spec.default === undefined) return;
   if (typeof spec.default !== 'string' || !SPEC_DEFAULT.test(spec.default)) {
     throw new Error(`servers.yaml: ${where}.default must be a string without $, { or } or control characters`);
@@ -266,8 +293,18 @@ function validateSpec(where, spec) {
 function validateTemplatedSpecs(servers) {
   for (const [name, server] of Object.entries(servers)) {
     validateSpec(`${name}.url`, server.url);
+    if (server.url && server.url.optional === true) {
+      throw new Error(`servers.yaml: ${name}.url cannot be optional: a remote server needs its address`);
+    }
     for (const key of BLOCK_KEYS) {
-      for (const [k, spec] of Object.entries(server[key] || {})) validateSpec(`${name}.${key}.${k}`, spec);
+      for (const [k, spec] of Object.entries(server[key] || {})) {
+        validateSpec(`${name}.${key}.${k}`, spec);
+        // SEC-T680-02: Pi does not pass a header through from its own environment (it does so for a stdio
+        // `env`), so an optional header would never be sent there.
+        if (key === 'headers' && spec && spec.optional === true) {
+          throw new Error(`servers.yaml: ${name}.headers.${k} cannot be optional: only an env value can be left out`);
+        }
+      }
     }
   }
 }
@@ -643,36 +680,37 @@ function applyGenericFrontmatter(data, cfg) {
 
 function emitMcp(servers, tags, format) {
   const filtered = Object.fromEntries(
-    Object.entries(servers).filter(([, s]) => (s.tags || []).some((t) => tags.includes(t)))
+    Object.entries(servers).filter(([, s]) => emittedFor(s, tags, format))
   );
 
   // T665 placeholder-form check (the T664 token-handling design, finding F-3):
   //   vscode  `${env:VAR}` is documented through the MCP page's pointer to the variables reference
   //           and resolved by the shared configuration resolver; behaviour for an UNSET variable is unverified.
-  //   pi      Pi documents `${VAR}` only. Source traced on main (commit 698a2d2, 2026-10-16), not run and not
-  //           matched to an installed release: extensions/mcp/config.ts reads `<project>/.pi/mcp.json` for
-  //           trusted projects and extensions/mcp/runtime.ts resolves each `env` value through
-  //           core/resolve-config-value.ts, which keeps `${env:VAR}` as literal text AND throws for an unset
-  //           or empty variable. A correct form needs a way to mark a variable optional. Left unchanged and
-  //           split out of T665 (see the T665 report).
+  //   pi      `${VAR}` (T680). Run on @earendil-works/pi-coding-agent 0.99.0, 1.0.0, 1.3.0 and 1.4.0
+  //           (`pi mcp list --json`, a stdio server that recorded its environment): `${VAR}` and `$VAR` are
+  //           expanded in `env` and `headers` values, `${env:VAR}` and `${VAR:-}` stay literal text, an unset
+  //           or EMPTY variable fails the server (it is not started, a fail-closed error), a `url` is
+  //           never expanded (a templated one is rejected as "url must be an http or https URL"), and a
+  //           stdio server inherits Pi's own environment. So a variable marked `optional` is left out of
+  //           `env` (the server still receives it when it is set); an optional `headers` value is refused. Documented in
+  //           implementation/PREREQUISITES.md and docs/wiki/mcp-servers.md; the verified forms table is there.
   //   cline   `${env:VAR}` is expanded by the VS Code extension (McpHub.ts expandEnvironmentVariables);
   //           an unset variable stays literal; the CLI/SDK loader was not shown to expand it (unverified).
   if (format === 'vscode' || format === 'pi') {
+    // pi: `${VAR}` and optional variables are left out (see above); vscode: `${env:VAR}`, unchanged.
+    const template = format === 'pi' ? '${VAR}' : '${env:VAR}';
+    const mapEnvValues = (m) => (format === 'pi' ? mapEnvOmitOptional(m, template) : mapEnv(m, template));
     const out = { servers: format === 'vscode' ? {} : undefined, mcpServers: format === 'pi' ? {} : undefined };
     const target = format === 'vscode' ? out.servers : out.mcpServers;
     for (const [name, s] of Object.entries(filtered)) {
       if (s.transport === 'remote') {
-        const url = mapTemplatedValue(s.url, '${env:VAR}');
-        if (format === 'vscode') {
-          target[name] = { type: 'http', url };
-          if (s.headers) target[name].headers = mapEnv(s.headers, '${env:VAR}');
-        } else {
-          target[name] = { url };
-          if (s.headers) target[name].headers = mapEnv(s.headers, '${env:VAR}');
-        }
+        const url = mapTemplatedValue(s.url, template);
+        target[name] = format === 'vscode' ? { type: 'http', url } : { url };
+        if (s.headers) target[name].headers = mapEnv(s.headers, template);
       } else {
         target[name] = { command: s.command, args: s.args || [] };
-        if (s.env) target[name].env = mapEnv(s.env, '${env:VAR}');
+        const env = s.env ? mapEnvValues(s.env) : undefined;
+        if (env && (format === 'vscode' || Object.keys(env).length > 0)) target[name].env = env;
       }
     }
     return JSON.stringify(format === 'vscode' ? { servers: target } : { mcpServers: target }, null, 2) + '\n';
@@ -781,6 +819,7 @@ function emitMcp(servers, tags, format) {
 //         OR { fromEnv: VAR }                   -> template.replace('VAR', VAR)
 //         OR { fromEnv: VAR, wrap: "X{VAR}Y" }   -> wrap.replace('{VAR}', <rendered above>)
 //         OR { fromEnv: VAR, default: "D" }      -> with `withDefault`: VAR becomes `VAR:-D`
+//         OR { fromEnv: VAR, optional: true }    -> with `withDefault`: VAR becomes `VAR:-` (T680)
 //   template: the platform's own placeholder pattern, e.g. '${env:VAR}' (vscode/pi/cline),
 //             '{env:VAR}' (opencode) or '${VAR}' (claude-code, gemini)
 //   withDefault: true only for the claude-code format (T665, SEC-T660-01): Claude Code passes an
@@ -788,7 +827,8 @@ function emitMcp(servers, tags, format) {
 //             format is documented to honour a default, so those render as before.
 function mapTemplatedValue(spec, template, withDefault = false) {
   if (spec && typeof spec === 'object' && spec.fromEnv) {
-    const name = withDefault && typeof spec.default === 'string' ? `${spec.fromEnv}:-${spec.default}` : spec.fromEnv;
+    const fallback = typeof spec.default === 'string' ? spec.default : spec.optional === true ? '' : undefined;
+    const name = withDefault && fallback !== undefined ? `${spec.fromEnv}:-${fallback}` : spec.fromEnv;
     const rendered = template.replace('VAR', () => name);
     return spec.wrap ? spec.wrap.replace('{VAR}', () => rendered) : rendered;
   }
@@ -798,6 +838,18 @@ function mapTemplatedValue(spec, template, withDefault = false) {
 function mapEnv(envSpec, template, withDefault = false) {
   const out = {};
   for (const [k, v] of Object.entries(envSpec)) out[k] = mapTemplatedValue(v, template, withDefault);
+  return out;
+}
+
+// T680: like mapEnv, but a value marked `optional: true` is left out (pi throws for an unset or empty
+// variable, and a stdio server inherits Pi's environment, so a variable that is set still reaches it).
+// Only `env` is rendered through this: an optional `headers` value is refused by validateTemplatedSpecs.
+function mapEnvOmitOptional(envSpec, template) {
+  const out = {};
+  for (const [k, v] of Object.entries(envSpec)) {
+    if (v && typeof v === 'object' && v.optional === true) continue;
+    out[k] = mapTemplatedValue(v, template);
+  }
   return out;
 }
 
@@ -1022,7 +1074,7 @@ async function syncPlatform(manifest, servers) {
     // emitMcp()'s return contract) to keep the 5 already-passing call sites'
     // return shape untouched.
     const filteredKeys = Object.entries(servers)
-      .filter(([, s]) => (s.tags || []).some((t) => manifest.mcp.tags.includes(t)))
+      .filter(([, s]) => emittedFor(s, manifest.mcp.tags, manifest.mcp.format))
       .map(([name]) => name)
       .sort();
     const sidecarPath = outPath + '.provenance.json';

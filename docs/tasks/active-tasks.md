@@ -4,7 +4,6 @@
 |----|-------|-------|--------|----------|-----------|-------------|
 | T679 | Cursor removal step S3: root refresh (ADR-010; needs the user's approval) | orchestrator | pending | P1 | T678 | 2026-10-16 |
 | T677 | Function-size refactors (tracked debt) | devops-engineer | pending | P2 | T672, T665 | 2026-10-16 |
-| T680 | Pi MCP placeholders: verify the adapter and support optional variables (SEC-T665-09) | devops-engineer | pending | P2 | T665 | 2026-10-22 |
 | T684 | Residual hardening of the T682 review (SEC-T682-03, -04, -06) | devops-engineer | pending | P2 | T682 | 2026-10-22 |
 | T685 | Supply-chain residuals of the T676 review and register leftovers | devops-engineer | pending | P2 | T676 | 2026-10-22 |
 

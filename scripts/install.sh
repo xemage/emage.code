@@ -1362,6 +1362,7 @@ merge_task_docs() {
 merge_or_copy_mcp_json() {
   local src="$1"
   local dest="$2"
+  local extra_flag="${3:-}"   # T680: --drop-env-form for .pi/mcp.json only
   local src_sidecar="${src}.provenance.json"
   local dest_sidecar="${dest}.provenance.json"
   refuse_unsafe_path "$dest"
@@ -1373,6 +1374,9 @@ merge_or_copy_mcp_json() {
     local args=("$REPO_ROOT/scripts/merge-mcp-json.py" --source "$src" --dest "$dest")
     if [[ -f "$src_sidecar" ]]; then
       args+=(--old-sidecar "$dest_sidecar" --new-sidecar "$src_sidecar")
+    fi
+    if [[ -n "$extra_flag" ]]; then
+      args+=("$extra_flag")
     fi
     if [[ "$DRY_RUN" -eq 1 ]]; then
       args+=(--dry-run)
@@ -1505,7 +1509,7 @@ install_opencode() {
 
 install_pi() {
   install_tree_into "$IMPLEMENTATION/.pi" "$TARGET/.pi" "mcp.json" "mcp.json.provenance.json"
-  merge_or_copy_mcp_json "$IMPLEMENTATION/.pi/mcp.json" "$TARGET/.pi/mcp.json"
+  merge_or_copy_mcp_json "$IMPLEMENTATION/.pi/mcp.json" "$TARGET/.pi/mcp.json" --drop-env-form
 }
 
 install_claude_code() {

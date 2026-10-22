@@ -10,8 +10,9 @@ decision of 2026-10-16). This file pins:
   the claude-code format ONLY; an unknown key in a templated value, a `default` on a secret that is not the
   empty string, and an unsafe default stop the run before anything is written;
 - the placeholder-form check (design finding F-3) as far as it changed a template: Gemini CLI renders
-  `${VAR}`; Pi, Cline, VS Code and Opencode are pinned as they were, with the verification status in the
-  generator comment and in docs/wiki/mcp-servers.md;
+  `${VAR}`; Cline, VS Code and Opencode are pinned as they were, with the verification status in the
+  generator comment and in docs/wiki/mcp-servers.md; Pi renders `${VAR}` and leaves an `optional` variable
+  out (T680, observed on four releases (0.99.0, 1.0.0, 1.3.0, 1.4.0); see tests/functional/test_pi_optional_variables.py);
 - `scripts/merge-mcp-json.py` on the gitlab entry: the user's own env keys survive, a user's value for the
   file variable is replaced by the generated placeholder (generated values win), and the merge is a fixed
   point;
@@ -49,7 +50,7 @@ GITLAB_ENV_FILES = {
     "claude-code": (".mcp.json", ("mcpServers", "gitlab", "env"), "${VAR}"),
     "vscode": (".vscode/mcp.json", ("servers", "gitlab", "env"), "${env:VAR}"),
     "gemini": (".gemini/settings.json", ("mcpServers", "gitlab", "env"), "${VAR}"),
-    "pi": (".pi/mcp.json", ("mcpServers", "gitlab", "env"), "${env:VAR}"),
+    "pi": (".pi/mcp.json", ("mcpServers", "gitlab", "env"), "${VAR}"),
     "cline": (".cline/mcp.json", ("mcpServers", "gitlab", "env"), "${env:VAR}"),
     "opencode": (".opencode/opencode.json", ("mcp", "gitlab", "environment"), "{env:VAR}"),
 }
@@ -70,9 +71,10 @@ def _shipped_gitlab() -> dict:
 class ServersYamlTests(unittest.TestCase):
     def test_the_gitlab_entry_declares_the_token_file_and_the_defaults(self):
         env = _shipped_gitlab()["env"]
-        self.assertEqual(env[TOKEN], {"fromEnv": TOKEN, "secret": True, "default": ""})
+        # T680: both are also `optional`, so Pi (which fails a server for an unset variable) leaves them out
+        self.assertEqual(env[TOKEN], {"fromEnv": TOKEN, "secret": True, "default": "", "optional": True})
         # a PATH, not a secret: it must not be marked secret
-        self.assertEqual(env[TOKEN_FILE], {"fromEnv": TOKEN_FILE, "default": ""})
+        self.assertEqual(env[TOKEN_FILE], {"fromEnv": TOKEN_FILE, "default": "", "optional": True})
         self.assertEqual(env["GITLAB_API_URL"], {"fromEnv": "GITLAB_API_URL"})
         self.assertEqual(env["GITLAB_PERMISSION_MODE"], "modify")
 
@@ -104,11 +106,19 @@ class ShippedOutputTests(unittest.TestCase):
                 env = _gitlab_env(platform)
                 # claude-code is the only platform that renders the optional empty default
                 suffix = ":-" if platform == "claude-code" else ""
-                self.assertEqual(env[TOKEN_FILE], template.replace("VAR", TOKEN_FILE + suffix))
-                self.assertEqual(env[TOKEN], template.replace("VAR", TOKEN + suffix))
+                if platform == "pi":
+                    # T680: Pi throws for an unset or empty variable, so an optional one is left out
+                    self.assertNotIn(TOKEN_FILE, env)
+                    self.assertNotIn(TOKEN, env)
+                else:
+                    self.assertEqual(env[TOKEN_FILE], template.replace("VAR", TOKEN_FILE + suffix))
+                    self.assertEqual(env[TOKEN], template.replace("VAR", TOKEN + suffix))
                 self.assertEqual(env["GITLAB_API_URL"], template.replace("VAR", "GITLAB_API_URL"))
                 self.assertEqual(env["GITLAB_PERMISSION_MODE"], "modify")
-                self.assertEqual(list(env), [TOKEN, TOKEN_FILE, "GITLAB_API_URL", "GITLAB_PERMISSION_MODE"])
+                expected = [TOKEN, TOKEN_FILE, "GITLAB_API_URL", "GITLAB_PERMISSION_MODE"]
+                if platform == "pi":
+                    expected = expected[2:]   # T680: the two optional variables are left out
+                self.assertEqual(list(env), expected)
 
     def test_only_claude_code_carries_a_default_anywhere(self):
         for platform, (rel, _, _) in GITLAB_ENV_FILES.items():
@@ -133,9 +143,10 @@ class ShippedOutputTests(unittest.TestCase):
         self.assertNotIn("${env:", gemini)
         self.assertIn("${HINDSIGHT_MCP_URL}", gemini)
         self.assertIn("Bearer ${CWSO_BEARER_TOKEN}", gemini)
-        # Pi (split out, unverified fix), Cline and VS Code (documented / source-verified) are unchanged
-        for rel in (".pi/mcp.json", ".cline/mcp.json", ".vscode/mcp.json"):
+        # Cline and VS Code (documented / source-verified) are unchanged; Pi moved to `${VAR}` in T680
+        for rel in (".cline/mcp.json", ".vscode/mcp.json"):
             self.assertIn("${env:", (IMPL / rel).read_text(encoding="utf-8"), rel)
+        self.assertNotIn("${env:", (IMPL / ".pi" / "mcp.json").read_text(encoding="utf-8"))
 
 
 def _scratch_root(servers_text: str) -> Path:
@@ -192,7 +203,7 @@ class GeneratorDefaultTests(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         self.assertEqual(self.probe_env(root, "claude-code"),
                          {"A": "${AAA:-}", "B": "${BBB:-}", "C": "${CCC:-fallback}", "D": "${DDD}", "E": "literal"})
-        for platform, template in (("vscode", "${env:VAR}"), ("gemini", "${VAR}"), ("pi", "${env:VAR}"),
+        for platform, template in (("vscode", "${env:VAR}"), ("gemini", "${VAR}"), ("pi", "${VAR}"),
                                    ("cline", "${env:VAR}"), ("opencode", "{env:VAR}")):
             with self.subTest(platform=platform):
                 self.assertEqual(self.probe_env(root, platform),
@@ -330,6 +341,54 @@ class MergeBehaviourTests(unittest.TestCase):
         self.assertEqual(merged["mcpServers"]["gitlab"]["env"][TOKEN], "${GITLAB_PERSONAL_ACCESS_TOKEN:-}")
         self.assertNotIn(b"glpat-", raw)
 
+    def merge_pi(self, dest_data: dict) -> tuple[dict, subprocess.CompletedProcess]:
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        dest = Path(tmp.name) / "mcp.json"
+        dest.write_text(json.dumps(dest_data, indent=2) + "\n", encoding="utf-8")
+        result = _run_merge(IMPL / ".pi" / "mcp.json", dest)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return json.loads(dest.read_text(encoding="utf-8")), result
+
+    def test_a_literal_token_typed_into_the_pi_file_is_kept_but_warned_about_by_name(self):
+        # SEC-T680-01: on Pi the generator no longer ships the two token keys, so the merge cannot replace a
+        # literal; it keeps the user's key (the merge never deletes one) and says so loudly, naming the key only.
+        fake = "glpat-FAKEVALUEFORTESTONLYNOTREAL"
+        pi = json.loads((IMPL / ".pi" / "mcp.json").read_text(encoding="utf-8"))
+        pi["mcpServers"]["gitlab"]["env"][TOKEN] = fake
+        pi["mcpServers"]["gitlab"]["env"]["MY_API_KEY"] = "${MY_API_KEY}"
+        pi["mcpServers"]["gitlab"]["env"]["MY_PASSWORD_CMD"] = "!pass show x"
+        pi["mcpServers"]["gitlab"]["env"]["GITLAB_TOOLS"] = "list_issues"
+        merged, result = self.merge_pi(pi)
+        self.assertEqual(merged["mcpServers"]["gitlab"]["env"][TOKEN], fake, "the key is kept, not deleted")
+        warnings = [l for l in result.stderr.splitlines() if "WARNING" in l]
+        self.assertEqual(len(warnings), 1, result.stderr)
+        self.assertIn(f"mcpServers.gitlab.env.{TOKEN} holds a literal value; remove it from the file and revoke the token",
+                      warnings[0])
+        self.assertNotIn(fake, result.stderr + result.stdout)
+        self.assertNotIn("glpat-", result.stderr + result.stdout)
+
+    def test_a_literal_credential_header_is_warned_about_on_any_platform(self):
+        source = {"mcpServers": {"srv": {"url": "https://x.invalid/mcp", "headers": {"Origin": "o"}}}}
+        dest = {"mcpServers": {"srv": {"url": "https://x.invalid/mcp", "headers": {"Authorization": "Bearer abc-literal"}}}}
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        s, d = Path(tmp.name) / "s.json", Path(tmp.name) / "d.json"
+        s.write_text(json.dumps(source), encoding="utf-8")
+        d.write_text(json.dumps(dest), encoding="utf-8")
+        result = _run_merge(s, d)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("mcpServers.srv.headers.Authorization holds a literal value", result.stderr)
+        self.assertNotIn("abc-literal", result.stderr + result.stdout)
+
+    def test_a_placeholder_or_a_non_credential_name_is_not_warned_about(self):
+        pi = json.loads((IMPL / ".pi" / "mcp.json").read_text(encoding="utf-8"))
+        env = pi["mcpServers"]["gitlab"]["env"]
+        env.update({"MY_API_KEY": "${MY_API_KEY}", "OTHER_TOKEN": "$OTHER_TOKEN", "THIRD_SECRET": "{env:THIRD_SECRET}",
+                    "GITLAB_TOOLS": "list_issues", "EMPTY_KEY": ""})
+        _, result = self.merge_pi(pi)
+        self.assertNotIn("WARNING", result.stderr)
+
     def test_an_already_current_file_is_left_byte_identical(self):
         current = (IMPL / ".mcp.json").read_bytes()
         merged, raw = self.merge(json.loads(current.decode("utf-8")))
@@ -399,7 +458,7 @@ class DocumentationTests(unittest.TestCase):
             self.assertIn(needle, steps, needle)
         self.assertRegex(steps, r"(?i)non-empty.{0,80}(wins|beats|takes precedence)")
 
-    def test_the_posture_table_labels_every_row_and_never_claims_a_live_run(self):
+    def test_the_posture_table_labels_every_row_and_only_pi_says_observed(self):
         posture = _section(self.prereq_token, "#### Per-client posture")
         for client in ("Claude Code", "GitHub Copilot", "Opencode", "Gemini CLI", "Pi", "Cline"):
             self.assertRegex(posture, rf"\|\s*{client}", client)
@@ -411,10 +470,15 @@ class DocumentationTests(unittest.TestCase):
             self.assertRegex(status, r"documented|unverified", row[:30])
         # the rows whose behaviour is NOT established must say so in their status cell
         by_client = {row.split("|")[1].strip(): row for row in rows}
-        self.assertIn("not fixed here", by_client["Pi"].lower())
+        self.assertIn("observed", by_client["Pi"].lower())   # T680: run on Pi, not only read
+        for client, row in by_client.items():   # the Status cell (last column) only: other cells say "not observed"
+            status = row.rstrip(" |").rsplit("|", 1)[1].lower()
+            if client != "Pi":
+                self.assertNotRegex(status, r"(?<!not )\bobserved\b", f"{client}: only the Pi row (T680) is a run")
         self.assertIn("unverified live", by_client["Claude Code"].lower())
         self.assertIn("cli unverified", by_client["Cline"].lower())
-        self.assertIn("not matched to an installed release", by_client["Pi"])
+        self.assertIn("other releases unverified", by_client["Pi"])
+        self.assertIn("1.4.0", by_client["Pi"])
         self.assertIn("CLAUDE_CODE_SUBPROCESS_ENV_SCRUB", posture)
 
     def test_the_residual_is_stated_in_plain_words(self):

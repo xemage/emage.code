@@ -422,11 +422,11 @@ class TestPlatformProjections(unittest.TestCase):
             "claude-code": lambda url: {"type": "http", "url": url},
         }
         # Each format renders env references with its *own* placeholder syntax (T517):
-        # pi/cline use VS Code's `${env:VAR}`; claude-code expands `${VAR}` /
+        # cline uses VS Code's `${env:VAR}` (pi moved to `${VAR}` in T680); claude-code expands `${VAR}` /
         # `${VAR:-default}` from the live process environment and passes the `env:`
         # form through as literal text, which broke hindsight/cwso at connect time.
         template_by_format = {
-            "pi": "${env:VAR}",
+            "pi": "${VAR}",   # T680: Pi expands `${VAR}` and leaves `${env:VAR}` as literal text
             "cline": "${env:VAR}",
             "claude-code": "${VAR}",
         }
@@ -447,6 +447,11 @@ class TestPlatformProjections(unittest.TestCase):
             headers_by_server = _remote_server_headers(template)
             for name, url in urls.items():
                 with self.subTest(platform=platform, server=name):
+                    if platform == "pi" and url.startswith("${"):
+                        # T680: Pi 1.x never expands a url and rejects a templated one, so the generator skips
+                        # these servers for Pi (`skipFormats: [pi]` in servers.yaml)
+                        self.assertNotIn(name, servers)
+                        continue
                     expected = expected_shape(url)
                     # T491: servers with a `headers` block (e.g. cwso) emit it
                     # after `type`/`url`, via mapEnv() -- see sync.mjs emitMcp().
