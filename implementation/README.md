@@ -10,14 +10,14 @@ Latest release: v8.0.0
 **Recommended** — from the repository root:
 
 ```bash
-scripts/install.sh --target <your-project> --platform cursor
-# or: make install TARGET=<your-project> PLATFORM=cursor
+scripts/install.sh --target <your-project> --platform claude-code
+# or: make install TARGET=<your-project> PLATFORM=claude-code
 ```
 
 **Update** an existing install (requires `AGENTS.md` in the target):
 
 ```bash
-scripts/install.sh --target <your-project> --platform cursor --update
+scripts/install.sh --target <your-project> --platform claude-code --update
 ```
 
 `--update` replaces the platform trees but spares the client-owned files
@@ -33,7 +33,7 @@ is merged.
 existing install:
 
 ```bash
-scripts/install.sh --target <your-project> --platform cursor --projections-only
+scripts/install.sh --target <your-project> --platform claude-code --projections-only
 ```
 
 **PoC security scan server.** `implementation/runtime/security/` is installed
@@ -48,7 +48,7 @@ installer never writes. Details:
 **Manual copy** — platform folder plus shared files:
 
 ```bash
-cp -r implementation/.cursor         <your-project>/.cursor/   # example: Cursor
+cp -r implementation/.claude         <your-project>/.claude/   # example: Claude Code
 cp    implementation/AGENTS.md         <your-project>/
 cp -r implementation/docs            <your-project>/docs/
 # MCP server runtime source (the installer skips it only under --projections-only);
@@ -78,7 +78,7 @@ Or: `make verify` and `make sync`. Thin wrappers: `scripts/sync.sh`, `scripts/ve
 | `knowledge/` | Canonical agents, commands, skills, instructions, MCP registry |
 | `platforms/` | Per-platform manifest JSON |
 | `cookbooks/`, `triggers/`, `runtime/` | Schema-first workflows |
-| `.cursor/`, `.github/`, … | **Generated** — run `make sync` after editing `knowledge/` |
+| `.github/`, `.claude/`, … | **Generated** — run `make sync` after editing `knowledge/` |
 
 ## Package workflow
 

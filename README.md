@@ -32,7 +32,7 @@ emage.code/
 │   ├── scripts/               ← sync, verify, check, packaging, registry
 │   ├── cookbooks/             ← managed-agent definitions
 │   ├── triggers/              ← trigger specs and examples
-│   └── .cursor/ … .pi/        ← generated platform outputs (do not edit by hand)
+│   └── .github/ … .pi/        ← generated platform outputs (do not edit by hand)
 ├── scripts/
 │   └── install.sh             ← one-command install into your project
 ├── docs/                      ← runtime workspace state + wiki sources
@@ -57,10 +57,11 @@ Use [`implementation/`](implementation/README.md) for all development work.
 | GitHub Copilot (VS Code) | `.github/` + `.vscode/mcp.json` | `.agent.md`, `.prompt.md`, `.instructions.md` |
 | Gemini CLI | `.gemini/` | `.md` (no `tools` field), `settings.json` with hooks |
 | Opencode | `.opencode/` | `.md` (object `tools`), `opencode.json` |
-| Cursor | `.cursor/` | `.mdc`, `applyTo` → `globs`, `mcp.json` |
 | Pi | `.pi/` | agents, prompts, instructions, skills (`.md`) |
 | Claude Code | `.claude/` + `.mcp.json` | `.md` (string `tools`), subagents + skills + rules |
 | Cline | `.clinerules/` (root) + `.cline/skills/` + `.cline/mcp.json` | `.md` rules (`paths` frontmatter) + skills; MCP config is a staging file, not auto-applied |
+
+Cursor support was removed in v9.0.0 (see the release notes).
 
 Adding a new platform = adding a `platforms/<name>.json` manifest under
 `implementation/`. Usually no script changes are required; add a new
@@ -76,12 +77,11 @@ Install the current release with the installer script:
 ```bash
 git clone https://gitlab.com/em-age/emage.code.git
 cd emage.code
-scripts/install.sh --target /path/to/your-project --platform cursor
+scripts/install.sh --target /path/to/your-project --platform claude-code
 ```
 
 | Platform | `--platform` value |
 |----------|-------------------|
-| Cursor | `cursor` |
 | GitHub Copilot (VS Code) | `github` |
 | Gemini CLI | `gemini` |
 | Opencode | `opencode` |
@@ -90,17 +90,17 @@ scripts/install.sh --target /path/to/your-project --platform cursor
 | Cline | `cline` |
 | All platforms | `all` |
 
-Makefile shortcut: `make install TARGET=/path/to/your-project PLATFORM=cursor`
+Makefile shortcut: `make install TARGET=/path/to/your-project PLATFORM=claude-code`
 
 **Update an existing install:**
 
 ```bash
-scripts/install.sh --target /path/to/your-project --platform cursor --update
+scripts/install.sh --target /path/to/your-project --platform claude-code --update
 ```
 
 On `--update`, the single-file MCP/settings configs for every platform —
-`.vscode/mcp.json` (`github`), `.mcp.json` (`claude-code`), `.cursor/mcp.json`
-(`cursor`), `.gemini/settings.json` (`gemini`), `.opencode/opencode.json`
+`.vscode/mcp.json` (`github`), `.mcp.json` (`claude-code`),
+`.gemini/settings.json` (`gemini`), `.opencode/opencode.json`
 (`opencode`), `.pi/mcp.json` (`pi`), and `.cline/mcp.json` (`cline`) — are
 merged, not overwritten: any existing top-level key the generator doesn't
 know about (e.g. a hand-added MCP server entry, or a top-level `inputs`
@@ -108,7 +108,7 @@ prompt block) is preserved, while every generator-known key is refreshed to
 the current generated content, recursing into nested objects (so hand-added
 fields inside a known server's config are preserved too). See
 `scripts/merge-mcp-json.py` for the exact algorithm. The rest of each
-platform's directory tree (`.github/`, `.cursor/`, `.gemini/`, `.opencode/`,
+platform's directory tree (`.github/`, `.gemini/`, `.opencode/`,
 `.pi/`, `.claude/`, `.cline/`, `.clinerules/`) is replaced on `--update`, with
 files that no longer exist upstream deleted: hand-written files inside those
 trees are lost, so keep project-specific content in `docs/`. Only each
@@ -156,7 +156,7 @@ refused in every mode.
 The `poc-security-audit` MCP server backs the PoC security review. It exposes
 exactly two tools, `scan_secrets` and `ref_containment`; a clean result means
 "no match for the fixed rule set at the scanned refs", not "no secrets". Its
-config is generated for Claude Code, Cursor, Gemini CLI, Opencode, Pi and Cline;
+config is generated for Claude Code, Gemini CLI, Opencode, Pi and Cline;
 GitHub Copilot's `.vscode/mcp.json` does not carry it, so the scan has no server
 to call there, and the agent's rule is that a scan which did not complete is
 `FAIL`, never `PASS`. Setup, once per project, after a
@@ -349,7 +349,7 @@ BENCH_STRESS=1 python3 tests/run.py --suite performance -v
 
 ## Contributing
 
-1. Edit canonical knowledge under [`implementation/knowledge/`](implementation/knowledge/) — **never** the generated `.github/`, `.gemini/`, `.opencode/`, `.cursor/`, `.pi/` folders.
+1. Edit canonical knowledge under [`implementation/knowledge/`](implementation/knowledge/) — **never** the generated `.github/`, `.gemini/`, `.opencode/`, `.pi/`, `.claude/`, `.cline/`, `.clinerules/` folders.
 2. Run the sync engine from the repo root:
    ```bash
    make sync

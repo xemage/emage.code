@@ -19,13 +19,13 @@ and validation super-gates (current release: v8.0.0).
 ```bash
 git clone https://gitlab.com/em-age/emage.code.git
 cd emage.code
-scripts/install.sh --target <your-project> --platform cursor
+scripts/install.sh --target <your-project> --platform claude-code
 ```
 
 Update an existing project:
 
 ```bash
-scripts/install.sh --target <your-project> --platform cursor --update
+scripts/install.sh --target <your-project> --platform claude-code --update
 ```
 
 `--update` replaces the platform trees but spares the client-owned files `.claude/settings.json`, `.claude/settings.local.json` and, under `.github/`, `workflows/`, `ISSUE_TEMPLATE/`, `PULL_REQUEST_TEMPLATE.md`, `PULL_REQUEST_TEMPLATE`, `CODEOWNERS`, `dependabot.yml`, `dependabot.yaml`, `FUNDING.yml` and `copilot-instructions.md`; each platform's MCP/settings config is merged. The task ledgers in `docs/tasks/` keep their `T<NNN>` rows and the prose around the table; other table rows are dropped with a warning.
@@ -33,14 +33,14 @@ scripts/install.sh --target <your-project> --platform cursor --update
 Refresh only the harness projections, leaving `docs/` and `implementation/` untouched (mutually exclusive with `--update`):
 
 ```bash
-scripts/install.sh --target <your-project> --platform cursor --projections-only
+scripts/install.sh --target <your-project> --platform claude-code --projections-only
 ```
 
 The PoC security scan runs on the `poc-security-audit` MCP server, which needs `mcp` (Python), `git` 2.40 or newer and, on Claude Code, an allow rule you add to your own `.claude/settings.json`: see [MCP Servers](mcp-servers#poc-security-scan-server-poc-security-audit).
 
 Or see [Quick Start](quick-start) and [`docs/releases/v8.0.0.md`](https://gitlab.com/em-age/emage.code/-/blob/main/docs/releases/v8.0.0.md).
 
-Supported projections: GitHub Copilot, Gemini CLI, Opencode, Cursor, Pi.
+Supported projections: GitHub Copilot, Gemini CLI, Opencode, Pi, Claude Code, Cline.
 
 ## Validate (maintainers)
 

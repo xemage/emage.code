@@ -27,7 +27,7 @@ Closes #<!-- issue id -->
 - [ ] Branched from `develop`
 - [ ] Branch name follows `feature/<issue-id>-<slug>` (or `bugfix/`, `hotfix/`, `release/`)
 - [ ] Commits follow [Conventional Commits](https://www.conventionalcommits.org/)
-- [ ] Edits made **only** under `v2/implementation/knowledge/` (not generated `.github/`, `.gemini/`, `.opencode/`, `.cursor/`)
+- [ ] Edits made **only** under `v2/implementation/knowledge/` (not generated `.github/`, `.gemini/`, `.opencode/`)
 - [ ] Ran `cd v2/implementation && node scripts/sync.mjs` and committed the result
 - [ ] No secrets, tokens, or PII in the diff
 - [ ] Markdown links resolve (`lint` job is informational; check locally if you added wiki/doc links)
