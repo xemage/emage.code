@@ -128,3 +128,9 @@ The Security Engineer review of T665 (`docs/artifacts/security-review-t665-token
 The delta re-review of T672 (`docs/artifacts/security-review-t672-installer-robustness-v1.md`) passed and left eight LOW findings (N-1 to N-8).
 
 22. **T682** (devops-engineer): fix N-1 to N-8 in the reviewer's priority order, with tests and mutation proofs. Depends on T672. *Acceptance:* the eight findings closed; all gates and the suite pass; a Security Engineer delta review.
+
+## Addendum (2026-10-22): the decision of T681 and T683
+
+The user decided on 2026-10-22 (AskUserQuestion, option labels verbatim) on T681 (`docs/artifacts/gitlab-per-role-token-design-v1.md`): DEC-T681-1 "A: status quo + exposure sentence (Recommended)" and the Reporter profile "Yes, document it (Recommended)". Options B, C and D are not pursued; SEC-T665-07 stays open as LOW with an accurate description and the exposure is a stated, accepted residual of SEC-T665-01.
+
+23. **T683** (qa-engineer): the anchored documentation assertions that pin the Developer-level exposure sentence and the Reporter profile written by T674. Depends on T674. *Acceptance:* the assertions and their mutation tests; all gates and the suite pass.

@@ -2,13 +2,13 @@
 
 **ID:** T681
 **Owner:** solution-architect
-**Status:** pending
+**Status:** done
 **Priority:** P2
 **Tier:** standard
 **Depends on:** T665
 **Affects:** —
 **Created:** 2026-10-22
-**Completed:** —
+**Completed:** 2026-10-22
 **Based on:**
 - `docs/plans/plan-123-post-release-follow-ups.md` (Addendum of 2026-10-22: T681)
 - `docs/artifacts/security-review-t665-token-handling-v1.md` (SEC-T665-07), `docs/artifacts/gitlab-token-handling-design-v1.md`
