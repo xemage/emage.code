@@ -59,7 +59,7 @@ After `scripts/install.sh --update`, the `filesystem`, `git`, `github` and `supa
 Set whichever you need before launching the AI tool. See [`SECURITY.md`](SECURITY.md) for handling guidance.
 
 ### Core
-- `GITLAB_PERSONAL_ACCESS_TOKEN` — read_api, write_repository, read_user
+- `GITLAB_PERSONAL_ACCESS_TOKEN_FILE` (recommended, since T665) or `GITLAB_PERSONAL_ACCESS_TOKEN` — the GitLab token, as a file path or as the token itself; scope, role, token type and handling: [GitLab token](#gitlab-token) below
 - `GITLAB_API_URL` — defaults to `https://gitlab.com/api/v4`
 - `BRAVE_API_KEY`
 
@@ -67,6 +67,108 @@ Set whichever you need before launching the AI tool. See [`SECURITY.md`](SECURIT
 - `TOOLRADAR_API_KEY`
 - `GITHUB_PERSONAL_ACCESS_TOKEN` — `github` server; passed into the container by name (`-e`), never on the command line
 - `SUPABASE_ACCESS_TOKEN` — `supabase` server (started with `--read-only`); read from the environment, never from argv
+
+### GitLab token
+
+The `gitlab` MCP server (`@zereight/mcp-gitlab@2.2.5`) needs one GitLab credential. Use a **dedicated credential for the harness**: never your own `glab` or git token. Every agent that holds a shell (`execute`) runs as you and can reach whatever token the server uses (SEC-T660-01), so the credential must be weak enough that its theft is no worse than the tool list you grant. Design and evidence: `docs/artifacts/gitlab-token-handling-design-v1.md`; the user's decision of 2026-10-16 is recorded in `docs/plans/plan-123-post-release-follow-ups.md`. Every statement below is documentation or vendor source read on 2026-10-16; **no statement was observed in a live run** unless it says so, and the three live checks at the end are yours to run.
+
+#### Scope and role
+
+This is the only scope table; the wiki points here. The two earlier lists (one here, one in the wiki) were wrong: a token with only `read_api`, `write_repository` and `read_user` cannot create an issue or a note, because `read_api` is read-only and `write_repository` does not authenticate against the REST API; the wiki's list asked for repository scopes that no role needs.
+
+| Use | Examples | Scope | Minimum role (GitLab permissions page) | Fine-grained permission rows |
+|-----|----------|-------|----------------------------------------|------------------------------|
+| Read issues, notes, labels, milestones, issue links, members | `list_issues`, `get_issue`, `list_labels` | `read_api` is enough | Guest | Issue / Issue note / Label / Milestone / Issue link / Member: Read |
+| Read merge requests, pipelines, jobs, job traces | `get_merge_request`, `list_pipelines`, `get_pipeline_job_output` | `read_api` is enough | Guest (pipeline visibility needed) | Merge request / Pipeline / Job: Read |
+| Create an issue, a note, an issue link | `create_issue`, `create_issue_note` | `api` | Guest | Issue / Issue note / Issue link: Create |
+| Update an issue; create or edit labels and milestones | `update_issue`, `create_label` | `api` | Planner (labels and milestones: not confirmed, unverified) | Issue: Update; Label / Milestone: Create, Update |
+| Create a merge request, a branch, a tag | `create_merge_request`, `create_branch` | `api` | Developer | Merge request / Branch / Repository tag: Create |
+| Push files or a commit | `push_files`, `create_or_update_file` | `api` | Developer (unprotected branch), Maintainer (protected) | Repository file / Commit: Create |
+| Trigger, retry or cancel a pipeline | `create_pipeline`, `retry_pipeline` | `api` | Developer | Pipeline: Create, Update; Job: Run |
+| Merge a merge request | `merge_merge_request` | `api` | not found on the permissions page (unverified); depends on "allowed to merge" of the protected branch | Merge request: Merge |
+| Create a release, protect a tag | `create_release` | `api` | Maintainer | release-create row not found (unverified) |
+| Delete anything, unprotect a branch | `delete_branch`, `unprotect_branch` | `api` | varies | Delete rows |
+
+Rules that follow from the table:
+
+- **The roles that write need `api`, and nothing else.** `qa-engineer` and `scrum-master` create and update issues, notes, labels and milestones, so a read-only token makes them fail. Do not add `write_repository`, `read_repository`, `ai_features`, `sudo`, `admin_mode`, `read_user` or any other scope: `scripts/check-gitlab-token.py` warns on every scope beyond `api`, `read_api`.
+- **The role sets the ceiling, not the scope.** An `api` token of a Planner or Reporter identity cannot push, branch or merge; the same scope on a Maintainer account can do everything. Limit by role, never Maintainer or Owner. With the named tool sets of T666 and T667 (merged; names compared with this table on 2026-10-22, not run): `qa-engineer`, `scrum-master`, `devops-engineer` and `poc-devops-engineer` need at most Planner or Reporter (issues, notes, labels, milestones, read-only lookups, CI lint); `orchestrator`, `poc-orchestrator` and `release-manager` hold `create_merge_request`, which needs **Developer**. One shared token therefore needs Developer if you use those three roles, Planner or Reporter otherwise. No role holds merge, push, branch or tag creation, release creation, pipeline trigger or delete tools.
+- **Expiry at most 90 days**; rotate; revoke the old token when you rotate. No token without an expiry.
+- **Server-side branch protection is a second line outside the harness**: protect `main` and `develop` and restrict merging to Maintainers, so a Developer-level token cannot merge or push there (whether it can is live check 5 of the design, unverified). Without that protection no such line exists.
+
+#### Token type
+
+Preference order today (the fine-grained token moves to the first place only after live check 1 below passes):
+
+1. **Project or group access token** with role Planner or Reporter (Developer only if a role creates branches or merge requests) and scope `api`. It is a bot user and cannot reach other projects. GitLab.com: Premium or Ultimate; self-managed: any licence. Documented, unverified in this harness.
+2. **Personal access token with scope `api` of a dedicated low-role user** whose role in the project is Planner, Reporter or Developer. Works on every tier. Documented, unverified in this harness.
+3. **Fine-grained personal access token** (GitLab 19.2 or later, GA; Free, Premium and Ultimate), limited to the project, with exactly the permission rows of the table. It is the smallest credential and **becomes the first choice once the user has run live check 1 and it passes**; until then it is **unverified**: it is not known whether all 44 tool calls of `qa-engineer` and `scrum-master` succeed with it (the pinned server may use GraphQL or endpoints that a fine-grained token covers only in part), or whether single projects can be selected in the creation form.
+
+Never use a token with `write_repository`, `admin` or `sudo`. A service account is not researched (unverified).
+
+#### File mode
+
+File mode is the documented default for new installs; the environment mode (an exported `GITLAB_PERSONAL_ACCESS_TOKEN`) stays supported. The pinned server reads `GITLAB_PERSONAL_ACCESS_TOKEN_FILE` once at start, so the token is in no process environment: not in the environment of the assistant, of its shell commands or in `/proc/<pid>/environ`, and not in a shell history.
+
+1. Create the file outside every project, readable by you only (bash). The subshell keeps `umask` from leaking into your session, `: >` creates the empty file and `chmod 600` fixes the mode before the token is written; the server performs no mode, owner or symlink check, `scripts/check-gitlab-token.py` does:
+
+   ```bash
+   ( umask 077; mkdir -p "$HOME/.config/gitlab-mcp"; : > "$HOME/.config/gitlab-mcp/token"; chmod 600 "$HOME/.config/gitlab-mcp/token" )
+   read -rsp 'GitLab token: ' t && printf '%s' "$t" > "$HOME/.config/gitlab-mcp/token"; unset t
+   ```
+
+   Run the checker afterwards (step 6): it refuses a symbolic link, a FIFO, a file you do not own and a non-ASCII token, and warns about a mode wider than 0600. Not inside the project directory: the extended `filesystem` server can read every file under the launch directory.
+
+   Where the file lives is your decision; the harness stores nothing and sends the token nowhere but to GitLab. The example above assumes **full-disk encryption on the workstation** (the file is a plain file at rest). Better placements, if you can: a file under `$XDG_RUNTIME_DIR` (a tmpfs owned by you, removed when your last session ends unless lingering is on, so nothing is written to the file system (tmpfs can still be swapped unless swap is encrypted); you write the token into it again after each login), or a file that you fill from your keyring at login (for example `secret-tool lookup ... > "$XDG_RUNTIME_DIR/gitlab-mcp-token"` with the same mode). A same-user process can run the same lookup, so these reduce what is left on disk, not who can read it (see "What this does not protect").
+2. Export the **path**, not the token (a path is not a secret), in the environment that starts the assistant: `export GITLAB_PERSONAL_ACCESS_TOKEN_FILE="$HOME/.config/gitlab-mcp/token"`.
+3. Then **remove the old export** of `GITLAB_PERSONAL_ACCESS_TOKEN` from your shell profile and your environment. A non-empty `GITLAB_PERSONAL_ACCESS_TOKEN` wins over the file; the server only prints a warning, so a stale export silently keeps the old, broader token in use.
+4. Claude Code: leave the generated `${GITLAB_PERSONAL_ACCESS_TOKEN:-}` and `${GITLAB_PERSONAL_ACCESS_TOKEN_FILE:-}` as they are. Claude Code passes an unset `${VAR}` through as the literal text `${VAR}`, which is non-empty and would win over the file; the `:-` (empty default) prevents that. `install.sh --update` restores the generated form if you edit it. The empty default is documented Claude Code syntax but **unverified** (live check 3).
+5. Other clients: where an unset reference stays literal text (verified in the vendor source for Cline; unknown for VS Code and Pi), also `export GITLAB_PERSONAL_ACCESS_TOKEN=` (set, empty). Gemini CLI and Opencode resolve an unset variable to an empty string (documented).
+6. Check the token: `python3 scripts/check-gitlab-token.py` from an emage.code checkout (standard library only; prints findings and never the token; exit 0 ok, 1 warnings, 2 error). It reads the same sources as the server (a non-empty variable first, else the file), asks `GET /personal_access_tokens/self` and `GET /user`, sends the token only to an https host that you pin (`--expected-host`, else `CI_SERVER_HOST`, else `gitlab.com`) and refuses redirects. It warns on a scope beyond `api`, `read_api`, on a missing expiry or one beyond 90 days, on an administrator owner, on a role above Developer when a response carries one and on a token file readable by group or others. **It does not check the role in the usual case**: the two endpoints are not documented to report it (unverified), so it prints `role: NOT checked ... verify Planner, Reporter or Developer in the project's Members page` and ends with `result: ok (scope, expiry and owner only; the role was not verified)` (exit 0); only a role that was reported and is too high is a warning (exit 1). It refuses a token file that is a symbolic link, a FIFO or not owned by you, and a token that is not printable ASCII. Then run `claude mcp list` (or the client's equivalent).
+
+#### Per-client posture
+
+Status column: **documented** = vendor documentation, or vendor source read on its main branch on 2026-10-16 (not run, and not matched to an installed release); **unverified** = not observed in a live run, or not established. The generated form is what `sync.mjs` writes. Everything in the posture column is client-owned: the installer never writes your client settings.
+
+| Client | Generated form | Keeps the token out of the agent's shell | Tool list enforced for agents | Status |
+|--------|----------------|------------------------------------------|-------------------------------|--------|
+| Claude Code | `${VAR:-}` for the two token variables | Documented mechanism: `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1` strips credentials from Bash and hook subprocesses, on Linux with an isolated PID namespace, so `/proc/<pid>/environ` of the client is not readable from Bash. Whether the explicitly configured `env` entry of the MCP server survives the scrub is **unverified** (live check 2). To protect the file and the `glab` credential: Bash sandbox `denyRead` for the token file, `~/.config/glab-cli` and `~/.git-credentials`, matching `Read(...)` deny rules (the file tools run outside the sandbox), `allowUnsandboxedCommands: false`. Optional `CLAUDE_CODE_MCP_ALLOWLIST_ENV=1` keeps the token from the sibling MCP servers (its baseline environment is undefined: unverified). macOS: the PID namespace is documented for Linux only | Yes | documented; unverified live |
+| GitHub Copilot / VS Code | `${env:VAR}` | `${env:...}` is documented for VS Code through the MCP page's pointer to the variables reference; an unset variable's behaviour is **unverified**. Alternative by hand: an `inputs` entry (`promptString`, `password: true`) referenced as `${input:id}`, so nothing is exported; `install.sh --update` reverts the edit (generated values win) and no generator mode exists; where VS Code stores the value is unverified | Yes (vendor documentation, not observed live) | documented; unverified live |
+| Opencode | `{env:VAR}` | The shell inherits an exported variable. `{file:path}` in the config is a file mode of the same strength as `GITLAB_PERSONAL_ACCESS_TOKEN_FILE`; its use inside a local server's `environment` is unverified. No scrub or sandbox found. An unset `{env:VAR}` is an empty string (documented) | No (K-15); the server-side limits below are the only enforced control | documented |
+| Gemini CLI | `${VAR}` (T665; was `${env:VAR}`) | `${env:VAR}` is not a documented form and the resolver looks it up as a variable named `env:VAR`, so it ended as an empty value (source read, not run): the server started without a token; `$VAR` and `${VAR}` are documented, an unset variable resolves to an empty string. The CLI redacts `*TOKEN*` variables from the environment a server **inherits**, not from the agent's shell; no secret input | No (K-15) | documented; source read, not run |
+| Pi | `${env:VAR}` (unchanged) | Pi documents `${VAR}` only. In the Pi source on main (commit 698a2d2, read 2026-10-16; **not run, and not matched to an installed release**) `extensions/mcp/config.ts` reads `<project>/.pi/mcp.json` for trusted projects and `extensions/mcp/runtime.ts` resolves each `env` value through `core/resolve-config-value.ts`, which keeps `${env:VAR}` as literal text and throws for an unset or empty variable. If that holds for your Pi version, the `gitlab` entry cannot work on Pi as generated: a follow-up task must add a way to mark a variable optional and then switch the form. Unverified: that your Pi release behaves like that commit, and that no other layer expands the value first. `!command` values (a keychain lookup) never export a secret, but a command that prints nothing also fails. Not changed in T665 | Only when the agent file reaches `pi --tools` | documented; source traced, not run; **not fixed here** |
+| Cline | `${env:VAR}` | The VS Code extension expands `${env:VAR}` (source read) and leaves an unset reference as literal text, so also set the empty variable (File mode, step 5); whether the CLI/SDK loader expands it is unverified. The settings file is global; no mechanism | n/a (no agent files) | documented; CLI unverified |
+
+#### What this does not protect
+
+The token is the credential of one GitLab identity. After this change the **environment path** is mitigated, not closed:
+
+- **Same user.** An agent that holds a shell runs as you. It can read the token file (file mode), the profile file that holds the `export` (environment mode), your shell history, and the other credentials of the same user: `~/.config/glab-cli`, `~/.git-credentials`, `~/.netrc`, SSH keys, `GITHUB_PERSONAL_ACCESS_TOKEN`. The `glab` token is usually the more powerful one. File mode removes the token from the process environment and from `/proc`; on Claude Code, under the posture above and once live check 2 passes, it also keeps it from sandboxed Bash and denied `Read`. It does not stop a same-user process from reading a file the client does not deny. On every other client no mechanism exists, and the role and scope table above is the only control.
+- **Tool lists** are not enforced on Opencode and Gemini CLI (K-15), so a narrowed role can still call any tool of the server there. `GITLAB_PERMISSION_MODE` (below) is enforced by the server on every client.
+- **The only closure** is an isolated user, container or VM that holds only the scoped credential and no `glab` or git token; the harness cannot create it.
+
+The user re-accepted this residual on 2026-10-16 ("Adopt D and re-accept the residual (Recommended)"); the Security Engineer grades it in the T665 review (SEC-T660-01).
+
+#### Server-side limits
+
+The generated `gitlab` entry sets `GITLAB_PERMISSION_MODE=modify` (a literal, non-secret value). The pinned server then refuses every delete tool and the teardown tools such as `cancel_pipeline`, `stop_environment` and `unprotect_branch`, on every client, **including your own session in that client**. It does not stop a shell that holds the token from calling the API directly (`curl`), and it does not narrow create, update, push or merge tools. To lift it, edit the entry in your own client config; `install.sh --update` writes the generated value back. The server also reads `GITLAB_TOOLS`, `GITLAB_TOOLSETS`, `GITLAB_DENIED_TOOLS_REGEX` and `GITLAB_ALLOWED_PROJECT_IDS` (the latter is checked only for `/projects/:id` paths of `gitlab_api_request`); their documentation is tracked in T674.
+
+#### Migration from v8.0.0
+
+1. Run `scripts/install.sh --update`. The `gitlab` entry gains `GITLAB_PERSONAL_ACCESS_TOKEN_FILE` and `GITLAB_PERMISSION_MODE`; on Claude Code the token placeholders gain `:-`; on Gemini CLI every placeholder changes from `${env:VAR}` to `${VAR}`. Your own env keys in the entry are kept, a literal value you typed into a generated key is replaced by the generated placeholder. Claude Code asks you to approve the changed project-scoped server again.
+2. Nothing breaks if you do nothing: the exported `GITLAB_PERSONAL_ACCESS_TOKEN` keeps working, and the risk stays as documented in K-16.
+3. To adopt file mode: create the scoped token (table above), write it to a mode 0600 file outside every project, export the path, **remove the old export** from your shell profile and environment, run `scripts/check-gitlab-token.py`, then **revoke the old, broader token**: it has been in a profile file and in process environments.
+4. Existing installs and the repository root keep the old rendering until the next `--update` or `--projections-only` refresh. Rolling back to the v8.0.0 files restores the old entry; the token file is then simply unused.
+
+#### Live checks (run by the user)
+
+An agent cannot hold or use a token, so these three checks need you, with a **throwaway token on a scratch project**. Until they have been run, every statement above that depends on them is **unverified until run**, and the documentation does not lead with the fine-grained token.
+
+- [ ] **Check 1 (fine-grained token).** Create a fine-grained token with only the permission rows of the table, limited to the scratch project. Run the 20 `qa-engineer` tools and the 24 `scrum-master` tools of `implementation/knowledge/agents/` against it and record pass or fail per tool. If all pass, the fine-grained token moves to the first place in "Token type".
+- [ ] **Check 2 (Claude Code posture).** Start Claude Code with `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1`: the `gitlab` server still authenticates (the explicit `env` entry survives the scrub), and a Bash command cannot read the variable, `/proc/<pid>/environ` of the client, or the token file placed under a sandbox `denyRead`.
+- [ ] **Check 3 (empty default).** With `${GITLAB_PERSONAL_ACCESS_TOKEN:-}` unset or empty and `GITLAB_PERSONAL_ACCESS_TOKEN_FILE` set, the file is used; and the reverse (the variable set, no file).
+
+Tracked but not part of this checklist: whether a Developer-level token can merge into a protected branch whose "allowed to merge" is Maintainers only; the `${env:VAR}` behaviour for an unset variable in VS Code and Cline.
 
 ## Verifying
 

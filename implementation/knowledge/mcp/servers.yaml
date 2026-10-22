@@ -12,6 +12,12 @@
 # `secret` env vars are emitted as platform-native env-var references; never
 # inline secrets in this file.
 #
+# A templated value is `{ fromEnv: VAR[, secret: true][, wrap: "X{VAR}Y"][, default: ""] }`; any other
+# key stops sync.mjs (T665). `default` (a string without `$`, `{`, `}`; for a `secret` value only the
+# empty string) is rendered as `${VAR:-<default>}` for the claude-code format ONLY; the other formats
+# ignore it. A plain value (`NAME: value`) is a literal and is emitted unchanged: use it only for
+# non-secret settings.
+#
 # `denyTools` (T658, SEC-T657-01) is the ONE list of exact tool names, as the server reports them,
 # that a platform must refuse for that server. sync.mjs renders it only where the vendor
 # documentation and source show an enforcing mechanism (docs/artifacts/mcp-server-denials-v1.md):
@@ -49,9 +55,22 @@ servers:
     transport: stdio
     command: npx
     args: ["-y", "@zereight/mcp-gitlab@2.2.5"]
+    # T665 (SEC-T660-01, docs/artifacts/gitlab-token-handling-design-v1.md, decisions DEC-T664-1 to -6):
+    # two ways to hand the token to the server, file mode first (docs/wiki/mcp-servers.md, "GitLab
+    # token"). The pinned server reads `GITLAB_PERSONAL_ACCESS_TOKEN_FILE` (a PATH, not a secret) once at
+    # start. A NON-EMPTY `GITLAB_PERSONAL_ACCESS_TOKEN` wins over the file (the server only warns), so the
+    # old export must be removed when the file mode is adopted. `default: ""` renders `${VAR:-}` on Claude
+    # Code ONLY: Claude Code passes an unset `${VAR}` through as literal text (F-2 of the design), which
+    # would win over the file; every other client renders as before. The empty default is documented
+    # syntax but not observed (live check 3 in docs/artifacts/gitlab-token-handling-design-v1.md §8.4).
+    # `GITLAB_PERMISSION_MODE: modify` is a literal, non-secret value (DEC-T664-3): the server refuses
+    # every delete and teardown tool for every client. It is a server-side control, not a defence
+    # against a shell that holds the token. An operator who needs more may override it in the client.
     env:
-      GITLAB_PERSONAL_ACCESS_TOKEN: { fromEnv: GITLAB_PERSONAL_ACCESS_TOKEN, secret: true }
+      GITLAB_PERSONAL_ACCESS_TOKEN: { fromEnv: GITLAB_PERSONAL_ACCESS_TOKEN, secret: true, default: "" }
+      GITLAB_PERSONAL_ACCESS_TOKEN_FILE: { fromEnv: GITLAB_PERSONAL_ACCESS_TOKEN_FILE, default: "" }
       GITLAB_API_URL: { fromEnv: GITLAB_API_URL }
+      GITLAB_PERMISSION_MODE: modify
 
   playwright:
     # T655 -- hardened per docs/artifacts/fetch-replacement-evaluation-v1.md §5.2. The agents

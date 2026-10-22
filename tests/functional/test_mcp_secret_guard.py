@@ -17,17 +17,28 @@ from pathlib import Path
 from tests._helpers.repo import repo_root
 
 # Three generator placeholder families, one per platform group (T517):
-#   ${env:VAR}  vscode/gemini/pi/cline
+#   ${env:VAR}  vscode/pi/cline
 #   {env:VAR}   opencode
-#   ${VAR}      claude-code -- it expands `${VAR}` / `${VAR:-default}` from the live
+#   ${VAR}      gemini (T665: Gemini CLI documents `$VAR` / `${VAR}`, not `${env:VAR}`) and
+#               claude-code -- it expands `${VAR}` / `${VAR:-default}` from the live
 #               process environment and passes the `env:` form through as literal text.
 # This is an allowlist of exactly the forms the generator emits, not a general pattern for
 # "anything placeholder-shaped": the `${VAR}` alternative still requires a bare, fully
 # upper-snake-case variable name between `${` and `}`, so no credential-shaped literal
 # (`tr_live_...`, `glpat-...`, `eyJhbGc...`) can satisfy it.
+#
+# T665 (SEC-T660-01): claude-code additionally renders `${VAR:-}` for a value that carries an
+# optional empty `default` (Claude Code passes an unset `${VAR}` through as literal text). ONLY the
+# empty default is admitted: `${VAR:-somevalue}` could carry a credential and is still flagged.
 ALLOWED_ENV_VALUE_RE = re.compile(
-    r"^(?:\$?\{env:[A-Z][A-Z0-9_]*\}|\$\{[A-Z][A-Z0-9_]*\})$"
+    r"^(?:\$?\{env:[A-Z][A-Z0-9_]*\}|\$\{[A-Z][A-Z0-9_]*(?::-)?\})$"
 )
+
+# T665 (DEC-T664-3): exact (variable, value) pairs of NON-secret literals the generator may emit in an
+# `env` block. `GITLAB_PERMISSION_MODE=modify` makes the pinned GitLab server refuse every delete and
+# teardown tool. The match is on the exact pair, so another variable with this value, or this variable
+# with another value, is still flagged.
+NON_SECRET_LITERAL_ENV: frozenset[tuple[str, str]] = frozenset({("GITLAB_PERMISSION_MODE", "modify")})
 
 # A single well-formed placeholder token, any of the three platform families. Used to
 # validate `headers` values, which (unlike `env` values) may wrap a placeholder in fixed
@@ -109,7 +120,11 @@ def find_literal_env_values(data, rel_path: str | None = None) -> list[tuple[str
             for key, value in node.items():
                 if key == "env" and isinstance(value, dict):
                     for env_key, env_value in value.items():
-                        if isinstance(env_value, str) and not ALLOWED_ENV_VALUE_RE.match(env_value):
+                        if (
+                            isinstance(env_value, str)
+                            and not ALLOWED_ENV_VALUE_RE.match(env_value)
+                            and (env_key, env_value) not in NON_SECRET_LITERAL_ENV
+                        ):
                             violations.append((env_key, env_value))
                 elif key == "headers" and isinstance(value, dict):
                     for header_key, header_value in value.items():
@@ -245,6 +260,35 @@ class TestMcpSecretGuard(unittest.TestCase):
                 ("X-Two", "${ONE}${TWO}"),
             ],
             msg="admitting the ${VAR} family must not weaken literal-secret detection",
+        )
+
+    def test_t665_empty_default_and_the_pinned_literal_are_allowed_and_nothing_wider(self):
+        """T665: `${VAR:-}` (claude-code, optional empty default) and the exact non-secret literal
+        `GITLAB_PERMISSION_MODE=modify` pass; a non-empty default, a lookalike, a wrong value and the
+        same value under another variable are flagged."""
+        allowed = {
+            "mcpServers": {
+                "gitlab": {"env": {
+                    "GITLAB_PERSONAL_ACCESS_TOKEN": "${GITLAB_PERSONAL_ACCESS_TOKEN:-}",
+                    "GITLAB_PERSONAL_ACCESS_TOKEN_FILE": "${GITLAB_PERSONAL_ACCESS_TOKEN_FILE:-}",
+                    "GITLAB_PERMISSION_MODE": "modify",
+                }},
+            }
+        }
+        self.assertEqual(find_literal_env_values(allowed), [])
+        flagged = {
+            "mcpServers": {
+                "a": {"env": {"GITLAB_PERSONAL_ACCESS_TOKEN": "${GITLAB_PERSONAL_ACCESS_TOKEN:-glpat-FAKEVALUEFORTESTONLYNOTREAL}"}},
+                "b": {"env": {"GITLAB_PERSONAL_ACCESS_TOKEN": "${GITLAB_PERSONAL_ACCESS_TOKEN:-x}"}},
+                "c": {"env": {"GITLAB_PERMISSION_MODE": "full"}},
+                "d": {"env": {"TOOLRADAR_API_KEY": "modify"}},
+                "e": {"env": {"GITLAB_PERSONAL_ACCESS_TOKEN": "prefix-${GITLAB_PERSONAL_ACCESS_TOKEN:-}"}},
+            }
+        }
+        self.assertEqual(
+            [key for key, _ in find_literal_env_values(flagged)],
+            ["GITLAB_PERSONAL_ACCESS_TOKEN", "GITLAB_PERSONAL_ACCESS_TOKEN", "GITLAB_PERMISSION_MODE",
+             "TOOLRADAR_API_KEY", "GITLAB_PERSONAL_ACCESS_TOKEN"],
         )
 
     def test_allowlist_permits_known_good_vscode_cwso_entry(self):

@@ -176,6 +176,7 @@ async function readServersYaml() {
   const raw = await fs.readFile(file, 'utf8');
   const servers = parseServersYaml(raw);
   validateDenyTools(servers);
+  validateTemplatedSpecs(servers);
   return servers;
 }
 
@@ -216,6 +217,54 @@ function validateDenyTools(servers) {
     }
     if (new Set(list).size !== list.length) {
       throw new Error(`servers.yaml: ${name}.denyTools has a duplicate entry`);
+    }
+  }
+}
+
+// T665 (SEC-T660-01): a templated value (`url`, an `env` or a `headers` entry written as an inline
+// object) may carry only these keys. As with SERVER_KEYS, an unknown key (a misspelled `default`,
+// `secret` or `wrap`) stops the run instead of being ignored, because a dropped `secret` or `default`
+// changes what is rendered into a credential entry. `default` is deliberate and new: it is rendered
+// only for the claude-code format (see mapTemplatedValue).
+const SPEC_KEYS = new Set(['fromEnv', 'secret', 'wrap', 'default']);
+const ENV_VAR_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
+// A default is literal text inside `${VAR:-<default>}`: no `$`, `{` or `}` that could end or nest the
+// expansion, no control character.
+const SPEC_WRAP = /^[A-Za-z0-9 _.:/-]*\{VAR\}[A-Za-z0-9 _.:/-]*$/;
+const SPEC_DEFAULT = /^[^${}\u0000-\u001f]*$/;
+
+function validateSpec(where, spec) {
+  if (spec === null || typeof spec !== 'object') return;
+  const unknown = Object.keys(spec).filter((k) => !SPEC_KEYS.has(k));
+  if (unknown.length > 0) {
+    throw new Error(`servers.yaml: ${where} has an unknown key: ${unknown.map((k) => k.slice(0, 40)).join(', ')}`);
+  }
+  if (typeof spec.fromEnv !== 'string' || !ENV_VAR_NAME.test(spec.fromEnv)) {
+    throw new Error(`servers.yaml: ${where}.fromEnv must be an environment variable name`);
+  }
+  // SEC-T665-08: `secret` is read as a boolean guard (a string such as `yes` or `"false"` would be
+  // truthy or ignored), and `wrap` is fixed text around exactly one `{VAR}`: nothing that could carry a
+  // credential or a second placeholder.
+  if (spec.secret !== undefined && typeof spec.secret !== 'boolean') {
+    throw new Error(`servers.yaml: ${where}.secret must be the boolean true or false (or absent)`);
+  }
+  if (spec.wrap !== undefined && !SPEC_WRAP.test(spec.wrap)) {
+    throw new Error(`servers.yaml: ${where}.wrap must contain exactly one {VAR} and otherwise only letters, digits, space and _ . : / -`);
+  }
+  if (spec.default === undefined) return;
+  if (typeof spec.default !== 'string' || !SPEC_DEFAULT.test(spec.default)) {
+    throw new Error(`servers.yaml: ${where}.default must be a string without $, { or } or control characters`);
+  }
+  if (spec.secret === true && spec.default !== '') {
+    throw new Error(`servers.yaml: ${where}.default of a secret value must be the empty string`);
+  }
+}
+
+function validateTemplatedSpecs(servers) {
+  for (const [name, server] of Object.entries(servers)) {
+    validateSpec(`${name}.url`, server.url);
+    for (const key of BLOCK_KEYS) {
+      for (const [k, spec] of Object.entries(server[key] || {})) validateSpec(`${name}.${key}.${k}`, spec);
     }
   }
 }
@@ -538,6 +587,17 @@ function emitMcp(servers, tags, format) {
     Object.entries(servers).filter(([, s]) => (s.tags || []).some((t) => tags.includes(t)))
   );
 
+  // T665 placeholder-form check (the T664 token-handling design, finding F-3):
+  //   vscode  `${env:VAR}` is documented through the MCP page's pointer to the variables reference
+  //           and resolved by the shared configuration resolver; behaviour for an UNSET variable is unverified.
+  //   pi      Pi documents `${VAR}` only. Source traced on main (commit 698a2d2, 2026-10-16), not run and not
+  //           matched to an installed release: extensions/mcp/config.ts reads `<project>/.pi/mcp.json` for
+  //           trusted projects and extensions/mcp/runtime.ts resolves each `env` value through
+  //           core/resolve-config-value.ts, which keeps `${env:VAR}` as literal text AND throws for an unset
+  //           or empty variable. A correct form needs a way to mark a variable optional. Left unchanged and
+  //           split out of T665 (see the T665 report).
+  //   cline   `${env:VAR}` is expanded by the VS Code extension (McpHub.ts expandEnvironmentVariables);
+  //           an unset variable stays literal; the CLI/SDK loader was not shown to expand it (unverified).
   if (format === 'vscode' || format === 'pi') {
     const out = { servers: format === 'vscode' ? {} : undefined, mcpServers: format === 'pi' ? {} : undefined };
     const target = format === 'vscode' ? out.servers : out.mcpServers;
@@ -560,14 +620,19 @@ function emitMcp(servers, tags, format) {
   }
 
   if (format === 'gemini') {
+    // T665 (SEC-T660-01, F-3): Gemini CLI documents `$VAR` and `${VAR}` (and `${VAR:-DEFAULT}`) and its
+    // resolver (packages/cli/src/utils/envVarResolver.ts, read at main on 2026-10-16) looks the text
+    // between the braces up as the variable NAME, so `${env:VAR}` is looked up as `env:VAR`, found
+    // nowhere, left as text by the settings loader and then expanded to an empty string by the MCP
+    // client (dotenv-expand). `${VAR}` is the documented form. Source read, not run.
     const mcpServers = {};
     for (const [name, s] of Object.entries(filtered)) {
       if (s.transport === 'remote') {
-        mcpServers[name] = { httpUrl: mapTemplatedValue(s.url, '${env:VAR}') };
-        if (s.headers) mcpServers[name].headers = mapEnv(s.headers, '${env:VAR}');
+        mcpServers[name] = { httpUrl: mapTemplatedValue(s.url, '${VAR}') };
+        if (s.headers) mcpServers[name].headers = mapEnv(s.headers, '${VAR}');
       } else {
         mcpServers[name] = { command: s.command, args: s.args || [] };
-        if (s.env) mcpServers[name].env = mapEnv(s.env, '${env:VAR}');
+        if (s.env) mcpServers[name].env = mapEnv(s.env, '${VAR}');
       }
       // T658: documented per-server tool blocklist; applies to the main agent and to subagents
       // (docs/artifacts/mcp-server-denials-v1.md). Gemini matches the name the server reports.
@@ -624,11 +689,11 @@ function emitMcp(servers, tags, format) {
     const mcpServers = {};
     for (const [name, s] of Object.entries(filtered)) {
       if (s.transport === 'remote') {
-        mcpServers[name] = { type: 'http', url: mapTemplatedValue(s.url, '${VAR}') };
-        if (s.headers) mcpServers[name].headers = mapEnv(s.headers, '${VAR}');
+        mcpServers[name] = { type: 'http', url: mapTemplatedValue(s.url, '${VAR}', true) };
+        if (s.headers) mcpServers[name].headers = mapEnv(s.headers, '${VAR}', true);
       } else {
         mcpServers[name] = { command: s.command, args: s.args || [] };
-        if (s.env) mcpServers[name].env = mapEnv(s.env, '${VAR}');
+        if (s.env) mcpServers[name].env = mapEnv(s.env, '${VAR}', true);
       }
     }
     return JSON.stringify({ mcpServers }, null, 2) + '\n';
@@ -656,19 +721,24 @@ function emitMcp(servers, tags, format) {
 //   spec: a plain literal (string/number/bool) -> returned unchanged (String(spec))
 //         OR { fromEnv: VAR }                   -> template.replace('VAR', VAR)
 //         OR { fromEnv: VAR, wrap: "X{VAR}Y" }   -> wrap.replace('{VAR}', <rendered above>)
-//   template: the platform's own placeholder pattern, e.g. '${env:VAR}' (vscode/gemini/
-//             pi/cline), '{env:VAR}' (opencode) or '${VAR}' (claude-code)
-function mapTemplatedValue(spec, template) {
+//         OR { fromEnv: VAR, default: "D" }      -> with `withDefault`: VAR becomes `VAR:-D`
+//   template: the platform's own placeholder pattern, e.g. '${env:VAR}' (vscode/pi/cline),
+//             '{env:VAR}' (opencode) or '${VAR}' (claude-code, gemini)
+//   withDefault: true only for the claude-code format (T665, SEC-T660-01): Claude Code passes an
+//             unset `${VAR}` through as literal text and documents `${VAR:-default}`; no other
+//             format is documented to honour a default, so those render as before.
+function mapTemplatedValue(spec, template, withDefault = false) {
   if (spec && typeof spec === 'object' && spec.fromEnv) {
-    const rendered = template.replace('VAR', spec.fromEnv);
-    return spec.wrap ? spec.wrap.replace('{VAR}', rendered) : rendered;
+    const name = withDefault && typeof spec.default === 'string' ? `${spec.fromEnv}:-${spec.default}` : spec.fromEnv;
+    const rendered = template.replace('VAR', () => name);
+    return spec.wrap ? spec.wrap.replace('{VAR}', () => rendered) : rendered;
   }
   return String(spec);
 }
 
-function mapEnv(envSpec, template) {
+function mapEnv(envSpec, template, withDefault = false) {
   const out = {};
-  for (const [k, v] of Object.entries(envSpec)) out[k] = mapTemplatedValue(v, template);
+  for (const [k, v] of Object.entries(envSpec)) out[k] = mapTemplatedValue(v, template, withDefault);
   return out;
 }
 

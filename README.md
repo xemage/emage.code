@@ -212,7 +212,7 @@ and are embedded in [GitLab Releases](https://gitlab.com/em-age/emage.code/-/rel
 ## Quick start
 
 After install, set the MCP env vars the generated `mcp.json` references
-(`GITLAB_PERSONAL_ACCESS_TOKEN`, `GITLAB_API_URL`, `BRAVE_API_KEY`,
+(`GITLAB_PERSONAL_ACCESS_TOKEN_FILE` or `GITLAB_PERSONAL_ACCESS_TOKEN`, `GITLAB_API_URL`, `BRAVE_API_KEY`,
 `HINDSIGHT_MCP_URL`, and for the extended servers `CWSO_MCP_URL`,
 `CWSO_BEARER_TOKEN`, `CWSO_ORIGIN`, `TOOLRADAR_API_KEY`; full table in
 [MCP Servers](docs/wiki/mcp-servers.md)), then in your AI assistant:
