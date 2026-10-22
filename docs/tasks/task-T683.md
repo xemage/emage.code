@@ -2,13 +2,13 @@
 
 **ID:** T683
 **Owner:** qa-engineer
-**Status:** pending
+**Status:** done
 **Priority:** P2
 **Tier:** standard
 **Depends on:** T674
 **Affects:** —
 **Created:** 2026-10-22
-**Completed:** —
+**Completed:** 2026-10-22
 **Based on:**
 - `docs/plans/plan-123-post-release-follow-ups.md` (Addendum of 2026-10-22: T683)
 - `docs/artifacts/gitlab-per-role-token-design-v1.md` (section 8 and the work item), the user's decision of 2026-10-22 (AskUserQuestion, verbatim option labels): "A: status quo + exposure sentence (Recommended)" and "Yes, document it (Recommended)"
