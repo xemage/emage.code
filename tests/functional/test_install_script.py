@@ -1200,6 +1200,14 @@ def _bash_functions(*names: str) -> str:
     return "\n".join(out)
 
 
+def _bash_array_definition(name: str) -> str:
+    """The `NAME=(...)` line of scripts/install.sh, verbatim."""
+    text = (repo_root() / "scripts" / "install.sh").read_text(encoding="utf-8")
+    match = re.search(rf"^{re.escape(name)}=\(.*?\)\n", text, re.S | re.M)
+    assert match, f"array {name} not found in install.sh"
+    return match.group(0)
+
+
 def managed_paths(projections_only: bool = False, platform: str = "all") -> list[str]:
     """The guarded paths, from install.sh's own list_managed_paths (relative to the target)."""
     script = (
@@ -1207,7 +1215,9 @@ def managed_paths(projections_only: bool = False, platform: str = "all") -> list
         f"IMPLEMENTATION={repo_root() / 'implementation'}\n"
         f"PLATFORM={platform}\nPROJECTIONS_ONLY={1 if projections_only else 0}\n"
         "DOCS_EXCLUDES=(__pycache__)\n"
-        + _bash_functions("platform_managed_paths", "docs_managed_paths", "list_managed_paths")
+        + _bash_array_definition("SUPPORTED_PLATFORMS")
+        + _bash_functions("printable", "internal_unknown_platform", "selected_platforms",
+                          "platform_managed_paths", "docs_managed_paths", "list_managed_paths")
         + "\nlist_managed_paths\n"
     )
     proc = subprocess.run(["bash", "-c", script], capture_output=True, text=True, check=True)

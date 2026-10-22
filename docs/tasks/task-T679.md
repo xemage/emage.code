@@ -32,6 +32,8 @@ As stated in section 1.
 
 - SEC-T678-03: the v9.0.0 migration item must say that a leftover `.cursor/` in an adopter project is no longer updated and that its agents are not tool-restricted (every agent can call every tool of every configured server there).
 
+- T672 (v9.0.0 migration item, SEC-T672-06): a plain install over an existing config now MERGES (as `--update` did) instead of overwriting; when there is no provenance sidecar the installer prints `merge-mcp-json: note: <dest>: there is no provenance sidecar at <old-sidecar>, so no retired generator entry could be pruned; kept your server(s) a, b, which the generated config does not contain. If one is a retired generator entry, remove it by hand or run scripts/merge-mcp-json.py with --force-prune-keys <name>.`; new on-disk names: `.<name>.<random>.tmp`, `<ledger>.bak`, `<tree>.emage-new.<pid>` / `.emage-old.<pid>`.
+
 ## 4. Acceptance criteria
 
 As stated in section 1.

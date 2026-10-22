@@ -22,6 +22,7 @@ def _repo_root(implementation_root: Path) -> Path:
 
 FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?\n)---\s*\n", re.DOTALL)
 SEMVER = "3.0.0"
+MANIFEST_SCHEMA_FILE = "_manifest.schema.json"
 CATEGORY_DIRS = {
     "agent": "agents",
     "command": "commands",
@@ -117,7 +118,12 @@ def _detect_platforms(repo_root: Path) -> list[str]:
     platform_dir = repo_root / "implementation" / "platforms"
     if not platform_dir.is_dir():
         return ["claude-code", "cline", "gemini", "github", "opencode", "pi"]
-    return sorted([item.stem for item in platform_dir.glob("*.json")])
+    # Only the manifest schema is skipped; any other `_*.json` is a mistake (T672), as in sync.mjs.
+    names = [item.name for item in platform_dir.glob("*.json") if item.name != MANIFEST_SCHEMA_FILE]
+    stray = sorted(name for name in names if name.startswith("_"))
+    if stray:
+        raise SystemExit(f"error: {platform_dir} holds {', '.join(stray)}: only {MANIFEST_SCHEMA_FILE} may start with an underscore")
+    return sorted(Path(name).stem for name in names)
 
 
 def _summary_markdown(entries: list[dict], source_root: Path, repo_root: Path) -> str:

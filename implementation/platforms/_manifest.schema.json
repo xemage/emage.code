@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gitlab.com/em-age/emage.code/-/raw/main/implementation/platforms/_manifest.schema.json",
+  "title": "emage.code platform manifest",
+  "description": "Shape of implementation/platforms/<platform>.json, the per-platform input of implementation/scripts/sync.mjs. Written from the keys the generator reads (T672, TD-T671-P8); every manifest declares it as its $schema, and tests/functional/test_manifest_schema.py validates all of them. Unknown keys are refused so that a typo cannot be ignored silently. The leading underscore keeps the file out of the platform list (sync.mjs and generate-registry.py skip _*.json).",
+  "type": "object",
+  "required": ["platform", "displayName", "outputDir", "fileMap", "frontmatter"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "platform": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$", "description": "Platform name: the --platform value of install.sh and the platform field of .generated-manifest.json." },
+    "displayName": { "type": "string", "minLength": 1 },
+    "outputDir": { "$ref": "#/$defs/relPath", "description": "Output tree, relative to the implementation root; never absolute and never starting with '..'." },
+    "fileMap": {
+      "type": "object",
+      "required": ["instructions", "skills"],
+      "additionalProperties": false,
+      "properties": {
+        "agents": { "$ref": "#/$defs/dirExt" },
+        "commands": { "$ref": "#/$defs/dirExt" },
+        "instructions": {
+          "type": "object",
+          "required": ["dir", "ext"],
+          "additionalProperties": false,
+          "properties": {
+            "dir": { "$ref": "#/$defs/relPath" },
+            "ext": { "type": "string", "pattern": "^\\." },
+            "rootRelative": { "type": "boolean", "description": "dir is relative to the implementation root, not to outputDir (Cline's .clinerules); the generator refuses a target outside the root." }
+          }
+        },
+        "skills": {
+          "type": "object",
+          "required": ["dir"],
+          "additionalProperties": false,
+          "properties": {
+            "dir": { "$ref": "#/$defs/relPath" },
+            "preserveTree": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "frontmatter": {
+      "type": "object",
+      "required": ["instructions", "skills"],
+      "additionalProperties": false,
+      "properties": {
+        "agents": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "tools": { "enum": ["array", "object", "string", "drop"] },
+            "mcpToolNames": { "enum": ["verbatim", "slash", "underscore", "pi"] },
+            "mcpAgentDenies": { "const": true, "description": "Opencode only; needs mcpToolNames underscore and tools object (sync.mjs refuses anything else)." },
+            "keepKeys": { "$ref": "#/$defs/stringList" },
+            "toolMap": { "type": "object", "additionalProperties": { "type": "string" } },
+            "addToOrchestrators": { "type": "object" },
+            "orchestratorNames": { "$ref": "#/$defs/stringList" }
+          }
+        },
+        "commands": { "$ref": "#/$defs/genericFrontmatter" },
+        "instructions": { "$ref": "#/$defs/genericFrontmatter" },
+        "skills": { "$ref": "#/$defs/genericFrontmatter" }
+      }
+    },
+    "mcp": {
+      "type": "object",
+      "required": ["tags", "outputFile", "format"],
+      "additionalProperties": false,
+      "properties": {
+        "tags": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["core", "extended"] } },
+        "outputFile": { "type": "string", "minLength": 1, "description": "Relative to outputDir." },
+        "format": { "enum": ["vscode", "gemini", "opencode", "pi", "claude-code", "cline"] },
+        "extraFields": { "type": "object", "description": "Opencode: fixed top-level fields of opencode.json." }
+      }
+    },
+    "extras": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["from", "to"],
+        "additionalProperties": false,
+        "properties": {
+          "from": { "type": "string", "pattern": "^_extras/" },
+          "to": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "dirExt": {
+      "type": "object",
+      "required": ["dir", "ext"],
+      "additionalProperties": false,
+      "properties": {
+        "dir": { "$ref": "#/$defs/relPath" },
+        "ext": { "type": "string", "pattern": "^\\." }
+      }
+    },
+    "relPath": {
+      "type": "string",
+      "pattern": "^(?!/)(?!(.*/)?\\.\\.?(/|$))[^\\\\]+$",
+      "description": "A relative path without '.' or '..' segments and without backslashes: never absolute, never the root itself, never leaving it."
+    },
+    "stringList": { "type": "array", "items": { "type": "string" } },
+    "genericFrontmatter": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "keepKeys": { "$ref": "#/$defs/stringList" },
+        "renameKeys": { "type": "object", "additionalProperties": { "type": "string" } }
+      }
+    }
+  }
+}

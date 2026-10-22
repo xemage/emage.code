@@ -2,8 +2,40 @@
 # emage.code installer — copy platform outputs into a target project.
 set -euo pipefail
 
+# SEC-005 (T672): nothing this installer creates is group- or world-writable, whatever the
+# source tree's modes or the caller's umask: the mask only ever gets stricter (OR 022).
+# rsync -a copies source modes verbatim and is held to the same rule by --chmod=go-w.
+ORIG_UMASK="$(umask)"
+umask "$(printf '%04o' $(( 8#$(umask) | 8#022 )))"
+
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 IMPLEMENTATION="${REPO_ROOT}/implementation"
+
+# The one list of platforms this installer supports (SEC-T662-03). The usage text, the early
+# --platform validation, the `all` expansion, list_managed_paths and the dispatch below are all
+# derived from it; a test compares it with the outputDir-bearing manifests in
+# implementation/platforms/*.json. Adding a platform means adding it here, to
+# platform_managed_paths, platform_mcp_config and an install_<name> function (dashes as
+# underscores) -- a missing piece fails closed (exit 70), it is never skipped.
+SUPPORTED_PLATFORMS=(github gemini opencode pi claude-code cline)
+
+# Prints $@ joined with " | " (for usage) -- bash has no join builtin.
+join_bar() {
+  local out="$1"
+  shift
+  local item
+  for item in "$@"; do out="$out | $item"; done
+  printf '%s' "$out"
+}
+
+# Prints $@ joined with ", " (for messages).
+join_comma() {
+  local out="$1"
+  shift
+  local item
+  for item in "$@"; do out="$out, $item"; done
+  printf '%s' "$out"
+}
 
 usage() {
   cat <<'EOF'
@@ -15,7 +47,9 @@ Options:
   --target <dir>       Destination project root (created if missing). Not the emage.code
                        repository: its root accepts only --projections-only, and any
                        directory below its root is refused in every mode.
-  --platform <name>    github | gemini | opencode | pi | claude-code | cline | all (default: all)
+EOF
+  printf '  --platform <name>    %s (default: all)\n' "$(join_bar "${SUPPORTED_PLATFORMS[@]}" all)"
+  cat <<'EOF'
   -u, --update         Update an existing install. Replaces the platform trees, EXCEPT
                        project-local files the harness never ships and therefore does not
                        own: each platform's MCP/settings config, .claude/settings.json and
@@ -40,11 +74,24 @@ Options:
   -n, --dry-run        Print actions without copying
   -h, --help           Show this help
 
+MCP/settings configs (.vscode/mcp.json, .gemini/settings.json, .opencode/opencode.json,
+.pi/mcp.json, .mcp.json, .cline/mcp.json): an existing one is MERGED in every mode, a plain
+install included, never overwritten -- your own servers, keys and rules are kept, generator-owned
+keys are refreshed, and the generated Playwright permission/excludeTools denials are put back.
+A note on stderr names exactly: a permission rule or hooks value of yours that was replaced, a
+key of yours kept inside a generator-owned server's env/headers, a file whose top level was not a
+JSON object, and your servers kept when no provenance sidecar could prune a retired entry; other
+generator-owned values (command, args, url ...) are refreshed silently. A config that is not
+valid JSON, or that cannot be replaced (file or directory not writable), is refused up front,
+naming the file, before anything is written.
+
 Symlinks: any symlink at a managed target path, or at one of its parent directories
 (.claude, docs, implementation, implementation/runtime, .vscode, .mcp.json, CLAUDE.md,
 a task ledger, ...), is refused before anything is written -- even one that points
 inside the target. Do not run the installer as root into a directory that other users
-can write to: a link planted between the check and the write is not detected.
+can write to: a link planted between the check and the write is not detected. Do not install
+into such a directory at all: --update replaces a tree by building a sibling next to it
+(<tree>.emage-new.<pid>) and renaming it over the old one, which another user could race.
 
 Examples:
   scripts/install.sh --target ~/projects/my-app --platform claude-code
@@ -78,18 +125,6 @@ resolve_abs_path() {
   fi
 }
 
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --target) TARGET="$2"; shift 2 ;;
-    --platform) PLATFORM="$2"; shift 2 ;;
-    -u|--update) UPDATE=1; shift ;;
-    --projections-only) PROJECTIONS_ONLY=1; shift ;;
-    -n|--dry-run) DRY_RUN=1; shift ;;
-    -h|--help) usage; exit 0 ;;
-    *) echo "Unknown option: $1" >&2; usage >&2; exit 1 ;;
-  esac
-done
-
 # $1 for an error message, byte-wise: in the C locale every byte outside printable
 # ASCII (controls, ESC, newline, and each byte of a multi-byte character such as the
 # bidi override U+202E) becomes `?`, whatever locale the caller runs in.
@@ -98,22 +133,65 @@ ascii_printable() {
   printf '%s' "${1//[^ -~]/?}"
 }
 
+# $1 is an option that takes a value, $2 its value: refuse a missing one (a bare
+# `$2` under `set -u` is an unbound-variable error) and a value that starts with `-`
+# (it would be taken for an option by mkdir, find, rsync ...; write ./-name instead).
+require_option_value() {
+  if [[ $# -lt 2 ]]; then
+    echo "error: $1 requires a value." >&2
+    echo "  Usage: scripts/install.sh --target <dir> [--platform <name>|all] [--update | --projections-only]. Nothing was written." >&2
+    exit 1
+  fi
+  case "$2" in
+    -*)
+      echo "error: $1 requires a value, but got '$(ascii_printable "$2")', which starts with '-' and would be read as an option." >&2
+      if [[ "$1" == "--target" ]]; then
+        echo "  For a path that really starts with '-', write it as ./$(ascii_printable "$2"). Nothing was written." >&2
+      else
+        echo "  Nothing was written." >&2
+      fi
+      exit 1
+      ;;
+  esac
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --target) require_option_value "$@"; TARGET="$2"; shift 2 ;;
+    --platform) require_option_value "$@"; PLATFORM="$2"; shift 2 ;;
+    -u|--update) UPDATE=1; shift ;;
+    --projections-only) PROJECTIONS_ONLY=1; shift ;;
+    -n|--dry-run) DRY_RUN=1; shift ;;
+    -h|--help) usage; exit 0 ;;
+    *) echo "Unknown option: $1" >&2; usage >&2; exit 1 ;;
+  esac
+done
+
 # Validate --platform before anything is resolved, created or written (ADR-010 D3):
 # a typo or the removed value must not create $TARGET or reach any guard first.
 # The removed value is matched in any letter case.
-case "$PLATFORM" in
-  github|gemini|opencode|pi|claude-code|cline|all) ;;
-  [Cc][Uu][Rr][Ss][Oo][Rr])
-    echo "error: platform 'cursor' was removed in v9.0.0 (see the Cursor migration item in docs/releases/v9.0.0.md; the v8.x releases are the last that support it)." >&2
-    echo "  Existing .cursor/ files in your project are not touched. Nothing was written." >&2
-    exit 1
-    ;;
-  *)
-    echo "error: unknown platform '$(ascii_printable "$PLATFORM")'" >&2
-    echo "  supported: github, gemini, opencode, pi, claude-code, cline, all. Nothing was written." >&2
-    exit 1
-    ;;
-esac
+is_supported_platform() {
+  local p
+  for p in "${SUPPORTED_PLATFORMS[@]}"; do
+    if [[ "$p" == "$1" ]]; then return 0; fi
+  done
+  return 1
+}
+
+if [[ "$PLATFORM" != "all" ]] && ! is_supported_platform "$PLATFORM"; then
+  case "$PLATFORM" in
+    [Cc][Uu][Rr][Ss][Oo][Rr])
+      echo "error: platform 'cursor' was removed in v9.0.0 (see the Cursor migration item in docs/releases/v9.0.0.md; the v8.x releases are the last that support it)." >&2
+      echo "  Existing .cursor/ files in your project are not touched. Nothing was written." >&2
+      exit 1
+      ;;
+    *)
+      echo "error: unknown platform '$(ascii_printable "$PLATFORM")'" >&2
+      echo "  supported: $(join_comma "${SUPPORTED_PLATFORMS[@]}" all). Nothing was written." >&2
+      exit 1
+      ;;
+  esac
+fi
 
 if [[ -z "$TARGET" ]]; then
   echo "error: --target is required" >&2
@@ -386,7 +464,39 @@ platform_managed_paths() {
     pi) printf '%s\n' .pi .pi/mcp.json .pi/mcp.json.provenance.json ;;
     claude-code) printf '%s\n' .claude .mcp.json .mcp.json.provenance.json CLAUDE.md ;;
     cline) printf '%s\n' .cline .clinerules .cline/mcp.json .cline/mcp.json.provenance.json ;;
+    *) internal_unknown_platform "$1" ;;
   esac
+}
+
+# Prints the platform $1's single-file MCP/settings config, relative to $TARGET (and to
+# $IMPLEMENTATION for the generated copy). One map for the merge, the up-front JSON check and
+# the Playwright notice.
+platform_mcp_config() {
+  case "$1" in
+    github) printf '%s\n' .vscode/mcp.json ;;
+    gemini) printf '%s\n' .gemini/settings.json ;;
+    opencode) printf '%s\n' .opencode/opencode.json ;;
+    pi) printf '%s\n' .pi/mcp.json ;;
+    claude-code) printf '%s\n' .mcp.json ;;
+    cline) printf '%s\n' .cline/mcp.json ;;
+    *) internal_unknown_platform "$1" ;;
+  esac
+}
+
+# A platform in SUPPORTED_PLATFORMS that one of the per-platform maps does not know is an
+# installer bug, never a reason to skip it silently.
+internal_unknown_platform() {
+  echo "error: internal: platform '$(printable "$1")' is in SUPPORTED_PLATFORMS but a per-platform map of install.sh does not know it; nothing written." >&2
+  exit 70
+}
+
+# Prints the platforms the run selected, one per line (--platform all expands to the list).
+selected_platforms() {
+  if [[ "$PLATFORM" == "all" ]]; then
+    printf '%s\n' "${SUPPORTED_PLATFORMS[@]}"
+  else
+    printf '%s\n' "$PLATFORM"
+  fi
 }
 
 # Prints the target-side docs/ paths a plain install or --update writes besides
@@ -425,11 +535,7 @@ list_managed_paths() {
       implementation/runtime/memory implementation/runtime/security implementation/runtime/handoff
     docs_managed_paths
   fi
-  if [[ "$PLATFORM" == "all" ]]; then
-    for p in github gemini opencode pi claude-code cline; do platform_managed_paths "$p"; done
-  else
-    platform_managed_paths "$PLATFORM"
-  fi
+  while IFS= read -r p; do platform_managed_paths "$p"; done < <(selected_platforms)
 }
 
 # Runs before the first write of any mode (plain install, --update,
@@ -512,6 +618,16 @@ check_exclude_names() {
 # leave alone. A global, because bash functions cannot return arrays; each
 # caller copies it out before the next call. The scan goes through a file, not
 # a pipe, so a failed find stops the run instead of reading as "no hits".
+# Scratch files this run created (the path lists of the scans), removed by swap_cleanup on any exit
+# so an interrupt cannot leave them behind. make_temp_file sets MADE_TEMP (a global: a command
+# substitution would lose the registration).
+TEMP_FILES=()
+MADE_TEMP=""
+make_temp_file() {
+  MADE_TEMP="$(mktemp)"
+  TEMP_FILES+=("$MADE_TEMP")
+}
+
 EXCLUDE_HITS=()
 exclude_hits() {
   local root="$1"
@@ -526,7 +642,8 @@ exclude_hits() {
   done
   if [[ ${#expr[@]} -eq 0 || ! -d "$root" ]]; then return 0; fi
   local list
-  list="$(mktemp)"
+  make_temp_file
+  list="$MADE_TEMP"
   # "$root/." rather than "$root": find does not follow a starting point that
   # is itself a symlink, and a symlinked .claude/ must be scanned like a real one.
   if ! find "$root/." -mindepth 1 \( "${expr[@]}" \) -prune -print0 >"$list"; then
@@ -539,6 +656,21 @@ exclude_hits() {
     EXCLUDE_HITS+=("${p#"$root/./"}")
   done <"$list"
   rm -f "$list"
+}
+
+# Sets DIR_ENTRIES to every entry of directory $1, dotfiles included (none: an empty array).
+# A global, like EXCLUDE_HITS. dotglob and nullglob are switched on for the one glob and put
+# back exactly as they were found (SEC-010): shopt -q reads the state, no eval of builtin output.
+DIR_ENTRIES=()
+list_dir_entries() {
+  local had_dotglob=0
+  local had_nullglob=0
+  if shopt -q dotglob; then had_dotglob=1; fi
+  if shopt -q nullglob; then had_nullglob=1; fi
+  shopt -s dotglob nullglob
+  DIR_ENTRIES=("$1"/*)
+  if [[ "$had_dotglob" -eq 0 ]]; then shopt -u dotglob; fi
+  if [[ "$had_nullglob" -eq 0 ]]; then shopt -u nullglob; fi
 }
 
 # `cp $1 "$src/." "$dest/"` ($1 is -r, or -rn for a no-clobber merge), minus
@@ -556,11 +688,8 @@ copy_contents_excluding() {
     run cp "$cp_opt" "$src/." "$dest/"
     return 0
   fi
-  local saved_shopt
-  saved_shopt="$(shopt -p dotglob nullglob || true)"
-  shopt -s dotglob nullglob
-  local entries=("$src"/*)
-  eval "$saved_shopt"
+  list_dir_entries "$src"
+  local entries=(${DIR_ENTRIES[@]+"${DIR_ENTRIES[@]}"})
   local entry name h skip below
   for entry in ${entries[@]+"${entries[@]}"}; do
     name="${entry##*/}"
@@ -604,12 +733,8 @@ copy_contents_excluding() {
 
 # True when directory $1 has no entries at all, dotfiles included.
 dir_is_empty() {
-  local saved_shopt
-  saved_shopt="$(shopt -p dotglob nullglob || true)"
-  shopt -s dotglob nullglob
-  local entries=("$1"/*)
-  eval "$saved_shopt"
-  [[ ${#entries[@]} -eq 0 ]]
+  list_dir_entries "$1"
+  [[ ${#DIR_ENTRIES[@]} -eq 0 ]]
 }
 
 # Rule 3, for either fallback: exit 1, naming each dest path ($3..) that is a
@@ -693,7 +818,8 @@ make_way_for_source() {
   shift 2
   if [[ ! -d "$dest" ]]; then return 0; fi
   local list
-  list="$(mktemp)"
+  make_temp_file
+  list="$MADE_TEMP"
   list_source_paths "$src" "$list" "$@"
   local remove=()
   local blocked=()
@@ -752,7 +878,7 @@ copy_tree_into() {
   if same_tree "$src" "$dest"; then return 0; fi
   run mkdir -p "$dest"
   if command -v rsync >/dev/null 2>&1; then
-    local rsync_args=(-a)
+    local rsync_args=(-a --chmod=go-w)
     local e
     for e in ${excludes[@]+"${excludes[@]}"}; do
       if [[ -n "$e" ]]; then rsync_args+=(--exclude="$e"); fi
@@ -802,7 +928,7 @@ sync_tree_into() {
   if same_tree "$src" "$dest"; then return 0; fi
   if command -v rsync >/dev/null 2>&1; then
     run mkdir -p "$dest"
-    local rsync_args=(-a --delete)
+    local rsync_args=(-a --chmod=go-w --delete)
     for e in ${excludes[@]+"${excludes[@]}"}; do
       if [[ -n "$e" ]]; then
         rsync_args+=(--exclude="$e")
@@ -837,36 +963,99 @@ sync_tree_into() {
     # _index/ or __pycache__/ received the installer's.
     exclude_hits "$src" ${excludes[@]+"${excludes[@]}"}
     local src_hits=(${EXCLUDE_HITS[@]+"${EXCLUDE_HITS[@]}"})
-    # Parallel arrays, one entry per kept path: backup_paths[i] is the relative
-    # path, backup_dirs[i] the mktemp -d holding its saved copy.
-    local backup_paths=()
-    local backup_dirs=()
-    local rel
-    # -r here (not plain cp) so an excluded path may name either a file (the
-    # original mcp.json/provenance use case) or a directory (a generated index
-    # dir, .github/workflows/) without a separate code path.
-    for rel in ${keep[@]+"${keep[@]}"}; do
-      local backup_dir
-      backup_dir="$(mktemp -d)"
-      cp -r "$dest/$rel" "$backup_dir/payload"
-      backup_paths+=("$rel")
-      backup_dirs+=("$backup_dir")
-    done
-    run rm -rf "$dest"
-    run mkdir -p "$dest"
-    copy_contents_excluding -r "$src" "$dest" ${src_hits[@]+"${src_hits[@]}"}
-    # `"${!arr[@]}"` on an empty array trips `set -u` on bash < 4.4, which the
-    # no-rsync CI images are exactly the kind of host to ship — count first.
-    local i
-    for ((i = 0; i < ${#backup_paths[@]}; i++)); do
-      rel="${backup_paths[$i]}"
-      local dir="${backup_dirs[$i]}"
-      run mkdir -p "$(dirname "$dest/$rel")"
-      run rm -rf "$dest/$rel"
-      run cp -r "$dir/payload" "$dest/$rel"
-      rm -rf "$dir"
-    done
+    replace_tree_by_swap "$src" "$dest" "${#src_hits[@]}" ${src_hits[@]+"${src_hits[@]}"} ${keep[@]+"${keep[@]}"}
   fi
+}
+
+# Directories replace_tree_by_swap has built or moved aside and not yet finished with, for
+# swap_cleanup (EXIT, and INT/TERM through `exit`). SWAP_BUILD is the sibling being built;
+# SWAP_OLD/SWAP_DEST are set only between the two renames of the swap.
+SWAP_BUILD=""
+SWAP_OLD=""
+SWAP_DEST=""
+swap_cleanup() {
+  local f
+  # SWAP_OLD is set from before the first rename until the swap is finished. If dest is missing the
+  # old tree is the only copy: put it back. If dest exists the swap completed (an interrupt between the
+  # second rename and the delete): the old tree is garbage.
+  if [[ -n "$SWAP_OLD" && ( -e "$SWAP_OLD" || -L "$SWAP_OLD" ) ]]; then
+    if [[ -e "$SWAP_DEST" || -L "$SWAP_DEST" ]]; then
+      rm -rf -- "$SWAP_OLD" || true
+    else
+      mv -- "$SWAP_OLD" "$SWAP_DEST" || true
+    fi
+  fi
+  if [[ -n "$SWAP_BUILD" && -d "$SWAP_BUILD" ]]; then rm -rf -- "$SWAP_BUILD" || true; fi
+  for f in ${TEMP_FILES[@]+"${TEMP_FILES[@]}"}; do rm -f -- "$f" || true; done
+  return 0
+}
+trap swap_cleanup EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 131' QUIT
+trap 'exit 143' TERM
+
+# The no-rsync half of sync_tree_into (SEC-004): make $2 hold exactly $1's tree (minus its
+# excluded paths) plus $2's own kept paths, without ever leaving $2 half-deleted. The new tree is
+# built in a sibling directory of $2 -- same filesystem, so the swap is two renames -- and only a
+# finished tree replaces the old one. A failure or an interrupt before the swap leaves $2 exactly
+# as it was (swap_cleanup removes the sibling); before SEC-004 `rm -rf "$dest"` ran first, and the
+# project-local files it was meant to keep sat in a /tmp backup until the restore, if there was one.
+# $3 is the number of source hits ($4..), then come the kept dest paths (relative to $2).
+replace_tree_by_swap() {
+  local src="$1"
+  local dest="$2"
+  local n_src_hits="$3"
+  shift 3
+  local src_hits=("${@:1:$n_src_hits}")
+  local keep=("${@:$((n_src_hits + 1))}")
+  local build="$dest.emage-new.$$"
+  local old="$dest.emage-old.$$"
+  local rel mode
+  # Both siblings are checked for a symlink or a foreign leftover BEFORE anything is created, and
+  # the build directory is created with a plain `mkdir` (no -p): it fails if the name appeared in
+  # between, so a directory or link planted by someone else is never adopted or deleted.
+  refuse_unsafe_path "$build"
+  refuse_unsafe_path "$old"
+  if [[ "$DRY_RUN" -eq 0 && ( -e "$build" || -L "$build" || -e "$old" || -L "$old" ) ]]; then
+    echo "error: $(printable "$build") or $(printable "$old") already exists; remove it and re-run. Nothing was written." >&2
+    exit 1
+  fi
+  run mkdir -- "$build"
+  if [[ "$DRY_RUN" -eq 0 ]]; then SWAP_BUILD="$build"; fi
+  # The new top directory has the old one's mode (group/world write stripped, SEC-005), not mkdir's default.
+  if [[ -d "$dest" ]]; then
+    mode="$(stat -c '%a' -- "$dest" 2>/dev/null || stat -f '%Lp' -- "$dest" 2>/dev/null || true)"
+    if [[ -n "$mode" ]]; then run chmod "$mode" "$build"; fi
+    run chmod go-w "$build"
+  fi
+  copy_contents_excluding -r "$src" "$build" ${src_hits[@]+"${src_hits[@]}"}
+  for rel in ${keep[@]+"${keep[@]}"}; do
+    run mkdir -p "$(dirname "$build/$rel")"
+    run rm -rf "$build/$rel"
+    run copy_kept_path "$dest/$rel" "$build/$rel"
+  done
+  if [[ -e "$dest" || -L "$dest" ]]; then
+    if [[ "$DRY_RUN" -eq 0 && ( -e "$old" || -L "$old" ) ]]; then
+      echo "error: $(printable "$old") appeared while the new tree was built; remove it and re-run. $(printable "$dest") was not touched." >&2
+      exit 1
+    fi
+    if [[ "$DRY_RUN" -eq 0 ]]; then SWAP_OLD="$old"; SWAP_DEST="$dest"; fi
+    run mv -- "$dest" "$old"
+    run mv -- "$build" "$dest"
+    run rm -rf -- "$old"
+  else
+    run mv -- "$build" "$dest"
+  fi
+  SWAP_BUILD=""
+  SWAP_OLD=""
+  SWAP_DEST=""
+}
+
+# cp -r of a project-local path the harness keeps ($1 -> $2) under the CALLER's umask, not the
+# tightened one: the file is the project's own, so its group bits are not ours to strip.
+copy_kept_path() {
+  (umask "$ORIG_UMASK" && cp -r -- "$1" "$2")
 }
 
 # Merge source tree into dest while preserving existing dest files.
@@ -883,7 +1072,7 @@ merge_tree_preserve_existing() {
   if same_tree "$src" "$dest"; then return 0; fi
   if command -v rsync >/dev/null 2>&1; then
     run mkdir -p "$dest"
-    local rsync_args=(-a --ignore-existing)
+    local rsync_args=(-a --chmod=go-w --ignore-existing)
     local e
     for e in ${excludes[@]+"${excludes[@]}"}; do
       if [[ -n "$e" ]]; then rsync_args+=(--exclude="$e"); fi
@@ -1037,15 +1226,43 @@ validate_before_update() {
   fi
 }
 
-# Before the first write of any mode, dry-run included (T636, SEC-001).
-guard_managed_paths
+# True when the platform's source (generated) MCP config in $IMPLEMENTATION names the
+# Playwright server; $1 is the platform.
+platform_ships_playwright() {
+  local config
+  config="$IMPLEMENTATION/$(platform_mcp_config "$1")"
+  [[ -f "$config" ]] && grep -q '"playwright"' "$config"
+}
 
-mkdir -p "$TARGET"
+# Before the first write of any mode (T672, SEC-T658-05 b): every existing MCP/settings config of
+# the selected platform(s) -- and its provenance sidecar -- must be valid JSON. The merge would
+# otherwise die with a traceback AFTER the platform tree was replaced. One line naming the file,
+# exit 1, nothing written.
+validate_existing_mcp_configs() {
+  local p rel
+  while IFS= read -r p; do
+    rel="$(platform_mcp_config "$p")"
+    if [[ -f "$TARGET/$rel" ]]; then
+      python3 -I "$REPO_ROOT/scripts/merge-mcp-json.py" --validate-only \
+        --dest "$TARGET/$rel" --old-sidecar "$TARGET/$rel.provenance.json" || exit 1
+    fi
+  done < <(selected_platforms)
+}
 
-if [[ "$UPDATE" -eq 1 ]]; then
-  require_existing_install
-  validate_before_update
-fi
+# Every selected platform must be known to ALL the per-platform pieces before anything is written
+# (SEC-T672-04): an install_<name> function, platform_managed_paths and platform_mcp_config. Each
+# map is probed in a subshell, because an unknown name makes it `exit 70`. Without this check a
+# missing piece surfaced halfway through an `all` install, after earlier platforms were written.
+verify_platform_maps() {
+  local p
+  while IFS= read -r p; do
+    if ! declare -F "install_${p//-/_}" >/dev/null \
+       || ! (platform_managed_paths "$p") >/dev/null 2>&1 \
+       || ! (platform_mcp_config "$p") >/dev/null 2>&1; then
+      internal_unknown_platform "$p"
+    fi
+  done < <(selected_platforms)
+}
 
 merge_task_docs() {
   refuse_in_projections_only merge_task_docs "$TARGET/docs/tasks"
@@ -1063,8 +1280,8 @@ merge_task_docs() {
 
 # Copy a generated single-file MCP config into target, preserving any
 # hand-added keys (e.g. a locally-added MCP server or `inputs` block) when
-# updating an existing install. Falls back to a plain copy on fresh installs
-# or when the dest file doesn't exist yet. The MCP file's provenance sidecar
+# the dest file already exists (plain install, --update and --projections-only
+# alike). Falls back to a plain copy when the dest file doesn't exist yet. The MCP file's provenance sidecar
 # (<mcpfile>.provenance.json, ADR-002) is carried alongside it: merged runs
 # pass it to merge-mcp-json.py for diff-based pruning and to refresh the
 # dest-side sidecar; fresh-install/no-dest runs plain-copy it too.
@@ -1075,7 +1292,10 @@ merge_or_copy_mcp_json() {
   local dest_sidecar="${dest}.provenance.json"
   refuse_unsafe_path "$dest"
   refuse_unsafe_path "$dest_sidecar"
-  if [[ "$UPDATE" -eq 1 && -f "$dest" ]]; then
+  # Merge into an existing config in EVERY mode (SEC-T658-05 a): a plain install used to
+  # overwrite it wholesale, user permission/excludeTools rules and servers included. Merging is
+  # what --update does, so a re-run of the same command line never loses the user's content.
+  if [[ -f "$dest" ]]; then
     local args=("$REPO_ROOT/scripts/merge-mcp-json.py" --source "$src" --dest "$dest")
     if [[ -f "$src_sidecar" ]]; then
       args+=(--old-sidecar "$dest_sidecar" --new-sidecar "$src_sidecar")
@@ -1130,59 +1350,59 @@ install_docs() {
   fi
 }
 
-  install_agents_doc() {
-    local src="$IMPLEMENTATION/AGENTS.md"
-    local dest="$TARGET/AGENTS.md"
-    refuse_unsafe_path "$dest"
+install_agents_doc() {
+  local src="$IMPLEMENTATION/AGENTS.md"
+  local dest="$TARGET/AGENTS.md"
+  refuse_unsafe_path "$dest"
 
-    local args=(
+  local args=(
     "$REPO_ROOT/scripts/render_installed_agents.py"
     --source "$src"
     --dest "$dest"
     --platform "$PLATFORM"
-    )
-    if [[ "$DRY_RUN" -eq 1 ]]; then
+  )
+  if [[ "$DRY_RUN" -eq 1 ]]; then
     args+=(--dry-run)
-    fi
-    run python3 "${args[@]}"
-  }
+  fi
+  run python3 "${args[@]}"
+}
 
-  # Copies the Python source these two MCP servers actually import at
-  # runtime (implementation/runtime/memory/, implementation/runtime/security/)
-  # into the target project. Config generation alone (.mcp.json etc.) is not
-  # enough — the config just tells the client to run
-  # `python3 -m implementation.runtime.memory...`, and outside the emage.code
-  # source repo itself, no such module exists to run until this step copies
-  # it there. `_index/` (context-retriever's per-project, locally-built
-  # search index) is excluded in both directions, at any depth: never copied
-  # from $IMPLEMENTATION, and never overwritten or deleted in the target.
-  # Being gitignored (build.py output) only keeps it out of git -- this
-  # installer reads the working tree, and in an authoring checkout
-  # $IMPLEMENTATION/runtime/memory/_index/ holds an index of THIS repository,
-  # which must never reach a client project (T555). A target's own _index/ is
-  # project-specific generated content this installer must not touch.
-  install_mcp_server_runtime() {
-    refuse_in_projections_only install_mcp_server_runtime "$TARGET/implementation"
-    refuse_unsafe_paths implementation implementation/__init__.py implementation/runtime
-    run mkdir -p "$TARGET/implementation"
-    if [[ ! -f "$TARGET/implementation/__init__.py" ]]; then
-      run touch "$TARGET/implementation/__init__.py"
-    fi
-    run mkdir -p "$TARGET/implementation/runtime"
-    install_tree_into "$IMPLEMENTATION/runtime/memory" "$TARGET/implementation/runtime/memory" "_index" "__pycache__"
-    install_tree_into "$IMPLEMENTATION/runtime/security" "$TARGET/implementation/runtime/security" "__pycache__"
-    # Not an MCP server, but runtime source a shipped command names by path:
-    # /handoff step 3 drafts its payload against
-    # implementation/runtime/handoff/schema-v1.json, and the security
-    # guidelines require handoff JSON to pass runtime/handoff/validator.py.
-    # The whole tree ships (schema, validator, worked example) so
-    # both references resolve in an installed project exactly as they do here
-    # (T553). __pycache__/ is excluded for the same reason as above.
-    install_tree_into "$IMPLEMENTATION/runtime/handoff" "$TARGET/implementation/runtime/handoff" "__pycache__"
-  }
+# Copies the Python source these two MCP servers actually import at
+# runtime (implementation/runtime/memory/, implementation/runtime/security/)
+# into the target project. Config generation alone (.mcp.json etc.) is not
+# enough — the config just tells the client to run
+# `python3 -m implementation.runtime.memory...`, and outside the emage.code
+# source repo itself, no such module exists to run until this step copies
+# it there. `_index/` (context-retriever's per-project, locally-built
+# search index) is excluded in both directions, at any depth: never copied
+# from $IMPLEMENTATION, and never overwritten or deleted in the target.
+# Being gitignored (build.py output) only keeps it out of git -- this
+# installer reads the working tree, and in an authoring checkout
+# $IMPLEMENTATION/runtime/memory/_index/ holds an index of THIS repository,
+# which must never reach a client project (T555). A target's own _index/ is
+# project-specific generated content this installer must not touch.
+install_mcp_server_runtime() {
+  refuse_in_projections_only install_mcp_server_runtime "$TARGET/implementation"
+  refuse_unsafe_paths implementation implementation/__init__.py implementation/runtime
+  run mkdir -p "$TARGET/implementation"
+  if [[ ! -f "$TARGET/implementation/__init__.py" ]]; then
+    run touch "$TARGET/implementation/__init__.py"
+  fi
+  run mkdir -p "$TARGET/implementation/runtime"
+  install_tree_into "$IMPLEMENTATION/runtime/memory" "$TARGET/implementation/runtime/memory" "_index" "__pycache__"
+  install_tree_into "$IMPLEMENTATION/runtime/security" "$TARGET/implementation/runtime/security" "__pycache__"
+  # Not an MCP server, but runtime source a shipped command names by path:
+  # /handoff step 3 drafts its payload against
+  # implementation/runtime/handoff/schema-v1.json, and the security
+  # guidelines require handoff JSON to pass runtime/handoff/validator.py.
+  # The whole tree ships (schema, validator, worked example) so
+  # both references resolve in an installed project exactly as they do here
+  # (T553). __pycache__/ is excluded for the same reason as above.
+  install_tree_into "$IMPLEMENTATION/runtime/handoff" "$TARGET/implementation/runtime/handoff" "__pycache__"
+}
 
 install_common() {
-    install_agents_doc
+  install_agents_doc
   if [[ "$PROJECTIONS_ONLY" -eq 1 ]]; then
     # Harness-only refresh: AGENTS.md is rendered above; docs/ (project-owned
     # once installed) and implementation/runtime/ (not a projection) are skipped.
@@ -1218,6 +1438,11 @@ install_claude_code() {
   install_tree_into "$IMPLEMENTATION/.claude" "$TARGET/.claude" "${CLAUDE_LOCAL_PATHS[@]}"
   merge_or_copy_mcp_json "$IMPLEMENTATION/.mcp.json" "$TARGET/.mcp.json"
   refuse_unsafe_paths CLAUDE.md
+  # CLAUDE.md is generator-owned and replaced in every mode; say so when that discards a file of the
+  # project's own (SEC-008 a), so the replacement is never silent.
+  if [[ -f "$TARGET/CLAUDE.md" ]] && ! cmp -s "$IMPLEMENTATION/CLAUDE.md" "$TARGET/CLAUDE.md"; then
+    echo "note: replacing the existing $(printable "$TARGET/CLAUDE.md") with the generated one; its previous content is not kept." >&2
+  fi
   run cp "$IMPLEMENTATION/CLAUDE.md" "$TARGET/CLAUDE.md"
 }
 
@@ -1227,32 +1452,61 @@ install_cline() {
   merge_or_copy_mcp_json "$IMPLEMENTATION/.cline/mcp.json" "$TARGET/.cline/mcp.json"
 }
 
-case "$PLATFORM" in
-  github) install_common; install_github ;;
-  gemini) install_common; install_gemini ;;
-  opencode) install_common; install_opencode ;;
-  pi) install_common; install_pi ;;
-  claude-code) install_common; install_claude_code ;;
-  cline) install_common; install_cline ;;
-  all)
-    install_common
-    install_github
-    install_gemini
-    install_opencode
-    install_pi
-    install_claude_code
-    install_cline
-    ;;
-  *)
-    echo "error: unknown platform '$PLATFORM'" >&2
-    exit 1
-    ;;
-esac
+# --- Main flow: every function above is defined; nothing is written before the checks below. ---
+# Before the first write of any mode, dry-run included (T636, SEC-001).
+verify_platform_maps
+guard_managed_paths
+validate_existing_mcp_configs
+
+# --dry-run creates nothing, the target directory included (SEC-008 b).
+run mkdir -p "$TARGET"
+
+if [[ "$UPDATE" -eq 1 ]]; then
+  require_existing_install
+  validate_before_update
+fi
+
+# Runs the install_<platform> function of platform $1 (dashes become underscores). A supported
+# platform without one is an installer bug: fail closed, never skip.
+install_platform() {
+  local fn="install_${1//-/_}"
+  if ! declare -F "$fn" >/dev/null; then internal_unknown_platform "$1"; fi
+  "$fn"
+}
+
+install_common
+while IFS= read -r selected; do install_platform "$selected"; done < <(selected_platforms)
+
+# The Playwright MCP server needs a browser that neither npx nor the installer fetches, and writes
+# its output to .playwright-mcp/ in the launch directory, which the installer does not put in the
+# project's .gitignore (QA-T648-02). Printed when a selected platform's config ships the server;
+# the commands are those of implementation/PREREQUISITES.md ("Browser for the `playwright`
+# server"), the version read from the generated config so a pin bump cannot leave this stale.
+print_playwright_notice() {
+  local p config pin=""
+  while IFS= read -r p; do
+    if platform_ships_playwright "$p"; then
+      config="$IMPLEMENTATION/$(platform_mcp_config "$p")"
+      pin="$(grep -o '@playwright/mcp@[0-9A-Za-z.+-]*' "$config" | head -n 1 || true)"
+      echo ""
+      echo "Note: this install includes the Playwright MCP server. It does not bundle or download a"
+      echo "browser, so its first browser tool call fails until you install one (once, about 670 MB):"
+      echo "  npx -y ${pin:-@playwright/mcp} install-browser chrome-for-testing"
+      echo "Its output (page snapshots, downloads) goes to .playwright-mcp/ under the directory your"
+      echo "assistant starts from, and this installer does not edit your .gitignore: add"
+      echo "  .playwright-mcp/"
+      echo "to your project's .gitignore, otherwise page content can be committed by accident."
+      echo "(Details: implementation/PREREQUISITES.md, section \"Browser for the \`playwright\` server\".)"
+      return 0
+    fi
+  done < <(selected_platforms)
+}
 
 if [[ "$PROJECTIONS_ONLY" -eq 1 ]]; then
   # The MCP-dependency and search-index notices below describe the runtime
   # install, which this mode deliberately did not perform.
   echo "Refreshed emage.code harness projections ($PLATFORM) in $TARGET; docs/ and implementation/ were not touched."
+  print_playwright_notice
   exit 0
 fi
 
@@ -1262,6 +1516,7 @@ else
   echo "Installed emage.code ($PLATFORM) into $TARGET"
 fi
 echo "Next: configure MCP env vars, then invoke /new-project in your assistant."
+print_playwright_notice
 
 # Some MCP servers (context-retriever, security-audit) are plain Python stdio
 # processes launched via `python3 -m ...` from the generated mcp.json/settings
@@ -1272,20 +1527,31 @@ echo "Next: configure MCP env vars, then invoke /new-project in your assistant."
 # silently). Without this notice, the first sign of the missing dependency is
 # a generic, unhelpful "Connection closed" error from the MCP client days or
 # weeks later, not an actionable message at install time.
+# Only the three runtime directories this installer ships are searched (SEC-009), not whatever
+# else sits under the target's implementation/runtime.
 mcp_server_reqs=()
-while IFS= read -r -d '' req_file; do
-  mcp_server_reqs+=("$req_file")
-done < <(find "$TARGET/implementation/runtime" -name "requirements-mcp-server.txt" -print0 2>/dev/null | sort -z)
+runtime_dirs=()
+for runtime_name in memory security handoff; do
+  if [[ -d "$TARGET/implementation/runtime/$runtime_name" ]]; then
+    runtime_dirs+=("$TARGET/implementation/runtime/$runtime_name")
+  fi
+done
+if [[ "${#runtime_dirs[@]}" -gt 0 ]]; then
+  while IFS= read -r -d '' req_file; do
+    mcp_server_reqs+=("$req_file")
+  done < <(find "${runtime_dirs[@]}" -name "requirements-mcp-server.txt" -print0 2>/dev/null | sort -z)
+fi
 
 if [[ "${#mcp_server_reqs[@]}" -gt 0 ]]; then
   echo ""
   echo "Note: this install includes MCP server(s) that need one extra, one-time local"
   echo "dependency install before they will actually run (their config is generated"
   echo "either way, but the server process will fail with 'Connection closed' in your"
-  echo "assistant until this is done). Run from $TARGET:"
+  # Paths are printed shell-quoted (%q): a copy-pasted line must not run a name in the path (SEC-009).
+  printf 'assistant until this is done). Run from %q:\n' "$TARGET"
   for req_file in "${mcp_server_reqs[@]}"; do
     req_rel="${req_file#"$TARGET"/}"
-    echo "  python3 -m venv .venv-mcp && source .venv-mcp/bin/activate && pip install -r $req_rel"
+    printf '  python3 -m venv .venv-mcp && source .venv-mcp/bin/activate && pip install -r %q\n' "$req_rel"
   done
 fi
 
@@ -1298,7 +1564,7 @@ fi
 if [[ -d "$TARGET/implementation/runtime/memory" ]]; then
   echo ""
   echo "Note: @context-retriever also needs its search index built once, after the"
-  echo "dependency install above, before it can answer real queries. Run from $TARGET:"
+  printf 'dependency install above, before it can answer real queries. Run from %q:\n' "$TARGET"
   echo "  python3 -m implementation.runtime.memory.build \\"
   echo "      --project-id <org>/<repo> --own-repo-root . --general-repo-root . \\"
   echo "      --output-dir implementation/runtime/memory/_index/<org-repo-slug>"

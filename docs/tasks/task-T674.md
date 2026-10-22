@@ -28,6 +28,12 @@ As stated in section 1.
 - Gates for any change under `implementation/`, `scripts/` or `tests/`: `node implementation/scripts/sync.mjs --root implementation --check`, `python3 implementation/scripts/generate-registry.py --check`, `python3 implementation/scripts/check-maturity.py --root implementation`, `python3 scripts/scorecard.py --check`, `python3 docs/tasks/validate-tasks.py`, the evaluator hash (`check_evaluator_hash()`, no drift unless the brief says otherwise), `python3 -m unittest tests.functional.test_golden_held_out_isolation`, and the full suite `python3 tests/run.py > file` (summary lines). Declare root drift in `tests/_baselines/root-install-drift.json` (sorted `python3 -m tests.functional.test_root_install_parity --print-drift` paths plus one comment line starting `Declared <date> by <task> (`); do NOT refresh the root install.
 - Never open `tests/golden/held-out/`; never write a held-out case id anywhere; only T668 may modify `tests/golden/**` (grant G-2). No `.env*` or credential files (the primary checkout has an untracked local `.env` that must not be read or grepped); do not read the user's local `.claude/settings*.json` or `.vscode/mcp.json`. Mark anything you did not verify **(unverified)**.
 
+## 3a. Carried from the T665 and T672 reviews
+
+- README and wiki: the config merge is done on `--update` AND on a plain install over an existing config (T672); document the new on-disk names (`.<name>.<random>.tmp`, `<ledger>.bak`, `<tree>.emage-new.<pid>` / `.emage-old.<pid>`) in the wiki.
+- The full operator-controls text (SEC-T660-03) still owns `GITLAB_DENIED_TOOLS_REGEX` and `GITLAB_ALLOWED_PROJECT_IDS`; `GITLAB_PERMISSION_MODE=modify` is now generated (T665).
+- Documentation tests (T673) read sentences with counts in `AGENTS.md`, `implementation/AGENTS.md`, the wiki and `PREREQUISITES.md`: keep the counts and holder lists in step with the agent sources.
+
 ## 4. Acceptance criteria
 
 As stated in section 1.

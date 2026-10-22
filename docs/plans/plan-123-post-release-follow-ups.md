@@ -122,3 +122,9 @@ The Security Engineer review of T665 (`docs/artifacts/security-review-t665-token
 
 20. **T680** (devops-engineer): verify the Pi adapter's placeholder forms and add optional-variable support to the generator (SEC-T665-09; the pre-existing Pi `gitlab` entry defect). Depends on T665. *Acceptance:* a verified-forms table for Pi in the docs; generator and install-merge tests; all gates and the suite pass; a Security Engineer review.
 21. **T681** (solution-architect): decision on a per-role GitLab token option (SEC-T665-07). Depends on T665. *Acceptance:* `docs/artifacts/gitlab-per-role-token-design-v1.md` with options, a recommendation and the user's decision. **Decision only.**
+
+## Addendum (2026-10-22): T682 from the T672 review
+
+The delta re-review of T672 (`docs/artifacts/security-review-t672-installer-robustness-v1.md`) passed and left eight LOW findings (N-1 to N-8).
+
+22. **T682** (devops-engineer): fix N-1 to N-8 in the reviewer's priority order, with tests and mutation proofs. Depends on T672. *Acceptance:* the eight findings closed; all gates and the suite pass; a Security Engineer delta review.

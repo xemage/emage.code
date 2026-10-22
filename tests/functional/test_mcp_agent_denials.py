@@ -188,7 +188,7 @@ class SourceTests(unittest.TestCase):
         self.assertEqual({k for k, v in self.servers.items() if "denyTools" in v}, {"playwright"})
 
     def test_the_opencode_manifest_opts_in_and_no_other_platform_does(self):
-        for path in sorted((IMPL / "platforms").glob("*.json")):
+        for path in sorted(p for p in (IMPL / "platforms").glob("*.json") if p.name != "_manifest.schema.json"):
             agents = json.loads(path.read_text(encoding="utf-8"))["frontmatter"].get("agents", {})
             with self.subTest(platform=path.stem):
                 self.assertEqual(agents.get("mcpAgentDenies"), True if path.stem == "opencode" else None)
