@@ -25,7 +25,7 @@ scripts/install.sh --target <your-project> --platform claude-code --update
 `workflows/`, `ISSUE_TEMPLATE/`, `PULL_REQUEST_TEMPLATE.md`,
 `PULL_REQUEST_TEMPLATE`, `CODEOWNERS`, `dependabot.yml`, `dependabot.yaml`,
 `FUNDING.yml` and `copilot-instructions.md`; each platform's MCP/settings config
-is merged.
+is merged (a plain install over an existing config merges it too).
 
 **Refresh only the harness projections** (platform trees, MCP configs,
 `AGENTS.md`, and `CLAUDE.md` for Claude Code), leaving `docs/` and

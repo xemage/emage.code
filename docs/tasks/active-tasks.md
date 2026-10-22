@@ -3,7 +3,6 @@
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
 | T679 | Cursor removal step S3: root refresh (ADR-010; needs the user's approval) | orchestrator | pending | P1 | T678 | 2026-10-16 |
-| T674 | Documentation corrections (tracked debt) | technical-writer | pending | P2 | T671 | 2026-10-16 |
 | T676 | Supply-chain and verification checklist items (tracked debt) | devops-engineer | pending | P2 | T671 | 2026-10-16 |
 | T677 | Function-size refactors (tracked debt) | devops-engineer | pending | P2 | T672, T665 | 2026-10-16 |
 | T680 | Pi MCP placeholders: verify the adapter and support optional variables (SEC-T665-09) | devops-engineer | pending | P2 | T665 | 2026-10-22 |

@@ -32,7 +32,7 @@ Servers in `knowledge/mcp/servers.yaml` reference credentials via a per-platform
 **Required env vars (extended; only if you enable those servers):**
 - `CWSO_MCP_URL`, `CWSO_BEARER_TOKEN`, `CWSO_ORIGIN` (the bearer token is sent as `Authorization: Bearer <value>`)
 - `TOOLRADAR_API_KEY` — see warning below.
-- `GITHUB_PERSONAL_ACCESS_TOKEN` (`github`, passed into its container by name, never in argv) and `SUPABASE_ACCESS_TOKEN` (`supabase`, started with `--read-only`, read from the environment, never from argv).
+- `GITHUB_PERSONAL_ACCESS_TOKEN` (`github`, passed into its container by name, never in argv) and `SUPABASE_ACCESS_TOKEN` (`supabase`, started with `--read-only`, read from the environment, never from argv). The Supabase token is account-wide: `--read-only` limits the server's tools, not the token. Scoping to one project and the hosted OAuth alternative: `PREREQUISITES.md`, "MCP server credentials".
 
 The extended Python servers `security-audit` and `poc-security-audit` need no environment variable and no API key; they make local calls only.
 
@@ -64,7 +64,8 @@ emage.code agents have `execute` tool access by default. Combined with broad ter
 The PoC security reviewer (`poc-security-engineer`) is the exception to the `execute` default: its tool grant has no `execute`. It scans with fixed-command MCP tools instead: `scan_secrets` and `ref_containment` from the `poc-security-audit` server, and `grep_content` from the `security-audit` server. Their results never contain matched text, `stderr` or the command line.
 
 - **A clean result is not proof of absence.** It means no match for the fixed rule set at the scanned refs. A secret in a format the rule set does not list, a short or unusual value, a dangling object or a reflog-only commit is not found, and a scan that did not complete (`complete: false`, `truncated`, an error) proves nothing. The reviewer reports such a scan as `FAIL`, never `PASS`.
-- **Scope is a directory, not one repository.** The server is started with `--allowed-root .`, and `root_dir` must be a repository top level inside it; any other git repository located below that directory can be scanned too.
+- **Scope is a directory, not one repository.** The server is started with `--allowed-root .`, and `root_dir` must be a repository top level inside it; any other git repository located below that directory can be scanned too. The launch directory decides what `.` means, so start the assistant from the project root.
+- **Submodules are not scanned.** The scan runs `git grep` without `--recurse-submodules`, so with default git configuration the content of a submodule is outside every scope (a repo-local `submodule.recurse` setting could change that; unverified); scan a submodule as a repository of its own (whether the server accepts a submodule's top level as `root_dir` was not tested). Details: [MCP Servers](../docs/wiki/mcp-servers.md#poc-security-scan-server-poc-security-audit).
 - **Permissions are yours to grant.** The installer never writes `.claude/settings.json` or `.claude/settings.local.json` (`--update` and `--projections-only` leave both untouched). To pre-approve the tools in Claude Code, add `"mcp__poc-security-audit__*"` (and `"mcp__security-audit__*"` for `grep_content`) to `permissions.allow` in your own `.claude/settings.json`. Grant only what you have reviewed; the rule is a standing approval for every tool of that server. Requirements, platform availability and limits: [MCP Servers](../docs/wiki/mcp-servers.md#poc-security-scan-server-poc-security-audit).
 
 ---

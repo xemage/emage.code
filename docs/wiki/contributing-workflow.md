@@ -6,8 +6,8 @@ Full contributor guide: [`CONTRIBUTING.md`](https://gitlab.com/em-age/emage.code
 
 1. Open or pick an issue
 2. Branch from `develop`: `feature/<issue-id>-<slug>`
-3. Edit **only** under [`v2/implementation/knowledge/`](https://gitlab.com/em-age/emage.code/-/tree/main/v2/implementation/knowledge)
-4. Run the sync engine — `cd v2/implementation && node scripts/sync.mjs`
+3. Edit **only** under [`implementation/knowledge/`](https://gitlab.com/em-age/emage.code/-/tree/main/implementation/knowledge)
+4. Run the sync engine — `cd implementation && node scripts/sync.mjs`
 5. Commit using [Conventional Commits](https://www.conventionalcommits.org/)
 6. Push, open MR → `develop`, wait for CI green, request review
 
@@ -44,7 +44,7 @@ The pipeline (`.gitlab-ci.yml`) runs three stages:
 
 If you see a sync failure, you forgot step 4 above:
 ```bash
-cd v2/implementation && node scripts/sync.mjs
+cd implementation && node scripts/sync.mjs
 git add . && git commit --amend --no-edit
 git push --force-with-lease
 ```
@@ -59,10 +59,10 @@ git push --force-with-lease
 
 ## Adding a new platform
 
-1. Drop a manifest file at `v2/implementation/platforms/<name>.json`
-2. Use an existing manifest such as [`claude-code.json`](https://gitlab.com/em-age/emage.code/-/blob/main/v2/implementation/platforms/claude-code.json) as a template
+1. Drop a manifest file at `implementation/platforms/<name>.json`
+2. Use an existing manifest such as [`claude-code.json`](https://gitlab.com/em-age/emage.code/-/blob/main/implementation/platforms/claude-code.json) as a template
 3. Run sync; the new `<name>/` folder appears
 4. Update README "Supported platforms" table
-5. Document quirks in `v2/plan/`
+5. Document quirks in an artifact under `docs/artifacts/` or, for a decision, an ADR under `docs/decisions/`
 
 No script changes needed.

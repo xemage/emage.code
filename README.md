@@ -98,21 +98,28 @@ Makefile shortcut: `make install TARGET=/path/to/your-project PLATFORM=claude-co
 scripts/install.sh --target /path/to/your-project --platform claude-code --update
 ```
 
-On `--update`, the single-file MCP/settings configs for every platform —
+An existing single-file MCP/settings config of a selected platform —
 `.vscode/mcp.json` (`github`), `.mcp.json` (`claude-code`),
 `.gemini/settings.json` (`gemini`), `.opencode/opencode.json`
-(`opencode`), `.pi/mcp.json` (`pi`), and `.cline/mcp.json` (`cline`) — are
-merged, not overwritten: any existing top-level key the generator doesn't
+(`opencode`), `.pi/mcp.json` (`pi`), or `.cline/mcp.json` (`cline`) — is
+merged, not overwritten, in every mode: on `--update`, on `--projections-only`
+and on a plain install over an existing config. Any existing top-level key the generator doesn't
 know about (e.g. a hand-added MCP server entry, or a top-level `inputs`
 prompt block) is preserved, while every generator-known key is refreshed to
 the current generated content, recursing into nested objects (so hand-added
 fields inside a known server's config are preserved too). See
-`scripts/merge-mcp-json.py` for the exact algorithm. The rest of each
+`scripts/merge-mcp-json.py` for the exact algorithm. A config that is not valid
+JSON, or that cannot be replaced, is refused up front, naming the file, before
+anything is written; the installer prints a one-line note on stderr for each
+kind of user content the merge replaced or kept. The rest of each
 platform's directory tree (`.github/`, `.gemini/`, `.opencode/`,
 `.pi/`, `.claude/`, `.cline/`, `.clinerules/`) is replaced on `--update`, with
 files that no longer exist upstream deleted: hand-written files inside those
 trees are lost, so keep project-specific content in `docs/`. Only each
-platform's one MCP/settings file gets the merge treatment above.
+platform's one MCP/settings file gets the merge treatment above. The temporary
+files and backups that the installer can leave next to your files, and every
+note it prints, are listed in the wiki:
+[Quick Start](docs/wiki/quick-start.md#files-and-notes-the-installer-produces).
 
 **Client-owned files are spared.** `--update` does not write, merge or delete
 the project-local files that the harness never ships:
@@ -141,11 +148,11 @@ scripts/install.sh --target /path/to/your-project --platform all --projections-o
 ```
 
 It refreshes the platform trees (with the same spared files as `--update`),
-their MCP/settings configs (merged, as `--update` does), `AGENTS.md`, and
+their MCP/settings configs (merged, as every mode does), `AGENTS.md`, and
 `CLAUDE.md` when Claude Code is among the selected platforms. It never writes or
 deletes anything under the target's `docs/` (the task ledgers included) or
 `implementation/`, so it does not install the MCP server runtime source and
-prints no dependency notice. It requires an existing install (`AGENTS.md` in the
+prints no dependency notice (it does print the Playwright browser note). It requires an existing install (`AGENTS.md` in the
 target) and is mutually exclusive with `--update`. At the emage.code repository
 root it is the only permitted mode, and only with `--platform all`; there,
 `--update` is refused, and any `--target` inside the source repository is
@@ -184,7 +191,8 @@ Details, tool arguments and limits: [MCP Servers](docs/wiki/mcp-servers.md).
 
 Each platform's MCP file also carries a `<mcpfile>.provenance.json` sidecar
 recording which server keys the generator owned at last generation. On
-`--update`, if a prior sidecar exists, a dest-only key is pruned automatically
+a merge (`--update`, `--projections-only` or a plain install over an existing
+config), if a prior sidecar exists, a dest-only key is pruned automatically
 when it was previously generator-owned and the current source no longer emits
 it — a currently-active generator-owned key is never pruned, regardless of
 sidecar content, and a key with no sidecar history at all (e.g. a genuinely

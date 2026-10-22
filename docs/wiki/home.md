@@ -19,6 +19,7 @@ emage.code projects a single canonical knowledge base into the major AI coding a
 | [Performance Benchmarks](performance-benchmarks) | Benchmark dimensions, thresholds, and runtime diagrams |
 | [Contributing Workflow](contributing-workflow) | GitFlow + Conventional Commits + sync engine |
 | [Implementation Guide](implementation-guide) | Schema-first workflows, cookbooks, triggers, packaging |
+| [Severity and Grade Scales](severity-and-grade-scales) | The coexisting severity, priority and verdict scales, who uses each and how they relate |
 
 Release note: documentation updates are a required release gate. Before tagging,
 update release markers and run `python3 scripts/verify-release-docs.py --tag vX.Y.Z`.

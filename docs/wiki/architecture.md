@@ -21,14 +21,14 @@ emage.code v2 is built on **six layers**, each with a clear responsibility.
 │                           MCP `memory` server (knowledge graph)│
 ├──────────────────────────────────────────────────────────────┤
 │  6. MCP servers           gitlab, playwright, memory, brave,  │
-│                           sequential-thinking, fetch, context7│
+│                           sequential-thinking, context7, ...  │
 └──────────────────────────────────────────────────────────────┘
 ```
 
 ## Knowledge → platform projection
 
 ```
-v2/implementation/knowledge/   (canonical)
+implementation/knowledge/   (canonical)
         │
         ▼
    sync.mjs                    (manifest-driven generator)
@@ -41,7 +41,7 @@ v2/implementation/knowledge/   (canonical)
         └──► .cline/ + .clinerules/ (Cline)
 ```
 
-Each platform has a manifest (`v2/implementation/platforms/<name>.json`) describing:
+Each platform has a manifest (`implementation/platforms/<name>.json`) describing:
 - File extensions and naming
 - Frontmatter shape (e.g. `applyTo` vs `paths`)
 - MCP output format (vscode / gemini / opencode / pi / claude-code / cline)
@@ -69,7 +69,6 @@ Verdicts: `PASS` / `CONDITIONAL_PASS` / `FAIL`. `FAIL` blocks progression and cr
 
 ## Further reading
 
-- [`v2/plan/00-vision-v2.md`](https://gitlab.com/em-age/emage.code/-/blob/main/v2/plan/00-vision-v2.md)
-- [`v2/plan/01-shared-knowledge-architecture.md`](https://gitlab.com/em-age/emage.code/-/blob/main/v2/plan/01-shared-knowledge-architecture.md)
-- [`v2/plan/02-platform-adapter-spec.md`](https://gitlab.com/em-age/emage.code/-/blob/main/v2/plan/02-platform-adapter-spec.md)
-- [`v2/plan/04-sync-script-design.md`](https://gitlab.com/em-age/emage.code/-/blob/main/v2/plan/04-sync-script-design.md)
+- [`implementation/README.md`](https://gitlab.com/em-age/emage.code/-/blob/main/implementation/README.md) (the sync engine and the installer)
+- [`docs/decisions/`](https://gitlab.com/em-age/emage.code/-/tree/main/docs/decisions) (architecture decision records)
+- [`docs/artifacts/`](https://gitlab.com/em-age/emage.code/-/tree/main/docs/artifacts) (design and review artifacts)
