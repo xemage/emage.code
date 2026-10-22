@@ -10,16 +10,23 @@
 #   release     — generate CHANGELOG and create GitLab Release (on tag vX.Y.Z)
 # ────────────────────────────────────────────────────────────────────────────
 
-# Supply-chain pins (T675, SEC-T650-04). Every image is pinned by the digest of its
-# multi-arch index (tag kept for readers; the digest is what is pulled). Digests read from
-# the Docker Hub registry API on 2026-10-16; each was re-fetched by digest and its body
-# hashes to the digest. Alpine in each image: node:20-alpine = 3.23, python:3.12-alpine = 3.24,
-# alpine:3.20 = 3.20. Every `apk add` package carries a fuzzy `~=MAJOR.MINOR` pin (`nodejs`
-# and `docker-cli`: MAJOR): an exact `=` pin breaks as soon as Alpine ships a security
+# Supply-chain pins (T675, SEC-T650-04; T676, SEC-T675-03 and SEC-T675-09). Every image is pinned
+# by the digest of its multi-arch index (tag kept for readers; the digest is what is pulled).
+# Digests read from the Docker Hub registry API on 2026-10-22 (python:3.12-alpine was bumped from the
+# 2026-10-16 digest at the same time); each was re-fetched and its body hashes to the digest. Alpine in
+# each image: node:24-alpine = 3.24.3 (Node 24.22.1), python:3.12-alpine = 3.24.3 (Python 3.12.15).
+# ci_images_reviewed_on: 2026-10-22   (tests/functional/test_ci_hash_pins.py fails when this is older than 120 days)
+# Both bases are supported (T676 replaced the end-of-life node:20-alpine and alpine:3.20: the jobs
+# that held WIKI_TOKEN or ran the repository's Python scripts now share the one python image, which
+# is also the interpreter the tests run on). Every `apk add` package carries a fuzzy `~=MAJOR.MINOR`
+# pin (`nodejs` and `docker-cli`: MAJOR): an exact `=` pin breaks as soon as Alpine ships a security
 # rebuild of the same upstream version, which would fail the release job. To bump an image:
 # re-read the digest, read the Alpine version of its base layer, re-read the package versions
 # in that branch's APKINDEX, and change digest and pins together. Do not add an unpinned
 # image or `apk add` (tests/functional/test_publish_release.py fails on it).
+# Python packages: every `pip install` goes through `--require-hashes -r ci/requirements-*.txt`,
+# the hash-locked output of ci/requirements-*.in (tests/functional/test_ci_hash_pins.py fails on a
+# floating install). To change a package, regenerate the lock (docs/wiki/mcp-pin-bump-checklist.md).
 
 stages:
   - lint
@@ -30,7 +37,7 @@ stages:
   - release
 
 default:
-  image: node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
+  image: node:24-alpine@sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53
   interruptible: true
   tags:
     - docker
@@ -41,9 +48,8 @@ variables:
 
 markdown-links:
   stage: lint
+  image: python:3.12-alpine@sha256:92abd2ba1bdfb48b1e2ac224b582dd1558d0d4bb11c903b126b5bf9c448fd656
   allow_failure: true
-  before_script:
-    - apk add --no-cache 'python3~=3.12'
   script:
     - |
       python3 - <<'PY'
@@ -83,7 +89,7 @@ markdown-links:
 
 unit-tests:
   stage: test
-  image: python:3.12-alpine@sha256:1b668429b3511ab407d8e00648891631b0b1a4d7e15e3ca70f38ab5b91ad4ab4
+  image: python:3.12-alpine@sha256:92abd2ba1bdfb48b1e2ac224b582dd1558d0d4bb11c903b126b5bf9c448fd656
   tags:
     - dind  # Docker socket binding for T223 docker availability test
   variables:
@@ -96,7 +102,9 @@ unit-tests:
     # test_install_cursor_removal installs a real `git archive v8.0.0` tree; GIT_DEPTH is shallow and
     # tags are not fetched by default (the test FAILS in CI when the tag is missing).
     - git fetch --depth=1 origin tag v8.0.0
-    - python3 -m pip install --no-cache-dir pyyaml jsonschema requests pyarrow "cryptography>=43.0.1" "mcp==2.2.0"
+    # Hash-locked (SEC-T675-09): the job binds the host Docker socket, so nothing floats. The lock holds
+    # pyyaml, jsonschema, requests, pyarrow, cryptography and mcp==2.2.0 with every transitive dependency.
+    - 'python3 -m pip install --no-cache-dir --disable-pip-version-check --require-hashes --only-binary=:all: -r ci/requirements-ci.txt'
   script:
     - python3 tests/run.py
   artifacts:
@@ -118,9 +126,9 @@ verify-knowledge-drift:
 
 validation-super-gate:
   stage: verify
-  image: python:3.12-alpine@sha256:1b668429b3511ab407d8e00648891631b0b1a4d7e15e3ca70f38ab5b91ad4ab4
+  image: python:3.12-alpine@sha256:92abd2ba1bdfb48b1e2ac224b582dd1558d0d4bb11c903b126b5bf9c448fd656
   before_script:
-    - python3 -m pip install --no-cache-dir --quiet pyyaml jsonschema
+    - 'python3 -m pip install --no-cache-dir --disable-pip-version-check --quiet --require-hashes --only-binary=:all: -r ci/requirements-gate.txt'
   script:
     - python3 implementation/scripts/check.py --root implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --maturity --packaging --triggers --adapters
   rules:
@@ -129,7 +137,7 @@ validation-super-gate:
 
 main-develop-drift-check:
   stage: verify
-  image: python:3.12-alpine@sha256:1b668429b3511ab407d8e00648891631b0b1a4d7e15e3ca70f38ab5b91ad4ab4
+  image: python:3.12-alpine@sha256:92abd2ba1bdfb48b1e2ac224b582dd1558d0d4bb11c903b126b5bf9c448fd656
   variables:
     GIT_DEPTH: "1"
   before_script:
@@ -146,7 +154,7 @@ sync-no-diff:
   stage: sync
   needs: ["verify-knowledge-drift", "validation-super-gate"]
   before_script:
-    - apk add --no-cache 'git~=2.52'
+    - apk add --no-cache 'git~=2.54'
   script:
     - node implementation/scripts/sync.mjs --root implementation
     - |
@@ -164,9 +172,7 @@ sync-no-diff:
 wiki-sync:
   stage: wiki-sync
   needs: ["sync-no-diff"]
-  image: alpine:3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc
-  before_script:
-    - apk add --no-cache 'curl~=8.14' 'python3~=3.12' 'jq~=1.7'
+  image: python:3.12-alpine@sha256:92abd2ba1bdfb48b1e2ac224b582dd1558d0d4bb11c903b126b5bf9c448fd656
   script:
     - |
       if [ -z "$WIKI_TOKEN" ]; then
@@ -184,9 +190,7 @@ wiki-sync:
 
 release-docs-gate:
   stage: release
-  image: alpine:3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc
-  before_script:
-    - apk add --no-cache 'python3~=3.12'
+  image: python:3.12-alpine@sha256:92abd2ba1bdfb48b1e2ac224b582dd1558d0d4bb11c903b126b5bf9c448fd656
   script:
     - python3 scripts/verify-release-docs.py --tag "${CI_COMMIT_TAG}"
   rules:
@@ -194,7 +198,7 @@ release-docs-gate:
 
 main-develop-drift-gate:
   stage: release
-  image: python:3.12-alpine@sha256:1b668429b3511ab407d8e00648891631b0b1a4d7e15e3ca70f38ab5b91ad4ab4
+  image: python:3.12-alpine@sha256:92abd2ba1bdfb48b1e2ac224b582dd1558d0d4bb11c903b126b5bf9c448fd656
   variables:
     GIT_DEPTH: "1"
   before_script:
@@ -209,7 +213,7 @@ main-develop-drift-gate:
 release:
   stage: release
   needs: ["release-docs-gate", "main-develop-drift-gate"]
-  image: python:3.12-alpine@sha256:1b668429b3511ab407d8e00648891631b0b1a4d7e15e3ca70f38ab5b91ad4ab4
+  image: python:3.12-alpine@sha256:92abd2ba1bdfb48b1e2ac224b582dd1558d0d4bb11c903b126b5bf9c448fd656
   variables:
     GIT_DEPTH: "0"
   before_script:

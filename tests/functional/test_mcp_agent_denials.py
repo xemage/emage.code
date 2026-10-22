@@ -86,7 +86,7 @@ EXPECTED_HOLDERS = {
 # servers.yaml must add it here, so its denial is a deliberate decision.
 OPENCODE_SERVERS = [
     "gitlab", "playwright", "memory", "sequential-thinking", "brave", "context7", "hindsight", "cwso",
-    "hf-mcp-server", "context-retriever", "security-audit", "poc-security-audit", "filesystem", "github",
+    "hf-mcp-server", "context-retriever", "security-audit", "poc-security-audit", "filesystem",
     "git", "supabase", "toolradar",
 ]
 # User decision of 2026-10-16 (AskUserQuestion, option label "Exempt the read/search servers
@@ -311,7 +311,6 @@ class EmittedPerAgentClassTests(unittest.TestCase):
             "  security-audit_*: false\n"
             "  poc-security-audit_*: false\n"
             "  filesystem_*: false\n"
-            "  github_*: false\n"
             "  git_*: false\n"
             "  supabase_*: false"), head)
 
@@ -473,7 +472,7 @@ class OpencodeEvaluationTests(unittest.TestCase):
 
     def test_a_non_holder_cannot_call_any_tool_of_any_server(self):
         samples = {"gitlab": GITLAB_WRITE_SAMPLE + GITLAB_READ_SAMPLE, "memory": ["create_entities"],
-                   "git": ["git_commit"], "filesystem": ["write_file"], "github": ["create_issue"],
+                   "git": ["git_commit"], "filesystem": ["write_file"],
                    "supabase": ["execute_sql"], "security-audit": ["run_npm_audit"],
                    "playwright": ["browser_click"]}
         for server, tools in samples.items():

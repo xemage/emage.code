@@ -22,7 +22,6 @@ tools:
   sequential-thinking_*: false
   context-retriever_*: false
   filesystem_*: false
-  github_*: false
   git_*: false
   supabase_*: false
 ---

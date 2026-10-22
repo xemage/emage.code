@@ -55,10 +55,18 @@ APPROVED_NPX_PINS = {
 # grade NAT) is 100.64 to 100.127 and 172.16.0.0/12 (private) is 172.16 to 172.31.
 _CGNAT = ",".join(str(n) for n in range(64, 128))
 _PRIVATE_172 = ",".join(str(n) for n in range(16, 32))
+# T676 (SEC-T655-07): multicast 224.0.0.0/4 is 224 to 239; the wildcard-DNS services below resolve any
+# name that embeds an address (127.0.0.1.nip.io) to that address, so they can reach internal hosts.
+_MULTICAST = ",".join(str(n) for n in range(224, 240))
+_WILDCARD_DNS = "{nip.io,sslip.io,localtest.me,lvh.me}"
 BLOCKED_ORIGINS = ";".join([
     "localhost", "localhost:*", "localhost.", "localhost.:*", "*.localhost", "*.localhost:*",
     "127.*", "0.*", "10.*", "100.{" + _CGNAT + "}.*", "169.254.*", "172.{" + _PRIVATE_172 + "}.*",
-    "192.168.*", "[::]", "[::]:*", "[::1]", "[::1]:*", "[::ffff:*", "[fc*", "[fd*", "[fe80:*", "*@*",
+    "192.168.*", "[::]", "[::]:*", "[::1]", "[::1]:*", "[::ffff:*", "[fc*", "[fd*", "[fe80:*",
+    "[64:ff9b:*", "[2002:*", "168.63.129.*", "192.0.0.*", "198.18.*", "198.19.*", "{" + _MULTICAST + "}.*",
+    "*.internal", "*.internal:*", "*.local", "*.local:*", "*." + _WILDCARD_DNS, "*." + _WILDCARD_DNS + ":*",
+    "localtest.me", "localtest.me:*", "lvh.me", "lvh.me:*",
+    "*@*",
 ])
 PLAYWRIGHT_ARGS = [
     "-y", "@playwright/mcp@0.0.83", "--headless", "--isolated", "--browser", "chromium",
@@ -81,6 +89,8 @@ REMOVED_OR_NONEXISTENT = (
     "mcp-fetch-server",
     "docker-mcp",
     "postgres-mcp",
+    "github-mcp-server",
+    "GITHUB_READ_ONLY",
 )
 
 
@@ -109,15 +119,42 @@ class McpPackagePinTests(unittest.TestCase):
         self.assertEqual(git["command"], "uvx")
         self.assertRegex(git["args"][0], r"^mcp-server-git@\d+\.\d+\.\d+$")
 
-    def test_github_is_a_digest_pinned_container_with_token_by_name(self):
-        gh = self.servers["github"]
-        self.assertEqual(gh["command"], "docker")
-        self.assertEqual(gh["args"][:5], ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN"])
-        self.assertRegex(gh["args"][5], r"^ghcr\.io/github/github-mcp-server@sha256:[0-9a-f]{64}$")
-        self.assertEqual(len(gh["args"]), 6)
-        token = gh["env"]["GITHUB_PERSONAL_ACCESS_TOKEN"]
-        self.assertTrue(token["secret"])
-        self.assertEqual(token["fromEnv"], "GITHUB_PERSONAL_ACCESS_TOKEN")
+    def test_github_server_is_removed_from_the_shipped_registry(self):
+        # v9.0.0 (user decision 2026-10-22, T676): the harness ships no GitHub MCP container. The entry, its
+        # token variable and its read-only flag must not reappear in the source or in any projection.
+        self.assertNotIn("github", self.servers)
+        self.assertEqual([k for k, v in self.servers.items() if v.get("command") == "docker"], [])
+        text = SERVERS_YAML.read_text(encoding="utf-8")
+        for needle in ("github-mcp-server", "GITHUB_PERSONAL_ACCESS_TOKEN", "GITHUB_READ_ONLY", "ghcr.io"):
+            self.assertNotIn(needle, text, needle)
+
+    def test_brave_entry_stays_a_plain_stdio_launch(self):
+        # docs/artifacts/brave-audit-acceptance-v1.md (SEC-T676-02): the accepted sdk advisories do not apply to a
+        # stdio launch. GHSA-46jr-4wx8-v453 (memory exhaustion by one HTTP request) applies as soon as the HTTP
+        # transport runs, which `--transport http` or BRAVE_MCP_TRANSPORT=http turns on. An operator who sets
+        # that variable in the environment or in a `.env` of the launch directory reopens it; the shipped entry must
+        # never do so.
+        brave = self.servers["brave"]
+        self.assertEqual(brave["command"], "npx")
+        self.assertEqual(brave["args"], ["-y", APPROVED_NPX_PINS["brave"]])
+        flags = [a for a in brave["args"] if a.startswith("-") and a != "-y"]
+        self.assertEqual(flags, [])
+        for forbidden in ("--transport", "--host", "--port", "--stateless", "--allowed-origins", "--allowed-hosts"):
+            self.assertNotIn(forbidden, brave["args"])
+        self.assertEqual(sorted(brave.get("env", {})), ["BRAVE_API_KEY"])
+        self.assertFalse([k for k in brave.get("env", {}) if k.startswith("BRAVE_MCP_")])
+        self.assertTrue(brave["env"]["BRAVE_API_KEY"]["secret"])
+
+    def test_mutation_brave_transport_flag_or_variable_is_detected(self):
+        # the assertions above must fail for each way of switching the HTTP transport on
+        for mutate in (lambda e: e["args"].extend(["--transport", "http"]),
+                       lambda e: e.setdefault("env", {}).__setitem__("BRAVE_MCP_TRANSPORT", "http"),
+                       lambda e: e["args"].extend(["--port", "8080"])):
+            entry = {"command": "npx", "args": ["-y", APPROVED_NPX_PINS["brave"]],
+                     "env": {"BRAVE_API_KEY": {"secret": True}}}
+            mutate(entry)
+            plain = entry["args"] == ["-y", APPROVED_NPX_PINS["brave"]] and sorted(entry["env"]) == ["BRAVE_API_KEY"]
+            self.assertFalse(plain)
 
     def test_filesystem_and_git_take_the_launch_directory_as_dot(self):
         self.assertEqual(self.servers["filesystem"]["args"][-1], ".")
@@ -157,7 +194,8 @@ class McpPackagePinTests(unittest.TestCase):
             self.assertIn("mcp-server-git@2026.10.10", text, rel)
             self.assertIn("--repository", text, rel)
             self.assertIn("--read-only", text, rel)
-            self.assertIn("ghcr.io/github/github-mcp-server@sha256:", text, rel)
+            self.assertNotIn("github-mcp-server", text, rel)
+            self.assertNotIn("GITHUB_PERSONAL_ACCESS_TOKEN", text, rel)
 
     def test_fetch_server_is_removed_from_source_and_every_projection(self):
         self.assertNotIn("fetch", self.servers)
@@ -180,15 +218,18 @@ class McpPackagePinTests(unittest.TestCase):
         shipped = args[args.index("--blocked-origins") + 1]
         self.assertEqual(shipped, BLOCKED_ORIGINS)
         entries = shipped.split(";")
-        self.assertEqual(len(entries), 22)
-        self.assertEqual(len(set(entries)), 22, "no duplicate entry")
+        self.assertEqual(len(entries), 39)  # 22 until T676 added 17 (SEC-T655-07, SEC-T676-06)
+        self.assertEqual(len(set(entries)), 39, "no duplicate entry")
         cgnat = next(e for e in entries if e.startswith("100.{"))
         private = next(e for e in entries if e.startswith("172.{"))
         self.assertEqual(sorted(int(n) for n in cgnat[5:cgnat.index("}")].split(",")), list(range(64, 128)))
         self.assertEqual(sorted(int(n) for n in private[5:private.index("}")].split(",")), list(range(16, 32)))
         for required in ("localhost", "localhost:*", "localhost.", "localhost.:*", "*.localhost",
                          "*.localhost:*", "127.*", "0.*", "10.*", "169.254.*", "192.168.*", "[::]",
-                         "[::1]", "[::ffff:*", "[fc*", "[fd*", "[fe80:*", "*@*"):
+                         "[::1]", "[::ffff:*", "[fc*", "[fd*", "[fe80:*", "*@*",
+                         "[64:ff9b:*", "[2002:*", "168.63.129.*", "192.0.0.*", "198.18.*", "198.19.*",
+                         "*.internal", "*.internal:*", "*.local", "*.local:*", "localtest.me", "localtest.me:*",
+                         "lvh.me", "lvh.me:*"):
             self.assertIn(required, entries)
 
     def test_playwright_source_entry_has_the_hardened_args(self):
@@ -242,6 +283,33 @@ class McpPackagePinTests(unittest.TestCase):
         self.assertNotIn("fetch", merged)
         self.assertIn("mine", merged)
         self.assertEqual(merged["playwright"]["args"], PLAYWRIGHT_ARGS)
+
+
+    def test_merge_script_prunes_the_retired_github_entry_only_through_the_sidecar(self):
+        # v9.0.0 (T676): `github` is a retired generator entry. The update removes it when the OLD sidecar lists it
+        # and keeps a copy the adopter renamed; without a sidecar nothing is pruned.
+        old = {"mcpServers": {
+            "github": {"command": "docker", "args": ["run", "-i", "--rm", "ghcr.io/github/github-mcp-server@sha256:" + "0" * 64]},
+            "github-mine": {"command": "docker", "args": ["run", "-i", "--rm", "ghcr.io/github/github-mcp-server@sha256:" + "0" * 64]},
+        }}
+        gen = REPO_ROOT / "implementation" / ".mcp.json"
+        new_sidecar = REPO_ROOT / "implementation" / ".mcp.json.provenance.json"
+        for listed, expect_github in ((True, False), (False, True)):
+            with self.subTest(sidecar_lists_github=listed), tempfile.TemporaryDirectory() as tmp:
+                tmp_path = Path(tmp)
+                dest = tmp_path / "mcp.json"
+                dest.write_text(json.dumps(old), encoding="utf-8")
+                old_sidecar = tmp_path / "mcp.json.provenance.json"
+                owned = ["github", "playwright"] if listed else ["playwright"]
+                old_sidecar.write_text(json.dumps({"schemaVersion": 1, "generatorOwnedKeys": owned}), encoding="utf-8")
+                result = subprocess.run(
+                    [sys.executable, str(REPO_ROOT / "scripts" / "merge-mcp-json.py"), "--source", str(gen),
+                     "--dest", str(dest), "--old-sidecar", str(old_sidecar), "--new-sidecar", str(new_sidecar)],
+                    capture_output=True, text=True, check=False)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                merged = json.loads(dest.read_text(encoding="utf-8"))["mcpServers"]
+                self.assertEqual("github" in merged, expect_github)
+                self.assertIn("github-mine", merged)
 
 
 AGENTS_DIR = REPO_ROOT / "implementation" / "knowledge" / "agents"

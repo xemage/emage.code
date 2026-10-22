@@ -31,7 +31,6 @@ tools:
   security-audit_*: false
   poc-security-audit_*: false
   filesystem_*: false
-  github_*: false
   git_*: false
   supabase_*: false
 agents: [technology-scout, feasibility-agent, scaffolding-agent, integration-agent, data-mockup-agent, demo-agent, evaluation-agent, technical-debt-narrator, poc-qa-engineer, poc-security-engineer, poc-technical-writer, poc-devops-engineer, backend-developer, frontend-developer]
