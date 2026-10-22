@@ -37,7 +37,21 @@ is refreshed silently, because refreshing them is what an update is for:
   - a key of yours inside a generator-owned server's `env`, `environment` or `headers` was kept;
   - the top level of your file is not a JSON object, so the whole file was replaced;
   - there is no provenance sidecar, so no retired generator entry could be pruned: your servers
-    that the generated config lacks are named, with a pointer to `--force-prune-keys`.
+    that the generated config lacks are named, with a pointer to `--force-prune-keys`;
+  - `--drop-env-form` only (T680, Pi): an `env` / `headers` entry of a generator-owned server that the
+    generated config no longer has and whose value holds the `${env:` form was dropped (names only, with
+    a hint that the dropped values were placeholder text);
+  - a retired generator server was pruned through the provenance sidecar (names only);
+  - WARNING (T680, SEC-T680-01): a key of yours kept inside a generator-owned `env`, `environment` or
+    `headers` block has a credential-like name (TOKEN, KEY, SECRET, PASSWORD, AUTHORIZATION) and holds a
+    literal value, not a `${...}` / `$VAR` / `{env:...}` placeholder or a `!command`. The value stays in
+    the file (the merge never deletes your key); the line names the key, never the value.
+
+`--drop-env-form` (install.sh passes it for `.pi/mcp.json` only): Pi does not expand `${env:VAR}` (it stays
+literal text, observed on four releases: 0.99.0, 1.0.0, 1.3.0, 1.4.0) and the generator now leaves its optional variables out, so
+an older generated `"GITLAB_PERSONAL_ACCESS_TOKEN": "${env:GITLAB_PERSONAL_ACCESS_TOKEN}"` would otherwise
+survive the merge as a user key and hand the literal text to the server as the token. Such an entry never
+worked on Pi, so dropping it loses nothing; every other key of yours is kept.
 
 Writes are atomic (SEC-006): the merged file is written next to the destination and moved over
 it with os.replace, so an interrupt leaves the old file or the new one, never a half-written
@@ -56,6 +70,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import stat
 import sys
 import tempfile
@@ -65,6 +80,83 @@ from typing import Any
 # The `env` / `headers` objects of a server entry: user-added keys inside them are kept, which is
 # the documented merge design, but the user is told their names (SEC-007).
 KEPT_KEY_PARENTS = frozenset({"env", "environment", "headers"})
+# T680 (SEC-T680-01, -07, -08): a kept key with a credential-like name and a literal value is warned about.
+CREDENTIAL_NAME = re.compile(r"token|key|secret|password|passwd|authorization|auth|cookie|bearer|credential",
+                             re.IGNORECASE)
+# A value is a placeholder only when the WHOLE value is one: an optional single-word prefix (`Bearer `) and a
+# `${NAME}`, `$NAME` or `{env:NAME}` reference. No `:-default` text, no text around it: `${VAR:-glpat-xxx}`,
+# `pa$word` and `ab$cd` are literals. A bare `$NAME`-shaped secret cannot be told from a reference.
+PLACEHOLDER = re.compile(r"(?:[A-Za-z]+ )?(?:\$\{[A-Za-z_][A-Za-z0-9_]*\}|\$[A-Za-z_][A-Za-z0-9_]*"
+                         r"|\{env:[A-Za-z_][A-Za-z0-9_]*\})")
+# Only the first CLASSIFY_LIMIT characters are classified; a longer value is a literal (SEC-T680-08).
+CLASSIFY_LIMIT = 4096
+# A name whose last segment is FILE or PATH holds a path, not a secret (`GITLAB_PERSONAL_ACCESS_TOKEN_FILE`).
+PATH_NAME = re.compile(r"(?:^|[_.-])(?:file|path)$", re.IGNORECASE)
+
+
+def holds_literal_credential(key: str, value: Any) -> bool:
+    """True for a credential-named key whose value is a non-empty string that is neither one placeholder
+    reference nor a `!command` (a value that starts with `!`)."""
+    if not (CREDENTIAL_NAME.search(key) and isinstance(value, str) and value != "" and not value.startswith("!")):
+        return False
+    return len(value) > CLASSIFY_LIMIT or PLACEHOLDER.fullmatch(value) is None
+
+
+def format_names(names: Any) -> str:
+    """The ONE place that turns key and server names into the text of a note (T680, SEC-T680-05).
+    Names only, never values; sorted and de-duplicated; every name goes through printable() (T682 N-1), so
+    an ESC, a newline or a bidi control in a name from the user's file never reaches the terminal."""
+    return ", ".join(printable(name) for name in sorted(set(names)))
+
+
+GENERATED_REF = re.compile(r"(?:[A-Za-z]+ )?\$\{(?:env:)?[A-Za-z_][A-Za-z0-9_]*\}")
+
+
+def differs_from_generated(entry: Any) -> bool:
+    """Whether a retired server entry looks hand-edited (SEC-T680-09). The old generated entry is not
+    available, so this judges by what a generated remote entry never holds: a `url`, header or env value that
+    is not one `${NAME}` / `${env:NAME}` reference (optionally after a one-word prefix), or a non-object entry."""
+    if not isinstance(entry, dict):
+        return True
+    values = [entry["url"]] if "url" in entry else []
+    for parent in sorted(KEPT_KEY_PARENTS):
+        block = entry.get(parent)
+        if isinstance(block, dict):
+            values.extend(block.values())
+        elif parent in entry:
+            return True
+    return any(not isinstance(v, str) or GENERATED_REF.fullmatch(v) is None for v in values)
+
+
+def drop_dead_env_form(dest: Any, source: Any, notes: list[tuple[str, str]]) -> Any:
+    """T680: a copy of `dest` without the `env`/`headers` entries (of servers that `source` also lists)
+    that `source` lacks and whose value holds `${env:`. Names go into `notes` as kind "dropped"."""
+    if not isinstance(dest, dict) or not isinstance(source, dict):
+        return dest
+    result = dict(dest)
+    for wrapper in SERVER_WRAPPERS:
+        servers, source_servers = result.get(wrapper), source.get(wrapper)
+        if not isinstance(servers, dict) or not isinstance(source_servers, dict):
+            continue
+        servers = dict(servers)
+        for name, server in list(servers.items()):
+            source_server = source_servers.get(name)
+            if not isinstance(server, dict) or not isinstance(source_server, dict):
+                continue
+            server = dict(server)
+            for parent in sorted(KEPT_KEY_PARENTS):
+                block, source_block = server.get(parent), source_server.get(parent)
+                if not isinstance(block, dict):
+                    continue
+                source_block = source_block if isinstance(source_block, dict) else {}
+                dead = [k for k, v in block.items()
+                        if k not in source_block and isinstance(v, str) and "${env:" in v]
+                for key in dead:
+                    notes.append(("dropped", f"{wrapper}.{name}.{parent}.{key}"))
+                server[parent] = {k: v for k, v in block.items() if k not in dead}
+            servers[name] = server
+        result[wrapper] = servers
+    return result
 
 
 def merge_exclude_tools(dest_value: Any, source_value: Any) -> Any:
@@ -101,7 +193,13 @@ def _note_kept_keys(path: tuple[str, ...], dest: dict, source: dict, notes: list
     """SEC-007: a user key kept inside a generator-owned server's env/headers goes into `notes`."""
     if notes is None or not path or path[-1] not in KEPT_KEY_PARENTS or len(path) < 3:
         return
-    notes.extend(("kept", f"{'.'.join(path)}.{key}") for key in dest if key not in source)
+    for key, value in dest.items():
+        if key in source:
+            continue
+        notes.append(("kept", f"{'.'.join(path)}.{key}"))
+        if holds_literal_credential(key, value):
+            kind = "literal_path" if PATH_NAME.search(key) else "literal"
+            notes.append((kind, f"{'.'.join(path)}.{key}"))
 
 
 def merge_json(dest: Any, source: Any, _top: bool = True, notes: list[tuple[str, str]] | None = None,
@@ -245,10 +343,25 @@ def print_notes(dest: Path, notes: list[tuple[str, str]]) -> None:
     if ("top", "level") in notes:
         print(f"merge-mcp-json: note: {dest}: the top level of your file is not a JSON object, so the whole "
               f"file was replaced by the generated config", file=sys.stderr)
-    for kind, text in (("replaced", "replaced your value for"), ("kept", "kept your key")):
-        names = sorted({name for note_kind, name in notes if note_kind == kind})
+    for kind, text in (("replaced", "replaced your value for"), ("kept", "kept your key"),
+                       ("dropped", "dropped the retired `${env:` entry"),
+                       ("pruned", "pruned the retired generator server")):
+        names = [name for note_kind, name in notes if note_kind == kind]
         if names:
-            print(f"merge-mcp-json: note: {dest}: {text} {', '.join(printable(name) for name in names)}", file=sys.stderr)
+            print(f"merge-mcp-json: note: {dest}: {text} {format_names(names)}", file=sys.stderr)
+        if names and kind == "dropped":
+            print(f"merge-mcp-json: note: {dest}: restore by hand if you need them: the dropped keys held "
+                  f"`${{env:...}}` placeholder text, which the client does not expand", file=sys.stderr)
+    differing = [name for note_kind, name in notes if note_kind == "pruned_differs"]
+    if differing:
+        print(f"merge-mcp-json: note: {dest}: {format_names(differing)} differs from the generated entry; its old "
+              f"content is not kept (copy the entry to another name and re-add it)", file=sys.stderr)
+    for name in sorted({name for note_kind, name in notes if note_kind == "literal"}):
+        print(f"merge-mcp-json: WARNING: {dest}: {format_names([name])} holds a literal value; remove it from "
+              f"the file and revoke the token", file=sys.stderr)
+    for name in sorted({name for note_kind, name in notes if note_kind == "literal_path"}):
+        print(f"merge-mcp-json: note: {dest}: {format_names([name])} holds a literal path; fine, but it is read "
+              f"by the server only if the token variable is empty", file=sys.stderr)
 
 
 def render_json(data: Any) -> str:
@@ -257,6 +370,16 @@ def render_json(data: Any) -> str:
 
 # The keys under which every platform lists its servers (`servers`, `mcpServers`, `mcp`).
 SERVER_WRAPPERS = ("mcpServers", "servers", "mcp")
+
+
+def server_names(data: Any) -> set[str]:
+    """Names of the servers a config lists under any of the wrapper keys."""
+    names: set[str] = set()
+    if isinstance(data, dict):
+        for wrapper in SERVER_WRAPPERS:
+            if isinstance(data.get(wrapper), dict):
+                names.update(data[wrapper])
+    return names
 
 
 def dest_only_servers(dest_data: Any, source_data: Any) -> list[str]:
@@ -294,6 +417,9 @@ def _main() -> int:
                          help="Only check that --dest (and --old-sidecar, if it exists) parse as JSON; write nothing")
     parser.add_argument("--force-prune-keys", type=str, default=None,
                          help="Comma-separated dest-only key names to prune exactly once, explicitly")
+    parser.add_argument("--drop-env-form", action="store_true",
+                         help="Pi only (T680): drop env/headers entries of generator-owned servers that the "
+                              "generated config lacks and whose value holds the `${env:` form")
     args = parser.parse_args()
 
     if args.validate_only:
@@ -323,6 +449,8 @@ def _main() -> int:
         source_data = load_json(args.source)
         if not isinstance(dest_data, dict):
             notes.append(("top", "level"))
+        if args.drop_env_form:
+            dest_data = drop_dead_env_form(dest_data, source_data, notes)
         merged = merge_json(dest_data, source_data, notes=notes)
         use_sidecars = bool(args.old_sidecar and args.new_sidecar and args.old_sidecar.is_file())
         old_keys = load_sidecar_keys(args.old_sidecar) if use_sidecars else set()
@@ -333,7 +461,13 @@ def _main() -> int:
 
     if use_sidecars:
         retired = old_keys - new_keys
+        before = server_names(merged)
+        old_entries = {name: entry for wrapper in SERVER_WRAPPERS if isinstance(merged.get(wrapper), dict)
+                       for name, entry in merged[wrapper].items() if name in retired}
         prune_names_recursive(merged, source_data, retired)
+        pruned = sorted(before - server_names(merged))
+        notes.extend(("pruned", name) for name in pruned)
+        notes.extend(("pruned_differs", name) for name in pruned if differs_from_generated(old_entries.get(name)))
 
     if args.force_prune_keys:
         force_prune_names = {n.strip() for n in args.force_prune_keys.split(",") if n.strip()}
@@ -342,7 +476,7 @@ def _main() -> int:
         check_prune_names_recursive(merged, source_data, force_prune_names, found)
         missing = force_prune_names - found
         if missing:
-            offenders = ", ".join(printable(name) for name in sorted(missing))
+            offenders = format_names(missing)
             print(f"merge-mcp-json: --force-prune-keys named '{offenders}', which is not a dest-only key "
                   f"(missing, or still present in source) — refusing to proceed", file=sys.stderr)
             return 1
@@ -359,7 +493,7 @@ def _main() -> int:
     print_notes(args.dest, notes)
     if bootstrap_kept:
         print(f"merge-mcp-json: note: {args.dest}: there is no provenance sidecar at {args.old_sidecar}, so no "
-              f"retired generator entry could be pruned; kept your server(s) {', '.join(printable(name) for name in bootstrap_kept)}, which "
+              f"retired generator entry could be pruned; kept your server(s) {format_names(bootstrap_kept)}, which "
               f"the generated config does not contain. If one is a retired generator entry, remove it by hand "
               f"or run scripts/merge-mcp-json.py with --force-prune-keys <name>.", file=sys.stderr)
     if not args.dry_run:
