@@ -6,7 +6,7 @@ import io
 import tempfile
 import unittest
 from unittest import mock
-from contextlib import redirect_stderr
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
 from tests._helpers.repo import repo_root
@@ -462,6 +462,66 @@ class TestLedgerBackupAndAtomicWrite(unittest.TestCase):
         (self.template / "validate-tasks.py").chmod(0o777)
         sync_task_docs(self.template, self.tmp / "fresh")
         self.assertEqual((self.tmp / "fresh" / "validate-tasks.py").stat().st_mode & 0o022, 0)
+
+    # -- T682 N-8: a failure is one line and, where it can be foreseen, comes before the first write ----
+    def _run_main(self, *extra: str):
+        out, err = io.StringIO(), io.StringIO()
+        argv = ["merge-task-docs.py", "--template-dir", str(self.template), "--dest-dir", str(self.dest), *extra]
+        with mock.patch("sys.argv", argv), redirect_stdout(out), redirect_stderr(err):
+            code = _merge.main()
+        return code, out.getvalue(), err.getvalue()
+
+    def _assert_one_line_failure(self, code: int, err: str, needle: str) -> None:
+        self.assertEqual(code, 1, err)
+        self.assertEqual(len(err.strip().splitlines()), 1, err)
+        self.assertIn("merge-task-docs: failed (", err)
+        self.assertIn(needle, err)
+        self.assertNotIn("Traceback", err)
+
+    def test_a_failed_write_is_one_line(self):
+        self.ledger.write_text(TEMPLATE_LEDGER, encoding="utf-8")
+        with mock.patch.object(_merge.os, "replace", side_effect=OSError("disk gone")):
+            code, _out, err = self._run_main()
+        self._assert_one_line_failure(code, err, "OSError: disk gone")
+        self.assertEqual(self.ledger.read_text(encoding="utf-8"), TEMPLATE_LEDGER)
+
+    def test_a_ledger_that_is_not_utf8_is_one_line_and_nothing_is_written(self):
+        (self.template / "completed-tasks.md").write_text(TEMPLATE_LEDGER, encoding="utf-8")
+        self.ledger.write_text(self.with_bad_row, encoding="utf-8")   # a row would be dropped: a write is due
+        completed = self.dest / "completed-tasks.md"
+        completed.write_bytes(b"| ID | Title |\n\xff\xfe\n")   # sorts AFTER active-tasks.md
+        code, _out, err = self._run_main()
+        self._assert_one_line_failure(code, err, "UnicodeDecodeError")
+        self.assertEqual(self.ledger.read_text(encoding="utf-8"), self.with_bad_row,
+                         "the first ledger was replaced before the second one was found unreadable")
+        self.assertEqual(sorted(p.name for p in self.dest.iterdir()), ["active-tasks.md", "completed-tasks.md"])
+
+    def test_an_unwritable_directory_is_one_line_and_nothing_is_written(self):
+        import os
+        self.ledger.write_text(self.with_bad_row, encoding="utf-8")
+        self.dest.chmod(0o555)
+        self.addCleanup(self.dest.chmod, 0o755)
+        if os.access(self.dest, os.W_OK):
+            self.skipTest("directory permissions are not enforced here (running as root)")
+        code, _out, err = self._run_main()
+        self._assert_one_line_failure(code, err, "is not writable")
+        self.assertEqual(self.ledger.read_text(encoding="utf-8"), self.with_bad_row)
+
+    def test_a_dry_run_does_not_need_a_writable_directory(self):
+        import os
+        self.ledger.write_text(TEMPLATE_LEDGER, encoding="utf-8")
+        self.dest.chmod(0o555)
+        self.addCleanup(self.dest.chmod, 0o755)
+        code, out, err = self._run_main("--dry-run")
+        self.assertEqual((code, err), (0, ""), err)
+        self.assertIn("DRY-RUN: merge ledger", out)
+
+    def test_a_symlink_is_still_its_own_message(self):
+        (self.dest / "active-tasks.md").symlink_to(self.tmp / "elsewhere")
+        code, _out, err = self._run_main()
+        self.assertEqual(code, 1)
+        self.assertIn("merge-task-docs: refusing to write through a symlink", err)
+        self.assertNotIn("failed (", err)
 
 
 if __name__ == "__main__":

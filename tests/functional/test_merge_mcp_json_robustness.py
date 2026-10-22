@@ -279,6 +279,42 @@ class TestMergeMcpJsonRobustness(unittest.TestCase):
         self.assertEqual(json.loads(old.read_text())["generatorOwnedKeys"], ["new"])
         self.assertEqual(json.loads(dest.read_text()), {"mcpServers": {"new": {}}})
 
+    # -- T682 N-1: names from the user's file never reach the terminal raw ------------------------------
+    EVIL = "x\x1b[31m\nforged: line\u202e"
+
+    def _assert_terminal_safe(self, err: str, escaped: str) -> None:
+        self.assertIn(escaped, err)
+        self.assertEqual([ch for ch in err if not (ch.isprintable() or ch == "\n")], [], repr(err))
+        self.assertNotIn("\nforged: line", err, "a raw newline in a name forged a stderr line")
+
+    def test_unprintable_names_are_ascii_escaped_in_every_note(self) -> None:
+        evil, escaped = self.EVIL, ascii(self.EVIL)
+        source = self.write("source.json", {
+            "permission": {evil: "deny"}, "hooks": {"AfterTool": "generated"},
+            "mcpServers": {"gitlab": {"env": {"A": "${A}"}}}})
+        dest = self.write("dest.json", {
+            "permission": {evil: "allow"}, "hooks": {"AfterTool": "mine"},
+            "mcpServers": {"gitlab": {"env": {"A": "x", evil: "v"}}, evil: {}}})
+        old = self.tmp / "dest.json.provenance.json"
+        new = self.write("source.json.provenance.json", {"schemaVersion": 1, "generatorOwnedKeys": ["gitlab"]})
+        code, _out, err = _run("--source", str(source), "--dest", str(dest),
+                               "--old-sidecar", str(old), "--new-sidecar", str(new))
+        self.assertEqual(code, 0, err)
+        lines = err.splitlines()
+        for needle in ("replaced your value for", "kept your key", "kept your server(s)"):
+            self.assertEqual(len([ln for ln in lines if needle in ln]), 1, err)
+        self._assert_terminal_safe(err, ascii(f"permission.{evil}"))
+        self._assert_terminal_safe(err, ascii(f"mcpServers.gitlab.env.{evil}"))
+        self._assert_terminal_safe(err, f"kept your server(s) {escaped},")
+        self.assertIn("hooks.AfterTool", err, "printable names are printed as they are")
+
+    def test_an_unprintable_force_prune_name_is_ascii_escaped(self) -> None:
+        source = self.write("source.json", {"mcpServers": {"gitlab": {}}})
+        dest = self.write("dest.json", {"mcpServers": {"gitlab": {}}})
+        code, _out, err = _run("--source", str(source), "--dest", str(dest), "--force-prune-keys", self.EVIL)
+        self.assertEqual(code, 1)
+        self._assert_terminal_safe(err, f"named '{ascii(self.EVIL)}'")
+
     def test_dry_run_writes_nothing(self) -> None:
         source = self.write("source.json", {"a": 2})
         dest = self.write("dest.json", {"a": 1})

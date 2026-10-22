@@ -98,7 +98,7 @@
     },
     "relPath": {
       "type": "string",
-      "pattern": "^(?!/)(?!(.*/)?\\.\\.?(/|$))[^\\\\]+$",
+      "pattern": "^(?!/)(?!([^/]*/)*\\.\\.?(/|$))[^\\\\]+$",
       "description": "A relative path without '.' or '..' segments and without backslashes: never absolute, never the root itself, never leaving it."
     },
     "stringList": { "type": "array", "items": { "type": "string" } },

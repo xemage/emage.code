@@ -170,7 +170,10 @@ class YamlDivergenceTests(unittest.TestCase):
                 self.assertEqual(self._generated_args(line), expected)
 
 
-def _run_sync_with_manifests(manifests: dict[str, dict]) -> tuple[subprocess.CompletedProcess, Path]:
+def _run_sync_with_manifests(manifests: dict[str, dict], extra_args: tuple[str, ...] = (), prepare=None,
+                             root_arg=None, sync: Path = SYNC) -> tuple[subprocess.CompletedProcess, Path]:
+    """`prepare(tmp)` runs before the generator (extra directories), `root_arg(tmp)` builds a --root
+    spelling, `sync` is the script to run (T682: a relative path is a copy inside the scratch root)."""
     tmp = Path(tempfile.mkdtemp(prefix="t672-sync-"))
     (tmp / "platforms").mkdir()
     for sub in ("mcp", "instructions", "skills", "agents", "commands"):
@@ -180,9 +183,16 @@ def _run_sync_with_manifests(manifests: dict[str, dict]) -> tuple[subprocess.Com
     for name, patch in manifests.items():
         manifest = json.loads(json.dumps(base))
         manifest["platform"], manifest["outputDir"] = name, f".{name}"
+        # Cline's rootRelative instructions directory is a removal target too: one per manifest (T682 N-5)
+        manifest["fileMap"]["instructions"]["dir"] = f".{name}-rules"
         patch(manifest)
         (tmp / "platforms" / f"{name}.json").write_text(json.dumps(manifest), encoding="utf-8")
-    proc = subprocess.run(["node", str(SYNC), "--root", str(tmp)], capture_output=True, text=True, check=False)
+    if prepare is not None:
+        prepare(tmp)
+    root = root_arg(tmp) if root_arg is not None else str(tmp)
+    script = sync if sync.is_absolute() else tmp / sync
+    proc = subprocess.run(["node", str(script), "--root", root, *extra_args], capture_output=True, text=True,
+                          check=False)
     return proc, tmp
 
 
@@ -232,6 +242,77 @@ class ManifestsAreValidatedBeforeTheFirstWriteTests(unittest.TestCase):
                 self.assertTrue((tmp / "knowledge" / "mcp" / "servers.yaml").is_file(), "the root was emptied")
                 self.assertFalse((tmp.parent / escape).exists())
                 self.addCleanup((tmp.parent / escape).unlink, missing_ok=True)
+
+    # -- T682 N-4 / N-5 ----------------------------------------------------------------------------
+    def test_an_absolute_root_is_normalised(self):
+        """N-4: "<tmp>/x/../" and "<tmp>//" name the root, and are not refused as "outside" it."""
+        for label, spell in (("dot-dot and trailing slash", lambda t: f"{t}/x/../"),
+                             ("doubled slash", lambda t: f"{t}//"),
+                             ("dot segment", lambda t: f"{t}/./")):
+            with self.subTest(label):
+                proc, tmp = _run_sync_with_manifests({"aaa": lambda m: None}, root_arg=spell)
+                self.addCleanup(shutil.rmtree, tmp, ignore_errors=True)
+                self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+                self.assertTrue((tmp / ".aaa" / "mcp.json").is_file())
+
+    def _assert_refused(self, manifests, message, **kwargs):
+        proc, tmp = _run_sync_with_manifests(manifests, **kwargs)
+        self.addCleanup(shutil.rmtree, tmp, ignore_errors=True)
+        self.assertNotEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertIn(message, proc.stdout + proc.stderr)
+        self.assertFalse((tmp / ".aaa").exists(), "a manifest was written before the refusal")
+        self.assertTrue((tmp / "knowledge" / "mcp" / "servers.yaml").is_file(), "a generator input was deleted")
+        return tmp
+
+    def test_an_output_tree_must_not_overlap_a_generator_input(self):
+        """N-5: outputDir "knowledge" (or inside it, or above `_extras`) would be `rm -rf`-ed before it is read."""
+        def make(*dirs):
+            def prepare(tmp):
+                for d in dirs:
+                    (tmp / d).mkdir(parents=True, exist_ok=True)
+            return prepare
+        for output_dir in ("knowledge", "platforms", "_extras", "scripts", "runtime", "knowledge/sub",
+                           "runtime/x/y", "scripts/out"):
+            with self.subTest(outputDir=output_dir):
+                self._assert_refused({"aaa": lambda m: None, "zzz": lambda m, d=output_dir: m.update(outputDir=d)},
+                                     "overlaps the generator input", prepare=make("_extras", "scripts", "runtime"))
+        with self.subTest("outputDir contains an input passed with --extras"):
+            tmp = self._assert_refused({"aaa": lambda m: None, "zzz": lambda m: m.update(outputDir="ex")},
+                                       "overlaps the generator input", prepare=make("ex/tras"),
+                                       extra_args=("--extras=ex/tras",))
+            self.assertTrue((tmp / "ex" / "tras").is_dir())
+        with self.subTest("the rootRelative instructions directory is a removal target too"):
+            self._assert_refused({"aaa": lambda m: None, "zzz": lambda m: m["fileMap"]["instructions"].update(dir="knowledge")},
+                                 "overlaps the generator input")
+
+    def test_the_generators_own_directory_is_an_input(self):
+        def copy_sync(tmp):
+            (tmp / "tools").mkdir()
+            shutil.copy(SYNC, tmp / "tools" / "sync.mjs")
+        for output_dir in ("tools", "tools/out"):
+            with self.subTest(outputDir=output_dir):
+                self._assert_refused({"aaa": lambda m: None, "zzz": lambda m, d=output_dir: m.update(outputDir=d)},
+                                     "overlaps the generator input", prepare=copy_sync, sync=Path("tools/sync.mjs"))
+
+    def test_output_trees_of_two_manifests_must_not_overlap(self):
+        cases = {
+            "equal": lambda m: m.update(outputDir=".aaa"),
+            "inside": lambda m: m.update(outputDir=".aaa/sub"),
+            "same rootRelative directory": lambda m: m["fileMap"]["instructions"].update(dir=".aaa-rules"),
+            "rootRelative inside the other output tree": lambda m: m["fileMap"]["instructions"].update(dir=".aaa/rules"),
+        }
+        for label, patch in cases.items():
+            with self.subTest(label):
+                self._assert_refused({"aaa": lambda m: None, "zzz": patch}, " overlaps ")
+
+    def test_an_extras_source_must_stay_under_the_extras_directory(self):
+        """N-5: `extras.from` was asserted against ROOT, so "../knowledge/..." was read as an extra."""
+        for source in ("_extras/../knowledge/mcp/servers.yaml", "../knowledge/mcp/servers.yaml", "_extras/.."):
+            with self.subTest(source):
+                self._assert_refused(
+                    {"aaa": lambda m: None,
+                     "zzz": lambda m, s=source: m.update(extras=[{"from": s, "to": "copy"}])},
+                    "extras.from of zzz outside or equal to", prepare=lambda tmp: (tmp / "_extras").mkdir())
 
     def test_only_the_manifest_schema_may_start_with_an_underscore(self):
         proc, tmp = _run_sync_with_manifests({"aaa": lambda m: None, "_other": lambda m: None})

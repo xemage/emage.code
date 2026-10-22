@@ -134,3 +134,9 @@ The delta re-review of T672 (`docs/artifacts/security-review-t672-installer-robu
 The user decided on 2026-10-22 (AskUserQuestion, option labels verbatim) on T681 (`docs/artifacts/gitlab-per-role-token-design-v1.md`): DEC-T681-1 "A: status quo + exposure sentence (Recommended)" and the Reporter profile "Yes, document it (Recommended)". Options B, C and D are not pursued; SEC-T665-07 stays open as LOW with an accurate description and the exposure is a stated, accepted residual of SEC-T665-01.
 
 23. **T683** (qa-engineer): the anchored documentation assertions that pin the Developer-level exposure sentence and the Reporter profile written by T674. Depends on T674. *Acceptance:* the assertions and their mutation tests; all gates and the suite pass.
+
+## Addendum (2026-10-22): T684 from the T682 review
+
+The review of T682 (`docs/artifacts/security-review-t682-installer-residuals-v1.md`) passed and left three LOW findings that are deferred.
+
+24. **T684** (devops-engineer): fix SEC-T682-03, -04 and -06 (stale-sibling hint and display hardening, `mcp.outputFile` against the generator inputs, a complete preflight in `merge-task-docs.py`), with tests and mutation proofs. Depends on T682. *Acceptance:* the three findings closed; all gates and the suite pass; a Security Engineer delta review.

@@ -78,6 +78,15 @@ class TestManifestSchema(unittest.TestCase):
                 with self.assertRaises(AssertionError):
                     helpers.list_platform_manifests()
 
+    def test_rel_path_still_accepts_ordinary_paths(self) -> None:
+        """N-6 changed the lookahead: names that merely contain dots, and nested paths, stay valid."""
+        base = json.loads((PLATFORMS / "claude-code.json").read_text(encoding="utf-8"))
+        for value in (".claude", "a/b", "..foo", "a/..b/c", "a.b/c.d", ".clinerules"):
+            with self.subTest(value):
+                data = copy.deepcopy(base)
+                data["outputDir"] = value
+                self.assertEqual([e.message for e in self.validator.iter_errors(data)], [])
+
     def test_the_schema_catches_what_it_is_for(self) -> None:
         base = json.loads((PLATFORMS / "claude-code.json").read_text(encoding="utf-8"))
         mutations = {
@@ -92,6 +101,10 @@ class TestManifestSchema(unittest.TestCase):
             "the parent itself as outputDir": lambda d: d.update(outputDir=".."),
             "an outputDir that climbs out": lambda d: d.update(outputDir="a/../.."),
             "an outputDir with a dot segment": lambda d: d.update(outputDir="a/./b"),
+            "an outputDir that climbs out behind a newline": lambda d: d.update(outputDir="a\n/../.."),
+            "an outputDir that is a parent segment behind a newline": lambda d: d.update(outputDir="a\n/.."),
+            "a dot segment behind a newline": lambda d: d.update(outputDir="a\nb/./c"),
+            "a dir that climbs out behind a newline": lambda d: d["fileMap"]["skills"].update(dir="x\n/../y"),
             "a dir that climbs out": lambda d: d["fileMap"]["skills"].update(dir="../x"),
             "an absolute dir": lambda d: d["fileMap"]["agents"].update(dir="/etc"),
             "an unknown mcp format": lambda d: d["mcp"].update(format="cursor"),

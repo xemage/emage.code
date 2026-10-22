@@ -189,6 +189,19 @@ def _backup_path(ledger: Path) -> Path:
     return candidate
 
 
+def _preflight(templates: list[Path], dest_dir: Path, dry_run: bool) -> None:
+    """Fail before the first write when a ledger cannot be read as UTF-8 or the directory cannot be
+    written (T682 N-8): otherwise the first ledger could be replaced and the second one fail."""
+    for template_path in templates:
+        if template_path.name in LEDGER_FILES:
+            template_path.read_text(encoding="utf-8")
+            dest_path = dest_dir / template_path.name
+            if dest_path.is_file():
+                dest_path.read_text(encoding="utf-8")
+    if not dry_run and dest_dir.exists() and not os.access(dest_dir, os.W_OK | os.X_OK):
+        raise PermissionError(f"{dest_dir} is not writable")
+
+
 def sync_task_docs(template_dir: Path, dest_dir: Path, dry_run: bool = False) -> list[str]:
     actions: list[str] = []
     # Every destination is checked before the first write, so a symlinked
@@ -199,6 +212,7 @@ def sync_task_docs(template_dir: Path, dest_dir: Path, dry_run: bool = False) ->
         _refuse_symlink(dest_dir / template_path.name)
         if template_path.name in LEDGER_FILES:
             _refuse_symlink(dest_dir / (template_path.name + ".bak"))
+    _preflight(templates, dest_dir, dry_run)
     dest_dir.mkdir(parents=True, exist_ok=True)
 
     for template_path in templates:
@@ -241,6 +255,14 @@ def main() -> int:
         actions = sync_task_docs(args.template_dir, args.dest_dir, dry_run=args.dry_run)
     except SymlinkRefused as exc:
         print(f"merge-task-docs: {exc}", file=sys.stderr)
+        return 1
+    except (OSError, ValueError, RecursionError) as exc:
+        # An unreadable or non-UTF-8 file, a failed write, a file that is too deeply nested: one line,
+        # never a traceback (T682 N-8). Each file is written atomically, so a file is either as it was
+        # or fully replaced; the checks above run before the first write.
+        reason = " ".join(f"{type(exc).__name__}: {exc}".split())
+        print(f"merge-task-docs: failed ({reason}); every file is either unchanged or fully replaced, "
+              f"never partly written.", file=sys.stderr)
         return 1
     for action in actions:
         prefix = "DRY-RUN: " if args.dry_run else ""

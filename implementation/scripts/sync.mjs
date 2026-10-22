@@ -44,8 +44,10 @@ function parseArgs(argv) {
 const args = parseArgs(process.argv.slice(2));
 
 const rootArg = args.root ? String(args.root) : null;
+// path.resolve also normalises an absolute --root (".." segments, "//", a trailing "/"), which the
+// startsWith(ROOT + sep) checks of assertUnderRoot rely on (T682 N-4).
 const ROOT = rootArg
-  ? (path.isAbsolute(rootArg) ? rootArg : path.resolve(process.cwd(), rootArg))
+  ? path.resolve(process.cwd(), rootArg)
   : path.resolve(__dirname, '..');
 const KNOWLEDGE = path.resolve(ROOT, String(args.knowledge || 'knowledge'));
 const PLATFORMS = path.resolve(ROOT, String(args.platforms || 'platforms'));
@@ -879,8 +881,46 @@ function validateManifestPaths(manifest) {
   }
   for (const extra of manifest.extras || []) {
     assertUnder(`extras.to of ${manifest.platform}`, path.resolve(outRoot, extra.to), outRoot);
-    assertUnderRoot(`extras.from of ${manifest.platform}`, path.resolve(EXTRAS, extra.from.replace(/^_extras\//, '')));
+    assertUnder(`extras.from of ${manifest.platform}`, path.resolve(EXTRAS, extra.from.replace(/^_extras\//, '')), EXTRAS);
   }
+}
+
+function overlaps(a, b) {
+  const aSep = a.endsWith(path.sep) ? a : a + path.sep;
+  const bSep = b.endsWith(path.sep) ? b : b + path.sep;
+  return a === b || a.startsWith(bSep) || b.startsWith(aSep);
+}
+
+// T682 (N-5): the directories a manifest makes the generator `rm -rf`: its outputDir and, for Cline,
+// the rootRelative instructions directory.
+function removalTargets(manifest) {
+  const outRoot = path.resolve(ROOT, manifest.outputDir);
+  const targets = [{ label: `outputDir of ${manifest.platform}`, dir: outRoot }];
+  if (manifest.fileMap.instructions.rootRelative) {
+    targets.push({ label: `fileMap.instructions.dir of ${manifest.platform}`, dir: instructionsRoot(manifest, outRoot) });
+  }
+  return targets;
+}
+
+// T682 (N-5): assertUnderRoot only keeps a target inside ROOT. A target that equals, contains or lies
+// inside a generator input (knowledge, platforms, _extras, scripts, runtime, the generator's own
+// directory) would be deleted before it is read, and two manifests whose trees overlap would delete
+// each other's output. Called from the validation pass, over every manifest, before the first write.
+function assertNoOverlappingTargets(manifests) {
+  const inputs = [KNOWLEDGE, PLATFORMS, EXTRAS, path.resolve(ROOT, 'scripts'), path.resolve(ROOT, 'runtime'), __dirname];
+  const targets = manifests.flatMap(removalTargets);
+  targets.forEach((target, index) => {
+    for (const input of inputs) {
+      if (overlaps(target.dir, input)) {
+        throw new Error(`Refusing ${target.label}: ${target.dir} overlaps the generator input ${input}`);
+      }
+    }
+    for (const other of targets.slice(index + 1)) {
+      if (overlaps(target.dir, other.dir)) {
+        throw new Error(`Refusing ${target.label}: ${target.dir} overlaps ${other.label} (${other.dir})`);
+      }
+    }
+  });
 }
 
 async function syncPlatform(manifest, servers) {
@@ -1045,6 +1085,7 @@ async function main() {
     validateManifestPaths(manifest);
     manifests.push(manifest);
   }
+  assertNoOverlappingTargets(manifests);
 
   for (const manifest of manifests) {
     if (ONLY_PLATFORM && manifest.platform !== ONLY_PLATFORM) continue;
