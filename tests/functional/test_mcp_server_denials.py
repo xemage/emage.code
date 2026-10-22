@@ -24,6 +24,7 @@ Static inspection plus local `node`, `python3` and `bash` runs on temporary dire
 """
 from __future__ import annotations
 
+import ast
 import json
 import os
 import re
@@ -595,6 +596,209 @@ class InstallUpdateTests(unittest.TestCase):
                 self.assertNotIn("excludeTools", merged["playwright-local"])
 
 
+# --- T673 (SEC-T658-06): documentation assertions anchored to the paragraph they protect ---------------------
+#
+# The earlier tests matched the whole file, so a statement in another paragraph satisfied them (a "not observed"
+# in the per-agent text for the server-level one; the variable `union` for the merge rule's documentation), and
+# the forbidden sentence they refused was one that only one of the four documents had ever carried. Each check is
+# now a pure function of one text, applied to the block that carries the statement, with in-suite mutation tests
+# (`DocumentationAnchorTests`) that break the property on an in-memory copy and require the function to notice.
+
+def section_of(text: str, heading: str) -> str | None:
+    """The heading line and everything up to the next heading of the same or a higher level; None if absent."""
+    lines = text.splitlines()
+    level = len(heading) - len(heading.lstrip("#"))
+    for i, line in enumerate(lines):
+        if line.startswith(heading):
+            body = [line]
+            for nxt in lines[i + 1:]:
+                if re.match(r"#{1,%d} " % level, nxt):
+                    break
+                body.append(nxt)
+            return "\n".join(body)
+    return None
+
+
+def line_starting(text: str, prefix: str) -> str | None:
+    found = [line for line in text.splitlines() if line.startswith(prefix)]
+    return found[0] if len(found) == 1 else None
+
+
+def sentences(block: str) -> list[str]:
+    return [part for part in re.split(r"(?<=\.)\s+", block) if part]
+
+
+def clauses(block: str) -> list[str]:
+    """Sentences, further split at a semicolon: one statement per item."""
+    return [part for part in re.split(r"(?<=[.;])\s+", block) if part]
+
+
+def t658_block(key: str, text: str) -> str | None:
+    """The part of a document that states the server-level denial (T658), before the per-agent text (T663)."""
+    if key == "wiki":
+        section = section_of(text, "## Server-level denial of six Playwright tools")
+        return None if section is None else section.split("\n### ", 1)[0]
+    if key == "prerequisites":
+        bullet = line_starting(text, "- **Server-level denial of six tools (T658):**")
+        return None if bullet is None else bullet.split("Since T663", 1)[0]
+    paragraph = next((l for l in text.splitlines() if "so since T658 the generator denies exactly six" in l), None)
+    if paragraph is None:
+        return None
+    return paragraph[paragraph.index("so since T658 the generator denies exactly six"):].split("Since T663", 1)[0]
+
+
+def local_block(key: str, text: str) -> str | None:
+    """The block that says what the user-owned `playwright-local` entry does and does not get."""
+    if key == "wiki":
+        return line_starting(text, "- **`playwright-local` is not covered.**")
+    if key == "prerequisites":
+        return line_starting(text, "- **Tool names and agents:**")
+    return next((l for l in text.splitlines() if "so since T658 the generator denies exactly six" in l), None)
+
+
+GAP_SENTENCE = re.compile(r"(?i)agent file of your own that allows[^.]*overrides the denial")
+OBSERVED_SENTENCE = re.compile(r"(?i)(vendor|documentation)[^.]*not (been )?observed in a live run")
+LOCAL_NOT_DENIED = re.compile(r"(?i)`playwright-local` is \*{0,2}not\*{0,2} (denied|covered)|`playwright-local` entry is another server name and is not denied")
+
+
+def denial_findings(key: str, text: str) -> list[str]:
+    """What the T658 block of one document fails to state; empty when it states all of it."""
+    block = t658_block(key, text)
+    if block is None:
+        return ["the T658 block is missing"]
+    found = [f"{tool} is not named in the T658 block" for tool in DENIED if tool not in block]
+    found += [f"{needle} is not named in the T658 block" for needle in ("`permission`", "`excludeTools`")
+              if needle not in block]
+    if not any(OBSERVED_SENTENCE.search(sentence) for sentence in sentences(block)):
+        found.append("no sentence of the T658 block says the denial was documented and read, not observed live")
+    if key != "prerequisites" and not any(GAP_SENTENCE.search(s) for s in sentences(block)):
+        found.append("the T658 block does not say an agent file of the user's own that re-allows overrides the denial")
+    return found
+
+
+def local_findings(key: str, text: str) -> list[str]:
+    block = local_block(key, text)
+    if block is None:
+        return ["the playwright-local block is missing"]
+    found = []
+    if not any(LOCAL_NOT_DENIED.search(s) for s in sentences(block)):
+        found.append("no sentence of the playwright-local block says it is not denied")
+    if key in ("wiki", "prerequisites") and "browser_run_code_unsafe" not in block:
+        found.append("the playwright-local block does not warn that it still holds browser_run_code_unsafe")
+    return found
+
+
+def unqualified_open_claims(text: str) -> list[str]:
+    """Sentences that put Opencode or Gemini CLI among the platforms where every agent can call every tool of
+    every configured server, without the qualifier that the six tools are denied server-wide (T658)."""
+    return [s for s in clauses(text)
+            if re.search(r"(?i)every tool of every configured (MCP )?server", s)
+            and re.search(r"Opencode|Gemini", s) and "not denied" not in s]
+
+
+def merge_rule_findings(script: str) -> list[str]:
+    """The documentation of the T658 merge rule in `merge-mcp-json.py`: the module docstring bullets and the two
+    function docstrings, not any occurrence of the words in the code (`union` is also a variable name)."""
+    tree = ast.parse(script)
+    doc = ast.get_docstring(tree) or ""
+    exclude = re.search(r"- `excludeTools`.*?(?=\n- |\n\n)", doc, re.S)
+    permission = re.search(r"- top-level `permission`.*?(?=\n- |\n\n)", doc, re.S)
+    found = []
+    if not exclude or "union" not in exclude.group(0) or "never dropped" not in exclude.group(0):
+        found.append("the module docstring does not say that excludeTools is a union and a user entry is never dropped")
+    if not permission or "LAST matching rule" not in permission.group(0) or "moved to the end" not in permission.group(0):
+        found.append("the module docstring does not say that generated permission keys go last (LAST matching rule)")
+    functions = {n.name: ast.get_docstring(n) or "" for n in tree.body if isinstance(n, ast.FunctionDef)}
+    if "Union" not in functions.get("merge_exclude_tools", ""):
+        found.append("merge_exclude_tools has no docstring that says Union")
+    if "generated rules last" not in functions.get("merge_permission", ""):
+        found.append("merge_permission has no docstring that says generated rules last")
+    return found
+
+
+# Where the artifact may name the unsafe tool, and what the line must say there. A line that names it anywhere
+# else, or in one of these places without its marker, fails.
+ARTIFACT_UNSAFE_CONTEXTS = (
+    ("## 1. Result", r"holds exactly the six tools that no agent holds"),
+    ("## 2. Per-platform result", r'^\| Opencode \(.*"playwright_browser_run_code_unsafe": "deny"'),
+    ("## 2. Per-platform result", r'^\| Gemini CLI \(.*"excludeTools": \["browser_run_code_unsafe"'),
+    ("## 3. What is emitted, and from where", r"`denyTools: \[browser_run_code_unsafe,"),
+    ("## 4. The playwright-local exception", r"is \*\*not\*\* denied on either platform, and it still contains `browser_run_code_unsafe`"),
+)
+
+
+RECOMMENDING_WORD = re.compile(r"(?i)\b(grant|recommend\w*|enable|give)\b")  # not "granted": the lookalike is granted
+
+
+def unsafe_tool_findings(text: str) -> list[str]:
+    heading, found, seen = None, [], set()
+    for line in text.splitlines():
+        if line.startswith("#"):
+            heading = line
+        if "browser_run_code_unsafe" not in line:
+            continue
+        hits = [i for i, (h, marker) in enumerate(ARTIFACT_UNSAFE_CONTEXTS)
+                if heading == h and re.search(marker, line)]
+        if hits and RECOMMENDING_WORD.search(line):
+            found.append(f"a line that names the tool also recommends or grants it: {line[:80]}")
+        elif hits:
+            seen.update(hits)
+        else:
+            found.append(f"unanchored mention under {heading!r}: {line[:80]}")
+    found += [f"expected context {ARTIFACT_UNSAFE_CONTEXTS[i][1][:50]!r} is missing"
+              for i in range(len(ARTIFACT_UNSAFE_CONTEXTS)) if i not in seen]
+    return found
+
+
+def artifact_row_findings(text: str) -> list[str]:
+    """Per-platform rows of the artifact: each carries its own status, mechanism, source and the not-observed note."""
+    metadata = section_of(text, "## Metadata") or ""
+    result = section_of(text, "## 1. Result") or ""
+    emitted = section_of(text, "## 3. What is emitted, and from where") or ""
+    found = []
+    if "Based on: security-review-t657-tool-name-mapping-v1.md" not in metadata:
+        found.append("the Metadata section does not carry the Based-on line")
+    for tool in DENIED:
+        if tool not in result:
+            found.append(f"{tool} is not in section 1")
+        if tool not in emitted:
+            found.append(f"{tool} is not in section 3")
+    rows = {
+        "Opencode": ("| Opencode (", ("**verified**", "not observed live", "`permission`",
+                                        "anomalyco/opencode@81200db2a3a8", "https://opencode.ai/docs/permissions",
+                                        "last matching rule")),
+        "Gemini CLI": ("| Gemini CLI (", ("**verified**", "not observed live", "`excludeTools`",
+                                           "google-gemini/gemini-cli@06d329873703",
+                                           "https://geminicli.com/docs/tools/mcp-server")),
+        "Cursor": ("| Cursor (", ("**unverified, no mechanism found; nothing emitted**",)),
+    }
+    for name, (prefix, needles) in rows.items():
+        row = line_starting(text, prefix)
+        if row is None:
+            found.append(f"the {name} row is missing or not unique")
+            continue
+        found += [f"the {name} row lacks {needle!r}" for needle in needles if needle not in row]
+    return found
+
+
+def override_findings(text: str) -> list[str]:
+    section = section_of(text, "### 2.1 Opencode")
+    if section is None:
+        return ["section 2.1 is missing"]
+    body = section.split("\n", 1)[1].lstrip()
+    found = []
+    if not body.startswith("**No.**"):
+        found.append("section 2.1 does not answer No to whether the explicit deny overrides the agent allow")
+    if not re.search(r"(?s)agent-level rule.{0,400}written after the global deny wins", section):
+        found.append("section 2.1 does not say an agent-level rule written after the global deny wins")
+    if not re.search(r"per-agent `false` \(deny\) entry is the only form that survives", section):
+        found.append("section 2.1 does not name the per-agent false entry as the only form that survives")
+    return found
+
+
+CLAIM_DOCS = ("wiki", "agents-root", "agents-impl")
+
+
 class DocumentationTests(unittest.TestCase):
     DOCS = {
         "wiki": REPO / "docs" / "wiki" / "mcp-servers.md",
@@ -606,58 +810,173 @@ class DocumentationTests(unittest.TestCase):
     def text(self, key: str) -> str:
         return self.DOCS[key].read_text(encoding="utf-8")
 
-    def test_artifact_records_both_platforms_with_status_and_sources(self):
-        text = ARTIFACT.read_text(encoding="utf-8")
-        self.assertIn("Based on: security-review-t657-tool-name-mapping-v1.md", text)
-        for needle in ("Opencode", "Gemini CLI", "**verified**", "unverified", "permission",
-                       "excludeTools", "last matching rule", "anomalyco/opencode@81200db2a3a8",
-                       "google-gemini/gemini-cli@06d329873703", "https://opencode.ai/docs/permissions",
-                       "https://geminicli.com/docs/tools/mcp-server"):
-            self.assertIn(needle, text)
-        for tool in DENIED:
-            self.assertIn(tool, text)
+    def test_artifact_rows_sections_and_sources(self):
+        self.assertEqual(artifact_row_findings(ARTIFACT.read_text(encoding="utf-8")), [])
 
-    def test_artifact_states_that_an_agent_level_allow_overrides_the_global_deny(self):
-        text = ARTIFACT.read_text(encoding="utf-8")
-        self.assertRegex(text, r"(?is)agent-level.{0,400}(overrid|wins)")
-        self.assertRegex(text, r"(?i)per-agent `?(false|deny)")
+    def test_artifact_section_2_1_says_the_agent_level_allow_overrides_the_global_deny(self):
+        self.assertEqual(override_findings(ARTIFACT.read_text(encoding="utf-8")), [])
 
-    def test_artifact_never_recommends_the_unsafe_tool(self):
+    def test_artifact_names_the_unsafe_tool_only_where_it_excludes_it(self):
         text = ARTIFACT.read_text(encoding="utf-8")
-        for line in text.splitlines():
-            if "browser_run_code_unsafe" in line:
-                self.assertRegex(line.replace("browser_run_code_unsafe", ""), r"(?i)\b(never|excluded|denied|deny|not|no)\b", line)
+        self.assertEqual(unsafe_tool_findings(text), [])
+        self.assertEqual(len([l for l in text.splitlines() if "browser_run_code_unsafe" in l]),
+                         len(ARTIFACT_UNSAFE_CONTEXTS), "one line per anchored context")
 
-    def test_every_doc_names_both_mechanisms_the_gaps_and_the_playwright_local_exception(self):
+    def test_every_doc_states_the_server_level_denial_where_it_describes_it(self):
         for key in self.DOCS:
-            text = self.text(key)
             with self.subTest(doc=key):
-                self.assertIn("excludeTools", text)
-                self.assertRegex(text, r"`permission`")
-                self.assertRegex(text, r"(?i)not (been )?observed")
-                for tool in DENIED:
-                    self.assertIn(tool, text)
+                self.assertEqual(denial_findings(key, self.text(key)), [])
 
-    def test_docs_say_playwright_local_is_not_denied(self):
-        for key in ("wiki", "prerequisites", "agents-root", "agents-impl"):
-            text = self.text(key)
-            with self.subTest(doc=key):
-                self.assertRegex(text, r"(?is)(playwright-local[^.]{0,200}\b(not|no)\b[^.]{0,120}(denied|covered|denial)"
-                                       r"|(denial|deny|denied|excludeTools)[^.]{0,200}playwright-local[^.]{0,120}\bnot\b)")
-
-    def test_docs_no_longer_claim_the_narrowing_is_absent_on_opencode_and_gemini_without_the_denial(self):
+    def test_every_doc_says_playwright_local_is_not_denied_where_it_describes_it(self):
         for key in self.DOCS:
-            text = self.text(key)
             with self.subTest(doc=key):
-                self.assertNotRegex(
-                    text,
-                    r"(?i)not in force on Opencode, Gemini CLI and Cursor, where an agent's tool list does not restrict MCP tools and every agent can call every tool of every configured server")
+                self.assertEqual(local_findings(key, self.text(key)), [])
+
+    def test_no_doc_claims_the_denial_is_absent_on_opencode_and_gemini(self):
+        # PREREQUISITES.md is left out: it never carried a sentence of this shape (the pre-T658 text passes), so
+        # the check cannot fail there. The wiki and both AGENTS.md files did carry it.
+        for key in CLAIM_DOCS:
+            with self.subTest(doc=key):
+                self.assertEqual(unqualified_open_claims(self.text(key)), [])
 
     def test_install_merge_rule_is_documented_where_the_merge_is(self):
+        self.assertEqual(merge_rule_findings(MERGER.read_text(encoding="utf-8")), [])
+
+
+class DocumentationAnchorTests(unittest.TestCase):
+    """Each anchored check must notice the property it protects being broken on an in-memory copy. The old
+    whole-file assertion is evaluated on the same copy where it is cited, to show it could not tell."""
+
+    def text(self, key: str) -> str:
+        return DocumentationTests.DOCS[key].read_text(encoding="utf-8")
+
+    def test_removing_the_not_observed_statement_of_the_t658_block_is_noticed_in_every_doc(self):
+        for key in DocumentationTests.DOCS:
+            text = self.text(key)
+            block = t658_block(key, text)
+            mutated_block, count = re.subn(r"not (been )?observed in a live run", "been confirmed in a live run", block)
+            self.assertGreaterEqual(count, 1, key)
+            mutated = text.replace(block, mutated_block, 1)
+            self.assertNotEqual(mutated, text, key)
+            with self.subTest(doc=key):
+                self.assertEqual(denial_findings(key, text), [])
+                self.assertTrue(any("not observed live" in f for f in denial_findings(key, mutated)))
+                # the earlier whole-file assertion still passed: another paragraph says "not observed" too
+                self.assertRegex(mutated, r"(?i)not (been )?observed")
+
+    def test_dropping_a_tool_name_or_a_mechanism_from_the_t658_block_is_noticed(self):
+        for key in DocumentationTests.DOCS:
+            text = self.text(key)
+            block = t658_block(key, text)
+            for needle in ("browser_drag", "`excludeTools`", "`permission`"):
+                with self.subTest(doc=key, dropped=needle):
+                    self.assertIn(needle, block)
+                    mutated = text.replace(block, block.replace(needle, "REDACTED"), 1)
+                    self.assertTrue(denial_findings(key, mutated))
+
+    def test_dropping_the_agent_file_override_gap_is_noticed(self):
+        for key in ("wiki", "agents-root", "agents-impl"):
+            text = self.text(key)
+            block = t658_block(key, text)
+            mutated = text.replace(block, GAP_SENTENCE.sub("An agent file of your own is irrelevant here", block), 1)
+            self.assertNotEqual(mutated, text, key)
+            with self.subTest(doc=key):
+                self.assertTrue(any("overrides" in f for f in denial_findings(key, mutated)))
+
+    def test_turning_playwright_local_into_a_denied_server_is_noticed(self):
+        for key in DocumentationTests.DOCS:
+            text = self.text(key)
+            block = local_block(key, text)
+            mutated_block = re.sub(r"is \*{0,2}not\*{0,2} (denied|covered)", "is denied", block)
+            mutated_block = mutated_block.replace("entry is another server name and is not denied by",
+                                                  "entry is another server name and is denied by")
+            self.assertNotEqual(mutated_block, block, key)
+            with self.subTest(doc=key):
+                self.assertTrue(local_findings(key, text.replace(block, mutated_block, 1)))
+
+    def test_losing_the_unsafe_tool_warning_of_the_playwright_local_block_is_noticed(self):
+        for key in ("wiki", "prerequisites"):
+            text = self.text(key)
+            block = local_block(key, text)
+            with self.subTest(doc=key):
+                self.assertTrue(local_findings(key, text.replace(block, block.replace("browser_run_code_unsafe", "the tool"), 1)))
+
+    def test_the_unqualified_claim_is_found_when_the_qualifier_is_removed(self):
+        for key in CLAIM_DOCS:
+            text = self.text(key)
+            qualified = [s for s in clauses(text) if re.search(r"(?i)every tool of every configured (MCP )?server", s)
+                         and re.search(r"Opencode|Gemini", s)]
+            with self.subTest(doc=key):
+                for sentence in qualified:  # the shipped sentences carry the qualifier
+                    self.assertIn("not denied", sentence)
+                    mutated = text.replace(sentence, sentence.replace("not denied", "denied"), 1)
+                    self.assertEqual(len(unqualified_open_claims(mutated)), 1)
+
+    def test_the_pre_t658_wording_is_found(self):
+        old = ("The narrowing is not in force on Opencode, Gemini CLI and Cursor, where an agent's tool list does "
+               "not restrict MCP tools and every agent can call every tool of every configured server (`docs/wiki`).")
+        self.assertEqual(len(unqualified_open_claims(old)), 1)
+        # SEC-T678-01: Cursor is gone from the docs; the check does not depend on the word (and none is asserted
+        # absent: the historical artifacts keep it, ADR-010)
+        cursor_free = ("The narrowing is not in force on Opencode and Gemini CLI, where an agent's tool list does "
+                       "not restrict MCP tools and every agent can call every tool of every configured server.")
+        self.assertEqual(len(unqualified_open_claims(cursor_free)), 1)
+        self.assertEqual(unqualified_open_claims(cursor_free.replace("server.", "server that is not denied server-wide.")), [])
+        wiki_old = ("On the platforms where it is not in force (Opencode, Gemini CLI, Cursor) an agent's tool list does "
+                    "not restrict MCP tools: every agent can call every tool of every configured MCP server, including "
+                    "the GitLab write tools elsewhere.")
+        self.assertEqual(len(unqualified_open_claims(wiki_old)), 1)
+
+    def test_an_unanchored_or_recommending_mention_of_the_unsafe_tool_is_found(self):
+        text = ARTIFACT.read_text(encoding="utf-8")
+        self.assertEqual(unsafe_tool_findings(text), [])
+        # a table row that recommends the tool still said "not observed live", so the old word test passed it
+        row = line_starting(text, "| Opencode (")
+        bad = text.replace(row, row + " Grant `browser_run_code_unsafe` to the QA agent.", 1)
+        self.assertRegex(bad.splitlines()[bad.splitlines().index(row + " Grant `browser_run_code_unsafe` to the QA agent.")]
+                         .replace("browser_run_code_unsafe", ""), r"(?i)\b(never|excluded|denied|deny|not|no)\b")
+        self.assertTrue(unsafe_tool_findings(bad))
+        extra = text + "\nGrant `browser_run_code_unsafe` to the QA agent; we have not observed a problem.\n"
+        self.assertTrue(unsafe_tool_findings(extra))
+        self.assertRegex(extra.splitlines()[-1].replace("browser_run_code_unsafe", ""), r"(?i)\b(never|excluded|denied|deny|not|no)\b")
+        gone = text.replace("`denyTools: [browser_run_code_unsafe,", "`denyTools: [x,")
+        self.assertTrue(unsafe_tool_findings(gone))
+
+    def test_each_artifact_row_and_section_is_noticed_when_it_loses_its_statement(self):
+        text = ARTIFACT.read_text(encoding="utf-8")
+        self.assertEqual(artifact_row_findings(text), [])
+        for name, prefix, needle in (("Opencode", "| Opencode (", "https://opencode.ai/docs/permissions"),
+                                     ("Gemini", "| Gemini CLI (", "not observed live"),
+                                     ("Cursor", "| Cursor (", "**unverified, no mechanism found; nothing emitted**")):
+            row = line_starting(text, prefix)
+            with self.subTest(row=name):
+                self.assertTrue(artifact_row_findings(text.replace(row, row.replace(needle, "x", 1), 1)))
+        # a source URL that is only in another row no longer satisfies the Opencode row
+        opencode = line_starting(text, "| Opencode (")
+        gemini = line_starting(text, "| Gemini CLI (")
+        swapped = text.replace(opencode, opencode.replace("https://opencode.ai/docs/permissions", ""), 1)
+        swapped = swapped.replace(gemini, gemini + " https://opencode.ai/docs/permissions", 1)
+        self.assertRegex(swapped, "https://opencode.ai/docs/permissions")
+        self.assertTrue(artifact_row_findings(swapped))
+
+    def test_the_section_2_1_answer_and_rule_are_noticed(self):
+        text = ARTIFACT.read_text(encoding="utf-8")
+        self.assertEqual(override_findings(text), [])
+        self.assertTrue(override_findings(text.replace("**No.** The global deny", "**Yes.** The global deny", 1)))
+        self.assertTrue(override_findings(text.replace("written after the global deny wins", "written after the global deny loses", 1)))
+        self.assertTrue(override_findings(text.replace("is the only form that survives", "is one form that survives", 1)))
+
+    def test_the_merge_script_documentation_is_noticed_when_only_the_code_keeps_the_words(self):
         script = MERGER.read_text(encoding="utf-8")
-        self.assertIn("excludeTools", script)
-        self.assertIn("union", script)
-        self.assertIn("LAST matching rule", script)
+        self.assertEqual(merge_rule_findings(script), [])
+        # the earlier assertIn("union", script) is satisfied by the variable of merge_exclude_tools
+        no_docs = script.replace("the result is the union", "the result is the merge").replace("Union of two", "Merge of two")
+        self.assertIn("union", no_docs)
+        self.assertIn("excludeTools", no_docs)
+        self.assertTrue(merge_rule_findings(no_docs))
+        self.assertTrue(merge_rule_findings(script.replace("LAST matching rule", "last matching rule")))
+        self.assertTrue(merge_rule_findings(script.replace("moved to the end", "left in place")))
+        self.assertTrue(merge_rule_findings(script.replace("put generated rules last", "put generated rules first")))
 
 
 if __name__ == "__main__":
