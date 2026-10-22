@@ -54,7 +54,12 @@ def list_instructions() -> list[Path]:
 
 
 def list_platform_manifests() -> list[Path]:
-    return sorted(
-        p for p in (implementation_root() / "platforms").glob("*.json")
-        if not p.name.startswith("_")
-    )
+    """The platform manifests: every `platforms/*.json` except the manifest schema.
+
+    Any other `_*.json` is an error (T672), as in sync.mjs and generate-registry.py."""
+    files = [p for p in (implementation_root() / "platforms").glob("*.json")
+             if p.name != "_manifest.schema.json"]
+    stray = sorted(p.name for p in files if p.name.startswith("_"))
+    if stray:
+        raise AssertionError(f"platforms/ holds {stray}: only _manifest.schema.json may start with an underscore")
+    return sorted(files)

@@ -106,5 +106,154 @@ class SplitInlineArrayTests(unittest.TestCase):
         self.assertIn("after the closing quote", self._refused('["a"b, c]'))
 
 
+class YamlDivergenceTests(unittest.TestCase):
+    """T672 (TL-T649-04): what YAML reads differently from this reader is refused, not mis-read."""
+
+    _generated_args = SplitInlineArrayTests._generated_args
+    _refused = SplitInlineArrayTests._refused
+
+    REFUSED = {
+        "[]": "empty inline array",
+        '["a", "b",]': "trailing comma",
+        "[a, b,]": "trailing comma",
+        '["a",, "b"]': "empty item",
+        "[a: b]": "mapping or collection",
+        "[a:]": "mapping or collection",
+        "[{}]": "mapping or collection",
+        "[[x]]": "mapping or collection",
+        "[{a: b}]": "mapping or collection",
+        "[a, {b: c}]": "mapping or collection",
+        "[*a]": "YAML indicator",
+        "[&a x]": "YAML indicator",
+        "[!t x]": "YAML indicator",
+        "[|x]": "YAML indicator",
+        "[>x]": "YAML indicator",
+        "[@x]": "YAML indicator",
+        "[%x]": "YAML indicator",
+        "[`x]": "YAML indicator",
+    }
+    ACCEPTED = {
+        "[a:b]": ["a:b"],
+        '["a: b"]': ["a: b"],
+        "['{}']": ["{}"],
+        '[ "x" , y ]': ["x", "y"],
+        "[a#b]": ["a#b"],
+        '["", x]': ["", "x"],
+        "[a, b]  # note": ["a", "b"],
+        '["a # b", c] # d': ["a # b", "c"],
+        "[a#b] # c": ["a#b"],
+    }
+
+    def test_each_refused_form_is_a_stop_with_its_own_message(self):
+        for line, message in self.REFUSED.items():
+            with self.subTest(line=line):
+                self.assertIn(message, self._refused(line))
+
+    def test_each_refused_form_really_differs_in_yaml(self):
+        for line in self.REFUSED:
+            with self.subTest(line=line):
+                try:
+                    parsed = yaml.safe_load(line)
+                except yaml.YAMLError:
+                    continue
+                naive = [part.strip() for part in line[1:-1].split(",")]
+                self.assertNotEqual(parsed, naive, "YAML agrees with the naive split: not a hazard")
+
+    def test_a_comment_after_an_array_is_not_part_of_it(self):
+        """T672 (TL-T649-09): `args: [a, b]  # note` used to be read as a scalar string."""
+        self.assertEqual(self._generated_args("[a, b]   # note [x]"), ["a", "b"])
+
+    def test_each_accepted_form_equals_yaml_safe_load(self):
+        for line, expected in self.ACCEPTED.items():
+            with self.subTest(line=line):
+                self.assertEqual(yaml.safe_load(line), expected)
+                self.assertEqual(self._generated_args(line), expected)
+
+
+def _run_sync_with_manifests(manifests: dict[str, dict]) -> tuple[subprocess.CompletedProcess, Path]:
+    tmp = Path(tempfile.mkdtemp(prefix="t672-sync-"))
+    (tmp / "platforms").mkdir()
+    for sub in ("mcp", "instructions", "skills", "agents", "commands"):
+        (tmp / "knowledge" / sub).mkdir(parents=True)
+    (tmp / "knowledge" / "mcp" / "servers.yaml").write_text(_entry("[a]"), encoding="utf-8")
+    base = json.loads(CLINE_MANIFEST.read_text(encoding="utf-8"))
+    for name, patch in manifests.items():
+        manifest = json.loads(json.dumps(base))
+        manifest["platform"], manifest["outputDir"] = name, f".{name}"
+        patch(manifest)
+        (tmp / "platforms" / f"{name}.json").write_text(json.dumps(manifest), encoding="utf-8")
+    proc = subprocess.run(["node", str(SYNC), "--root", str(tmp)], capture_output=True, text=True, check=False)
+    return proc, tmp
+
+
+class ManifestsAreValidatedBeforeTheFirstWriteTests(unittest.TestCase):
+    """T672 (SEC-T658-07 b, TL-T649-03): a bad manifest sorted AFTER a good one writes nothing."""
+
+    def _assert_nothing_written(self, patch) -> str:
+        proc, tmp = _run_sync_with_manifests({"aaa": lambda m: None, "zzz": patch})
+        self.addCleanup(shutil.rmtree, tmp, ignore_errors=True)
+        self.assertNotEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertFalse((tmp / ".aaa").exists(), "the good manifest was written before the bad one was read")
+        self.assertFalse((tmp / ".zzz").exists())
+        return proc.stdout + proc.stderr
+
+    def test_unknown_mcp_tool_name_style(self):
+        def patch(m):
+            m["frontmatter"]["agents"] = {"tools": "array", "mcpToolNames": "bogus"}
+        self.assertIn("Unknown mcpToolNames style", self._assert_nothing_written(patch))
+
+    def test_root_relative_target_outside_the_root(self):
+        def patch(m):
+            m["fileMap"]["instructions"] = {"dir": "../escape", "ext": ".md", "rootRelative": True}
+        self.assertIn("Refusing rootRelative fileMap target", self._assert_nothing_written(patch))
+
+    def test_every_manifest_derived_path_must_stay_strictly_under_the_root(self):
+        """T672 (SEC-T672-08): outputDir "." would `rm -rf` the whole root; the rest would write outside it."""
+        import uuid
+        escape = f"t672-escape-{uuid.uuid4().hex}.json"  # never a name another run could have left behind
+        cases = {
+            "outputDir is the root": lambda m: m.update(outputDir="."),
+            "outputDir is the parent": lambda m: m.update(outputDir=".."),
+            "outputDir climbs out": lambda m: m.update(outputDir="a/../.."),
+            "outputDir is absolute": lambda m: m.update(outputDir="/tmp/t672-never"),
+            "mcp.outputFile climbs out": lambda m: m["mcp"].update(outputFile=f"../../{escape}"),
+            "extras.to climbs out": lambda m: m.update(extras=[{"from": "_extras/x", "to": "../escape"}]),
+            "skills.dir climbs out": lambda m: m["fileMap"]["skills"].update(dir="../../escape"),
+            "skills.dir is absolute": lambda m: m["fileMap"]["skills"].update(dir="/tmp/t672-never"),
+            "instructions.dir climbs out": lambda m: m["fileMap"]["instructions"].update(dir="../../escape"),
+        }
+        for label, patch in cases.items():
+            with self.subTest(label):
+                proc, tmp = _run_sync_with_manifests({"aaa": lambda m: None, "zzz": patch})
+                self.addCleanup(shutil.rmtree, tmp, ignore_errors=True)
+                self.assertNotEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+                self.assertIn("Refusing", proc.stdout + proc.stderr)
+                self.assertFalse((tmp / ".aaa").exists(), "the good manifest was written first")
+                self.assertTrue((tmp / "knowledge" / "mcp" / "servers.yaml").is_file(), "the root was emptied")
+                self.assertFalse((tmp.parent / escape).exists())
+                self.addCleanup((tmp.parent / escape).unlink, missing_ok=True)
+
+    def test_only_the_manifest_schema_may_start_with_an_underscore(self):
+        proc, tmp = _run_sync_with_manifests({"aaa": lambda m: None, "_other": lambda m: None})
+        self.addCleanup(shutil.rmtree, tmp, ignore_errors=True)
+        self.assertNotEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertIn("only _manifest.schema.json may start with an underscore", proc.stdout + proc.stderr)
+        self.assertFalse((tmp / ".aaa").exists())
+
+    def test_the_manifest_schema_is_skipped(self):
+        proc, tmp = _run_sync_with_manifests({"aaa": lambda m: None, "_manifest.schema": lambda m: None})
+        self.addCleanup(shutil.rmtree, tmp, ignore_errors=True)
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertTrue((tmp / ".aaa").is_dir())
+        self.assertFalse((tmp / "._manifest.schema").exists())
+
+    def test_two_good_manifests_are_both_written(self):
+        proc, tmp = _run_sync_with_manifests({"aaa": lambda m: None, "zzz": lambda m: None})
+        self.addCleanup(shutil.rmtree, tmp, ignore_errors=True)
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertTrue((tmp / ".aaa" / "mcp.json").is_file())
+        self.assertTrue((tmp / ".zzz" / "mcp.json").is_file())
+
+
 if __name__ == "__main__":
     unittest.main()

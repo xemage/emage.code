@@ -51,6 +51,7 @@ const KNOWLEDGE = path.resolve(ROOT, String(args.knowledge || 'knowledge'));
 const PLATFORMS = path.resolve(ROOT, String(args.platforms || 'platforms'));
 const EXTRAS = path.resolve(ROOT, String(args.extras || '_extras'));
 
+const MANIFEST_SCHEMA_FILE = '_manifest.schema.json';
 const CHECK_ONLY = !!args.check;
 const ONLY_PLATFORM = args.platform ? String(args.platform) : null;
 
@@ -326,8 +327,14 @@ function parseServersYaml(raw) {
           openBlock = {};
           openBlockKey = key;
           servers[current][key] = openBlock;
-        } else if (rest.startsWith('[') && rest.endsWith(']')) {
-          servers[current][key] = splitInlineArray(rest.slice(1, -1)).map((s) => stripQuotes(s.trim()));
+        } else if (stripInlineArrayComment(rest).startsWith('[') && stripInlineArrayComment(rest).endsWith(']')) {
+          try {
+            const arrayText = stripInlineArrayComment(rest);
+            servers[current][key] = splitInlineArray(arrayText.slice(1, -1)).map((s) => stripQuotes(s.trim()));
+          } catch (err) {
+            // T672: name the server and the key, so a refused array is found without searching the file.
+            throw new Error(`${err.message} (server ${current}, key ${key})`);
+          }
         } else if (rest.startsWith('{') && rest.endsWith('}')) {
           servers[current][key] = parseInlineObject(rest);
         } else {
@@ -352,6 +359,10 @@ function parseServersYaml(raw) {
 // read faithfully instead of silently diverging from YAML: a backslash inside a quoted item, a
 // quote that is never closed, and text between a closing quote and the next comma. A quote opens
 // a quoted item only at the start of an item (an apostrophe inside a plain item is plain text).
+// T672 (TL-T649-04): it also refuses what YAML reads differently from this reader: an empty array
+// (`[]`, YAML: an empty list; here one empty item), a trailing comma (YAML ignores it), an empty
+// item between commas (YAML: an error), and a plain item that YAML would read as a mapping or a
+// nested collection (`a: b`, `a:`, `{}`, `[x]`). A quoted item is always a string and is never refused.
 function splitInlineArray(inner) {
   const parts = [];
   let cur = '';
@@ -384,7 +395,53 @@ function splitInlineArray(inner) {
     throw new Error(`servers.yaml: unclosed quote in an array item: ${inner.slice(0, 60)}`);
   }
   parts.push(cur);
+  checkInlineArrayItems(parts, inner);
   return parts;
+}
+
+// T672 (TL-T649-09): YAML ends a value at ` #` outside quotes, so `args: [a, b]  # note` is an array.
+// Only an inline-array value (starting with `[`) is touched. A quote opens a quoted item only at the start of
+// an item, as in splitInlineArray; text inside a quoted item, `#` included, is kept.
+function stripInlineArrayComment(rest) {
+  if (!rest.startsWith('[')) return rest;
+  let quote = null;
+  let prev = '[';
+  let prevNonSpace = '[';
+  for (let i = 0; i < rest.length; i++) {
+    const ch = rest[i];
+    if (quote) {
+      if (ch === quote) quote = null;
+    } else if ((ch === '"' || ch === "'") && (prevNonSpace === '[' || prevNonSpace === ',')) {
+      quote = ch;
+    } else if (ch === '#' && /\s/.test(prev)) {
+      return rest.slice(0, i).trimEnd();
+    }
+    prev = ch;
+    if (!/\s/.test(ch)) prevNonSpace = ch;
+  }
+  return rest;
+}
+
+function checkInlineArrayItems(parts, inner) {
+  const shown = inner.slice(0, 60);
+  if (parts.length === 1 && parts[0].trim() === '') {
+    throw new Error(`servers.yaml: an empty inline array \`[]\` is not supported: [${shown}]`);
+  }
+  parts.forEach((part, index) => {
+    const item = part.trim();
+    if (item === '') {
+      const kind = index === parts.length - 1 ? 'a trailing comma' : 'an empty item';
+      throw new Error(`servers.yaml: ${kind} in an inline array is not supported: [${shown}]`);
+    }
+    if (item.startsWith('"') || item.startsWith("'")) return;
+    // YAML indicators that start an alias, anchor, tag, block scalar, reserved or directive token.
+    if (/^[*&!|>@%`]/.test(item)) {
+      throw new Error(`servers.yaml: a plain array item may not start with a YAML indicator (${item.slice(0, 40)}); quote it: [${shown}]`);
+    }
+    if (/:($|\s)/.test(item) || item.startsWith('{') || item.startsWith('[')) {
+      throw new Error(`servers.yaml: a plain array item that YAML reads as a mapping or collection (${item.slice(0, 40)}) is not supported; quote it: [${shown}]`);
+    }
+  });
 }
 
 function parseInlineObject(s) {
@@ -777,6 +834,55 @@ async function emitFile(absPath, content) {
   await writeFile(absPath, content);
 }
 
+// T672 (SEC-T672-08): every path a manifest names resolves strictly under ROOT (not ROOT itself): the
+// generator `rm -rf`s outputDir and writes the rest, so a manifest with outputDir "." or "../x" must
+// stop the run before the first write, like any other invalid manifest.
+function assertUnderRoot(label, resolved) {
+  const rootWithSep = ROOT.endsWith(path.sep) ? ROOT : ROOT + path.sep;
+  if (resolved === ROOT || !resolved.startsWith(rootWithSep)) {
+    throw new Error(`Refusing ${label} outside or equal to ROOT: ${resolved}`);
+  }
+}
+
+function assertUnder(label, resolved, base) {
+  const baseWithSep = base.endsWith(path.sep) ? base : base + path.sep;
+  if (resolved === base || !resolved.startsWith(baseWithSep)) {
+    throw new Error(`Refusing ${label} outside or equal to ${base}: ${resolved}`);
+  }
+}
+
+// The directory a manifest's instructions are written to. A rootRelative target outside ROOT, or ROOT
+// itself, is refused.
+function instructionsRoot(manifest, outRoot) {
+  const insMap = manifest.fileMap.instructions;
+  const insRoot = insMap.rootRelative ? path.resolve(ROOT, insMap.dir) : path.resolve(outRoot, insMap.dir);
+  if (insMap.rootRelative) {
+    const rootWithSep = ROOT.endsWith(path.sep) ? ROOT : ROOT + path.sep;
+    if (insRoot === ROOT || !insRoot.startsWith(rootWithSep)) {
+      throw new Error(`Refusing rootRelative fileMap target outside or equal to ROOT: ${insRoot}`);
+    }
+  }
+  return insRoot;
+}
+
+// Called from the validation pass of main(), before the first write.
+function validateManifestPaths(manifest) {
+  const outRoot = path.resolve(ROOT, manifest.outputDir);
+  assertUnderRoot(`outputDir of ${manifest.platform}`, outRoot);
+  instructionsRoot(manifest, outRoot);
+  for (const [kind, map] of Object.entries(manifest.fileMap)) {
+    if (kind === 'instructions' && map.rootRelative) continue;
+    assertUnder(`fileMap.${kind}.dir of ${manifest.platform}`, path.resolve(outRoot, map.dir), outRoot);
+  }
+  if (manifest.mcp) {
+    assertUnderRoot(`mcp.outputFile of ${manifest.platform}`, path.resolve(outRoot, manifest.mcp.outputFile));
+  }
+  for (const extra of manifest.extras || []) {
+    assertUnder(`extras.to of ${manifest.platform}`, path.resolve(outRoot, extra.to), outRoot);
+    assertUnderRoot(`extras.from of ${manifest.platform}`, path.resolve(EXTRAS, extra.from.replace(/^_extras\//, '')));
+  }
+}
+
 async function syncPlatform(manifest, servers) {
   const outRoot = path.resolve(ROOT, manifest.outputDir);
   const filesWritten = [];
@@ -823,12 +929,8 @@ async function syncPlatform(manifest, servers) {
   }
 
   const insMap = manifest.fileMap.instructions;
-  const insRoot = insMap.rootRelative ? path.resolve(ROOT, insMap.dir) : path.join(outRoot, insMap.dir);
+  const insRoot = instructionsRoot(manifest, outRoot);
   if (insMap.rootRelative) {
-    const rootWithSep = ROOT.endsWith(path.sep) ? ROOT : ROOT + path.sep;
-    if (insRoot === ROOT || !insRoot.startsWith(rootWithSep)) {
-      throw new Error(`Refusing rootRelative fileMap target outside or equal to ROOT: ${insRoot}`);
-    }
     if (!CHECK_ONLY) {
       await fs.rm(insRoot, { recursive: true, force: true });
     }
@@ -923,9 +1025,14 @@ async function main() {
     process.exit(1);
   }
 
+  // Only the manifest schema is skipped; any other `_*.json` in platforms/ is a mistake and stops the run (T672).
   const platformFiles = (await fs.readdir(PLATFORMS))
-    .filter((f) => f.endsWith('.json') && !f.startsWith('_'))
+    .filter((f) => f.endsWith('.json') && f !== MANIFEST_SCHEMA_FILE)
     .sort();
+  const stray = platformFiles.filter((f) => f.startsWith('_'));
+  if (stray.length > 0) {
+    throw new Error(`platforms/ holds ${stray.join(', ')}: only ${MANIFEST_SCHEMA_FILE} may start with an underscore`);
+  }
 
   const servers = await readServersYaml();
   let total = 0;
@@ -935,6 +1042,7 @@ async function main() {
   for (const file of platformFiles) {
     const manifest = JSON.parse(await fs.readFile(path.join(PLATFORMS, file), 'utf8'));
     validateMcpToolNamesStyle(manifest);
+    validateManifestPaths(manifest);
     manifests.push(manifest);
   }
 
