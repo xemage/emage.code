@@ -9,33 +9,33 @@ From a clone of this repository:
 ```bash
 git clone https://gitlab.com/em-age/emage.code.git
 cd emage.code
-scripts/install.sh --target /path/to/your-project --platform cursor
+scripts/install.sh --target /path/to/your-project --platform claude-code
 ```
 
 | Platform | `--platform` value |
 |----------|------------------|
-| Cursor | `cursor` |
 | GitHub Copilot (VS Code) | `github` |
 | Gemini CLI | `gemini` |
 | Opencode | `opencode` |
 | Pi | `pi` |
 | Claude Code | `claude-code` |
+| Cline | `cline` |
 | All platforms | `all` |
 
-Makefile shortcut: `make install TARGET=/path/to/your-project PLATFORM=cursor`
+Makefile shortcut: `make install TARGET=/path/to/your-project PLATFORM=claude-code`
 
 **Update** an existing install (requires `AGENTS.md` in the target):
 
 ```bash
-scripts/install.sh --target /path/to/your-project --platform cursor --update
+scripts/install.sh --target /path/to/your-project --platform claude-code --update
 ```
 
-`--update` replaces each platform tree (`.github/`, `.cursor/`, `.gemini/`, `.opencode/`, `.pi/`, `.claude/`, `.cline/`, `.clinerules/`) and keeps the files the harness never ships: `.claude/settings.json`, `.claude/settings.local.json`, and under `.github/` the `workflows/`, `ISSUE_TEMPLATE/`, `PULL_REQUEST_TEMPLATE.md`, `PULL_REQUEST_TEMPLATE`, `CODEOWNERS`, `dependabot.yml`, `dependabot.yaml`, `FUNDING.yml` and `copilot-instructions.md`. Each platform's MCP/settings config is merged. In `docs/tasks/`, the two ledgers are rewritten: `T<NNN>` task rows and the prose around the table are kept, other table rows are dropped with a warning.
+`--update` replaces each platform tree (`.github/`, `.gemini/`, `.opencode/`, `.pi/`, `.claude/`, `.cline/`, `.clinerules/`) and keeps the files the harness never ships: `.claude/settings.json`, `.claude/settings.local.json`, and under `.github/` the `workflows/`, `ISSUE_TEMPLATE/`, `PULL_REQUEST_TEMPLATE.md`, `PULL_REQUEST_TEMPLATE`, `CODEOWNERS`, `dependabot.yml`, `dependabot.yaml`, `FUNDING.yml` and `copilot-instructions.md`. Each platform's MCP/settings config is merged. In `docs/tasks/`, the two ledgers are rewritten: `T<NNN>` task rows and the prose around the table are kept, other table rows are dropped with a warning.
 
 To refresh only the harness projections (platform trees, MCP configs, `AGENTS.md`, and `CLAUDE.md` for Claude Code) and touch nothing under `docs/` or `implementation/`:
 
 ```bash
-scripts/install.sh --target /path/to/your-project --platform cursor --projections-only
+scripts/install.sh --target /path/to/your-project --platform claude-code --projections-only
 ```
 
 `--projections-only` cannot be combined with `--update`, needs an existing install, and does not install the MCP server runtime source.
@@ -47,7 +47,6 @@ scripts/install.sh --target /path/to/your-project --platform cursor --projection
 | GitHub Copilot | `.github/` + `.vscode/mcp.json` |
 | Gemini CLI | `.gemini/` |
 | Opencode | `.opencode/` |
-| Cursor | `.cursor/` |
 | Pi | `.pi/` |
 | Claude Code | `.claude/` + `.mcp.json` + `CLAUDE.md` |
 
@@ -94,6 +93,6 @@ See [Implementation Guide](implementation-guide) for cookbooks, triggers, packag
 
 ## Troubleshooting
 
-- **Agents not loading?** Confirm format: `.mdc` (Cursor), `.agent.md` (Copilot), `.md` (Gemini/Opencode/Pi/Claude Code).
+- **Agents not loading?** Confirm format: `.agent.md` (Copilot), `.md` (Gemini/Opencode/Pi/Claude Code).
 - **MCP failing?** Check env vars and network access.
 - **Drift after editing knowledge?** Run `make sync` from repo root.

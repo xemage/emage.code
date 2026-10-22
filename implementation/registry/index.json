@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-16T20:10:03+02:00",
+  "generatedAt": "2026-10-16T18:34:25+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -42,7 +42,7 @@
       "category": "agent",
       "name": "Context Retriever",
       "path": "agents/context-retriever.md",
-      "checksum": "19afb05d1865b2d3aa25d2dbfef005947b47fd9f526efe339f0167a33cbf093d",
+      "checksum": "db72c31c8f67fcb67cddc7e624ee61a96cd765227b92daa09d1313f2a01d337a",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -822,7 +822,7 @@
       "category": "command",
       "name": "consolidate-memory",
       "path": "commands/consolidate-memory.md",
-      "checksum": "840c7bdfc48f2843ebcbb3bfc06706062779d1f031bbe043cc45e63410f3ea1e",
+      "checksum": "286d938a5bf282005f5107e48c6ae8972a82d6d49ff8a75a921a3e1b464dfe0d",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -848,7 +848,7 @@
       "category": "command",
       "name": "discover-skills",
       "path": "commands/discover-skills.md",
-      "checksum": "70bf327a0b4b0ba71e935ff97831d3c580e84886ee1ef38214d9ccdb324c339e",
+      "checksum": "229e6a3d3106642b870dd1d85b13f88bd188ab594c46facd7fcf9cf8582dbc27",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1108,7 +1108,7 @@
       "category": "command",
       "name": "skillify",
       "path": "commands/skillify.md",
-      "checksum": "e1613362715d956d51fa68f492ba7bb4724a0e93ed51251e3785e5a438615dca",
+      "checksum": "c5daaff840daacc3e41288463d920da54e2f33d952ea2ea6eb2950f8d5f123cf",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1680,7 +1680,7 @@
       "category": "skill",
       "name": "memory-management",
       "path": "skills/memory-management/SKILL.md",
-      "checksum": "f19d770af43e91f10416d030367c1dbca5ef422bb5256a629b09adb9cb81ea5d",
+      "checksum": "7a65a364d1edac8572ed1e6a480ae6946d49bd5da7e7c1bcb77c2da503a29459",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1862,7 +1862,7 @@
       "category": "skill",
       "name": "skillify",
       "path": "skills/skillify/SKILL.md",
-      "checksum": "a2b303f47a86416b67fdd8d8cc7a797cfe525247e51dafe99edc64b564e453e7",
+      "checksum": "33db2affb6ceda0a83b9e074bca3dae18b09759ace524dfd2fba2ca42729bf3e",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [

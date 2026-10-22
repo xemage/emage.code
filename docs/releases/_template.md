@@ -20,7 +20,6 @@ scripts/install.sh --target <your-project> --platform <name>
 
 | Platform | `--platform` value |
 |----------|-------------------|
-| Cursor | `cursor` |
 | GitHub Copilot (VS Code) | `github` |
 | Gemini CLI | `gemini` |
 | Opencode | `opencode` |

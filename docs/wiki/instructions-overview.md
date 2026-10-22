@@ -8,7 +8,7 @@ had no dedicated overview page under `docs/wiki/**`, unlike agents (see
 [Commands and Skills Overview](commands-and-skills-overview)). Unlike a
 command or skill, an instruction is never invoked directly — it is projected
 into every supported platform's own rule/instruction mechanism (`.github/
-instructions/*.instructions.md`, `.cursor/rules/*.mdc`, `.claude/rules/*.md`,
+instructions/*.instructions.md`, `.claude/rules/*.md`,
 and so on) and applies automatically whenever its `applyTo` glob matches the
 file or situation an agent is working in.
 
@@ -33,7 +33,7 @@ the two into one page would blur that distinction rather than clarify it.
 `AGENTS.md` names explicitly, in its "Code Standards" and "Security"
 sections respectively, listing every platform's own projected path for each
 (`.github/instructions/coding-standards.instructions.md`,
-`.cursor/rules/security-guidelines.mdc`, and so on) — the routing table a
+`.claude/rules/security-guidelines.md`, and so on) — the routing table a
 developer or agent follows to find the platform-native copy of the rule
 that's actually active in their current environment.
 

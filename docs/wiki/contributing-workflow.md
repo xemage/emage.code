@@ -60,7 +60,7 @@ git push --force-with-lease
 ## Adding a new platform
 
 1. Drop a manifest file at `v2/implementation/platforms/<name>.json`
-2. Use [`cursor.json`](https://gitlab.com/em-age/emage.code/-/blob/main/v2/implementation/platforms/cursor.json) as a template
+2. Use an existing manifest such as [`claude-code.json`](https://gitlab.com/em-age/emage.code/-/blob/main/v2/implementation/platforms/claude-code.json) as a template
 3. Run sync; the new `<name>/` folder appears
 4. Update README "Supported platforms" table
 5. Document quirks in `v2/plan/`

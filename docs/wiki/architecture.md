@@ -36,13 +36,15 @@ v2/implementation/knowledge/   (canonical)
         ├──► .github/   (GitHub Copilot)
         ├──► .gemini/   (Gemini CLI)
         ├──► .opencode/ (Opencode)
-        └──► .cursor/   (Cursor)
+        ├──► .pi/       (Pi)
+        ├──► .claude/   (Claude Code)
+        └──► .cline/ + .clinerules/ (Cline)
 ```
 
 Each platform has a manifest (`v2/implementation/platforms/<name>.json`) describing:
 - File extensions and naming
-- Frontmatter shape (e.g. `applyTo` vs `globs`)
-- MCP output format (vscode / gemini / opencode / cursor)
+- Frontmatter shape (e.g. `applyTo` vs `paths`)
+- MCP output format (vscode / gemini / opencode / pi / claude-code / cline)
 - Which `extended` MCP servers to include
 
 ## Lifecycle states
