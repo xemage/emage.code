@@ -549,6 +549,39 @@ guard_managed_paths() {
   done < <(list_managed_paths)
 }
 
+# T682 (N-7): a run killed (SIGKILL, power loss) between the two renames of replace_tree_by_swap leaves
+# the user's previous tree as <dest>.emage-old.<pid> and no <dest> at all; one killed during the copy
+# leaves <dest>.emage-new.<pid>. The names carry the dead run's pid, so the per-run check of the next
+# swap never sees them. Left alone, the next run would install a fresh tree and carry over none of the
+# project-local files the old one held (a .claude/settings.json), and a later sweep or a hand-run `rm`
+# could remove the only copy. A stale sibling is therefore REFUSED, not warned about: nothing is written
+# (dry-run included), nothing is adopted or deleted, and the message says what each one is and what to do.
+guard_stale_swap_siblings() {
+  local rel sibling found=0
+  while IFS= read -r rel; do
+    for sibling in "$TARGET/$rel".emage-old.* "$TARGET/$rel".emage-new.*; do
+      if [[ ! -e "$sibling" && ! -L "$sibling" ]]; then continue; fi
+      if [[ "$found" -eq 0 ]]; then
+        echo "error: a previous update of this target was interrupted and left a temporary tree behind:" >&2
+      fi
+      found=1
+      if [[ "$sibling" == *.emage-old.* ]]; then
+        echo "  $(printable "$sibling")" >&2
+        echo "    the tree this update was replacing. If $(printable "$TARGET/$rel") is missing it is your only copy:" >&2
+        echo "      mv -- $(printf '%q' "$sibling") $(printf '%q' "$TARGET/$rel")" >&2
+        echo "    otherwise, after checking nothing in it is needed, remove it." >&2
+      else
+        echo "  $(printable "$sibling")" >&2
+        echo "    the unfinished new tree of an interrupted update; remove it." >&2
+      fi
+    done
+  done < <(list_managed_paths)
+  if [[ "$found" -eq 1 ]]; then
+    echo "Nothing was written and nothing was removed. Resolve the above and re-run." >&2
+    exit 1
+  fi
+}
+
 # True when src and dest are one and the same directory, however each is
 # spelled (`-ef`: same device and inode, so symlinks, `.`, relative paths and
 # bind mounts all resolve). The three tree writers below return early in that
@@ -973,17 +1006,54 @@ sync_tree_into() {
 SWAP_BUILD=""
 SWAP_OLD=""
 SWAP_DEST=""
+# 1 only once BOTH renames of the swap have succeeded (T682 SEC-T682-02): swap_cleanup must not infer
+# "the swap completed" from dest existing, which a failed second rename can also leave behind.
+SWAP_DONE=0
+# Removes a moved-aside old tree. Its top directory may be read-only or not searchable (the mode the
+# user chose, T682 N-2), which would make `rm -rf` fail after the swap had succeeded: give the owner
+# back write and search first (best effort; the tree is garbage from here on). Never through a symlink:
+# chmod follows a link given as its own argument, and the target is not ours (SEC-T682-05).
+discard_old_tree() {
+  if [[ "$DRY_RUN" -eq 0 && -d "$1" && ! -L "$1" ]]; then chmod -R u+rwX -- "$1" 2>/dev/null || true; fi
+  run rm -rf -- "$1"
+}
+
+# MV_T is (-T) where `mv` is GNU, else empty. `mv -T src dst` treats dst as the final name, never as a
+# directory to move src into: a directory someone creates at dst between our checks and the rename makes
+# the rename fail (or replace an empty one) instead of nesting our tree inside theirs (T682 N-3b).
+# Detected, not assumed: BSD and busybox `mv` either lack -T or differ, and keep the plain rename.
+MV_T=()
+detect_mv_flags() {
+  local version
+  MV_T=()
+  version="$(mv --version 2>/dev/null || true)"
+  if [[ "$version" == *"GNU coreutils"* ]]; then MV_T=(-T); fi
+}
+detect_mv_flags
+
 swap_cleanup() {
+  # A second signal while the cleanup runs (a repeated Ctrl-C, a supervisor's TERM after HUP) would
+  # re-enter the signal traps below, whose `exit` cuts the cleanup short and leaves the sibling trees
+  # behind (T682 N-3): ignore them until the cleanup is done. Must stay the first command.
+  trap '' HUP INT QUIT TERM
   local f
-  # SWAP_OLD is set from before the first rename until the swap is finished. If dest is missing the
-  # old tree is the only copy: put it back. If dest exists the swap completed (an interrupt between the
-  # second rename and the delete): the old tree is garbage.
+  # SWAP_OLD is set from before the first rename until the swap is finished. Three states (T682
+  # SEC-T682-02): both renames succeeded (SWAP_DONE=1, interrupted before the delete): the old tree is
+  # garbage. Not done and dest is missing: the old tree is the only copy, put it back. Anything else
+  # (the second rename failed and dest was recreated, or SWAP_OLD is not ours): leave BOTH alone.
   if [[ -n "$SWAP_OLD" && ( -e "$SWAP_OLD" || -L "$SWAP_OLD" ) ]]; then
-    if [[ -e "$SWAP_DEST" || -L "$SWAP_DEST" ]]; then
-      rm -rf -- "$SWAP_OLD" || true
+    if [[ "$SWAP_DONE" -eq 1 ]]; then
+      discard_old_tree "$SWAP_OLD" || true
+    elif [[ ! -e "$SWAP_DEST" && ! -L "$SWAP_DEST" ]]; then
+      mv ${MV_T[@]+"${MV_T[@]}"} -- "$SWAP_OLD" "$SWAP_DEST" || true
     else
-      mv -- "$SWAP_OLD" "$SWAP_DEST" || true
+      echo "note: the update did not finish; $(printable "$SWAP_OLD") and $(printable "$SWAP_DEST") were both left in place; check them." >&2
     fi
+  fi
+  # The build tree may have been given a read-only mode already (T682 N-2): give the owner access back
+  # first, or the rm cannot empty it (SEC-T682-01). Never through a symlink.
+  if [[ -n "$SWAP_BUILD" && -d "$SWAP_BUILD" && ! -L "$SWAP_BUILD" ]]; then
+    chmod -R u+rwX -- "$SWAP_BUILD" 2>/dev/null || true
   fi
   if [[ -n "$SWAP_BUILD" && -d "$SWAP_BUILD" ]]; then rm -rf -- "$SWAP_BUILD" || true; fi
   for f in ${TEMP_FILES[@]+"${TEMP_FILES[@]}"}; do rm -f -- "$f" || true; done
@@ -1023,33 +1093,37 @@ replace_tree_by_swap() {
   fi
   run mkdir -- "$build"
   if [[ "$DRY_RUN" -eq 0 ]]; then SWAP_BUILD="$build"; fi
-  # The new top directory has the old one's mode (group/world write stripped, SEC-005), not mkdir's default.
-  if [[ -d "$dest" ]]; then
-    mode="$(stat -c '%a' -- "$dest" 2>/dev/null || stat -f '%Lp' -- "$dest" 2>/dev/null || true)"
-    if [[ -n "$mode" ]]; then run chmod "$mode" "$build"; fi
-    run chmod go-w "$build"
-  fi
   copy_contents_excluding -r "$src" "$build" ${src_hits[@]+"${src_hits[@]}"}
   for rel in ${keep[@]+"${keep[@]}"}; do
     run mkdir -p "$(dirname "$build/$rel")"
     run rm -rf "$build/$rel"
     run copy_kept_path "$dest/$rel" "$build/$rel"
   done
+  # The new top directory gets the old one's mode (group/world write stripped, SEC-005), not mkdir's
+  # default -- AFTER the copy (T682 N-2): a 555/500/600 old tree would otherwise make the copy into
+  # the read-only (or non-searchable) build directory fail, and the update with it.
+  if [[ -d "$dest" ]]; then
+    mode="$(stat -c '%a' -- "$dest" 2>/dev/null || stat -f '%Lp' -- "$dest" 2>/dev/null || true)"
+    if [[ -n "$mode" ]]; then run chmod "$mode" "$build"; fi
+    run chmod go-w "$build"
+  fi
   if [[ -e "$dest" || -L "$dest" ]]; then
     if [[ "$DRY_RUN" -eq 0 && ( -e "$old" || -L "$old" ) ]]; then
       echo "error: $(printable "$old") appeared while the new tree was built; remove it and re-run. $(printable "$dest") was not touched." >&2
       exit 1
     fi
     if [[ "$DRY_RUN" -eq 0 ]]; then SWAP_OLD="$old"; SWAP_DEST="$dest"; fi
-    run mv -- "$dest" "$old"
-    run mv -- "$build" "$dest"
-    run rm -rf -- "$old"
+    run mv ${MV_T[@]+"${MV_T[@]}"} -- "$dest" "$old"
+    run mv ${MV_T[@]+"${MV_T[@]}"} -- "$build" "$dest"
+    SWAP_DONE=1
+    discard_old_tree "$old"
   else
-    run mv -- "$build" "$dest"
+    run mv ${MV_T[@]+"${MV_T[@]}"} -- "$build" "$dest"
   fi
   SWAP_BUILD=""
   SWAP_OLD=""
   SWAP_DEST=""
+  SWAP_DONE=0
 }
 
 # cp -r of a project-local path the harness keeps ($1 -> $2) under the CALLER's umask, not the
@@ -1456,6 +1530,7 @@ install_cline() {
 # Before the first write of any mode, dry-run included (T636, SEC-001).
 verify_platform_maps
 guard_managed_paths
+guard_stale_swap_siblings
 validate_existing_mcp_configs
 
 # --dry-run creates nothing, the target directory included (SEC-008 b).

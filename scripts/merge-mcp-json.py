@@ -232,6 +232,14 @@ def atomic_write_text(path: Path, text: str) -> None:
         raise
 
 
+def printable(name: str) -> str:
+    """`name` for a terminal: as is when every character is printable, else its ascii() escape.
+
+    The names come from the user's own file (or from --force-prune-keys), which may be a third-party
+    project file: an ESC, a newline or a bidi control in a key must not reach the terminal (T682 N-1)."""
+    return name if name.isprintable() else ascii(name)
+
+
 def print_notes(dest: Path, notes: list[tuple[str, str]]) -> None:
     """One stderr line per kind: which user content was replaced / kept (names, never values)."""
     if ("top", "level") in notes:
@@ -240,7 +248,7 @@ def print_notes(dest: Path, notes: list[tuple[str, str]]) -> None:
     for kind, text in (("replaced", "replaced your value for"), ("kept", "kept your key")):
         names = sorted({name for note_kind, name in notes if note_kind == kind})
         if names:
-            print(f"merge-mcp-json: note: {dest}: {text} {', '.join(names)}", file=sys.stderr)
+            print(f"merge-mcp-json: note: {dest}: {text} {', '.join(printable(name) for name in names)}", file=sys.stderr)
 
 
 def render_json(data: Any) -> str:
@@ -334,7 +342,7 @@ def _main() -> int:
         check_prune_names_recursive(merged, source_data, force_prune_names, found)
         missing = force_prune_names - found
         if missing:
-            offenders = ", ".join(sorted(missing))
+            offenders = ", ".join(printable(name) for name in sorted(missing))
             print(f"merge-mcp-json: --force-prune-keys named '{offenders}', which is not a dest-only key "
                   f"(missing, or still present in source) — refusing to proceed", file=sys.stderr)
             return 1
@@ -351,7 +359,7 @@ def _main() -> int:
     print_notes(args.dest, notes)
     if bootstrap_kept:
         print(f"merge-mcp-json: note: {args.dest}: there is no provenance sidecar at {args.old_sidecar}, so no "
-              f"retired generator entry could be pruned; kept your server(s) {', '.join(bootstrap_kept)}, which "
+              f"retired generator entry could be pruned; kept your server(s) {', '.join(printable(name) for name in bootstrap_kept)}, which "
               f"the generated config does not contain. If one is a retired generator entry, remove it by hand "
               f"or run scripts/merge-mcp-json.py with --force-prune-keys <name>.", file=sys.stderr)
     if not args.dry_run:

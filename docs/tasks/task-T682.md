@@ -2,13 +2,13 @@
 
 **ID:** T682
 **Owner:** devops-engineer
-**Status:** pending
+**Status:** done
 **Priority:** P2
 **Tier:** standard
 **Depends on:** T672
 **Affects:** —
 **Created:** 2026-10-22
-**Completed:** —
+**Completed:** 2026-10-22
 **Based on:**
 - `docs/plans/plan-123-post-release-follow-ups.md` (Addendum of 2026-10-22: T682)
 - `docs/artifacts/security-review-t672-installer-robustness-v1.md` (delta re-review, N-1..N-8)

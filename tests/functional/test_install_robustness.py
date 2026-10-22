@@ -57,6 +57,9 @@ BROWSER_COMMAND = re.search(r"^npx -y @playwright/mcp@\S+ install-browser chrome
                             re.M).group(0)
 
 
+needs_non_root = unittest.skipIf(os.geteuid() == 0, "root ignores directory permission bits, the test would pass vacuously")
+
+
 def _bash_output(script: str) -> str:
     return subprocess.run(["bash", "-c", script], capture_output=True, text=True, check=True).stdout
 
@@ -210,7 +213,7 @@ class TestDryRunCreatesNothing(_Scratch):
                 self.assertEqual(_snapshot(target), before)
                 self.assertEqual(_paths(target), paths, "a directory or file was created")
                 if label == "cp":
-                    self.assertIn("DRY-RUN: mv --", proc.stdout)
+                    self.assertRegex(proc.stdout, r"DRY-RUN: mv (-T )?--")
 
 
 class TestExistingMcpConfigIsMerged(_Scratch):
@@ -677,6 +680,49 @@ class TestSwapInterruptions(_CopierMatrix):
         self.assertEqual((target / ".claude/settings.json").read_text(encoding="utf-8"), '{"mine": true}\n')
         self.assertFalse((target / ".claude/stale-agent.md").exists(), "the update was applied")
 
+    def test_a_second_signal_during_the_cleanup_does_not_cut_it_short(self) -> None:
+        """T682 N-3: TERM hits the hanging second rename, the cleanup restores the old tree with a slow
+        `mv`, and a second TERM arrives while it runs; the rest of the cleanup must still run."""
+        target, before = self._installed()
+        hang, restoring, seen_old = (self.tmp / n for n in ("hang.marker", "restoring.marker", "old.seen"))
+        restore_args = self.tmp / "restore.args"
+        shim = _shim_tool(self.tmp, "mv-slow-restore", "mv",
+                          f'case " $* " in *"/.claude.emage-old."*)\n'
+                          f'  if [ -e {seen_old} ]; then echo "$*" > {restore_args}; : > {restoring}; sleep 2;'
+                          f' else : > {seen_old}; fi;;\n'
+                          f'*.claude.emage-new.*) if [ ! -e {hang} ]; then : > {hang}; sleep 60; fi;; esac')
+        scratch = self.tmp / "tmpdir-second-signal"
+        scratch.mkdir()
+        env = dict(os.environ, PATH=str(shim) + os.pathsep + self.no_rsync, TMPDIR=str(scratch))
+        proc = subprocess.Popen(
+            ["bash", str(INSTALLER), "--target", str(target), "--platform", "claude-code", "--update"],
+            cwd=str(repo_root()), env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+            start_new_session=True)
+        try:
+            deadline = time.time() + 60
+            while not hang.exists() and time.time() < deadline:
+                time.sleep(0.05)
+            self.assertTrue(hang.exists(), "the update never reached the second rename")
+            os.killpg(proc.pid, signal.SIGTERM)      # kills the hanging mv; the trap runs the cleanup
+            while not restoring.exists() and time.time() < deadline:
+                time.sleep(0.05)
+            self.assertTrue(restoring.exists(), "the cleanup never reached the restore")
+            # the second signal goes to the whole group, like a repeated Ctrl-C: it kills a cleanup
+            # command that does not ignore it (the slow restore `mv`) and re-enters the traps of the installer
+            os.killpg(proc.pid, signal.SIGTERM)
+            proc.communicate(timeout=60)
+        finally:
+            if proc.poll() is None:
+                os.killpg(proc.pid, signal.SIGKILL)
+                proc.communicate()
+        self.assertEqual(proc.returncode, 143)
+        self.assertEqual(_snapshot(target / ".claude"), before, "the old tree must be restored")
+        self.assertEqual([p for p in _paths(target) if ".emage-" in p], [], "a sibling tree was left behind")
+        self.assertEqual(os.listdir(scratch), [], "the cleanup was cut short: a scan file survived")
+        # N-3b: the restore is a `mv -T` too where mv is GNU
+        gnu = "GNU coreutils" in subprocess.run(["mv", "--version"], capture_output=True, text=True).stdout
+        self.assertEqual(restore_args.read_text(encoding="utf-8").startswith("-T -- "), gnu)
+
     def test_scan_files_are_removed_when_the_run_is_interrupted(self) -> None:
         target, before = self._installed()
         marker = self.tmp / "scan.marker"
@@ -694,11 +740,11 @@ def _harness(tmp: Path, scenario: str) -> subprocess.CompletedProcess[str]:
     script = (
         "set -euo pipefail\n"
         f"TARGET={shlex.quote(str(tmp / 't'))}\nDRY_RUN=0\nORIG_UMASK=\"$(umask)\"\n"
-        'SWAP_BUILD=""\nSWAP_OLD=""\nSWAP_DEST=""\nTEMP_FILES=()\nMADE_TEMP=""\nDIR_ENTRIES=()\n'
+        'SWAP_BUILD=""\nSWAP_OLD=""\nSWAP_DEST=""\nSWAP_DONE=0\nTEMP_FILES=()\nMADE_TEMP=""\nDIR_ENTRIES=()\n'
         + _bash_functions("printable", "physical_path", "refuse_unsafe_path", "run", "make_temp_file",
                           "list_dir_entries", "copy_contents_excluding", "replace_tree_by_swap",
-                          "copy_kept_path", "swap_cleanup")
-        + "\ntrap swap_cleanup EXIT\n"
+                          "copy_kept_path", "discard_old_tree", "detect_mv_flags", "swap_cleanup")
+        + "\nMV_T=(); detect_mv_flags\ntrap swap_cleanup EXIT\n"
         'mkdir -p "$TARGET/tree" "$TARGET/src"\necho old > "$TARGET/tree/f"\necho new > "$TARGET/src/f"\n'
         + scenario)
     return subprocess.run(["bash", "-c", script], capture_output=True, text=True)
@@ -761,10 +807,17 @@ class TestSwapSiblingHandling(_Scratch):
         self.assertEqual(list((self.tmp / "t").glob("*.emage-*")), [])
         shutil.rmtree(self.tmp / "t")
         proc = _harness(self.tmp, 'cp -R "$TARGET/tree" "$TARGET/tree.emage-old.$$"; echo newer > "$TARGET/tree/f"\n'
-                                  'SWAP_OLD="$TARGET/tree.emage-old.$$"; SWAP_DEST="$TARGET/tree"\nexit 0\n')
+                                  'SWAP_OLD="$TARGET/tree.emage-old.$$"; SWAP_DEST="$TARGET/tree"; SWAP_DONE=1\nexit 0\n')
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertEqual((self._tree("tree") / "f").read_text(), "newer\n", "dest is kept")
         self.assertEqual(list((self.tmp / "t").glob("*.emage-*")), [], "the old tree is discarded")
+        shutil.rmtree(self.tmp / "t")
+        proc = _harness(self.tmp, 'cp -R "$TARGET/tree" "$TARGET/tree.emage-old.$$"; echo newer > "$TARGET/tree/f"\n'
+                                  'SWAP_OLD="$TARGET/tree.emage-old.$$"; SWAP_DEST="$TARGET/tree"\nexit 0\n')
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual((self._tree("tree") / "f").read_text(), "newer\n", "dest is kept")
+        self.assertEqual(len(list((self.tmp / "t").glob("tree.emage-old.*"))), 1, "not finished: nothing is deleted")
+        self.assertIn("the update did not finish", proc.stderr)
 
     def test_new_top_directory_gets_the_old_mode_without_group_or_world_write(self) -> None:
         for old_mode, expected in ((0o750, 0o750), (0o700, 0o700), (0o775, 0o755), (0o777, 0o755)):
@@ -775,6 +828,251 @@ class TestSwapSiblingHandling(_Scratch):
                 self.assertEqual(stat.S_IMODE(self._tree("tree").stat().st_mode), expected)
                 self.assertEqual((self._tree("tree") / "f").read_text(), "new\n")
                 shutil.rmtree(self.tmp / "t")
+
+    @needs_non_root
+    def test_a_read_only_or_unsearchable_old_tree_does_not_break_the_swap(self) -> None:
+        """T682 N-2: the old mode is applied to the build directory after the copy, not before."""
+        for old_mode in (0o555, 0o500, 0o600, 0o000):
+            with self.subTest(old=oct(old_mode)):
+                proc = _harness(self.tmp, f'chmod {old_mode:o} "$TARGET/tree"\n'
+                                          'replace_tree_by_swap "$TARGET/src" "$TARGET/tree" 0\n')
+                tree = self._tree("tree")
+                try:
+                    self.assertEqual(proc.returncode, 0, proc.stderr)
+                    self.assertEqual(stat.S_IMODE(tree.stat().st_mode), old_mode & ~0o022)
+                    tree.chmod(0o700)
+                    self.assertEqual((tree / "f").read_text(), "new\n")
+                    self.assertEqual(list((self.tmp / "t").glob("*.emage-*")), [], "the old tree was left behind")
+                finally:
+                    for path in (self.tmp / "t").glob("tree*"):
+                        path.chmod(0o700)
+                    shutil.rmtree(self.tmp / "t")
+
+    @needs_non_root
+    def test_a_kept_path_is_copied_into_a_build_directory_that_ends_up_read_only(self) -> None:
+        proc = _harness(self.tmp, 'echo mine > "$TARGET/tree/local"; chmod 555 "$TARGET/tree"\n'
+                                  'replace_tree_by_swap "$TARGET/src" "$TARGET/tree" 0 local\n')
+        tree = self._tree("tree")
+        try:
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertEqual(stat.S_IMODE(tree.stat().st_mode), 0o555)
+            self.assertEqual((tree / "local").read_text(), "mine\n")
+        finally:
+            tree.chmod(0o700)
+
+    @needs_non_root
+    def test_a_read_only_installed_tree_can_be_updated_without_rsync(self) -> None:
+        target = self.tmp / "ro-target"
+        self.assertEqual(run_installer(INSTALLER, target, "--platform", "claude-code").returncode, 0)
+        (target / ".claude").chmod(0o555)
+        try:
+            proc = run_installer(INSTALLER, target, "--platform", "claude-code", "--update",
+                                 path=path_without(self.tmp, "rsync"))
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            self.assertEqual(stat.S_IMODE((target / ".claude").stat().st_mode), 0o555)
+            self.assertEqual([p for p in _paths(target) if ".emage-" in p], [])
+        finally:
+            (target / ".claude").chmod(0o755)
+
+
+class TestSwapRenamesUseMvDashT(_CopierMatrix):
+    """T682 N-3b: where `mv` is GNU the renames of the swap are `mv -T`, elsewhere the plain rename."""
+
+    def _update_logging_mv(self, version_line: str, reject_t: bool) -> tuple[subprocess.CompletedProcess, list[str]]:
+        target = self.tmp / f"{self._testMethodName}-t"
+        self.assertEqual(run_installer(INSTALLER, target, "--platform", "claude-code").returncode, 0)
+        log = self.tmp / f"{self._testMethodName}.log"
+        reject = '[ "$1" = "-T" ] && { echo "mv: invalid option -- T" >&2; exit 1; }\n' if reject_t else ""
+        version = f'[ "$1" = "--version" ] && {{ echo {shlex.quote(version_line)}; exit 0; }}\n' if version_line else ""
+        shim = _shim_tool(self.tmp, f"mv-{self._testMethodName}", "mv",
+                          version + reject + f'case " $* " in *.emage-*) echo "$*" >> {log};; esac')
+        proc = run_installer(INSTALLER, target, "--platform", "claude-code", "--update",
+                             path=str(shim) + os.pathsep + self.no_rsync)
+        calls = log.read_text(encoding="utf-8").splitlines() if log.exists() else []
+        return proc, calls
+
+    def test_gnu_mv_gets_dash_t_for_both_renames(self) -> None:
+        if "GNU coreutils" not in subprocess.run(["mv", "--version"], capture_output=True, text=True).stdout:
+            self.skipTest("mv is not GNU here")
+        proc, calls = self._update_logging_mv("", reject_t=False)
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertTrue(calls and len(calls) % 2 == 0, calls)
+        self.assertTrue(all(c.startswith("-T -- ") for c in calls), calls)
+        for first, second in zip(calls[::2], calls[1::2]):   # dest -> old, then new -> dest
+            self.assertIn(".emage-old.", first.split()[-1])
+            self.assertIn(".emage-new.", second.split()[-2])
+
+    def test_the_rename_into_a_missing_destination_uses_dash_t_too(self) -> None:
+        if "GNU coreutils" not in subprocess.run(["mv", "--version"], capture_output=True, text=True).stdout:
+            self.skipTest("mv is not GNU here")
+        target = self.tmp / f"{self._testMethodName}-t"
+        self.assertEqual(run_installer(INSTALLER, target, "--platform", "claude-code").returncode, 0)
+        shutil.rmtree(target / ".claude")
+        log = self.tmp / f"{self._testMethodName}.log"
+        shim = _shim_tool(self.tmp, f"mv-{self._testMethodName}", "mv",
+                          f'case " $* " in *"/.claude.emage-"*) echo "$*" >> {log};; esac')
+        proc = run_installer(INSTALLER, target, "--platform", "claude-code", "--update",
+                             path=str(shim) + os.pathsep + self.no_rsync)
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        calls = log.read_text(encoding="utf-8").splitlines()
+        self.assertEqual(len(calls), 1, calls)
+        self.assertTrue(calls[0].startswith("-T -- ") and ".claude.emage-new." in calls[0], calls)
+        self.assertTrue((target / ".claude/agents").is_dir())
+
+    def test_a_non_gnu_mv_keeps_the_plain_rename(self) -> None:
+        proc, calls = self._update_logging_mv("mv (BusyBox v1.36)", reject_t=True)
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertTrue(calls and len(calls) % 2 == 0, calls)
+        self.assertTrue(all(c.startswith("-- ") for c in calls), calls)
+        self.assertEqual([p for p in _paths(self.tmp / f"{self._testMethodName}-t") if ".emage-" in p], [])
+
+
+class TestSwapCleanupStates(_Scratch):
+    """T682 SEC-T682-01/-02/-05: swap_cleanup acts on an explicit SWAP_DONE, not on what exists."""
+
+    def _gnu(self) -> None:
+        if "GNU coreutils" not in subprocess.run(["mv", "--version"], capture_output=True, text=True).stdout:
+            self.skipTest("mv is not GNU here (-T is what makes the rename fail instead of nest)")
+
+    def test_a_failed_second_rename_with_a_recreated_dest_deletes_nothing(self) -> None:
+        proc = _harness(self.tmp,
+                        'mv() { if [[ "${@: -1}" == "$TARGET/tree" && "$*" == *.emage-new.* ]]; then\n'
+                        '    command mkdir "$TARGET/tree"; echo recreated > "$TARGET/tree/mine"; return 1; fi\n'
+                        '  command mv "$@"; }\n'
+                        'replace_tree_by_swap "$TARGET/src" "$TARGET/tree" 0\n')
+        self.assertNotEqual(proc.returncode, 0, proc.stdout)
+        tree = self.tmp / "t" / "tree"
+        self.assertEqual((tree / "mine").read_text(), "recreated\n", "dest is left as it was found")
+        olds = list((self.tmp / "t").glob("tree.emage-old.*"))
+        self.assertEqual([(o / "f").read_text() for o in olds], ["old\n"], "the user's tree must not be deleted")
+        self.assertIn("the update did not finish", proc.stderr)
+        self.assertEqual(list((self.tmp / "t").glob("tree.emage-new.*")), [], "our build is still removed")
+
+    @needs_non_root
+    def test_a_foreign_old_directory_planted_after_the_check_is_never_touched(self) -> None:
+        self._gnu()
+        proc = _harness(self.tmp,
+                        'mv() { local last="${@: -1}"\n'
+                        '  if [[ "$last" == *.emage-old.* && ! -e "$last" ]]; then\n'
+                        '    command mkdir "$last"; echo foreign > "$last/keep"; chmod 500 "$last"; fi\n'
+                        '  command mv "$@"; }\n'
+                        'replace_tree_by_swap "$TARGET/src" "$TARGET/tree" 0\n')
+        foreign = list((self.tmp / "t").glob("tree.emage-old.*"))
+        try:
+            self.assertNotEqual(proc.returncode, 0, proc.stdout)
+            self.assertEqual((self.tmp / "t" / "tree" / "f").read_text(), "old\n", "dest is still the user's tree")
+            self.assertEqual([(p / "keep").read_text() for p in foreign], ["foreign\n"])
+            self.assertEqual([stat.S_IMODE(p.stat().st_mode) for p in foreign], [0o500], "chmod-ed")
+            self.assertIn("were both left in place", proc.stderr)
+        finally:
+            for p in foreign:
+                p.chmod(0o700)
+
+    @needs_non_root
+    def test_the_build_tree_is_removed_even_when_it_was_made_read_only(self) -> None:
+        proc = _harness(self.tmp,
+                        'chmod 555 "$TARGET/tree"\n'
+                        'copy_contents_excluding() { echo x > "$3/f"; mkdir "$TARGET/tree.emage-old.$$"; }\n'
+                        'replace_tree_by_swap "$TARGET/src" "$TARGET/tree" 0\n')
+        (self.tmp / "t" / "tree").chmod(0o700)
+        self.assertEqual(proc.returncode, 1, proc.stderr)
+        self.assertIn("appeared while the new tree was built", proc.stderr)
+        leftovers = list((self.tmp / "t").glob("tree.emage-new.*"))
+        for p in leftovers:
+            p.chmod(0o700)
+        self.assertEqual(leftovers, [], "the read-only build tree was left behind")
+
+    def test_discard_old_tree_never_chmods_through_a_symlink(self) -> None:
+        outside = self.tmp / "outside"
+        outside.mkdir()
+        (outside / "canary").write_text("canary\n")
+        outside.chmod(0o500)
+        try:
+            proc = _harness(self.tmp, f'ln -s {shlex.quote(str(outside))} "$TARGET/link"\n'
+                                      'discard_old_tree "$TARGET/link"\n')
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertEqual(stat.S_IMODE(outside.stat().st_mode), 0o500, "the link target was chmod-ed")
+            self.assertFalse((self.tmp / "t" / "link").is_symlink(), "the link itself is removed")
+            self.assertTrue((outside / "canary").exists())
+        finally:
+            outside.chmod(0o700)
+
+
+class TestStaleSwapSiblingsAreRefused(_Scratch):
+    """T682 N-7: a `<tree>.emage-old.<pid>` / `.emage-new.<pid>` left by a killed run stops the next run."""
+
+    MODES = {"plain": (), "update": ("--update",), "dry-run": ("--update", "--dry-run"),
+             "projections-only": ("--projections-only",)}
+
+    def _stale(self, rel: str, kind: str) -> Path:
+        sibling = self.tmp / "project" / f"{rel}.emage-{kind}.4242"
+        sibling.mkdir(parents=True)
+        (sibling / "settings.json").write_text('{"mine": true}\n', encoding="utf-8")
+        return sibling
+
+    def test_every_mode_refuses_and_writes_and_removes_nothing(self) -> None:
+        target = self.installed("claude-code")
+        for rel, kind in ((".claude", "old"), (".claude", "new"), ("implementation/runtime/memory", "old"),
+                          ("implementation/runtime/handoff", "new")):
+            sibling = self._stale(rel, kind)
+            before, paths = _snapshot(target), _paths(target)
+            for label, flags in self.MODES.items():
+                if label == "projections-only" and rel.startswith("implementation/"):
+                    continue    # that mode does not manage the runtime trees
+                with self.subTest(sibling=sibling.name, mode=label, rel=rel):
+                    proc = run_installer(INSTALLER, target, "--platform", "claude-code", *flags)
+                    self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+                    self.assertIn("a previous update of this target was interrupted", proc.stderr)
+                    self.assertIn(str(sibling), proc.stderr)
+                    self.assertIn("Nothing was written and nothing was removed", proc.stderr)
+                    self.assertEqual(_snapshot(target), before)
+                    self.assertEqual(_paths(target), paths)
+                    self.assertEqual((sibling / "settings.json").read_text(encoding="utf-8"), '{"mine": true}\n')
+            shutil.rmtree(sibling)
+
+    def test_an_old_tree_whose_destination_is_missing_gets_the_restore_command(self) -> None:
+        target = self.installed("claude-code")
+        os.rename(target / ".claude", target / ".claude.emage-old.4242")
+        proc = run_installer(INSTALLER, target, "--platform", "claude-code", "--update")
+        self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+        self.assertIn(f"mv -- {shlex.quote(str(target / '.claude.emage-old.4242'))} {shlex.quote(str(target / '.claude'))}",
+                      proc.stderr)
+        self.assertFalse((target / ".claude").exists(), "nothing may be installed over the missing tree")
+        self.assertTrue((target / ".claude.emage-old.4242" / "agents").is_dir())
+
+    def test_a_symlink_at_a_sibling_name_is_refused_and_not_followed(self) -> None:
+        target = self.installed("claude-code")
+        outside = self.tmp / "outside"
+        outside.mkdir()
+        (outside / "canary").write_text("canary\n")
+        for label, link_target in (("to a directory", outside), ("dangling", self.tmp / "does-not-exist")):
+            with self.subTest(label):
+                link = target / ".claude.emage-new.4242"
+                link.symlink_to(link_target, target_is_directory=True)
+                proc = run_installer(INSTALLER, target, "--platform", "claude-code", "--update")
+                self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+                self.assertIn(".claude.emage-new.4242", proc.stderr)
+                self.assertEqual(os.listdir(outside), ["canary"])
+                link.unlink()
+
+    def test_the_name_is_printed_without_control_characters(self) -> None:
+        target = self.installed("claude-code")
+        (target / ".claude.emage-old.\x1b[31mx").mkdir()
+        proc = run_installer(INSTALLER, target, "--platform", "claude-code", "--update")
+        self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+        self.assertNotIn("\x1b", proc.stderr)
+
+    def test_a_sibling_of_a_platform_that_is_not_selected_is_left_alone(self) -> None:
+        target = self.installed("claude-code")
+        (target / ".gemini.emage-old.4242").mkdir()
+        proc = run_installer(INSTALLER, target, "--platform", "claude-code", "--update")
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertTrue((target / ".gemini.emage-old.4242").is_dir())
+
+    def test_a_clean_target_is_not_refused(self) -> None:
+        target = self.installed("claude-code")
+        proc = run_installer(INSTALLER, target, "--platform", "claude-code", "--update")
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
 
 
 class TestPlatformMapsAreVerifiedBeforeAnyWrite(_Scratch):
