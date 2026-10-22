@@ -8,7 +8,9 @@
       ],
       "env": {
         "GITLAB_PERSONAL_ACCESS_TOKEN": "${env:GITLAB_PERSONAL_ACCESS_TOKEN}",
-        "GITLAB_API_URL": "${env:GITLAB_API_URL}"
+        "GITLAB_PERSONAL_ACCESS_TOKEN_FILE": "${env:GITLAB_PERSONAL_ACCESS_TOKEN_FILE}",
+        "GITLAB_API_URL": "${env:GITLAB_API_URL}",
+        "GITLAB_PERMISSION_MODE": "modify"
       }
     },
     "playwright": {

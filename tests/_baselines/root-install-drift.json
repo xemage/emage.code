@@ -48,7 +48,8 @@
     "Declared 2026-10-16 by T666 (SEC-T660-04: orchestrator and poc-orchestrator hold named, non-destructive GitLab tools instead of the whole `gitlab` server): 8 new paths = the two agent projections on each of Claude Code, Cursor, GitHub Copilot and Pi; their 2 Opencode projections were already declared by T663, so 36 paths in total; root not refreshed.",
     "Declared 2026-10-16 by T667 (SEC-T660-04: devops-engineer, release-manager and poc-devops-engineer hold named GitLab tools instead of the whole `gitlab` server; after this task no agent holds the whole server): 12 new paths = the three agent projections on each of Claude Code, Cursor, GitHub Copilot and Pi; their 3 Opencode projections were already declared by T663, so 48 paths in total; root not refreshed.",
     "Declared 2026-10-16 by T667 (review follow-up, SEC-T667-01 and SEC-T666-01: the release-manager, orchestrator and release-workflow texts say the top-level session merges, tags and publishes): 9 further paths = the release-workflow skill projections on 7 platforms and the Gemini projections of orchestrator and release-manager (the other platforms' agent projections were already declared); 57 paths in total; root not refreshed.",
-    "Declared 2026-10-16 by T678 (ADR-010 step S2: live docs, seven knowledge sources, templates; Cursor wording and platform-count words removed): the root self-install now diverges in 82 paths in total (31 newly declared: the AGENTS.md rendering and the projections of the changed knowledge files on the remaining platforms); root not refreshed (T679)."
+    "Declared 2026-10-16 by T678 (ADR-010 step S2: live docs, seven knowledge sources, templates; Cursor wording and platform-count words removed): the root self-install now diverges in 82 paths in total (31 newly declared: the AGENTS.md rendering and the projections of the changed knowledge files on the remaining platforms); root not refreshed (T679).",
+    "Declared 2026-10-16 by T665 (SEC-T660-01: the `gitlab` MCP entry gains the non-secret `GITLAB_PERSONAL_ACCESS_TOKEN_FILE` variable and `GITLAB_PERMISSION_MODE=modify`, Claude Code renders `${VAR:-}` for the two token variables, and Gemini CLI renders `${VAR}` instead of the undocumented `${env:VAR}`): the root MCP config on 6 platforms (.mcp.json, .gemini/settings.json, .opencode/opencode.json, .cline/mcp.json, .pi/mcp.json, .vscode/mcp.json) joins the declared drift; AGENTS.md was already declared (its GitLab-token sentence changed as well, no new path); root not refreshed."
   ],
   "drift": [
     ".claude/agents/context-retriever.md",
@@ -63,6 +64,7 @@
     ".claude/skills/memory-management/SKILL.md",
     ".claude/skills/release-workflow/SKILL.md",
     ".claude/skills/skillify/SKILL.md",
+    ".cline/mcp.json",
     ".cline/skills/memory-management/SKILL.md",
     ".cline/skills/release-workflow/SKILL.md",
     ".cline/skills/skillify/SKILL.md",
@@ -72,6 +74,7 @@
     ".gemini/commands/consolidate-memory.md",
     ".gemini/commands/discover-skills.md",
     ".gemini/commands/skillify.md",
+    ".gemini/settings.json",
     ".gemini/skills/memory-management/SKILL.md",
     ".gemini/skills/release-workflow/SKILL.md",
     ".gemini/skills/skillify/SKILL.md",
@@ -87,6 +90,7 @@
     ".github/skills/memory-management/SKILL.md",
     ".github/skills/release-workflow/SKILL.md",
     ".github/skills/skillify/SKILL.md",
+    ".mcp.json",
     ".opencode/agents/backend-developer.md",
     ".opencode/agents/context-retriever.md",
     ".opencode/agents/data-mockup-agent.md",
@@ -118,6 +122,7 @@
     ".opencode/commands/consolidate-memory.md",
     ".opencode/commands/discover-skills.md",
     ".opencode/commands/skillify.md",
+    ".opencode/opencode.json",
     ".opencode/skills/memory-management/SKILL.md",
     ".opencode/skills/release-workflow/SKILL.md",
     ".opencode/skills/skillify/SKILL.md",
@@ -127,11 +132,13 @@
     ".pi/agents/poc-devops-engineer.md",
     ".pi/agents/poc-orchestrator.md",
     ".pi/agents/release-manager.md",
+    ".pi/mcp.json",
     ".pi/prompts/consolidate-memory.md",
     ".pi/prompts/discover-skills.md",
     ".pi/prompts/skillify.md",
     ".pi/skills/memory-management/SKILL.md",
     ".pi/skills/release-workflow/SKILL.md",
-    ".pi/skills/skillify/SKILL.md"
+    ".pi/skills/skillify/SKILL.md",
+    ".vscode/mcp.json"
   ]
 }

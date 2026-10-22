@@ -21,8 +21,10 @@
         "@zereight/mcp-gitlab@2.2.5"
       ],
       "env": {
-        "GITLAB_PERSONAL_ACCESS_TOKEN": "${env:GITLAB_PERSONAL_ACCESS_TOKEN}",
-        "GITLAB_API_URL": "${env:GITLAB_API_URL}"
+        "GITLAB_PERSONAL_ACCESS_TOKEN": "${GITLAB_PERSONAL_ACCESS_TOKEN}",
+        "GITLAB_PERSONAL_ACCESS_TOKEN_FILE": "${GITLAB_PERSONAL_ACCESS_TOKEN_FILE}",
+        "GITLAB_API_URL": "${GITLAB_API_URL}",
+        "GITLAB_PERMISSION_MODE": "modify"
       }
     },
     "playwright": {
@@ -70,20 +72,20 @@
         "@brave/brave-search-mcp-server@2.1.4"
       ],
       "env": {
-        "BRAVE_API_KEY": "${env:BRAVE_API_KEY}"
+        "BRAVE_API_KEY": "${BRAVE_API_KEY}"
       }
     },
     "context7": {
       "httpUrl": "https://mcp.context7.com/mcp"
     },
     "hindsight": {
-      "httpUrl": "${env:HINDSIGHT_MCP_URL}"
+      "httpUrl": "${HINDSIGHT_MCP_URL}"
     },
     "cwso": {
-      "httpUrl": "${env:CWSO_MCP_URL}",
+      "httpUrl": "${CWSO_MCP_URL}",
       "headers": {
-        "Authorization": "Bearer ${env:CWSO_BEARER_TOKEN}",
-        "Origin": "${env:CWSO_ORIGIN}"
+        "Authorization": "Bearer ${CWSO_BEARER_TOKEN}",
+        "Origin": "${CWSO_ORIGIN}"
       }
     },
     "hf-mcp-server": {
@@ -137,7 +139,7 @@
         "ghcr.io/github/github-mcp-server@sha256:ffced0d76e77428532a2ced185516992d77fd146d69eec2f244e6237d1a97796"
       ],
       "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "${env:GITHUB_PERSONAL_ACCESS_TOKEN}"
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
       }
     },
     "git": {
@@ -156,7 +158,7 @@
         "--read-only"
       ],
       "env": {
-        "SUPABASE_ACCESS_TOKEN": "${env:SUPABASE_ACCESS_TOKEN}"
+        "SUPABASE_ACCESS_TOKEN": "${SUPABASE_ACCESS_TOKEN}"
       }
     },
     "toolradar": {
@@ -166,7 +168,7 @@
         "toolradar-mcp@2.1.0"
       ],
       "env": {
-        "TOOLRADAR_API_KEY": "${env:TOOLRADAR_API_KEY}"
+        "TOOLRADAR_API_KEY": "${TOOLRADAR_API_KEY}"
       }
     }
   }

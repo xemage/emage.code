@@ -115,3 +115,10 @@ The user decided on 2026-10-16 (AskUserQuestion, option labels verbatim): ADR-01
 19. **T679** (step S3 of ADR-010; orchestrator, the user's approval needed at that step): the root `--projections-only` refresh on the tip of T678, empty drift, the baseline's "Emptied" line. Depends on T678.
 
 T665 now carries the T664 decisions (option D, file mode as documented default, `GITLAB_PERMISSION_MODE=modify`, the check script, the live checks supplied by the user) and depends on T662 as well, because both touch `emitMcp`. T677 depends on T665 as well as T672 and T675.
+
+## Addendum (2026-10-22): T680 and T681 from the T665 review
+
+The Security Engineer review of T665 (`docs/artifacts/security-review-t665-token-handling-v1.md`) left two items that need their own tasks.
+
+20. **T680** (devops-engineer): verify the Pi adapter's placeholder forms and add optional-variable support to the generator (SEC-T665-09; the pre-existing Pi `gitlab` entry defect). Depends on T665. *Acceptance:* a verified-forms table for Pi in the docs; generator and install-merge tests; all gates and the suite pass; a Security Engineer review.
+21. **T681** (solution-architect): decision on a per-role GitLab token option (SEC-T665-07). Depends on T665. *Acceptance:* `docs/artifacts/gitlab-per-role-token-design-v1.md` with options, a recommendation and the user's decision. **Decision only.**

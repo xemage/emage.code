@@ -7,8 +7,10 @@
         "@zereight/mcp-gitlab@2.2.5"
       ],
       "env": {
-        "GITLAB_PERSONAL_ACCESS_TOKEN": "${GITLAB_PERSONAL_ACCESS_TOKEN}",
-        "GITLAB_API_URL": "${GITLAB_API_URL}"
+        "GITLAB_PERSONAL_ACCESS_TOKEN": "${GITLAB_PERSONAL_ACCESS_TOKEN:-}",
+        "GITLAB_PERSONAL_ACCESS_TOKEN_FILE": "${GITLAB_PERSONAL_ACCESS_TOKEN_FILE:-}",
+        "GITLAB_API_URL": "${GITLAB_API_URL}",
+        "GITLAB_PERMISSION_MODE": "modify"
       }
     },
     "playwright": {
