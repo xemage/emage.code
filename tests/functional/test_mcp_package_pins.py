@@ -492,7 +492,12 @@ GITLAB_FORBIDDEN_NAME = re.compile(
     r"trigger|retry|cancel|play_|create_pipeline|update_pipeline|variable|webhook|deployment|environment|"
     r"gitlab_api_request|execute_graphql|upload|download|create_commit_status|create_snippet|wiki|promote|"
     r"create_note$|move_work_item|dismiss|confirm|resolve|create_merge_request_(note|thread|discussion)|"
-    r"update_merge_request|publish|rebase|revert|mark_|stop_")
+    r"update_merge_request|publish|rebase|revert|mark_|stop_|"
+    # T673 (SEC-T660-06): the remaining mutating classes of the 275-name registry. Reactions, draft notes, work items,
+    # timeline events, group milestones, issue-note and issue-description edits, release and snippet updates, schedule
+    # ownership, proxy settings and type conversion. Verb-prefixed where a read of the same noun exists.
+    r"convert_|_draft_note|emoji_reaction|timeline_event|(create|update|delete)_work_item|group_milestone|"
+    r"take_ownership|dependency_proxy|update_issue_(note|description)|update_release|update_snippet")
 GITLAB_WHOLE_SERVER_FORMS = ("mcp__gitlab", "mcp__gitlab__*", "gitlab/*", "gitlab_*")
 
 
@@ -601,7 +606,13 @@ class GitLabGrantSetTests(unittest.TestCase):
                      "approve_merge_request", "create_pipeline", "erase_pipeline_job", "download_job_artifacts",
                      "update_merge_request", "create_merge_request_note", "create_merge_request_thread",
                      "create_merge_request_discussion_note", "publish_draft_note", "bulk_publish_draft_notes",
-                     "resolve_merge_request_thread", "mark_todo_done", "stop_environment"):
+                     "resolve_merge_request_thread", "mark_todo_done", "stop_environment",
+                     # T673 (SEC-T660-06): the classes added to the pattern
+                     "convert_work_item_type", "create_draft_note", "update_draft_note", "create_issue_emoji_reaction",
+                     "create_merge_request_emoji_reaction", "create_timeline_event", "create_work_item",
+                     "update_work_item", "create_work_item_note", "create_group_milestone", "edit_group_milestone",
+                     "take_ownership_pipeline_schedule", "update_dependency_proxy_settings", "update_issue_note",
+                     "update_issue_description_patch", "update_release", "update_snippet"):
             self.assertIsNotNone(GITLAB_FORBIDDEN_NAME.search(name), name)
 
     def test_every_projection_renders_the_same_sets(self):
@@ -652,6 +663,10 @@ class GitLabGrantSetTests(unittest.TestCase):
             front = path.read_text(encoding="utf-8").split("---", 2)[1]
             with self.subTest(agent=path.stem):
                 self.assertFalse([l for l in front.splitlines() if l.startswith("tools:")])
+                # T673 (SEC-T660-06): by parsed key as well, so an indented or re-spelled `tools` cannot slip past
+                # the line test, and no MCP tool token survives anywhere in the front matter.
+                self.assertNotIn("tools", yaml.safe_load(front))
+                self.assertNotIn("mcp__", front)
 
 
 class GitLabGrantDocumentationTests(unittest.TestCase):

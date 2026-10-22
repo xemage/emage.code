@@ -5,7 +5,6 @@
 | T679 | Cursor removal step S3: root refresh (ADR-010; needs the user's approval) | orchestrator | pending | P1 | T678 | 2026-10-16 |
 | T665 | Implement the T664 token-scope decision | devops-engineer | pending | P1 | T664, T662 | 2026-10-16 |
 | T672 | Installer and generator robustness (tracked debt) | devops-engineer | pending | P2 | T671 | 2026-10-16 |
-| T673 | Test quality (tracked debt) | qa-engineer | pending | P2 | T671 | 2026-10-16 |
 | T674 | Documentation corrections (tracked debt) | technical-writer | pending | P2 | T671 | 2026-10-16 |
 | T676 | Supply-chain and verification checklist items (tracked debt) | devops-engineer | pending | P2 | T671 | 2026-10-16 |
 | T677 | Function-size refactors (tracked debt) | devops-engineer | pending | P2 | T672, T665 | 2026-10-16 |
