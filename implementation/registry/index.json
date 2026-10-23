@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-23T04:54:48+02:00",
+  "generatedAt": "2026-10-23T08:14:03+02:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -458,7 +458,7 @@
       "category": "agent",
       "name": "QA Engineer",
       "path": "agents/qa-engineer.md",
-      "checksum": "e7fe824d5a50a04c2cca40d61868b78eedd040f0d8b4adbc2d50514da7a8cd10",
+      "checksum": "e5df60310d16547399acee6879c8ce498e057269303e671f47533ce1b0f44aaa",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [

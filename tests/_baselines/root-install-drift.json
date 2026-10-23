@@ -54,7 +54,8 @@
     "Declared 2026-10-22 by T674 (documentation corrections: the release-workflow skill template title, the operator-controls, Supabase token, submodule and Pi sentences): no new paths; the 88 declared paths already covered the release-workflow skill projections (T667) and the root AGENTS.md rendering; root not refreshed (T679).",
     "Declared 2026-10-22 by T676 (SEC-T655-07 blocked-origins additions, user decision 2026-10-22 removing the shipped `github` MCP server): 5 new paths = the `.provenance.json` sidecars of .mcp.json, .gemini/settings.json, .opencode/opencode.json, .pi/mcp.json and .cline/mcp.json (the generator-owned key list lost `github`); the six MCP config projections that were already declared change content only. The new ci/, scripts/ and runtime lock files are not part of the root self-install.",
     "Declared 2026-10-22 by T680 (SEC-T665-09 and the review follow-up: the Pi MCP config renders `${VAR}`, leaves the optional `gitlab` token variables out and no longer generates `hindsight` and `cwso`; the generator gains `optional: true` and `skipFormats`): 1 further path, `.pi/mcp.json.provenance.json` (`.pi/mcp.json` was already declared by T665); scripts/ and the docs are not root-install paths; root not refreshed.",
-    "Declared 2026-10-22 by T685 (knowledge edit: the end-of-life image examples node:20-alpine and alpine:3.19 in the devops-engineer agent and the ci-cd-pipeline skill replaced by node:24-alpine and alpine:3.24): 7 new paths = the ci-cd-pipeline skill projections of claude, cline, gemini, github, opencode and pi, and the gemini devops-engineer agent; the other projections of the two files were already declared (T667). No refresh of the root install."
+    "Declared 2026-10-22 by T685 (knowledge edit: the end-of-life image examples node:20-alpine and alpine:3.19 in the devops-engineer agent and the ci-cd-pipeline skill replaced by node:24-alpine and alpine:3.24): 7 new paths = the ci-cd-pipeline skill projections of claude, cline, gemini, github, opencode and pi, and the gemini devops-engineer agent; the other projections of the two files were already declared (T667). No refresh of the root install.",
+    "Declared 2026-10-23 by T688 (SEC-T660-02, knowledge edit: `qa-engineer` drops `get_pipeline_job_output`, 20 to 19 GitLab tools, and gains the body line against raw job traces): 4 new paths = the qa-engineer projections of claude, gemini, github and pi (the opencode projection was already declared); the root refresh (T679) follows."
   ],
   "drift": [
     ".claude/agents/context-retriever.md",
@@ -62,6 +63,7 @@
     ".claude/agents/orchestrator.md",
     ".claude/agents/poc-devops-engineer.md",
     ".claude/agents/poc-orchestrator.md",
+    ".claude/agents/qa-engineer.md",
     ".claude/agents/release-manager.md",
     ".claude/commands/consolidate-memory.md",
     ".claude/commands/discover-skills.md",
@@ -79,6 +81,7 @@
     ".gemini/agents/context-retriever.md",
     ".gemini/agents/devops-engineer.md",
     ".gemini/agents/orchestrator.md",
+    ".gemini/agents/qa-engineer.md",
     ".gemini/agents/release-manager.md",
     ".gemini/commands/consolidate-memory.md",
     ".gemini/commands/discover-skills.md",
@@ -94,6 +97,7 @@
     ".github/agents/orchestrator.agent.md",
     ".github/agents/poc-devops-engineer.agent.md",
     ".github/agents/poc-orchestrator.agent.md",
+    ".github/agents/qa-engineer.agent.md",
     ".github/agents/release-manager.agent.md",
     ".github/prompts/consolidate-memory.prompt.md",
     ".github/prompts/discover-skills.prompt.md",
@@ -146,6 +150,7 @@
     ".pi/agents/orchestrator.md",
     ".pi/agents/poc-devops-engineer.md",
     ".pi/agents/poc-orchestrator.md",
+    ".pi/agents/qa-engineer.md",
     ".pi/agents/release-manager.md",
     ".pi/mcp.json",
     ".pi/mcp.json.provenance.json",

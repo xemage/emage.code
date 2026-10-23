@@ -493,12 +493,13 @@ EXPECTED_GITLAB_GRANTS = {
         "list_milestones", "get_milestone", "create_milestone", "edit_milestone", "get_milestone_issue",
         "get_milestone_merge_requests", "get_milestone_burndown_events",
         "list_merge_requests", "get_merge_request", "list_project_members", "discover_tools"},
-    # bug reports and test reports: create issues and notes, read issues, MRs, pipelines and jobs
+    # bug reports and test reports: create issues and notes, read issues, MRs, pipelines, jobs and test reports.
+    # T688 (SEC-T660-02): no job output; raw traces can hold unmasked secrets and attacker-influenced text.
     "qa-engineer": {
         "create_issue", "create_issue_note", "get_issue", "list_issues", "list_issue_discussions", "list_labels",
         "list_merge_requests", "get_merge_request", "list_merge_request_changed_files", "get_merge_request_file_diff",
         "mr_discussions", "list_merge_request_pipelines",
-        "list_pipelines", "get_pipeline", "list_pipeline_jobs", "get_pipeline_job", "get_pipeline_job_output",
+        "list_pipelines", "get_pipeline", "list_pipeline_jobs", "get_pipeline_job",
         "get_pipeline_test_report", "get_pipeline_test_report_summary", "discover_tools"},
     # T666: coordination only. Reads: issues named in a request, MR state and approvals, pipeline status for the
     # "CI green before a release tag / before merge" checks, branches for the branch policy. One write:
@@ -561,6 +562,8 @@ GITLAB_FORBIDDEN_NAME = re.compile(
     r"gitlab_api_request|execute_graphql|upload|download|create_commit_status|create_snippet|wiki|promote|"
     r"create_note$|move_work_item|dismiss|confirm|resolve|create_merge_request_(note|thread|discussion)|"
     r"update_merge_request|publish|rebase|revert|mark_|stop_|"
+    # T688 (SEC-T660-02): the last 1000 lines of a raw job trace, which can hold unmasked secrets
+    r"job_(output|trace|log)|job_artifact|"
     # T673 (SEC-T660-06): the remaining mutating classes of the 275-name registry. Reactions, draft notes, work items,
     # timeline events, group milestones, issue-note and issue-description edits, release and snippet updates, schedule
     # ownership, proxy settings and type conversion. Verb-prefixed where a read of the same noun exists.
@@ -667,6 +670,61 @@ class GitLabGrantSetTests(unittest.TestCase):
         # the PoC track needs less than the production track: its set is a strict subset
         self.assertLess(EXPECTED_GITLAB_GRANTS["poc-devops-engineer"], EXPECTED_GITLAB_GRANTS["devops-engineer"])
 
+    def test_no_agent_holds_raw_job_output_and_qa_engineer_holds_nineteen_tools(self):
+        """T688 (SEC-T660-02, decision D-1 of 2026-10-23): `get_pipeline_job_output` (the last 1000 lines of a raw
+        job trace) is held by no agent; qa-engineer, its only holder, goes from 20 to 19 GitLab tools."""
+        for path in sorted(AGENTS_DIR.glob("*.md")):
+            with self.subTest(agent=path.stem):
+                self.assertNotIn("get_pipeline_job_output", _gitlab_names(path.stem))
+        self.assertEqual(len(_gitlab_names("qa-engineer")), 19)
+        self.assertEqual(len(EXPECTED_GITLAB_GRANTS["qa-engineer"]), 19)
+        # the test sets themselves: no expected grant holds it, and the name pattern refuses it
+        for slug, names in EXPECTED_GITLAB_GRANTS.items():
+            with self.subTest(expected=slug):
+                self.assertNotIn("get_pipeline_job_output", names)
+        # the tool stays in the pinned registry snapshot: the server has it, nobody is granted it
+        snap = json.loads((REPO_ROOT / "tests" / "_baselines" / "gitlab-mcp-tool-names.json").read_text(encoding="utf-8"))
+        self.assertIn("get_pipeline_job_output", snap["tools"])
+
+    def test_the_tool_is_absent_from_every_projection_of_every_agent(self):
+        """T688: source, Claude Code, Pi, Copilot, Opencode and Gemini projections (the name in each platform's
+        form). The Opencode form `gitlab_get_pipeline_job_output` must not appear as an allow either."""
+        root = REPO_ROOT / "implementation"
+        for platform, glob in ((".claude", "*.md"), (".pi", "*.md"), (".github", "*.agent.md"),
+                               (".opencode", "*.md"), (".gemini", "*.md")):
+            files = sorted((root / platform / "agents").glob(glob))
+            self.assertGreaterEqual(len(files), 20, platform)
+            for path in files:
+                with self.subTest(platform=platform, agent=path.name):
+                    front = path.read_text(encoding="utf-8").split("---", 2)[1]
+                    self.assertNotIn("job_output", front)
+        for path in sorted(AGENTS_DIR.glob("*.md")):
+            with self.subTest(source=path.name):
+                self.assertNotIn("job_output", path.read_text(encoding="utf-8").split("---", 2)[1])
+
+    def test_qa_engineer_body_forbids_raw_job_traces_in_every_projection(self):
+        """T688: the rule is in the body of the source and of each projection, so the role cannot read it away."""
+        root = REPO_ROOT / "implementation"
+        paths = [AGENTS_DIR / "qa-engineer.md"] + [
+            root / platform / "agents" / name for platform, name in (
+                (".claude", "qa-engineer.md"), (".pi", "qa-engineer.md"), (".github", "qa-engineer.agent.md"),
+                (".opencode", "qa-engineer.md"), (".gemini", "qa-engineer.md"))]
+        for path in paths:
+            with self.subTest(path=str(path.relative_to(root))):
+                body = path.read_text(encoding="utf-8").split("---", 2)[2]
+                line = [l for l in body.splitlines() if "raw CI job traces" in l]
+                self.assertEqual(len(line), 1)
+                # SEC-T688-03: every route, not only the MCP tool
+                self.assertTrue(line[0].startswith("- DO NOT fetch raw CI job traces by any route (an MCP tool, "
+                                                   "`glab ci trace`, `curl`, a job `/raw` URL or the browser)"))
+                self.assertIn("do not ask the user to paste a whole trace", line[0])
+                self.assertIn("ask the user for one short excerpt that the user has checked for secrets", line[0])
+                self.assertIn("quote at most the lines that show the failure, never the surrounding trace", line[0])
+                self.assertIn("Never copy test-report `system_output`/`stack_trace` into an issue or note verbatim", line[0])
+                # SEC-T688-04: the bug report template no longer invites raw logs
+                self.assertIn("a user-checked log excerpt (never a raw CI trace)", body)
+                self.assertNotIn("[Screenshots, logs, error messages]", body)
+
     def test_forbidden_pattern_does_catch_the_dangerous_names(self):
         for name in ("merge_merge_request", "push_files", "delete_branch", "delete_issue", "create_branch",
                      "create_tag", "create_release", "gitlab_api_request", "execute_graphql", "trigger_pipeline",
@@ -680,7 +738,10 @@ class GitLabGrantSetTests(unittest.TestCase):
                      "create_merge_request_emoji_reaction", "create_timeline_event", "create_work_item",
                      "update_work_item", "create_work_item_note", "create_group_milestone", "edit_group_milestone",
                      "take_ownership_pipeline_schedule", "update_dependency_proxy_settings", "update_issue_note",
-                     "update_issue_description_patch", "update_release", "update_snippet"):
+                     "update_issue_description_patch", "update_release", "update_snippet",
+                     # T688 (SEC-T660-02)
+                     "get_pipeline_job_output", "get_pipeline_job_trace", "get_job_log", "get_job_artifacts",
+                     "list_job_artifacts"):
             self.assertIsNotNone(GITLAB_FORBIDDEN_NAME.search(name), name)
 
     def test_every_projection_renders_the_same_sets(self):
@@ -776,7 +837,35 @@ class GitLabGrantDocumentationTests(unittest.TestCase):
                     m = re.search(re.escape(shown) + r" \((\d+) tools", text)
                     self.assertIsNotNone(m, slug)
                     self.assertEqual(int(m.group(1)), len(EXPECTED_GITLAB_GRANTS[slug]), slug)
-                self.assertEqual(sorted(len(v) for v in EXPECTED_GITLAB_GRANTS.values()), [6, 8, 11, 16, 17, 20, 24])
+                self.assertEqual(sorted(len(v) for v in EXPECTED_GITLAB_GRANTS.values()), [6, 8, 11, 16, 17, 19, 24])
+
+    def test_no_agent_reads_raw_job_output_is_stated_and_anchored(self):
+        """T688 (SEC-T660-02): the sentence 'only qa-engineer reads raw job output' became 'no agent reads raw job
+        output (T688, ...)'; the live documents name the tool nowhere as something a role reads."""
+        for label, path in self.DOCS.items():
+            text = self._paragraph(path)
+            with self.subTest(doc=label):
+                # SEC-T688-01: the claim is about the tool lists of these seven roles, not about every route
+                self.assertEqual(text.count(
+                    "no agent of these seven holds a tool that reads raw job output (T688, SEC-T660-02): a shell can "
+                    "still run `glab ci trace`, and on Gemini CLI the tool list does not restrict MCP tools "
+                    "(T660 for qa-engineer"), 1)
+                self.assertNotIn("no agent reads raw job output", text)
+                self.assertNotIn("only qa-engineer reads raw job output", text)
+                self.assertIn("qa-engineer (19 tools: bug issues and notes, read-only merge request, pipeline, job and "
+                              "test report lookups)", text)
+        for path in list(self.DOCS.values()) + [REPO_ROOT / "implementation" / "PREREQUISITES.md"]:
+            with self.subTest(live_doc=path.name):
+                self.assertNotIn("get_pipeline_job_output", path.read_text(encoding="utf-8"))
+                self.assertNotIn("only qa-engineer reads raw job output", path.read_text(encoding="utf-8"))
+        prereq = (REPO_ROOT / "implementation" / "PREREQUISITES.md").read_text(encoding="utf-8")
+        self.assertIn("Run the 19 `qa-engineer` tools", prereq)
+        self.assertNotIn("Run the 20 `qa-engineer` tools", prereq)
+        # SEC-T688-04: the residual of the test report tool is named, and marked unverified
+        rule = [l for l in prereq.splitlines() if l.startswith("- **No role reads raw job traces (T688, SEC-T660-02).**")]
+        self.assertEqual(len(rule), 1)
+        self.assertIn("`system_output` and `stack_trace`", rule[0])
+        self.assertIn("unverified", rule[0])
 
     def test_the_paragraph_states_a_policy_not_an_enforcement(self):
         """SEC-T667-05: no over-claim; the PAT scope reconciliation is left to T665."""
