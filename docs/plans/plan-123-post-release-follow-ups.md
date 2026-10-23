@@ -152,3 +152,9 @@ The user decided on 2026-10-22 (AskUserQuestion, option labels verbatim) on the 
 The user decided on 2026-10-23 (AskUserQuestion, option labels verbatim): the release job on the job token, "Yes, create a task to switch (Recommended)"; and, because each security review of the installer hardening kept finding new LOW items (T672, T682, T684: six to eight each), the policy for LOW findings, "Track LOW items as debt, stop chasing (Recommended)": MEDIUM and higher are fixed before merge, LOW items are recorded in the tracked-debt register v2 with an owner and no new task is opened per review round.
 
 26. **T686** (devops-engineer): the release job on `CI_JOB_TOKEN` (`--token-header` allowlist in `publish-release.py`, `WIKI_TOKEN` only for `wiki-sync`). Depends on T685. *Acceptance:* the code and tests; all gates and the suite pass; a Security Engineer delta review.
+
+## Addendum (2026-10-23): T688 and the approval of T679
+
+The user decided on 2026-10-23 (AskUserQuestion, option labels verbatim): the root refresh T679, "Yes, refresh the root now (Recommended)"; and, for decision D-1 of `docs/artifacts/tracked-debt-register-v2.md` (SEC-T660-02, raw job traces readable by `qa-engineer`), "Drop the tool from qa-engineer (Recommended)".
+
+27. **T688** (devops-engineer): drop `get_pipeline_job_output` from `qa-engineer` (20 to 19 GitLab tools), with the body line, counts, tests and the declared root drift. It runs before T679 so that one refresh covers it. Depends on T687. *Acceptance:* the tool is gone from every projection, the counts are consistent, all gates and the suite pass, a Security Engineer read follows.

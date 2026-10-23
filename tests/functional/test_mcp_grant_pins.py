@@ -417,6 +417,7 @@ class DocumentedGitLabCountMutationTests(unittest.TestCase):
             text = self.text(key)
             with self.subTest(doc=key):
                 for old, new in (("scrum-master (24 tools", "scrum-master (23 tools"),
+                                 ("qa-engineer (19 tools", "qa-engineer (20 tools"),  # T688: 20 became 19
                                  ("poc-devops-engineer (6 tools", "poc-devops-engineer (7 tools"),
                                  ("registers 275 tools", "registers 274 tools"),
                                  ("Six of the seven roles hold `execute`", "Five of the seven roles hold `execute`"),
