@@ -8,7 +8,10 @@ source, the copy is loaded, and the matching condition must then FAIL):
   - a redirect of ANY status the stdlib follows (301, 302, 303, 307, 308) is refused and the token is not re-sent;
   - a release document that is a symlink to a SIBLING file inside docs/releases is refused;
   - a commit subject loses C1 controls and invisible/bidirectional formatting characters (SEC-T675-10); Markdown
-    characters are kept on purpose.
+    characters are kept on purpose;
+  - T685 (SEC-T676-12): U+034F and the Khmer inherent vowels U+17B4/U+17B5 are in the class too; emoji keep every code
+    point (ZWJ and the variation selector are stripped, which is cosmetic); the NUL framing is asserted over several
+    real commits, one with a lone CR and one with other line separators, as an exact list through the real run_git.
 """
 from __future__ import annotations
 
@@ -164,6 +167,13 @@ class TestSubjectSanitising(unittest.TestCase):
         with mock.patch.object(module, "run_git", lambda args: framed if args[0] == "log" else "1"):
             return module.get_commit_subjects("v1.2.3", None)
 
+    # Three commits, oldest first. The second subject holds a lone CR (git keeps it with --cleanup=verbatim, text mode would
+    # split it), the third holds other line separators and the two newly listed invisible characters.
+    COMMITS = (b"feat: first\n",
+               b"fix: real\rfeat: injected\n",
+               ("docs: x\u2028y\x0bz\u034f\u17b4\u17b5w\n").encode("utf-8"))
+    EXPECTED = ["docs: xyzw", "fix: realfeat: injected", "feat: first"]  # `git log` order: newest first
+
     def temp_repo(self, tmp: str) -> None:
         env = {**os.environ, **self.ENV}
 
@@ -171,13 +181,49 @@ class TestSubjectSanitising(unittest.TestCase):
             subprocess.run(["git", *args], cwd=tmp, env=env, check=True, capture_output=True, input=data)
 
         git("init", "-q")
-        git("commit", "--allow-empty", "-q", "--cleanup=verbatim", "-F", "-", data=b"fix: real\rfeat: injected\n")
+        for message in self.COMMITS:
+            git("commit", "--allow-empty", "-q", "--cleanup=verbatim", "-F", "-", data=message)
         git("tag", "v1.2.3")
 
     def test_c1_controls_and_invisible_formatting_characters_are_removed(self):
         bad = ("\x80\x85\x9f؜​‌‍‎‏‪‫‬‭‮⁠⁦⁧⁨⁩"
                "﻿­ᅟᅠㅤﾠ⠀︀️\U000e0001\U000e0041\U000e007f\U000e0100\U000e01ef")
         self.assertEqual(self.subjects(PR, f"feat: pay{bad}load", "fix(ci): a‮b"), ["feat: payload", "fix(ci): ab"])
+
+    def test_the_grapheme_joiner_and_the_khmer_inherent_vowels_are_removed(self):
+        """T685 (SEC-T676-12): invisible, default-ignorable, and able to make two subjects look alike."""
+        for char in ("\u034f", "\u17b4", "\u17b5"):
+            with self.subTest(codepoint=f"U+{ord(char):04X}"):
+                self.assertEqual(self.subjects(PR, f"feat: pay{char}load"), ["feat: payload"])
+                self.assertEqual(self.subjects(PR, f"feat: a{char}{char}b"), ["feat: ab"])
+        self.assertEqual(self.subjects(PR, "feat: \u034f\u17b4\u17b5x"), ["feat: x"])
+
+    def test_emoji_keep_every_code_point_when_zwj_and_the_variation_selector_go(self):
+        """Documented cosmetic cost: a ZWJ sequence prints as its parts and a text-style heart loses VS16, nothing else."""
+        family = "\U0001f468\u200d\U0001f469\u200d\U0001f467"  # man, ZWJ, woman, ZWJ, girl
+        heart = "\u2764\ufe0f"  # red heart, VS16
+        flag = "\U0001f3f3\ufe0f\u200d\U0001f308"  # white flag, VS16, ZWJ, rainbow
+        got = self.subjects(PR, f"feat: {family} {heart} {flag}")[0]
+        self.assertEqual(got, "feat: \U0001f468\U0001f469\U0001f467 \u2764 \U0001f3f3\U0001f308")
+        for original in (family, heart, flag):
+            parts = [c for c in original if c not in "\u200d\ufe0f"]
+            self.assertTrue(all(c in got for c in parts), "an emoji code point was removed")
+
+    def test_mutation_dropping_the_new_characters_from_the_class_is_detected(self):
+        no_joiner = mutated("\\u034f", "")
+        no_khmer = mutated("\\u17b4\\u17b5", "")
+        line = "feat: a\u034fb\u17b4c\u17b5d"
+        self.assertEqual(self.subjects(PR, line), ["feat: abcd"])
+        self.assertIn("\u034f", self.subjects(no_joiner, line)[0])  # the old class leaves the joiner in
+        self.assertIn("\u17b4", self.subjects(no_khmer, line)[0])
+        self.assertIn("\u17b5", self.subjects(no_khmer, line)[0])
+
+    def test_mutation_dropping_zwj_and_the_variation_selector_is_detected(self):
+        no_zwj = mutated("\\u200b-\\u200f", "\\u200b-\\u200c\\u200e\\u200f")
+        no_vs16 = mutated("\\ufe00-\\ufe0f", "\\ufe00-\\ufe0e")
+        self.assertEqual(self.subjects(PR, "feat: a\u200db\ufe0f"), ["feat: ab"])
+        self.assertEqual(self.subjects(no_zwj, "feat: a\u200db"), ["feat: a\u200db"])
+        self.assertEqual(self.subjects(no_vs16, "feat: b\ufe0f"), ["feat: b\ufe0f"])
 
     def test_markdown_and_ordinary_unicode_are_kept(self):
         line = "docs: use `code`, *emphasis*, [x](y) and _under_ é中文\U0001f600"
@@ -200,12 +246,23 @@ class TestSubjectSanitising(unittest.TestCase):
         self.assertEqual(self.subjects(mutant, line), [line])  # the ASCII-only class leaves all of it in
 
     @unittest.skipUnless(shutil.which("git"), "git is needed")
-    def test_the_real_run_git_does_not_split_a_subject_at_a_lone_carriage_return(self):
+    def test_the_real_run_git_over_several_commits_returns_the_exact_subjects(self):
         with tempfile.TemporaryDirectory() as tmp:
             self.temp_repo(tmp)
             with mock.patch.object(PR, "ROOT", Path(tmp)), mock.patch.dict(os.environ, self.ENV):
                 got = PR.get_commit_subjects("v1.2.3", None)
-        self.assertEqual(got, ["fix: realfeat: injected"])
+        # one entry per commit, in log order: no lone CR, VT, LS, U+034F or Khmer vowel split or glued anything
+        self.assertEqual(got, self.EXPECTED)
+
+    @unittest.skipUnless(shutil.which("git"), "git is needed")
+    def test_the_real_run_git_with_a_previous_tag_returns_only_the_new_range(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.temp_repo(tmp)
+            env = {**os.environ, **self.ENV}
+            subprocess.run(["git", "tag", "v1.2.2", "HEAD~1"], cwd=tmp, env=env, check=True, capture_output=True)
+            with mock.patch.object(PR, "ROOT", Path(tmp)), mock.patch.dict(os.environ, self.ENV):
+                got = PR.get_commit_subjects("v1.2.3", "v1.2.2")
+        self.assertEqual(got, self.EXPECTED[:1])
 
     @unittest.skipUnless(shutil.which("git"), "git is needed")
     def test_mutation_the_old_text_mode_newline_split_is_detected(self):
@@ -225,7 +282,9 @@ class TestSubjectSanitising(unittest.TestCase):
             self.temp_repo(tmp)
             with mock.patch.object(mutant, "ROOT", Path(tmp)), mock.patch.dict(os.environ, self.ENV):
                 got = mutant.get_commit_subjects("v1.2.3", None)
-        self.assertEqual(got, ["fix: real", "feat: injected"])  # the text-mode mutant splits one subject in two
+        # the text-mode mutant splits the CR subject in two; every other subject is the same
+        self.assertEqual(got, ["docs: xyzw", "fix: real", "feat: injected", "feat: first"])
+        self.assertNotEqual(got, self.EXPECTED)
 
 
 if __name__ == "__main__":

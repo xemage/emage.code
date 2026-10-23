@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-22T21:05:23+02:00",
+  "generatedAt": "2026-10-23T04:54:48+02:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -146,7 +146,7 @@
       "category": "agent",
       "name": "DevOps Engineer",
       "path": "agents/devops-engineer.md",
-      "checksum": "808255dfda611aeaa9316df4f1dd8a047a1946cc18586d3ae39fc68159d3387a",
+      "checksum": "6e2bd15b9dd5500cad6cb45d35bc740dda8ee3b5d8c1168421f4800f3bba99d8",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1472,7 +1472,7 @@
       "category": "skill",
       "name": "ci-cd-pipeline",
       "path": "skills/ci-cd-pipeline/SKILL.md",
-      "checksum": "8ca5ac5f562be95909ea6c86016f7bf8f6933253fa8eec3522974ec2956203d3",
+      "checksum": "6c0095f1a06226d66baad1bab5c9418e5225830c4b520799c150926372b44cea",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [

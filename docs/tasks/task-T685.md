@@ -2,13 +2,13 @@
 
 **ID:** T685
 **Owner:** devops-engineer
-**Status:** pending
+**Status:** done
 **Priority:** P2
 **Tier:** standard
 **Depends on:** T676
 **Affects:** —
 **Created:** 2026-10-22
-**Completed:** —
+**Completed:** 2026-10-23
 **Based on:**
 - `docs/plans/plan-123-post-release-follow-ups.md` (Addendum of 2026-10-22: T685)
 - `docs/artifacts/security-review-t676-supply-chain-v1.md` (SEC-T676-11 to -14 and the open and unverified list), `docs/artifacts/brave-audit-acceptance-v1.md`
