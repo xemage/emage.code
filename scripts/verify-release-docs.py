@@ -248,6 +248,44 @@ def check_version_consistency(errors: list[str]) -> None:
             errors.append(f"  {line}")
 
 
+def check_markers(marker: str, errors: list[str]) -> None:
+    """Every MARKER_FILES entry carries the `Latest release: <tag>` marker."""
+    for relative in MARKER_FILES:
+        text = (ROOT / relative).read_text(encoding="utf-8", errors="ignore")
+        if marker not in text:
+            errors.append(f"missing marker '{marker}' in {relative}")
+
+
+def check_section_requirements(errors: list[str]) -> None:
+    """Every SECTION_REQUIREMENTS file holds each of its required snippets."""
+    for relative, required_snippets in SECTION_REQUIREMENTS.items():
+        text = (ROOT / relative).read_text(encoding="utf-8", errors="ignore")
+        for snippet in required_snippets:
+            if snippet not in text:
+                errors.append(f"missing required content in {relative}: {snippet}")
+
+
+def check_release_brief(tag: str, release_brief: str, errors: list[str]) -> None:
+    """The release notes document has the required sections and no unfilled verdict."""
+    brief_text = (ROOT / release_brief).read_text(encoding="utf-8", errors="ignore")
+    for snippet in (
+        "## Install",
+        "## Highlights",
+        # Placement of the release gate VERDICT, declared by step 7 of
+        # implementation/knowledge/commands/prepare-release.md: the release notes
+        # document is the block's home. Presence of the section is checked here; the
+        # field-level contract (11 fields, Status enum) is encoded once, in the golden
+        # suite, and is deliberately not duplicated in this gate.
+        "## RELEASE VERDICT",
+        f"Latest release: {tag}",
+    ):
+        if snippet not in brief_text:
+            errors.append(f"missing required content in {release_brief}: {snippet}")
+
+    for problem in verdict_placeholder_problems(brief_text):
+        errors.append(f"unfilled verdict in {release_brief}: {problem}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--tag", required=True, help="Release tag, e.g. v1.0.1")
@@ -269,34 +307,9 @@ def main() -> int:
             print(f"release-docs-verify: {error}")
         return 1
 
-    for relative in MARKER_FILES:
-        text = (ROOT / relative).read_text(encoding="utf-8", errors="ignore")
-        if marker not in text:
-            errors.append(f"missing marker '{marker}' in {relative}")
-
-    for relative, required_snippets in SECTION_REQUIREMENTS.items():
-        text = (ROOT / relative).read_text(encoding="utf-8", errors="ignore")
-        for snippet in required_snippets:
-            if snippet not in text:
-                errors.append(f"missing required content in {relative}: {snippet}")
-
-    brief_text = (ROOT / release_brief).read_text(encoding="utf-8", errors="ignore")
-    for snippet in (
-        "## Install",
-        "## Highlights",
-        # Placement of the release gate VERDICT, declared by step 7 of
-        # implementation/knowledge/commands/prepare-release.md: the release notes
-        # document is the block's home. Presence of the section is checked here; the
-        # field-level contract (11 fields, Status enum) is encoded once, in the golden
-        # suite, and is deliberately not duplicated in this gate.
-        "## RELEASE VERDICT",
-        f"Latest release: {args.tag}",
-    ):
-        if snippet not in brief_text:
-            errors.append(f"missing required content in {release_brief}: {snippet}")
-
-    for problem in verdict_placeholder_problems(brief_text):
-        errors.append(f"unfilled verdict in {release_brief}: {problem}")
+    check_markers(marker, errors)
+    check_section_requirements(errors)
+    check_release_brief(args.tag, release_brief, errors)
 
     for relative in required_for_tag:
         check_links(ROOT / relative, errors)

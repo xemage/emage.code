@@ -56,96 +56,86 @@ def _replace_one(text: str, pattern: str, replacement: str) -> str:
     return updated
 
 
-def render(source_text: str, platform: str) -> str:
-    if platform == "all":
-        skills_paths = [cfg["skills"] for cfg in PLATFORM_MAP.values()]
-        skills_ref = (
-            "MUST check applicable skills in the active platform projection ("
-            + ", ".join(f"`{p}`" for p in skills_paths)
-            + ") (or invoke `/discover-skills`)."
-        )
+def _refs_for_all() -> dict[str, str]:
+    """The replacement texts that list every platform's paths (T677: split out of render)."""
+    skills_paths = [cfg["skills"] for cfg in PLATFORM_MAP.values()]
+    skills_ref = (
+        "MUST check applicable skills in the active platform projection ("
+        + ", ".join(f"`{p}`" for p in skills_paths)
+        + ") (or invoke `/discover-skills`)."
+    )
 
-        standards_paths = [cfg["standards"] for cfg in PLATFORM_MAP.values()]
-        code_ref = (
-            "- See platform instruction projections: "
-            + ", ".join(f"`{p}`" for p in standards_paths)
-            + "."
-        )
+    standards_paths = [cfg["standards"] for cfg in PLATFORM_MAP.values()]
+    code_ref = (
+        "- See platform instruction projections: "
+        + ", ".join(f"`{p}`" for p in standards_paths)
+        + "."
+    )
 
-        security_paths = [cfg["security"] for cfg in PLATFORM_MAP.values()]
-        sec_ref = (
-            "- See platform security instruction projections: "
-            + ", ".join(f"`{p}`" for p in security_paths)
-            + ", and `implementation/SECURITY.md`."
-        )
+    security_paths = [cfg["security"] for cfg in PLATFORM_MAP.values()]
+    sec_ref = (
+        "- See platform security instruction projections: "
+        + ", ".join(f"`{p}`" for p in security_paths)
+        + ", and `implementation/SECURITY.md`."
+    )
 
-        roots: list[str] = []
-        for cfg in PLATFORM_MAP.values():
-            for field in ("skills", "standards", "security"):
-                root = cfg[field].split("/")[0] + "/"
-                if root not in roots:
-                    roots.append(root)
-        readme_ref = (
-            "- Use the installed platform folders ("
-            + ", ".join(f"`{r}`" for r in roots)
-            + ") as runtime references in this target project."
-        )
+    roots: list[str] = []
+    for cfg in PLATFORM_MAP.values():
+        for field in ("skills", "standards", "security"):
+            root = cfg[field].split("/")[0] + "/"
+            if root not in roots:
+                roots.append(root)
+    readme_ref = (
+        "- Use the installed platform folders ("
+        + ", ".join(f"`{r}`" for r in roots)
+        + ") as runtime references in this target project."
+    )
 
-        mcp_paths = [cfg["mcp"] for cfg in PLATFORM_MAP.values()]
-        mcp_ref = (
-            "Declared in platform MCP configs ("
-            + ", ".join(f"`{p}`" for p in mcp_paths)
-            + "). Each server is tagged:"
-        )
-    else:
-        if platform not in PLATFORM_MAP:
-            raise ValueError(f"unsupported platform for AGENTS rewrite: {platform}")
-        cfg = PLATFORM_MAP[platform]
-        skills_ref = f"MUST check applicable skills in `{cfg['skills']}` (or invoke `/discover-skills`)."
-        code_ref = f"- See `{cfg['standards']}` for coding standards projected for this platform."
-        sec_ref = f"- See `{cfg['security']}` and `implementation/SECURITY.md`."
-        readme_ref = (
+    mcp_paths = [cfg["mcp"] for cfg in PLATFORM_MAP.values()]
+    mcp_ref = (
+        "Declared in platform MCP configs ("
+        + ", ".join(f"`{p}`" for p in mcp_paths)
+        + "). Each server is tagged:"
+    )
+    return {"skills": skills_ref, "code": code_ref, "sec": sec_ref, "readme": readme_ref, "mcp": mcp_ref}
+
+
+def _refs_for_platform(platform: str) -> dict[str, str]:
+    """The replacement texts that name one platform's paths."""
+    if platform not in PLATFORM_MAP:
+        raise ValueError(f"unsupported platform for AGENTS rewrite: {platform}")
+    cfg = PLATFORM_MAP[platform]
+    return {
+        "skills": f"MUST check applicable skills in `{cfg['skills']}` (or invoke `/discover-skills`).",
+        "code": f"- See `{cfg['standards']}` for coding standards projected for this platform.",
+        "sec": f"- See `{cfg['security']}` and `implementation/SECURITY.md`.",
+        "readme": (
             f"- See installed platform projection roots (`{cfg['skills'].split('/')[0]}/`) "
             "for runtime authoring references in this target project."
-        )
-        mcp_ref = f"Declared in [`{cfg['mcp']}`]({cfg['mcp']}). Each server is tagged:"
+        ),
+        "mcp": f"Declared in [`{cfg['mcp']}`]({cfg['mcp']}). Each server is tagged:",
+    }
+
+
+def render(source_text: str, platform: str) -> str:
+    refs = _refs_for_all() if platform == "all" else _refs_for_platform(platform)
 
     kb_ref = (
         "- Source knowledge lives in the emage.code repository under "
         "`implementation/knowledge/`; this target uses installed platform projections."
     )
 
+    replacements = (
+        (r"MUST check applicable skills in `[^`]+` \(or invoke `/discover-skills`\)\.", refs["skills"]),
+        (r"- See `[^`]*coding-standards[^`]*`[^\n]*", refs["code"]),
+        (r"- See `[^`]*security-guidelines[^`]*`[^\n]*", refs["sec"]),
+        (r"- The single source of truth for agents, skills, commands, and instructions is `[^`]+`\.", kb_ref),
+        (r"- See \[`[^`]*README\.md`\]\([^)]+\) for authoring rules\.", refs["readme"]),
+        (r"Declared in \[`[^`]+`\]\([^)]+\)\. Each server is tagged:", refs["mcp"]),
+    )
     text = source_text
-    text = _replace_one(
-        text,
-        r"MUST check applicable skills in `[^`]+` \(or invoke `/discover-skills`\)\.",
-        skills_ref,
-    )
-    text = _replace_one(
-        text,
-        r"- See `[^`]*coding-standards[^`]*`[^\n]*",
-        code_ref,
-    )
-    text = _replace_one(
-        text,
-        r"- See `[^`]*security-guidelines[^`]*`[^\n]*",
-        sec_ref,
-    )
-    text = _replace_one(
-        text,
-        r"- The single source of truth for agents, skills, commands, and instructions is `[^`]+`\.",
-        kb_ref,
-    )
-    text = _replace_one(
-        text,
-        r"- See \[`[^`]*README\.md`\]\([^)]+\) for authoring rules\.",
-        readme_ref,
-    )
-    text = _replace_one(
-        text,
-        r"Declared in \[`[^`]+`\]\([^)]+\)\. Each server is tagged:",
-        mcp_ref,
-    )
+    for pattern, replacement in replacements:
+        text = _replace_one(text, pattern, replacement)
     return text
 
 
