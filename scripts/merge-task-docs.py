@@ -26,7 +26,6 @@ from __future__ import annotations
 import argparse
 import os
 import re
-import shutil
 import stat
 import sys
 import tempfile
@@ -156,27 +155,33 @@ def _refuse_symlink(path: Path) -> None:
         raise SymlinkRefused(f"refusing to write through a symlink: {path}")
 
 
-def _atomic_write_text(path: Path, text: str) -> None:
+def _atomic_write_bytes(path: Path, data: bytes, mode: int | None = None) -> None:
     """Write through a random-named temp file next to `path` and os.replace (SEC-006).
 
-    mkstemp creates it 0600; it gets the mode of the file it replaces (0666 minus the umask for a new
-    file) BEFORE any content is written, so no content is ever more readable than the old file was
-    (SEC-T672-01). An interrupt leaves the old file or the new one; the temp file is removed on failure."""
-    try:
-        mode = stat.S_IMODE(path.stat().st_mode)
-    except FileNotFoundError:
-        umask = os.umask(0)
-        os.umask(umask)
-        mode = 0o666 & ~umask
+    mkstemp creates it 0600; it gets `mode` -- by default the mode of the file it replaces (0666 minus
+    the umask for a new file) -- BEFORE any content is written, so no content is ever more readable than
+    the old file was (SEC-T672-01). An interrupt leaves the old file or the new one; the temp file is
+    removed on failure. os.replace swaps the name, so a symlink at `path` is replaced, never followed."""
+    if mode is None:
+        try:
+            mode = stat.S_IMODE(path.stat().st_mode)
+        except FileNotFoundError:
+            umask = os.umask(0)
+            os.umask(umask)
+            mode = 0o666 & ~umask
     fd, tmp_name = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
     try:
-        with os.fdopen(fd, "w", encoding="utf-8", newline="") as handle:
+        with os.fdopen(fd, "wb") as handle:
             os.fchmod(handle.fileno(), mode)
-            handle.write(text)
+            handle.write(data)
         os.replace(tmp_name, path)
     except BaseException:
         Path(tmp_name).unlink(missing_ok=True)
         raise
+
+
+def _atomic_write_text(path: Path, text: str) -> None:
+    _atomic_write_bytes(path, text.encode("utf-8"))
 
 
 def _backup_path(ledger: Path) -> Path:
@@ -189,21 +194,51 @@ def _backup_path(ledger: Path) -> Path:
     return candidate
 
 
-def _preflight(templates: list[Path], dest_dir: Path, dry_run: bool) -> None:
-    """Fail before the first write when a ledger cannot be read as UTF-8 or the directory cannot be
-    written (T682 N-8): otherwise the first ledger could be replaced and the second one fail."""
-    for template_path in templates:
-        if template_path.name in LEDGER_FILES:
-            template_path.read_text(encoding="utf-8")
-            dest_path = dest_dir / template_path.name
-            if dest_path.is_file():
-                dest_path.read_text(encoding="utf-8")
+def _preflight(dest_dir: Path, dry_run: bool) -> None:
+    """Fail before the first write when the directory cannot be written (T682 N-8). The files are
+    decoded by _plan_task_docs, which runs first (T684)."""
     if not dry_run and dest_dir.exists() and not os.access(dest_dir, os.W_OK | os.X_OK):
         raise PermissionError(f"{dest_dir} is not writable")
 
 
-def sync_task_docs(template_dir: Path, dest_dir: Path, dry_run: bool = False) -> list[str]:
+# One write of the apply phase: (destination, bytes, mode or None for "the mode of the file it replaces").
+WriteOp = tuple[Path, bytes, "int | None"]
+
+
+def _plan_task_docs(templates: list[Path], dest_dir: Path) -> tuple[list[str], list[WriteOp]]:
+    """Everything that can fail short of a write, computed before the first write (T684, SEC-T682-06):
+    every file is read and decoded (first, so an undecodable ledger fails before any merge prints a
+    warning), every ledger merged, every backup name chosen. Returns the action lines and the writes,
+    a backup always ahead of the ledger it protects."""
     actions: list[str] = []
+    ops: list[WriteOp] = []
+    texts: dict[Path, tuple[bytes, str, str]] = {}
+    for template_path in templates:
+        dest_path = dest_dir / template_path.name
+        if template_path.name in LEDGER_FILES and dest_path.is_file():
+            existing_bytes = dest_path.read_bytes()
+            texts[template_path] = (existing_bytes, existing_bytes.decode("utf-8"), template_path.read_text(encoding="utf-8"))
+    for template_path in templates:
+        dest_path = dest_dir / template_path.name
+        if template_path in texts:
+            existing_bytes, existing_text, template_text = texts[template_path]
+            dropped: list[str] = []
+            merged = merge_ledger(template_text, existing_text, dropped)
+            actions.append(f"merge ledger {dest_path}")
+            if dropped:
+                # Rows are only ever dropped with a copy of the ledger as it was (SEC-006).
+                backup = _backup_path(dest_path)
+                actions.append(f"back up {dest_path} to {backup} ({len(dropped)} row(s) dropped)")
+                ops.append((backup, existing_bytes, stat.S_IMODE(dest_path.stat().st_mode) & ~0o022))
+            ops.append((dest_path, merged.encode("utf-8"), None))
+        elif not dest_path.exists():
+            actions.append(f"seed {dest_path}")
+            # The template's mode without group/world write: nothing seeded is group/world-writable (SEC-005).
+            ops.append((dest_path, template_path.read_bytes(), stat.S_IMODE(template_path.stat().st_mode) & ~0o022))
+    return actions, ops
+
+
+def sync_task_docs(template_dir: Path, dest_dir: Path, dry_run: bool = False) -> list[str]:
     # Every destination is checked before the first write, so a symlinked
     # ledger or support file cannot leave earlier files already written.
     _refuse_symlink(dest_dir)
@@ -212,31 +247,13 @@ def sync_task_docs(template_dir: Path, dest_dir: Path, dry_run: bool = False) ->
         _refuse_symlink(dest_dir / template_path.name)
         if template_path.name in LEDGER_FILES:
             _refuse_symlink(dest_dir / (template_path.name + ".bak"))
-    _preflight(templates, dest_dir, dry_run)
+    _preflight(dest_dir, dry_run)
+    actions, ops = _plan_task_docs(templates, dest_dir)
     dest_dir.mkdir(parents=True, exist_ok=True)
-
-    for template_path in templates:
-        dest_path = dest_dir / template_path.name
-        if template_path.name in LEDGER_FILES and dest_path.is_file():
-            existing_text = dest_path.read_text(encoding="utf-8")
-            dropped: list[str] = []
-            merged = merge_ledger(template_path.read_text(encoding="utf-8"), existing_text, dropped)
-            actions.append(f"merge ledger {dest_path}")
-            if dropped:
-                # Rows are only ever dropped with a copy of the ledger as it was (SEC-006).
-                backup = _backup_path(dest_path)
-                actions.append(f"back up {dest_path} to {backup} ({len(dropped)} row(s) dropped)")
-                if not dry_run:
-                    shutil.copy2(dest_path, backup)
-            if not dry_run:
-                _atomic_write_text(dest_path, merged)
-        elif not dest_path.exists():
-            actions.append(f"seed {dest_path}")
-            if not dry_run:
-                shutil.copy2(template_path, dest_path)
-                # copy2 carries the template's mode bits; nothing seeded is group/world-writable (SEC-005).
-                dest_path.chmod(dest_path.stat().st_mode & ~0o022)
-
+    if not dry_run:
+        # Each write is atomic: a file is as it was or fully replaced (backups, ledgers and seeds alike).
+        for path, data, mode in ops:
+            _atomic_write_bytes(path, data, mode)
     return actions
 
 
@@ -258,11 +275,11 @@ def main() -> int:
         return 1
     except (OSError, ValueError, RecursionError) as exc:
         # An unreadable or non-UTF-8 file, a failed write, a file that is too deeply nested: one line,
-        # never a traceback (T682 N-8). Each file is written atomically, so a file is either as it was
-        # or fully replaced; the checks above run before the first write.
+        # never a traceback (T682 N-8). Everything that can fail short of a write runs before the first
+        # write (T684), and each write is atomic, so every file is as it was or fully replaced -- but a
+        # write failing late can leave an earlier ledger replaced and a later one unchanged.
         reason = " ".join(f"{type(exc).__name__}: {exc}".split())
-        print(f"merge-task-docs: failed ({reason}); every file is either unchanged or fully replaced, "
-              f"never partly written.", file=sys.stderr)
+        print(f"merge-task-docs: failed ({reason}); each ledger is either unchanged or fully replaced.", file=sys.stderr)
         return 1
     for action in actions:
         prefix = "DRY-RUN: " if args.dry_run else ""

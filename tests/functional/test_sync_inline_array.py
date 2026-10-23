@@ -13,6 +13,7 @@ written.
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import tempfile
@@ -304,6 +305,113 @@ class ManifestsAreValidatedBeforeTheFirstWriteTests(unittest.TestCase):
         for label, patch in cases.items():
             with self.subTest(label):
                 self._assert_refused({"aaa": lambda m: None, "zzz": patch}, " overlaps ")
+
+    # -- T684 SEC-T682-04 ----------------------------------------------------------------------------
+    def test_the_mcp_files_must_not_overlap_a_generator_input(self):
+        """A manifest whose mcp.outputFile (or its .provenance.json) lands in an input would overwrite it."""
+        cases = {
+            "the servers file itself": "../knowledge/mcp/servers.yaml",
+            "a new file in knowledge": "../knowledge/new.json",
+            "a manifest": "../platforms/aaa.json",
+            "inside scripts": "../scripts/x.json",
+            "inside runtime": "../runtime/a/b.json",
+            "inside _extras": "../_extras/x.json",
+            "climbing back in": "../.zzz/../knowledge/mcp/servers.yaml",
+        }
+        for label, output_file in cases.items():
+            with self.subTest(label):
+                tmp = self._assert_refused(
+                    {"aaa": lambda m: None, "zzz": lambda m, o=output_file: m["mcp"].update(outputFile=o)},
+                    "overlaps the generator input",
+                    prepare=lambda tmp: [(tmp / d).mkdir(exist_ok=True) for d in ("scripts", "runtime", "_extras")])
+                self.assertEqual((tmp / "knowledge" / "mcp" / "servers.yaml").read_text(encoding="utf-8"), _entry("[a]"))
+        with self.subTest("only the provenance sidecar lands in an input"):
+            self._assert_refused(
+                {"aaa": lambda m: None, "zzz": lambda m: m["mcp"].update(outputFile="../out.json")},
+                "overlaps the generator input", extra_args=("--extras=out.json.provenance.json",))
+
+    def test_a_different_case_or_a_symlink_does_not_hide_an_overlap(self):
+        """The comparison uses the physical, case-folded form of both sides."""
+        def link(name, to):
+            def prepare(tmp):
+                os.symlink(tmp / to, tmp / name, target_is_directory=True)
+            return prepare
+        def link_file(tmp):
+            os.symlink(tmp / "knowledge" / "mcp" / "servers.yaml", tmp / "lnk.json")
+        def dangling(tmp):
+            os.symlink(tmp / "knowledge" / "not-yet", tmp / ".zzz")
+        def two_hops(tmp):
+            os.symlink(tmp / "knowledge", tmp / "hop1")
+            os.symlink(tmp / "hop1", tmp / "hop2")
+        def input_is_a_link(tmp):
+            shutil.move(str(tmp / "knowledge"), str(tmp / "real-k"))
+            os.symlink(tmp / "real-k", tmp / "knowledge", target_is_directory=True)
+        cases = {
+            "outputDir is the real directory behind a symlinked input": ({"outputDir": "real-k"}, input_is_a_link),
+            "outputDir upper-case": ({"outputDir": "Knowledge"}, None),
+            "outputDir inside an upper-case input": ({"outputDir": "KNOWLEDGE/sub"}, None),
+            "mcp file in an upper-case input": ({"mcp": "../Knowledge/x.json"}, None),
+            "outputDir is a symlink to knowledge": ({"outputDir": "link"}, link("link", "knowledge")),
+            "outputDir inside a symlink to knowledge": ({"outputDir": "link/sub"}, link("link", "knowledge")),
+            "outputDir is a dangling symlink into knowledge": ({"outputDir": ".zzz"}, dangling),
+            "outputDir behind two symlinks": ({"outputDir": "hop2"}, two_hops),
+            "mcp file below a symlink to knowledge": ({"mcp": "../link/mcp/servers.yaml"}, link("link", "knowledge")),
+            "mcp file is a symlink to the servers file": ({"mcp": "../lnk.json"}, link_file),
+            "rootRelative instructions dir is a symlink to knowledge":
+                ({"rules": "link"}, link("link", "knowledge")),
+        }
+        for label, (change, prepare) in cases.items():
+            def patch(m, change=change):
+                if "outputDir" in change:
+                    m["outputDir"] = change["outputDir"]
+                if "mcp" in change:
+                    m["mcp"]["outputFile"] = change["mcp"]
+                if "rules" in change:
+                    m["fileMap"]["instructions"]["dir"] = change["rules"]
+            with self.subTest(label):
+                tmp = self._assert_refused({"aaa": lambda m: None, "zzz": patch}, "overlaps the generator input",
+                                           prepare=prepare)
+                self.assertEqual((tmp / "knowledge" / "mcp" / "servers.yaml").read_text(encoding="utf-8"), _entry("[a]"))
+                self.assertEqual(os.listdir(tmp / "knowledge" / "mcp"), ["servers.yaml"])
+
+    def test_an_output_tree_reached_through_a_symlink_to_another_output_tree_is_refused(self):
+        def prepare(tmp):
+            os.symlink(tmp / ".aaa", tmp / "alias", target_is_directory=True)    # dangling until .aaa exists
+        self._assert_refused({"aaa": lambda m: None, "zzz": lambda m: m.update(outputDir="alias/sub")}, " overlaps ",
+                             prepare=prepare)
+
+    def test_a_root_spelled_through_a_symlink_is_not_refused(self):
+        """No false positive: inputs and targets are both compared in their physical form."""
+        def spelled(tmp):
+            lnk = Path(str(tmp) + "-lnk")
+            os.symlink(tmp, lnk, target_is_directory=True)
+            self.addCleanup(lnk.unlink, missing_ok=True)
+            return str(lnk)
+        proc, tmp = _run_sync_with_manifests({"aaa": lambda m: None, "zzz": lambda m: None}, root_arg=spelled)
+        self.addCleanup(shutil.rmtree, tmp, ignore_errors=True)
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertTrue((tmp / ".zzz" / "mcp.json").is_file())
+
+    def test_a_unicode_normalisation_difference_does_not_hide_an_overlap(self):
+        """NFC "caf\u00e9" (the input) and NFD "cafe\u0301/sub" (the output) are one place on some file systems."""
+        self._assert_refused({"aaa": lambda m: None, "zzz": lambda m: m.update(outputDir="cafe\u0301/sub")},
+                             "overlaps the generator input", extra_args=("--extras=caf\u00e9",))
+
+    @unittest.skipIf(os.geteuid() == 0, "root can read a directory without permission bits")
+    def test_a_target_below_an_unreadable_directory_is_refused_not_skipped(self):
+        def prepare(tmp):
+            (tmp / "closed").mkdir()
+            (tmp / "closed").chmod(0)
+            self.addCleanup(shutil.rmtree, tmp, ignore_errors=True)    # runs after the chmod below
+            self.addCleanup((tmp / "closed").chmod, 0o755)
+        self._assert_refused({"aaa": lambda m: None, "zzz": lambda m: m.update(outputDir="closed/sub")},
+                             "cannot resolve", prepare=prepare)
+
+    def test_an_unresolvable_target_is_refused_not_skipped(self):
+        def prepare(tmp):
+            for name in ("a", "b"):
+                os.symlink(tmp / ("b" if name == "a" else "a"), tmp / name)
+        self._assert_refused({"aaa": lambda m: None, "zzz": lambda m: m.update(outputDir="a/x")}, "Refusing", prepare=prepare)
 
     def test_an_extras_source_must_stay_under_the_extras_directory(self):
         """N-5: `extras.from` was asserted against ROOT, so "../knowledge/..." was read as an extra."""
