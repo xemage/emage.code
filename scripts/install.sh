@@ -1078,6 +1078,28 @@ trap 'exit 130' INT
 trap 'exit 131' QUIT
 trap 'exit 143' TERM
 
+# The last step of replace_tree_by_swap (T677: split out of it): the finished tree $1 takes the place of
+# $2; an existing $2 is first moved aside to $3 and discarded after the swap (SWAP_OLD/SWAP_DEST/SWAP_DONE
+# tell swap_cleanup which state an interrupt found).
+swap_build_into_place() {
+  local build="$1"
+  local dest="$2"
+  local old="$3"
+  if [[ -e "$dest" || -L "$dest" ]]; then
+    if [[ "$DRY_RUN" -eq 0 && ( -e "$old" || -L "$old" ) ]]; then
+      echo "error: $(printable "$old") appeared while the new tree was built; remove it and re-run. $(printable "$dest") was not touched." >&2
+      exit 1
+    fi
+    if [[ "$DRY_RUN" -eq 0 ]]; then SWAP_OLD="$old"; SWAP_DEST="$dest"; fi
+    run mv ${MV_T[@]+"${MV_T[@]}"} -- "$dest" "$old"
+    run mv ${MV_T[@]+"${MV_T[@]}"} -- "$build" "$dest"
+    SWAP_DONE=1
+    discard_old_tree "$old"
+  else
+    run mv ${MV_T[@]+"${MV_T[@]}"} -- "$build" "$dest"
+  fi
+}
+
 # The no-rsync half of sync_tree_into (SEC-004): make $2 hold exactly $1's tree (minus its
 # excluded paths) plus $2's own kept paths, without ever leaving $2 half-deleted. The new tree is
 # built in a sibling directory of $2 -- same filesystem, so the swap is two renames -- and only a
@@ -1120,19 +1142,7 @@ replace_tree_by_swap() {
     if [[ -n "$mode" ]]; then run chmod "$mode" "$build"; fi
     run chmod go-w "$build"
   fi
-  if [[ -e "$dest" || -L "$dest" ]]; then
-    if [[ "$DRY_RUN" -eq 0 && ( -e "$old" || -L "$old" ) ]]; then
-      echo "error: $(printable "$old") appeared while the new tree was built; remove it and re-run. $(printable "$dest") was not touched." >&2
-      exit 1
-    fi
-    if [[ "$DRY_RUN" -eq 0 ]]; then SWAP_OLD="$old"; SWAP_DEST="$dest"; fi
-    run mv ${MV_T[@]+"${MV_T[@]}"} -- "$dest" "$old"
-    run mv ${MV_T[@]+"${MV_T[@]}"} -- "$build" "$dest"
-    SWAP_DONE=1
-    discard_old_tree "$old"
-  else
-    run mv ${MV_T[@]+"${MV_T[@]}"} -- "$build" "$dest"
-  fi
+  swap_build_into_place "$build" "$dest" "$old"
   SWAP_BUILD=""
   SWAP_OLD=""
   SWAP_DEST=""

@@ -742,7 +742,7 @@ def _harness(tmp: Path, scenario: str) -> subprocess.CompletedProcess[str]:
         f"TARGET={shlex.quote(str(tmp / 't'))}\nDRY_RUN=0\nORIG_UMASK=\"$(umask)\"\n"
         'SWAP_BUILD=""\nSWAP_OLD=""\nSWAP_DEST=""\nSWAP_DONE=0\nTEMP_FILES=()\nMADE_TEMP=""\nDIR_ENTRIES=()\n'
         + _bash_functions("printable", "physical_path", "refuse_unsafe_path", "run", "make_temp_file",
-                          "list_dir_entries", "copy_contents_excluding", "replace_tree_by_swap",
+                          "list_dir_entries", "copy_contents_excluding", "swap_build_into_place", "replace_tree_by_swap",
                           "copy_kept_path", "discard_old_tree", "detect_mv_flags", "swap_cleanup")
         + "\nMV_T=(); detect_mv_flags\ntrap swap_cleanup EXIT\n"
         'mkdir -p "$TARGET/tree" "$TARGET/src"\necho old > "$TARGET/tree/f"\necho new > "$TARGET/src/f"\n'

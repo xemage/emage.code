@@ -321,6 +321,31 @@ function validateTemplatedSpecs(servers) {
 // `headers` (T491) reuses the identical block-parsing mechanism.
 const BLOCK_KEYS = new Set(['env', 'headers']);
 
+// The value of one `    key: rest` line of a server entry (T677: split out of parseServersYaml).
+function parseServerValue(rest, serverName, key) {
+  const arrayText = stripInlineArrayComment(rest);
+  if (arrayText.startsWith('[') && arrayText.endsWith(']')) {
+    try {
+      return splitInlineArray(arrayText.slice(1, -1)).map((s) => stripQuotes(s.trim()));
+    } catch (err) {
+      // T672: name the server and the key, so a refused array is found without searching the file.
+      throw new Error(`${err.message} (server ${serverName}, key ${key})`);
+    }
+  }
+  if (rest.startsWith('{') && rest.endsWith('}')) return parseInlineObject(rest);
+  return parseScalar(stripQuotes(rest));
+}
+
+// Stores one `    key: rest` line on the server; returns the key when it opens a block (`env`, `headers`), else null.
+function parseServerKeyLine(server, serverName, key, rest) {
+  if (BLOCK_KEYS.has(key) && rest === '') {
+    server[key] = {};
+    return key;
+  }
+  server[key] = parseServerValue(rest, serverName, key);
+  return null;
+}
+
 function parseServersYaml(raw) {
   const lines = raw.split(/\r?\n/);
   const servers = {};
@@ -328,63 +353,28 @@ function parseServersYaml(raw) {
   while (i < lines.length && !lines[i].trim().startsWith('servers:')) i++;
   i++;
   let current = null;
-  let openBlock = null;
   let openBlockKey = null;
 
-  while (i < lines.length) {
+  for (; i < lines.length; i++) {
     const ln = lines[i];
-    if (!ln.trim() || ln.trim().startsWith('#')) {
-      i++;
-      continue;
-    }
+    if (!ln.trim() || ln.trim().startsWith('#')) continue;
     const m2 = ln.match(/^  ([A-Za-z0-9._-]+):\s*$/);
     if (m2) {
       current = m2[1];
       servers[current] = {};
-      openBlock = null;
       openBlockKey = null;
-      i++;
       continue;
     }
-
-    if (current && openBlock !== null) {
+    if (current && openBlockKey !== null) {
       const me = ln.match(/^      ([A-Za-z0-9_-]+):\s*(.*)$/);
       if (me) {
         servers[current][openBlockKey][me[1]] = parseInlineObject(me[2]);
-        i++;
         continue;
       }
-      openBlock = null;
       openBlockKey = null;
     }
-
-    if (current) {
-      const me2 = ln.match(/^    ([A-Za-z0-9_-]+):\s*(.*)$/);
-      if (me2) {
-        const [, key, rest] = me2;
-        if (BLOCK_KEYS.has(key) && rest === '') {
-          openBlock = {};
-          openBlockKey = key;
-          servers[current][key] = openBlock;
-        } else if (stripInlineArrayComment(rest).startsWith('[') && stripInlineArrayComment(rest).endsWith(']')) {
-          try {
-            const arrayText = stripInlineArrayComment(rest);
-            servers[current][key] = splitInlineArray(arrayText.slice(1, -1)).map((s) => stripQuotes(s.trim()));
-          } catch (err) {
-            // T672: name the server and the key, so a refused array is found without searching the file.
-            throw new Error(`${err.message} (server ${current}, key ${key})`);
-          }
-        } else if (rest.startsWith('{') && rest.endsWith('}')) {
-          servers[current][key] = parseInlineObject(rest);
-        } else {
-          servers[current][key] = parseScalar(stripQuotes(rest));
-        }
-        i++;
-        continue;
-      }
-    }
-
-    i++;
+    const me2 = current ? ln.match(/^    ([A-Za-z0-9_-]+):\s*(.*)$/) : null;
+    if (me2) openBlockKey = parseServerKeyLine(servers[current], current, me2[1], me2[2]);
   }
 
   return servers;
@@ -678,11 +668,8 @@ function applyGenericFrontmatter(data, cfg) {
   return out;
 }
 
-function emitMcp(servers, tags, format) {
-  const filtered = Object.fromEntries(
-    Object.entries(servers).filter(([, s]) => emittedFor(s, tags, format))
-  );
-
+// Per-format MCP config emitters (T677: emitMcp was one 134-line function; behaviour is unchanged).
+// Each takes the servers already filtered for the platform's tags and the format name.
   // T665 placeholder-form check (the T664 token-handling design, finding F-3):
   //   vscode  `${env:VAR}` is documented through the MCP page's pointer to the variables reference
   //           and resolved by the shared configuration resolver; behaviour for an UNSET variable is unverified.
@@ -696,121 +683,135 @@ function emitMcp(servers, tags, format) {
   //           implementation/PREREQUISITES.md and docs/wiki/mcp-servers.md; the verified forms table is there.
   //   cline   `${env:VAR}` is expanded by the VS Code extension (McpHub.ts expandEnvironmentVariables);
   //           an unset variable stays literal; the CLI/SDK loader was not shown to expand it (unverified).
-  if (format === 'vscode' || format === 'pi') {
-    // pi: `${VAR}` and optional variables are left out (see above); vscode: `${env:VAR}`, unchanged.
-    const template = format === 'pi' ? '${VAR}' : '${env:VAR}';
-    const mapEnvValues = (m) => (format === 'pi' ? mapEnvOmitOptional(m, template) : mapEnv(m, template));
-    const out = { servers: format === 'vscode' ? {} : undefined, mcpServers: format === 'pi' ? {} : undefined };
-    const target = format === 'vscode' ? out.servers : out.mcpServers;
-    for (const [name, s] of Object.entries(filtered)) {
-      if (s.transport === 'remote') {
-        const url = mapTemplatedValue(s.url, template);
-        target[name] = format === 'vscode' ? { type: 'http', url } : { url };
-        if (s.headers) target[name].headers = mapEnv(s.headers, template);
-      } else {
-        target[name] = { command: s.command, args: s.args || [] };
-        const env = s.env ? mapEnvValues(s.env) : undefined;
-        if (env && (format === 'vscode' || Object.keys(env).length > 0)) target[name].env = env;
-      }
+function emitMcpVscodePi(filtered, format) {
+  // pi: `${VAR}` and optional variables are left out (see above); vscode: `${env:VAR}`, unchanged.
+  const template = format === 'pi' ? '${VAR}' : '${env:VAR}';
+  const mapEnvValues = (m) => (format === 'pi' ? mapEnvOmitOptional(m, template) : mapEnv(m, template));
+  const out = { servers: format === 'vscode' ? {} : undefined, mcpServers: format === 'pi' ? {} : undefined };
+  const target = format === 'vscode' ? out.servers : out.mcpServers;
+  for (const [name, s] of Object.entries(filtered)) {
+    if (s.transport === 'remote') {
+      const url = mapTemplatedValue(s.url, template);
+      target[name] = format === 'vscode' ? { type: 'http', url } : { url };
+      if (s.headers) target[name].headers = mapEnv(s.headers, template);
+    } else {
+      target[name] = { command: s.command, args: s.args || [] };
+      const env = s.env ? mapEnvValues(s.env) : undefined;
+      if (env && (format === 'vscode' || Object.keys(env).length > 0)) target[name].env = env;
     }
-    return JSON.stringify(format === 'vscode' ? { servers: target } : { mcpServers: target }, null, 2) + '\n';
   }
+  return JSON.stringify(format === 'vscode' ? { servers: target } : { mcpServers: target }, null, 2) + '\n';
+}
 
-  if (format === 'gemini') {
-    // T665 (SEC-T660-01, F-3): Gemini CLI documents `$VAR` and `${VAR}` (and `${VAR:-DEFAULT}`) and its
-    // resolver (packages/cli/src/utils/envVarResolver.ts, read at main on 2026-10-16) looks the text
-    // between the braces up as the variable NAME, so `${env:VAR}` is looked up as `env:VAR`, found
-    // nowhere, left as text by the settings loader and then expanded to an empty string by the MCP
-    // client (dotenv-expand). `${VAR}` is the documented form. Source read, not run.
-    const mcpServers = {};
-    for (const [name, s] of Object.entries(filtered)) {
-      if (s.transport === 'remote') {
-        mcpServers[name] = { httpUrl: mapTemplatedValue(s.url, '${VAR}') };
-        if (s.headers) mcpServers[name].headers = mapEnv(s.headers, '${VAR}');
-      } else {
-        mcpServers[name] = { command: s.command, args: s.args || [] };
-        if (s.env) mcpServers[name].env = mapEnv(s.env, '${VAR}');
-      }
-      // T658: documented per-server tool blocklist; applies to the main agent and to subagents
-      // (docs/artifacts/mcp-server-denials-v1.md). Gemini matches the name the server reports.
-      if (s.denyTools) mcpServers[name].excludeTools = [...s.denyTools];
+// The Gemini CLI hook block written next to its MCP servers.
+const GEMINI_POST_EDIT_HOOKS = {
+  AfterTool: [
+    {
+      matcher: 'replace|write_file',
+      hooks: [
+        {
+          name: 'post-edit-reminder',
+          type: 'command',
+          command:
+            "echo '{\"systemMessage\": \"Reminder: Ensure code follows coding standards (naming, error handling, security). Run lint before committing.\"}'",
+        },
+      ],
+    },
+  ],
+};
+
+function emitMcpGemini(filtered) {
+  // T665 (SEC-T660-01, F-3): Gemini CLI documents `$VAR` and `${VAR}` (and `${VAR:-DEFAULT}`) and its
+  // resolver (packages/cli/src/utils/envVarResolver.ts, read at main on 2026-10-16) looks the text
+  // between the braces up as the variable NAME, so `${env:VAR}` is looked up as `env:VAR`, found
+  // nowhere, left as text by the settings loader and then expanded to an empty string by the MCP
+  // client (dotenv-expand). `${VAR}` is the documented form. Source read, not run.
+  const mcpServers = {};
+  for (const [name, s] of Object.entries(filtered)) {
+    if (s.transport === 'remote') {
+      mcpServers[name] = { httpUrl: mapTemplatedValue(s.url, '${VAR}') };
+      if (s.headers) mcpServers[name].headers = mapEnv(s.headers, '${VAR}');
+    } else {
+      mcpServers[name] = { command: s.command, args: s.args || [] };
+      if (s.env) mcpServers[name].env = mapEnv(s.env, '${VAR}');
     }
-    const cfg = {
-      hooks: {
-        AfterTool: [
-          {
-            matcher: 'replace|write_file',
-            hooks: [
-              {
-                name: 'post-edit-reminder',
-                type: 'command',
-                command:
-                  "echo '{\"systemMessage\": \"Reminder: Ensure code follows coding standards (naming, error handling, security). Run lint before committing.\"}'",
-              },
-            ],
-          },
-        ],
-      },
-      mcpServers,
-    };
-    return JSON.stringify(cfg, null, 2) + '\n';
+    // T658: documented per-server tool blocklist; applies to the main agent and to subagents
+    // (docs/artifacts/mcp-server-denials-v1.md). Gemini matches the name the server reports.
+    if (s.denyTools) mcpServers[name].excludeTools = [...s.denyTools];
   }
+  return JSON.stringify({ hooks: GEMINI_POST_EDIT_HOOKS, mcpServers }, null, 2) + '\n';
+}
 
-  if (format === 'opencode') {
-    const mcp = {};
-    const permission = {};
-    for (const [name, s] of Object.entries(filtered)) {
-      // T658: Opencode checks a permission whose action is the registered tool name
-      // `<server>_<tool>`; the same cleaning as the `underscore` tool-name style. Last match wins,
-      // and the agent-level rules come after this global one (docs/artifacts/mcp-server-denials-v1.md).
-      for (const tool of s.denyTools || []) {
-        permission[MCP_TOOL_NAME_STYLES.underscore({ server: name, tool })] = 'deny';
-      }
-      if (s.transport === 'remote') {
-        mcp[name] = { type: 'remote', url: mapTemplatedValue(s.url, '{env:VAR}') };
-        if (s.headers) mcp[name].headers = mapEnv(s.headers, '{env:VAR}');
-      } else {
-        mcp[name] = { type: 'local', command: [s.command, ...(s.args || [])] };
-        if (s.env) mcp[name].environment = mapEnv(s.env, '{env:VAR}');
-      }
+function emitMcpOpencode(filtered) {
+  const mcp = {};
+  const permission = {};
+  for (const [name, s] of Object.entries(filtered)) {
+    // T658: Opencode checks a permission whose action is the registered tool name
+    // `<server>_<tool>`; the same cleaning as the `underscore` tool-name style. Last match wins,
+    // and the agent-level rules come after this global one (docs/artifacts/mcp-server-denials-v1.md).
+    for (const tool of s.denyTools || []) {
+      permission[MCP_TOOL_NAME_STYLES.underscore({ server: name, tool })] = 'deny';
     }
-    return { __mcpObject: mcp, __permission: permission };
-  }
-
-  if (format === 'claude-code') {
-    // Claude Code expands `${VAR}` / `${VAR:-default}` from the live process environment in
-    // `command`, `args`, `env`, `url` and `headers` — it does NOT recognise VS Code's
-    // `${env:VAR}` form and passes such text through literally (T517; see
-    // docs/artifacts/mcp-header-url-templating-design-v2.md §3 and
-    // https://code.claude.com/docs/en/mcp#environment-variable-expansion-in-mcp-json).
-    const mcpServers = {};
-    for (const [name, s] of Object.entries(filtered)) {
-      if (s.transport === 'remote') {
-        mcpServers[name] = { type: 'http', url: mapTemplatedValue(s.url, '${VAR}', true) };
-        if (s.headers) mcpServers[name].headers = mapEnv(s.headers, '${VAR}', true);
-      } else {
-        mcpServers[name] = { command: s.command, args: s.args || [] };
-        if (s.env) mcpServers[name].env = mapEnv(s.env, '${VAR}', true);
-      }
+    if (s.transport === 'remote') {
+      mcp[name] = { type: 'remote', url: mapTemplatedValue(s.url, '{env:VAR}') };
+      if (s.headers) mcp[name].headers = mapEnv(s.headers, '{env:VAR}');
+    } else {
+      mcp[name] = { type: 'local', command: [s.command, ...(s.args || [])] };
+      if (s.env) mcp[name].environment = mapEnv(s.env, '{env:VAR}');
     }
-    return JSON.stringify({ mcpServers }, null, 2) + '\n';
   }
+  return { __mcpObject: mcp, __permission: permission };
+}
 
-  if (format === 'cline') {
-    const mcpServers = {};
-    for (const [name, s] of Object.entries(filtered)) {
-      if (s.transport === 'remote') {
-        mcpServers[name] = { type: 'streamableHttp', url: mapTemplatedValue(s.url, '${env:VAR}') };
-        if (s.headers) mcpServers[name].headers = mapEnv(s.headers, '${env:VAR}');
-      } else {
-        mcpServers[name] = { command: s.command, args: s.args || [] };
-        if (s.env) mcpServers[name].env = mapEnv(s.env, '${env:VAR}');
-      }
+function emitMcpClaudeCode(filtered) {
+  // Claude Code expands `${VAR}` / `${VAR:-default}` from the live process environment in
+  // `command`, `args`, `env`, `url` and `headers` — it does NOT recognise VS Code's
+  // `${env:VAR}` form and passes such text through literally (T517; see
+  // docs/artifacts/mcp-header-url-templating-design-v2.md §3 and
+  // https://code.claude.com/docs/en/mcp#environment-variable-expansion-in-mcp-json).
+  const mcpServers = {};
+  for (const [name, s] of Object.entries(filtered)) {
+    if (s.transport === 'remote') {
+      mcpServers[name] = { type: 'http', url: mapTemplatedValue(s.url, '${VAR}', true) };
+      if (s.headers) mcpServers[name].headers = mapEnv(s.headers, '${VAR}', true);
+    } else {
+      mcpServers[name] = { command: s.command, args: s.args || [] };
+      if (s.env) mcpServers[name].env = mapEnv(s.env, '${VAR}', true);
     }
-    return JSON.stringify({ mcpServers }, null, 2) + '\n';
   }
+  return JSON.stringify({ mcpServers }, null, 2) + '\n';
+}
 
-  throw new Error(`Unknown MCP format: ${format}`);
+function emitMcpCline(filtered) {
+  const mcpServers = {};
+  for (const [name, s] of Object.entries(filtered)) {
+    if (s.transport === 'remote') {
+      mcpServers[name] = { type: 'streamableHttp', url: mapTemplatedValue(s.url, '${env:VAR}') };
+      if (s.headers) mcpServers[name].headers = mapEnv(s.headers, '${env:VAR}');
+    } else {
+      mcpServers[name] = { command: s.command, args: s.args || [] };
+      if (s.env) mcpServers[name].env = mapEnv(s.env, '${env:VAR}');
+    }
+  }
+  return JSON.stringify({ mcpServers }, null, 2) + '\n';
+}
+
+const MCP_EMITTERS = new Map([
+  ['vscode', emitMcpVscodePi],
+  ['pi', emitMcpVscodePi],
+  ['gemini', emitMcpGemini],
+  ['opencode', emitMcpOpencode],
+  ['claude-code', emitMcpClaudeCode],
+  ['cline', emitMcpCline],
+]);
+
+function emitMcp(servers, tags, format) {
+  const filtered = Object.fromEntries(
+    Object.entries(servers).filter(([, s]) => emittedFor(s, tags, format))
+  );
+  const emitter = MCP_EMITTERS.get(format);
+  if (!emitter) throw new Error(`Unknown MCP format: ${format}`);
+  return emitter(filtered, format);
 }
 
 // Renders one templated-value spec (see design mcp-header-url-templating-design-v1.md §3/§4)
@@ -1033,51 +1034,46 @@ async function assertNoOverlappingTargets(manifests) {
   });
 }
 
-async function syncPlatform(manifest, servers) {
-  const outRoot = path.resolve(ROOT, manifest.outputDir);
-  const filesWritten = [];
-
-  if (!CHECK_ONLY) {
-    await fs.rm(outRoot, { recursive: true, force: true });
+// T677: syncPlatform was one 131-line function; each step below is one section of it, in the same order.
+// Every step appends the paths it emitted to `filesWritten`.
+async function syncAgents(manifest, outRoot, servers, filesWritten) {
+  const agentMap = manifest.fileMap.agents;
+  const agentCfg = manifest.frontmatter.agents;
+  for (const file of await walk(path.join(KNOWLEDGE, 'agents'))) {
+    if (!file.endsWith('.md')) continue;
+    const baseName = path.basename(file, '.md');
+    const raw = await fs.readFile(file, 'utf8');
+    const { data, body } = parseFrontmatter(raw);
+    const newData = applyAgentFrontmatter(data, baseName, agentCfg);
+    const denies = agentCfg.mcpAgentDenies === true && manifest.mcp
+      ? agentMcpDenials(sourceToolList(data), newData.tools, servers, manifest.mcp.tags)
+      : { first: [], last: [] };
+    const fm = emitFrontmatter(newData, {
+      toolsFormat: agentCfg.tools === 'object' ? 'object' : agentCfg.tools === 'string' ? 'string' : 'array',
+      denyFirst: denies.first,
+      denyTools: denies.last,
+    });
+    const outPath = path.join(outRoot, agentMap.dir, baseName + agentMap.ext);
+    await emitFile(outPath, fm + body);
+    filesWritten.push(outPath);
   }
+}
 
-  if (manifest.fileMap.agents) {
-    const agentMap = manifest.fileMap.agents;
-    const agentCfg = manifest.frontmatter.agents;
-    for (const file of await walk(path.join(KNOWLEDGE, 'agents'))) {
-      if (!file.endsWith('.md')) continue;
-      const baseName = path.basename(file, '.md');
-      const raw = await fs.readFile(file, 'utf8');
-      const { data, body } = parseFrontmatter(raw);
-      const newData = applyAgentFrontmatter(data, baseName, agentCfg);
-      const denies = agentCfg.mcpAgentDenies === true && manifest.mcp
-        ? agentMcpDenials(sourceToolList(data), newData.tools, servers, manifest.mcp.tags)
-        : { first: [], last: [] };
-      const fm = emitFrontmatter(newData, {
-        toolsFormat: agentCfg.tools === 'object' ? 'object' : agentCfg.tools === 'string' ? 'string' : 'array',
-        denyFirst: denies.first,
-        denyTools: denies.last,
-      });
-      const outPath = path.join(outRoot, agentMap.dir, baseName + agentMap.ext);
-      await emitFile(outPath, fm + body);
-      filesWritten.push(outPath);
-    }
+async function syncCommands(manifest, outRoot, filesWritten) {
+  const cmdMap = manifest.fileMap.commands;
+  for (const file of await walk(path.join(KNOWLEDGE, 'commands'))) {
+    if (!file.endsWith('.md')) continue;
+    const baseName = path.basename(file, '.md');
+    const raw = await fs.readFile(file, 'utf8');
+    const { data, body } = parseFrontmatter(raw);
+    const newData = applyGenericFrontmatter(data, manifest.frontmatter.commands);
+    const outPath = path.join(outRoot, cmdMap.dir, baseName + cmdMap.ext);
+    await emitFile(outPath, emitFrontmatter(newData) + body);
+    filesWritten.push(outPath);
   }
+}
 
-  if (manifest.fileMap.commands) {
-    const cmdMap = manifest.fileMap.commands;
-    for (const file of await walk(path.join(KNOWLEDGE, 'commands'))) {
-      if (!file.endsWith('.md')) continue;
-      const baseName = path.basename(file, '.md');
-      const raw = await fs.readFile(file, 'utf8');
-      const { data, body } = parseFrontmatter(raw);
-      const newData = applyGenericFrontmatter(data, manifest.frontmatter.commands);
-      const outPath = path.join(outRoot, cmdMap.dir, baseName + cmdMap.ext);
-      await emitFile(outPath, emitFrontmatter(newData) + body);
-      filesWritten.push(outPath);
-    }
-  }
-
+async function syncInstructions(manifest, outRoot, filesWritten) {
   const insMap = manifest.fileMap.instructions;
   const insRoot = instructionsRoot(manifest, outRoot);
   if (insMap.rootRelative) {
@@ -1095,7 +1091,9 @@ async function syncPlatform(manifest, servers) {
     await emitFile(outPath, emitFrontmatter(newData) + body);
     filesWritten.push(outPath);
   }
+}
 
+async function syncSkills(manifest, outRoot, filesWritten) {
   const skillMap = manifest.fileMap.skills;
   const skillsRoot = path.join(KNOWLEDGE, 'skills');
   for (const file of await walk(skillsRoot)) {
@@ -1112,35 +1110,37 @@ async function syncPlatform(manifest, servers) {
     }
     filesWritten.push(outPath);
   }
+}
 
-  if (manifest.mcp) {
-    const mcpResult = emitMcp(servers, manifest.mcp.tags, manifest.mcp.format);
-    const outPath = path.resolve(outRoot, manifest.mcp.outputFile);
-    if (manifest.mcp.format === 'opencode') {
-      const cfg = { ...(manifest.mcp.extraFields || {}), mcp: mcpResult.__mcpObject };
-      if (Object.keys(mcpResult.__permission).length > 0) cfg.permission = mcpResult.__permission;
-      await emitFile(outPath, JSON.stringify(cfg, null, 2) + '\n');
-    } else {
-      await emitFile(outPath, mcpResult);
-    }
-    filesWritten.push(outPath);
-
-    // ADR-002: emit a <mcpfile>.provenance.json sidecar recording the
-    // generator-owned server-key set, so merge-mcp-json.py can diff old vs.
-    // new provenance and safely prune a retired dest-only key without ever
-    // touching a hand-added one. Recomputed inline (rather than changed via
-    // emitMcp()'s return contract) to keep the 5 already-passing call sites'
-    // return shape untouched.
-    const filteredKeys = Object.entries(servers)
-      .filter(([, s]) => emittedFor(s, manifest.mcp.tags, manifest.mcp.format))
-      .map(([name]) => name)
-      .sort();
-    const sidecarPath = outPath + '.provenance.json';
-    const sidecarContent = JSON.stringify({ schemaVersion: 1, generatorOwnedKeys: filteredKeys }, null, 2) + '\n';
-    await emitFile(sidecarPath, sidecarContent);
-    filesWritten.push(sidecarPath);
+async function syncMcp(manifest, outRoot, servers, filesWritten) {
+  const mcpResult = emitMcp(servers, manifest.mcp.tags, manifest.mcp.format);
+  const outPath = path.resolve(outRoot, manifest.mcp.outputFile);
+  if (manifest.mcp.format === 'opencode') {
+    const cfg = { ...(manifest.mcp.extraFields || {}), mcp: mcpResult.__mcpObject };
+    if (Object.keys(mcpResult.__permission).length > 0) cfg.permission = mcpResult.__permission;
+    await emitFile(outPath, JSON.stringify(cfg, null, 2) + '\n');
+  } else {
+    await emitFile(outPath, mcpResult);
   }
+  filesWritten.push(outPath);
 
+  // ADR-002: emit a <mcpfile>.provenance.json sidecar recording the
+  // generator-owned server-key set, so merge-mcp-json.py can diff old vs.
+  // new provenance and safely prune a retired dest-only key without ever
+  // touching a hand-added one. Recomputed inline (rather than changed via
+  // emitMcp()'s return contract) to keep the 5 already-passing call sites'
+  // return shape untouched.
+  const filteredKeys = Object.entries(servers)
+    .filter(([, s]) => emittedFor(s, manifest.mcp.tags, manifest.mcp.format))
+    .map(([name]) => name)
+    .sort();
+  const sidecarPath = outPath + '.provenance.json';
+  const sidecarContent = JSON.stringify({ schemaVersion: 1, generatorOwnedKeys: filteredKeys }, null, 2) + '\n';
+  await emitFile(sidecarPath, sidecarContent);
+  filesWritten.push(sidecarPath);
+}
+
+async function syncExtras(manifest, outRoot, filesWritten) {
   for (const extra of manifest.extras || []) {
     const src = path.resolve(EXTRAS, extra.from.replace(/^_extras\//, ''));
     const dst = path.join(outRoot, extra.to);
@@ -1148,7 +1148,9 @@ async function syncPlatform(manifest, servers) {
     await emitFile(dst, content);
     filesWritten.push(dst);
   }
+}
 
+async function writeGeneratedManifest(manifest, outRoot, filesWritten) {
   const manifestPath = path.join(outRoot, '.generated-manifest.json');
   const manifestContent = JSON.stringify(
     {
@@ -1161,11 +1163,28 @@ async function syncPlatform(manifest, servers) {
     2
   ) + '\n';
   await emitFile(manifestPath, manifestContent);
+}
+
+async function syncPlatform(manifest, servers) {
+  const outRoot = path.resolve(ROOT, manifest.outputDir);
+  const filesWritten = [];
+
+  if (!CHECK_ONLY) {
+    await fs.rm(outRoot, { recursive: true, force: true });
+  }
+
+  if (manifest.fileMap.agents) await syncAgents(manifest, outRoot, servers, filesWritten);
+  if (manifest.fileMap.commands) await syncCommands(manifest, outRoot, filesWritten);
+  await syncInstructions(manifest, outRoot, filesWritten);
+  await syncSkills(manifest, outRoot, filesWritten);
+  if (manifest.mcp) await syncMcp(manifest, outRoot, servers, filesWritten);
+  await syncExtras(manifest, outRoot, filesWritten);
+  await writeGeneratedManifest(manifest, outRoot, filesWritten);
 
   return filesWritten.length;
 }
 
-async function main() {
+async function listPlatformFiles() {
   try {
     await fs.access(KNOWLEDGE);
     await fs.access(PLATFORMS);
@@ -1183,11 +1202,11 @@ async function main() {
   if (stray.length > 0) {
     throw new Error(`platforms/ holds ${stray.join(', ')}: only ${MANIFEST_SCHEMA_FILE} may start with an underscore`);
   }
+  return platformFiles;
+}
 
-  const servers = await readServersYaml();
-  let total = 0;
-
-  // T663 (SEC-T658-07 b): every manifest is read and validated before the first file is written.
+// T663 (SEC-T658-07 b): every manifest is read and validated before the first file is written.
+async function loadManifests(platformFiles) {
   const manifests = [];
   for (const file of platformFiles) {
     const manifest = JSON.parse(await fs.readFile(path.join(PLATFORMS, file), 'utf8'));
@@ -1196,6 +1215,31 @@ async function main() {
     manifests.push(manifest);
   }
   await assertNoOverlappingTargets(manifests);
+  return manifests;
+}
+
+function reportResult(total) {
+  if (!CHECK_ONLY) {
+    console.log(`\nDone - ${total} files written.`);
+    return;
+  }
+  if (driftReports.length) {
+    console.error(`\nDRIFT DETECTED in ${driftReports.length} file(s):`);
+    for (const f of driftReports.sort()) {
+      console.error(`  - ${path.relative(ROOT, f)}`);
+    }
+    console.error('\nRun `node scripts/sync.mjs` to regenerate.');
+    process.exit(1);
+  }
+  console.log(`\nOK - no drift across ${total} files.`);
+}
+
+async function main() {
+  const platformFiles = await listPlatformFiles();
+  const servers = await readServersYaml();
+  let total = 0;
+
+  const manifests = await loadManifests(platformFiles);
 
   for (const manifest of manifests) {
     if (ONLY_PLATFORM && manifest.platform !== ONLY_PLATFORM) continue;
@@ -1204,19 +1248,7 @@ async function main() {
     total += count;
   }
 
-  if (CHECK_ONLY) {
-    if (driftReports.length) {
-      console.error(`\nDRIFT DETECTED in ${driftReports.length} file(s):`);
-      for (const f of driftReports.sort()) {
-        console.error(`  - ${path.relative(ROOT, f)}`);
-      }
-      console.error('\nRun `node scripts/sync.mjs` to regenerate.');
-      process.exit(1);
-    }
-    console.log(`\nOK - no drift across ${total} files.`);
-  } else {
-    console.log(`\nDone - ${total} files written.`);
-  }
+  reportResult(total);
 }
 
 main().catch((err) => {

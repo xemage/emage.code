@@ -202,12 +202,13 @@ def _note_kept_keys(path: tuple[str, ...], dest: dict, source: dict, notes: list
             notes.append((kind, f"{'.'.join(path)}.{key}"))
 
 
-def merge_json(dest: Any, source: Any, _top: bool = True, notes: list[tuple[str, str]] | None = None,
+def merge_json(dest: Any, source: Any, notes: list[tuple[str, str]] | None = None,
                _path: tuple[str, ...] = ()) -> Any:
     """Recursively merge `source` into `dest`, per the module-level algorithm.
 
     `notes` (optional) collects (kind, name) pairs, kind "replaced" or "kept", for user content
-    the merge replaced or kept in a generator-owned place; it never holds a value, only names."""
+    the merge replaced or kept in a generator-owned place; it never holds a value, only names.
+    `_path` is the recursion's key path; the top level is the empty path (T677: it replaces `_top`)."""
     if not isinstance(dest, dict) or not isinstance(source, dict):
         return source
 
@@ -215,12 +216,11 @@ def merge_json(dest: Any, source: Any, _top: bool = True, notes: list[tuple[str,
     for key, source_value in source.items():
         if key == "excludeTools" and key in merged:
             merged[key] = merge_exclude_tools(merged[key], source_value)
-        elif key == "permission" and _top and key in merged:
+        elif key == "permission" and not _path and key in merged:
             merged[key] = merge_permission(merged[key], source_value, notes)
         elif key in merged and isinstance(merged[key], dict) and isinstance(source_value, dict):
             _note_kept_keys(_path + (key,), merged[key], source_value, notes)
-            merged[key] = merge_json(merged[key], source_value, _top=False, notes=notes,
-                                     _path=_path + (key,))
+            merged[key] = merge_json(merged[key], source_value, notes=notes, _path=_path + (key,))
         else:
             if notes is not None and _path[:1] == ("hooks",) and key in merged and merged[key] != source_value:
                 notes.append(("replaced", ".".join(_path + (key,))))
@@ -404,7 +404,7 @@ def main() -> int:
         return 1
 
 
-def _main() -> int:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", type=Path, default=None, help="Generated JSON file (wins on conflict)")
     parser.add_argument("--dest", type=Path, required=True, help="Existing target JSON file to merge into")
@@ -420,13 +420,11 @@ def _main() -> int:
     parser.add_argument("--drop-env-form", action="store_true",
                          help="Pi only (T680): drop env/headers entries of generator-owned servers that the "
                               "generated config lacks and whose value holds the `${env:` form")
-    args = parser.parse_args()
+    return parser
 
-    if args.validate_only:
-        return validate_only(args)
-    if args.source is None:
-        parser.error("--source is required unless --validate-only is given")
 
+def refuse_bad_paths(args: argparse.Namespace) -> int | None:
+    """The pre-merge path checks; returns 1 after printing the refusal, None when every check passes."""
     # SEC-001 (T636): never write through a symlink, whatever it points at. The
     # sidecar is written too, so it is held to the same rule.
     for written in (args.dest, args.old_sidecar):
@@ -442,6 +440,69 @@ def _main() -> int:
     if bool(args.old_sidecar) != bool(args.new_sidecar):
         print("merge-mcp-json: --old-sidecar and --new-sidecar must be given together", file=sys.stderr)
         return 1
+    return None
+
+
+def prune_retired_servers(merged: Any, source_data: Any, retired: set[str], notes: list[tuple[str, str]]) -> None:
+    """Prune the servers a previous release generated and this one retired; note each, and each that differs."""
+    before = server_names(merged)
+    old_entries = {name: entry for wrapper in SERVER_WRAPPERS if isinstance(merged.get(wrapper), dict)
+                   for name, entry in merged[wrapper].items() if name in retired}
+    prune_names_recursive(merged, source_data, retired)
+    pruned = sorted(before - server_names(merged))
+    notes.extend(("pruned", name) for name in pruned)
+    notes.extend(("pruned_differs", name) for name in pruned if differs_from_generated(old_entries.get(name)))
+
+
+def force_prune(merged: Any, source_data: Any, force_prune_keys: str) -> int | None:
+    """--force-prune-keys: prune the named dest-only keys; returns 1 when one is not dest-only, else None."""
+    force_prune_names = {n.strip() for n in force_prune_keys.split(",") if n.strip()}
+
+    found: set[str] = set()
+    check_prune_names_recursive(merged, source_data, force_prune_names, found)
+    missing = force_prune_names - found
+    if missing:
+        offenders = format_names(missing)
+        print(f"merge-mcp-json: --force-prune-keys named '{offenders}', which is not a dest-only key "
+              f"(missing, or still present in source) — refusing to proceed", file=sys.stderr)
+        return 1
+
+    prune_names_recursive(merged, source_data, force_prune_names)
+    return None
+
+
+def report_and_write(args: argparse.Namespace, rendered: str, notes: list[tuple[str, str]],
+                     bootstrap_kept: list[str]) -> None:
+    """Print the merge line and the notes, then (unless --dry-run) write the destination, then the sidecar."""
+    prefix = "DRY-RUN: " if args.dry_run else ""
+    print(f"{prefix}merge {args.source} -> {args.dest}")
+    print_notes(args.dest, notes)
+    if bootstrap_kept:
+        print(f"merge-mcp-json: note: {args.dest}: there is no provenance sidecar at {args.old_sidecar}, so no "
+              f"retired generator entry could be pruned; kept your server(s) {format_names(bootstrap_kept)}, which "
+              f"the generated config does not contain. If one is a retired generator entry, remove it by hand "
+              f"or run scripts/merge-mcp-json.py with --force-prune-keys <name>.", file=sys.stderr)
+    if not args.dry_run:
+        # Sidecar text is read before the first write; destination first, sidecar second (SEC-006).
+        sidecar_text = (args.new_sidecar.read_text(encoding="utf-8")
+                        if args.new_sidecar and args.old_sidecar else None)
+        atomic_write_text(args.dest, rendered)
+        if sidecar_text is not None:
+            atomic_write_text(args.old_sidecar, sidecar_text)
+
+
+def _main() -> int:
+    parser = build_parser()
+    args = parser.parse_args()
+
+    if args.validate_only:
+        return validate_only(args)
+    if args.source is None:
+        parser.error("--source is required unless --validate-only is given")
+
+    refused = refuse_bad_paths(args)
+    if refused is not None:
+        return refused
 
     notes: list[tuple[str, str]] = []
     try:
@@ -460,50 +521,18 @@ def _main() -> int:
         return 1
 
     if use_sidecars:
-        retired = old_keys - new_keys
-        before = server_names(merged)
-        old_entries = {name: entry for wrapper in SERVER_WRAPPERS if isinstance(merged.get(wrapper), dict)
-                       for name, entry in merged[wrapper].items() if name in retired}
-        prune_names_recursive(merged, source_data, retired)
-        pruned = sorted(before - server_names(merged))
-        notes.extend(("pruned", name) for name in pruned)
-        notes.extend(("pruned_differs", name) for name in pruned if differs_from_generated(old_entries.get(name)))
+        prune_retired_servers(merged, source_data, old_keys - new_keys, notes)
 
     if args.force_prune_keys:
-        force_prune_names = {n.strip() for n in args.force_prune_keys.split(",") if n.strip()}
-
-        found: set[str] = set()
-        check_prune_names_recursive(merged, source_data, force_prune_names, found)
-        missing = force_prune_names - found
-        if missing:
-            offenders = format_names(missing)
-            print(f"merge-mcp-json: --force-prune-keys named '{offenders}', which is not a dest-only key "
-                  f"(missing, or still present in source) — refusing to proceed", file=sys.stderr)
-            return 1
-
-        prune_names_recursive(merged, source_data, force_prune_names)
+        refused = force_prune(merged, source_data, args.force_prune_keys)
+        if refused is not None:
+            return refused
 
     rendered = render_json(merged)
 
     bootstrap_kept = (dest_only_servers(dest_data, source_data)
                       if args.old_sidecar and not args.old_sidecar.is_file() else [])
-
-    prefix = "DRY-RUN: " if args.dry_run else ""
-    print(f"{prefix}merge {args.source} -> {args.dest}")
-    print_notes(args.dest, notes)
-    if bootstrap_kept:
-        print(f"merge-mcp-json: note: {args.dest}: there is no provenance sidecar at {args.old_sidecar}, so no "
-              f"retired generator entry could be pruned; kept your server(s) {format_names(bootstrap_kept)}, which "
-              f"the generated config does not contain. If one is a retired generator entry, remove it by hand "
-              f"or run scripts/merge-mcp-json.py with --force-prune-keys <name>.", file=sys.stderr)
-    if not args.dry_run:
-        # Sidecar text is read before the first write; destination first, sidecar second (SEC-006).
-        sidecar_text = (args.new_sidecar.read_text(encoding="utf-8")
-                        if args.new_sidecar and args.old_sidecar else None)
-        atomic_write_text(args.dest, rendered)
-        if sidecar_text is not None:
-            atomic_write_text(args.old_sidecar, sidecar_text)
-
+    report_and_write(args, rendered, notes, bootstrap_kept)
     return 0
 
 
