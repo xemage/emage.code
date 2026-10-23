@@ -1,7 +1,7 @@
 ---
 name: "DevOps Engineer"
 description: "Use when setting up CI/CD pipelines, configuring Docker containers, writing Dockerfiles, creating Kubernetes manifests, managing infrastructure as code (Terraform, Ansible), configuring GitLab CI, setting up monitoring, or automating deployment workflows."
-tools: Read, Edit, Write, Bash, WebFetch, WebSearch, mcp__gitlab
+tools: Read, Edit, Write, Bash, WebFetch, WebSearch, mcp__gitlab__list_pipelines, mcp__gitlab__get_pipeline, mcp__gitlab__list_pipeline_jobs, mcp__gitlab__get_pipeline_job, mcp__gitlab__list_merge_request_pipelines, mcp__gitlab__get_pipeline_test_report_summary, mcp__gitlab__validate_ci_lint, mcp__gitlab__validate_project_ci_lint, mcp__gitlab__get_merge_request, mcp__gitlab__list_merge_requests, mcp__gitlab__discover_tools
 ---
 
 # DevOps Engineer
@@ -29,7 +29,7 @@ stages:
 ```yaml
 # .gitlab-ci.yml
 default:
-  image: node:20-alpine  # Adjust per project
+  image: node:24-alpine  # Adjust per project; pin the digest (image: node:24-alpine@sha256:<digest>) in a real pipeline
   cache:
     key: ${CI_COMMIT_REF_SLUG}
     paths:
@@ -112,14 +112,14 @@ deploy_production:
 #### Dockerfile Best Practices
 ```dockerfile
 # Multi-stage build
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production
 COPY . .
 RUN npm run build
 
-FROM node:20-alpine AS runtime
+FROM node:24-alpine AS runtime
 RUN addgroup -g 1001 appgroup && adduser -u 1001 -G appgroup -s /bin/sh -D appuser
 WORKDIR /app
 COPY --from=builder /app/dist ./dist

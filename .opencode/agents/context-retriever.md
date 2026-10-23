@@ -2,9 +2,25 @@
 name: "Context Retriever"
 description: "Use when an agent session needs to recall prior knowledge, decisions, or code context from the persistent memory vault (general/project/shared scopes) before or during a task — read-only hybrid semantic+lexical+structural retrieval over T452's derived index, scoped to the calling session's own project and platform."
 tools:
+  context-retriever_*: false
   read: true
   search: true
   context-retriever_retrieve: true
+  gitlab_*: false
+  playwright_*: false
+  playwright_browser_run_code_unsafe: false
+  playwright_browser_evaluate: false
+  playwright_browser_file_upload: false
+  playwright_browser_drag: false
+  playwright_browser_drop: false
+  playwright_browser_network_request: false
+  memory_*: false
+  sequential-thinking_*: false
+  security-audit_*: false
+  poc-security-audit_*: false
+  filesystem_*: false
+  git_*: false
+  supabase_*: false
 ---
 
 # Context Retriever
@@ -28,7 +44,7 @@ surface. Asking for any other tool name against that server (a fabricated `write
 for the live, subprocess-over-stdio proof this is not merely asserted. **Disclosed, not
 overclaimed:** `docs/artifacts/scoped-execution-primitive-v1.md` §4 found this exact-tool-name
 mechanism confirmed for Claude Code specifically, with a mixed, still-open picture on the
-other 6 platforms — do not assume this same technical guarantee holds on every platform this
+other 5 platforms — do not assume this same technical guarantee holds on every platform this
 agent is ever projected to. This is one of three `ALLOW_WRITE=false` controls this component
 carries (`docs/decisions/ADR-005-memory-layer-design.md` Decision 3) — the other two live in
 the server module the MCP tool calls (`implementation/runtime/memory/context_retriever.py`,

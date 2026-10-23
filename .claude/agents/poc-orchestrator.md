@@ -1,7 +1,7 @@
 ---
 name: "PoC Orchestrator"
 description: "Use when starting a proof-of-concept project. Validates a hypothesis quickly by coordinating PoC specialists with explicit debt tracking and production handoff artifacts."
-tools: Read, Edit, Write, Bash, Agent, WebFetch, WebSearch, TodoWrite, mcp__gitlab, mcp__memory, mcp__sequential-thinking
+tools: Read, Edit, Write, Bash, Agent, WebFetch, WebSearch, TodoWrite, mcp__gitlab__create_merge_request, mcp__gitlab__get_merge_request, mcp__gitlab__list_merge_requests, mcp__gitlab__get_merge_request_approval_state, mcp__gitlab__list_merge_request_pipelines, mcp__gitlab__get_pipeline, mcp__gitlab__list_pipeline_jobs, mcp__gitlab__discover_tools, mcp__memory, mcp__sequential-thinking
 ---
 
 # PoC Orchestrator

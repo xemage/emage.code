@@ -2,13 +2,13 @@
 
 **ID:** T679
 **Owner:** orchestrator
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Tier:** standard
 **Depends on:** T678
 **Affects:** —
 **Created:** 2026-10-16
-**Completed:** —
+**Completed:** 2026-10-23
 **Based on:**
 - `docs/plans/plan-123-post-release-follow-ups.md` (Addendum of 2026-10-16: T679)
 - `docs/decisions/ADR-010-drop-cursor-platform-support.md` (accepted 2026-10-16), `docs/artifacts/cursor-removal-inventory-v1.md`

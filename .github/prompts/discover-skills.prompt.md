@@ -13,7 +13,7 @@ You are in **Skill Discovery** mode. Match the user's intent to canonical skills
    | `implementation/registry/index.json` | You are in | Enumerate skills from |
    |--------------------------------------|------------|-----------------------|
    | exists | the emage.code authoring repository | `implementation/knowledge/skills/*/SKILL.md`. The registry's `category: skill` entries index this same tree and may be read instead, as an accelerator (`implementation/registry/summary.md` for an overview); where the two disagree, the tree wins. |
-   | does not exist | an installed target project | `.<platform>/skills/*/SKILL.md` — the active platform projection (`.claude`, `.cline`, `.cursor`, `.gemini`, `.github`, `.opencode` or `.pi`). Targets have no registry; do not look for one. |
+   | does not exist | an installed target project | `.<platform>/skills/*/SKILL.md` — the active platform projection (`.claude`, `.cline`, `.gemini`, `.github`, `.opencode` or `.pi`). Targets have no registry; do not look for one. |
 
    Test for the registry file itself, never for `implementation/` — the installer creates `implementation/runtime/` in target projects too. Recommend only skills this step enumerated.
 2. **Parse intent** — from `{{input}}` or active task brief; identify phase (plan, implement, debug, review, release).

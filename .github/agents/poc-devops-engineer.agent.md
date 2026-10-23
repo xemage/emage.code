@@ -1,6 +1,6 @@
 ---
 description: "Use for minimal PoC delivery setup emphasizing fast local reproducibility over production hardening."
-tools: [read, search, edit, execute, gitlab/*]
+tools: [read, search, edit, execute, gitlab/list_pipelines, gitlab/get_pipeline, gitlab/list_pipeline_jobs, gitlab/validate_ci_lint, gitlab/validate_project_ci_lint, gitlab/discover_tools]
 user-invocable: false
 ---
 
