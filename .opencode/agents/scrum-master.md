@@ -2,6 +2,7 @@
 name: "Scrum Master"
 description: "Use when planning sprints, tracking progress, managing milestones, facilitating agile ceremonies, breaking down epics into tasks, creating GitLab issues and milestones, or resolving team impediments."
 tools:
+  gitlab_*: false
   read: true
   search: true
   todo: true
@@ -30,6 +31,21 @@ tools:
   gitlab_get_merge_request: true
   gitlab_list_project_members: true
   gitlab_discover_tools: true
+  playwright_*: false
+  playwright_browser_run_code_unsafe: false
+  playwright_browser_evaluate: false
+  playwright_browser_file_upload: false
+  playwright_browser_drag: false
+  playwright_browser_drop: false
+  playwright_browser_network_request: false
+  memory_*: false
+  sequential-thinking_*: false
+  context-retriever_*: false
+  security-audit_*: false
+  poc-security-audit_*: false
+  filesystem_*: false
+  git_*: false
+  supabase_*: false
 ---
 
 # Scrum Master

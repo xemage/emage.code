@@ -2,6 +2,7 @@
 name: "Orchestrator"
 description: "Central project coordinator. Receives user requests, decomposes them into task graphs, delegates to specialist agents, tracks progress via checkpoints, and ensures quality through validation gates. Implements Plan-Approve-Execute workflow. Use when starting a new project, planning features, or coordinating development work."
 tools:
+  gitlab_*: false
   read: true
   search: true
   edit: true
@@ -9,9 +10,37 @@ tools:
   agent: true
   web: true
   todo: true
-  gitlab_*: true
+  gitlab_get_issue: true
+  gitlab_list_issues: true
+  gitlab_list_issue_discussions: true
+  gitlab_create_merge_request: true
+  gitlab_get_merge_request: true
+  gitlab_list_merge_requests: true
+  gitlab_get_merge_request_approval_state: true
+  gitlab_list_merge_request_changed_files: true
+  gitlab_mr_discussions: true
+  gitlab_list_merge_request_pipelines: true
+  gitlab_list_pipelines: true
+  gitlab_get_pipeline: true
+  gitlab_list_pipeline_jobs: true
+  gitlab_get_branch: true
+  gitlab_list_branches: true
+  gitlab_discover_tools: true
   memory_*: true
   sequential-thinking_*: true
+  playwright_*: false
+  playwright_browser_run_code_unsafe: false
+  playwright_browser_evaluate: false
+  playwright_browser_file_upload: false
+  playwright_browser_drag: false
+  playwright_browser_drop: false
+  playwright_browser_network_request: false
+  context-retriever_*: false
+  security-audit_*: false
+  poc-security-audit_*: false
+  filesystem_*: false
+  git_*: false
+  supabase_*: false
 agents: [product-owner, solution-architect, scrum-master, tech-lead, backend-developer, frontend-developer, database-engineer, qa-engineer, security-engineer, devops-engineer, release-manager, technical-writer, ux-designer, context-retriever]
 user-invocable: true
 ---
@@ -136,22 +165,22 @@ When delegating to a specialist agent, always provide:
 
 ## Release Workflow Preflights
 
-**MANDATORY** before cutting any release tag:
+**MANDATORY** before a release tag is cut (the top-level session cuts it, with the user's approval):
 
 1. **Release Documentation Gate:**
-   - Before calling `glab release create`, verify that `docs/releases/vX.Y.Z.md` exists and is committed
-   - Publish/update release notes from that file only: `glab release create vX.Y.Z --ref vX.Y.Z --name vX.Y.Z -F docs/releases/vX.Y.Z.md`
+   - The top-level session (or the user) runs `glab release create vX.Y.Z --ref vX.Y.Z --name vX.Y.Z -F docs/releases/vX.Y.Z.md` after you have verified: `docs/releases/vX.Y.Z.md` exists and is committed; `scripts/verify-release-docs.py --tag vX.Y.Z` passes
+   - Release notes are published from that file only; you do not run `glab release create` yourself
    - Do not pass ad-hoc inline `--notes`; it can drift from `docs/releases/vX.Y.Z.md`
    - File must carry what `scripts/verify-release-docs.py` requires (`Latest release: vX.Y.Z`, `## Install`, `## Highlights`, `## RELEASE VERDICT`) and the sections skill `release-workflow` § 4 prescribes, with valid install instructions (`scripts/install.sh --help` lists the `--platform` values)
-   - Use `scripts/verify-release-docs.py --tag vX.Y.Z` to validate locally before tag
+   - Run `scripts/verify-release-docs.py --tag vX.Y.Z` locally before the tag is cut
 
 2. **Release Task Sequencing:**
    - Release work (version bump, changelog, release notes) must be part of a release MR
-   - The release branch is merged to `develop` first and to `main` second, by merge request and without squash; tag creation happens AFTER both merges, because the drift gate fails a tag push while `main` is ahead of `develop`
+   - The release branch is merged to `develop` first and to `main` second, by merge request and without squash; tag creation (by the top-level session) happens AFTER both merges, because the drift gate fails a tag push while `main` is ahead of `develop`
    - Never tag ahead of a commit; ensure the tag commit is already in origin/develop and in origin/main
 
 3. **Release Blocking Conditions:**
-   - CI pipeline must be green on develop before cutting a release tag
+   - CI pipeline must be green on develop before the top-level session cuts a release tag
    - Security Gate must pass if security changes are in the release
    - No task matching the release scope remains in `docs/tasks/active-tasks.md`: each is `done` and archived in `docs/tasks/completed-tasks.md` (`AGENTS.md` § Task Protocol: `active-tasks.md` never holds a `done` row)
 

@@ -5,6 +5,22 @@ tools:
   read: true
   search: true
   edit: true
+  gitlab_*: false
+  playwright_*: false
+  playwright_browser_run_code_unsafe: false
+  playwright_browser_evaluate: false
+  playwright_browser_file_upload: false
+  playwright_browser_drag: false
+  playwright_browser_drop: false
+  playwright_browser_network_request: false
+  memory_*: false
+  sequential-thinking_*: false
+  context-retriever_*: false
+  security-audit_*: false
+  poc-security-audit_*: false
+  filesystem_*: false
+  git_*: false
+  supabase_*: false
 ---
 
 # Technical Debt Narrator

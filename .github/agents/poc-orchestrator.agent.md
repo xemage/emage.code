@@ -1,6 +1,6 @@
 ---
 description: "Use when starting a proof-of-concept project. Validates a hypothesis quickly by coordinating PoC specialists with explicit debt tracking and production handoff artifacts."
-tools: [read, search, edit, execute, agent, web, todo, gitlab/*, memory/*, sequential-thinking/*]
+tools: [read, search, edit, execute, agent, web, todo, gitlab/create_merge_request, gitlab/get_merge_request, gitlab/list_merge_requests, gitlab/get_merge_request_approval_state, gitlab/list_merge_request_pipelines, gitlab/get_pipeline, gitlab/list_pipeline_jobs, gitlab/discover_tools, memory/*, sequential-thinking/*]
 agents: [technology-scout, feasibility-agent, scaffolding-agent, integration-agent, data-mockup-agent, demo-agent, evaluation-agent, technical-debt-narrator, poc-qa-engineer, poc-security-engineer, poc-technical-writer, poc-devops-engineer, backend-developer, frontend-developer]
 user-invocable: true
 ---

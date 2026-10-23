@@ -85,7 +85,7 @@ variables:
   DOCKER_TLS_CERTDIR: "/certs"
 
 .deploy_template: &deploy_template
-  image: alpine:3.19
+  image: alpine:3.24
   before_script:
     - apk add --no-cache curl
   script:
