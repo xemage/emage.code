@@ -219,10 +219,12 @@ release:
   variables:
     GIT_DEPTH: "0"
   before_script:
-    - python3 -I -c "import os, shutil, subprocess; apk=shutil.which('apk'); env=dict(i for i in os.environ.items() if i[0] != 'WIKI_TOKEN'); subprocess.check_call([apk, 'add', '--no-cache', 'git~=2.54'], env=env) if apk else None"
+    - python3 -I -c "import os, shutil, subprocess; apk=shutil.which('apk'); secrets=[v for k, v in os.environ.items() if k in ('CI_JOB_TOKEN', 'WIKI_TOKEN') and v]; ok=('PATH', 'HOME', 'LANG', 'LANGUAGE', 'TMPDIR', 'TZ', 'SSL_CERT_FILE', 'SSL_CERT_DIR', 'CURL_CA_BUNDLE', 'http_proxy', 'https_proxy', 'no_proxy', 'HTTP_PROXY', 'HTTPS_PROXY', 'NO_PROXY', 'ALL_PROXY'); env=dict(i for i in os.environ.items() if (i[0] in ok or i[0].startswith('LC_')) and not any(x in i[1] for x in secrets)); subprocess.check_call([apk, 'add', '--no-cache', 'git~=2.54'], env=env) if apk else None"
   script:
-    # The token is read from the environment by name (--token-env); its value is never in argv.
-    - python3 scripts/publish-release.py --tag "${CI_COMMIT_TAG}" --api-v4-url "${CI_API_V4_URL}" --expected-host "${CI_SERVER_HOST}" --project-id "${CI_PROJECT_ID}" --token-env WIKI_TOKEN
+    # T686: the release job authenticates with the GitLab job token (CI_JOB_TOKEN, sent only in the JOB-TOKEN header),
+    # not with WIKI_TOKEN, which only the wiki-sync job reads. The value is read by name (--token-env); it is never in argv.
+    # git and apk get an allowlisted environment without any variable whose value contains the job token (before_script).
+    - python3 scripts/publish-release.py --tag "${CI_COMMIT_TAG}" --api-v4-url "${CI_API_V4_URL}" --expected-host "${CI_SERVER_HOST}" --project-id "${CI_PROJECT_ID}" --token-env CI_JOB_TOKEN --token-header JOB-TOKEN
   artifacts:
     paths:
       - CHANGELOG.md

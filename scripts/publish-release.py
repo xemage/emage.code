@@ -9,13 +9,16 @@ which is the only file this script writes; no root ``release-notes.md`` is
 written. Offline rehearsal: ``scripts/dry-run-publish-release.py``.
 
 The API token is read from an environment variable named by ``--token-env``
-(CI: ``--token-env WIKI_TOKEN``), so the value never appears in argv, in the
-process list or in a job log. ``--token`` is still accepted but deprecated: it
-prints a warning (never the value) because argv is world-readable on a runner.
+(CI: ``--token-env CI_JOB_TOKEN --token-header JOB-TOKEN``, the GitLab job token;
+T686), so the value never appears in argv, in the process list or in a job log.
+``--token-header`` names the one HTTP header that carries it and is limited to a
+fixed allowlist (``TOKEN_HEADERS``: ``PRIVATE-TOKEN``, the default, and
+``JOB-TOKEN``). ``--token`` is still accepted but deprecated: it prints a warning
+(never the value) because argv is world-readable on a runner.
 The API target is parsed, not prefix-matched (``validate_api_target``), the
 host can be pinned (``--expected-host``, default ``CI_SERVER_HOST``), and the
-HTTP opener refuses every redirect, so the ``PRIVATE-TOKEN`` header is never
-re-sent to a second location (T675).
+HTTP opener refuses every redirect, so the token header is never re-sent to a
+second location (T675).
 """
 
 from __future__ import annotations
@@ -67,7 +70,30 @@ CONTROL_CHARS_RE = re.compile(r"[\x00-\x1f\x7f]")
 # the tagged history are the maintainers.
 SUBJECT_UNSAFE_RE = re.compile("[\x00-\x1f\x7f-\x9f\u061c\u200b-\u200f\u202a-\u202e\u2028\u2029\u2060-\u2069\ufeff\u00ad\u034f\u115f\u1160\u17b4\u17b5\u3164\uffa0\u2800\ufe00-\ufe0f\U000e0000-\U000e007f\U000e0100-\U000e01ef]")
 HTTP_TIMEOUT_SECONDS = 30
-WITHHELD_ENV_NAMES = {"WIKI_TOKEN"}  # never passed to git: main() adds the --token-env name
+# T686: the only headers the token may travel in (a fixed allowlist, never taken from input); the default keeps the
+# behaviour of every earlier call. The job token goes in JOB-TOKEN (GitLab "Releases API" accepts it), a personal,
+# project or group access token in PRIVATE-TOKEN.
+DEFAULT_TOKEN_HEADER = "PRIVATE-TOKEN"
+TOKEN_HEADERS = (DEFAULT_TOKEN_HEADER, "JOB-TOKEN")
+# Never passed to git: both CI token variables by name (the job token is in every job's environment), plus
+# main() adds the --token-env name.
+WITHHELD_ENV_NAMES = {"WIKI_TOKEN", "CI_JOB_TOKEN"}
+# T686 (SEC-T686-01): withholding by name is not enough: GitLab exposes the job token under a second name
+# (CI_REGISTRY_PASSWORD) and inside URL-shaped variables (CI_REPOSITORY_URL = https://gitlab-ci-token:<token>@host/...).
+# So the child environment is (1) an ALLOWLIST of names git needs and (2) minus every variable whose value contains
+# one of the secret values (the values of the withheld names, and the token main() resolved, also from --token).
+# The same rule is mirrored in the release job's apk bootstrap in .gitlab-ci.yml (tests pin the two together).
+# git reads the checkout credential from .git/config (the clone URL the runner wrote), not from the environment.
+CHILD_ENV_APK_NAMES = frozenset({
+    "PATH", "HOME", "LANG", "LANGUAGE", "TMPDIR", "TZ", "SSL_CERT_FILE", "SSL_CERT_DIR", "CURL_CA_BUNDLE",
+    "http_proxy", "https_proxy", "no_proxy", "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "ALL_PROXY",
+})
+CHILD_ENV_NAMES = CHILD_ENV_APK_NAMES | frozenset({
+    "GIT_SSL_CAINFO", "GIT_SSL_CAPATH", "GIT_ASKPASS", "GIT_TERMINAL_PROMPT", "GIT_EXEC_PATH",
+    "GIT_CONFIG_NOSYSTEM", "GIT_CONFIG_GLOBAL", "GIT_CONFIG_SYSTEM", "GIT_CONFIG_COUNT",
+})
+CHILD_ENV_PATTERN = re.compile(r"LC_[A-Z_]+|GIT_CONFIG_(?:KEY|VALUE)_[0-9]+")
+WITHHELD_ENV_VALUES: set[str] = set()  # main() adds the resolved token (it may come from --token, not from a name)
 
 
 class ReleasePublishError(RuntimeError):
@@ -171,9 +197,25 @@ def resolve_token(token: str | None, token_env: str | None, environ: dict[str, s
     return value
 
 
-def child_environment() -> dict[str, str]:
-    """A copy of the environment without the API token variable (git has no use for it)."""
-    return {k: v for k, v in os.environ.items() if k not in WITHHELD_ENV_NAMES}
+def secret_values(environ: dict[str, str]) -> set[str]:
+    """The non-empty values that must not reach a child: those of the withheld names, plus the resolved token."""
+    values = {environ[name] for name in WITHHELD_ENV_NAMES if environ.get(name)}
+    return values | {v for v in WITHHELD_ENV_VALUES if v}
+
+
+def child_environment(environ: dict[str, str] | None = None) -> dict[str, str]:
+    """The environment git gets: allowlisted names only, and no variable whose value contains a secret value.
+
+    Names alone do not protect the job token (``CI_REGISTRY_PASSWORD`` and ``CI_REPOSITORY_URL`` carry it too), so a
+    variable is dropped when its value contains the token, whatever it is called.
+    """
+    environ = os.environ if environ is None else environ
+    secrets = secret_values(environ)
+    return {
+        k: v for k, v in environ.items()
+        if (k in CHILD_ENV_NAMES or CHILD_ENV_PATTERN.fullmatch(k))
+        and k not in WITHHELD_ENV_NAMES and not any(secret in v for secret in secrets)
+    }
 
 
 def run_git(args: list[str]) -> str:
@@ -372,7 +414,7 @@ def write_artifacts(changelog: str) -> None:
 
 
 class _RefuseRedirects(urllib.request.HTTPRedirectHandler):
-    """Never follow a redirect: urllib would re-send ``PRIVATE-TOKEN`` to the new location."""
+    """Never follow a redirect: urllib would re-send the token header to the new location."""
 
     def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: D401
         return None  # the caller then sees the 3xx as an HTTPError
@@ -381,10 +423,20 @@ class _RefuseRedirects(urllib.request.HTTPRedirectHandler):
 OPENER = urllib.request.build_opener(_RefuseRedirects)
 
 
-def gitlab_request(method: str, url: str, token: str, payload: dict | None = None) -> dict:
+def validate_token_header(name: str) -> str:
+    """Fail closed unless ``name`` is exactly one of ``TOKEN_HEADERS`` (case-sensitive; the value is never echoed)."""
+    if name not in TOKEN_HEADERS:
+        raise ReleasePublishError(f"invalid --token-header: must be one of {', '.join(TOKEN_HEADERS)}")
+    return name
+
+
+def gitlab_request(
+    method: str, url: str, token: str, payload: dict | None = None, token_header: str = DEFAULT_TOKEN_HEADER,
+) -> dict:
+    validate_token_header(token_header)
     data = None if payload is None else json.dumps(payload).encode("utf-8")
     request = urllib.request.Request(url=url, method=method, data=data)
-    request.add_header("PRIVATE-TOKEN", token)
+    request.add_header(token_header, token)
     request.add_header("Content-Type", "application/json")
 
     try:
@@ -410,8 +462,9 @@ def _error_body(exc: urllib.error.HTTPError) -> str:
 
 def create_or_update_release(
     tag: str, api_v4_url: str, project_id: str, token: str, description: str,
-    expected_host: str | None = None,
+    expected_host: str | None = None, token_header: str = DEFAULT_TOKEN_HEADER,
 ) -> None:
+    validate_token_header(token_header)
     validate_api_target(api_v4_url, project_id, expected_host)
     endpoint = f"{api_v4_url}/projects/{project_id}/releases/{tag}"
     payload = {
@@ -423,17 +476,17 @@ def create_or_update_release(
 
     exists = False
     try:
-        current = gitlab_request("GET", endpoint, token)
+        current = gitlab_request("GET", endpoint, token, token_header=token_header)
         exists = current.get("tag_name") == tag
     except ReleasePublishError as exc:
         if exc.status != 404:
             raise
 
     if exists:
-        response = gitlab_request("PUT", endpoint, token, payload)
+        response = gitlab_request("PUT", endpoint, token, payload, token_header=token_header)
     else:
         response = gitlab_request(
-            "POST", f"{api_v4_url}/projects/{project_id}/releases", token, payload
+            "POST", f"{api_v4_url}/projects/{project_id}/releases", token, payload, token_header=token_header
         )
 
     if response.get("tag_name") != tag:
@@ -446,6 +499,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--api-v4-url", required=True)
     parser.add_argument("--project-id", required=True)
     parser.add_argument("--token-env", help="name of the environment variable that holds the API token")
+    parser.add_argument(
+        "--token-header",
+        choices=TOKEN_HEADERS,
+        default=DEFAULT_TOKEN_HEADER,
+        help="the HTTP header that carries the token: PRIVATE-TOKEN (default; access tokens) or JOB-TOKEN (CI_JOB_TOKEN)",
+    )
     parser.add_argument("--token", help="DEPRECATED: the token in argv is visible to every process; use --token-env")
     parser.add_argument(
         "--expected-host",
@@ -459,11 +518,14 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     validate_tag(args.tag)
+    validate_token_header(args.token_header)
     expected_host = resolve_expected_host(args.expected_host)
     validate_api_target(args.api_v4_url, args.project_id, expected_host)
     token = None if args.skip_api else resolve_token(args.token, args.token_env)
     if args.token_env:
         WITHHELD_ENV_NAMES.add(args.token_env)
+    if token and not args.token_env:
+        WITHHELD_ENV_VALUES.add(token)  # the deprecated --token: no variable name to withhold, so withhold the value
     run_git(["fetch", "--tags", "--force"])
     ensure_full_history()
 
@@ -485,6 +547,7 @@ def main() -> int:
             token=token,
             description=description,
             expected_host=expected_host,
+            token_header=args.token_header,
         )
 
     print(f"release-publish: regenerated CHANGELOG.md for {args.tag}")

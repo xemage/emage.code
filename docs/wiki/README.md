@@ -19,7 +19,9 @@ that touches `docs/wiki/**` and pushes the pages via the GitLab Wiki API.
 
 **Required CI/CD variable:** `WIKI_TOKEN` — Project Access Token with scope
 `api`. See [Settings → CI/CD → Variables](https://gitlab.com/em-age/emage.code/-/settings/ci_cd).
-Mark the variable as **Masked**.
+Mark the variable as **Protected** and **Masked** and give the token the minimum role. Only
+`wiki-sync` uses it; the `release` job authenticates with `CI_JOB_TOKEN` (T686, see
+`CONTRIBUTING.md`, "Release token and permissions").
 
 To sync manually (or to test before pushing):
 
