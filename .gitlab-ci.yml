@@ -207,6 +207,8 @@ main-develop-drift-gate:
     - git fetch origin main develop --depth=1
     - git fetch --force origin 'refs/tags/*:refs/tags/*'
     - python3 scripts/check-main-develop-drift.py --main-ref origin/main --develop-ref origin/develop
+    # T685 (TL-T649-13): the tag must carry the content of main (tree comparison, not SHA ancestry; depth 1 is enough).
+    - python3 scripts/check-release-tag-tree.py --tag "${CI_COMMIT_TAG}" --main-ref origin/main
   rules:
     - if: '$CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$/'
 

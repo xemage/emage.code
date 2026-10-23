@@ -12,11 +12,17 @@ builds a THROWAWAY ``package.json`` from them, so the usual tools work on the re
                                 with --signatures also ``npm install --ignore-scripts`` and
                                 ``npm audit signatures`` (registry signatures and provenance of the
                                 whole tree). Exit 1 when a finding reaches the audit level.
-        [--accept GHSA-x:DATE]  a reviewed, EXPIRING acceptance of one advisory (repeatable; the date is
-                                mandatory, YYYY-MM-DD, last day it counts). An accepted advisory is still
-                                printed, marked ACCEPTED, and does not count as a finding; an expired
-                                acceptance fails the run. Acceptances are recorded in an artifact
-                                (docs/artifacts/brave-audit-acceptance-v1.md) and listed in the checklist.
+        [--accept GHSA-x:DATE:PACKAGE@VERSION]
+                                a reviewed, EXPIRING acceptance of one advisory FOR ONE PINNED PACKAGE
+                                (repeatable; date and package are mandatory; DATE is YYYY-MM-DD, the last
+                                day it counts, and may not be more than 90 days from today; PACKAGE@VERSION
+                                must be a current pin of servers.yaml, so a bump of that pin voids the
+                                acceptance). An accepted advisory is still printed, marked ACCEPTED, and
+                                does not count as a finding, but only when every pinned package that the
+                                vulnerable entry puts at risk is the named one: a second pin that pulls the
+                                same vulnerable library stays a finding. An expired acceptance fails the
+                                run. Acceptances are recorded in an artifact
+                                (docs/artifacts/brave-audit-acceptance-v2.md) and listed in the checklist.
   provenance                    ask the npm registry whether the pinned version, and the ``latest``
         [--require]             version, carry a provenance attestation (SEC-T646-03). --require: exit 1
                                 when a pinned version has none.
@@ -35,6 +41,9 @@ Safety properties (each has a test with a mutation proof in tests/functional/tes
     ``.npmrc`` of the maintainer (registry, auth token) can neither redirect nor receive the traffic;
   - the audit fails closed: a reply without both ``vulnerabilities`` and ``metadata`` is an error and an
     unknown severity counts as critical;
+  - an acceptance is scoped (SEC-T676-11): it names a package@version that must be a current pin, it counts only
+    when every pinned package the vulnerable entry puts at risk is that package, and its date may not be more
+    than 90 days from today (a later date, an unknown pin or a duplicate is an error, exit 2);
   - the registry is reached over https at registry.npmjs.org only, never through a redirect, with a
     timeout and a size limit; text taken from a reply is stripped of control characters before printing;
   - a version that is not an exact pin is never written to the manifest.
@@ -79,6 +88,7 @@ NPM_PIN = re.compile(r"^(?P<name>(?:@[a-z0-9][a-z0-9._~-]*/)?[a-z0-9][a-z0-9._~-
                      r"@(?P<version>\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$")
 PYPI_PIN = re.compile(r"^(?P<name>[A-Za-z0-9][A-Za-z0-9._-]*)@(?P<version>[0-9][0-9A-Za-z.!+_-]*)$")
 GHSA_RE = re.compile(r"GHSA-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}")
+MAX_ACCEPT_DAYS = 90  # SEC-T676-11: an acceptance may not run more than 90 days from the day of the run
 UNSAFE_TEXT_RE = re.compile("[\x00-\x1f\x7f-\x9f\u061c\u200b-\u200f\u2028\u2029\u202a-\u202e\u2060-\u2069\ufeff]")
 SECRET_NAME = re.compile(r"(TOKEN|KEY|SECRET|PASSWORD|PASSWD|CREDENTIAL|AUTH|COOKIE)", re.I)
 
@@ -204,15 +214,50 @@ def npm_install_args(full: bool) -> list[str]:
     return base if full else ["install", "--package-lock-only", *base[1:]]
 
 
-def parse_accept(value: str) -> tuple[str, dt.date]:
-    """``GHSA-xxxx-xxxx-xxxx:YYYY-MM-DD``; the expiry date is mandatory (last day the acceptance counts)."""
-    advisory, sep, day = value.partition(":")
-    if not sep or not GHSA_RE.fullmatch(advisory) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", day):
-        raise argparse.ArgumentTypeError(f"{safe_text(value)!r}: expected GHSA-xxxx-xxxx-xxxx:YYYY-MM-DD (expiry mandatory)")
+@dataclass(frozen=True)
+class Acceptance:
+    """One reviewed acceptance: this advisory, for this pinned package at this version, up to this day."""
+
+    advisory: str
+    until: dt.date
+    package: str
+    version: str
+
+
+def parse_accept(value: str) -> Acceptance:
+    """``GHSA-xxxx-xxxx-xxxx:YYYY-MM-DD:PACKAGE@VERSION``; the expiry date and the package are mandatory."""
+    usage = f"{safe_text(value)!r}: expected GHSA-xxxx-xxxx-xxxx:YYYY-MM-DD:PACKAGE@VERSION (expiry and package mandatory)"
+    advisory, sep, rest = value.partition(":")
+    day, sep2, spec = rest.partition(":")
+    spec_match = NPM_PIN.match(spec)
+    if not sep or not sep2 or not GHSA_RE.fullmatch(advisory) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", day) or not spec_match:
+        raise argparse.ArgumentTypeError(usage)
     try:
-        return advisory, dt.date.fromisoformat(day)
+        until = dt.date.fromisoformat(day)
     except ValueError as exc:
         raise argparse.ArgumentTypeError(f"{safe_text(value)!r}: not a calendar date") from exc
+    return Acceptance(advisory, until, spec_match["name"], spec_match["version"])
+
+
+def check_acceptances(accepted: list[Acceptance], pins: list[Pin], today: dt.date) -> dict[tuple[str, str], Acceptance]:
+    """Validate the acceptances of one run (SEC-T676-11) and key them by (advisory, package).
+
+    Refused (AuditError, exit 2): the same advisory accepted twice for one package; a package@version that is not a
+    current npm pin (a bump of the pin voids the acceptance); an expiry more than MAX_ACCEPT_DAYS from today.
+    A date in the past is not refused here: it is printed as EXPIRED and fails the run.
+    """
+    npm_pins = {(p.name, p.version) for p in pins if p.kind == "npm"}
+    keyed: dict[tuple[str, str], Acceptance] = {}
+    for item in accepted:
+        if (item.advisory, item.package) in keyed:
+            raise AuditError("the same advisory is accepted twice for one package")
+        if (item.package, item.version) not in npm_pins:
+            raise AuditError(f"{item.advisory}: {safe_text(item.package)}@{safe_text(item.version)} is not a current npm pin "
+                             "(a bumped pin voids its acceptance: renew it with the user)")
+        if (item.until - today).days > MAX_ACCEPT_DAYS:
+            raise AuditError(f"{item.advisory}: expiry {item.until.isoformat()} is more than {MAX_ACCEPT_DAYS} days from today")
+        keyed[(item.advisory, item.package)] = item
+    return keyed
 
 
 def advisory_id(via: dict) -> str | None:
@@ -220,14 +265,30 @@ def advisory_id(via: dict) -> str | None:
     return match.group(0) if match else None
 
 
-def fully_accepted(name: str, vulns: dict, active: set[str], seen: frozenset = frozenset()) -> bool:
-    """True when every advisory under ``name``, and every package it is vulnerable through, is accepted."""
+def direct_roots(name: str, vulns: dict, seen: frozenset = frozenset()) -> set[str]:
+    """The direct (pinned) packages that the vulnerable entry ``name`` puts at risk, following ``effects`` upward.
+
+    npm marks the packages of the manifest ``isDirect``; ``effects`` lists the packages that depend on a vulnerable one.
+    An empty result (an entry that is neither direct nor reaches a direct one) can not be scoped, so it is never accepted.
+    """
+    entry = vulns.get(name) or {}
+    roots = {name} if entry.get("isDirect") else set()
+    for effect in entry.get("effects") or []:
+        if isinstance(effect, str) and effect in vulns and effect not in seen and effect != name:
+            roots |= direct_roots(effect, vulns, seen | {name})
+    return roots
+
+
+def fully_accepted(name: str, vulns: dict, active: set[tuple[str, str]], seen: frozenset = frozenset()) -> bool:
+    """True when every advisory under ``name``, and every package it is vulnerable through, is accepted for the
+    pinned package(s) the entry puts at risk (``active`` holds (advisory, package) pairs, SEC-T676-11)."""
     vias = (vulns.get(name) or {}).get("via") or []
-    if name in seen or not vias:
+    roots = direct_roots(name, vulns)
+    if name in seen or not vias or not roots:
         return False
     for via in vias:
         if isinstance(via, dict):
-            if advisory_id(via) not in active:
+            if any((advisory_id(via), root) not in active for root in roots):
                 return False
         elif not isinstance(via, str) or via not in vulns or not fully_accepted(via, vulns, active, seen | {name}):
             return False
@@ -242,12 +303,12 @@ def severity_index(severity: object) -> int:
 def summarise_audit(report: dict, level: str, accepted: dict | None = None, today: dt.date | None = None) -> tuple[list[str], int]:
     """(lines to print, number of findings at or above `level`) from `npm audit --json`.
 
-    ``accepted`` maps advisory id to the last day of its acceptance. An accepted package is printed as ACCEPTED
-    and not counted; an advisory whose acceptance has expired counts like any other.
+    ``accepted`` maps (advisory id, package) to an Acceptance (see check_acceptances). An accepted package is printed
+    as ACCEPTED and not counted; an advisory whose acceptance has expired counts like any other.
     """
     floor = LEVELS.index(level)
     day = today or dt.date.today()
-    active = {a for a, until in (accepted or {}).items() if until >= day}
+    active = {key for key, item in (accepted or {}).items() if item.until >= day}
     vulns = report.get("vulnerabilities") or {}
     lines, hits = [], 0
     for name, vuln in sorted(vulns.items()):
@@ -262,12 +323,13 @@ def summarise_audit(report: dict, level: str, accepted: dict | None = None, toda
 
 
 def acceptance_lines(accepted: dict, today: dt.date) -> tuple[list[str], int]:
-    """Print every acceptance with its expiry; an expired one is a failure of its own."""
+    """Print every acceptance with its expiry and package; an expired one is a failure of its own."""
     lines, expired = [], 0
-    for advisory, until in sorted(accepted.items()):
-        stale = until < today
+    for _key, item in sorted(accepted.items()):
+        stale = item.until < today
         expired += 1 if stale else 0
-        lines.append(f"  {'EXPIRED' if stale else 'accepted'} {advisory} until {until.isoformat()}")
+        lines.append(f"  {'EXPIRED' if stale else 'accepted'} {item.advisory} until {item.until.isoformat()} "
+                     f"for {safe_text(item.package)}@{safe_text(item.version)}")
     return lines, expired
 
 
@@ -313,9 +375,7 @@ def audit_directory(directory: Path, level: str, runner: Runner, options: dict) 
 def command_audit(args: argparse.Namespace, runner: Runner = run_npm, today: dt.date | None = None) -> int:
     pins = load_pins(Path(args.servers))
     day = today or dt.date.today()
-    accepted = dict(getattr(args, "accept", None) or [])
-    if len(accepted) != len(getattr(args, "accept", None) or []):
-        raise AuditError("the same advisory is accepted twice")
+    accepted = check_acceptances(list(getattr(args, "accept", None) or []), pins, day)
     work = Path(tempfile.mkdtemp(prefix="emage-mcp-pin-audit-"))
     try:
         write_manifest(work, pins)
@@ -413,8 +473,9 @@ def build_parser() -> argparse.ArgumentParser:
     aud = sub.add_parser("audit")
     aud.add_argument("--audit-level", choices=LEVELS, default="low")
     aud.add_argument("--signatures", action="store_true", help="full install + `npm audit signatures`")
-    aud.add_argument("--accept", action="append", default=[], type=parse_accept, metavar="GHSA-x:YYYY-MM-DD",
-                     help="reviewed acceptance of one advisory, with a mandatory expiry date (repeatable)")
+    aud.add_argument("--accept", action="append", default=[], type=parse_accept, metavar="GHSA-x:YYYY-MM-DD:PACKAGE@VERSION",
+                     help="reviewed acceptance of one advisory for one pinned package, with a mandatory expiry date "
+                          f"at most {MAX_ACCEPT_DAYS} days away (repeatable)")
     aud.set_defaults(func=command_audit)
     prov = sub.add_parser("provenance")
     prov.add_argument("--require", action="store_true")

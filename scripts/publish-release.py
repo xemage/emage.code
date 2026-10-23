@@ -58,9 +58,14 @@ CONTROL_CHARS_RE = re.compile(r"[\x00-\x1f\x7f]")
 # T676 (SEC-T675-10): a commit subject also loses C1 controls and the invisible/bidirectional formatting characters
 # (zero-width, LRM/RLM, ALM, LS/PS, LRE..RLO, LRI..PDI, BOM, soft hyphen, Hangul and braille fillers, variation
 # selectors, Unicode tag characters) that make a changelog line read differently from its bytes.
+# T685 (SEC-T676-12): also U+034F COMBINING GRAPHEME JOINER and the Khmer inherent vowels U+17B4/U+17B5 (all
+# default-ignorable and invisible). Cosmetic cost, by design and tested: U+200D (ZWJ) and U+FE0F (emoji variation
+# selector) are in the class, so an emoji ZWJ sequence prints as its separate emoji and an emoji loses its
+# presentation selector; no emoji code point is removed. U+034F is rare outside collation and ligature fixes for
+# Hebrew, Arabic and Tibetan, and the Khmer vowels are discouraged in Unicode, so a real subject loses no meaning.
 # Markdown characters are NOT escaped: subjects use backticks and underscores legitimately, and the authors of
 # the tagged history are the maintainers.
-SUBJECT_UNSAFE_RE = re.compile("[\x00-\x1f\x7f-\x9f\u061c\u200b-\u200f\u202a-\u202e\u2028\u2029\u2060-\u2069\ufeff\u00ad\u115f\u1160\u3164\uffa0\u2800\ufe00-\ufe0f\U000e0000-\U000e007f\U000e0100-\U000e01ef]")
+SUBJECT_UNSAFE_RE = re.compile("[\x00-\x1f\x7f-\x9f\u061c\u200b-\u200f\u202a-\u202e\u2028\u2029\u2060-\u2069\ufeff\u00ad\u034f\u115f\u1160\u17b4\u17b5\u3164\uffa0\u2800\ufe00-\ufe0f\U000e0000-\U000e007f\U000e0100-\U000e01ef]")
 HTTP_TIMEOUT_SECONDS = 30
 WITHHELD_ENV_NAMES = {"WIKI_TOKEN"}  # never passed to git: main() adds the --token-env name
 

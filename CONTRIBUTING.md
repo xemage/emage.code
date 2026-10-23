@@ -245,6 +245,16 @@ releases separate them.
   `main` is already more than 1 release behind at the moment a new release is tagged, this job
   fails and blocks the `release` job (CHANGELOG + GitLab Release publish) until the outstanding
   `release/vX.Y.Z → main` MR is merged.
+- **Tag tree check (same job, T685):** after the marker check the job runs
+  `python3 scripts/check-release-tag-tree.py --tag vX.Y.Z --main-ref origin/main`. The tag's commit
+  must have the same tree (the same files, byte for byte) as `origin/main`; this is the check that
+  "the release is on `main` before the tag" actually holds, and it has no grace window. It compares
+  tree ids, not commit ancestry, because GitLab's API merge makes a new commit with the same tree,
+  so the tag commit is not an ancestor of `main` even for a correct release; it works in the
+  depth-1 clone of the tag job. It fails when `main` was not fetched (an offline run proves nothing),
+  when the tag was pushed before the `main` merge, and on a re-run of the tag pipeline after `main`
+  has moved on (re-tag from the right commit instead). Run it locally the same way after
+  `git fetch origin main` and with the tags fetched.
 - **Informational check (`main-develop-drift-check`, `verify` stage):** runs on every push to
   `develop`, non-blocking (`allow_failure: true`), for earlier visibility between releases.
 

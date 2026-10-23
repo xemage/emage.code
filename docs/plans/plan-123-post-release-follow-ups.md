@@ -146,3 +146,9 @@ The review of T682 (`docs/artifacts/security-review-t682-installer-residuals-v1.
 The user decided on 2026-10-22 (AskUserQuestion, option labels verbatim) on the T676 review: the Brave audit risk "Accept with conditions (Recommended)" (`docs/artifacts/brave-audit-acceptance-v1.md`, expiry the first brave release above 2.1.4 or 2026-11-21) and, for the GitHub MCP server, "Remove GitHub MCP server" (the shipped `github` entry is removed; a breaking change for the v9.0.0 notes, `docs/tasks/task-T679.md` section 3a).
 
 25. **T685** (devops-engineer): close the open items of the T676 review (SEC-T676-11 to -14, the ancestor check of the release tag, the `WIKI_TOKEN` question, the knowledge templates with end-of-life images). Depends on T676. *Acceptance:* the items closed or reported; all gates and the suite pass; a Security Engineer delta review.
+
+## Addendum (2026-10-23): T686 and the policy for LOW findings
+
+The user decided on 2026-10-23 (AskUserQuestion, option labels verbatim): the release job on the job token, "Yes, create a task to switch (Recommended)"; and, because each security review of the installer hardening kept finding new LOW items (T672, T682, T684: six to eight each), the policy for LOW findings, "Track LOW items as debt, stop chasing (Recommended)": MEDIUM and higher are fixed before merge, LOW items are recorded in the tracked-debt register v2 with an owner and no new task is opened per review round.
+
+26. **T686** (devops-engineer): the release job on `CI_JOB_TOKEN` (`--token-header` allowlist in `publish-release.py`, `WIKI_TOKEN` only for `wiki-sync`). Depends on T685. *Acceptance:* the code and tests; all gates and the suite pass; a Security Engineer delta review.

@@ -23,6 +23,10 @@ Limits (T675, QA-T648-03 / TL-T649-13):
   ``develop`` and then to ``main`` BEFORE the tag is pushed (CONTRIBUTING.md § Cutting a
   release, steps 5 to 7). The gate prints a NOTE whenever ``main`` is behind, so the
   tag pipeline's output shows it.
+* T685: the tolerance above is for the marker check only. The tag job also runs
+  ``scripts/check-release-tag-tree.py``, which requires the tag commit's TREE to equal the tree of
+  ``origin/main`` (a tree comparison, for the same reason as above: SHA ancestry is unreliable after a GitLab
+  API merge). A tag pushed before the release reached ``main`` therefore fails there even though this check passes.
 """
 
 from __future__ import annotations

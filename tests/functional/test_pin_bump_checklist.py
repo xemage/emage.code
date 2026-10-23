@@ -21,7 +21,7 @@ WARNING = "Never run `opencode debug config` with your real home"
 REQUIRED_PHRASES = ("audit-mcp-pins.py audit", "audit-mcp-pins.py provenance", "--generate-hashes", "--require-hashes",
                     "Browser security version", "Blocked-origins re-check", "One-time live checks", "excludeTools",
                     "opencode agent list", "(unverified)", WARNING, "ci_images_reviewed_on", "--only-binary=:all:", "--exclude-newer",
-                    "brave-audit-acceptance-v1.md")
+                    "brave-audit-acceptance-v2.md", "SEC-T676-11", "SEC-T676-14", "seven days before")
 LINKS = {
     "implementation/PREREQUISITES.md": "docs/wiki/mcp-pin-bump-checklist.md",
     "docs/wiki/mcp-servers.md": "mcp-pin-bump-checklist",
@@ -29,13 +29,24 @@ LINKS = {
 }
 
 
+def brave_pin() -> str:
+    """The pinned brave package@version of servers.yaml: the gate command must name exactly this one (SEC-T676-11)."""
+    spec = re.search(r"@brave/brave-search-mcp-server@\d+\.\d+\.\d+", (ROOT / "implementation/knowledge/mcp/servers.yaml").read_text(encoding="utf-8"))
+    assert spec, "brave pin not found in servers.yaml"
+    return spec.group(0)
+
+
 def gate_problems(text: str) -> list[str]:
-    """The release gate command accepts exactly the five brave advisories, each with the artifact's expiry date."""
-    found = re.findall(r"--accept (GHSA-[a-z0-9-]+):(\d{4}-\d{2}-\d{2})", text)
+    """The release gate command accepts exactly the five brave advisories, each with the artifact's expiry date and
+    scoped to the pinned brave package (an unscoped `GHSA:DATE` is the old, global form and is refused)."""
+    found = re.findall(r"--accept (GHSA-[a-z0-9-]+):(\d{4}-\d{2}-\d{2}):(\S+?)(?=[\s`]|$)", text)
     out = []
-    if sorted(i for i, _ in found) != sorted(GHSA):
-        out.append(f"the release gate accepts {sorted(i for i, _ in found)}, expected exactly {sorted(GHSA)}")
-    out += [f"{i} expires {d}, expected {EXPIRY}" for i, d in found if d != EXPIRY]
+    if sorted(i for i, _, _ in found) != sorted(GHSA):
+        out.append(f"the release gate accepts {sorted(i for i, _, _ in found)}, expected exactly {sorted(GHSA)}")
+    if len(re.findall(r"--accept GHSA-(?!xxxx)", text)) != len(found):  # GHSA-xxxx-... is the syntax placeholder
+        out.append("an --accept in the text lacks the :<package>@<version> scope")
+    out += [f"{i} expires {d}, expected {EXPIRY}" for i, d, _ in found if d != EXPIRY]
+    out += [f"{i} is scoped to {pkg}, expected {brave_pin()}" for i, _, pkg in found if pkg != brave_pin()]
     return out
 
 
@@ -72,7 +83,7 @@ class TestChecklist(unittest.TestCase):
 
     def test_it_has_no_secret_looking_value(self):
         self.assertEqual(secret_findings(self.text), [])
-        for artifact in (ROOT / "docs/artifacts/brave-audit-acceptance-v1.md",):
+        for artifact in (ROOT / "docs/artifacts/brave-audit-acceptance-v1.md", ROOT / "docs/artifacts/brave-audit-acceptance-v2.md"):
             self.assertEqual(secret_findings(artifact.read_text(encoding="utf-8")), [])
 
     def test_the_secret_check_catches_each_shape(self):
@@ -83,13 +94,47 @@ class TestChecklist(unittest.TestCase):
         self.assertEqual(secret_findings("sha256:06d7adf3... GHSA-6qxp-vccf-f47h `Bearer`-less prose"), [])
 
     def test_the_acceptance_artifact_matches_the_gate_command_and_the_decision(self):
-        artifact = (ROOT / "docs/artifacts/brave-audit-acceptance-v1.md").read_text(encoding="utf-8")
+        artifact = (ROOT / "docs/artifacts/brave-audit-acceptance-v2.md").read_text(encoding="utf-8")
         self.assertEqual(gate_problems(artifact), [])
         for needle in GHSA + (EXPIRY, "Accept with conditions (Recommended)", "BRAVE_MCP_TRANSPORT=http", "GHSA-46jr-4wx8-v453",
                               "**Based on**", "devops-engineer"):
             self.assertIn(needle, artifact)
-        pattern = r"--accept (GHSA-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}:\d{4}-\d{2}-\d{2})"
+        pattern = r"--accept (GHSA-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}:\d{4}-\d{2}-\d{2}:\S+?)(?=[\s`]|$)"
         self.assertEqual(re.findall(pattern, artifact), re.findall(pattern, self.text))
+
+    def test_the_acceptance_artifact_expiry_is_within_ninety_days_of_the_decision(self):
+        """SEC-T676-11: the script refuses a date more than 90 days out; the recorded decision must respect the same bound."""
+        import datetime as dt
+        artifact = (ROOT / "docs/artifacts/brave-audit-acceptance-v2.md").read_text(encoding="utf-8")
+        decision = dt.date.fromisoformat(re.search(r"\*\*Date\*\*: (\d{4}-\d{2}-\d{2})", artifact).group(1))
+        expiry = dt.date.fromisoformat(EXPIRY)
+        self.assertLessEqual((expiry - decision).days, 90)
+        self.assertGreater(expiry, decision)
+
+    def test_the_gate_command_names_the_current_brave_pin_and_the_script_accepts_it(self):
+        """The documented command parses with the real parser and every package@version it names is a current pin."""
+        import datetime as dt
+        import importlib.util
+        import sys
+        spec = importlib.util.spec_from_file_location("audit_mcp_pins_chk", ROOT / "scripts" / "audit-mcp-pins.py")
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules["audit_mcp_pins_chk"] = mod
+        spec.loader.exec_module(mod)
+        specs = [m for m in re.findall(r"--accept (GHSA-(?!xxxx)\S+?(?=[\s`]|$))", self.text)]
+        self.assertEqual(len(specs), len(GHSA))
+        parsed = [mod.parse_accept(s) for s in specs]
+        pins = mod.load_pins(mod.SERVERS_YAML)
+        keyed = mod.check_acceptances(parsed, pins, parsed[0].until - dt.timedelta(days=30))
+        self.assertEqual({k[0] for k in keyed}, set(GHSA))
+
+    def test_mutation_an_unscoped_or_wrongly_scoped_gate_is_detected(self):
+        unscoped = self.text.replace("--accept GHSA-rvq5-wwqv-78pq:2026-11-21:@brave/brave-search-mcp-server@2.1.4", "--accept GHSA-rvq5-wwqv-78pq:2026-11-21")
+        self.assertNotEqual(unscoped, self.text)
+        self.assertTrue(any("lacks the" in p for p in problems(unscoped)))
+        stale = self.text.replace("GHSA-46jr-4wx8-v453:2026-11-21:@brave/brave-search-mcp-server@2.1.4", "GHSA-46jr-4wx8-v453:2026-11-21:@brave/brave-search-mcp-server@2.1.3")
+        self.assertTrue(any("is scoped to" in p for p in problems(stale)))
+        other = self.text.replace("GHSA-46jr-4wx8-v453:2026-11-21:@brave/brave-search-mcp-server@2.1.4", "GHSA-46jr-4wx8-v453:2026-11-21:left-pad@1.3.0")
+        self.assertTrue(any("is scoped to" in p for p in problems(other)))
 
     def test_the_opencode_warning_and_the_safe_command_are_present(self):
         self.assertIn(WARNING, self.text)
