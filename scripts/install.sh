@@ -133,6 +133,15 @@ ascii_printable() {
   printf '%s' "${1//[^ -~]/?}"
 }
 
+# $1 quoted for a shell (`printf %q`) in the C locale: every byte outside printable ASCII
+# (a newline, ESC, each byte of the bidi override U+202E) becomes an octal escape inside
+# $'...', whatever locale the caller runs in. A UTF-8 locale would print a "printable"
+# multi-byte character raw, which a reader cannot tell from a look-alike (T684, SEC-T682-03).
+shell_quote_ascii() {
+  local LC_ALL=C
+  printf '%q' "$1"
+}
+
 # $1 is an option that takes a value, $2 its value: refuse a missing one (a bare
 # `$2` under `set -u` is an unbound-variable error) and a value that starts with `-`
 # (it would be taken for an option by mkdir, find, rsync ...; write ./-name instead).
@@ -556,6 +565,10 @@ guard_managed_paths() {
 # project-local files the old one held (a .claude/settings.json), and a later sweep or a hand-run `rm`
 # could remove the only copy. A stale sibling is therefore REFUSED, not warned about: nothing is written
 # (dry-run included), nothing is adopted or deleted, and the message says what each one is and what to do.
+# T684 (SEC-T682-03): the names are shown with the byte-wise ascii_printable (the locale-dependent printable
+# let a bidi override through in a UTF-8 locale), and the restore hint is `[ ! -e DEST ] && mv -- OLD DEST`
+# with both paths quoted by shell_quote_ascii: pasted after DEST was recreated it does nothing, and a hostile
+# name is data, never code.
 guard_stale_swap_siblings() {
   local rel sibling found=0
   while IFS= read -r rel; do
@@ -566,12 +579,12 @@ guard_stale_swap_siblings() {
       fi
       found=1
       if [[ "$sibling" == *.emage-old.* ]]; then
-        echo "  $(printable "$sibling")" >&2
-        echo "    the tree this update was replacing. If $(printable "$TARGET/$rel") is missing it is your only copy:" >&2
-        echo "      mv -- $(printf '%q' "$sibling") $(printf '%q' "$TARGET/$rel")" >&2
+        echo "  $(ascii_printable "$sibling")" >&2
+        echo "    the tree this update was replacing. If $(ascii_printable "$TARGET/$rel") is missing it is your only copy:" >&2
+        echo "      [ ! -e $(shell_quote_ascii "$TARGET/$rel") ] && mv -- $(shell_quote_ascii "$sibling") $(shell_quote_ascii "$TARGET/$rel")" >&2
         echo "    otherwise, after checking nothing in it is needed, remove it." >&2
       else
-        echo "  $(printable "$sibling")" >&2
+        echo "  $(ascii_printable "$sibling")" >&2
         echo "    the unfinished new tree of an interrupted update; remove it." >&2
       fi
     done

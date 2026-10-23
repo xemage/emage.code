@@ -1035,10 +1035,104 @@ class TestStaleSwapSiblingsAreRefused(_Scratch):
         os.rename(target / ".claude", target / ".claude.emage-old.4242")
         proc = run_installer(INSTALLER, target, "--platform", "claude-code", "--update")
         self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
-        self.assertIn(f"mv -- {shlex.quote(str(target / '.claude.emage-old.4242'))} {shlex.quote(str(target / '.claude'))}",
+        self.assertIn(f"[ ! -e {shlex.quote(str(target / '.claude'))} ] && "
+                      f"mv -- {shlex.quote(str(target / '.claude.emage-old.4242'))} {shlex.quote(str(target / '.claude'))}",
                       proc.stderr)
         self.assertFalse((target / ".claude").exists(), "nothing may be installed over the missing tree")
         self.assertTrue((target / ".claude.emage-old.4242" / "agents").is_dir())
+
+    HOSTILE = {
+        "semicolon": "4242;touch MARKER;",
+        "command-substitution": "4242$(touch MARKER)",
+        "backtick": "4242`touch MARKER`",
+        "space": "4242 touch MARKER",
+        "newline": "4242\ntouch MARKER\n",
+        "bidi-override": "4242\u202etxt.exe",
+        "quote-and-ampersand": "4242'; touch MARKER &",
+    }
+
+    def _hint(self, stderr: str) -> str:
+        lines = [line.strip() for line in stderr.splitlines() if line.startswith("      [ ! -e ")]
+        self.assertEqual(len(lines), 1, stderr)
+        return lines[0]
+
+    def _refused_with_hostile_sibling(self, target: Path, suffix: str, utf8: bool) -> tuple[Path, str]:
+        old = target / f".claude.emage-old.{suffix}"
+        os.rename(target / ".claude", old)
+        env = dict(os.environ, LC_ALL="C.UTF-8" if utf8 else "C")
+        proc = subprocess.run(["bash", str(INSTALLER), "--target", str(target), "--platform", "claude-code", "--update"],
+                              capture_output=True, text=True, errors="surrogateescape", env=env, timeout=120)
+        self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+        return old, proc.stderr
+
+    def test_the_printed_hint_is_data_not_code_for_a_hostile_name(self) -> None:
+        """The hint is run through `bash -c`: no marker appears and the tree is restored (SEC-T682-03)."""
+        for utf8 in (True, False):
+            for label, suffix in self.HOSTILE.items():
+                with self.subTest(name=label, utf8=utf8):
+                    case = f"{label}-{'utf8' if utf8 else 'c'}"
+                    target = self.installed("claude-code", f"project-{case}")
+                    old, stderr = self._refused_with_hostile_sibling(target, suffix, utf8)
+                    work = self.tmp / f"work-{case}"
+                    work.mkdir()
+                    hint = self._hint(stderr)
+                    self.assertTrue(hint.startswith("[ ! -e "), hint)
+                    self.assertIn("] && mv -- ", hint)
+                    self.assertTrue(stderr.isascii(), "the message must be byte-wise ASCII, whatever the locale")
+                    # Run once while DEST is missing: restores, and nothing else happens.
+                    ran = subprocess.run(["bash", "-c", hint], cwd=work, capture_output=True, text=True,
+                                         errors="surrogateescape", env=dict(os.environ, LC_ALL="C"))
+                    self.assertEqual(ran.returncode, 0, ran.stdout + ran.stderr)
+                    self.assertEqual(os.listdir(work), [], "a side effect of the hint (a marker in the cwd)")
+                    self.assertTrue((target / ".claude" / "agents").is_dir(), "the old tree was not restored")
+                    self.assertFalse(os.path.lexists(old))
+                    # Pasting it again, with DEST recreated, does nothing at all (no nesting).
+                    os.rename(target / ".claude", old)
+                    (target / ".claude").mkdir()
+                    before = _paths(target)
+                    again = subprocess.run(["bash", "-c", hint], cwd=work, capture_output=True, text=True,
+                                           errors="surrogateescape", env=dict(os.environ, LC_ALL="C"))
+                    self.assertNotEqual(again.returncode, 0)
+                    self.assertEqual(_paths(target), before, "the hint nested the old tree inside the recreated one")
+                    self.assertEqual(os.listdir(work), [])
+
+    def test_a_hostile_unfinished_new_tree_name_is_ascii(self) -> None:
+        for label, suffix in (("bidi", "4242\u202etxt"), ("escape", "\x1b[31mx"), ("newline", "4242\nx")):
+            with self.subTest(name=label):
+                target = self.installed("claude-code", f"project-{label}")
+                (target / f".claude.emage-new.{suffix}").mkdir()
+                env = dict(os.environ, LC_ALL="C.UTF-8")
+                proc = subprocess.run(["bash", str(INSTALLER), "--target", str(target), "--platform", "claude-code",
+                                       "--update"], capture_output=True, text=True, errors="surrogateescape", env=env,
+                                      timeout=120)
+                self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+                self.assertTrue(proc.stderr.isascii(), proc.stderr)
+                self.assertNotIn("\x1b", proc.stderr)
+
+    def test_a_hostile_target_directory_name_is_ascii_in_the_message_and_data_in_the_hint(self) -> None:
+        """The target's own name reaches the second display line and both hint operands."""
+        names = {"bidi": "pro\u202eject", "escape": "pro\x1b[31mject", "command": "pro$(touch MARKER)ject",
+                 "newline": "pro\ntouch MARKER\nject"}
+        for label, name in names.items():
+            with self.subTest(name=label):
+                target = self.installed("claude-code", name)
+                old, stderr = self._refused_with_hostile_sibling(target, "4242", True)
+                self.assertTrue(stderr.isascii(), stderr)
+                self.assertNotIn("\x1b", stderr)
+                work = self.tmp / f"work-{label}"
+                work.mkdir()
+                ran = subprocess.run(["bash", "-c", self._hint(stderr)], cwd=work, capture_output=True, text=True,
+                                     errors="surrogateescape", env=dict(os.environ, LC_ALL="C"))
+                self.assertEqual(ran.returncode, 0, ran.stdout + ran.stderr)
+                self.assertEqual(os.listdir(work), [])
+                self.assertTrue((target / ".claude" / "agents").is_dir())
+
+    def test_the_hint_names_are_octal_escaped_in_every_locale(self) -> None:
+        target = self.installed("claude-code")
+        _, stderr = self._refused_with_hostile_sibling(target, "4242\u202etxt", True)
+        self.assertIn("\\342\\200\\256", self._hint(stderr))
+        self.assertNotIn("\u202e", stderr)
+        self.assertTrue(stderr.isascii(), stderr)
 
     def test_a_symlink_at_a_sibling_name_is_refused_and_not_followed(self) -> None:
         target = self.installed("claude-code")

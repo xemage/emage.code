@@ -954,22 +954,80 @@ function removalTargets(manifest) {
   return targets;
 }
 
-// T682 (N-5): assertUnderRoot only keeps a target inside ROOT. A target that equals, contains or lies
-// inside a generator input (knowledge, platforms, _extras, scripts, runtime, the generator's own
-// directory) would be deleted before it is read, and two manifests whose trees overlap would delete
-// each other's output. Called from the validation pass, over every manifest, before the first write.
-function assertNoOverlappingTargets(manifests) {
-  const inputs = [KNOWLEDGE, PLATFORMS, EXTRAS, path.resolve(ROOT, 'scripts'), path.resolve(ROOT, 'runtime'), __dirname];
-  const targets = manifests.flatMap(removalTargets);
-  targets.forEach((target, index) => {
-    for (const input of inputs) {
-      if (overlaps(target.dir, input)) {
-        throw new Error(`Refusing ${target.label}: ${target.dir} overlaps the generator input ${input}`);
+// T684 (SEC-T682-04): the files a manifest's mcp block writes: the config and its provenance sidecar.
+function mcpFiles(manifest) {
+  if (!manifest.mcp) return [];
+  const outPath = path.resolve(path.resolve(ROOT, manifest.outputDir), manifest.mcp.outputFile);
+  return [
+    { label: `mcp.outputFile of ${manifest.platform}`, dir: outPath, file: true },
+    { label: `mcp.outputFile provenance of ${manifest.platform}`, dir: outPath + '.provenance.json', file: true },
+  ];
+}
+
+// T684 (SEC-T682-04): the physical, case-folded form of a path that need not exist yet, for the overlap
+// checks below: the nearest existing ancestor is resolved with fs.realpath and the components below it are
+// appended as given; a dangling symlink is followed by hand (readlink), at most 40 hops (a defensive
+// bound: realpath reports ELOOP for a cycle first). The result is
+// NFC-normalised and lower-cased, so `Scripts` and `scripts` are one place on a case-insensitive file
+// system; on a case-sensitive one that is a false positive, which only makes the check stricter.
+// Remaining limits (documented, not closed): the check runs once before the first write, so a link
+// swapped in afterwards (a race with another process) is not seen; hard links and bind mounts are not
+// resolved; the folding is toLowerCase, not the file system's own table; a path that cannot be resolved
+// for another reason (EACCES, ELOOP) is refused, never skipped.
+async function physicalFolded(target) {
+  let current = path.resolve(target);
+  let rest = '';
+  for (let hops = 0; hops < 40; ) {
+    try {
+      return (await fs.realpath(current) + rest).normalize('NFC').toLowerCase();
+    } catch (error) {
+      if (error.code !== 'ENOENT' && error.code !== 'ENOTDIR') {
+        throw new Error(`Refusing ${target}: cannot resolve ${current} (${error.code || error.message})`);
       }
     }
+    let link = null;
+    try {
+      link = await fs.readlink(current);
+    } catch {
+      // not a symlink: the component is simply missing
+    }
+    if (link !== null) {
+      hops += 1;
+      current = path.resolve(path.dirname(current), link);
+      continue;
+    }
+    const parent = path.dirname(current);
+    if (parent === current) return (current + rest).normalize('NFC').toLowerCase();
+    rest = path.sep + path.basename(current) + rest;
+    current = parent;
+  }
+  throw new Error(`Refusing ${target}: more than 40 symbolic links to follow`);
+}
+
+// T682 (N-5), T684 (SEC-T682-04): assertUnderRoot only keeps a path inside ROOT. A target that equals,
+// contains or lies inside a generator input (knowledge, platforms, _extras, scripts, runtime, the
+// generator's own directory) would be deleted before it is read, an mcp.outputFile (or its
+// .provenance.json sidecar) that equals or lies inside one would overwrite it, and two manifests whose
+// trees overlap would delete each other's output. Each pair is compared lexically and again in its
+// physical, case-folded form (physicalFolded: a symlinked outputDir that leads into an input is caught).
+// Called from the validation pass, over every manifest, before the first write.
+async function assertNoOverlappingTargets(manifests) {
+  const inputs = [KNOWLEDGE, PLATFORMS, EXTRAS, path.resolve(ROOT, 'scripts'), path.resolve(ROOT, 'runtime'), __dirname];
+  const physicalInputs = await Promise.all(inputs.map(physicalFolded));
+  const targets = manifests.flatMap(removalTargets);
+  const files = manifests.flatMap(mcpFiles);
+  const guarded = [...targets, ...files];
+  for (const item of guarded) item.physical = await physicalFolded(item.dir);
+  guarded.forEach((item, index) => {
+    inputs.forEach((input, at) => {
+      if (overlaps(item.dir, input) || overlaps(item.physical, physicalInputs[at])) {
+        throw new Error(`Refusing ${item.label}: ${item.dir} overlaps the generator input ${input}`);
+      }
+    });
+    if (item.file) return;
     for (const other of targets.slice(index + 1)) {
-      if (overlaps(target.dir, other.dir)) {
-        throw new Error(`Refusing ${target.label}: ${target.dir} overlaps ${other.label} (${other.dir})`);
+      if (overlaps(item.dir, other.dir) || overlaps(item.physical, other.physical)) {
+        throw new Error(`Refusing ${item.label}: ${item.dir} overlaps ${other.label} (${other.dir})`);
       }
     }
   });
@@ -1137,7 +1195,7 @@ async function main() {
     validateManifestPaths(manifest);
     manifests.push(manifest);
   }
-  assertNoOverlappingTargets(manifests);
+  await assertNoOverlappingTargets(manifests);
 
   for (const manifest of manifests) {
     if (ONLY_PLATFORM && manifest.platform !== ONLY_PLATFORM) continue;
