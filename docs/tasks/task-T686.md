@@ -2,13 +2,13 @@
 
 **ID:** T686
 **Owner:** devops-engineer
-**Status:** pending
+**Status:** done
 **Priority:** P2
 **Tier:** standard
 **Depends on:** T685
 **Affects:** —
 **Created:** 2026-10-23
-**Completed:** —
+**Completed:** 2026-10-23
 **Based on:**
 - `docs/plans/plan-123-post-release-follow-ups.md` (Addendum of 2026-10-23: T686)
 - `docs/artifacts/security-review-t685-supply-chain-residuals-v1.md` (the WIKI_TOKEN section)

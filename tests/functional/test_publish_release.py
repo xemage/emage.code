@@ -243,9 +243,12 @@ class TestSingleReleaseDocument(unittest.TestCase):
         self.assertIsNotNone(artifacts)
         self.assertEqual(re.findall(r"- (\S+)", artifacts.group(1)), ["CHANGELOG.md"])
         self.assertIn('needs: ["release-docs-gate", "main-develop-drift-gate"]', body)
-        self.assertIn("--token-env WIKI_TOKEN", body)  # T675: the name, never the value, is in argv
+        # T675/T686: the job token, by name (never the value) and in the JOB-TOKEN header; WIKI_TOKEN is not the release credential
+        self.assertIn("--token-env CI_JOB_TOKEN --token-header JOB-TOKEN", body)
+        self.assertNotIn("--token-env WIKI_TOKEN", body)
         self.assertNotIn("--token \"", body)
         self.assertNotIn("${WIKI_TOKEN}", body)
+        self.assertNotIn("${CI_JOB_TOKEN}", body)
         self.assertIn(r"/^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$/", body)
 
     def test_tag_re_equals_every_ci_tag_rule(self):
@@ -430,7 +433,7 @@ class TestGuardsAndApiPaths(unittest.TestCase):
         sent: list[tuple[str, str, dict | None]] = []
         error = self.publish_release.ReleasePublishError
 
-        def fake(method, url, token, payload=None):
+        def fake(method, url, token, payload=None, token_header="PRIVATE-TOKEN"):
             sent.append((method, url, payload))
             if method == "GET":
                 if isinstance(get_result, tuple):
@@ -684,7 +687,7 @@ class TestTokenFromEnvironment(unittest.TestCase):
         (root / "docs" / "releases" / "v1.2.3.md").write_text("# Release v1.2.3\n\nbody\n", encoding="utf-8")
         seen: list[tuple[str, str]] = []
 
-        def fake_request(method, url, token, payload=None):
+        def fake_request(method, url, token, payload=None, token_header="PRIVATE-TOKEN"):
             seen.append((method, token))
             if method == "GET":
                 raise self.pr.ReleasePublishError("GitLab API GET u failed: 404 fake", 404)
@@ -904,7 +907,7 @@ class TestReleaseBriefAndTagGuards(unittest.TestCase):
             subjects = self.pr.get_commit_subjects("v1.2.3", None)
         self.assertEqual(subjects, ["feat: ok[31m red", "fix(x): tabhere end"])
 
-    def test_git_runs_without_the_token_variable_but_with_the_rest_of_the_environment(self):
+    def test_git_runs_without_the_token_variable_but_with_the_allowlisted_rest_of_the_environment(self):
         seen: list[dict] = []
         fake = mock.Mock(returncode=0, stdout=b"ok\n", stderr=b"")
 
@@ -912,14 +915,15 @@ class TestReleaseBriefAndTagGuards(unittest.TestCase):
             seen.append(kwargs)
             return fake
 
-        with mock.patch.dict(os.environ, {"WIKI_TOKEN": "glpat-FAKE", "MY_TOKEN_VAR": "glpat-FAKE2", "KEEP_ME": "1"}), \
+        with mock.patch.dict(os.environ, {"WIKI_TOKEN": "glpat-FAKE", "MY_TOKEN_VAR": "glpat-FAKE2", "LANG": "C", "KEEP_ME": "1"}), \
                 mock.patch.object(self.pr.subprocess, "run", run), \
                 mock.patch.object(self.pr, "WITHHELD_ENV_NAMES", {"WIKI_TOKEN", "MY_TOKEN_VAR"}):
             self.assertEqual(self.pr.run_git(["status"]), "ok")
         env = seen[0]["env"]
         self.assertNotIn("WIKI_TOKEN", env)
         self.assertNotIn("MY_TOKEN_VAR", env)
-        self.assertEqual(env["KEEP_ME"], "1")
+        self.assertEqual(env["LANG"], "C")  # T686: the environment is an allowlist now, so the allowlisted rest passes ...
+        self.assertNotIn("KEEP_ME", env)  # ... and an unlisted variable does not
         self.assertIn("PATH", env)
 
     def test_main_withholds_the_named_token_variable_from_git(self):
@@ -1140,7 +1144,9 @@ class TestCiSupplyChainPins(unittest.TestCase):
         self.assertNotIn("python3 -c", self.ci)
         job = re.search(r"^release:\n(?:[ \t].*\n|\n)+", self.ci, re.M).group(0)
         bootstrap = [ln for ln in job.splitlines() if "subprocess.check_call" in ln][0]
-        self.assertIn("!= 'WIKI_TOKEN'", bootstrap)
+        # T686: both CI tokens are secret sources; apk gets an allowlist minus any variable whose value holds one of them
+        self.assertIn("k in ('CI_JOB_TOKEN', 'WIKI_TOKEN')", bootstrap)
+        self.assertIn("not any(x in i[1] for x in secrets)", bootstrap)
         self.assertIn("env=env", bootstrap)
 
     def test_the_unit_test_job_installs_ripgrep_and_the_pinned_mcp_sdk(self):
@@ -1157,7 +1163,7 @@ class TestCiSupplyChainPins(unittest.TestCase):
     def test_the_release_job_pins_the_host_and_never_puts_the_token_in_argv(self):
         job = re.search(r"^release:\n(?:[ \t].*\n|\n)+", self.ci, re.M).group(0)
         self.assertIn('--expected-host "${CI_SERVER_HOST}"', job)
-        self.assertNotRegex(job, r"--token(?!-env)")
+        self.assertNotRegex(job, r"--token(?!-env(?![\w-])|-header JOB-TOKEN(?=\s|$))")  # T686: only --token-env NAME and the fixed header option
 
 
 if __name__ == "__main__":

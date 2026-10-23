@@ -214,8 +214,14 @@ The project uses **Semantic Versioning** (`vMAJOR.MINOR.PATCH`) and
 
    The `release-docs-gate` fails when the release document's Gate Verdicts or RELEASE VERDICT section
    still holds `pending`, `YYYY-MM-DD` or another template placeholder (fill every row and field before
-   the tag). The `release` job reads the GitLab token from the CI variable `WIKI_TOKEN` through
-   `--token-env WIKI_TOKEN`, so the value is never in argv, and pins the API host to `CI_SERVER_HOST`.
+   the tag). Since T686 the `release` job authenticates with the GitLab job token: it reads
+   `CI_JOB_TOKEN` through `--token-env CI_JOB_TOKEN --token-header JOB-TOKEN`, so the value is never
+   in argv, is sent only in the `JOB-TOKEN` header (the script accepts only `PRIVATE-TOKEN` and
+   `JOB-TOKEN` as header names, and never follows a redirect), and the API host is pinned to
+   `CI_SERVER_HOST`. The `git` and `apk` child processes get an allowlisted environment, and no
+   variable whose value contains the job token is passed to either of them, whatever the variable is
+   called (the same token also appears as `CI_REGISTRY_PASSWORD` and inside `CI_REPOSITORY_URL`). The job no longer uses
+   `WIKI_TOKEN`; see "Release token and permissions" below.
 
 If you must manually create or repair a GitLab release entry, always source notes from the release brief file:
 
@@ -224,6 +230,52 @@ glab release create vX.Y.Z --ref vX.Y.Z --name vX.Y.Z -F docs/releases/vX.Y.Z.md
 ```
 
 Do not use ad-hoc inline `--notes`, as that can drift from `docs/releases/vX.Y.Z.md`.
+
+### Release token and permissions
+
+The tag pipeline creates the GitLab Release with the job token of the user who pushed the tag
+(T686; `docs/artifacts/security-review-t685-supply-chain-residuals-v1.md`, the `WIKI_TOKEN` section).
+A job token acts with the permissions of that user, so:
+
+- The pushing user needs at least the **Developer role** on the project and the permission to
+  create the tag (GitLab's Releases API requires the Developer role to create or update a release).
+  That role may be higher than the role the old `WIKI_TOKEN` carried: the release now acts with the
+  pusher's role, not with the token's.
+- Protected `v*` tags should be **restricted to Maintainers** ("Allowed to create"). Whoever can push
+  a release tag runs the tagged commit's scripts in the release job, with the job token of that
+  user in its environment. Tag protection limits who runs the release job; it does **not** limit
+  who holds a Releases-capable token: every job of every pipeline has a job token, so any Developer
+  job holds one. The real controls are the protected `v*` tags (Maintainers) and GitLab's job token
+  permission and allowlist settings (on newer GitLab versions, fine-grained job token permissions).
+- `WIKI_TOKEN` is used **only by the `wiki-sync` job** (the Wiki API does not accept job tokens). It
+  must be a **protected and masked** CI/CD variable holding a token with the minimum role that can
+  edit the wiki (typically Developer) and the `api` scope that wiki pages need. The release job does
+  not use it; its `git` and `apk` child processes also never see it.
+- What the child-process filter does, exactly: `git` and `apk` get only allowlisted variable names
+  (`PATH`, `HOME`, locale, temp directory, proxy and CA-bundle variables, and the few `GIT_*` names
+  git needs), and no variable whose value contains the job token, `WIKI_TOKEN` or the token that was
+  passed is handed to either of them. It does not hide the token from the script itself, from the
+  runner's own `.git/config` (which holds the clone credential) or from other jobs.
+- Keep the manual fallback above (`glab release create ...`) until a real tag pipeline has confirmed
+  the job token. If the `release` job fails with a 401 or 403 from the Releases API (for example
+  because a job token permission or allowlist setting denies it), create the release with the
+  fallback and report the status code in the release record.
+- Not changed by T686 and not checked by any agent: the GitLab settings themselves (tag protection,
+  the variable flags, the token's role and scope, the job token permissions) belong to the user.
+- **(unverified)** Whether job tokens work in tag pipelines on protected tags in this GitLab
+  instance, whether the Releases API accepts the job token here (the GitLab documentation says it
+  does, read 2026-10-22), whether protected tags also restrict release create, update and delete,
+  and whether `CI_JOB_TOKEN` is masked in job logs.
+
+First-tag rehearsal checklist (the user runs it on the first real tag pipeline):
+
+- [ ] The `release` job succeeded, or failed with a status code you wrote down (then use the fallback).
+- [ ] Search the whole job log of the `release` job and of `release-docs-gate` for the job token value
+      (it is not printed by the script, and masking of `CI_JOB_TOKEN` in job logs is unverified).
+- [ ] The GitLab Release shows the text of `docs/releases/vX.Y.Z.md`.
+- [ ] `git fetch` in the `release` job worked with the allowlisted environment (the runner's clone
+      credential lives in `.git/config`); if it did not, report the log line, do not widen the allowlist
+      to the job token.
 
 ### Drift detection
 

@@ -155,8 +155,8 @@ def run_dry_run(tag: str, work: Path, source: DryRunSource | None = None) -> dic
 
     sent: list[dict[str, Any]] = []
 
-    def fake_gitlab_request(method, url, token, payload=None):
-        sent.append({"method": method, "url": url, "payload": payload})
+    def fake_gitlab_request(method, url, token, payload=None, token_header="PRIVATE-TOKEN"):
+        sent.append({"method": method, "url": url, "payload": payload, "token_header": token_header})
         if method == "GET":
             raise module.ReleasePublishError(f"GitLab API GET {url} failed: 404 fake", 404)
         return {"tag_name": tag}
@@ -172,6 +172,7 @@ def run_dry_run(tag: str, work: Path, source: DryRunSource | None = None) -> dic
         "publish-release.py", "--tag", tag,
         "--api-v4-url", "https://gitlab.invalid/api/v4", "--expected-host", "gitlab.invalid",
         "--project-id", "0", "--token-env", TOKEN_ENV,
+        "--token-header", "JOB-TOKEN",  # as the CI release job (T686)
     ]
     previous_token = os.environ.get(TOKEN_ENV)
     out = io.StringIO()
