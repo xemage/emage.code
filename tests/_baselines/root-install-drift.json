@@ -56,7 +56,20 @@
     "Declared 2026-10-22 by T680 (SEC-T665-09 and the review follow-up: the Pi MCP config renders `${VAR}`, leaves the optional `gitlab` token variables out and no longer generates `hindsight` and `cwso`; the generator gains `optional: true` and `skipFormats`): 1 further path, `.pi/mcp.json.provenance.json` (`.pi/mcp.json` was already declared by T665); scripts/ and the docs are not root-install paths; root not refreshed.",
     "Declared 2026-10-22 by T685 (knowledge edit: the end-of-life image examples node:20-alpine and alpine:3.19 in the devops-engineer agent and the ci-cd-pipeline skill replaced by node:24-alpine and alpine:3.24): 7 new paths = the ci-cd-pipeline skill projections of claude, cline, gemini, github, opencode and pi, and the gemini devops-engineer agent; the other projections of the two files were already declared (T667). No refresh of the root install.",
     "Declared 2026-10-23 by T688 (SEC-T660-02, knowledge edit: `qa-engineer` drops `get_pipeline_job_output`, 20 to 19 GitLab tools, and gains the body line against raw job traces): 4 new paths = the qa-engineer projections of claude, gemini, github and pi (the opencode projection was already declared); the root refresh (T679) follows.",
-    "Emptied 2026-10-23 by T679 (ADR-010 step S3, the user's approval of 2026-10-23: \"Yes, refresh the root now (Recommended)\"): the root self-install was refreshed with `scripts/install.sh --target <worktree> --platform all --projections-only` from develop 9998f71e (sources touched, destination mtimes set old because rsync's quick check works at one-second resolution and skips equal-size files edited within the same second); the 104 declared paths no longer diverge; no `.cursor` path remains; no file under docs/ or implementation/ changed."
+    "Emptied 2026-10-23 by T679 (ADR-010 step S3, the user's approval of 2026-10-23: \"Yes, refresh the root now (Recommended)\"): the root self-install was refreshed with `scripts/install.sh --target <worktree> --platform all --projections-only` from develop 9998f71e (sources touched, destination mtimes set old because rsync's quick check works at one-second resolution and skips equal-size files edited within the same second); the 104 declared paths no longer diverge; no `.cursor` path remains; no file under docs/ or implementation/ changed.",
+    "Declared 2026-10-24 by T692 (RO621-N-2 ruling: one sentence in `poc-guidelines.md` and `technical-debt-narrator.md` stating that `TECHNICAL-DEBT.md` lives in the PoC root next to `POC-DEBT-SCORECARD.md`): 11 new paths = the poc-guidelines projections of claude, cline, gemini, github, opencode and pi (6) and the technical-debt-narrator projections of claude, gemini, github, opencode and pi (5); the next root refresh clears them."
   ],
-  "drift": []
+  "drift": [
+    ".claude/agents/technical-debt-narrator.md",
+    ".claude/rules/poc-guidelines.md",
+    ".clinerules/poc-guidelines.md",
+    ".gemini/agents/technical-debt-narrator.md",
+    ".gemini/instructions/poc-guidelines.md",
+    ".github/agents/technical-debt-narrator.agent.md",
+    ".github/instructions/poc-guidelines.instructions.md",
+    ".opencode/agents/technical-debt-narrator.md",
+    ".opencode/instructions/poc-guidelines.md",
+    ".pi/agents/technical-debt-narrator.md",
+    ".pi/instructions/poc-guidelines.md"
+  ]
 }
