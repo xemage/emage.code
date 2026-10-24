@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-23T08:14:03+02:00",
+  "generatedAt": "2026-10-24T15:14:38+00:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -640,7 +640,7 @@
       "category": "agent",
       "name": "Technical Debt Narrator",
       "path": "agents/technical-debt-narrator.md",
-      "checksum": "6182a2add0100771fb5f66a8e86c0226dff35b107c7e26b983e98b730112a551",
+      "checksum": "e0ca7624a1e9b1de7fa567b7111f76a2d625dd88ef8b0fb6078d5f5cd6376dbb",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1342,7 +1342,7 @@
       "category": "instruction",
       "name": "poc-guidelines",
       "path": "instructions/poc-guidelines.md",
-      "checksum": "108604c3cb106290eefc24309fd5feca51dcebcac049c59761226d06396dc542",
+      "checksum": "32ab9d2c5287018a02d6ddcf711fcbe4461c4a32f40dcb8f507cc664f1e4f548",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
