@@ -167,3 +167,9 @@ The user reported on 2026-10-24 the results of the user actions A-1 to A-4 (the 
 29. **T690** (devops-engineer): generate `security-audit` and `poc-security-audit` for GitHub Copilot (K-3, D-4 b). Depends on T687. *Acceptance:* `.vscode/mcp.json` carries the two servers, the Copilot security agents hold their tools, the K-3 limitation is gone from the live docs, all gates and the suite pass, a Security Engineer review follows.
 30. **T691** (solution-architect): the ruling on P112-P41-O1 (release self-review), decision artifact only. Depends on T687. *Acceptance:* the ruling artifact with options, a recommendation and the lines to change.
 31. **T692** (devops-engineer): RO621-N-2 ruled (`TECHNICAL-DEBT.md` lives in the PoC root, next to `POC-DEBT-SCORECARD.md`) in `poc-guidelines.md` and `technical-debt-narrator.md`; RO621-N-1 accepted without change. Depends on T687. *Acceptance:* the sentence in both files and their projections, mirrors and registry regenerated, all gates and the suite pass, no scorecard or evaluator drift.
+
+## Addendum (2026-10-24): the ruling of T691 and T693
+
+T691 (the Solution Architect's ruling on P112-P41-O1, `docs/artifacts/ruling-p112-p41-o1-release-self-review-v1.md`) recommends option A+: keep the executors, make the independent check of the release document a named gate input in `release-manager.md` and `orchestrator.md` (three hunks, no change to `validation-gates`, commands, `AGENTS.md` or goldens). The user asked the Solution Architect to rule and may overrule.
+
+32. **T693** (devops-engineer): apply the ruling (E1 to E3). Depends on T691; **starts only after the user has had the chance to overrule**. *Acceptance:* the three hunks in both files and all projections, registry and mirrors regenerated, all gates and the suite pass, a Security Engineer read follows.
