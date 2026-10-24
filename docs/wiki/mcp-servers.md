@@ -12,7 +12,7 @@ All servers are declared once in [`implementation/knowledge/mcp/servers.yaml`](h
 | Tag | Behaviour |
 |-----|-----------|
 | `core` | Emitted to **every** platform, always available |
-| `extended` | Emitted only to platforms that opt in via their manifest (all except `github`: `gemini`, `opencode`, `pi`, `claude-code`, `cline`) |
+| `extended` | Emitted only to platforms that opt in via their manifest (`gemini`, `opencode`, `pi`, `claude-code`, `cline`). `github` opts in to no `extended` server as a whole; it carries `security-audit` and `poc-security-audit` only, through `extraPlatforms: [github]` on those two entries (T690) |
 
 ## Core servers (always available)
 
@@ -217,7 +217,7 @@ A clean result means **no match for the fixed rule set at the scanned refs. It i
 | Python package `mcp` | Pinned `mcp==2.2.0` in `implementation/runtime/security/requirements-mcp-server.txt`, the same pin as the memory server. That release declares Python 3.10 or newer on PyPI; the repository itself states no minimum. Without it the client shows a generic "Connection closed" error. |
 | `git` 2.40 or newer on `PATH` | The scanner reads attributes from git's empty tree with `--attr-source`; an older git exits non-zero and every call fails closed as `git_failed`. |
 | A regex library with `RE_DUP_MAX` of at least 1024 | Used by `git grep -E` and `git log -G`. glibc has 32767. Where it is lower (some musl and BSD builds), every scope except `tracked_names` ends `regex_unsupported` with `complete: false`. |
-| Launch from the project root | The configs start the server with `--allowed-root .` and an `implementation.…` module path, both relative to its launch directory. The server accepts only repositories inside that directory. |
+| Launch from the project root | The configs start the server with `--allowed-root .` and an `implementation.…` module path, both relative to its launch directory. The server accepts only repositories inside that directory. In VS Code the entry sets `"cwd": "${workspaceFolder}"`, so the launch directory is the workspace folder; open the project root as the workspace folder. |
 | POSIX host | Paths such as `/dev/null` are assumed. Windows is not verified. |
 
 Install the dependency once per project, from the project root; the installer prints this command after a full install or `--update`:
@@ -246,7 +246,11 @@ The installer never writes `.claude/settings.json`. For Claude Code, add this to
 
 ### Platform availability
 
-The entry is generated into `.mcp.json` (Claude Code), `.gemini/settings.json`, `.opencode/opencode.json`, `.pi/mcp.json` and `.cline/mcp.json`. It is **not** in GitHub Copilot's `.vscode/mcp.json`, because `extended` servers are not emitted to the `github` platform. On Copilot the reviewer's scan has no server to call; see the `FAIL` rule above.
+The entry is generated into `.mcp.json` (Claude Code), `.gemini/settings.json`, `.opencode/opencode.json`, `.pi/mcp.json`, `.cline/mcp.json` and, since T690, GitHub Copilot's `.vscode/mcp.json`. The `github` platform does not carry the `extended` servers as a group: `servers.yaml` lists `extraPlatforms: [github]` on `security-audit` and `poc-security-audit` and on no other entry, so `cwso`, `hf-mcp-server`, `context-retriever`, `filesystem`, `git`, `supabase` and `toolradar` stay out of `.vscode/mcp.json`. `sync.mjs` refuses a platform name in `extraPlatforms` that no manifest declares, before it writes a file.
+
+The VS Code entries differ from the others in one key. Each carries `"cwd": "${workspaceFolder}"` (`cwd: workspace` in `servers.yaml`), so the server starts in the workspace folder and `-m implementation.runtime.security...` and `--allowed-root .` resolve against it. VS Code documents `cwd` ("Working directory for the server command. Defaults to the workspace folder when run in a workspace.") and `${workspaceFolder}` as a predefined variable of the server configuration (<https://code.visualstudio.com/docs/copilot/reference/mcp-configuration>, read 2026-10-24); a live VS Code run was **not** made **(unverified)**. The same page says workspace MCP servers inherit Workspace Trust, and it separates trusting a server to start from approving individual tool calls, so VS Code can ask for either before the scan runs; the prompts were not observed **(unverified)**. Whether the `python3` that VS Code launches can import `mcp` depends on your machine **(unverified)**. VS Code starts the server from its own process environment, not from a terminal virtual environment: start VS Code from a shell where the virtual environment of [Requirements](#requirements) is active (for example `source .venv-mcp/bin/activate && code .`), or make `python3` on the `PATH` of the VS Code process able to import `mcp`.
+
+The Copilot agent files list the tools in Copilot's form, `security-audit/<tool>` and `poc-security-audit/<tool>` (`frontmatter.agents.mcpToolNames: slash`; see `docs/artifacts/mcp-tool-name-mapping-v1.md`): `security-engineer` holds the four `security-audit` tools and `poc-security-engineer` holds `security-audit/grep_content`, `poc-security-audit/scan_secrets` and `poc-security-audit/ref_containment`, as on the other platforms, and no other Copilot agent lists either server. The server's own denials and its allowed root are unchanged. The config holds no secret and no placeholder, because neither server reads an environment variable. The `FAIL` rule above is unchanged: a scan that did not complete is `FAIL` on Copilot as everywhere else.
 
 ## Per-platform output
 

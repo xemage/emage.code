@@ -9,6 +9,15 @@
 #   core     — always emitted to every platform
 #   extended — only emitted when the platform manifest opts into "extended"
 #
+# `extraPlatforms: [github]` (T690, K-3 / D-4 b) adds ONE server to the named platforms whose manifest
+# `mcp.tags` do not select it. The `github` platform (tags: core) carries `security-audit` and
+# `poc-security-audit` this way and no other `extended` server. A name must be the `platform` of a manifest in
+# platforms/*.json; an unknown or misspelled name stops sync.mjs before the first write. `skipFormats` still wins.
+#
+# `cwd: workspace` (T690) makes the vscode format write `"cwd": "${workspaceFolder}"` on a stdio entry, so the
+# server starts in the workspace folder (VS Code documents `cwd`, default: the workspace folder). The other
+# formats ignore it. `workspace` is the only accepted value.
+#
 # `secret` env vars are emitted as platform-native env-var references; never
 # inline secrets in this file.
 #
@@ -196,6 +205,9 @@ servers:
     # run_dotnet_list_vulnerable, grep_content) is a local CLI subprocess call against the
     # calling agent's own workspace -- no network call, no API key.
     tags: [extended]
+    # T690 (K-3, D-4 b): also generated for GitHub Copilot (VS Code), see `extraPlatforms` above.
+    extraPlatforms: [github]
+    cwd: workspace
     denyUnlessGranted: true
     transport: stdio
     command: python3
@@ -210,6 +222,10 @@ servers:
     # client launches from); it is never a tool parameter. No `env:` block: local git
     # subprocess calls only, no network call, no API key.
     tags: [extended]
+    # T690 (K-3, D-4 b): also generated for GitHub Copilot (VS Code), see `extraPlatforms` above. `cwd: workspace`
+    # keeps `--allowed-root .` the workspace folder there.
+    extraPlatforms: [github]
+    cwd: workspace
     denyUnlessGranted: true
     transport: stdio
     command: python3

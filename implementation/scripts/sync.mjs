@@ -197,6 +197,7 @@ const DENY_TOOL_NAME = /^[A-Za-z0-9_]+$/;
 // leaves the denial out; it now stops the run.
 const SERVER_KEYS = new Set([
   'tags', 'transport', 'command', 'args', 'env', 'url', 'headers', 'denyTools', 'denyUnlessGranted', 'skipFormats',
+  'extraPlatforms', 'cwd',
 ]);
 
 // T680 (SEC-T680-03): `skipFormats: [<format>, ...]` leaves a server out of the MCP config of the named
@@ -205,9 +206,26 @@ const SERVER_KEYS = new Set([
 // older release generated. Only known format names are accepted: a misspelling would keep the entry.
 const MCP_FORMATS = ['vscode', 'gemini', 'opencode', 'pi', 'claude-code', 'cline'];
 
-function emittedFor(server, tags, format) {
-  return (server.tags || []).some((t) => tags.includes(t)) && !(server.skipFormats || []).includes(format);
+// T690 (K-3, D-4 b): `extraPlatforms: [<platform>, ...]` adds a server to the MCP config of the named
+// platforms (the `platform` of a manifest in platforms/*.json) whose manifest `mcp.tags` do not select it. It
+// is how the `github` platform (tags: core) carries `security-audit` and `poc-security-audit` and no other
+// `extended` server. Only platform names that a manifest declares are accepted (validateExtraPlatforms, run
+// before the first write): a misspelling would leave the server out without a word. `skipFormats` still wins.
+function emittedFor(server, manifest) {
+  const { tags, format } = manifest.mcp;
+  const selected = (server.tags || []).some((t) => tags.includes(t))
+    || (server.extraPlatforms || []).includes(manifest.platform);
+  return selected && !(server.skipFormats || []).includes(format);
 }
+
+// T690: `cwd: workspace` makes the vscode projection write `"cwd": "${workspaceFolder}"` on a stdio
+// entry. VS Code documents `cwd` ("Working directory for the server command. Defaults to the workspace
+// folder when run in a workspace.") and `${workspaceFolder}` as a predefined variable of the server
+// configuration (https://code.visualstudio.com/docs/copilot/reference/mcp-configuration). The two Python
+// servers resolve `-m implementation.runtime...` and `--allowed-root .` against their launch directory, so the
+// directory is written out instead of left to the default. The only accepted value is `workspace`; the other
+// formats ignore the key.
+const SERVER_CWD_VALUES = ['workspace'];
 
 function validateDenyTools(servers) {
   for (const [name, server] of Object.entries(servers)) {
@@ -217,6 +235,16 @@ function validateDenyTools(servers) {
     }
     if (server.denyUnlessGranted !== undefined && typeof server.denyUnlessGranted !== 'boolean') {
       throw new Error(`servers.yaml: ${name}.denyUnlessGranted must be the boolean true or false (or absent)`);
+    }
+    if (server.extraPlatforms !== undefined) {
+      const names = server.extraPlatforms;
+      if (!Array.isArray(names) || names.length === 0 || names.some((n) => typeof n !== 'string' || !/^[a-z][a-z0-9-]*$/.test(n))
+          || new Set(names).size !== names.length) {
+        throw new Error(`servers.yaml: ${name}.extraPlatforms must be a non-empty array of distinct platform names`);
+      }
+    }
+    if (server.cwd !== undefined && !SERVER_CWD_VALUES.includes(server.cwd)) {
+      throw new Error(`servers.yaml: ${name}.cwd must be one of: ${SERVER_CWD_VALUES.join(', ')}`);
     }
     if (server.skipFormats !== undefined) {
       const formats = server.skipFormats;
@@ -696,6 +724,7 @@ function emitMcpVscodePi(filtered, format) {
       if (s.headers) target[name].headers = mapEnv(s.headers, template);
     } else {
       target[name] = { command: s.command, args: s.args || [] };
+      if (format === 'vscode' && s.cwd === 'workspace') target[name].cwd = '${workspaceFolder}';
       const env = s.env ? mapEnvValues(s.env) : undefined;
       if (env && (format === 'vscode' || Object.keys(env).length > 0)) target[name].env = env;
     }
@@ -805,9 +834,10 @@ const MCP_EMITTERS = new Map([
   ['cline', emitMcpCline],
 ]);
 
-function emitMcp(servers, tags, format) {
+function emitMcp(servers, manifest) {
+  const { format } = manifest.mcp;
   const filtered = Object.fromEntries(
-    Object.entries(servers).filter(([, s]) => emittedFor(s, tags, format))
+    Object.entries(servers).filter(([, s]) => emittedFor(s, manifest))
   );
   const emitter = MCP_EMITTERS.get(format);
   if (!emitter) throw new Error(`Unknown MCP format: ${format}`);
@@ -1113,7 +1143,7 @@ async function syncSkills(manifest, outRoot, filesWritten) {
 }
 
 async function syncMcp(manifest, outRoot, servers, filesWritten) {
-  const mcpResult = emitMcp(servers, manifest.mcp.tags, manifest.mcp.format);
+  const mcpResult = emitMcp(servers, manifest);
   const outPath = path.resolve(outRoot, manifest.mcp.outputFile);
   if (manifest.mcp.format === 'opencode') {
     const cfg = { ...(manifest.mcp.extraFields || {}), mcp: mcpResult.__mcpObject };
@@ -1131,7 +1161,7 @@ async function syncMcp(manifest, outRoot, servers, filesWritten) {
   // emitMcp()'s return contract) to keep the 5 already-passing call sites'
   // return shape untouched.
   const filteredKeys = Object.entries(servers)
-    .filter(([, s]) => emittedFor(s, manifest.mcp.tags, manifest.mcp.format))
+    .filter(([, s]) => emittedFor(s, manifest))
     .map(([name]) => name)
     .sort();
   const sidecarPath = outPath + '.provenance.json';
@@ -1218,6 +1248,18 @@ async function loadManifests(platformFiles) {
   return manifests;
 }
 
+// T690: every `extraPlatforms` name of servers.yaml must be a platform that a manifest declares. Called
+// from main() with all manifests (also under --platform), before the first write.
+function validateExtraPlatforms(servers, manifests) {
+  const known = new Set(manifests.map((m) => m.platform));
+  for (const [name, server] of Object.entries(servers)) {
+    const unknown = (server.extraPlatforms || []).filter((p) => !known.has(p));
+    if (unknown.length > 0) {
+      throw new Error(`servers.yaml: ${name}.extraPlatforms names a platform without a manifest: ${unknown.map((p) => p.slice(0, 40)).join(', ')} (known: ${[...known].sort().join(', ')})`);
+    }
+  }
+}
+
 function reportResult(total) {
   if (!CHECK_ONLY) {
     console.log(`\nDone - ${total} files written.`);
@@ -1240,6 +1282,7 @@ async function main() {
   let total = 0;
 
   const manifests = await loadManifests(platformFiles);
+  validateExtraPlatforms(servers, manifests);
 
   for (const manifest of manifests) {
     if (ONLY_PLATFORM && manifest.platform !== ONLY_PLATFORM) continue;

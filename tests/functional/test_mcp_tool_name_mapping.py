@@ -313,6 +313,23 @@ class ProjectedAgentTests(unittest.TestCase):
                     for name in _projected_tools(platform, source.stem):
                         self.assertFalse(name.startswith("mcp__"), name)
 
+    # T690 (K-3, D-4 b): `<server>/<tool>` tokens in a Copilot agent file name a server that the generated
+    # `.vscode/mcp.json` carries. `context-retriever` is the one server an agent lists that Copilot does not
+    # carry (an `extended` server outside T690's scope: the config for it is generated for the other platforms
+    # only); it is pinned here so that a second gap cannot appear unnoticed.
+    COPILOT_SERVERS_NOT_IN_VSCODE_CONFIG = {"context-retriever"}
+
+    def test_every_server_a_copilot_agent_lists_is_in_the_generated_vscode_config(self):
+        config = json.loads((implementation_root() / ".vscode" / "mcp.json").read_text(encoding="utf-8"))["servers"]
+        missing = set()
+        for source in sorted((knowledge_root() / "agents").glob("*.md")):
+            for name in _projected_tools("github", source.stem):
+                if "/" in name and name.split("/", 1)[0] not in config:
+                    missing.add(name.split("/", 1)[0])
+        self.assertEqual(missing, self.COPILOT_SERVERS_NOT_IN_VSCODE_CONFIG)
+        for server in ("security-audit", "poc-security-audit"):
+            self.assertIn(server, config)
+
     def test_no_projection_names_the_unsafe_tool(self):
         # T658 (SEC-T657-07): a file-count floor, so an empty glob (a renamed directory) cannot pass
         # vacuously. Five platforms project agent files (Cline has none); every source agent is projected.

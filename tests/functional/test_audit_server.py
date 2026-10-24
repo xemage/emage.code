@@ -324,6 +324,9 @@ class ServersYamlEntryTests(unittest.TestCase):
         self.assertEqual(entry["command"], "python3")
         self.assertEqual(entry["args"], ["-m", "implementation.runtime.security.audit_server"])
         self.assertNotIn("env", entry)
+        # T690 (K-3, D-4 b): also generated for GitHub Copilot, started in the workspace folder
+        self.assertEqual(entry["extraPlatforms"], ["github"])
+        self.assertEqual(entry["cwd"], "workspace")
 
     def test_other_entries_untouched_sample(self):
         # Spot-check a couple of pre-existing entries to catch an accidental drive-by

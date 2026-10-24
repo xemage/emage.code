@@ -26,15 +26,21 @@ from tests._helpers.repo import implementation_root
 
 SYNC = implementation_root() / "scripts" / "sync.mjs"
 CLINE_MANIFEST = implementation_root() / "platforms" / "cline.json"
+GITHUB_MANIFEST = implementation_root() / "platforms" / "github.json"
 SERVERS_YAML = implementation_root() / "knowledge" / "mcp" / "servers.yaml"
 
 
-def _run_sync(servers_yaml_text: str) -> tuple[subprocess.CompletedProcess, Path]:
+def _run_sync(servers_yaml_text: str, with_github: bool = False) -> tuple[subprocess.CompletedProcess, Path]:
     tmp = Path(tempfile.mkdtemp(prefix="t656-sync-"))
     (tmp / "platforms").mkdir()
     for sub in ("mcp", "instructions", "skills", "agents", "commands"):
         (tmp / "knowledge" / sub).mkdir(parents=True)
     shutil.copy(CLINE_MANIFEST, tmp / "platforms" / "cline.json")
+    if with_github:
+        # T690: the shipped servers.yaml names `github` in `extraPlatforms`, and the generator refuses a platform
+        # name that no manifest declares, so the scratch root needs the GitHub manifest (and its extras).
+        shutil.copy(GITHUB_MANIFEST, tmp / "platforms" / "github.json")
+        shutil.copytree(implementation_root() / "_extras", tmp / "_extras")
     (tmp / "knowledge" / "mcp" / "servers.yaml").write_text(servers_yaml_text, encoding="utf-8")
     proc = subprocess.run(
         ["node", str(SYNC), "--root", str(tmp)],
@@ -71,7 +77,7 @@ class SplitInlineArrayTests(unittest.TestCase):
 
     def test_reader_matches_yaml_safe_load_for_every_shipped_entry(self):
         shipped = yaml.safe_load(SERVERS_YAML.read_text(encoding="utf-8"))["servers"]
-        proc, tmp = _run_sync(SERVERS_YAML.read_text(encoding="utf-8"))
+        proc, tmp = _run_sync(SERVERS_YAML.read_text(encoding="utf-8"), with_github=True)
         self.addCleanup(shutil.rmtree, tmp, ignore_errors=True)
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         generated = json.loads((tmp / ".cline" / "mcp.json").read_text(encoding="utf-8"))["mcpServers"]

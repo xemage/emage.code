@@ -163,21 +163,26 @@ refused in every mode.
 The `poc-security-audit` MCP server backs the PoC security review. It exposes
 exactly two tools, `scan_secrets` and `ref_containment`; a clean result means
 "no match for the fixed rule set at the scanned refs", not "no secrets". Its
-config is generated for Claude Code, Gemini CLI, Opencode, Pi and Cline;
-GitHub Copilot's `.vscode/mcp.json` does not carry it, so the scan has no server
-to call there, and the agent's rule is that a scan which did not complete is
-`FAIL`, never `PASS`. Setup, once per project, after a
+config is generated for Claude Code, Gemini CLI, Opencode, Pi, Cline and
+GitHub Copilot (`.vscode/mcp.json`, with `"cwd": "${workspaceFolder}"`). The
+agent's rule is that a scan which did not complete is `FAIL`, never `PASS`.
+Setup, once per project, after a
 full install or `--update` (not `--projections-only`):
 
 1. Install the Python dependency (`mcp==2.2.0`) into a virtual environment, from
    the project root; the installer prints this command:
    `python3 -m venv .venv-mcp && source .venv-mcp/bin/activate && pip install -r implementation/runtime/security/requirements-mcp-server.txt`.
    The configs launch plain `python3`, so start your assistant from an
-   environment where that `python3` can import `mcp`.
+   environment where that `python3` can import `mcp`. VS Code (GitHub Copilot)
+   starts the server from its own process environment, so start VS Code from a
+   shell where the virtual environment is active (`code .`), or make the
+   `python3` on its `PATH` able to import `mcp`.
 2. Make sure `git` 2.40 or newer is on `PATH`. An older git makes every call
    fail closed as `git_failed`.
 3. Launch the assistant from the project root: the server is started as
    `python3 -m implementation.runtime.security.poc_audit_server --allowed-root .`.
+   In VS Code (GitHub Copilot) the entry sets `"cwd": "${workspaceFolder}"`, so
+   open the project root as the workspace folder.
 4. Claude Code only: add the allow rule to your own `.claude/settings.json`
    (the installer never writes it):
 

@@ -60,6 +60,24 @@
     "hindsight": {
       "type": "http",
       "url": "${env:HINDSIGHT_MCP_URL}"
+    },
+    "security-audit": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "implementation.runtime.security.audit_server"
+      ],
+      "cwd": "${workspaceFolder}"
+    },
+    "poc-security-audit": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "implementation.runtime.security.poc_audit_server",
+        "--allowed-root",
+        "."
+      ],
+      "cwd": "${workspaceFolder}"
     }
   }
 }
