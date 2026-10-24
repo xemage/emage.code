@@ -2,13 +2,13 @@
 
 **ID:** T691
 **Owner:** solution-architect
-**Status:** pending
+**Status:** done
 **Priority:** P2
 **Tier:** standard
 **Depends on:** T687
 **Affects:** —
 **Created:** 2026-10-24
-**Completed:** —
+**Completed:** 2026-10-24
 **Based on:**
 - `docs/plans/plan-123-post-release-follow-ups.md` (Addendum of 2026-10-24: T691)
 - The user's decisions of 2026-10-24 (replies to the decision list of `docs/artifacts/tracked-debt-register-v2.md` section 5.2): "O1 have the Solution Architect rule on it"
