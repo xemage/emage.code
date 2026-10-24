@@ -7,6 +7,8 @@
     "hindsight",
     "memory",
     "playwright",
+    "poc-security-audit",
+    "security-audit",
     "sequential-thinking"
   ]
 }

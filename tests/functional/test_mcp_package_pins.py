@@ -25,7 +25,8 @@ import yaml  # noqa: E402
 
 SERVERS_YAML = REPO_ROOT / "implementation" / "knowledge" / "mcp" / "servers.yaml"
 CLAUDE_MCP = REPO_ROOT / "implementation" / ".mcp.json"
-# Every generated MCP projection (one per platform; .vscode carries the core servers only).
+# Every generated MCP projection (one per platform; .vscode carries the core servers and, since T690, the two
+# local Python security servers, and no other `extended` server).
 PROJECTIONS = [
     REPO_ROOT / "implementation" / rel
     for rel in (
@@ -189,7 +190,7 @@ class McpPackagePinTests(unittest.TestCase):
                 self.assertNotIn(key, text, f"{key} in {rel}")
             self.assertIn("@playwright/mcp@0.0.83", text, rel)
             if path.parts[-2:] == (".vscode", "mcp.json"):
-                continue  # core servers only on the github platform
+                continue  # core servers (+ the two Python security servers, T690) only on the github platform
             self.assertIn("@modelcontextprotocol/server-filesystem@1.0.0", text, rel)
             self.assertIn("mcp-server-git@2026.10.10", text, rel)
             self.assertIn("--repository", text, rel)

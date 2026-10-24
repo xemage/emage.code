@@ -99,7 +99,7 @@ Declared in [`knowledge/mcp/servers.yaml`](knowledge/mcp/servers.yaml). Each ser
 | Tag | Emitted to |
 |-----|-----------|
 | `core` | every platform |
-| `extended` | platforms whose manifest opts in (all except `github`: `gemini`, `opencode`, `pi`, `claude-code`, `cline`) |
+| `extended` | platforms whose manifest opts in (`gemini`, `opencode`, `pi`, `claude-code`, `cline`); `github` opts in to no `extended` server as a whole and carries only `security-audit` and `poc-security-audit` of them (`extraPlatforms` in `servers.yaml`, T690) |
 
 ### Core servers (always available)
 
