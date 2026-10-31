@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-24T18:06:08+02:00",
+  "generatedAt": "2026-10-31T08:06:51+01:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -276,7 +276,7 @@
       "category": "agent",
       "name": "Orchestrator",
       "path": "agents/orchestrator.md",
-      "checksum": "53e765f3aa38a732e12211e58a3c6f3770767f8e2be5e2325cca4ac24996cd8a",
+      "checksum": "6065c377be7ae82bafbd55b9413f5a4d76f9adbe937d0533483efd1db99cda7e",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -484,7 +484,7 @@
       "category": "agent",
       "name": "Release Manager",
       "path": "agents/release-manager.md",
-      "checksum": "fb3a797dec1467e52327c812f3afc549a7f23fd3987fc3eeb300425d18a59ef5",
+      "checksum": "af3eecd3f66647360288fd734a2cc53f4ea11966e6f2f049964fc526351afca8",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
