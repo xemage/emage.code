@@ -182,7 +182,7 @@ raise only fires once a 3rd contributor for the same path is observed).
 A live CWSO stack (`cwso-orchestrator`, `cwso-rollout`, `cwso-git-shadow` containers, `v0.5.2`,
 healthy) was already running in this environment and `CWSO_JWT_SECRET` was set. Ran:
 ```
-CWSO_LIVE_CONTRACT_TEST=1 CWSO_JWT_SECRET=ci-ephemeral-secret-not-used-in-prod-ci-only \
+CWSO_LIVE_CONTRACT_TEST=1 CWSO_JWT_SECRET=<redacted 2026-10-31, rotated> \
   python3 -m pytest tests/functional/test_pattern_a_integration_live.py -v -s
 ```
 Result: **4 passed in 117.32s** — all 4 T214 scenarios (independent-edit 3-way pairwise merge,

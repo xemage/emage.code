@@ -5,18 +5,29 @@ Tests that the orchestrator can assign tasks and the executor can fetch them.
 """
 
 import json
+import os
 import sys
 import subprocess
 import time
-import requests
 import urllib.request
 import urllib.error
-from pathlib import Path
 
 # Configuration
 CWSO_URL = "http://localhost:8080"
 NODE_ID = "test-executor-1"
-JWT_SECRET_FILE = Path("/home/emage/Code/emage/CWSO/.env.jwt.dev")
+SECRET_ENV_VAR = "CWSO_JWT_SECRET"
+
+
+def load_jwt_secret() -> str:
+    """Return the JWT secret from CWSO_JWT_SECRET only (T694, no file fallback).
+
+    Raises SystemExit with a message that names the variable, never a value.
+    """
+    secret = os.environ.get(SECRET_ENV_VAR, "").strip()
+    if not secret:
+        raise SystemExit(f"error: {SECRET_ENV_VAR} is not set; export {SECRET_ENV_VAR} first")
+    return secret
+
 
 def generate_jwt_token(node_id: str, role: str = "worker") -> str:
     """Generate HS256 JWT token."""
@@ -26,7 +37,7 @@ def generate_jwt_token(node_id: str, role: str = "worker") -> str:
     import json as json_lib
     from datetime import datetime, timezone
 
-    jwt_secret = JWT_SECRET_FILE.read_text().strip()
+    jwt_secret = load_jwt_secret()
     now = int(datetime.now(timezone.utc).timestamp())
     exp = now + 3600
 
@@ -143,6 +154,7 @@ def verify_task_spec(tasks: list, task_id: str) -> bool:
     return False
 
 def main():
+    load_jwt_secret()  # fail fast, before any network call
     print("=" * 60)
     print("Phase 3.1 Task Assignment Verification Test")
     print("=" * 60)

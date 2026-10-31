@@ -2,13 +2,13 @@
 
 **ID:** T696
 **Owner:** devops-engineer
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Tier:** standard
 **Depends on:** —
 **Affects:** —
 **Created:** 2026-10-31
-**Completed:** —
+**Completed:** 2026-10-31
 **Based on:**
 - `docs/plans/plan-123-post-release-follow-ups.md` (Addendum of 2026-10-31: T696)
 - The user's decision of 2026-10-31: "T696 go"
@@ -42,3 +42,10 @@ One or more commits on a branch `agent/devops-engineer/T696` in the CWSO reposit
 ## 5. Blocker protocol
 
 Report each blocker with its type (`technical` | `dependency` | `unclear_requirements` | `external`) and severity (`critical` | `major` | `minor`).
+
+## 6. Outcome (2026-10-31)
+
+- CWSO commits `562e5d6` (Rust advisories), `73fb538` (Go 1.26.10, govulncheck v1.9.0), `083c49c` (Rust images from `Cargo.lock` with `--locked`); squash-merged as CWSO develop `4093337` on a green pipeline (3011518716; `e2e:phase2` first failed on the known container-name race, fixed by T695, and passed on retry).
+- zstd was removed instead of updated: it came only through wasmtime's unused `cache` feature, and zstd 0.14 would have required a wasmtime major update.
+- Security review: PASS, 7 LOW tracked (`docs/artifacts/security-review-t696-cwso-deps-toolchain-v1.md`).
+- The user rebuilt the images on the CWSO server (10.10.160.13) at CWSO develop `5869cc5` on 2026-10-31: orchestrator healthy, git-shadow and merge-engine up; the orchestrator verified from the devcontainer: new bearer token HTTP 200, a foreign Origin HTTP 403, the pre-rotation token HTTP 401; no `cwso-sia-executor` container exists (SEC-T694-12 not applicable there).

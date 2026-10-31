@@ -75,15 +75,12 @@ class CwsoMcpClient:
         jwt_secret = os.getenv("CWSO_JWT_SECRET")
         jwt_secret_file = os.getenv("CWSO_JWT_SECRET_FILE")
         if not jwt_secret and not jwt_secret_file:
-            workspace_root = Path(__file__).resolve().parents[3]
-            fallback_candidates = [
-                workspace_root.parent / "CWSO" / ".env.jwt.dev",
-                workspace_root / "CWSO" / ".env.jwt.dev",
-            ]
-            for candidate in fallback_candidates:
-                if candidate.is_file():
-                    jwt_secret_file = str(candidate)
-                    break
+            # No default secret file (T694, SEC-T694-03): name the variable,
+            # never a value.
+            raise ValueError(
+                "CWSO_JWT_SECRET is not set; export CWSO_JWT_SECRET "
+                "or set CWSO_JWT_SECRET_FILE to an explicit path"
+            )
 
         return cls(
             base_url=base_url,

@@ -1,7 +1,13 @@
 # T226 Infrastructure: CWSO + Polar rollout (phase2/phase4 sidecars + capture)
 # Usage:
 #   source deploy/t226-phase2.env
+#   export CWSO_JWT_SECRET=...   # from your secret store; required by `up`
 #   docker compose -f deploy/docker-compose-t226.yml up -d
+#
+# The JWT secret comes from the CWSO_JWT_SECRET environment variable of the
+# `docker compose` process (or the project .env next to this file) and is
+# mounted into the services as /run/secrets/jwt_secret. There is no secret
+# file default (T694); `up` fails when the variable is not set.
 #
 # This compose stack brings up:
 #   - cwso-orchestrator (port 8080): main orchestration server
@@ -13,8 +19,8 @@ name: cwso-t226
 
 secrets:
   jwt_secret:
-    file: /home/emage/Code/emage/CWSO/.env.jwt.dev  # Dev JWT secret for MCP authentication
-    # POC-DEBT: File-based secret acceptable for dev/testing; production must use secure vault
+    environment: CWSO_JWT_SECRET  # JWT secret for MCP authentication (T694: no file default)
+    # POC-DEBT: Environment-sourced secret acceptable for dev/testing; production must use secure vault
 
 services:
   # Main orchestration server
@@ -162,19 +168,22 @@ services:
     command:
       - -c
       - |
-        set -x
+        set -eu
         echo "=== SIA Executor Container Starting ==="
         echo "Workspace: $(pwd)"
         echo "PYTHONPATH: $$PYTHONPATH"
         echo "Files: $(ls -la)"
-        echo "Secret file: $(ls -la /run/secrets/ 2>/dev/null || echo 'NOT FOUND')"
-        JWT_SECRET=$$(cat /run/secrets/jwt_secret 2>/dev/null || echo "ERROR_NO_SECRET")
-        echo "JWT_SECRET length: $${#JWT_SECRET}"
+        # No xtrace and no fallback value: the secret is never echoed (T694).
+        CWSO_JWT_SECRET="$$(tr -d '\r\n' < /run/secrets/jwt_secret 2>/dev/null || true)"
+        if [ -z "$$CWSO_JWT_SECRET" ]; then
+          echo "ERROR: /run/secrets/jwt_secret is missing or empty; set CWSO_JWT_SECRET for docker compose" >&2
+          exit 1
+        fi
+        export CWSO_JWT_SECRET
         echo "Running executor..."
         exec python3 sia-executor.py \
           --cwso-url http://orchestrator:8080 \
           --node-id sia-executor-1 \
-          --jwt-secret "$$JWT_SECRET" \
           --mock-delay 1.5 \
           --poll-interval 2.0
     secrets:
@@ -187,7 +196,7 @@ services:
       orchestrator:
         condition: service_healthy
     restart: on-failure:3
-    # POC-DEBT: Entrypoint uses shell expansion for secret; production must use proper secret injection
+    # POC-DEBT: Entrypoint exports the mounted secret as CWSO_JWT_SECRET; production must use proper secret injection
 
 volumes:
   cwso-runtime:

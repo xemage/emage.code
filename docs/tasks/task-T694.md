@@ -2,13 +2,13 @@
 
 **ID:** T694
 **Owner:** devops-engineer
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Tier:** standard
 **Depends on:** —
 **Affects:** —
 **Created:** 2026-10-31
-**Completed:** —
+**Completed:** 2026-10-31
 **Based on:**
 - `docs/plans/plan-123-post-release-follow-ups.md` (Addendum of 2026-10-31: T694)
 - The user's decision of 2026-10-31: "T694 go"
@@ -43,3 +43,9 @@ As stated in section 1.
 ## 5. Blocker protocol
 
 Report each blocker with its type (`technical` | `dependency` | `unclear_requirements` | `external`) and severity (`critical` | `major` | `minor`).
+
+## 6. Outcome (2026-10-31)
+
+- Commits `5117ee0d` and `dd25a98c`. Security review: CONDITIONAL_PASS at `5117ee0d` (SEC-T694-01 and -02 MEDIUM in `deploy/docker-compose-t226.yml`), fixed in `dd25a98c`, re-check PASS.
+- Incident: the implementing agent printed a secret once through a broken heredoc; the orchestrator verified by hash that it was the dead pre-rotation value (no rotation needed; SEC-T694-10, recorded under SEC-T695-06).
+- Orchestrator's independent run at `dd25a98c`: sync, registry, maturity, scorecard `--check` OK; ledger PASS; full suite 2156 tests OK (skipped=24); `docker compose -f deploy/docker-compose-t226.yml config --quiet` OK with a made-up value; the dead value in no tracked file.

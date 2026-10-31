@@ -5,11 +5,26 @@ import json
 import base64
 import hashlib
 import hmac
+import os
 import sys
 import time
 import urllib.request
 import urllib.error
 from datetime import datetime, timezone
+
+SECRET_ENV_VAR = "CWSO_JWT_SECRET"
+
+
+def load_jwt_secret() -> str:
+    """Return the JWT secret from CWSO_JWT_SECRET only (T694, no file fallback).
+
+    Raises SystemExit with a message that names the variable, never a value.
+    """
+    secret = os.environ.get(SECRET_ENV_VAR, "").strip()
+    if not secret:
+        raise SystemExit(f"error: {SECRET_ENV_VAR} is not set; export {SECRET_ENV_VAR} first")
+    return secret
+
 
 def generate_jwt_token(jwt_secret: str, role: str = "worker", sub: str = "sia-executor-1") -> str:
     """Generate HS256 JWT token (stdlib implementation)."""
@@ -64,7 +79,8 @@ def test_jwt_format(token: str):
             elif i == 1:
                 print("Payload:", json.loads(base64.urlsafe_b64decode(part_padded)))
             else:
-                print("Signature (hex):", base64.urlsafe_b64decode(part_padded).hex())
+                sig = base64.urlsafe_b64decode(part_padded)
+                print(f"Signature: <redacted, {len(sig)} bytes>")
         except Exception as e:
             print(f"ERROR decoding part {i}: {e}")
 
@@ -79,7 +95,8 @@ def test_registration(cwso_url: str, jwt_token: str):
 
     print(f"\n📋 Registration Request:")
     print(f"  URL: {url}")
-    print(f"  Headers: {headers}")
+    shown = {**headers, "Authorization": "Bearer <redacted>"}
+    print(f"  Headers: {shown}")
     print(f"  Body: {payload}")
 
     try:
@@ -107,7 +124,7 @@ def test_registration(cwso_url: str, jwt_token: str):
         return False
 
 def main():
-    jwt_secret = "ci-ephemeral-secret-not-used-in-prod-ci-only"
+    jwt_secret = load_jwt_secret()
     cwso_url = "http://localhost:8080"
 
     print("=== CWSO JWT Registration Test ===\n")
@@ -115,7 +132,7 @@ def main():
     # Generate token
     print("🔐 Generating JWT token...")
     token = generate_jwt_token(jwt_secret, role="worker", sub="sia-executor-1")
-    print(f"Token: {token[:50]}...")
+    print(f"Token: <redacted, {len(token)} characters>")
 
     # Decode token structure
     print("\n🔍 JWT Structure:")

@@ -2,13 +2,13 @@
 
 **ID:** T695
 **Owner:** devops-engineer
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Tier:** standard
 **Depends on:** —
 **Affects:** —
 **Created:** 2026-10-31
-**Completed:** —
+**Completed:** 2026-10-31
 **Based on:**
 - `docs/plans/plan-123-post-release-follow-ups.md` (Addendum of 2026-10-31: T695)
 - The user's decision of 2026-10-31: "T694 go"
@@ -46,3 +46,10 @@ As stated in section 1, as one commit on a branch `agent/devops-engineer/T695` i
 ## 5. Blocker protocol
 
 Report each blocker with its type (`technical` | `dependency` | `unclear_requirements` | `external`) and severity (`critical` | `major` | `minor`).
+
+## 6. Outcome (2026-10-31)
+
+- CWSO commits `480e434`, `ab46f7b` (`Cargo.lock` with `--locked`, fixing the build failure from uuid 1.29.0), `72b0d5a` (SEC-T695-01: tunnel or TLS for cross-host access; CI stack isolation), `6dc114b` (e2e serialization, govulncheck pin), merged with develop (T696) as `519d2a2`; squash-merged as CWSO develop `5869cc5` on a green pipeline (3011684701, all e2e jobs).
+- Security review: FAIL at `480e434` (SEC-T695-01, plain HTTP documented for cross-host access), CONDITIONAL_PASS at `72b0d5a`, no new finding at `519d2a2`; 6 LOW tracked.
+- The user's decision of 2026-10-31 "C": plain HTTP between the devcontainer and the CWSO server (10.10.160.13) stays as an accepted risk (the bearer token, 90 days, role orchestrator, travels in cleartext on the LAN); the server keeps its local `docker-compose.override.yml` for the Origin list.
+- Incident: the implementing agent printed the dead value once in its tool output (SEC-T695-06, LOW process).
