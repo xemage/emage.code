@@ -89,13 +89,13 @@ Plus always: `AGENTS.md`, `docs/`, and the MCP server runtime source that `insta
 The generated `mcp.json` needs credentials for the MCP servers you want active:
 
 ```bash
-export GITLAB_PERSONAL_ACCESS_TOKEN_FILE="$HOME/.config/gitlab-mcp/token"  # a path, not the token
+export GITLAB_PERSONAL_ACCESS_TOKEN_FILE="${XDG_RUNTIME_DIR:-/dev/shm}/gitlab-mcp/token"  # a path, not the token
 export GITLAB_API_URL=...
 export BRAVE_API_KEY=...
 export HINDSIGHT_MCP_URL=...
 ```
 
-The GitLab token goes in a file that only you can read, outside every project; you export its path. Exporting the token itself as `GITLAB_PERSONAL_ACCESS_TOKEN` still works, but a non-empty value wins over the file. Scope, role, file steps and checks: [`implementation/PREREQUISITES.md`, "GitLab token"](https://gitlab.com/em-age/emage.code/-/blob/main/implementation/PREREQUISITES.md#gitlab-token).
+The GitLab token goes in a file that only you can read, outside every project and in memory (`$XDG_RUNTIME_DIR`, else `/dev/shm`), not at rest on disk: the harness does not assume disk encryption. You export its path, and you write the file again after each login or reboot. Exporting the token itself as `GITLAB_PERSONAL_ACCESS_TOKEN` still works, but a non-empty value wins over the file, and an export in a shell profile file is a plaintext secret at rest. Scope, role, file steps and checks: [`implementation/PREREQUISITES.md`, "GitLab token"](https://gitlab.com/em-age/emage.code/-/blob/main/implementation/PREREQUISITES.md#gitlab-token).
 
 The `extended` servers use `CWSO_MCP_URL`, `CWSO_BEARER_TOKEN`, `CWSO_ORIGIN` and `TOOLRADAR_API_KEY`. See [MCP Servers](mcp-servers) for the full table. Only `core` servers are required.
 

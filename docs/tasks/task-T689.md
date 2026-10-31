@@ -2,13 +2,13 @@
 
 **ID:** T689
 **Owner:** devops-engineer
-**Status:** pending
+**Status:** done
 **Priority:** P2
 **Tier:** standard
 **Depends on:** T687
 **Affects:** —
 **Created:** 2026-10-24
-**Completed:** —
+**Completed:** 2026-10-31
 **Based on:**
 - `docs/plans/plan-123-post-release-follow-ups.md` (Addendum of 2026-10-24: T689)
 - The user's decisions of 2026-10-24 (replies to the decision list of `docs/artifacts/tracked-debt-register-v2.md` section 5.2): "D-3 reject (disk encryption: no)"
@@ -47,3 +47,10 @@ Recorded by the orchestrator from the user's reports. These are observations on 
 4. **`glab` takes `GITLAB_TOKEN` from the environment** ahead of its config file (`glab auth status`: "Token found in environment variable GITLAB_TOKEN … takes precedence"). The user's `glab` config.yml had a separate OAuth token and refresh token in plaintext. It is not a `glpat-` token, so a prefix search misses it; the user emptied it and revoked the OAuth authorization. Document `glab`'s own stored login as a second plaintext copy to check.
 5. **The Claude Code sandbox (bubblewrap) created empty placeholder dotfiles** in the home directory (2026-10-26, during check 2b): `~/.bash_profile`, `~/.bash_aliases`, `~/.npmrc`, `~/.netrc`, `~/.yarnrc`, `~/.yarnrc.yml` and `~/.bunfig.toml`. An empty `~/.bash_profile` stops login shells from reading `~/.bashrc`, so `claude`, `npx` and every exported variable were lost and the MCP servers failed ("npx not found", "url is not a valid URL"). The fix is to delete the 0-byte placeholders. This deserves a warning wherever the docs suggest the sandbox for the live checks (cause inferred from identical timestamps; unverified).
 6. **The VS Code server reads its environment once, when it starts.** After the token or the RAM file changes, or after a reboot with the store still locked, the MCP servers keep the old environment until the VS Code server is restarted ("Kill VS Code Server on Host").
+
+## 7. Outcome (2026-10-31)
+
+- Commit `29107505` (devops-engineer). Security review: PASS, 0 MEDIUM or higher, SEC-T689-01 to -06 LOW tracked; SEC-T665-03 closed by this change (`docs/artifacts/security-review-t689-token-placement-v1.md`).
+- Orchestrator's independent run at `29107505`: sync, registry, maturity, scorecard `--check` OK; ledger PASS; held-out isolation and root parity OK; full suite 2188 tests OK (skipped=24); `scripts/check-gitlab-token.py` on the user's real setup (token file in RAM) exits 0 without an at-rest warning.
+- Follow-up for the orchestrator: issue `tracked-debt-register-v3.md` (D-3 rejected, SEC-T665-03 closed, the LOW findings of T689 and of T693 to T696).
+- The implementing agent used about 250k tokens against a 150k budget (overrun, recorded for the next checkpoint).
