@@ -87,7 +87,8 @@ servers:
     # old export must be removed when the file mode is adopted. `default: ""` renders `${VAR:-}` on Claude
     # Code ONLY: Claude Code passes an unset `${VAR}` through as literal text (F-2 of the design), which
     # would win over the file; every other client renders as before. The empty default is documented
-    # syntax but not observed (live check 3 in docs/artifacts/gitlab-token-handling-design-v1.md §8.4).
+    # syntax; live check 3 (run by the user, T689) observed token-file mode working with the variable unset;
+    # a set but empty variable was not reported. Keep the file in memory, not on disk (T689).
     # `optional: true` (T680): Pi fails the whole server for an unset or empty variable (observed on Pi
     # 1.4.0), so on Pi both entries are left out and the server inherits them from Pi's environment.
     # `GITLAB_PERMISSION_MODE: modify` is a literal, non-secret value (DEC-T664-3): the server refuses

@@ -25,7 +25,7 @@ This file documents security trade-offs you must review **before** copying emage
 Servers in `knowledge/mcp/servers.yaml` reference credentials via a per-platform placeholder form: `${env:VAR}` (VS Code / GitHub Copilot, Cline), `{env:VAR}` (Opencode), `${VAR}` (Pi, which documents `${VAR}` and does not expand `${env:VAR}`, T680; Gemini CLI, which documents `$VAR` and `${VAR}`, not `${env:VAR}`), and `${VAR}` (Claude Code — it expands `${VAR}` and `${VAR:-default}` from the live process environment and does **not** recognise the `${env:…}` form; see `docs/artifacts/mcp-header-url-templating-design-v2.md` §3 and §9). The sync engine emits these placeholders verbatim — secrets are never written to generated files.
 
 **Required env vars (core):**
-- `GITLAB_PERSONAL_ACCESS_TOKEN_FILE` (a path to a mode 0600 file that holds the token; recommended) or `GITLAB_PERSONAL_ACCESS_TOKEN`, and `GITLAB_API_URL`; scope `api` limited by role, expiry at most 90 days: `PREREQUISITES.md`, "GitLab token"
+- `GITLAB_PERSONAL_ACCESS_TOKEN_FILE` (a path to a mode 0600 file that holds the token; recommended, with the file kept in memory under `$XDG_RUNTIME_DIR`, else `/dev/shm`, not at rest on disk: the harness does not assume disk encryption, T689) or `GITLAB_PERSONAL_ACCESS_TOKEN`, and `GITLAB_API_URL`; scope `api` limited by role, expiry at most 90 days: `PREREQUISITES.md`, "GitLab token"
 - `BRAVE_API_KEY`
 - `HINDSIGHT_MCP_URL`
 
@@ -42,6 +42,8 @@ Set credentials via:
 - a per-user env-var (Windows: `setx`, Linux/macOS: shell rc file)
 - a `.env` file consumed by your shell, **never committed**
 - a secret manager (Azure Key Vault, AWS Secrets Manager, 1Password CLI, …)
+
+A shell rc file, a `setx` value and a `.env` file hold the secret in plaintext at rest. Immutable Security Constraint 6 forbids unencrypted sensitive data at rest, and the harness does not assume disk encryption (the user's decision of 2026-10-24, D-3): use them only on a disk that you have encrypted, or load the value at login from a secret manager or an encrypted store into the environment or into a file in memory. For the GitLab token the documented default is such a file (`PREREQUISITES.md`, "File mode").
 
 ---
 

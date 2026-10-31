@@ -7,7 +7,12 @@ against an in-process fake opener. Every main guard has a mutation proof: the gu
 of the source, the copy is loaded, and the matching test condition must then FAIL.
 
 Guards under mutation proof: https-only, host pin, redirect refusal, token redaction in output, the
-over-broad scope warning, the expiry boundary.
+over-broad scope warning, the expiry boundary, and (T689, SEC-T665-03) the at-rest storage check: the
+persistent-file-system warning and its wiring, the tmpfs/ramfs set, the fail-soft read of the mount table,
+the device-first lookup, the path fallback, whole-component matching and mountinfo unescaping.
+
+Tests that read a token file from the host's temporary directory point the script at a fake mount table
+(`MOUNTINFO_PATH`), so they do not depend on whether the host's /tmp is on disk or in memory.
 """
 from __future__ import annotations
 
@@ -52,6 +57,30 @@ def mutated(old: str, new: str) -> types.ModuleType:
 
 
 M = load_module()
+
+
+def device_of(path) -> str:
+    st_dev = os.stat(path).st_dev
+    return f"{os.major(st_dev)}:{os.minor(st_dev)}"
+
+
+def mountinfo_line(device: str, mount_point: str, fs_type: str, mount_id: int = 40) -> str:
+    """One /proc/self/mountinfo line (a space in the mount point is written as \\040, as the kernel does)."""
+    escaped = mount_point.replace("\\", "\\134").replace(" ", "\\040")
+    return f"{mount_id} 1 {device} / {escaped} rw,relatime shared:1 - {fs_type} none rw\n"
+
+
+def write_mountinfo(directory, lines: list[str]) -> str:
+    """A fake mount table in `directory`; the script reads it through the module constant MOUNTINFO_PATH."""
+    path = Path(directory) / "mountinfo"
+    path.write_text("".join(lines), encoding="utf-8")
+    return str(path)
+
+
+def memory_mountinfo(directory) -> str:
+    """A fake mount table that puts `directory` on tmpfs, so a test does not depend on the host's /tmp."""
+    return write_mountinfo(directory, [mountinfo_line("999:999", "/", "ext4", 1),
+                                       mountinfo_line(device_of(directory), str(directory), "tmpfs")])
 
 
 def good_self(**over) -> dict:
@@ -193,8 +222,14 @@ class TargetTests(unittest.TestCase):
 
 class TokenTests(unittest.TestCase):
     def setUp(self):
+        from unittest import mock
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
+        # T689: the storage check would warn on a host whose /tmp is on disk; these tests are about other guards
+        self.mountinfo = memory_mountinfo(self.tmp.name)
+        patcher = mock.patch.object(M, "MOUNTINFO_PATH", self.mountinfo)
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def token_file(self, content: str = FAKE_TOKEN + "\n", mode: int = 0o600) -> str:
         path = Path(self.tmp.name) / "token"
@@ -322,6 +357,7 @@ class TokenTests(unittest.TestCase):
         path = self.token_file(mode=0o644)
         self.assertTrue(M.load_token("T", "F", {"F": path}).warnings)
         mutant = mutated("        if info.st_mode & 0o077:", "        if False:")
+        mutant.MOUNTINFO_PATH = self.mountinfo
         self.assertEqual(mutant.load_token("T", "F", {"F": path}).warnings, [])
 
     def test_mutation_proof_control_character_refusal(self):
@@ -334,6 +370,222 @@ class TokenTests(unittest.TestCase):
         src = M.TokenSource(token=FAKE_TOKEN, description="x")
         self.assertNotIn(FAKE_TOKEN, repr(src))
         self.assertNotIn(FAKE_TOKEN, f"{src}")
+
+
+# ------------------------------------------------------------- storage (T689) ----
+
+def fresh_opener() -> FakeOpener:
+    return FakeOpener({"/personal_access_tokens/self": json_body(good_self(
+        expires_at=(dt.date.today() + dt.timedelta(days=30)).isoformat())), "/user": json_body(good_user())})
+
+
+class StorageTests(unittest.TestCase):
+    """T689 (SEC-T665-03): a token file on a persistent file system is a warning (exit 1) that names the variable,
+    never the path; tmpfs and ramfs are not; no readable or matching mount table is an information line (fail
+    soft). Fake mount tables, except the two host tests at the end, which skip where the host lacks the case."""
+
+    MARKER = "PATH-MARKER-t689"
+    OTHER = "999:999"  # a device number that no real mount of the test host uses
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(prefix=self.MARKER + " ")  # the space exercises mountinfo escaping
+        self.addCleanup(self.tmp.cleanup)
+        self.dir = os.path.realpath(self.tmp.name)  # the script compares resolved paths
+        self.file = Path(self.dir) / "token"
+        self.file.write_text(FAKE_TOKEN + "\n", encoding="utf-8")
+        self.file.chmod(0o600)
+        self.device = device_of(self.dir)
+
+    def load(self, lines: list[str], module: types.ModuleType = M):
+        from unittest import mock
+        with mock.patch.object(module, "MOUNTINFO_PATH", write_mountinfo(self.dir, lines)):
+            return module.load_token("T", "F", {"F": str(self.file)})
+
+    def assert_persistent(self, source, fs_type: str) -> None:
+        self.assertEqual(len(source.warnings), 1, source.warnings)
+        warning = source.warnings[0]
+        self.assertIn(f"the token file named by F is on a persistent file system ({fs_type}), at rest on disk", warning)
+        for needle in ("$XDG_RUNTIME_DIR", "/dev/shm", "encrypted"):
+            self.assertIn(needle, warning)
+        self.assertNotIn(self.MARKER, warning + "".join(source.notes))
+        self.assertEqual(source.notes, [])
+
+    def assert_memory(self, source, fs_type: str) -> None:
+        self.assertEqual(source.warnings, [])
+        self.assertEqual(source.notes, [f"token file storage: {fs_type} (in memory, not at rest on disk; swap is not checked)"])
+
+    def assert_not_determined(self, source) -> None:
+        self.assertEqual(source.warnings, [])
+        self.assertEqual(len(source.notes), 1)
+        self.assertIn("token file storage: not determined", source.notes[0])
+        self.assertIn("the at-rest check was skipped", source.notes[0])
+
+    def test_a_file_on_tmpfs_or_ramfs_is_not_a_warning(self):
+        for fs_type in ("tmpfs", "ramfs"):
+            with self.subTest(fs=fs_type):
+                self.assert_memory(self.load([mountinfo_line(self.OTHER, "/", "ext4", 1),
+                                              mountinfo_line(self.device, self.dir, fs_type)]), fs_type)
+
+    def test_a_file_on_any_other_file_system_warns_naming_the_variable_only(self):
+        for fs_type in ("ext4", "btrfs", "xfs", "zfs", "overlay", "nfs4", "fuse.sshfs", "ecryptfs"):
+            with self.subTest(fs=fs_type):
+                self.assert_persistent(self.load([mountinfo_line(self.device, self.dir, fs_type)]), fs_type)
+
+    def test_no_readable_mount_table_fails_soft(self):
+        from unittest import mock
+        for label, path in (("missing", str(Path(self.dir) / "no-such-file")), ("a directory", self.dir)):
+            with self.subTest(case=label), mock.patch.object(M, "MOUNTINFO_PATH", path):
+                self.assert_not_determined(M.load_token("T", "F", {"F": str(self.file)}))
+        self.assert_not_determined(self.load([]))
+
+    def test_a_mount_table_without_a_matching_row_fails_soft(self):
+        self.assert_not_determined(self.load([mountinfo_line(self.OTHER, "/no-such-mount", "ext4")]))
+
+    def test_malformed_lines_are_skipped(self):
+        lines = ["garbage\n", "1 2 3\n", f"1 2 {self.device} / /x rw - \n", f"1 2 {self.device} / /x rw ext4\n",
+                 mountinfo_line(self.device, self.dir, "tmpfs")]
+        self.assert_memory(self.load(lines), "tmpfs")
+
+    def test_the_device_of_the_open_descriptor_wins_over_the_path(self):
+        lines = [mountinfo_line(self.OTHER, "/", "ext4", 1), mountinfo_line("999:998", self.dir, "ext4"),
+                 mountinfo_line(self.device, "/elsewhere", "tmpfs")]
+        self.assert_memory(self.load(lines), "tmpfs")
+
+    def test_without_a_device_match_the_longest_containing_mount_point_decides(self):
+        # a btrfs subvolume or an overlay reports a device that mountinfo does not list
+        lines = [mountinfo_line(self.OTHER, "/", "tmpfs", 1), mountinfo_line("999:998", str(Path(self.dir).parent), "btrfs")]
+        self.assert_persistent(self.load(lines), "btrfs")
+
+    def test_a_mount_point_is_matched_by_whole_path_components_only(self):
+        lines = [mountinfo_line(self.OTHER, "/", "ext4", 1), mountinfo_line("999:998", self.dir[:-2], "tmpfs")]
+        self.assert_persistent(self.load(lines), "ext4")
+
+    def test_an_escaped_mount_point_is_unescaped(self):
+        self.assertIn(" ", self.dir)
+        lines = [mountinfo_line(self.OTHER, "/", "tmpfs", 1), mountinfo_line("999:998", self.dir, "ext4")]
+        self.assertIn("\\040", lines[1])
+        self.assert_persistent(self.load(lines), "ext4")
+
+    def test_a_later_mount_on_the_same_mount_point_wins(self):
+        ext4, tmpfs = mountinfo_line("999:997", self.dir, "ext4"), mountinfo_line("999:996", self.dir, "tmpfs")
+        self.assert_memory(self.load([ext4, tmpfs]), "tmpfs")
+        self.assert_persistent(self.load([tmpfs, ext4]), "ext4")
+
+    def test_a_fs_type_with_unexpected_characters_is_not_printed_and_still_warns(self):
+        source = self.load([mountinfo_line(self.device, self.dir, "odd\x1b[31m")])
+        self.assert_persistent(source, "unrecognised")
+
+    def test_through_main_a_persistent_file_is_exit_1_and_neither_path_nor_token_is_printed(self):
+        from unittest import mock
+        mountinfo = write_mountinfo(self.dir, [mountinfo_line(self.device, self.dir, "ext4")])
+        with mock.patch.object(M, "MOUNTINFO_PATH", mountinfo):
+            code, out, err = run_main([], {"GITLAB_PERSONAL_ACCESS_TOKEN_FILE": str(self.file)}, fresh_opener())
+        self.assertEqual(code, 1)
+        self.assertIn("warning: the token file named by GITLAB_PERSONAL_ACCESS_TOKEN_FILE is on a persistent file "
+                      "system (ext4), at rest on disk; move it to $XDG_RUNTIME_DIR or /dev/shm unless the disk is "
+                      "encrypted\n", out)
+        self.assertIn("result: 1 warning(s)", out)
+        self.assertNotIn(self.MARKER, out + err)
+        self.assertNotIn(FAKE_TOKEN, out + err)
+
+    def test_through_main_tmpfs_and_an_undetermined_file_system_are_exit_0(self):
+        from unittest import mock
+        for mountinfo, line in ((write_mountinfo(self.dir, [mountinfo_line(self.device, self.dir, "tmpfs")]),
+                                 "token file storage: tmpfs"),
+                                (str(Path(self.dir) / "absent"), "token file storage: not determined")):
+            with self.subTest(line=line), mock.patch.object(M, "MOUNTINFO_PATH", mountinfo):
+                code, out, err = run_main([], {"GITLAB_PERSONAL_ACCESS_TOKEN_FILE": str(self.file)}, fresh_opener())
+                self.assertEqual((code, err), (0, ""))
+                self.assertIn(line, out)
+                self.assertNotIn(self.MARKER, out)
+
+    def test_the_variable_mode_reads_no_mount_table(self):
+        from unittest import mock
+        with mock.patch.object(M, "_mount_table", side_effect=AssertionError("read")):
+            source = M.load_token("T", "F", {"T": FAKE_TOKEN})
+        self.assertEqual((source.warnings, source.notes), ([], []))
+
+    # --- mutation proofs ---
+
+    def test_mutation_proof_the_warning_is_wired_into_the_token_source(self):
+        mutant = mutated("        warnings.extend(storage_warnings)", "        pass")
+        self.assertEqual(self.load([mountinfo_line(self.device, self.dir, "ext4")], mutant).warnings, [])
+
+    def test_mutation_proof_only_tmpfs_and_ramfs_count_as_memory(self):
+        mutant = mutated('MEMORY_FS_TYPES = frozenset({"tmpfs", "ramfs"})', 'MEMORY_FS_TYPES = frozenset({"tmpfs", "ramfs", "ext4"})')
+        self.assertEqual(self.load([mountinfo_line(self.device, self.dir, "ext4")], mutant).warnings, [])
+
+    def test_mutation_proof_fail_soft_on_an_unreadable_mount_table(self):
+        from unittest import mock
+        absent = str(Path(self.dir) / "absent")
+        # both fail-soft layers are removed: the read of the table and the guard around the whole lookup
+        text = SCRIPT.read_text(encoding="utf-8")
+        for old, new in (("    except OSError:\n        return None\n    rows = []",
+                          "    except ZeroDivisionError:\n        return None\n    rows = []"),
+                         ("    except (OSError, ValueError):\n        return None\n    if fs is None:",
+                          "    except ZeroDivisionError:\n        return None\n    if fs is None:")):
+            self.assertEqual(text.count(old), 1)
+            text = text.replace(old, new)
+        mutant = load_module(text, "check_gitlab_token_mutant")
+        with mock.patch.object(mutant, "MOUNTINFO_PATH", absent):
+            with self.assertRaises(mutant.CheckError):   # the read error would stop the whole check (exit 2)
+                mutant.load_token("T", "F", {"F": str(self.file)})
+            code, _, _ = run_main_with(mutant, {"GITLAB_PERSONAL_ACCESS_TOKEN_FILE": str(self.file)})
+        self.assertEqual(code, 2)
+
+    def test_mutation_proof_the_device_is_asked_first(self):
+        mutant = mutated("        fs = _device_fs_type(st_dev, table) or _path_fs_type(path, table)",
+                         "        fs = _path_fs_type(path, table)")
+        lines = [mountinfo_line(self.OTHER, "/", "ext4", 1), mountinfo_line("999:998", self.dir, "ext4"),
+                 mountinfo_line(self.device, "/elsewhere", "tmpfs")]
+        self.assertTrue(self.load(lines, mutant).warnings)
+
+    def test_mutation_proof_the_path_fallback(self):
+        mutant = mutated("        fs = _device_fs_type(st_dev, table) or _path_fs_type(path, table)",
+                         "        fs = _device_fs_type(st_dev, table)")
+        lines = [mountinfo_line(self.OTHER, "/", "tmpfs", 1), mountinfo_line("999:998", str(Path(self.dir).parent), "btrfs")]
+        self.assertEqual(self.load(lines, mutant).warnings, [])
+
+    def test_mutation_proof_whole_component_matching(self):
+        mutant = mutated('real.startswith(mount.rstrip("/") + "/")', "real.startswith(mount)")
+        lines = [mountinfo_line(self.OTHER, "/", "ext4", 1), mountinfo_line("999:998", self.dir[:-2], "tmpfs")]
+        self.assertEqual(self.load(lines, mutant).warnings, [])
+
+    def test_mutation_proof_unescaping(self):
+        mutant = mutated("            mount = MOUNT_ESCAPE_RE.sub(lambda m: chr(int(m.group(1), 8)), fields[4])",
+                         "            mount = fields[4]")
+        lines = [mountinfo_line(self.OTHER, "/", "tmpfs", 1), mountinfo_line("999:998", self.dir, "ext4")]
+        self.assertEqual(self.load(lines, mutant).warnings, [])
+
+    # --- the real mount table of the test host ---
+
+    def test_on_this_host_a_file_in_memory_is_not_a_warning(self):
+        base = os.environ.get("XDG_RUNTIME_DIR") or "/dev/shm"
+        if not (os.path.isfile("/proc/self/mountinfo") and os.path.isdir(base) and os.access(base, os.W_OK)):
+            self.skipTest("no /proc/self/mountinfo or no writable $XDG_RUNTIME_DIR or /dev/shm")
+        with tempfile.TemporaryDirectory(dir=base) as tmp:
+            path = Path(tmp) / "token"
+            path.write_text(FAKE_TOKEN, encoding="utf-8")
+            path.chmod(0o600)
+            source = M.load_token("T", "F", {"F": str(path)})
+        self.assertEqual(source.warnings, [])
+        self.assertRegex(source.notes[0], r"^token file storage: (tmpfs|ramfs) \(in memory")
+
+    def test_on_this_host_a_file_in_the_temporary_directory_on_disk_warns(self):
+        if not os.path.isfile("/proc/self/mountinfo"):
+            self.skipTest("no /proc/self/mountinfo")
+        fs_type = M.filesystem_type(os.stat(self.dir).st_dev, str(self.file))
+        self.assertIsNotNone(fs_type, "the real mount table did not resolve the temporary directory")
+        if fs_type in M.MEMORY_FS_TYPES:
+            self.skipTest(f"the temporary directory is on {fs_type} on this host")
+        self.assert_persistent(M.load_token("T", "F", {"F": str(self.file)}), fs_type)
+
+
+def run_main_with(module: types.ModuleType, environ: dict):
+    out, err = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        code = module.main([], environ=environ, opener=fresh_opener())
+    return code, out.getvalue(), err.getvalue()
 
 
 # -------------------------------------------------------------------- analysis ----
@@ -688,11 +940,13 @@ class MainTests(unittest.TestCase):
         self.assertIn(FAKE_TOKEN, out.getvalue())
 
     def test_the_token_from_a_file_is_not_printed_either(self):
+        from unittest import mock
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "t"
             path.write_text(FAKE_TOKEN + "\n", encoding="utf-8")
             path.chmod(0o600)
-            code, out, err = run_main([], {"GITLAB_PERSONAL_ACCESS_TOKEN_FILE": str(path)}, self.opener())
+            with mock.patch.object(M, "MOUNTINFO_PATH", memory_mountinfo(tmp)):
+                code, out, err = run_main([], {"GITLAB_PERSONAL_ACCESS_TOKEN_FILE": str(path)}, self.opener())
         self.assertEqual(code, 0)
         self.assertIn("the file named by GITLAB_PERSONAL_ACCESS_TOKEN_FILE", out)
         self.assertNotIn(FAKE_TOKEN, out + err)

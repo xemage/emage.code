@@ -17,7 +17,13 @@ Findings (exit code 1 when any warning is printed):
   - the owner is an instance administrator, or is not active;
   - a role above Developer, when a response carries one (``access_level`` or ``role``);
   - a token file that group or others can read; both the variable and the file set (the server then
-    uses the variable and only warns).
+    uses the variable and only warns);
+  - a token file on a persistent file system, i.e. anything but ``tmpfs`` or ``ramfs`` (T689,
+    SEC-T665-03): the token is then at rest on disk, and the harness no longer assumes disk encryption.
+    The file system is read from ``/proc/self/mountinfo`` (the device of the open descriptor first,
+    else the longest mount point that contains the resolved path). Where no mount table can be read
+    (non-Linux) or nothing matches, the check fails soft: an information line says the storage was
+    not determined and no warning is raised. The message names the variable, never the path.
 The role is NOT checked in the usual case: the two endpoints above are not documented to report it.
 The script then always prints "role: NOT checked ..." (verify Planner, Reporter or Developer in the
 project's Members page) and ends with "result: ok (scope, expiry and owner only; the role was not
@@ -77,6 +83,9 @@ HTTP_TIMEOUT_SECONDS = 15
 MAX_REPLY_BYTES = 1_000_000
 MAX_TOKEN_FILE_BYTES = 4096
 PREFIX = "gitlab-token-check"
+MEMORY_FS_TYPES = frozenset({"tmpfs", "ramfs"})
+MOUNTINFO_PATH = "/proc/self/mountinfo"  # Linux only; elsewhere the storage check is skipped (fail soft)
+MAX_MOUNTINFO_BYTES = 4_000_000
 ROLE_NOT_CHECKED = (
     "role: NOT checked (the endpoints do not report it); verify Planner, Reporter or Developer "
     "in the project's Members page"
@@ -86,6 +95,8 @@ ENV_NAME_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 HOST_RE = re.compile(r"[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?")
 CONTROL_CHARS_RE = re.compile(r"[\x00-\x1f\x7f]")
 TOKEN_TEXT_RE = re.compile(r"[\x21-\x7e]+")
+FS_TYPE_RE = re.compile(r"[A-Za-z0-9._+-]{1,40}")
+MOUNT_ESCAPE_RE = re.compile(r"\\([0-7]{3})")  # mountinfo writes a space as \040
 # The only API base shape: .../api/v4. A segment is never "." or "..".
 API_PATH_RE = re.compile(r"(/(?!\.{1,2}(?:/|$))[A-Za-z0-9._~-]+)*/api/v4")
 
@@ -101,6 +112,7 @@ class TokenSource:
     token: str
     description: str
     warnings: list[str] = field(default_factory=list)
+    notes: list[str] = field(default_factory=list)  # information lines (where the token file is stored)
 
     def __repr__(self) -> str:  # a stray print() or traceback must not show the value
         return f"TokenSource(description={self.description!r}, token=<redacted>)"
@@ -162,6 +174,71 @@ def validate_target(api_url: str, expected_host: str) -> None:
         raise CheckError(f"invalid API URL: {problem}")
 
 
+# --------------------------------------------------------------- storage ----
+
+def _mount_table() -> list[tuple[str, str, str]] | None:
+    """``(major:minor, mount point, fs type)`` per line of ``MOUNTINFO_PATH``; None when it cannot be read."""
+    try:
+        with open(MOUNTINFO_PATH, encoding="utf-8", errors="replace") as handle:
+            text = handle.read(MAX_MOUNTINFO_BYTES)
+    except OSError:
+        return None
+    rows = []
+    for line in text.splitlines():
+        head, sep, tail = line.partition(" - ")
+        fields, fs_type = head.split(" "), tail.split(" ")[0]
+        if sep and len(fields) >= 5 and fs_type:
+            mount = MOUNT_ESCAPE_RE.sub(lambda m: chr(int(m.group(1), 8)), fields[4])
+            rows.append((fields[2], mount, fs_type))
+    return rows
+
+
+def _device_fs_type(st_dev: int, table: list[tuple[str, str, str]]) -> str | None:
+    """The fs type of the mounts whose device is ``st_dev``, when they agree on one."""
+    try:
+        device = f"{os.major(st_dev)}:{os.minor(st_dev)}"
+    except (AttributeError, ValueError, OverflowError):
+        return None
+    types = {fs for dev, _, fs in table if dev == device}
+    return types.pop() if len(types) == 1 else None
+
+
+def _path_fs_type(path: str, table: list[tuple[str, str, str]]) -> str | None:
+    """The fs type of the longest mount point that contains the resolved path (a later mount wins a tie)."""
+    real = os.path.realpath(path)
+    best_len, best = -1, None
+    for _, mount, fs in table:
+        if (real == mount or real.startswith(mount.rstrip("/") + "/")) and len(mount) >= best_len:
+            best_len, best = len(mount), fs
+    return best
+
+
+def filesystem_type(st_dev: int, path: str) -> str | None:
+    """The file system type that holds the token file, or None where it cannot be determined (fail soft)."""
+    try:
+        table = _mount_table()
+        if not table:
+            return None
+        fs = _device_fs_type(st_dev, table) or _path_fs_type(path, table)
+    except (OSError, ValueError):
+        return None
+    if fs is None:
+        return None
+    return fs if FS_TYPE_RE.fullmatch(fs) else "unrecognised"
+
+
+def _storage_findings(st_dev: int, path: str, file_env: str) -> tuple[list[str], list[str]]:
+    """``(warnings, notes)`` about where the token file is stored. Neither ever holds the path."""
+    fs = filesystem_type(st_dev, path)
+    if fs is None:
+        return [], ["token file storage: not determined (no readable or matching mount table); "
+                    "the at-rest check was skipped"]
+    if fs in MEMORY_FS_TYPES:
+        return [], [f"token file storage: {fs} (in memory, not at rest on disk; swap is not checked)"]
+    return [f"the token file named by {file_env} is on a persistent file system ({fs}), at rest on disk; "
+            "move it to $XDG_RUNTIME_DIR or /dev/shm unless the disk is encrypted"], []
+
+
 # ----------------------------------------------------------------- token ----
 
 def _env_name(value: str, flag: str) -> str:
@@ -183,8 +260,10 @@ def _open_token_file(path: str, file_env: str) -> int:
         ) from exc
 
 
-def _read_token_file(path: str, file_env: str) -> tuple[str, list[str]]:
-    """Read the token file through ONE descriptor: regular file, owned by the current user, size-capped."""
+def _read_token_file(path: str, file_env: str) -> tuple[str, list[str], list[str]]:
+    """Read the token file through ONE descriptor: regular file, owned by the current user, size-capped.
+
+    Returns the text, the warnings and the information lines (where the file is stored)."""
     warnings: list[str] = []
     fd = _open_token_file(path, file_env)
     try:
@@ -198,6 +277,8 @@ def _read_token_file(path: str, file_env: str) -> tuple[str, list[str]]:
                 f"the token file is accessible by group or others (mode {stat.S_IMODE(info.st_mode):04o}); "
                 "use chmod 600"
             )
+        storage_warnings, notes = _storage_findings(info.st_dev, path, file_env)
+        warnings.extend(storage_warnings)
         data = os.read(fd, MAX_TOKEN_FILE_BYTES + 1)
     except OSError as exc:
         raise CheckError(f"cannot read the token file named by {file_env}: {type(exc).__name__}") from exc
@@ -206,7 +287,7 @@ def _read_token_file(path: str, file_env: str) -> tuple[str, list[str]]:
     if len(data) > MAX_TOKEN_FILE_BYTES:
         raise CheckError(f"the token file named by {file_env} is larger than {MAX_TOKEN_FILE_BYTES} bytes")
     try:
-        return data.decode("utf-8").lstrip("\ufeff").strip(), warnings
+        return data.decode("utf-8").lstrip("\ufeff").strip(), warnings, notes
     except UnicodeDecodeError as exc:
         raise CheckError(f"the token file named by {file_env} is not UTF-8 text") from exc
 
@@ -232,6 +313,7 @@ def load_token(token_env: str, file_env: str, environ: Mapping[str, str]) -> Tok
     inline = environ.get(token_env, "").lstrip("\ufeff").strip()
     path = environ.get(file_env, "").strip()
     warnings: list[str] = []
+    notes: list[str] = []
     if inline:
         if path:
             warnings.append(
@@ -240,13 +322,13 @@ def load_token(token_env: str, file_env: str, environ: Mapping[str, str]) -> Tok
             )
         token, description = inline, f"environment variable {token_env}"
     elif path:
-        token, file_warnings = _read_token_file(path, file_env)
+        token, file_warnings, notes = _read_token_file(path, file_env)
         warnings.extend(file_warnings)
         description = f"the file named by {file_env}"
     else:
         raise CheckError(f"no token: {token_env} is empty or unset and {file_env} is not set")
     _check_token_text(token, description)
-    return TokenSource(token=token, description=description, warnings=warnings)
+    return TokenSource(token=token, description=description, warnings=warnings, notes=notes)
 
 
 # ------------------------------------------------------------------ HTTP ----
@@ -449,6 +531,7 @@ def _prepare(args: argparse.Namespace, environ: Mapping[str, str]) -> tuple[str,
 def _report(reporter: Reporter, source: TokenSource, findings: Findings, user: Mapping) -> int:
     reporter.line(f"token owner: {_server_text(user, 'username')}")
     findings.warnings[:0] = source.warnings
+    findings.infos[:0] = source.notes
     for text in findings.infos:
         reporter.line(text)
     for text in findings.warnings:

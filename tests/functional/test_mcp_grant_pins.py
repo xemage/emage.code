@@ -486,6 +486,39 @@ def server_and_agent_count_findings(text: str, server_count: int, agent_count: i
     return found
 
 
+# --- T689: the token sentence of each one-line GitLab-grants paragraph names the in-memory placement ----------------
+TOKEN_PLACEMENT_NEEDLES = ("the token file", "kept in memory (`$XDG_RUNTIME_DIR`, else `/dev/shm`), not at rest on disk",
+                           "T689")
+
+
+def token_placement_findings(label: str, text: str) -> list[str]:
+    paragraph = gitlab_paragraph(text)
+    if paragraph is None:
+        return [f"{label}: the GitLab grants paragraph is missing or not unique"]
+    return [f"{label}: the grants paragraph lacks {needle!r}" for needle in TOKEN_PLACEMENT_NEEDLES if needle not in paragraph]
+
+
+class DocumentedTokenPlacementTests(unittest.TestCase):
+    def test_each_grants_paragraph_names_the_in_memory_placement(self):
+        for key in GITLAB_PARAGRAPH_DOCS:
+            with self.subTest(doc=key):
+                self.assertEqual(token_placement_findings(key, DOCS[key].read_text(encoding="utf-8")), [])
+
+    def test_the_two_agents_files_state_the_profile_export_caveat(self):
+        for key in ("agents-root", "agents-impl"):
+            with self.subTest(doc=key):
+                paragraph = gitlab_paragraph(DOCS[key].read_text(encoding="utf-8")) or ""
+                self.assertIn("the harness does not assume disk encryption", paragraph)
+                self.assertIn("an exported token in a shell profile file is a plaintext secret at rest too", paragraph)
+
+    def test_dropping_the_placement_or_splitting_the_paragraph_is_noticed(self):
+        text = DOCS["agents-root"].read_text(encoding="utf-8")
+        dropped = text.replace("kept in memory (`$XDG_RUNTIME_DIR`, else `/dev/shm`), not at rest on disk", "", 1)
+        self.assertTrue(token_placement_findings("mutant", dropped))
+        split = text.replace("Use a least-privilege token", "\nGitLab grants: Use a least-privilege token", 1)
+        self.assertEqual(token_placement_findings("mutant", split), ["mutant: the GitLab grants paragraph is missing or not unique"])
+
+
 class DocumentedPlaywrightAndOpencodeCountTests(unittest.TestCase):
     def setUp(self):
         self.wiki = DOCS["wiki"].read_text(encoding="utf-8")
