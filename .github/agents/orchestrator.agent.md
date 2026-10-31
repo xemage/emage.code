@@ -214,6 +214,7 @@ Invoke quality gates at defined points:
 
 **RELEASE GATE** (before deployment):
 - Delegate to `@release-manager`: "Verify release readiness. Produce VERDICT."
+- The release manager prepares `docs/releases/vX.Y.Z.md` (Core Workflow, Phase 5, step 2), so obtain the independent check of that document first (a `@tech-lead` review by area, or your own verification) and give the release manager its artifact and commit; `release-manager` § Release Gate Policy item 5 requires it.
 
 Process verdicts:
 - `PASS` → Proceed to next phase
