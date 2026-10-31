@@ -2,13 +2,13 @@
 
 **ID:** T693
 **Owner:** devops-engineer
-**Status:** pending
+**Status:** done
 **Priority:** P2
 **Tier:** standard
 **Depends on:** T691
 **Affects:** —
 **Created:** 2026-10-24
-**Completed:** —
+**Completed:** 2026-10-31
 **Based on:**
 - `docs/plans/plan-123-post-release-follow-ups.md` (Addendum of 2026-10-24: T693)
 - `docs/artifacts/ruling-p112-p41-o1-release-self-review-v1.md` (the ruling; section 5.1 hunks E1 to E3 and section 5.2 the task shape)
@@ -37,3 +37,10 @@ As stated in section 1.
 
 
 Report each blocker with its type (`technical` | `dependency` | `unclear_requirements` | `external`) and severity (`critical` | `major` | `minor`).
+
+## 6. Outcome (2026-10-31)
+
+- Applied E1-E3 of ruling A+ after the user's "T693 go" (2026-10-31). E3 uses "(Core Workflow, Phase 5, step 2)" instead of "(`:259`)", which pointed at the wrong line once E3 was inserted.
+- Security review: CONDITIONAL_PASS at `d70b4e35` (SEC-T693-01 MEDIUM, the stale-check rule went stale by construction and named no re-run actor). The user decided "fix 01"; the orchestrator refined the allowed parts to the `## RELEASE VERDICT` section and the `Release:` line under `## Gate Verdicts` (`docs/releases/_template.md:62-86`). Re-check at `702f2171`: PASS, 0 MEDIUM or higher; SEC-T693-02..09 LOW tracked as debt in the review artifact (LOW policy of 2026-10-23).
+- Orchestrator's independent run at `702f2171`: sync, registry, scorecard `--check` OK; full suite 2124 tests OK (skipped=24).
+
