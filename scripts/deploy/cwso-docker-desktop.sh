@@ -17,7 +17,11 @@ REPO_ROOT="${REPO_ROOT:-.}"
 DEPLOY_DIR="${REPO_ROOT}/deploy/local-dev"
 DOCKER_COMPOSE_SOURCE="${REPO_ROOT}/deploy/docker-compose-t226.yml"
 ENV_SOURCE="${REPO_ROOT}/deploy/t226-phase2.env"
-JWT_SOURCE="${REPO_ROOT}/deploy/.env.jwt.dev"
+# The JWT secret comes from the CWSO_JWT_SECRET environment variable only
+# (T694): there is no secret file default and no generated fallback.
+SECRET_ENV_VAR="CWSO_JWT_SECRET"
+# Services whose logs are shown on failure: last 50 lines each, never a full dump.
+LOG_SERVICES="orchestrator git-shadow merge-engine rollout sia-executor"
 
 # Functions
 print_header() {
@@ -34,6 +38,14 @@ print_warning() {
 
 print_error() {
     echo -e "${RED}✗ $1${NC}"
+}
+
+require_jwt_secret() {
+    if [ -z "${CWSO_JWT_SECRET:-}" ]; then
+        print_error "${SECRET_ENV_VAR} is not set"
+        echo "Export ${SECRET_ENV_VAR} before running the setup, for example from your secret store." >&2
+        exit 1
+    fi
 }
 
 check_prerequisites() {
@@ -114,18 +126,11 @@ copy_configuration() {
     cp "$ENV_SOURCE" "$DEPLOY_DIR/.env"
     print_success "Copied environment configuration"
 
-    # Configure JWT
-    if [ -f "$JWT_SOURCE" ]; then
-        JWT_SECRET=$(tr -d '\r\n' < "$JWT_SOURCE")
-        echo "JWT_SECRET=$JWT_SECRET" >> "$DEPLOY_DIR/.env"
-        print_success "Configured JWT secret from development source"
-    else
-        print_warning "Development JWT not found at $JWT_SOURCE"
-        echo "Generating new JWT secret..."
-        JWT_SECRET=$(head -c 32 /dev/urandom | base64)
-        echo "JWT_SECRET=$JWT_SECRET" >> "$DEPLOY_DIR/.env"
-        print_success "Generated new JWT secret"
-    fi
+    # The JWT secret is not written to any file: docker compose reads
+    # CWSO_JWT_SECRET from this script's environment and mounts it as the
+    # jwt_secret secret (deploy/docker-compose-t226.yml, T694).
+    require_jwt_secret
+    print_success "${SECRET_ENV_VAR} is set; docker compose passes it to the services as the jwt_secret secret"
 }
 
 pull_images() {
@@ -159,7 +164,7 @@ verify_deployment() {
     # Check container status
     if ! docker compose -f "$DOCKER_COMPOSE_SOURCE" ps | grep -q "Up"; then
         print_error "Services are not running"
-        docker compose -f "$DOCKER_COMPOSE_SOURCE" logs
+        docker compose -f "$DOCKER_COMPOSE_SOURCE" logs --tail=50 $LOG_SERVICES
         exit 1
     fi
 
@@ -176,7 +181,7 @@ verify_deployment() {
     if [ "$all_running" = false ]; then
         print_error "Some services failed to start"
         print_header "Service Logs"
-        docker compose -f "$DOCKER_COMPOSE_SOURCE" logs
+        docker compose -f "$DOCKER_COMPOSE_SOURCE" logs --tail=50 $LOG_SERVICES
         exit 1
     fi
 
@@ -251,13 +256,14 @@ To stop services:
     docker compose -f deploy/docker-compose-t226.yml down
 
 To view logs:
-    docker compose -f deploy/docker-compose-t226.yml logs -f
+    docker compose -f deploy/docker-compose-t226.yml logs -f --tail=50
 
 EOF
 }
 
 update_deployment() {
     print_header "Updating CWSO Deployment"
+    require_jwt_secret  # `up --force-recreate` needs the jwt_secret secret
 
     echo "Pulling latest images..."
     docker compose -f "$DOCKER_COMPOSE_SOURCE" pull
@@ -295,7 +301,7 @@ show_logs() {
     echo "Press Ctrl+C to stop"
     sleep 2
 
-    docker compose -f "$DOCKER_COMPOSE_SOURCE" logs -f
+    docker compose -f "$DOCKER_COMPOSE_SOURCE" logs -f --tail=50 $LOG_SERVICES
 }
 
 # Main execution
@@ -320,6 +326,7 @@ main() {
             ;;
         ""|setup)
             # Full setup
+            require_jwt_secret
             check_prerequisites
             setup_deploy_directory
             copy_configuration
@@ -332,7 +339,7 @@ main() {
             echo ""
             echo "Next steps:"
             echo "  1. Test health: curl http://localhost:8080/healthz"
-            echo "  2. View logs: docker compose -f $DOCKER_COMPOSE_SOURCE logs"
+            echo "  2. View logs: docker compose -f $DOCKER_COMPOSE_SOURCE logs --tail=50 $LOG_SERVICES"
             echo "  3. Run tests: pytest tests/"
             ;;
         *)
