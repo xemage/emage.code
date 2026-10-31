@@ -36,3 +36,14 @@ As stated in section 1.
 
 
 Report each blocker with its type (`technical` | `dependency` | `unclear_requirements` | `external`) and severity (`critical` | `major` | `minor`).
+
+## 6. Live-check results and the user's setup (2026-10-24 to 2026-10-31)
+
+Recorded by the orchestrator from the user's reports. These are observations on gitlab.com and on the user's devcontainer (Ubuntu 24.04, Claude Code in VS Code Remote SSH), and they are inputs to this task.
+
+1. **Fine-grained personal access tokens are not usable for the agent roles.** On gitlab.com (observed 2026-10-24), the fine-grained token form offers no Create permission for Issue (only Subscribe), Milestone or Issue link. qa-engineer and scrum-master need these. Read and update calls worked; the merge request tools were not called. The documented default stays a legacy token with scope `api`. GitLab's scopes page says `api` also covers Git over HTTP for personal access tokens. On gitlab.com Free a personal token cannot be limited by role.
+2. **`CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1` stops the `gitlab` MCP server from connecting** (observed; cause unverified). Do not document it as compatible with the GitLab entry.
+3. **Token-file mode works.** With `GITLAB_PERSONAL_ACCESS_TOKEN_FILE` set and the token variable unset, the server connects. Since 2026-10-31 the user runs it with the file in RAM: `/dev/shm/emage-secrets/gitlab-token`, mode 600 in a 700 directory, written from a gpg-encrypted store at unlock time. That is the tmpfs placement this task makes the default.
+4. **`glab` takes `GITLAB_TOKEN` from the environment** ahead of its config file (`glab auth status`: "Token found in environment variable GITLAB_TOKEN … takes precedence"). The user's `glab` config.yml had a separate OAuth token and refresh token in plaintext. It is not a `glpat-` token, so a prefix search misses it; the user emptied it and revoked the OAuth authorization. Document `glab`'s own stored login as a second plaintext copy to check.
+5. **The Claude Code sandbox (bubblewrap) created empty placeholder dotfiles** in the home directory (2026-10-26, during check 2b): `~/.bash_profile`, `~/.bash_aliases`, `~/.npmrc`, `~/.netrc`, `~/.yarnrc`, `~/.yarnrc.yml` and `~/.bunfig.toml`. An empty `~/.bash_profile` stops login shells from reading `~/.bashrc`, so `claude`, `npx` and every exported variable were lost and the MCP servers failed ("npx not found", "url is not a valid URL"). The fix is to delete the 0-byte placeholders. This deserves a warning wherever the docs suggest the sandbox for the live checks (cause inferred from identical timestamps; unverified).
+6. **The VS Code server reads its environment once, when it starts.** After the token or the RAM file changes, or after a reboot with the store still locked, the MCP servers keep the old environment until the VS Code server is restarted ("Kill VS Code Server on Host").
