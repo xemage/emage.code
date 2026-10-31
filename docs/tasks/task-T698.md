@@ -1,13 +1,14 @@
-# T698 — Checkpoint 039 (2026-10-24 to 2026-10-31)
+# T698 — Checkpoint 039 (2026-10-16 to 2026-10-31)
 
 **ID:** T698
 **Owner:** orchestrator
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Tier:** standard
 **Depends on:** T697, T699
 **Affects:** —
 **Created:** 2026-10-31
+**Completed:** 2026-10-31
 **Based on:**
 - `docs/plans/plan-123-post-release-follow-ups.md` (Addendum of 2026-10-31: T697 to T699)
 - The user's approval of 2026-10-31: "1 2 go, refresh yes"
@@ -15,7 +16,7 @@
 
 ## 1. What and why
 
-The phase-boundary checkpoint for 2026-10-24 to 2026-10-31 (skill `checkpoint-protocol`): completed tasks T689 to T699, key decisions (the user's), blockers and incidents, token metrics (including the T689 agent's overrun, about 250k tokens against a 150k budget), the state after the root refresh, and the next steps (v9.0.0 plan, open user actions).
+The phase-boundary checkpoint for 2026-10-16 (checkpoint-038) to 2026-10-31 (skill `checkpoint-protocol`): completed tasks T653 to T699 (plan-123 and its addenda), key decisions (the user's), blockers and incidents, token metrics (including the T689 agent's overrun, about 250k tokens against a 150k budget), the state after the root refresh, and the next steps (v9.0.0 plan, open user actions).
 
 ## 2. Output
 

@@ -2,12 +2,13 @@
 
 **ID:** T697
 **Owner:** tech-lead
-**Status:** in_progress
+**Status:** done
 **Priority:** P1
 **Tier:** standard
 **Depends on:** —
 **Affects:** —
 **Created:** 2026-10-31
+**Completed:** 2026-10-31
 **Based on:**
 - `docs/plans/plan-123-post-release-follow-ups.md` (Addendum of 2026-10-31: T697 to T699)
 - The user's approval of 2026-10-31: "1 2 go, refresh yes"
