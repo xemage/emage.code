@@ -38,7 +38,7 @@ No ledger row is open. The full list is `docs/artifacts/tracked-debt-register-v3
 | First real tag pipeline with `CI_JOB_TOKEN` (SEC-T686-06: runner clone method) | T686 review | user, at the v9.0.0 tag |
 | D-11 (TD-T697-08): environment mode on an unencrypted disk is a plaintext secret at rest; the T689 review calls it the user's accepted exposure, but no user decision records that and Constraint 6 admits no acceptance | register v3 | user, with security-engineer |
 | D-12 (when to run the batches of tracked-LOW items) and D-13 (add T688, T689, T690 and T693 to the v9.0.0 migration list) | register v3 | user; orchestrator for the v9.0.0 plan |
-| The devcontainer GitLab token (expires 2027-01-28) and the CWSO bearer token (expires 2027-01-29) were issued for 90 days (A-13) | the user's secrets setup of 2026-10-31 | user |
+| The devcontainer GitLab token (expires 2027-01-28, as the user's token check of 2026-10-31 printed it) and the CWSO bearer token (expires 2027-01-29: minted on 2026-10-31 with a 90-day TTL) were issued for 90 days (A-13, where register v3 marks the dates unverified); TD-T697-07 (decision "C") is re-decided at the bearer-token renewal at the latest | the user's secrets setup of 2026-10-31; SEC-T699-04 | user |
 | `paste` advisory acceptance in CWSO, review due 2027-01-31 (SEC-T696-06) | T696 review | devops-engineer |
 
 ## 4. Key decisions (the user's, recorded verbatim in the plan-123 addenda)
@@ -78,7 +78,7 @@ Not measured per phase (the session ran across several context compactions). Rec
 ## 9. Next steps
 
 - Phase: v9.0.0 release preparation. First step: a release plan for the user's approval, carrying SEC-T662-01 and the migration items of `task-T679.md` section 3a.
-- The user's side: restart the VS Code server on the devcontainer so the session environment picks up the rotated values (the CWSO MCP connection depends on it); delete the local session transcripts that hold the dead secret; decide on the plaintext `.env` files of the user's other projects and on the plaintext JWT secret file on the CWSO server; fix the stored Context7 CLI key.
+- The user's side: restart the VS Code server on the devcontainer so the session environment picks up the rotated values (the CWSO MCP connection depends on it); delete the local session transcripts that hold the dead secret (recommended by the orchestrator; register v3 lists it as optional, A-15); act on UA-T699-1 to UA-T699-3 of `security-review-t697-t699-debt-checkpoint-refresh-v1.md` (the plaintext `.env` files of the user's other projects, the plaintext JWT secret file on the CWSO server, the stored Context7 CLI key): plaintext secrets at rest fall under Constraint 6 and are user actions, not acceptable risks.
 
 ## Compression note
 
