@@ -2,7 +2,7 @@
 
 **ID:** T709
 **Owner:** security-engineer
-**Status:** pending
+**Status:** in_progress
 **Priority:** P1
 **Tier:** standard
 **Depends on:** T702, T705

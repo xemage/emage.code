@@ -2,7 +2,7 @@
 
 **ID:** T708
 **Owner:** tech-lead
-**Status:** pending
+**Status:** in_progress
 **Priority:** P1
 **Tier:** standard
 **Depends on:** T705
@@ -16,6 +16,10 @@
 ## 1. What and why
 
 Tech Lead review by area (tech-lead, read-only): installer and generator; knowledge text and rulings; CI and release job; documentation. *Acceptance:* a verdict per area.
+
+**Gate order (orchestrator, 2026-11-01, under `release-manager.md` § Release Gate Policy item 5):** T706 to T709 run first and do not edit `docs/releases/v9.0.0.md`. Then the release-manager fills the `## Gate Verdicts` lines except `Release:`; then the top-level session checks the document independently at that commit and records the check (the policy's "top-level session's own verification"); then T710 changes only the `## RELEASE VERDICT` section and the `Release:` line.
+
+T708 also reviews T704's test change `2f2cd4db` (the v8.0.0 gate tests run with the marker check patched out) and reads the release document for technical accuracy by area; it is not the Policy item 5 check.
 
 ## 2. Output
 

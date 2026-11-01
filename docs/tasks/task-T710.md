@@ -17,6 +17,8 @@
 
 Release manager verdict (release-manager): the `## RELEASE VERDICT` block and `## Gate Verdicts` from T707 to T709. *Acceptance:* `verify-release-docs.py` passes with the verdict in place.
 
+**Gate order (orchestrator, 2026-11-01, under `release-manager.md` § Release Gate Policy item 5):** T706 to T709 run first and do not edit `docs/releases/v9.0.0.md`. Then the release-manager fills the `## Gate Verdicts` lines except `Release:`; then the top-level session checks the document independently at that commit and records the check (the policy's "top-level session's own verification"); then T710 changes only the `## RELEASE VERDICT` section and the `Release:` line.
+
 ## 2. Output
 
 As stated in section 1.

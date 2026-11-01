@@ -2,7 +2,7 @@
 
 **ID:** T707
 **Owner:** qa-engineer
-**Status:** pending
+**Status:** in_progress
 **Priority:** P1
 **Tier:** standard
 **Depends on:** T705, T706

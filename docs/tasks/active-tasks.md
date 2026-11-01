@@ -2,11 +2,10 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T705 | Write docs/releases/v9.0.0.md (closes SEC-T662-01) | release-manager | in_progress | P1 | — | 2026-11-01 |
-| T706 | Rehearse the release job in the CI image, no publish | devops-engineer | pending | P1 | T705 | 2026-11-01 |
-| T707 | QA release gate v9.0.0 | qa-engineer | pending | P1 | T705, T706 | 2026-11-01 |
-| T708 | Tech Lead review by area v9.0.0 | tech-lead | pending | P1 | T705 | 2026-11-01 |
-| T709 | Release-level security re-check v9.0.0 | security-engineer | pending | P1 | T702, T705 | 2026-11-01 |
+| T706 | Rehearse the release job in the CI image, no publish | devops-engineer | in_progress | P1 | — | 2026-11-01 |
+| T707 | QA release gate v9.0.0 | qa-engineer | in_progress | P1 | T706 | 2026-11-01 |
+| T708 | Tech Lead review by area v9.0.0 | tech-lead | in_progress | P1 | — | 2026-11-01 |
+| T709 | Release-level security re-check v9.0.0 | security-engineer | in_progress | P1 | — | 2026-11-01 |
 | T710 | Release manager verdict v9.0.0 | release-manager | pending | P1 | T707, T708, T709 | 2026-11-01 |
 | T711 | Publish v9.0.0 (each step needs the user's approval) | orchestrator | pending | P1 | T710 | 2026-11-01 |
 

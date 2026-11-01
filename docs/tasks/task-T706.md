@@ -2,7 +2,7 @@
 
 **ID:** T706
 **Owner:** devops-engineer
-**Status:** pending
+**Status:** in_progress
 **Priority:** P1
 **Tier:** standard
 **Depends on:** T705
