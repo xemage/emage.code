@@ -2,12 +2,13 @@
 
 **ID:** T710
 **Owner:** release-manager
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Tier:** standard
 **Depends on:** T707, T708, T709
 **Affects:** —
 **Created:** 2026-11-01
+**Completed:** 2026-11-01
 **Based on:**
 - `docs/plans/plan-124-release-v9.md` (task T710)
 - The user's answers of 2026-11-01 (AskUserQuestion, verbatim option labels): "Approve (Recommended)"; "Yes, in v9.0.0 (Recommended)"; "Decide after T702 (Recommended)"; "Yes, rehearse (Recommended)"
@@ -16,6 +17,8 @@
 ## 1. What and why
 
 Release manager verdict (release-manager): the `## RELEASE VERDICT` block and `## Gate Verdicts` from T707 to T709. *Acceptance:* `verify-release-docs.py` passes with the verdict in place.
+
+**Gate order (orchestrator, 2026-11-01, under `release-manager.md` § Release Gate Policy item 5):** T706 to T709 run first and do not edit `docs/releases/v9.0.0.md`. Then the release-manager fills the `## Gate Verdicts` lines except `Release:`; then the top-level session checks the document independently at that commit and records the check (the policy's "top-level session's own verification"); then T710 changes only the `## RELEASE VERDICT` section and the `Release:` line.
 
 ## 2. Output
 

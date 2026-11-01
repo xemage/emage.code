@@ -10,7 +10,7 @@ emage.code uses several scales that share words. `critical`, `high`, `medium` an
 
 - **Descriptive, never ranking.** Each row points to the document that defines the scale, and that document governs (principle P4 of ADR-008: nothing here orders documents; cited from the draft, ADR-008 itself was not re-read for this page **(unverified)**). If a row differs from its source, the source wins and this page is the defect: report it.
 - **Values are written as the source writes them.** Casing differs between documents for the same value (see [Known gaps](#known-gaps)).
-- The Migration section M-6 of the v8.0.0 release document (`docs/releases/v8.0.0.md`) compares the old and the new vocabulary of the v8 release. It is a dated record and stays unchanged; this page is the standing reference.
+- The Migration section M-6 of the v8.0.0 release document compares the old and the new vocabulary of the v8 release. It is a dated record and stays unchanged; this page is the standing reference.
 
 ## Table 1: the scales
 

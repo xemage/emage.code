@@ -29,6 +29,27 @@ def _load():
     return module
 
 
+def _run_past_release_without_markers(test: unittest.TestCase, tag: str) -> tuple[int, str]:
+    """Run main() for a past release tag on this tree with the marker check patched out.
+
+    T704: once the tree's `Latest release:` markers name a newer release, the marker check
+    fails for the past tag by design. This helper first proves that the marker check is the
+    only reason (it reports exactly the MARKER_FILES for the past tag and nothing for the
+    tree's own marker), then runs the rest of the gate for the past tag.
+    """
+    readme = (repo_root() / "README.md").read_text(encoding="utf-8")
+    current = next(line.strip() for line in readme.splitlines() if line.startswith("Latest release:"))
+    past: list[str] = []
+    test.mod.check_markers(f"Latest release: {tag}", past)
+    if current != f"Latest release: {tag}":
+        test.assertEqual(past, [f"missing marker 'Latest release: {tag}' in {f}" for f in test.mod.MARKER_FILES])
+    own: list[str] = []
+    test.mod.check_markers(current, own)
+    test.assertEqual(own, [])
+    with mock.patch.object(test.mod, "check_markers"):
+        return test._run_main(tag)
+
+
 GOOD = """# Release v1.2.3
 
 ## Gate Verdicts
@@ -167,7 +188,7 @@ class GateWiringTests(unittest.TestCase):
             return self.mod.main(), out.getvalue()
 
     def test_the_published_v8_document_passes_the_gate(self):
-        code, output = self._run_main("v8.0.0")
+        code, output = _run_past_release_without_markers(self, "v8.0.0")
         self.assertEqual((code, "all documentation checks passed" in output), (0, True))
 
     def test_an_unfilled_verdict_fails_the_gate_with_a_clear_message(self):
@@ -289,7 +310,7 @@ class MigrationPointerTests(unittest.TestCase):
         errors: list[str] = []
         self.mod.check_migration_pointers("v8.0.0", errors)
         self.assertEqual(errors, [])
-        code, output = self._run_main("v8.0.0")
+        code, output = _run_past_release_without_markers(self, "v8.0.0")
         self.assertEqual((code, "all documentation checks passed" in output), (0, True))
 
     def test_the_gate_runs_in_ci_only_on_release_tag_pipelines(self):

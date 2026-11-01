@@ -2,12 +2,13 @@
 
 **ID:** T705
 **Owner:** release-manager
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Tier:** standard
 **Depends on:** T703, T704
 **Affects:** —
 **Created:** 2026-11-01
+**Completed:** 2026-11-01
 **Based on:**
 - `docs/plans/plan-124-release-v9.md` (task T705)
 - The user's answers of 2026-11-01 (AskUserQuestion, verbatim option labels): "Approve (Recommended)"; "Yes, in v9.0.0 (Recommended)"; "Decide after T702 (Recommended)"; "Yes, rehearse (Recommended)"
