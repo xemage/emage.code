@@ -2154,6 +2154,46 @@ def _mcp_available() -> bool:
 
 
 @unittest.skipUnless(_mcp_available(), "mcp SDK not installed")
+class BroadAllowedRootTests(unittest.TestCase):
+    """SEC-T714-03: the PoC server refuses an `--allowed-root` of `/`, `$HOME` or an ancestor of `$HOME`."""
+
+    def setUp(self):
+        from unittest import mock
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.base = Path(self.tmp.name).resolve()
+        self.home = self.base / "home" / "user"
+        self.repo = self.home / "code" / "repo"
+        self.repo.mkdir(parents=True)
+        patcher = mock.patch.object(Path, "home", return_value=self.home)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def run_main(self, module, root) -> object:
+        from unittest import mock
+        with mock.patch.object(module.MCPServer, "run", return_value=None):
+            return module.main(["--allowed-root", str(root)])
+
+    def test_a_broad_allowed_root_is_refused(self):
+        from implementation.runtime.security import poc_audit_server
+        from implementation.runtime.security.validation import PathValidationError
+        for broad in (Path("/"), self.home, self.home.parent, self.base):
+            with self.subTest(root=str(broad)), self.assertRaisesRegex(PathValidationError, "must not be /"):
+                self.run_main(poc_audit_server, broad)
+        self.assertEqual(self.run_main(poc_audit_server, self.repo), 0)
+
+    def test_mutation_proof_without_the_check_home_is_accepted(self):
+        import types
+        text = SERVER_PY.read_text(encoding="utf-8")
+        old = "allowed_root=validate_allowed_root(args.allowed_root)"
+        self.assertEqual(text.count(old), 1)
+        mutant = types.ModuleType("poc_audit_server_mutant_t714")
+        exec(compile(text.replace(old, "allowed_root=args.allowed_root.resolve()"), str(SERVER_PY), "exec"),
+             mutant.__dict__)  # noqa: S102
+        self.assertEqual(self.run_main(mutant, self.home), 0)
+
+
+@unittest.skipUnless(_mcp_available(), "mcp SDK not installed")
 class StartupSmokeTests(RepoCase):
     def _params(self):
         from mcp import StdioServerParameters

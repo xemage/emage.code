@@ -27,9 +27,13 @@ from pathlib import Path
 # globs to `rg` as deny globs (`commands.DENY_GLOBS`). The list covers environment files
 # (`.env`, `.env.example`, `.envs/`, `prod.env`), private keys and certificates, credential
 # files, and the `.git` directory. Deny by default: a legitimate `monkey.key` is also refused.
+# T714 (SEV-T690-04 (c)) adds the credential files `.netrc`, `.npmrc`, `.pgpass` and
+# `.git-credentials`, the key stores `*.p12`, `*.pfx` and `*.kdbx`, and `.aws`: the match is per
+# path component, so `.aws/credentials` is covered by refusing the `.aws` directory as a whole.
 SENSITIVE_NAME_GLOBS = (
     ".env*", "*.env", "*.pem", "*.key", "id_rsa*", "id_ed25519*",
     "credentials.json", "secrets.y*ml", ".git",
+    ".netrc", ".npmrc", ".pgpass", ".git-credentials", ".aws", "*.p12", "*.pfx", "*.kdbx",
 )
 
 
@@ -108,6 +112,18 @@ def root_is_too_broad(path: Path, allowed_root: Path | None) -> bool:
     if path == home or path in home.parents:
         return True
     return allowed_root is not None and path in allowed_root.resolve().parents
+
+
+def validate_allowed_root(allowed_root: Path) -> Path:
+    """T714 (SEV-T690-04 (b)): the resolved `allowed_root`, refused when it is `/`, `$HOME` or
+    an ancestor of `$HOME` (`root_is_too_broad`), as an extra root already is."""
+    resolved = allowed_root.resolve()
+    if root_is_too_broad(resolved, None):
+        raise PathValidationError(
+            f"allowed root {str(allowed_root)!r} must not be /, $HOME or an ancestor of $HOME; "
+            "launch the server from the workspace directory"
+        )
+    return resolved
 
 
 def parse_worktree_list(porcelain: str, allowed_root: Path | None = None) -> list[Path]:

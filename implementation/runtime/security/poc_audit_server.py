@@ -19,6 +19,7 @@ from mcp.server.mcpserver import MCPServer
 
 from implementation.runtime.security import poc_scan
 from implementation.runtime.security.poc_scan import PocAuditConfig
+from implementation.runtime.security.validation import validate_allowed_root
 
 SERVER_NAME = "poc-security-audit"
 
@@ -89,7 +90,8 @@ def _build_arg_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = _build_arg_parser().parse_args(argv)
-    build_server(PocAuditConfig(allowed_root=args.allowed_root.resolve())).run("stdio")
+    # SEC-T714-03: `/`, `$HOME` or an ancestor of `$HOME` is refused, as for `security-audit`
+    build_server(PocAuditConfig(allowed_root=validate_allowed_root(args.allowed_root))).run("stdio")
     return 0
 
 

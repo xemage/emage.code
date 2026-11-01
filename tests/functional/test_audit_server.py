@@ -30,6 +30,7 @@ import os
 import shutil
 import sys
 import tempfile
+import types
 import unittest
 import uuid
 from pathlib import Path
@@ -182,6 +183,9 @@ class CommandsArgvUnitTests(unittest.TestCase):
                 "--iglob", "!**/.env*", "--iglob", "!**/*.env", "--iglob", "!**/*.pem",
                 "--iglob", "!**/*.key", "--iglob", "!**/id_rsa*", "--iglob", "!**/id_ed25519*",
                 "--iglob", "!**/credentials.json", "--iglob", "!**/secrets.y*ml", "--iglob", "!**/.git",
+                "--iglob", "!**/.netrc", "--iglob", "!**/.npmrc", "--iglob", "!**/.pgpass",
+                "--iglob", "!**/.git-credentials", "--iglob", "!**/.aws", "--iglob", "!**/*.p12",
+                "--iglob", "!**/*.pfx", "--iglob", "!**/*.kdbx",
                 str(self.root.resolve()),
             ],
         )
@@ -831,12 +835,16 @@ from unittest import mock  # noqa: E402
 from implementation.runtime.security.validation import (  # noqa: E402
     SENSITIVE_NAME_GLOBS,
     root_is_too_broad,
+    validate_allowed_root,
 )
 
 SENSITIVE_PATHS = (
     ".env", ".env.example", ".envs/.production", "prod.env", "keys/server.pem", "keys/tls.KEY",
     "ssh/id_rsa", "ssh/id_rsa.pub", "ssh/id_ed25519", "cloud/credentials.json", "cfg/secrets.yaml",
     "cfg/secrets.yml", ".git/config", ".ENV",
+    # T714 (SEV-T690-04 (c))
+    ".netrc", "home/.npmrc", "db/.pgpass", ".git-credentials", ".aws/credentials", "certs/client.p12",
+    "certs/client.PFX", "vault/passwords.kdbx",
 )
 
 
@@ -862,8 +870,17 @@ class SensitivePathTests(unittest.TestCase):
         self.assertEqual(
             set(SENSITIVE_NAME_GLOBS),
             {".env*", "*.env", "*.pem", "*.key", "id_rsa*", "id_ed25519*",
-             "credentials.json", "secrets.y*ml", ".git"},
+             "credentials.json", "secrets.y*ml", ".git",
+             ".netrc", ".npmrc", ".pgpass", ".git-credentials", ".aws", "*.p12", "*.pfx", "*.kdbx"},
         )
+
+    def test_the_t714_credential_files_are_refused_by_the_file_tools(self):
+        for rel in (".netrc", "home/.npmrc", "db/.pgpass", ".git-credentials", ".aws/credentials",
+                    "certs/client.p12", "certs/client.PFX", "vault/passwords.kdbx"):
+            with self.subTest(path=rel), self.assertRaisesRegex(PathValidationError, "sensitive name"):
+                commands.build_pip_audit_argv(str(self.root / rel), allowed_root=self.root)
+        with self.assertRaisesRegex(PathValidationError, "sensitive name"):
+            commands.build_grep_content_argv("x", "*", str(self.root / ".aws"), allowed_root=self.root)
 
     def test_grep_root_dir_in_or_below_a_sensitive_directory_is_refused(self):
         for rel in (".envs", ".envs/.production", ".git"):
@@ -990,6 +1007,188 @@ class BroadRootTests(unittest.TestCase):
         with self.assertRaises(PathValidationError):
             commands.build_grep_content_argv("x", "*", str(self.allowed.parent), allowed_root=self.allowed, extra_roots=roots)
         commands.build_grep_content_argv("x", "*", str(self.sibling), allowed_root=self.allowed, extra_roots=roots)
+
+
+class AllowedRootTests(unittest.TestCase):
+    """T714 (SEV-T690-04 (b)): the allowed root itself is refused when it is `/`, `$HOME` or an ancestor."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.base = Path(self.tmp.name).resolve()
+        self.home = self.base / "home" / "user"
+        self.repo = self.home / "code" / "repo"
+        self.repo.mkdir(parents=True)
+        patcher = mock.patch.object(Path, "home", return_value=self.home)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_a_broad_allowed_root_is_refused(self):
+        for broad in (Path("/"), self.home, self.home.parent, self.base):
+            with self.subTest(root=str(broad)), self.assertRaisesRegex(PathValidationError, "must not be /, \\$HOME"):
+                validate_allowed_root(broad)
+
+    def test_a_workspace_below_home_is_accepted_and_resolved(self):
+        self.assertEqual(validate_allowed_root(self.repo / "." / ".." / "repo"), self.repo)
+        self.assertEqual(validate_allowed_root(self.home / "code"), self.home / "code")
+
+    def test_a_symlink_to_home_is_refused(self):
+        link = self.base / "link-to-home"
+        link.symlink_to(self.home)
+        with self.assertRaises(PathValidationError):
+            validate_allowed_root(link)
+
+    @_required_unless_missing(MCP_AVAILABLE, "needs the mcp SDK")
+    def test_build_server_and_main_refuse_a_broad_allowed_root(self):
+        from implementation.runtime.security import audit_server
+        with self.assertRaises(PathValidationError):
+            audit_server.build_server(self.home)
+        audit_server.build_server(self.repo)  # an ordinary workspace still starts
+        with mock.patch.object(audit_server.MCPServer, "run", side_effect=AssertionError("started")), \
+                self.assertRaisesRegex(PathValidationError, "must not be /, \\$HOME"):
+            audit_server.main(["--allowed-root", str(self.home)])
+
+
+class ChildEnvironmentTests(unittest.TestCase):
+    """T714 (SEV-T690-04 (a)): a child tool gets the allowlisted environment, never the server's whole one."""
+
+    SECRET_NAMES = ("GITLAB_PERSONAL_ACCESS_TOKEN", "AWS_SECRET_ACCESS_KEY", "NPM_TOKEN", "BRAVE_API_KEY")
+
+    def fake_environ(self) -> dict:
+        env = {name: "FAKE-secret-value-t714" for name in self.SECRET_NAMES}
+        env.update({"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "HOME": "/tmp/fake-home-t714",
+                    "LANG": "C.UTF-8", "HTTPS_PROXY": "http://proxy.invalid:3128",
+                    "SSL_CERT_FILE": "/tmp/fake-ca-t714.pem", "EMPTY_ONE": "", "TMPDIR": ""})
+        return env
+
+    def test_child_env_keeps_only_the_allowlisted_names(self):
+        env = executor.child_env(self.fake_environ())
+        self.assertEqual(set(env), {"PATH", "HOME", "LANG", "HTTPS_PROXY", "SSL_CERT_FILE"} | set(executor.CHILD_ENV_FIXED))
+        self.assertTrue(set(env) <= set(executor.CHILD_ENV_NAMES) | set(executor.CHILD_ENV_FIXED))
+        self.assertNotIn("FAKE-secret-value-t714", "".join(env.values()))
+
+    def test_child_env_has_a_default_path(self):
+        self.assertEqual(executor.child_env({})["PATH"], "/usr/local/bin:/usr/bin:/bin")
+
+    def test_the_allowlist_holds_no_credential_like_name(self):
+        for name in executor.CHILD_ENV_NAMES:
+            with self.subTest(name=name):
+                self.assertNotRegex(name.upper(), r"TOKEN|SECRET|PASSWORD|KEY|AUTH|CREDENTIAL")
+
+    def test_the_one_subprocess_run_call_passes_the_child_env(self):
+        executor_calls = _subprocess_run_calls(_parse(EXECUTOR_PY))
+        self.assertEqual(len(executor_calls), 1)
+        env_kw = [kw for kw in executor_calls[0].keywords if kw.arg == "env"]
+        self.assertEqual(len(env_kw), 1, "subprocess.run must receive env=")
+        self.assertEqual(ast.unparse(env_kw[0].value), "child_env()")
+
+    def test_a_real_child_sees_no_secret_of_the_server(self):
+        argv = [sys.executable, "-I", "-c", "import json, os; print(json.dumps(sorted(os.environ)))"]
+        with mock.patch.dict(os.environ, self.fake_environ(), clear=True):
+            out = executor.run_fixed_argv(argv)
+        self.assertEqual(out.get("exit_code"), 0, out)
+        seen = set(json.loads(out["stdout"]))
+        for name in self.SECRET_NAMES:
+            self.assertNotIn(name, seen)
+        self.assertIn("HTTPS_PROXY", seen)
+        self.assertTrue(seen <= set(executor.CHILD_ENV_NAMES) | set(executor.CHILD_ENV_FIXED)
+                        | {"LC_CTYPE", "__CF_USER_TEXT_ENCODING"}, seen)
+
+    def test_mutation_proof_without_env_the_child_inherits_the_secrets(self):
+        source = EXECUTOR_PY.read_text(encoding="utf-8")
+        anchor = "            env=child_env(),\n"
+        self.assertEqual(source.count(anchor), 1)
+        mutant = types.ModuleType("executor_mutant_t714")
+        exec(compile(source.replace(anchor, ""), str(EXECUTOR_PY), "exec"), mutant.__dict__)  # noqa: S102
+        argv = [sys.executable, "-I", "-c", "import json, os; print(json.dumps(sorted(os.environ)))"]
+        with mock.patch.dict(os.environ, self.fake_environ(), clear=True):
+            out = mutant.run_fixed_argv(argv)
+        self.assertIn("GITLAB_PERSONAL_ACCESS_TOKEN", set(json.loads(out["stdout"])))
+
+
+class PackageIndexSettingsTests(unittest.TestCase):
+    """SEC-T714-01: pointers to the tools' own configuration pass, the dotnet opt-outs are always set, and a
+    package-index setting made only in the environment makes pip-audit / npm refuse to run (never a silent
+    fallback to the public index). Fake `pip-audit` and `npm` executables record whether they ran."""
+
+    POINTERS = {"PIP_CONFIG_FILE": "/cfg/pip.conf", "XDG_CONFIG_HOME": "/cfg", "XDG_CACHE_HOME": "/cache",
+                "NPM_CONFIG_USERCONFIG": "/cfg/npmrc", "NPM_CONFIG_GLOBALCONFIG": "/cfg/global-npmrc",
+                "npm_config_userconfig": "/cfg/npmrc2", "npm_config_globalconfig": "/cfg/global2",
+                "NUGET_PACKAGES": "/cache/nuget"}
+    PIP_INDEX = ("PIP_INDEX_URL", "PIP_EXTRA_INDEX_URL", "PIP_FIND_LINKS", "PIP_AUDIT_INDEX_URL")
+    NPM_REGISTRY = ("npm_config_registry", "NPM_CONFIG_REGISTRY", "npm_config_@corp:registry",
+                    "NPM_CONFIG_@CORP:REGISTRY")
+    VALUE = "https://user:FAKE-index-secret-t714@index.invalid/simple"
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.bin = Path(self.tmp.name).resolve()
+        for tool in ("pip-audit", "npm"):
+            script = self.bin / tool
+            script.write_text(f"#!/bin/sh\nenv > '{self.bin / (tool + '.ran')}'\n", encoding="utf-8")
+            script.chmod(0o700)
+
+    def environ(self, **extra) -> dict:
+        return {"PATH": f"{self.bin}{os.pathsep}{os.environ.get('PATH', '/usr/bin:/bin')}", **extra}
+
+    def ran(self, tool: str) -> bool:
+        return (self.bin / (tool + ".ran")).exists()
+
+    def run_tool(self, module, tool: str, environ: dict) -> dict:
+        with mock.patch.dict(os.environ, environ, clear=True):
+            return module.run_fixed_argv([tool, "audit"])
+
+    def test_the_pointer_variables_and_the_dotnet_opt_outs_pass(self):
+        env = executor.child_env(self.environ(**self.POINTERS))
+        for name, value in self.POINTERS.items():
+            self.assertEqual(env.get(name), value, name)
+        self.assertEqual((env["DOTNET_CLI_TELEMETRY_OPTOUT"], env["DOTNET_NOLOGO"]), ("1", "1"))
+
+    def test_the_dotnet_opt_outs_are_always_set_and_win(self):
+        env = executor.child_env({"DOTNET_CLI_TELEMETRY_OPTOUT": "0", "DOTNET_NOLOGO": "false"})
+        self.assertEqual((env["DOTNET_CLI_TELEMETRY_OPTOUT"], env["DOTNET_NOLOGO"]), ("1", "1"))
+
+    @unittest.skipIf(os.name == "nt", "fake executables are POSIX shell scripts")
+    def test_a_child_receives_the_pointers(self):
+        out = self.run_tool(executor, "npm", self.environ(**self.POINTERS))
+        self.assertEqual(out.get("exit_code"), 0, out)
+        seen = (self.bin / "npm.ran").read_text(encoding="utf-8")
+        for name in (*self.POINTERS, "DOTNET_CLI_TELEMETRY_OPTOUT", "DOTNET_NOLOGO"):
+            self.assertIn(f"{name}=", seen, name)
+
+    @unittest.skipIf(os.name == "nt", "fake executables are POSIX shell scripts")
+    def test_each_index_variable_makes_the_tool_refuse_naming_the_variable_only(self):
+        for tool, names in (("pip-audit", self.PIP_INDEX), ("npm", self.NPM_REGISTRY)):
+            for name in names:
+                with self.subTest(tool=tool, name=name):
+                    out = self.run_tool(executor, tool, self.environ(**{name: self.VALUE}))
+                    self.assertFalse(self.ran(tool), "the tool must not run")
+                    self.assertNotIn("exit_code", out)
+                    self.assertIn(name, out["error"])
+                    self.assertIn("pip.conf" if tool == "pip-audit" else ".npmrc", out["error"])
+                    self.assertNotIn("FAKE-index-secret-t714", repr(out))
+                    self.assertNotIn("index.invalid", repr(out))
+
+    def test_the_guard_is_per_tool_and_ignores_unrelated_names(self):
+        env = {"PIP_INDEX_URL": self.VALUE, "npm_config_registry": self.VALUE}
+        for argv in (["rg", "x"], ["dotnet", "list"], ["git", "status"]):
+            self.assertIsNone(executor.index_override_error(argv, env), argv)
+        self.assertIsNone(executor.index_override_error(["npm", "audit"], {"PIP_INDEX_URL": self.VALUE}))
+        self.assertIsNone(executor.index_override_error(["pip-audit"], {"npm_config_registry": self.VALUE}))
+        self.assertIsNone(executor.index_override_error(["npm"], {"npm_config_userconfig": "/x", "NPM_TOKEN": "y"}))
+        self.assertIsNotNone(executor.index_override_error(["/usr/bin/pip-audit"], {"PIP_INDEX_URL": ""}))
+
+    @unittest.skipIf(os.name == "nt", "fake executables are POSIX shell scripts")
+    def test_mutation_proof_without_the_guard_the_tool_runs_without_the_index(self):
+        source = EXECUTOR_PY.read_text(encoding="utf-8")
+        anchor = "    refused = index_override_error(argv)\n"
+        self.assertEqual(source.count(anchor), 1)
+        mutant = types.ModuleType("executor_mutant_t714_index")
+        exec(compile(source.replace(anchor, "    refused = None\n"), str(EXECUTOR_PY), "exec"), mutant.__dict__)  # noqa: S102
+        out = self.run_tool(mutant, "pip-audit", self.environ(PIP_INDEX_URL=self.VALUE))
+        self.assertEqual(out.get("exit_code"), 0)  # it ran ...
+        self.assertNotIn("PIP_INDEX_URL", (self.bin / "pip-audit.ran").read_text(encoding="utf-8"))  # ... without it
 
 
 @_required_unless_missing(MCP_AVAILABLE and _which("git") and _which("rg"), "needs the mcp SDK, git and rg")
