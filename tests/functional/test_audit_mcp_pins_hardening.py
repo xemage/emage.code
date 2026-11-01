@@ -10,6 +10,7 @@ import datetime as dt
 import io
 import json
 import os
+import re
 import subprocess
 import tempfile
 import unittest
@@ -252,7 +253,7 @@ class TestAcceptanceIsScopedToAPackage(unittest.TestCase):
     def test_mutation_not_following_effects_is_detected(self):
         # brave is linked to the sdk only through `effects` here (its own `via` is empty, so it stays a finding)
         effects_only = {"metadata": {}, "vulnerabilities": {"@modelcontextprotocol/sdk": SDK, "@brave/brave-search-mcp-server": {**BRAVE, "via": []}}}
-        mutant = mutated('    for effect in entry.get("effects") or []:', "    for effect in []:")
+        mutant = mutated('    for effect in effects if isinstance(effects, list) else []:', "    for effect in []:")
         accepted = accepts(*BOTH)
         self.assertEqual(M.summarise_audit(effects_only, "high", accepted, TODAY)[1], 1)
         self.assertEqual(mutant.summarise_audit(effects_only, "high", accepted, TODAY)[1], 2)  # the sdk reaches no root, so nothing is accepted
@@ -297,6 +298,87 @@ class TestAcceptanceIsScopedToAPackage(unittest.TestCase):
         with self.assertRaises(M.AuditError):
             M.check_acceptances([one, one], M.load_pins(SERVERS), TODAY)
         self.assertEqual(len(mutant.check_acceptances([one, one], M.load_pins(SERVERS), TODAY)), 1)
+
+
+ADV_A = {"title": "adv a", "range": "<2", "url": "https://github.com/advisories/GHSA-aaaa-aaaa-aaaa"}
+ADV_B = {"title": "adv b", "range": "<2", "url": "https://github.com/advisories/GHSA-bbbb-bbbb-bbbb"}
+BRAVE_NAME, SDK_NAME = "@brave/brave-search-mcp-server", "@modelcontextprotocol/sdk"
+
+
+def report(**entries: dict) -> dict:
+    return {"metadata": {}, "vulnerabilities": {name.replace("__", "/"): e for name, e in entries.items()}}
+
+
+class TestViaShapes(unittest.TestCase):
+    """T716 (SEC-T712-05): `via` cycles, a `via` dependent that reaches no pinned package, mixed dict/string `via` lists
+    and a `via` that is not a list. Each case fails closed (stays a finding) and terminates."""
+
+    ALL = accepts(*BOTH, f"GHSA-aaaa-aaaa-aaaa:2026-11-21:{BRAVE_PIN}", f"GHSA-bbbb-bbbb-bbbb:2026-11-21:{BRAVE_PIN}")
+
+    def vulns(self, brave: dict, sdk: dict) -> dict:
+        return {"metadata": {}, "vulnerabilities": {BRAVE_NAME: brave, SDK_NAME: sdk}}
+
+    def test_a_via_cycle_terminates_and_is_never_accepted(self):
+        cyc = self.vulns({"severity": "high", "isDirect": True, "effects": [], "via": [SDK_NAME, ADV_A]},
+                         {"severity": "high", "isDirect": False, "effects": [], "via": [BRAVE_NAME, ADV_B]})
+        self.assertEqual(M.direct_roots(SDK_NAME, cyc["vulnerabilities"]), {BRAVE_NAME})
+        self.assertEqual(M.summarise_audit(cyc, "high", self.ALL, TODAY)[1], 2)  # every advisory accepted, still open
+
+    def test_a_self_via_terminates(self):
+        own = self.vulns({"severity": "high", "isDirect": True, "effects": [BRAVE_NAME], "via": [BRAVE_NAME, ADV_A]},
+                         {"severity": "low", "isDirect": False, "effects": [], "via": [ADV_B]})
+        self.assertEqual(M.summarise_audit(own, "high", self.ALL, TODAY)[1], 1)
+
+    def test_a_via_dependent_that_reaches_no_pinned_package_is_never_accepted(self):
+        lone = {"metadata": {}, "vulnerabilities": {
+            "lib": {"severity": "high", "isDirect": False, "effects": [], "via": [ADV_A]},
+            "mid": {"severity": "high", "isDirect": False, "effects": [], "via": ["lib"]}}}
+        self.assertEqual(M.direct_roots("lib", lone["vulnerabilities"]), set())
+        self.assertEqual(M.summarise_audit(lone, "high", self.ALL, TODAY)[1], 2)
+
+    def test_a_mixed_dict_and_string_via_list_needs_every_part_accepted(self):
+        mixed = self.vulns({"severity": "high", "isDirect": True, "effects": [], "via": [ADV_A, SDK_NAME]},
+                           {**SDK, "effects": []})
+        only_sdk, only_own = accepts(*BOTH), accepts(f"GHSA-aaaa-aaaa-aaaa:2026-11-21:{BRAVE_PIN}")
+        self.assertEqual(M.summarise_audit(mixed, "high", self.ALL, TODAY)[1], 0)
+        self.assertEqual(M.summarise_audit(mixed, "high", only_sdk, TODAY)[1], 1)  # brave's own advisory is open
+        self.assertEqual(M.summarise_audit(mixed, "high", only_own, TODAY)[1], 2)  # the sdk, and brave through it
+        unknown = self.vulns({"severity": "high", "isDirect": True, "effects": [], "via": [ADV_A, "not-in-the-report", 7]},
+                             {**SDK, "effects": [BRAVE_NAME]})
+        self.assertEqual(M.summarise_audit(unknown, "high", self.ALL, TODAY)[1], 1)  # an unknown or odd member: open
+
+    def test_a_via_that_is_not_a_list_is_never_accepted_and_does_not_crash(self):
+        sdk = {**SDK, "effects": [BRAVE_NAME]}
+        for shape in (SDK_NAME, {SDK_NAME: ADV_A}, ADV_A, 5, None, True, ""):
+            with self.subTest(via=repr(shape)[:40]):
+                odd = self.vulns({"severity": "high", "isDirect": True, "effects": [], "via": shape}, sdk)
+                lines, hits = M.summarise_audit(odd, "high", self.ALL, TODAY)
+                self.assertEqual(hits, 1)  # brave stays a finding; the well-formed sdk entry is accepted
+                self.assertRegex("\n".join(lines), rf"(?m)^  high\s+{re.escape(BRAVE_NAME)} .*via a dependency$")
+
+    def test_odd_effects_shapes_do_not_crash(self):
+        for shape in (BRAVE_NAME, {BRAVE_NAME: 1}, 3, None):
+            with self.subTest(effects=repr(shape)[:40]):
+                odd = self.vulns(BRAVE, {**SDK, "effects": shape})
+                self.assertEqual(M.direct_roots(SDK_NAME, odd["vulnerabilities"]), {BRAVE_NAME})  # found through `via`
+
+    def test_mutation_iterating_a_non_list_via_is_detected(self):
+        mutant = mutated("    return via if isinstance(via, list) else None", "    return via or []")
+        sdk = {**SDK, "effects": [BRAVE_NAME]}
+        keyed = self.vulns({"severity": "high", "isDirect": True, "effects": [], "via": {SDK_NAME: ADV_A}}, sdk)
+        self.assertEqual(M.summarise_audit(keyed, "high", self.ALL, TODAY)[1], 1)
+        self.assertEqual(mutant.summarise_audit(keyed, "high", self.ALL, TODAY)[1], 0)  # the dict's KEY is taken as a package
+        number = self.vulns({"severity": "high", "isDirect": True, "effects": [], "via": 5}, sdk)
+        with self.assertRaises(TypeError):
+            mutant.summarise_audit(number, "high", self.ALL, TODAY)
+
+    def test_mutation_dropping_the_cycle_guard_is_detected(self):
+        mutant = mutated("    if name in seen or not vias or not roots:", "    if not vias or not roots:")
+        cyc = self.vulns({"severity": "high", "isDirect": True, "effects": [], "via": [SDK_NAME, ADV_A]},
+                         {"severity": "high", "isDirect": False, "effects": [], "via": [BRAVE_NAME, ADV_B]})
+        self.assertEqual(M.summarise_audit(cyc, "high", self.ALL, TODAY)[1], 2)
+        with self.assertRaises(RecursionError):
+            mutant.summarise_audit(cyc, "high", self.ALL, TODAY)
 
 
 class TestHardenedNpmAndOutput(unittest.TestCase):

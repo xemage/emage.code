@@ -305,7 +305,7 @@ releases separate them.
   so the tag commit is not an ancestor of `main` even for a correct release; it works in the
   depth-1 clone of the tag job. It fails when `main` was not fetched (an offline run proves nothing),
   when the tag was pushed before the `main` merge, and on a re-run of the tag pipeline after `main`
-  has moved on (re-tag from the right commit instead). Run it locally the same way after
+  has moved on (see "Moving or deleting a pushed tag (retag)" below). Run it locally the same way after
   `git fetch origin main` and with the tags fetched.
 - **Informational check (`main-develop-drift-check`, `verify` stage):** runs on every push to
   `develop`, non-blocking (`allow_failure: true`), for earlier visibility between releases.
@@ -381,6 +381,126 @@ is shown insufficient on a real sync.
 2. Fix, test; bump the `Latest release:` marker and write `docs/releases/vX.Y.Z+1.md`
 3. MR to `develop` first, then MR to `main`, merged as in "Cutting a release" step 6
 4. Tag `vX.Y.Z+1` as in step 7 (the same gates run: `main` must not be ahead of `develop`)
+
+If a `release/*` branch is open at the same time, also follow "Hotfix during an open release" below.
+
+### Hotfix during an open release
+
+Sometimes a hotfix must ship from `main` while a `release/vX.Y.Z` branch is still open. Below,
+`vH` is the hotfix version (the patch after the release that `main` carries now).
+
+1. **Do not interleave the merges.** Finish the hotfix completely (its two MRs and its tag,
+   "Hotfixes" steps 1 to 4) before step 5 of "Cutting a release", or start it after step 7.
+   Between the two step 6 merges, `develop` carries the marker `Latest release: vX.Y.Z`, but the
+   tag `vX.Y.Z` does not exist yet. The drift gate fails when a marker names a tag that does not
+   exist, and it fails when the marker on `main` sorts after the one on `develop`.
+2. **Bring the hotfix into the release branch.** After the hotfix tag, merge `origin/main` into
+   `release/vX.Y.Z`. Both branches changed the `Latest release:` marker line, so expect a conflict
+   in `README.md`, `docs/wiki/README.md` and `docs/wiki/home.md`. Keep `vX.Y.Z`. Then run step 4
+   again:
+   ```bash
+   git fetch origin
+   git checkout release/vX.Y.Z
+   git merge origin/main        # on a marker conflict, keep vX.Y.Z
+   python3 scripts/verify-release-docs.py --tag vX.Y.Z
+   git push origin release/vX.Y.Z
+   ```
+3. **Continue with steps 5 to 7 unchanged.** The release branch tip now contains the hotfix. After
+   step 6 it has the same tree as `origin/main`, so the step 7 checks and the tag tree check pass.
+4. **If the release branch did not take the hotfix:** after step 6, `main` holds the hotfix and the
+   release, but the release branch tip (`origin/main^2`) does not hold the hotfix. Step 7's
+   `git diff --exit-code "$sha" origin/main` is then not empty, and `check-release-tag-tree.py`
+   fails for a tag on that commit. Do not tag `origin/main^2` in this case. The T685 security review
+   (`docs/artifacts/security-review-t685-supply-chain-residuals-v1.md`, SEC-T685-03) suggests
+   tagging the `main` merge commit instead; its tree equals `origin/main`, but it is not an
+   ancestor of `origin/develop`, so step 7's ancestry check fails for it. This case is **not
+   ruled**: stop and ask the user before you tag any commit other than the release branch tip.
+5. **The hotfix tag pipeline cannot be re-run** after the release reached `main`: the tag tree
+   check then fails by design (see "Moving or deleting a pushed tag (retag)").
+
+### Pre-release tags
+
+The tag rule accepts a pre-release suffix. The jobs `release-docs-gate`, `main-develop-drift-gate`
+and `release` run on tags that match `^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$`, and
+`check-release-tag-tree.py` and `publish-release.py` check the tag name against the same pattern.
+
+- Accepted: `vX.Y.Z-rc.1`, `vX.Y.Z-beta.2` (letters, digits, dots and hyphens after one `-`).
+- Refused: a build suffix (`vX.Y.Z+build.1`), a short version (`vX.Y`), a name without the
+  leading `v`. A refused name starts no release job, and both scripts fail on it.
+
+A pre-release tag goes through the same steps 1 to 8 as a release, with the full tag name in place
+of `vX.Y.Z`. There is no lighter path:
+
+- **Docs gate:** `docs/releases/vX.Y.Z-rc.N.md` must exist. The marker
+  `Latest release: vX.Y.Z-rc.N` must be in `README.md`, `docs/wiki/README.md`, `docs/wiki/home.md`
+  and in that release document. Run `python3 scripts/verify-release-docs.py --tag vX.Y.Z-rc.N`.
+  A migration pointer in `install.sh` to a release document newer than the tag fails the gate;
+  `--allow-newer-pointers` turns that into a note and is only for checking a past tag on a later
+  tree (the CI job does not pass it).
+- **Tag tree check:** a pre-release tag must have the same tree as `origin/main`, like every
+  release tag. So the pre-release content is merged to `develop` and to `main` before the tag
+  (steps 5 and 6), and `main` then says `Latest release: vX.Y.Z-rc.N`.
+- **Drift gate:** the markers on `main` and on `develop` must each name an existing tag. The gate
+  sorts a pre-release before its final release, and it counts each pre-release tag as one release
+  in the grace window.
+- **Release job:** it creates the GitLab Release for a pre-release tag with the same request as for
+  a release (name, tag, description, ref). It sets no pre-release flag. **(unverified)** How GitLab
+  shows such a release, and whether the GitLab UI then treats it as the latest release.
+
+Check these points by hand:
+
+- **Marker of the final release.** Before the final tag, change every marker from
+  `vX.Y.Z-rc.N` to `vX.Y.Z`. The docs gate matches the marker as a whole token, so a leftover
+  `Latest release: vX.Y.Z-rc.N` fails the gate for the tag `vX.Y.Z` (T715).
+- **Changelog range.** The release job sorts the tags itself, with a pre-release before its final
+  release (as the drift gate does), so the first release after `vX.Y.Z` lists the commits since
+  `vX.Y.Z`, not since the last `vX.Y.Z-rc.N` (T716). Check the "Commits since" line of the
+  `CHANGELOG.md` artifact all the same.
+- **Branch.** No branch name is ruled for a pre-release. The step 6 `main` MR deletes the release
+  branch, so each further pre-release needs a new branch and two new MRs. **(unverified)** Whether a
+  pre-release tag was ever cut in this repository (the tag list was not checked).
+
+### Moving or deleting a pushed tag (retag)
+
+Moving or deleting a tag that is already on `origin` is a **destructive operation**. It needs the
+user's explicit approval, given in the current session, before anyone runs it; treat it like the
+destructive operations in the security guidelines (Agent Safety Guards). By policy the top-level
+session creates release tags with the user's approval (`AGENTS.md`, MCP Servers); no subagent
+deletes, moves or re-creates a tag. Anyone who already fetched the old tag keeps it: a plain
+`git fetch` does not replace an existing local tag (the CI jobs fetch tags with `--force`).
+
+**When a retag is the fix:** the tag is on the wrong commit. For example, it was pushed before the
+step 6 `main` merge, or on a commit whose tree differs from `origin/main`. The
+`main-develop-drift-gate` job then fails at `check-release-tag-tree.py`, and the `release` job does
+not run (it needs both gate jobs), so no GitLab Release is created.
+
+**When a retag is not the fix:** the tag is right, but `main` has moved on (a hotfix, the next
+release), and a re-run of the tag pipeline now fails the tag tree check. This is by design: the
+check states that the tag matched `main` when the pipeline ran. No commit holds both the release
+content and the current `main`, so moving the tag would change what the release contains. Do not
+move the tag; how to release in this case is **not ruled**, ask the user. If only the GitLab Release is missing, the manual fallback above
+(`glab release create ... -F docs/releases/vX.Y.Z.md`) creates it from the existing tag.
+
+**Procedure** (only after the user's approval):
+
+```bash
+git fetch origin
+sha=RIGHT_COMMIT_SHA                 # for a release: the release branch tip, as in step 7
+git merge-base --is-ancestor "$sha" origin/develop && git merge-base --is-ancestor "$sha" origin/main
+git diff --exit-code "$sha" origin/main
+git push origin --delete refs/tags/vX.Y.Z    # destructive: needs the user's approval
+git tag -d vX.Y.Z
+git tag -a vX.Y.Z -m "Release vX.Y.Z" "$sha"
+git push origin vX.Y.Z
+```
+
+- The new tag push starts a new tag pipeline, and all three release-stage jobs run again.
+- If a GitLab Release for the tag still exists, `publish-release.py` updates it: it reads the
+  release first and sends a `PUT` when one exists, otherwise a `POST`.
+- Record the old commit, the new commit, the reason and the user's approval in the release record.
+- **(unverified)** Whether GitLab accepts a push that deletes a protected `v*` tag, or requires the
+  Maintainer role and the UI or the Tags API for it; and whether deleting a tag also deletes its
+  GitLab Release.
 
 ### What goes in the changelog
 

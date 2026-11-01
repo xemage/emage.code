@@ -17,9 +17,12 @@ Migration pointers (T703, SEC-T662-01): every ``docs/releases/v*.md`` path that
 mentions "Cursor" must carry its Cursor migration item. See ``MIGRATION_POINTER_HELP``
 for the anchor and for how a pointer to a version newer than the tag is treated.
 
-This gate cannot check that ``main`` already carries the release: that duty (merge the
-release branch to ``develop`` and ``main`` before the tag) is enforced, within its
-grace window, by ``scripts/check-main-develop-drift.py`` and stated in CONTRIBUTING.md.
+This gate cannot check that ``main`` already carries the release. That duty (merge the
+release branch to ``develop`` and ``main`` before the tag, stated in CONTRIBUTING.md) is
+enforced on the tag pipeline, without a grace window, by ``scripts/check-release-tag-tree.py``:
+the tree of the tag's commit must equal the tree of ``origin/main``. It runs in the blocking
+``main-develop-drift-gate`` job, next to ``scripts/check-main-develop-drift.py``, whose
+one-release grace window applies only to ``main`` lagging ``develop`` (SEC-T685-03).
 """
 
 from __future__ import annotations
@@ -125,22 +128,34 @@ PENDING_ON_RE = re.compile(r"\bon\s+pending\b", re.IGNORECASE)
 INSTALL_SH = Path("scripts/install.sh")
 MIGRATION_SECTION = "## Migration Guide"
 POINTER_RE = re.compile(r"docs/releases/(?P<tag>v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)\.md")
+# SEC-T703-02: "the v8.0.0 release notes" names a release document in prose; it must exist too.
+PROSE_POINTER_RE = re.compile(r"\b(?P<tag>v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?) release notes\b")
+# Anything that looks like a pointer to a release document; each hit must lie inside a parsed pointer.
+POINTER_LIKE_RE = re.compile(r"docs/releases|releases/v|\brelease notes\b", re.IGNORECASE)
 TAG_CORE_RE = re.compile(r"v(\d+)\.(\d+)\.(\d+)(?:-[0-9A-Za-z.-]+)?")
 ITEM_HEADING_RE = re.compile(r"^#{3,6}[ \t]+(?P<text>.+)$")
 ITEM_BOLD_LEAD_RE = re.compile(r"^(?:[-*][ \t]+|\d+\.[ \t]+)?\*\*(?P<text>[^*\n]+)\*\*")
 CURSOR_WORD_RE = re.compile(r"\bCursor\b")
+# SEC-T703-01: the anchor counts only where a reader sees it, not in fenced code or an HTML comment.
+FENCE_OPEN_RE = re.compile(r"^ {0,3}(?P<fence>`{3,}|~{3,})")
+HTML_COMMENT_RE = re.compile(r"<!--.*?(?:-->|\Z)", re.DOTALL)
 MIGRATION_POINTER_HELP = """\
 Migration pointers (T703, SEC-T662-01). Every docs/releases/v*.md path named in
-scripts/install.sh must exist in the tree. A document named on an install.sh line that
-contains the word "Cursor" must carry a Cursor migration item. Anchor: inside the
-'## Migration Guide' section (up to the next '## ' heading; fenced code is ignored), a
+scripts/install.sh, and every "vX.Y.Z release notes" it names, must exist in the tree.
+A line that names 'docs/releases', 'releases/v' or 'release notes' in any other form
+(a variable, a missing patch number, no 'docs/' prefix) fails the gate: write the
+literal path docs/releases/vX.Y.Z.md (SEC-T703-02). A document named by path on an
+install.sh line that contains the word "Cursor" must carry a Cursor migration item.
+Anchor: inside the '## Migration Guide' section (up to the next '## ' heading), a
 heading of level 3 to 6 ('### ...') or a bold lead ('**...**' at the start of a line,
 optionally after a list marker) whose text contains the word "Cursor" (case-sensitive),
-for example '**Migration Guide item M-3. Cursor is no longer supported.**'.
-Future versions: a pointer is enforced only when its version (major.minor.patch, any
-pre-release suffix ignored) is not newer than the tag being verified, so verifying
-v8.0.0 does not fail because install.sh names v9.0.0. A tag that is not vX.Y.Z[-pre]
-enforces every pointer."""
+for example '**Migration Guide item M-3. Cursor is no longer supported.**'. Fenced code
+(``` or ~~~) and HTML comments are ignored, so an anchor there does not count (SEC-T703-01).
+Newer versions: a pointer to a version (major.minor.patch, any pre-release suffix
+ignored) newer than the tag being verified is an error, because the tagged tree points
+users to a document it does not ship (SEC-T703-03). --allow-newer-pointers turns that
+error into a printed note; it exists for verifying a past tag on a later tree (tests)
+and is not used by the CI job. A tag that is not vX.Y.Z[-pre] enforces every pointer."""
 
 FENCED_CODE_RE = re.compile(r"```.*?```", re.DOTALL)
 INLINE_CODE_RE = re.compile(r"`[^`\n]*`")
@@ -273,11 +288,22 @@ def check_version_consistency(errors: list[str]) -> None:
             errors.append(f"  {line}")
 
 
+# T717-D2: the marker is a whole token. A tag character after it (``-rc.1``, ``.1``, a further digit) means a
+# different tag, so a leftover ``Latest release: v1.2.3-rc.1`` does not satisfy ``v1.2.3``; a sentence-ending
+# period or a closing bracket after the tag is still accepted.
+MARKER_END = r"(?![0-9A-Za-z]|[.-][0-9A-Za-z])"
+
+
+def has_marker(text: str, marker: str) -> bool:
+    """``marker`` occurs in ``text`` as a whole token (see MARKER_END)."""
+    return re.search(re.escape(marker) + MARKER_END, text) is not None
+
+
 def check_markers(marker: str, errors: list[str]) -> None:
-    """Every MARKER_FILES entry carries the `Latest release: <tag>` marker."""
+    """Every MARKER_FILES entry carries the `Latest release: <tag>` marker as a whole token."""
     for relative in MARKER_FILES:
         text = (ROOT / relative).read_text(encoding="utf-8", errors="ignore")
-        if marker not in text:
+        if not has_marker(text, marker):
             errors.append(f"missing marker '{marker}' in {relative}")
 
 
@@ -293,6 +319,8 @@ def check_section_requirements(errors: list[str]) -> None:
 def check_release_brief(tag: str, release_brief: str, errors: list[str]) -> None:
     """The release notes document has the required sections and no unfilled verdict."""
     brief_text = (ROOT / release_brief).read_text(encoding="utf-8", errors="ignore")
+    if not has_marker(brief_text, f"Latest release: {tag}"):
+        errors.append(f"missing required content in {release_brief}: Latest release: {tag}")
     for snippet in (
         "## Install",
         "## Highlights",
@@ -302,7 +330,6 @@ def check_release_brief(tag: str, release_brief: str, errors: list[str]) -> None
         # field-level contract (11 fields, Status enum) is encoded once, in the golden
         # suite, and is deliberately not duplicated in this gate.
         "## RELEASE VERDICT",
-        f"Latest release: {tag}",
     ):
         if snippet not in brief_text:
             errors.append(f"missing required content in {release_brief}: {snippet}")
@@ -312,13 +339,31 @@ def check_release_brief(tag: str, release_brief: str, errors: list[str]) -> None
 
 
 def install_sh_pointers(text: str) -> dict[str, bool]:
-    """Each ``docs/releases/v*.md`` path named in install.sh text, mapped to whether a line naming it mentions Cursor."""
+    """Each release document install.sh text names, mapped to whether a line naming it by path mentions Cursor.
+
+    A ``docs/releases/vX.Y.Z.md`` path and a ``vX.Y.Z release notes`` phrase both name
+    ``docs/releases/vX.Y.Z.md``; only the path form carries the Cursor-item requirement.
+    """
     pointers: dict[str, bool] = {}
     for line in text.splitlines():
         for match in POINTER_RE.finditer(line):
             path = match.group(0)
             pointers[path] = pointers.get(path, False) or CURSOR_WORD_RE.search(line) is not None
+        for match in PROSE_POINTER_RE.finditer(line):
+            pointers.setdefault(f"docs/releases/{match.group('tag')}.md", False)
     return pointers
+
+
+def unparsed_pointer_lines(text: str) -> list[tuple[int, str]]:
+    """``(line number, line)`` for each line naming a release document in a form the pointer patterns do not parse."""
+    unparsed: list[tuple[int, str]] = []
+    for number, line in enumerate(text.splitlines(), start=1):
+        spans = [m.span() for pattern in (POINTER_RE, PROSE_POINTER_RE) for m in pattern.finditer(line)]
+        for hit in POINTER_LIKE_RE.finditer(line):
+            if not any(start <= hit.start() < end for start, end in spans):
+                unparsed.append((number, line.strip()))
+                break
+    return unparsed
 
 
 def tag_core(tag: str) -> tuple[int, int, int] | None:
@@ -338,23 +383,58 @@ def pointer_applies(pointed_tag: str, tag: str) -> bool:
     return pointed <= verified
 
 
+def strip_hidden_markdown(text: str) -> str:
+    """Blank fenced code (``` and ~~~, CommonMark rules) and HTML comments; the line count is kept.
+
+    An unclosed fence or comment hides the rest of the document, as a Markdown renderer does.
+    """
+    kept: list[str] = []
+    fence = ""
+    for line in text.splitlines():
+        if fence:
+            if re.match(rf"^ {{0,3}}{re.escape(fence[0])}{{{len(fence)},}}[ \t]*$", line):
+                fence = ""
+            kept.append("")
+            continue
+        opening = FENCE_OPEN_RE.match(line)
+        if opening and not (opening.group("fence")[0] == "`" and "`" in line[opening.end():]):
+            fence = opening.group("fence")
+            kept.append("")
+            continue
+        kept.append(line)
+    return HTML_COMMENT_RE.sub(lambda m: "\n" * m.group(0).count("\n"), "\n".join(kept))
+
+
 def has_cursor_migration_item(text: str) -> bool:
     """The Migration Guide section holds a heading or bold lead that names Cursor (see MIGRATION_POINTER_HELP)."""
-    for line in section_text(text, MIGRATION_SECTION).splitlines():
+    for line in section_text(strip_hidden_markdown(text), MIGRATION_SECTION).splitlines():
         match = ITEM_HEADING_RE.match(line) or ITEM_BOLD_LEAD_RE.match(line)
         if match and CURSOR_WORD_RE.search(match.group("text")):
             return True
     return False
 
 
-def check_migration_pointers(tag: str, errors: list[str]) -> None:
-    """Every release document install.sh points users to exists and, if pointed to for Cursor, has the item."""
+def check_migration_pointers(tag: str, errors: list[str], allow_newer: bool = False) -> None:
+    """Every release document install.sh points users to exists and, if pointed to for Cursor, has the item.
+
+    ``allow_newer`` (``--allow-newer-pointers``) reports a pointer newer than ``tag`` as a note instead of an error.
+    """
     install = ROOT / INSTALL_SH
     if not install.is_file():
         return  # reported as a missing required file
-    pointers = install_sh_pointers(install.read_text(encoding="utf-8", errors="ignore"))
-    for path, needs_cursor in sorted(pointers.items()):
+    text = install.read_text(encoding="utf-8", errors="ignore")
+    for number, line in unparsed_pointer_lines(text):
+        errors.append(
+            f"{INSTALL_SH}:{number} names a release document in a form the gate cannot check; "
+            f"write the literal path docs/releases/vX.Y.Z.md: {line[:120]}"
+        )
+    for path, needs_cursor in sorted(install_sh_pointers(text).items()):
         if not pointer_applies(Path(path).stem, tag):
+            message = f"{INSTALL_SH} points users to {path}, a version newer than {tag}, which this tag does not ship"
+            if allow_newer:
+                print(f"release-docs-verify: note: {message} (allowed by --allow-newer-pointers)")
+            else:
+                errors.append(f"{message}; remove the pointer or tag the newer release")
             continue
         document = ROOT / path
         if not document.is_file():
@@ -374,6 +454,11 @@ def main() -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--tag", required=True, help="Release tag, e.g. v1.0.1")
+    parser.add_argument(
+        "--allow-newer-pointers", action="store_true",
+        help="report an install.sh pointer to a version newer than --tag as a note, not an error "
+        "(for verifying a past tag on a later tree; never in CI)",
+    )
     args = parser.parse_args()
 
     marker = f"Latest release: {args.tag}"
@@ -386,7 +471,7 @@ def main() -> int:
         absolute = ROOT / relative
         if not absolute.is_file():
             errors.append(f"missing required file: {relative}")
-    check_migration_pointers(args.tag, errors)
+    check_migration_pointers(args.tag, errors, args.allow_newer_pointers)
 
     if errors:
         for error in errors:

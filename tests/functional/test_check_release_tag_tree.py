@@ -227,6 +227,82 @@ class TestTreeComparison(RepoCase):
         self.assertNotIn("Traceback", done.stderr)
 
 
+def check_in(module: types.ModuleType, clone: Path, tag: str = "v1.2.3", main_ref: str = "origin/main") -> int:
+    cwd = os.getcwd()
+    os.chdir(clone)
+    try:
+        return module.check(tag, main_ref)[0]
+    finally:
+        os.chdir(cwd)
+
+
+class TestExactRefNames(RepoCase):
+    """T716 (SEC-T685-01): git's short-name search tries refs/tags/<name> before refs/remotes/<name>, so a TAG named
+    origin/main (the job fetches every tag) must not stand in for the remote-tracking branch; refs are read exactly."""
+
+    def setUp(self):
+        super().setUp()
+        self.write("docs.md", "release content\n")
+        self.commit("feat: release content")
+        git(self.work, "tag", "-a", "v1.2.3", "-m", "Release v1.2.3")
+        self.write("hotfix.md", "main moved on\n")
+        self.commit("fix: main is ahead with other content")
+        self.push("main", "v1.2.3")
+
+    def shadow_tag(self, name: str, fetch_main: bool = True) -> Path:
+        """A tag NAMED like a ref, on the tag commit, pushed to origin and fetched with the job's tag refspec."""
+        git(self.work, "tag", name, "v1.2.3^{commit}")
+        self.push(f"refs/tags/{name}")
+        clone = self.make_clone("v1.2.3", fetch_main=fetch_main)
+        git(clone, "fetch", "-q", "--force", "origin", "refs/tags/*:refs/tags/*")
+        return clone
+
+    def test_a_tag_named_origin_main_does_not_shadow_the_remote_tracking_branch(self):
+        clone = self.shadow_tag("origin/main")
+        self.assertNotEqual(git(clone, "rev-parse", "refs/tags/origin/main^{tree}"),
+                            git(clone, "rev-parse", "refs/remotes/origin/main^{tree}"))
+        done = self.run_script(clone, "--tag", "v1.2.3")
+        self.assertEqual(done.returncode, 1, done.stdout + done.stderr)
+        self.assertIn("  hotfix.md", done.stdout)
+
+    def test_mutation_the_short_name_search_is_detected(self):
+        mutant = mutated("    main_tree = exact_tree(full_ref_name(main_ref))", "    main_tree = resolve_tree(main_ref)")
+        clone = self.shadow_tag("origin/main")
+        self.assertEqual(check_in(M, clone), 1)
+        self.assertEqual(check_in(mutant, clone), 0)  # the tag named origin/main wins git's search: a false PASS
+
+    def test_a_tag_named_like_the_full_ref_does_not_fill_in_for_an_unfetched_main(self):
+        clone = self.shadow_tag("refs/remotes/origin/main", fetch_main=False)
+        done = self.run_script(clone, "--tag", "v1.2.3")
+        self.assertEqual(done.returncode, 1, done.stdout + done.stderr)
+        self.assertIn("origin/main does not resolve to a commit", done.stdout)
+        self.assertEqual(check_in(M, clone, main_ref="refs/remotes/origin/main"), 1)
+
+    def test_mutation_resolving_the_full_name_by_search_is_detected(self):
+        mutant = mutated("    oid = ref_object(full_ref)\n    return resolve_tree(oid) if oid else None",
+                         "    return resolve_tree(full_ref)")
+        clone = self.shadow_tag("refs/remotes/origin/main", fetch_main=False)
+        self.assertEqual(check_in(M, clone), 1)
+        self.assertEqual(check_in(mutant, clone), 0)  # refs/tags/refs/remotes/origin/main answers the search
+
+    def test_a_tag_named_like_the_full_tag_ref_does_not_fill_in_for_an_unfetched_tag(self):
+        git(self.work, "tag", "refs/tags/v1.2.4", "main")
+        self.push("refs/tags/refs/tags/v1.2.4")
+        clone = self.make_clone("v1.2.3")
+        git(clone, "fetch", "-q", "--force", "origin", "refs/tags/*:refs/tags/*")
+        self.assertEqual(git(clone, "rev-parse", "refs/tags/v1.2.4^{tree}"), git(clone, "rev-parse", "origin/main^{tree}"))
+        self.assertEqual(check_in(M, clone, tag="v1.2.4"), 1)  # v1.2.4 itself does not exist
+
+    def test_a_remote_tracking_name_and_its_full_name_give_the_same_result(self):
+        git(self.work, "reset", "-q", "--hard", "v1.2.3^{commit}")
+        self.push("main")
+        clone = self.make_clone("v1.2.3")
+        self.assertEqual(check_in(M, clone), 0)
+        self.assertEqual(check_in(M, clone, main_ref="refs/remotes/origin/main"), 0)
+        self.assertEqual(M.full_ref_name("origin/main"), "refs/remotes/origin/main")
+        self.assertEqual(M.full_ref_name("refs/heads/main"), "refs/heads/main")
+
+
 class TestEvaluate(unittest.TestCase):
     TREE_A, TREE_B = "a" * 40, "b" * 40
 

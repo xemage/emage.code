@@ -667,6 +667,34 @@ class TestSwapInterruptions(_CopierMatrix):
         self.assertEqual(_snapshot(target / ".claude"), before, "the old tree must be restored exactly")
         self.assertEqual([p for p in _paths(target) if ".emage-" in p], [])
 
+    def test_interrupt_right_after_the_first_rename_restores_the_old_tree(self) -> None:
+        """SEC-T677-02: SWAP_OLD/SWAP_DEST must be set BEFORE the first rename. The shim performs the first
+        rename (`mv -- <dest> <old>`) and then hangs, so the interrupt lands after it but before the next
+        line of swap_build_into_place; an assignment moved after the rename leaves .claude missing."""
+        target, before = self._installed()
+        marker = self.tmp / "first.marker"
+        real_mv = shutil.which("mv")
+        shim = _shim_tool(self.tmp, "mv-first", "mv",
+                          f'case " $* " in *"/.claude.emage-old."*) if [ ! -e {marker} ]; then '
+                          f'{real_mv} "$@"; : > {marker}; sleep 60; exit 0; fi;; esac')
+        rc, state = self._interrupt(target, shim, marker, signal.SIGTERM)
+        self.assertEqual(rc, 143)
+        self.assertFalse(state["dest"], "the first rename had moved .claude aside")
+        self.assertTrue(state["old"], "the old tree is the only copy at that moment")
+        self.assertEqual(_snapshot(target / ".claude"), before, "the old tree must be restored exactly")
+        self.assertEqual([p for p in _paths(target) if ".emage-" in p], [])
+
+    def test_swap_state_is_assigned_before_the_first_rename_in_the_source(self) -> None:
+        """SEC-T677-02, static half: in swap_build_into_place the SWAP_OLD/SWAP_DEST assignment precedes
+        the first `mv`, and SWAP_DONE=1 follows the second."""
+        body = _bash_functions("swap_build_into_place").splitlines()
+        assign = next(i for i, line in enumerate(body) if 'SWAP_OLD="$old"; SWAP_DEST="$dest"' in line)
+        renames = [i for i, line in enumerate(body) if line.strip().startswith("run mv ")]
+        done = next(i for i, line in enumerate(body) if line.strip() == "SWAP_DONE=1")
+        self.assertGreaterEqual(len(renames), 2)
+        self.assertLess(assign, renames[0])
+        self.assertGreater(done, renames[1])
+
     def test_interrupt_after_the_second_rename_discards_the_old_tree(self) -> None:
         target, before = self._installed()
         marker = self.tmp / "after.marker"

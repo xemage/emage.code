@@ -219,7 +219,7 @@ release:
   variables:
     GIT_DEPTH: "0"
   before_script:
-    - python3 -I -c "import os, shutil, subprocess; apk=shutil.which('apk'); secrets=[v for k, v in os.environ.items() if k in ('CI_JOB_TOKEN', 'WIKI_TOKEN') and v]; ok=('PATH', 'HOME', 'LANG', 'LANGUAGE', 'TMPDIR', 'TZ', 'SSL_CERT_FILE', 'SSL_CERT_DIR', 'CURL_CA_BUNDLE', 'http_proxy', 'https_proxy', 'no_proxy', 'HTTP_PROXY', 'HTTPS_PROXY', 'NO_PROXY', 'ALL_PROXY'); env=dict(i for i in os.environ.items() if (i[0] in ok or i[0].startswith('LC_')) and not any(x in i[1] for x in secrets)); subprocess.check_call([apk, 'add', '--no-cache', 'git~=2.54'], env=env) if apk else None"
+    - python3 -I -c "import os, re, shutil, subprocess; apk=shutil.which('apk'); secrets=[v for k, v in os.environ.items() if k in ('CI_JOB_TOKEN', 'WIKI_TOKEN') and v]; ok=('PATH', 'HOME', 'LANG', 'LANGUAGE', 'TMPDIR', 'TZ', 'SSL_CERT_FILE', 'SSL_CERT_DIR', 'CURL_CA_BUNDLE', 'http_proxy', 'https_proxy', 'no_proxy', 'HTTP_PROXY', 'HTTPS_PROXY', 'NO_PROXY', 'ALL_PROXY'); env=dict(i for i in os.environ.items() if (i[0] in ok or re.fullmatch('LC_[A-Z_]+', i[0])) and not any(x in i[1] for x in secrets)); subprocess.check_call([apk, 'add', '--no-cache', 'git~=2.54'], env=env) if apk else None"
   script:
     # T686: the release job authenticates with the GitLab job token (CI_JOB_TOKEN, sent only in the JOB-TOKEN header),
     # not with WIKI_TOKEN, which only the wiki-sync job reads. The value is read by name (--token-env); it is never in argv.
