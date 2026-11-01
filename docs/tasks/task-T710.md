@@ -2,7 +2,7 @@
 
 **ID:** T710
 **Owner:** release-manager
-**Status:** pending
+**Status:** in_progress
 **Priority:** P1
 **Tier:** standard
 **Depends on:** T707, T708, T709

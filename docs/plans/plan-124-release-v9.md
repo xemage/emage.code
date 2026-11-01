@@ -34,7 +34,7 @@ Publish `v9.0.0`, the release that removes Cursor support (ADR-010), with one re
 
 **Wave 4 (publish)**
 
-12. **T711** — Publish (orchestrator; **each step needs the user's explicit approval at that moment**): MR `release/v9.0.0` to `develop`; MR `develop` to `main` with a merge commit; tag `v9.0.0` on the verified `main` tip; watch the tag jobs (the first real tag pipeline on `CI_JOB_TOKEN`: user action A-5, SEC-T686-03 and SEC-T686-06 recorded); `docs/checkpoints/checkpoint-040-release-v9.0.0.md`. *Acceptance:* the GitLab Release body equals `docs/releases/v9.0.0.md`; all tag jobs green.
+12. **T711** — Publish (orchestrator; **each step needs the user's explicit approval at that moment**): the B1 order of `CONTRIBUTING.md` (release steps 5 to 7; the user's decision of 2026-10-15 for v8.0.0, "B1: develop, then main, then tag"): MR `release/v9.0.0` to `develop`, then MR `release/v9.0.0` to `main` (both merge commits, PUT-first `squash=false`, `scripts/verify-main-sync-merge.py`), then tag `v9.0.0` on the release-branch tip after checking it is an ancestor of `origin/develop` and `origin/main` with the tree of `origin/main` (corrected 2026-11-01 for TL-T708-01); watch the tag jobs (the first real tag pipeline on `CI_JOB_TOKEN`: user action A-5, SEC-T686-03 and SEC-T686-06 recorded); `docs/checkpoints/checkpoint-040-release-v9.0.0.md`. *Acceptance:* the GitLab Release body equals `docs/releases/v9.0.0.md`; all tag jobs green.
 
 ```mermaid
 flowchart TD
