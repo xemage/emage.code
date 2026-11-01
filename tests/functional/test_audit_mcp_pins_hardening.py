@@ -33,6 +33,12 @@ TWO_PINS = {"metadata": {}, "vulnerabilities": {"@modelcontextprotocol/sdk": SDK
                                                  "@modelcontextprotocol/server-memory": MEMORY}}
 BOTH = [f"GHSA-aaaa-bbbb-cccc:2026-11-21:{BRAVE_PIN}", f"GHSA-dddd-eeee-ffff:2026-11-21:{BRAVE_PIN}"]
 DAY1 = dt.timedelta(days=1)
+# T712: the shape npm 11.17.0 returned for the whole pin set on 2026-11-01: brave is vulnerable via sdk and zod, but only
+# zod lists brave in `effects`; the sdk's `effects` is empty.
+ZOD = {"severity": "high", "isDirect": False, "effects": ["@brave/brave-search-mcp-server"], "via": [
+    {"title": "adv three", "range": "<4.6.6", "url": "https://github.com/advisories/GHSA-gggg-hhhh-iiii"}]}
+SPLIT = {"metadata": {}, "vulnerabilities": {"@modelcontextprotocol/sdk": {**SDK, "effects": []}, "zod": ZOD,
+                                              "@brave/brave-search-mcp-server": {**BRAVE, "via": ["@modelcontextprotocol/sdk", "zod"]}}}
 
 
 def accepts(*specs: str) -> dict:
@@ -244,10 +250,32 @@ class TestAcceptanceIsScopedToAPackage(unittest.TestCase):
         self.assertEqual(mutant.summarise_audit(orphan, "high", accepts(*BOTH), TODAY)[1], 0)
 
     def test_mutation_not_following_effects_is_detected(self):
+        # brave is linked to the sdk only through `effects` here (its own `via` is empty, so it stays a finding)
+        effects_only = {"metadata": {}, "vulnerabilities": {"@modelcontextprotocol/sdk": SDK, "@brave/brave-search-mcp-server": {**BRAVE, "via": []}}}
         mutant = mutated('    for effect in entry.get("effects") or []:', "    for effect in []:")
         accepted = accepts(*BOTH)
-        self.assertEqual(M.summarise_audit(CHAIN, "high", accepted, TODAY)[1], 0)
-        self.assertEqual(mutant.summarise_audit(CHAIN, "high", accepted, TODAY)[1], 2)  # the sdk reaches no root, so nothing is accepted
+        self.assertEqual(M.summarise_audit(effects_only, "high", accepted, TODAY)[1], 1)
+        self.assertEqual(mutant.summarise_audit(effects_only, "high", accepted, TODAY)[1], 2)  # the sdk reaches no root, so nothing is accepted
+
+    def test_a_dependent_named_only_by_its_via_is_a_root(self):
+        # T712: npm 11.17.0 lists brave in the `effects` of only one of its two vulnerable dependencies (sdk, zod)
+        accepted = accepts(*BOTH, f"GHSA-gggg-hhhh-iiii:2026-11-21:{BRAVE_PIN}")
+        self.assertEqual(M.direct_roots("@modelcontextprotocol/sdk", SPLIT["vulnerabilities"]), {"@brave/brave-search-mcp-server"})
+        self.assertEqual(M.summarise_audit(SPLIT, "high", accepted, TODAY)[1], 0)
+        self.assertEqual(M.summarise_audit(SPLIT, "high", accepts(*BOTH), TODAY)[1], 2)  # zod unaccepted: zod and brave stay
+
+    def test_a_second_pin_named_only_by_its_via_keeps_the_library_a_finding(self):
+        # following `via` can only add roots: memory pulls the sdk but npm left it out of the sdk's `effects`
+        two = {"metadata": {}, "vulnerabilities": {**TWO_PINS["vulnerabilities"], "@modelcontextprotocol/sdk": SDK}}
+        self.assertEqual(M.direct_roots("@modelcontextprotocol/sdk", two["vulnerabilities"]),
+                         {"@brave/brave-search-mcp-server", "@modelcontextprotocol/server-memory"})
+        self.assertEqual(M.summarise_audit(two, "high", accepts(*BOTH), TODAY)[1], 3)
+
+    def test_mutation_not_following_via_dependents_is_detected(self):
+        mutant = mutated("    for dependent in via_dependents(name, vulns):", "    for dependent in []:")
+        accepted = accepts(*BOTH, f"GHSA-gggg-hhhh-iiii:2026-11-21:{BRAVE_PIN}")
+        self.assertEqual(M.summarise_audit(SPLIT, "high", accepted, TODAY)[1], 0)
+        self.assertEqual(mutant.summarise_audit(SPLIT, "high", accepted, TODAY)[1], 2)  # the sdk and brave stay findings
 
     def test_mutation_dropping_the_date_bound_is_detected(self):
         mutant = mutated("        if (item.until - today).days > MAX_ACCEPT_DAYS:", "        if False:")

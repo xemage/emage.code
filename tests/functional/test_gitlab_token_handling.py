@@ -546,7 +546,8 @@ class DocumentationTests(unittest.TestCase):
         steps = _section(self.prereq_token, "#### File mode")
         # T689: the snippet creates the file in memory and refuses a directory that is not the user's
         self.assertIn('d="${XDG_RUNTIME_DIR:-/dev/shm}/gitlab-mcp"\n', steps)
-        self.assertIn('( umask 077; mkdir -p "$d" && [ ! -L "$d" ] && [ -O "$d" ] && chmod 700 "$d" && : > "$d/token" '
+        self.assertIn('( umask 077; mkdir -p "$d" && [ ! -L "$d" ] && [ -O "$d" ] && chmod 700 "$d" && rm -f -- "$d/token" '
+                      '&& : > "$d/token" '
                       '&& chmod 600 "$d/token" ) &&', steps)
         self.assertIn("printf '%s' \"$t\" > \"$d/token\"; unset t", steps)
         self.assertNotIn('mkdir -p "$HOME/.config/gitlab-mcp"', steps)

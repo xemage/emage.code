@@ -45,7 +45,9 @@
       "command": "npx",
       "args": [
         "-y",
-        "@brave/brave-search-mcp-server@2.1.4"
+        "@brave/brave-search-mcp-server@2.1.4",
+        "--transport",
+        "stdio"
       ],
       "env": {
         "BRAVE_API_KEY": "${BRAVE_API_KEY}"

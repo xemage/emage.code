@@ -22,7 +22,7 @@ builds a THROWAWAY ``package.json`` from them, so the usual tools work on the re
                                 vulnerable entry puts at risk is the named one: a second pin that pulls the
                                 same vulnerable library stays a finding. An expired acceptance fails the
                                 run. Acceptances are recorded in an artifact
-                                (docs/artifacts/brave-audit-acceptance-v2.md) and listed in the checklist.
+                                (docs/artifacts/brave-audit-acceptance-v3.md) and listed in the checklist.
   provenance                    ask the npm registry whether the pinned version, and the ``latest``
         [--require]             version, carry a provenance attestation (SEC-T646-03). --require: exit 1
                                 when a pinned version has none.
@@ -270,13 +270,26 @@ def direct_roots(name: str, vulns: dict, seen: frozenset = frozenset()) -> set[s
 
     npm marks the packages of the manifest ``isDirect``; ``effects`` lists the packages that depend on a vulnerable one.
     An empty result (an entry that is neither direct nor reaches a direct one) can not be scoped, so it is never accepted.
+    The dependents are npm's ``effects`` AND every entry that names ``name`` as a string ``via``: npm 11.17.0 fills
+    ``effects`` for only one of two vulnerable dependencies of the same package (T712, 2026-11-01: brave 2.1.4 lists
+    ``via`` sdk and zod, but only one of the two lists brave in ``effects``, which one depends on the tree). Following
+    both can only add roots, so an acceptance never covers fewer pinned packages than npm reports.
     """
     entry = vulns.get(name) or {}
     roots = {name} if entry.get("isDirect") else set()
     for effect in entry.get("effects") or []:
         if isinstance(effect, str) and effect in vulns and effect not in seen and effect != name:
             roots |= direct_roots(effect, vulns, seen | {name})
+    for dependent in via_dependents(name, vulns):
+        if dependent not in seen and dependent != name:
+            roots |= direct_roots(dependent, vulns, seen | {name})
     return roots
+
+
+def via_dependents(name: str, vulns: dict) -> list[str]:
+    """The entries that list ``name`` as a string ``via`` (they are vulnerable through it), sorted."""
+    return sorted(other for other, item in vulns.items()
+                  if isinstance(item, dict) and isinstance(item.get("via"), list) and name in item["via"])
 
 
 def fully_accepted(name: str, vulns: dict, active: set[tuple[str, str]], seen: frozenset = frozenset()) -> bool:

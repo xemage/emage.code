@@ -1,6 +1,6 @@
 # Release vX.Y.Z
 
-Copy this file to `docs/releases/vX.Y.Z.md` on the `release/vX.Y.Z` branch before the tag is cut, and delete this paragraph. It is the release's one document: `scripts/verify-release-docs.py --tag vX.Y.Z` checks it, its sections follow skill `release-workflow` § 4, the release job publishes it whole as the GitLab Release description, and `/prepare-release` step 7 writes the release gate verdict into it. Keep the first line as `# Release vX.Y.Z`. Do not quote the verdict section's heading text above that section. Cite repository files as code spans or absolute URLs, not relative links.
+Copy this file to `docs/releases/vX.Y.Z.md` on the `release/vX.Y.Z` branch before the tag is cut, and delete this paragraph. It is the release's one document: `scripts/verify-release-docs.py --tag vX.Y.Z` checks it, its sections follow skill `release-workflow` § 4, the release job publishes it whole as the GitLab Release description, and `/prepare-release` step 7 writes the release gate verdict into it. Keep the first line as `# Release vX.Y.Z`. Do not quote the verdict section's heading text above that section. Cite repository files as code spans or absolute URLs, not relative links. If `scripts/install.sh` points users to this document for the Cursor migration item, the gate requires that item under `## Migration Guide`: a `###` to `######` heading, or a line that starts with a bold lead (`**...**`, optionally after a list marker), whose text contains the word `Cursor` (see `scripts/verify-release-docs.py --help`).
 
 ## Summary
 

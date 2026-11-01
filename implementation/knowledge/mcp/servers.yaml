@@ -144,7 +144,10 @@ servers:
     denyUnlessGranted: false
     transport: stdio
     command: npx
-    args: ["-y", "@brave/brave-search-mcp-server@2.1.4"]
+    # T712 (docs/artifacts/brave-audit-acceptance-v3.md, SEC-T702-07): `--transport stdio` is explicit so that
+    # BRAVE_MCP_TRANSPORT in the environment or in a `.env` of the launch directory cannot switch it to HTTP
+    # (dist/config.js of 2.1.4: the env value is only the default of the `--transport <stdio|http>` option).
+    args: ["-y", "@brave/brave-search-mcp-server@2.1.4", "--transport", "stdio"]
     env:
       BRAVE_API_KEY: { fromEnv: BRAVE_API_KEY, secret: true }
 
