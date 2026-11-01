@@ -15,13 +15,16 @@ ROOT = repo_root()
 DOC = ROOT / "docs" / "wiki" / "mcp-pin-bump-checklist.md"
 IDS = ("SEC-T646-03", "SEC-T646-04", "SEC-T646-05", "SEC-T646-06", "SEC-T655-06", "SEC-T655-07", "SEC-T658-02",
        "SEC-014", "T638-L-2", "T638-L-8", "K-17", "K-20", "SEC-T675-03", "SEC-T675-09")
-GHSA = ("GHSA-6qxp-vccf-f47h", "GHSA-22jm-h49p-29qw", "GHSA-6prh-2h8m-c8cw", "GHSA-46jr-4wx8-v453", "GHSA-rvq5-wwqv-78pq")
-EXPIRY = "2026-11-21"
+# docs/artifacts/brave-audit-acceptance-v3.md (T712, the user's renewal of 2026-11-01): seven advisories, one expiry.
+GHSA = ("GHSA-6qxp-vccf-f47h", "GHSA-22jm-h49p-29qw", "GHSA-6prh-2h8m-c8cw", "GHSA-46jr-4wx8-v453", "GHSA-rvq5-wwqv-78pq",
+        "GHSA-f897-62hf-6gxq", "GHSA-mrhx-c7xc-m3w5")
+EXPIRY = "2027-01-30"
+ACCEPTANCE = ROOT / "docs" / "artifacts" / "brave-audit-acceptance-v3.md"
 WARNING = "Never run `opencode debug config` with your real home"
 REQUIRED_PHRASES = ("audit-mcp-pins.py audit", "audit-mcp-pins.py provenance", "--generate-hashes", "--require-hashes",
                     "Browser security version", "Blocked-origins re-check", "One-time live checks", "excludeTools",
                     "opencode agent list", "(unverified)", WARNING, "ci_images_reviewed_on", "--only-binary=:all:", "--exclude-newer",
-                    "brave-audit-acceptance-v2.md", "SEC-T676-11", "SEC-T676-14", "seven days before")
+                    "brave-audit-acceptance-v3.md", "SEC-T676-11", "SEC-T676-14", "seven days before")
 LINKS = {
     "implementation/PREREQUISITES.md": "docs/wiki/mcp-pin-bump-checklist.md",
     "docs/wiki/mcp-servers.md": "mcp-pin-bump-checklist",
@@ -37,7 +40,7 @@ def brave_pin() -> str:
 
 
 def gate_problems(text: str) -> list[str]:
-    """The release gate command accepts exactly the five brave advisories, each with the artifact's expiry date and
+    """The release gate command accepts exactly the seven brave advisories, each with the artifact's expiry date and
     scoped to the pinned brave package (an unscoped `GHSA:DATE` is the old, global form and is refused)."""
     found = re.findall(r"--accept (GHSA-[a-z0-9-]+):(\d{4}-\d{2}-\d{2}):(\S+?)(?=[\s`]|$)", text)
     out = []
@@ -83,7 +86,7 @@ class TestChecklist(unittest.TestCase):
 
     def test_it_has_no_secret_looking_value(self):
         self.assertEqual(secret_findings(self.text), [])
-        for artifact in (ROOT / "docs/artifacts/brave-audit-acceptance-v1.md", ROOT / "docs/artifacts/brave-audit-acceptance-v2.md"):
+        for artifact in (ROOT / "docs/artifacts/brave-audit-acceptance-v1.md", ROOT / "docs/artifacts/brave-audit-acceptance-v2.md", ACCEPTANCE):
             self.assertEqual(secret_findings(artifact.read_text(encoding="utf-8")), [])
 
     def test_the_secret_check_catches_each_shape(self):
@@ -94,10 +97,10 @@ class TestChecklist(unittest.TestCase):
         self.assertEqual(secret_findings("sha256:06d7adf3... GHSA-6qxp-vccf-f47h `Bearer`-less prose"), [])
 
     def test_the_acceptance_artifact_matches_the_gate_command_and_the_decision(self):
-        artifact = (ROOT / "docs/artifacts/brave-audit-acceptance-v2.md").read_text(encoding="utf-8")
+        artifact = ACCEPTANCE.read_text(encoding="utf-8")
         self.assertEqual(gate_problems(artifact), [])
-        for needle in GHSA + (EXPIRY, "Accept with conditions (Recommended)", "BRAVE_MCP_TRANSPORT=http", "GHSA-46jr-4wx8-v453",
-                              "**Based on**", "devops-engineer"):
+        for needle in GHSA + (EXPIRY, "Renew + force stdio (Recommended)", "BRAVE_MCP_TRANSPORT=http", "BRAVE_MCP_HOST",
+                              "--transport stdio", "brave-audit-acceptance-v2.md", "**Based on**", "devops-engineer"):
             self.assertIn(needle, artifact)
         pattern = r"--accept (GHSA-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}:\d{4}-\d{2}-\d{2}:\S+?)(?=[\s`]|$)"
         self.assertEqual(re.findall(pattern, artifact), re.findall(pattern, self.text))
@@ -105,7 +108,7 @@ class TestChecklist(unittest.TestCase):
     def test_the_acceptance_artifact_expiry_is_within_ninety_days_of_the_decision(self):
         """SEC-T676-11: the script refuses a date more than 90 days out; the recorded decision must respect the same bound."""
         import datetime as dt
-        artifact = (ROOT / "docs/artifacts/brave-audit-acceptance-v2.md").read_text(encoding="utf-8")
+        artifact = ACCEPTANCE.read_text(encoding="utf-8")
         decision = dt.date.fromisoformat(re.search(r"\*\*Date\*\*: (\d{4}-\d{2}-\d{2})", artifact).group(1))
         expiry = dt.date.fromisoformat(EXPIRY)
         self.assertLessEqual((expiry - decision).days, 90)
@@ -128,12 +131,12 @@ class TestChecklist(unittest.TestCase):
         self.assertEqual({k[0] for k in keyed}, set(GHSA))
 
     def test_mutation_an_unscoped_or_wrongly_scoped_gate_is_detected(self):
-        unscoped = self.text.replace("--accept GHSA-rvq5-wwqv-78pq:2026-11-21:@brave/brave-search-mcp-server@2.1.4", "--accept GHSA-rvq5-wwqv-78pq:2026-11-21")
+        unscoped = self.text.replace("--accept GHSA-rvq5-wwqv-78pq:2027-01-30:@brave/brave-search-mcp-server@2.1.4", "--accept GHSA-rvq5-wwqv-78pq:2027-01-30")
         self.assertNotEqual(unscoped, self.text)
         self.assertTrue(any("lacks the" in p for p in problems(unscoped)))
-        stale = self.text.replace("GHSA-46jr-4wx8-v453:2026-11-21:@brave/brave-search-mcp-server@2.1.4", "GHSA-46jr-4wx8-v453:2026-11-21:@brave/brave-search-mcp-server@2.1.3")
+        stale = self.text.replace("GHSA-46jr-4wx8-v453:2027-01-30:@brave/brave-search-mcp-server@2.1.4", "GHSA-46jr-4wx8-v453:2027-01-30:@brave/brave-search-mcp-server@2.1.3")
         self.assertTrue(any("is scoped to" in p for p in problems(stale)))
-        other = self.text.replace("GHSA-46jr-4wx8-v453:2026-11-21:@brave/brave-search-mcp-server@2.1.4", "GHSA-46jr-4wx8-v453:2026-11-21:left-pad@1.3.0")
+        other = self.text.replace("GHSA-46jr-4wx8-v453:2027-01-30:@brave/brave-search-mcp-server@2.1.4", "GHSA-46jr-4wx8-v453:2027-01-30:left-pad@1.3.0")
         self.assertTrue(any("is scoped to" in p for p in problems(other)))
 
     def test_the_opencode_warning_and_the_safe_command_are_present(self):
@@ -149,9 +152,9 @@ class TestChecklist(unittest.TestCase):
 
     def test_mutation_a_missing_warning_or_a_wider_gate_is_detected(self):
         self.assertTrue(any("missing phrase" in p for p in problems(self.text.replace(WARNING, "Be careful"))))
-        wider = self.text.replace("--accept GHSA-rvq5-wwqv-78pq:2026-11-21", "--accept GHSA-rvq5-wwqv-78pq:2026-11-21 --accept GHSA-xxxx-yyyy-zzzz:2026-11-21")
+        wider = self.text.replace("--accept GHSA-rvq5-wwqv-78pq:2027-01-30", "--accept GHSA-rvq5-wwqv-78pq:2027-01-30 --accept GHSA-xxxx-yyyy-zzzz:2027-01-30")
         self.assertTrue(any("accepts" in p for p in problems(wider)))
-        self.assertTrue(any("expires" in p for p in problems(self.text.replace("GHSA-46jr-4wx8-v453:2026-11-21", "GHSA-46jr-4wx8-v453:2027-01-01"))))
+        self.assertTrue(any("expires" in p for p in problems(self.text.replace("GHSA-46jr-4wx8-v453:2027-01-30", "GHSA-46jr-4wx8-v453:2027-01-01"))))
 
     def test_mutation_a_dropped_id_is_detected(self):
         self.assertIn("missing id SEC-T655-07", problems(self.text.replace("SEC-T655-07", "SEC-T655-0x")))

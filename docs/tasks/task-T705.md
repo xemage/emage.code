@@ -17,6 +17,8 @@
 
 Write `docs/releases/v9.0.0.md` from `docs/releases/_template.md` and T700 (release-manager): the Migration section with the Cursor item of ADR-010 Appendix A (M-9 steps, the v5.0.0 to v6.9.0 keys `e2b`, `redis`, `figma`, `notion` and `filesystem`, `--force-prune-keys` only from the `v8.0.0` tag, the Known Issue "a Cursor install left in a project is frozen and is not pruned", and SEC-T678-03: a leftover `.cursor/` is no longer updated and its agents are not tool-restricted) and every other item of T700; the restatement that the two Brave HIGH findings block the tag if their acceptance lapses (security review T697-T699). *Acceptance:* `verify-release-docs.py --tag v9.0.0` and the T703 check pass; SEC-T662-01 closed.
 
+**Condition from `security-review-t701-t703-wave1-v1.md` (SEC-T703-01):** the gate checks only that a Cursor item exists; the Cursor item must carry every element SEC-T662-01 requires (the M-9 steps, the v5.0.0 to v6.9.0 keys `e2b`, `redis`, `figma`, `notion` and `filesystem`, `--force-prune-keys` only from the `v8.0.0` tag, the frozen-install Known Issue, SEC-T678-03), and the reviewer of this task checks that content by hand.
+
 ## 2. Output
 
 As stated in section 1.

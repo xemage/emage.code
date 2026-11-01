@@ -2,12 +2,8 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T700 | Release-level audit of v8.0.0..develop | tech-lead | in_progress | P1 | — | 2026-11-01 |
-| T701 | Token-docs batch (SEC-T689-01/-02/-03/-06, SEC-T699-01) | devops-engineer | in_progress | P1 | — | 2026-11-01 |
-| T702 | Dependency audit of the pinned MCP set without --accept (A-6) | devops-engineer | in_progress | P0 | — | 2026-11-01 |
-| T703 | Release-gate check of the migration pointer (SEC-T662-01) | devops-engineer | in_progress | P1 | — | 2026-11-01 |
-| T704 | Open release/v9.0.0, version markers and stale lines | release-manager | pending | P1 | T700, T701 | 2026-11-01 |
-| T705 | Write docs/releases/v9.0.0.md (closes SEC-T662-01) | release-manager | pending | P1 | T703, T704 | 2026-11-01 |
+| T704 | Open release/v9.0.0, version markers and stale lines | release-manager | pending | P1 | — | 2026-11-01 |
+| T705 | Write docs/releases/v9.0.0.md (closes SEC-T662-01) | release-manager | pending | P1 | T704 | 2026-11-01 |
 | T706 | Rehearse the release job in the CI image, no publish | devops-engineer | pending | P1 | T705 | 2026-11-01 |
 | T707 | QA release gate v9.0.0 | qa-engineer | pending | P1 | T705, T706 | 2026-11-01 |
 | T708 | Tech Lead review by area v9.0.0 | tech-lead | pending | P1 | T705 | 2026-11-01 |

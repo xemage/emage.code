@@ -5,7 +5,7 @@
 **Status:** pending
 **Priority:** P1
 **Tier:** standard
-**Depends on:** T700, T701
+**Depends on:** T700, T701, T712
 **Affects:** —
 **Created:** 2026-11-01
 **Based on:**
@@ -16,6 +16,8 @@
 ## 1. What and why
 
 Open `release/v9.0.0` from `develop` after wave 1 (a user-approved root refresh first if drift is not 0); bump the version markers and fix the stale lines and counts T700 lists (release-manager). *Acceptance:* `scripts/check-version-consistency.py` passes for v9.0.0.
+
+The user's answers of 2026-11-01 on the T700 decisions (AskUserQuestion, verbatim option labels): D-T700-1 "Exclude docs/decisions/ (Recommended)" (add `docs/decisions/` to `EXCLUDED_PREFIXES` in `scripts/check-version-consistency.py`, with a test, as T642 did for `tests/golden/`); D-T700-2 "Fix in T704 (Recommended)" (correct the `--force-prune-keys` sentence at `scripts/install.sh:1300`, finding TL-T700-01, and its test pin at `tests/functional/test_install_cursor_removal.py:41-42`). Inputs: `docs/artifacts/release-v9-audit-v1.md` §4.
 
 ## 2. Output
 

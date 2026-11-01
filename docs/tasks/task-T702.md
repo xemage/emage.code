@@ -2,12 +2,13 @@
 
 **ID:** T702
 **Owner:** devops-engineer
-**Status:** in_progress
+**Status:** done
 **Priority:** P0
 **Tier:** standard
 **Depends on:** —
 **Affects:** —
 **Created:** 2026-11-01
+**Completed:** 2026-11-01
 **Based on:**
 - `docs/plans/plan-124-release-v9.md` (task T702)
 - The user's answers of 2026-11-01 (AskUserQuestion, verbatim option labels): "Approve (Recommended)"; "Yes, in v9.0.0 (Recommended)"; "Decide after T702 (Recommended)"; "Yes, rehearse (Recommended)"

@@ -129,33 +129,61 @@ class McpPackagePinTests(unittest.TestCase):
         for needle in ("github-mcp-server", "GITHUB_PERSONAL_ACCESS_TOKEN", "GITHUB_READ_ONLY", "ghcr.io"):
             self.assertNotIn(needle, text, needle)
 
-    def test_brave_entry_stays_a_plain_stdio_launch(self):
-        # docs/artifacts/brave-audit-acceptance-v1.md (SEC-T676-02): the accepted sdk advisories do not apply to a
-        # stdio launch. GHSA-46jr-4wx8-v453 (memory exhaustion by one HTTP request) applies as soon as the HTTP
-        # transport runs, which `--transport http` or BRAVE_MCP_TRANSPORT=http turns on. An operator who sets
-        # that variable in the environment or in a `.env` of the launch directory reopens it; the shipped entry must
-        # never do so.
+    # docs/artifacts/brave-audit-acceptance-v3.md (T712, SEC-T702-07): the shipped launch must be exactly
+    # `npx -y <pin> --transport stdio`. In 2.1.4 BRAVE_MCP_TRANSPORT (environment or a `.env` of the launch
+    # directory, loaded by dotenv) is only the default of `--transport <stdio|http>` (dist/config.js), so the
+    # explicit flag keeps the HTTP transport off; GHSA-46jr-4wx8-v453, GHSA-f897-62hf-6gxq and the HTTP path of
+    # GHSA-mrhx-c7xc-m3w5 apply as soon as it runs. No other flag and no BRAVE_MCP_* variable may be shipped.
+    BRAVE_ARGS = ["-y", "@brave/brave-search-mcp-server@2.1.4", "--transport", "stdio"]
+
+    @staticmethod
+    def _brave_launch_ok(entry):
+        args, env = entry.get("args", []), entry.get("env", {})
+        flags = [a for a in args if a.startswith("-") and a != "-y"]
+        return (entry.get("command") == "npx"
+                and args == ["-y", APPROVED_NPX_PINS["brave"], "--transport", "stdio"]
+                and flags == ["--transport"]
+                and not any(a.startswith(("--host", "--port")) for a in args)
+                and sorted(env) == ["BRAVE_API_KEY"]
+                and not [k for k in env if k.startswith("BRAVE_MCP_")])
+
+    def test_brave_entry_is_a_forced_stdio_launch(self):
         brave = self.servers["brave"]
         self.assertEqual(brave["command"], "npx")
-        self.assertEqual(brave["args"], ["-y", APPROVED_NPX_PINS["brave"]])
+        self.assertEqual(brave["args"], self.BRAVE_ARGS)
+        self.assertEqual(brave["args"][1], APPROVED_NPX_PINS["brave"])
+        self.assertEqual(brave["args"].count("--transport"), 1)
+        self.assertEqual(brave["args"][brave["args"].index("--transport") + 1], "stdio")
         flags = [a for a in brave["args"] if a.startswith("-") and a != "-y"]
-        self.assertEqual(flags, [])
-        for forbidden in ("--transport", "--host", "--port", "--stateless", "--allowed-origins", "--allowed-hosts"):
+        self.assertEqual(flags, ["--transport"])
+        for forbidden in ("--host", "--port", "--stateless", "--allowed-origins", "--allowed-hosts",
+                          "http", "--transport=http", "--transport=stdio"):
             self.assertNotIn(forbidden, brave["args"])
+        self.assertFalse([a for a in brave["args"] if a.startswith(("--host", "--port"))])
         self.assertEqual(sorted(brave.get("env", {})), ["BRAVE_API_KEY"])
         self.assertFalse([k for k in brave.get("env", {}) if k.startswith("BRAVE_MCP_")])
         self.assertTrue(brave["env"]["BRAVE_API_KEY"]["secret"])
+        self.assertTrue(self._brave_launch_ok(brave))
 
     def test_mutation_brave_transport_flag_or_variable_is_detected(self):
-        # the assertions above must fail for each way of switching the HTTP transport on
-        for mutate in (lambda e: e["args"].extend(["--transport", "http"]),
-                       lambda e: e.setdefault("env", {}).__setitem__("BRAVE_MCP_TRANSPORT", "http"),
-                       lambda e: e["args"].extend(["--port", "8080"])):
-            entry = {"command": "npx", "args": ["-y", APPROVED_NPX_PINS["brave"]],
-                     "env": {"BRAVE_API_KEY": {"secret": True}}}
+        # the check must fail for each way of switching the HTTP transport on or of dropping the forced stdio
+        def base():
+            return {"command": "npx", "args": list(self.BRAVE_ARGS), "env": {"BRAVE_API_KEY": {"secret": True}}}
+        self.assertTrue(self._brave_launch_ok(base()))
+        mutations = (
+            lambda e: e.__setitem__("args", ["-y", APPROVED_NPX_PINS["brave"]]),
+            lambda e: e.__setitem__("args", ["-y", APPROVED_NPX_PINS["brave"], "--transport", "http"]),
+            lambda e: e["args"].extend(["--transport", "http"]),
+            lambda e: e.__setitem__("args", ["-y", APPROVED_NPX_PINS["brave"], "--transport=stdio"]),
+            lambda e: e.setdefault("env", {}).__setitem__("BRAVE_MCP_TRANSPORT", "http"),
+            lambda e: e.setdefault("env", {}).__setitem__("BRAVE_MCP_HOST", "0.0.0.0"),
+            lambda e: e["args"].extend(["--port", "8080"]),
+            lambda e: e["args"].extend(["--host=0.0.0.0"]),
+        )
+        for i, mutate in enumerate(mutations):
+            entry = base()
             mutate(entry)
-            plain = entry["args"] == ["-y", APPROVED_NPX_PINS["brave"]] and sorted(entry["env"]) == ["BRAVE_API_KEY"]
-            self.assertFalse(plain)
+            self.assertFalse(self._brave_launch_ok(entry), i)
 
     def test_filesystem_and_git_take_the_launch_directory_as_dot(self):
         self.assertEqual(self.servers["filesystem"]["args"][-1], ".")

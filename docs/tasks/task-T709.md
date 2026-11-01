@@ -17,6 +17,8 @@
 
 Release-level security re-check (security-engineer, read-only): the delta since T650 (plan-123, T689 to T699, T701, T703) and T702's result; confirms SEC-T662-01 closed and that no `HIGH` or `CRITICAL` is open. *Acceptance:* a verdict; any `CRITICAL` or `HIGH` blocks.
 
+**Condition from `security-review-t701-t703-wave1-v1.md` (SEC-T703-01):** check the content of the Cursor migration item in `docs/releases/v9.0.0.md` by hand against SEC-T662-01 before declaring it closed.
+
 ## 2. Output
 
 As stated in section 1.

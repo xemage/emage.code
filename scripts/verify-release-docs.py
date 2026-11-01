@@ -12,6 +12,11 @@ the gate. The gate does not require the Gate Verdicts section to exist (only the
 RELEASE VERDICT section, as before) and does not check the field-level contract, which the
 golden suite encodes.
 
+Migration pointers (T703, SEC-T662-01): every ``docs/releases/v*.md`` path that
+``scripts/install.sh`` names must exist, and a document named on an install.sh line that
+mentions "Cursor" must carry its Cursor migration item. See ``MIGRATION_POINTER_HELP``
+for the anchor and for how a pointer to a version newer than the tag is treated.
+
 This gate cannot check that ``main`` already carries the release: that duty (merge the
 release branch to ``develop`` and ``main`` before the tag) is enforced, within its
 grace window, by ``scripts/check-main-develop-drift.py`` and stated in CONTRIBUTING.md.
@@ -116,6 +121,26 @@ FIELD_RE = re.compile(r"^[ \t]*[-*][ \t]+(?P<label>[^:\n \t](?:[^:\n]*[^:\n \t])
 WORD_MARKER_RE = re.compile(r"\b(?:TBD|TODO)\b")
 TEMPLATE_PROSE_MARKERS = ("[list ", "[if FAIL")
 PENDING_ON_RE = re.compile(r"\bon\s+pending\b", re.IGNORECASE)
+
+INSTALL_SH = Path("scripts/install.sh")
+MIGRATION_SECTION = "## Migration Guide"
+POINTER_RE = re.compile(r"docs/releases/(?P<tag>v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)\.md")
+TAG_CORE_RE = re.compile(r"v(\d+)\.(\d+)\.(\d+)(?:-[0-9A-Za-z.-]+)?")
+ITEM_HEADING_RE = re.compile(r"^#{3,6}[ \t]+(?P<text>.+)$")
+ITEM_BOLD_LEAD_RE = re.compile(r"^(?:[-*][ \t]+|\d+\.[ \t]+)?\*\*(?P<text>[^*\n]+)\*\*")
+CURSOR_WORD_RE = re.compile(r"\bCursor\b")
+MIGRATION_POINTER_HELP = """\
+Migration pointers (T703, SEC-T662-01). Every docs/releases/v*.md path named in
+scripts/install.sh must exist in the tree. A document named on an install.sh line that
+contains the word "Cursor" must carry a Cursor migration item. Anchor: inside the
+'## Migration Guide' section (up to the next '## ' heading; fenced code is ignored), a
+heading of level 3 to 6 ('### ...') or a bold lead ('**...**' at the start of a line,
+optionally after a list marker) whose text contains the word "Cursor" (case-sensitive),
+for example '**Migration Guide item M-3. Cursor is no longer supported.**'.
+Future versions: a pointer is enforced only when its version (major.minor.patch, any
+pre-release suffix ignored) is not newer than the tag being verified, so verifying
+v8.0.0 does not fail because install.sh names v9.0.0. A tag that is not vX.Y.Z[-pre]
+enforces every pointer."""
 
 FENCED_CODE_RE = re.compile(r"```.*?```", re.DOTALL)
 INLINE_CODE_RE = re.compile(r"`[^`\n]*`")
@@ -286,8 +311,68 @@ def check_release_brief(tag: str, release_brief: str, errors: list[str]) -> None
         errors.append(f"unfilled verdict in {release_brief}: {problem}")
 
 
+def install_sh_pointers(text: str) -> dict[str, bool]:
+    """Each ``docs/releases/v*.md`` path named in install.sh text, mapped to whether a line naming it mentions Cursor."""
+    pointers: dict[str, bool] = {}
+    for line in text.splitlines():
+        for match in POINTER_RE.finditer(line):
+            path = match.group(0)
+            pointers[path] = pointers.get(path, False) or CURSOR_WORD_RE.search(line) is not None
+    return pointers
+
+
+def tag_core(tag: str) -> tuple[int, int, int] | None:
+    """``(major, minor, patch)`` of a ``vX.Y.Z[-pre]`` tag; None for any other string."""
+    match = TAG_CORE_RE.fullmatch(tag)
+    if match is None:
+        return None
+    major, minor, patch = (int(part) for part in match.groups())
+    return major, minor, patch
+
+
+def pointer_applies(pointed_tag: str, tag: str) -> bool:
+    """True unless the pointed version is newer than the tag being verified (fail-closed on an unparseable tag)."""
+    pointed, verified = tag_core(pointed_tag), tag_core(tag)
+    if pointed is None or verified is None:
+        return True
+    return pointed <= verified
+
+
+def has_cursor_migration_item(text: str) -> bool:
+    """The Migration Guide section holds a heading or bold lead that names Cursor (see MIGRATION_POINTER_HELP)."""
+    for line in section_text(text, MIGRATION_SECTION).splitlines():
+        match = ITEM_HEADING_RE.match(line) or ITEM_BOLD_LEAD_RE.match(line)
+        if match and CURSOR_WORD_RE.search(match.group("text")):
+            return True
+    return False
+
+
+def check_migration_pointers(tag: str, errors: list[str]) -> None:
+    """Every release document install.sh points users to exists and, if pointed to for Cursor, has the item."""
+    install = ROOT / INSTALL_SH
+    if not install.is_file():
+        return  # reported as a missing required file
+    pointers = install_sh_pointers(install.read_text(encoding="utf-8", errors="ignore"))
+    for path, needs_cursor in sorted(pointers.items()):
+        if not pointer_applies(Path(path).stem, tag):
+            continue
+        document = ROOT / path
+        if not document.is_file():
+            errors.append(f"{INSTALL_SH} points users to {path}, which does not exist; write it before the tag is cut")
+            continue
+        if needs_cursor and not has_cursor_migration_item(document.read_text(encoding="utf-8", errors="ignore")):
+            errors.append(
+                f"{path} lacks its Cursor migration item ({INSTALL_SH} points users to it): add a "
+                f"'### ... Cursor ...' heading or a '**... Cursor ...**' lead line under '{MIGRATION_SECTION}'"
+            )
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description="Release documentation verification gate.",
+        epilog=MIGRATION_POINTER_HELP,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     parser.add_argument("--tag", required=True, help="Release tag, e.g. v1.0.1")
     args = parser.parse_args()
 
@@ -301,6 +386,7 @@ def main() -> int:
         absolute = ROOT / relative
         if not absolute.is_file():
             errors.append(f"missing required file: {relative}")
+    check_migration_pointers(args.tag, errors)
 
     if errors:
         for error in errors:
