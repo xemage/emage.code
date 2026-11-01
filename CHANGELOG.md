@@ -12,4 +12,7 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
 
 ## [Unreleased]
 
-Bootstrap of the professional GitLab project surface — initial release pending.
+Changes merged since the latest `vX.Y.Z` tag. This committed file carries no
+released entries: the `release` CI job lists the commits of each tag in the
+`CHANGELOG.md` of its job artifact, and the release notes are in
+`docs/releases/vX.Y.Z.md`.
