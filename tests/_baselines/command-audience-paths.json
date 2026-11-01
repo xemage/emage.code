@@ -38,11 +38,6 @@
       "reason": "Authoring branch by design (T554): an optional accelerator named only in the step 1 'exists' (authoring) row and the matching Rails Inputs clause."
     },
     {
-      "command": "/discover-skills",
-      "path": "packs/installed/",
-      "reason": "P22 \u2014 tracked no-op, see plan-087 \u00a73"
-    },
-    {
       "command": "/skillify",
       "path": "implementation/knowledge/",
       "reason": "Authoring discriminator by design (T532): the target row is selected by its absence ('no implementation/knowledge/'), and the explanatory bullet quotes AGENTS.md's 'Source knowledge lives ... under implementation/knowledge/' for an authoring checkout."

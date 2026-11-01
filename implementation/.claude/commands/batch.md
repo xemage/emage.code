@@ -23,6 +23,7 @@ You are in **Batch Processing mode**. Decompose a large change into independent 
 5. **Track progress** — record each unit as a task in `docs/tasks/active-tasks.md`, using that file's own 7-column schema (`AGENTS.md` § Task Protocol) and never a five-field manifest row, which its validator rejects:
    - Format (7 columns, exact order):
      `| T<NNN> | BATCH <slug>: <description> | <agent-slug> | pending | P0\|P1\|P2 | <dep-ids or —> | YYYY-MM-DD |`
+   - `<slug>` is a short name for the batch, written in lowercase letters, digits, hyphens and dots: the slug rule of the `plan-approve-execute` skill § File Location, which also names the step 2 plan document.
    - Use the NEXT sequential `T<NNN>` ID for every unit. NEVER a `U<n>` or any other non-`T` unit ID — non-`T` rows fail `docs/tasks/validate-tasks.py` check `C3` and are silently deleted by `install.sh --update`.
    - Write a `docs/tasks/task-T<NNN>.md` brief per unit, whose `**Based on:**` field cites the step 2 plan document.
    - `Depends on` must not name another unit of the same batch — that is step 2's independence constraint, and `validate-tasks.py` checks `C12`/`C13`/`C14` are what enforce it. A dependency on a task *outside* the batch is permitted.

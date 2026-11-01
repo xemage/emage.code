@@ -31,7 +31,6 @@ You are in **Skill Discovery** mode. Match the user's intent to canonical skills
    - Review feedback → `receiving-code-review` before edits
    - Phase transitions → relevant gate skill (`validation-gates`, `checkpoint-protocol`)
 5. **Offer invocation** — tell the user which skill file to load or which slash command to run next.
-6. **Optional packaging** — if a skill pack is installed (`packs/installed/`), merge pack registry entries into recommendations.
 
 ## Output format
 
