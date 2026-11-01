@@ -2,7 +2,7 @@
 
 **ID:** T705
 **Owner:** release-manager
-**Status:** pending
+**Status:** in_progress
 **Priority:** P1
 **Tier:** standard
 **Depends on:** T703, T704
