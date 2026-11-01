@@ -109,7 +109,8 @@ The release gate is the final validation before deployment. All items must be ch
 - [ ] Architecture gate: PASS or CONDITIONAL_PASS (all conditions resolved)
 - [ ] Implementation gate: PASS or CONDITIONAL_PASS (all conditions resolved)
 - [ ] Integration gate: PASS or CONDITIONAL_PASS (all conditions resolved)
-- [ ] Security gate: PASS or CONDITIONAL_PASS (all conditions resolved)
+- [ ] Security gate: PASS or CONDITIONAL_PASS (all conditions resolved, or a medium security finding accepted by the user for this release under `validation-gates` § Verdict Rules)
+- [ ] Every `SECURITY:MEDIUM` that an earlier release shipped under the user's acceptance and that is not yet fixed: fixed, or accepted by the user for this release (`validation-gates` § Verdict Rules)
 
 ### Release Readiness
 - [ ] No critical or high bugs open for this release
@@ -167,7 +168,7 @@ For critical issues discovered after a release:
 ```
 1. TRIAGE
    ├── Confirm the issue is critical (production-impacting)
-   └── Assign a severity (must be critical or high)
+   └── Assign a severity on the issue's own scale, and name it: `Critical` or `High` for a bug (`/bug-report` § Severity), `SECURITY:CRITICAL` or `SECURITY:HIGH` for a security finding (`security-guidelines.md` § Security Review Workflow)
 
 2. BRANCH
    ├── Branch from the release tag: hotfix/v<VERSION>-<issue>
@@ -201,7 +202,7 @@ Hotfixes use a fast-track gate process:
 - Implementation gate: **REQUIRED** (focused review of the fix)
 - Integration gate: **ABBREVIATED** (regression test + smoke test only)
 - Security gate: **REQUIRED if security-related**, otherwise skipped
-- Release gate: **ABBREVIATED** (checklist with reduced scope)
+- Release gate: **ABBREVIATED** (checklist with reduced scope; the reduced scope never drops the Release Gate input of `validation-gates` § Gate Input Requirements that lists the security findings graded medium an earlier release shipped under the user's acceptance)
 
 ## Examples
 
@@ -228,7 +229,7 @@ Merged back to main
 ## Guidelines
 
 - Never release without passing the release gate checklist.
-- Hotfixes are for critical/high issues only. Medium/low issues wait for the next regular release.
+- Hotfixes are for issues graded critical or high on their own scale (§ 5, step 1) only. Medium/low issues wait for the next regular release.
 - Hotfixes must be minimal — fix the issue and nothing else.
 - Always merge hotfixes back to main to prevent regression in future releases.
 - Keep release notes user-facing. Internal changes go in the "Internal" changelog section.

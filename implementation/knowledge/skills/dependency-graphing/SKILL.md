@@ -31,11 +31,11 @@ Build and visualize task dependency graphs as Mermaid DAGs. Identify critical pa
 1. Start the graph with `graph TD` (top-down) or `graph LR` (left-right).
 2. For each task, create a node: `TASK_NNN["TNNN: Title"]`.
 3. For each dependency edge, create an arrow: `TASK_NNN --> TASK_MMM`.
-4. Apply styling based on status:
+4. Apply styling based on status (`in_progress` and `in_review` use the colours of the `/team-status` and `/sprint-status` graphs):
    - `pending` → default style
-   - `in_progress` → blue fill
+   - `in_progress` → yellow fill (`#FFD700`)
    - `blocked` → red fill
-   - `in_review` → yellow fill
+   - `in_review` → blue fill (`#87CEFA`)
    - `done` → green fill
 
 #### Mermaid Template
@@ -54,7 +54,7 @@ graph TD
     TASK_004 --> TASK_005
 
     style TASK_001 fill:#28a745,color:#fff
-    style TASK_002 fill:#007bff,color:#fff
+    style TASK_002 fill:#FFD700,color:#000
     style TASK_003 fill:#dc3545,color:#fff
     style TASK_004 fill:#6c757d,color:#fff
     style TASK_005 fill:#6c757d,color:#fff

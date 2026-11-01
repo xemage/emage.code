@@ -55,7 +55,7 @@ tests/
 ## Bug: [Title]
 
 ### Severity: [Critical | High | Medium | Low]
-### Priority: [P0 | P1 | P2 | P3]
+### Priority: [P0 | P1 | P2] (the task priority of `AGENTS.md` § Task Protocol)
 
 ### Environment
 [OS, browser, version, environment]

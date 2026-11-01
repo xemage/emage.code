@@ -84,6 +84,8 @@ declared home for the block; fill in every field before the tag is cut.
 - **Blocker IDs**: [if FAIL — list blocking issues with owners]
 - **Release manager**: release-manager
 - **Timestamp**: <ISO-8601>
+- **Issued at commit**: <sha the release files were at when the verdict was issued>
+- **Independent check**: <PASS | CONDITIONAL_PASS | FAIL> at <sha>, by <tech-lead | orchestrator | top-level session>
 
 ## Rollback Plan
 
