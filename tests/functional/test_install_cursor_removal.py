@@ -39,8 +39,15 @@ NOTICE = "holds a Cursor install written by an earlier emage.code release"
 CONCRETE_STEP = (
     "Open .cursor/mcp.json and remove the 'filesystem' entry if it runs @anthropic/mcp-filesystem, "
     "and the keys e2b, redis, figma and notion if present (M-9 of the v8.0.0 release notes). "
-    "--force-prune-keys exists only in the v8.0.0 installer."
+    "Edit the file by hand: --force-prune-keys of scripts/merge-mcp-json.py does not help here. "
+    "It needs as --source the generated Cursor file, which exists only at the v8.0.0 tag; "
+    "with that file it refuses to prune 'filesystem' (the file has that key) and merges every entry "
+    "of the file, github included, into yours."
 )
+# TL-T700-01 (T704, the user's 2026-11-01 decision "Fix in T704 (Recommended)"): the
+# option belongs to scripts/merge-mcp-json.py and still exists; the old wording said it
+# existed "only in the v8.0.0 installer". The wrong claim must not come back.
+STALE_CLAIM = "exists only in the v8.0.0 installer"
 USER_RULE = "# my own cursor rule; the installer must never delete it\n"
 PROVENANCE = {"schemaVersion": 1, "generatorOwnedKeys": ["context7", "gitlab"]}
 
@@ -195,6 +202,7 @@ class TestPreviousCursorInstallIsNoticedAndNeverTouched(_InstallCase):
                     self.assertIn("@anthropic/mcp-filesystem", proc.stderr)
                     self.assertIn("M-9", proc.stderr)
                     self.assertIn(CONCRETE_STEP, proc.stderr)
+                    self.assertNotIn(STALE_CLAIM, proc.stderr)
                     self.assertIn("docs/releases/v9.0.0.md", proc.stderr)
                     self.assertIn("MCP server versions are frozen", proc.stderr)
                     # claims only what the installer can know: no statement about hardening

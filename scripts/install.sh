@@ -1297,7 +1297,7 @@ notice_previous_cursor_install() {
   echo "  Cursor support was removed in v9.0.0: that folder is no longer updated, pruned or checked, and this installer does not delete it." >&2
   echo "  Its MCP server versions are frozen at the version that wrote it, and nothing prunes it." >&2
   echo "  An install from v7.x or older can still contain unpinned or non-existent launchers (for example 'npx -y @anthropic/mcp-filesystem', see M-9 of the v8.0.0 release notes)." >&2
-  echo "  Open .cursor/mcp.json and remove the 'filesystem' entry if it runs @anthropic/mcp-filesystem, and the keys e2b, redis, figma and notion if present (M-9 of the v8.0.0 release notes). --force-prune-keys exists only in the v8.0.0 installer." >&2
+  echo "  Open .cursor/mcp.json and remove the 'filesystem' entry if it runs @anthropic/mcp-filesystem, and the keys e2b, redis, figma and notion if present (M-9 of the v8.0.0 release notes). Edit the file by hand: --force-prune-keys of scripts/merge-mcp-json.py does not help here. It needs as --source the generated Cursor file, which exists only at the v8.0.0 tag; with that file it refuses to prune 'filesystem' (the file has that key) and merges every entry of the file, github included, into yours." >&2
   echo "  Remove the folder or edit it by hand; see the Cursor migration item in docs/releases/v9.0.0.md." >&2
 }
 
