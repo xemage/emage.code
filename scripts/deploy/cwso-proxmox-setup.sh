@@ -25,6 +25,9 @@ BRIDGE="vmbr0"
 TEMPLATE="/var/lib/vz/template/cache/ubuntu-20.04-standard_20.04-1_amd64.tar.zst"
 NON_INTERACTIVE=0
 AUTO_MODE=0
+# The JWT secret comes from the CWSO_JWT_SECRET environment variable only
+# (T694): there is no secret file default.
+SECRET_ENV_VAR="CWSO_JWT_SECRET"
 
 # Functions
 print_header() {
@@ -47,11 +50,24 @@ print_info() {
     echo -e "${BLUE}ℹ $1${NC}"
 }
 
+require_jwt_secret() {
+    if [ -z "${CWSO_JWT_SECRET:-}" ]; then
+        print_error "${SECRET_ENV_VAR} is not set"
+        echo "Export ${SECRET_ENV_VAR} before running the setup, for example from your secret store." >&2
+        exit 1
+    fi
+}
+
 show_usage() {
     cat << 'EOF'
 CWSO Proxmox LXC Setup Script
 
-Usage: bash cwso-proxmox-setup.sh [OPTIONS]
+Usage: CWSO_JWT_SECRET=... bash cwso-proxmox-setup.sh [OPTIONS]
+
+Environment:
+  CWSO_JWT_SECRET          Required. Written as CWSO_JWT_SECRET to /opt/cwso/repo/.env
+                           (mode 600) in the container; docker-compose reads it
+                           there for the jwt_secret secret
 
 Options:
   --ctid <ID>              Container ID (default: 201)
@@ -376,15 +392,18 @@ cp deploy/docker-compose-t226.yml docker-compose.yml
 # Copy environment
 cp deploy/t226-phase2.env .env
 
-# Configure JWT (use development JWT for testing)
-if [ -f deploy/.env.jwt.dev ]; then
-    JWT_SECRET=$(tr -d '\r\n' < deploy/.env.jwt.dev)
-    echo "JWT_SECRET=$JWT_SECRET" >> .env
-fi
+chmod 600 .env
 
 # Add Parquet store configuration
 echo "PARQUET_STORE_PATH=/opt/cwso/data" >> .env
 EOF
+
+    # Configure JWT: docker-compose reads CWSO_JWT_SECRET from the project .env
+    # (mode 600) for the jwt_secret secret of docker-compose.yml. The value is
+    # passed over stdin, never on argv, and never printed (T694).
+    print_info "Writing ${SECRET_ENV_VAR} to /opt/cwso/repo/.env for the jwt_secret secret..."
+    printf '%s=%s\n' "$SECRET_ENV_VAR" "$(printf '%s' "$CWSO_JWT_SECRET" | tr -d '\r\n')" \
+        | pct exec $CTID -- sh -c 'cat >> /opt/cwso/repo/.env'
 
     print_info "Starting CWSO services..."
     pct exec $CTID bash << 'EOF'
@@ -420,7 +439,7 @@ if docker-compose ps | grep -q "Up"; then
     echo "✓ Services running"
 else
     echo "✗ Services not running"
-    docker-compose logs
+    docker-compose logs --tail=50 orchestrator git-shadow merge-engine rollout sia-executor
     exit 1
 fi
 
@@ -450,7 +469,7 @@ show_summary() {
     echo "  pct enter $CTID"
     echo ""
     echo "View Logs:"
-    echo "  pct exec $CTID docker-compose logs -f"
+    echo "  pct exec $CTID docker-compose logs -f --tail=50"
     echo ""
     echo "Check Services:"
     echo "  pct exec $CTID docker-compose ps"
@@ -468,6 +487,7 @@ main() {
     print_header "CWSO Proxmox LXC Setup"
 
     parse_arguments "$@"
+    require_jwt_secret
     verify_proxmox
     confirm_configuration
     create_container

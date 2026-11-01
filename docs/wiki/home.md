@@ -2,11 +2,11 @@
 
 Welcome to the **emage.code** wiki — the central knowledge hub for the multi-platform AI dev-team orchestration framework.
 
-Latest release: v8.0.0
+Latest release: v9.0.0
 
 ## What is emage.code?
 
-emage.code projects a single canonical knowledge base into the major AI coding assistants (GitHub Copilot, Gemini CLI, Opencode, Cursor, Pi, Claude Code) so that every assistant runs the *same* dev team with the *same* protocols.
+emage.code projects a single canonical knowledge base into the major AI coding assistants (GitHub Copilot, Gemini CLI, Opencode, Pi, Claude Code, Cline) so that every assistant runs the *same* dev team with the *same* protocols.
 
 ## Wiki contents
 
@@ -19,6 +19,7 @@ emage.code projects a single canonical knowledge base into the major AI coding a
 | [Performance Benchmarks](performance-benchmarks) | Benchmark dimensions, thresholds, and runtime diagrams |
 | [Contributing Workflow](contributing-workflow) | GitFlow + Conventional Commits + sync engine |
 | [Implementation Guide](implementation-guide) | Schema-first workflows, cookbooks, triggers, packaging |
+| [Severity and Grade Scales](severity-and-grade-scales) | The coexisting severity, priority and verdict scales, who uses each and how they relate |
 
 Release note: documentation updates are a required release gate. Before tagging,
 update release markers and run `python3 scripts/verify-release-docs.py --tag vX.Y.Z`.

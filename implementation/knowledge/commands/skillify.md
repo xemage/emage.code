@@ -35,7 +35,7 @@ in the two. Test for the source tree first, then apply the one row that matches:
 | If the project has… | Write the skill to | Then |
 |---|---|---|
 | `implementation/knowledge/skills/` — an emage.code **authoring** checkout | `implementation/knowledge/skills/<name>/SKILL.md` | Regenerate the derived trees: `node implementation/scripts/sync.mjs` **and** `python3 implementation/scripts/generate-registry.py --root implementation`. Do not hand-write any platform folder. |
-| no `implementation/knowledge/` — an **installed target** project | `<platform>/skills/<name>/SKILL.md` in **every** installed platform folder that exists: `.github/`, `.claude/`, `.cursor/`, `.gemini/`, `.opencode/`, `.pi/`, `.cline/` | Tell the user, in the approval step below, that `scripts/install.sh --update` replaces each of those trees wholesale (`rsync -a --delete`, and the installer prints that warning itself), so the skill must be re-applied after an update or contributed upstream to survive one. |
+| no `implementation/knowledge/` — an **installed target** project | `<platform>/skills/<name>/SKILL.md` in **every** installed platform folder that exists: `.github/`, `.claude/`, `.gemini/`, `.opencode/`, `.pi/`, `.cline/` | Tell the user, in the approval step below, that `scripts/install.sh --update` replaces each of those trees wholesale (`rsync -a --delete`, and the installer prints that warning itself), so the skill must be re-applied after an update or contributed upstream to survive one. |
 
 This is **one rule with a precondition, not two acceptable output forms**: exactly one row applies to
 any given project, decided by whether `implementation/knowledge/skills/` exists.
@@ -47,10 +47,10 @@ Two reasons the path is not a free choice:
   that the per-platform folders are projections that must not be edited by hand.
   `implementation/scripts/sync.mjs` deletes each platform output directory before regenerating it,
   so a hand-written skill there is destroyed, never reaches the source tree or
-  `implementation/registry/`, and never appears in the other six platforms.
+  `implementation/registry/`, and never appears in the other five platforms.
 - **In an installed target, one platform folder is not enough.** `AGENTS.md` § Skill Workflow
-  requires agents to "check applicable skills in the active platform projection" and lists all seven
-  folders. A skill written to only one of them is invisible to any agent running on the other six.
+  requires agents to "check applicable skills in the active platform projection" and lists all six
+  folders. A skill written to only one of them is invisible to any agent running on the other five.
   Where a project installed a single platform, "every folder that exists" is that one folder.
 
 ### Generate the Skill File

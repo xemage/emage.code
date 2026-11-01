@@ -48,7 +48,7 @@ The implementation stream keeps the same roster while providing a schema-first r
 | `@integration-agent` | Wires third-party APIs and SDKs into a PoC quickly, documenting required environment variables and failure-mode notes for each integration. |
 | `@scaffolding-agent` | Creates a minimal, runnable project skeleton with basic dependency setup, avoiding overengineering and non-essential tooling for a PoC timeline. |
 | `@data-mockup-agent` | Generates realistic, deterministic synthetic demo data (seed scripts, fixtures, example payloads) when real production data is unavailable or inappropriate. |
-| `@evaluation-agent` | Determines whether a PoC actually validated its hypothesis, tying its Validated/Invalidated/Inconclusive verdict directly to observable evidence. |
+| `@evaluation-agent` | Determines whether a PoC actually validated its hypothesis, tying its Validated/Invalidated verdict directly to observable evidence. |
 | `@demo-agent` | Demo preparation & walkthroughs |
 | `@technical-debt-narrator` | Documents every PoC shortcut in a Technical Debt Scorecard with severity, remediation effort, and ownership, so production teams inherit an explicit backlog. |
 | `@poc-devops-engineer` | Sets up the minimal local-first run loop (clone, configure, run within minutes) for a PoC, adding containerization only if it speeds up adoption. |

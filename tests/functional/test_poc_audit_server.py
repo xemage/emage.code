@@ -2098,6 +2098,9 @@ class TextAndStructureTests(unittest.TestCase):
         self.assertEqual(entry["args"], ["-m", "implementation.runtime.security.poc_audit_server",
                                          "--allowed-root", "."])
         self.assertNotIn("env", entry)
+        # T690 (K-3, D-4 b): also generated for GitHub Copilot, started in the workspace folder
+        self.assertEqual(entry["extraPlatforms"], ["github"])
+        self.assertEqual(entry["cwd"], "workspace")
         self.assertIn("security-audit", data["servers"])  # the four-tool server is still there
 
 

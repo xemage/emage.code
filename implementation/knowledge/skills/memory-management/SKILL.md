@@ -40,7 +40,7 @@ A project that does not use this harness and maintains its own `AGENTS.md` by ha
 
 Tier 2 is content the project **authors**: a document under `docs/` that the project owns — an existing project document whose subject fits, or a new file. An architectural decision fits an ADR under `docs/decisions/` (`AGENTS.md` § Decision Log). Prefer a file the project created: a file the installer ships under `docs/` keeps local edits across `--update`, but a fresh `install.sh` run without `--update` overwrites it.
 
-Tier 2 is **not** content the harness **renders**. Never promote into the root `AGENTS.md` or `CLAUDE.md`, or anything under `.claude/`, `.cursor/`, `.gemini/`, `.github/`, `.opencode/`, `.pi/`, `.cline/` or `.clinerules/`, including the skill files there. A promotion written there is lost at the next update. Agents still *read* `AGENTS.md` for the harness's conventions (see § Memory Retrieval Strategy); they never write memory into it.
+Tier 2 is **not** content the harness **renders**. Never promote into the root `AGENTS.md` or `CLAUDE.md`, or anything under `.claude/`, `.gemini/`, `.github/`, `.opencode/`, `.pi/`, `.cline/` or `.clinerules/`, including the skill files there. A promotion written there is lost at the next update. Agents still *read* `AGENTS.md` for the harness's conventions (see § Memory Retrieval Strategy); they never write memory into it.
 
 **In the emage.code repository itself**, promote into the root `docs/`, not `implementation/docs/`, which ships to every installed project. If an entry belongs in the shipped conventions (`implementation/AGENTS.md`) or in a shipped skill under `implementation/knowledge/`, do not edit those while managing memory: promote it to `docs/` and propose a separate task for the knowledge-base change.
 

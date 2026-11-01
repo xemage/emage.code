@@ -11,7 +11,7 @@
 emage.code brings a **structured multi-agent development team** to your
 favourite AI assistant. Every project follows the same protocol:
 
-Latest release: v8.0.0
+Latest release: v9.0.0
 
 - **Plan → Approve → Execute** lifecycle, never silent execution
 - **DAG-based task management** with explicit dependencies
@@ -32,7 +32,7 @@ emage.code/
 │   ├── scripts/               ← sync, verify, check, packaging, registry
 │   ├── cookbooks/             ← managed-agent definitions
 │   ├── triggers/              ← trigger specs and examples
-│   └── .cursor/ … .pi/        ← generated platform outputs (do not edit by hand)
+│   └── .github/ … .pi/        ← generated platform outputs (do not edit by hand)
 ├── scripts/
 │   └── install.sh             ← one-command install into your project
 ├── docs/                      ← runtime workspace state + wiki sources
@@ -57,10 +57,11 @@ Use [`implementation/`](implementation/README.md) for all development work.
 | GitHub Copilot (VS Code) | `.github/` + `.vscode/mcp.json` | `.agent.md`, `.prompt.md`, `.instructions.md` |
 | Gemini CLI | `.gemini/` | `.md` (no `tools` field), `settings.json` with hooks |
 | Opencode | `.opencode/` | `.md` (object `tools`), `opencode.json` |
-| Cursor | `.cursor/` | `.mdc`, `applyTo` → `globs`, `mcp.json` |
 | Pi | `.pi/` | agents, prompts, instructions, skills (`.md`) |
 | Claude Code | `.claude/` + `.mcp.json` | `.md` (string `tools`), subagents + skills + rules |
 | Cline | `.clinerules/` (root) + `.cline/skills/` + `.cline/mcp.json` | `.md` rules (`paths` frontmatter) + skills; MCP config is a staging file, not auto-applied |
+
+Cursor support was removed in v9.0.0 (see the release notes).
 
 Adding a new platform = adding a `platforms/<name>.json` manifest under
 `implementation/`. Usually no script changes are required; add a new
@@ -76,12 +77,11 @@ Install the current release with the installer script:
 ```bash
 git clone https://gitlab.com/em-age/emage.code.git
 cd emage.code
-scripts/install.sh --target /path/to/your-project --platform cursor
+scripts/install.sh --target /path/to/your-project --platform claude-code
 ```
 
 | Platform | `--platform` value |
 |----------|-------------------|
-| Cursor | `cursor` |
 | GitHub Copilot (VS Code) | `github` |
 | Gemini CLI | `gemini` |
 | Opencode | `opencode` |
@@ -90,29 +90,36 @@ scripts/install.sh --target /path/to/your-project --platform cursor
 | Cline | `cline` |
 | All platforms | `all` |
 
-Makefile shortcut: `make install TARGET=/path/to/your-project PLATFORM=cursor`
+Makefile shortcut: `make install TARGET=/path/to/your-project PLATFORM=claude-code`
 
 **Update an existing install:**
 
 ```bash
-scripts/install.sh --target /path/to/your-project --platform cursor --update
+scripts/install.sh --target /path/to/your-project --platform claude-code --update
 ```
 
-On `--update`, the single-file MCP/settings configs for every platform —
-`.vscode/mcp.json` (`github`), `.mcp.json` (`claude-code`), `.cursor/mcp.json`
-(`cursor`), `.gemini/settings.json` (`gemini`), `.opencode/opencode.json`
-(`opencode`), `.pi/mcp.json` (`pi`), and `.cline/mcp.json` (`cline`) — are
-merged, not overwritten: any existing top-level key the generator doesn't
+An existing single-file MCP/settings config of a selected platform —
+`.vscode/mcp.json` (`github`), `.mcp.json` (`claude-code`),
+`.gemini/settings.json` (`gemini`), `.opencode/opencode.json`
+(`opencode`), `.pi/mcp.json` (`pi`), or `.cline/mcp.json` (`cline`) — is
+merged, not overwritten, in every mode: on `--update`, on `--projections-only`
+and on a plain install over an existing config. Any existing top-level key the generator doesn't
 know about (e.g. a hand-added MCP server entry, or a top-level `inputs`
 prompt block) is preserved, while every generator-known key is refreshed to
 the current generated content, recursing into nested objects (so hand-added
 fields inside a known server's config are preserved too). See
-`scripts/merge-mcp-json.py` for the exact algorithm. The rest of each
-platform's directory tree (`.github/`, `.cursor/`, `.gemini/`, `.opencode/`,
+`scripts/merge-mcp-json.py` for the exact algorithm. A config that is not valid
+JSON, or that cannot be replaced, is refused up front, naming the file, before
+anything is written; the installer prints a one-line note on stderr for each
+kind of user content the merge replaced or kept. The rest of each
+platform's directory tree (`.github/`, `.gemini/`, `.opencode/`,
 `.pi/`, `.claude/`, `.cline/`, `.clinerules/`) is replaced on `--update`, with
 files that no longer exist upstream deleted: hand-written files inside those
 trees are lost, so keep project-specific content in `docs/`. Only each
-platform's one MCP/settings file gets the merge treatment above.
+platform's one MCP/settings file gets the merge treatment above. The temporary
+files and backups that the installer can leave next to your files, and every
+note it prints, are listed in the wiki:
+[Quick Start](docs/wiki/quick-start.md#files-and-notes-the-installer-produces).
 
 **Client-owned files are spared.** `--update` does not write, merge or delete
 the project-local files that the harness never ships:
@@ -141,11 +148,11 @@ scripts/install.sh --target /path/to/your-project --platform all --projections-o
 ```
 
 It refreshes the platform trees (with the same spared files as `--update`),
-their MCP/settings configs (merged, as `--update` does), `AGENTS.md`, and
+their MCP/settings configs (merged, as every mode does), `AGENTS.md`, and
 `CLAUDE.md` when Claude Code is among the selected platforms. It never writes or
 deletes anything under the target's `docs/` (the task ledgers included) or
 `implementation/`, so it does not install the MCP server runtime source and
-prints no dependency notice. It requires an existing install (`AGENTS.md` in the
+prints no dependency notice (it does print the Playwright browser note). It requires an existing install (`AGENTS.md` in the
 target) and is mutually exclusive with `--update`. At the emage.code repository
 root it is the only permitted mode, and only with `--platform all`; there,
 `--update` is refused, and any `--target` inside the source repository is
@@ -156,21 +163,26 @@ refused in every mode.
 The `poc-security-audit` MCP server backs the PoC security review. It exposes
 exactly two tools, `scan_secrets` and `ref_containment`; a clean result means
 "no match for the fixed rule set at the scanned refs", not "no secrets". Its
-config is generated for Claude Code, Cursor, Gemini CLI, Opencode, Pi and Cline;
-GitHub Copilot's `.vscode/mcp.json` does not carry it, so the scan has no server
-to call there, and the agent's rule is that a scan which did not complete is
-`FAIL`, never `PASS`. Setup, once per project, after a
+config is generated for Claude Code, Gemini CLI, Opencode, Pi, Cline and
+GitHub Copilot (`.vscode/mcp.json`, with `"cwd": "${workspaceFolder}"`). The
+agent's rule is that a scan which did not complete is `FAIL`, never `PASS`.
+Setup, once per project, after a
 full install or `--update` (not `--projections-only`):
 
 1. Install the Python dependency (`mcp==2.2.0`) into a virtual environment, from
    the project root; the installer prints this command:
    `python3 -m venv .venv-mcp && source .venv-mcp/bin/activate && pip install -r implementation/runtime/security/requirements-mcp-server.txt`.
    The configs launch plain `python3`, so start your assistant from an
-   environment where that `python3` can import `mcp`.
+   environment where that `python3` can import `mcp`. VS Code (GitHub Copilot)
+   starts the server from its own process environment, so start VS Code from a
+   shell where the virtual environment is active (`code .`), or make the
+   `python3` on its `PATH` able to import `mcp`.
 2. Make sure `git` 2.40 or newer is on `PATH`. An older git makes every call
    fail closed as `git_failed`.
 3. Launch the assistant from the project root: the server is started as
    `python3 -m implementation.runtime.security.poc_audit_server --allowed-root .`.
+   In VS Code (GitHub Copilot) the entry sets `"cwd": "${workspaceFolder}"`, so
+   open the project root as the workspace folder.
 4. Claude Code only: add the allow rule to your own `.claude/settings.json`
    (the installer never writes it):
 
@@ -184,7 +196,8 @@ Details, tool arguments and limits: [MCP Servers](docs/wiki/mcp-servers.md).
 
 Each platform's MCP file also carries a `<mcpfile>.provenance.json` sidecar
 recording which server keys the generator owned at last generation. On
-`--update`, if a prior sidecar exists, a dest-only key is pruned automatically
+a merge (`--update`, `--projections-only` or a plain install over an existing
+config), if a prior sidecar exists, a dest-only key is pruned automatically
 when it was previously generator-owned and the current source no longer emits
 it — a currently-active generator-owned key is never pruned, regardless of
 sidecar content, and a key with no sidecar history at all (e.g. a genuinely
@@ -206,13 +219,13 @@ already-reviewed retirement gap on an already-installed project with no prior
 history — it is opt-in only, never invoked automatically by `--update`, and
 prunes exactly the named keys and nothing else.
 
-Per-release install steps live in [`docs/releases/v8.0.0.md`](docs/releases/v8.0.0.md)
+Per-release install steps live in [`docs/releases/v9.0.0.md`](docs/releases/v9.0.0.md)
 and are embedded in [GitLab Releases](https://gitlab.com/em-age/emage.code/-/releases).
 
 ## Quick start
 
 After install, set the MCP env vars the generated `mcp.json` references
-(`GITLAB_PERSONAL_ACCESS_TOKEN`, `GITLAB_API_URL`, `BRAVE_API_KEY`,
+(`GITLAB_PERSONAL_ACCESS_TOKEN_FILE` or `GITLAB_PERSONAL_ACCESS_TOKEN`, `GITLAB_API_URL`, `BRAVE_API_KEY`,
 `HINDSIGHT_MCP_URL`, and for the extended servers `CWSO_MCP_URL`,
 `CWSO_BEARER_TOKEN`, `CWSO_ORIGIN`, `TOOLRADAR_API_KEY`; full table in
 [MCP Servers](docs/wiki/mcp-servers.md)), then in your AI assistant:
@@ -349,7 +362,7 @@ BENCH_STRESS=1 python3 tests/run.py --suite performance -v
 
 ## Contributing
 
-1. Edit canonical knowledge under [`implementation/knowledge/`](implementation/knowledge/) — **never** the generated `.github/`, `.gemini/`, `.opencode/`, `.cursor/`, `.pi/` folders.
+1. Edit canonical knowledge under [`implementation/knowledge/`](implementation/knowledge/) — **never** the generated `.github/`, `.gemini/`, `.opencode/`, `.pi/`, `.claude/`, `.cline/`, `.clinerules/` folders.
 2. Run the sync engine from the repo root:
    ```bash
    make sync

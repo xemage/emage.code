@@ -18,6 +18,8 @@ version numbers by design — a release note for v6.0.1 is supposed to say v6.0.
     docs/tasks/
     docs/plans/
     docs/artifacts/
+    tests/golden/
+    docs/decisions/
     CHANGELOG.md
 
 A bare `vX.Y.Z` string is only treated as a "current state" claim (and therefore
@@ -63,6 +65,10 @@ VERSION_RE = re.compile(r"\bv(\d+)\.(\d+)\.(\d+)(?:-[A-Za-z0-9.]+)?\b")
 # four exclusions. tests/golden/ was added by T642 (docs/tasks/task-T642.md) on the
 # user's 2026-10-15 decision "Exclude tests/golden/ (Recommended)": golden fixtures
 # are frozen evidence by design, so their old version strings are not current-state claims.
+# docs/decisions/ was added by T704 (docs/tasks/task-T704.md) on the user's 2026-11-01
+# decision "Exclude docs/decisions/ (Recommended)" (D-T700-1, release-v9-audit-v1.md):
+# accepted ADRs are immutable per AGENTS.md (superseded, never edited), so a path such as
+# docs/releases/v8.0.0.md in ADR-010 is a dated record, not a current-state claim.
 EXCLUDED_PREFIXES = (
     "docs/releases/",
     "docs/checkpoints/",
@@ -71,6 +77,7 @@ EXCLUDED_PREFIXES = (
     "docs/plans/",
     "docs/artifacts/",
     "tests/golden/",
+    "docs/decisions/",
     "CHANGELOG.md",
 )
 

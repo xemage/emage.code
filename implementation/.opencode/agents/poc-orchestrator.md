@@ -2,6 +2,7 @@
 name: "PoC Orchestrator"
 description: "Use when starting a proof-of-concept project. Validates a hypothesis quickly by coordinating PoC specialists with explicit debt tracking and production handoff artifacts."
 tools:
+  gitlab_*: false
   read: true
   search: true
   edit: true
@@ -9,9 +10,29 @@ tools:
   agent: true
   web: true
   todo: true
-  gitlab_*: true
+  gitlab_create_merge_request: true
+  gitlab_get_merge_request: true
+  gitlab_list_merge_requests: true
+  gitlab_get_merge_request_approval_state: true
+  gitlab_list_merge_request_pipelines: true
+  gitlab_get_pipeline: true
+  gitlab_list_pipeline_jobs: true
+  gitlab_discover_tools: true
   memory_*: true
   sequential-thinking_*: true
+  playwright_*: false
+  playwright_browser_run_code_unsafe: false
+  playwright_browser_evaluate: false
+  playwright_browser_file_upload: false
+  playwright_browser_drag: false
+  playwright_browser_drop: false
+  playwright_browser_network_request: false
+  context-retriever_*: false
+  security-audit_*: false
+  poc-security-audit_*: false
+  filesystem_*: false
+  git_*: false
+  supabase_*: false
 agents: [technology-scout, feasibility-agent, scaffolding-agent, integration-agent, data-mockup-agent, demo-agent, evaluation-agent, technical-debt-narrator, poc-qa-engineer, poc-security-engineer, poc-technical-writer, poc-devops-engineer, backend-developer, frontend-developer]
 user-invocable: true
 ---

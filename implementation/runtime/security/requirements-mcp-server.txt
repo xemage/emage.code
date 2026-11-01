@@ -21,3 +21,10 @@
 # surface this session; not independently re-verified against a different version here.
 
 mcp==2.2.0
+# T676 (SEC-T646-04): `mcp==2.2.0` itself only requires `httpx2>=2.5.0`, and httpx2 before 2.12.0
+# is affected by GHSA-8xx6-hgc6-gc2m. This floor keeps a plain `pip install -r` off the
+# vulnerable range; the exact, hash-verified set is in `requirements-mcp-server.lock.txt` in this
+# directory (`pip install --require-hashes -r requirements-mcp-server.lock.txt`). Regenerate the
+# lock with `uv pip compile requirements-mcp-server.txt --universal --python-version 3.10
+# --generate-hashes --exclude-newer <UTC timestamp> -o requirements-mcp-server.lock.txt` (docs/wiki/mcp-pin-bump-checklist.md).
+httpx2>=2.12.0

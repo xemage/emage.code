@@ -127,10 +127,10 @@ The release gate is the final validation before deployment. All items must be ch
 
 ### 4. Create Release Artifact
 
-The release notes are one document per release, `docs/releases/v<VERSION>.md`: the file the `orchestrator` agent § Release Workflow Preflights publishes, and the release notes document into which `/prepare-release` step 7 writes the `## RELEASE VERDICT` section. Add the sections below, from `## Summary` on, to that document. When the release is prepared with `/prepare-release`, that command's steps govern the document, and these sections accompany them: its Breaking Changes group is the `## Breaking changes` section, and `## Changelog` holds its Features, Fixes and Internal groups (step 2) as `###` headings, not the six groups of § 2. The document's first line is `# Release v<VERSION>`, not the title in the block below, and it also carries the `## Install` and `## Highlights` sections that `scripts/verify-release-docs.py` requires (`docs/releases/_template.md` is the scaffold). The `Release` line under `## Gate Verdicts` carries the same value as the `**Status**` of the `## RELEASE VERDICT` section.
+The release notes are one document per release, `docs/releases/v<VERSION>.md`: the file the `orchestrator` agent § Release Workflow Preflights publishes, and the release notes document into which `/prepare-release` step 7 writes the `## RELEASE VERDICT` section. Add the sections below, from `## Summary` on, to that document. When the release is prepared with `/prepare-release`, that command's steps govern the document, and these sections accompany them: its Breaking Changes group is the `## Breaking changes` section, and `## Changelog` holds its Features, Fixes and Internal groups (step 2) as `###` headings, not the six groups of § 2. The document's first line is `# Release v<VERSION>`, the title in the block below, and it also carries the `## Install` and `## Highlights` sections that `scripts/verify-release-docs.py` requires (`docs/releases/_template.md` is the scaffold). The `Release` line under `## Gate Verdicts` carries the same value as the `**Status**` of the `## RELEASE VERDICT` section.
 
 ```markdown
-# Release Notes — v<VERSION>
+# Release v<VERSION>
 
 **Release Date:** YYYY-MM-DD
 **Release Manager:** <agent-name>
@@ -189,8 +189,8 @@ For critical issues discovered after a release:
    └── Create release artifact
 
 6. MERGE, TAG, DEPLOY
-   ├── Merge the hotfix branch into develop, then into main (merge requests), so the fix is included in future releases
-   ├── Tag the hotfix branch tip, after both merges
+   ├── The release manager opens the merge requests of the hotfix branch to develop and to main; the top-level session merges them, develop first and main second (no squash), after its own verification, so the fix is included in future releases
+   ├── The top-level session tags the hotfix branch tip, after both merges, with the user's approval
    └── Deploy
 ```
 
@@ -232,5 +232,5 @@ Merged back to main
 - Hotfixes must be minimal — fix the issue and nothing else.
 - Always merge hotfixes back to main to prevent regression in future releases.
 - Keep release notes user-facing. Internal changes go in the "Internal" changelog section.
-- Tag releases in git: `git tag -a v<VERSION> -m "Release v<VERSION>"`.
-- The release manager is responsible for the full release workflow, including gate coordination.
+- The top-level session tags releases in git, with the user's approval and only after both merges, on the release branch tip: `git tag -a v<VERSION> -m "Release v<VERSION>"`.
+- The release manager prepares and verifies the release workflow, including gate coordination; the top-level session merges, tags and publishes with the user's approval.

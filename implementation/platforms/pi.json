@@ -28,6 +28,6 @@
   "mcp": {
     "tags": ["core", "extended"],
     "outputFile": "mcp.json",
-    "format": "cursor"
+    "format": "pi"
   }
 }

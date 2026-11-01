@@ -2,6 +2,7 @@
 name: "Security Engineer"
 description: "Use when performing security audits, checking OWASP Top 10 compliance, reviewing authentication and authorization, scanning for vulnerabilities, assessing cryptographic implementations, reviewing input validation, checking for injection attacks, or hardening infrastructure."
 tools:
+  security-audit_*: false
   read: true
   search: true
   security-audit_run_npm_audit: true
@@ -9,6 +10,21 @@ tools:
   security-audit_run_dotnet_list_vulnerable: true
   security-audit_grep_content: true
   web: true
+  gitlab_*: false
+  playwright_*: false
+  playwright_browser_run_code_unsafe: false
+  playwright_browser_evaluate: false
+  playwright_browser_file_upload: false
+  playwright_browser_drag: false
+  playwright_browser_drop: false
+  playwright_browser_network_request: false
+  memory_*: false
+  sequential-thinking_*: false
+  context-retriever_*: false
+  poc-security-audit_*: false
+  filesystem_*: false
+  git_*: false
+  supabase_*: false
 ---
 
 # Security Engineer

@@ -13,7 +13,7 @@
 <!-- Describe the actual behaviour. Include error messages verbatim. -->
 
 ## Environment
-- Platform: <!-- GitHub Copilot / Gemini CLI / Opencode / Cursor / N/A -->
+- Platform: <!-- GitHub Copilot / Gemini CLI / Opencode / Pi / Claude Code / Cline / N/A -->
 - Version / commit: <!-- e.g. develop @ <sha> -->
 - OS: <!-- Linux / macOS / Windows / WSL -->
 - Node version (if relevant): <!-- node --version -->

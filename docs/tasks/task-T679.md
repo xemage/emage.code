@@ -1,0 +1,48 @@
+# T679 — Cursor removal step S3: root refresh (ADR-010)
+
+**ID:** T679
+**Owner:** orchestrator
+**Status:** done
+**Priority:** P1
+**Tier:** standard
+**Depends on:** T678
+**Affects:** —
+**Created:** 2026-10-16
+**Completed:** 2026-10-23
+**Based on:**
+- `docs/plans/plan-123-post-release-follow-ups.md` (Addendum of 2026-10-16: T679)
+- `docs/decisions/ADR-010-drop-cursor-platform-support.md` (accepted 2026-10-16), `docs/artifacts/cursor-removal-inventory-v1.md`
+- The user's decisions of 2026-10-16 (AskUserQuestion, verbatim option labels): "v9.0.0 (MAJOR), no deprecation release (Recommended)", "B: error plus read-only notice, never delete (Recommended)", "Yes, delete both trees (Recommended)", "Accept all four defaults (Recommended)"
+
+## 1. What and why
+
+Step S3 of ADR-010: `scripts/install.sh --target <clean worktree> --platform all --projections-only` on the tip of T678 (touch the sources' mtimes first in a fresh worktree: rsync's quick check skips equal-size files), empty the drift list in `tests/_baselines/root-install-drift.json` and add the 'Emptied' line. Needs the user's explicit approval at that step. Acceptance: `python3 -m tests.functional.test_root_install_parity --print-drift` prints `[]`; the suite passes; `git status` shows no `.cursor` path; no file under `docs/` or `implementation/` changed by the refresh.
+
+## 2. Output
+
+As stated in section 1.
+
+## 3. Constraints
+
+- Work in your own worktree/branch; one Conventional Commit ending with `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`. Do not push; do not merge; never create, push or delete a tag or release; never use or print `WIKI_TOKEN`; do not edit `docs/tasks/active-tasks.md`, `completed-tasks.md` or any brief's Status line. Agents without a shell (solution-architect, technical-writer) write their artifact text for the orchestrator to commit.
+- Gates for any change under `implementation/`, `scripts/` or `tests/`: `node implementation/scripts/sync.mjs --root implementation --check`, `python3 implementation/scripts/generate-registry.py --check`, `python3 implementation/scripts/check-maturity.py --root implementation`, `python3 scripts/scorecard.py --check`, `python3 docs/tasks/validate-tasks.py`, the evaluator hash (`check_evaluator_hash()`, no drift unless the brief says otherwise), `python3 -m unittest tests.functional.test_golden_held_out_isolation`, and the full suite `python3 tests/run.py > file` (summary lines). Declare root drift in `tests/_baselines/root-install-drift.json` (sorted `python3 -m tests.functional.test_root_install_parity --print-drift` paths plus one comment line starting `Declared <date> by <task> (`); do NOT refresh the root install.
+- Never open `tests/golden/held-out/`; never write a held-out case id anywhere; only T668 may modify `tests/golden/**` (grant G-2). No `.env*` or credential files (the primary checkout has an untracked local `.env` that must not be read or grepped); do not read the user's local `.claude/settings*.json` or `.vscode/mcp.json`. Mark anything you did not verify **(unverified)**.
+
+## 3a. Carried from the T678 review
+
+- SEC-T678-03: the v9.0.0 migration item must say that a leftover `.cursor/` in an adopter project is no longer updated and that its agents are not tool-restricted (every agent can call every tool of every configured server there).
+
+- T672 (v9.0.0 migration item, SEC-T672-06): a plain install over an existing config now MERGES (as `--update` did) instead of overwriting; when there is no provenance sidecar the installer prints `merge-mcp-json: note: <dest>: there is no provenance sidecar at <old-sidecar>, so no retired generator entry could be pruned; kept your server(s) a, b, which the generated config does not contain. If one is a retired generator entry, remove it by hand or run scripts/merge-mcp-json.py with --force-prune-keys <name>.`; new on-disk names: `.<name>.<random>.tmp`, `<ledger>.bak`, `<tree>.emage-new.<pid>` / `.emage-old.<pid>`.
+
+- T676 (v9.0.0 migration item, BREAKING; user decision 2026-10-22, free-text answer "Remove GitHub MCP server" to the AskUserQuestion on the GitHub MCP hardening): the shipped `github` MCP server entry (the `ghcr.io/github/github-mcp-server` container, `GITHUB_PERSONAL_ACCESS_TOKEN`) is removed from `servers.yaml` and from every generated config. Adopters who used it must copy the entry from their old config under their own server name (for example `github-mine`) BEFORE `install.sh --update`, because the update prunes the generator-owned name `github` through the provenance sidecar (the existing note applies: without a sidecar nothing is pruned and the entry stays; `scripts/merge-mcp-json.py --force-prune-keys github` removes it by hand). The harness ships no GitHub tooling any more; the user's own session keeps whatever the user configured. Also tell them that `docker` is no longer a launcher of any shipped server. (T685, SEC-T676-13) Add these two sentences to the migration item: "A GitHub server that you keep under your own name is outside every generated denial on Opencode and Gemini CLI (those denials name the generated servers only), so give it a fine-grained, read-only token. If you no longer use a GitHub server, revoke or unset `GITHUB_PERSONAL_ACCESS_TOKEN`." Documented in `docs/wiki/mcp-servers.md` ("Migrating an existing install", item 8) and `implementation/PREREQUISITES.md`; no release document exists yet, so mention it here only.
+- T680 (v9.0.0 migration items, Pi): `.pi/mcp.json` placeholders change from `${env:X}` to `${X}` for every server (Pi 0.99.0 to 1.4.0 keeps `${env:X}` as literal text); the optional GitLab token variables are omitted from the Pi entry (they come from Pi\'s environment); `hindsight` and `cwso` are no longer generated for Pi (Pi 1.x rejects a templated url) and the update prunes them from `.pi/mcp.json` (copy a hand-edited entry to another name first; add your own Pi entry with a literal URL); a literal token pasted into a Pi config is kept and the installer prints a WARNING naming the key (remove it and revoke the token); the merge drops `${env:` placeholder keys that the generator no longer ships (a note names them).
+
+- SEC-T662-01 (MEDIUM, open until the v9.0.0 release; owner release-manager with technical-writer): `docs/releases/v9.0.0.md` must carry the Cursor Migration Guide item of ADR-010 Appendix A: the M-9 steps, the v5.0.0 to v6.9.0 keys (`e2b`, `redis`, `figma`, `notion` and the `filesystem` entry), the statement that `--force-prune-keys` is only available from the `v8.0.0` tag, and the Known Issue "a Cursor install left in a project is frozen and is not pruned"; the release gate must check that the pointer target (`docs/releases/v9.0.0.md`) exists. It must be closed before the v9.0.0 tag (`docs/artifacts/tracked-debt-register-v2.md`, decision D-9).
+
+## 4. Acceptance criteria
+
+As stated in section 1.
+
+## 5. Blocker protocol
+
+Report each blocker with its type (`technical` | `dependency` | `unclear_requirements` | `external`) and severity (`critical` | `major` | `minor`).

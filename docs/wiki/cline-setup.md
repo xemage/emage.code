@@ -31,7 +31,7 @@ required to get workspace conventions loaded.
 
 **Scope note — subagents and slash commands are not included in this release.**
 emage.code ships 28 specialist subagents and 19 slash commands to other
-platforms (Claude Code, Cursor, etc.), but **Cline support in this release
+platforms (Claude Code, Opencode, etc.), but **Cline support in this release
 covers only rules, skills, and the MCP staging file**. As of this writing, no
 confirmed on-disk format for Cline-native subagents (`.cline/agents/`) or
 slash commands exists in Cline's documentation, and emage.code does not invent
@@ -106,16 +106,23 @@ After merging in the `gitlab` entry from the generated `.cline/mcp.json`:
       "args": ["-y", "@zereight/mcp-gitlab@2.2.5"],
       "env": {
         "GITLAB_PERSONAL_ACCESS_TOKEN": "${env:GITLAB_PERSONAL_ACCESS_TOKEN}",
-        "GITLAB_API_URL": "${env:GITLAB_API_URL}"
+        "GITLAB_PERSONAL_ACCESS_TOKEN_FILE": "${env:GITLAB_PERSONAL_ACCESS_TOKEN_FILE}",
+        "GITLAB_API_URL": "${env:GITLAB_API_URL}",
+        "GITLAB_PERMISSION_MODE": "modify"
       }
     }
   }
 }
 ```
 
-Set the referenced environment variables (`GITLAB_PERSONAL_ACCESS_TOKEN`,
-`BRAVE_API_KEY`, …) before starting Cline — see [MCP Servers](mcp-servers) for
-the full env-var contract. Never commit real values for these variables.
+Set the referenced environment variables (`GITLAB_PERSONAL_ACCESS_TOKEN_FILE`
+or `GITLAB_PERSONAL_ACCESS_TOKEN`, `BRAVE_API_KEY`, …) before starting Cline —
+see [MCP Servers](mcp-servers) for the full env-var contract. Never commit real
+values for these variables. For the GitLab token, Cline's VS Code extension
+leaves an unset `${env:VAR}` reference as literal text (source read, not run;
+the CLI is unverified), and a non-empty `GITLAB_PERSONAL_ACCESS_TOKEN` wins over
+the token file: if you use the file, also set `GITLAB_PERSONAL_ACCESS_TOKEN` to
+an empty value. Details: [GitLab token](mcp-servers#gitlab-token).
 
 ## Troubleshooting: rules not loading
 

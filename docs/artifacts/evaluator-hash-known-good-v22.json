@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "algorithm": "sha256",
+  "digests": {
+    "tests_golden": "e0b1413328de798e6224f3a855df708492a42c58ff1069c163194b1115629731",
+    "scripts_scorecard": "45346c178c7f6d92101130d898f55dfaad908aa7e5ae669ce1faac99a51192d6"
+  },
+  "computed_from_commit": "0727329a30941693b9e41b32bc17540b6123378f",
+  "computed_at": "2026-10-16T09:14:44Z",
+  "protected_paths": {
+    "tests_golden": "tests/golden",
+    "scripts_scorecard": "scripts/scorecard.py"
+  },
+  "supersedes": "evaluator-hash-known-good-v21.json",
+  "reason": "T668 (plan-123) applied grant G-2 of docs/artifacts/promotion-and-golden-realignment-plan-v1.md \u00a76.4 as drafted in docs/plans/plan-123-post-release-follow-ups.md (protected-paths-v1.md \u00a75). The user approved baseline v22 on 2026-10-16 (\"Regarding baseline v22: approving it\") and approved plan-123, which carries grant G-2, on 2026-10-16 (\"Approve as written (Recommended)\"). Protected golden files changed, and only these: prepare-release-real-verdict-missing (case.yaml status to expected_pass with the two known_failing keys dropped, brief.md history, fixture/docs/releases/v7.0.1.md deleted and fixture/docs/releases/v8.0.0.md added as a byte-identical copy of the published docs/releases/v8.0.0.md; expect.py unchanged) and skillify-skill-file-template-drift (case.yaml status to expected_pass with the two known_failing keys dropped, brief.md history, the old fixture .github/skills/verification-before-completion/SKILL.md deleted and fixture/implementation/knowledge/skills/gitlab-api-push-fallback/SKILL.md added as a byte-identical copy of the skill produced by the real /skillify run of T627; expect.py unchanged). Case-result transitions: both cases False to True; scorecard 34 cases, 28 pass becomes 30 pass, 0 regressions, 4 known_failing (all capability_gap). scripts_scorecard is unchanged and byte-identical to v21 and to every version back to v5. Verification: the orchestrator confirmed the diff touches only the authorized files (no expect.py, no held-out path), cmp-identical fixtures, both check() results True and the scorecard check; the full suite showed exactly the two evaluator-hash failures; tests_golden was computed through evaluator_hash.py and independently by a separate script in a second fresh worktree at commit 0727329 (equal); held-out isolation passes. The implementing agent did not refresh the baseline.",
+  "update_policy": "Manual only, never automatic. Any future legitimate update goes through the exception path in docs/artifacts/protected-paths-v1.md \u00a75 and produces evaluator-hash-known-good-v23.json. This file (v22) is never edited in place, and v1 through v21 are kept unmodified as the historical record. See docs/artifacts/evaluator-hash-check-v1.md for the full policy."
+}

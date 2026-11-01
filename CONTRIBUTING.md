@@ -17,7 +17,7 @@ By participating you agree to follow the collaboration and review expectations d
 |------------------|--------|--------|
 | Update an agent, skill, command, instruction, or MCP server | `implementation/knowledge/**` | re-run sync (see "Working with implementation") |
 | Update workspace conventions | `AGENTS.md` (root) and `implementation/AGENTS.md` | — |
-| **Never** edit by hand | `.github/`, `.gemini/`, `.opencode/`, `.cursor/`, `.pi/`, `.claude/` (generated under `implementation/`) | these are generated |
+| **Never** edit by hand | `.github/`, `.gemini/`, `.opencode/`, `.pi/`, `.claude/`, `.cline/`, `.clinerules/` (generated under `implementation/`) | these are generated |
 
 ## Workflow
 
@@ -65,8 +65,8 @@ Refs #<issue>
 
 ## Sync engine — required before every commit
 
-The platform folders (`.github/`, `.gemini/`, `.opencode/`, `.cursor/`, `.pi/`,
-`.claude/`) are **generated**. CI fails if they drift from `knowledge/`.
+The platform folders (`.github/`, `.gemini/`, `.opencode/`, `.pi/`,
+`.claude/`, `.cline/`, `.clinerules/`) are **generated**. CI fails if they drift from `knowledge/`.
 
 From the repository root:
 
@@ -113,7 +113,7 @@ on merge.
 
 ## Adding a new platform
 
-1. Create `implementation/platforms/<name>.json` (use `cursor.json` as a template)
+1. Create `implementation/platforms/<name>.json` (use an existing manifest such as `claude-code.json` as a template)
 2. Run `make sync`
 3. Verify the generated `<name>/` folder
 4. Add a row to the README "Supported platforms" table
@@ -135,8 +135,10 @@ requires `"httpUrl"` instead of `"url"` (it reserves `"url"` for the legacy SSE
 transport), and Cline requires `"type": "streamableHttp"`, not `"http"` — three
 platforms, three different requirements, none discoverable by analogy to
 another platform already wired up. Never assume a new platform's remote-server
-shape by copying a sibling platform's `format` branch verbatim (as `pi.json`
-currently does with `cursor`'s) without checking that platform's *own* current
+shape by copying a sibling platform's `format` branch verbatim (a `format`
+value that is named after one platform but silently reused by another is
+exactly that mistake, which is why each `format` value now names its own
+platform, as `pi.json` does with `"pi"`) without checking that platform's *own* current
 official MCP docs for the `context7`/`hf-mcp-server` remote-transport case
 specifically — training-data memory and cross-platform analogy are exactly
 what caused this drift in the first place. See
@@ -210,6 +212,17 @@ The project uses **Semantic Versioning** (`vMAJOR.MINOR.PATCH`) and
    - Regenerates [`CHANGELOG.md`](CHANGELOG.md) as a job artifact (not committed) from Conventional Commits since the previous tag, merge commits excluded (full git history; `GIT_DEPTH: 0` on release job)
    - Creates the [GitLab Release](https://gitlab.com/em-age/emage.code/-/releases)
 
+   The `release-docs-gate` fails when the release document's Gate Verdicts or RELEASE VERDICT section
+   still holds `pending`, `YYYY-MM-DD` or another template placeholder (fill every row and field before
+   the tag). Since T686 the `release` job authenticates with the GitLab job token: it reads
+   `CI_JOB_TOKEN` through `--token-env CI_JOB_TOKEN --token-header JOB-TOKEN`, so the value is never
+   in argv, is sent only in the `JOB-TOKEN` header (the script accepts only `PRIVATE-TOKEN` and
+   `JOB-TOKEN` as header names, and never follows a redirect), and the API host is pinned to
+   `CI_SERVER_HOST`. The `git` and `apk` child processes get an allowlisted environment, and no
+   variable whose value contains the job token is passed to either of them, whatever the variable is
+   called (the same token also appears as `CI_REGISTRY_PASSWORD` and inside `CI_REPOSITORY_URL`). The job no longer uses
+   `WIKI_TOKEN`; see "Release token and permissions" below.
+
 If you must manually create or repair a GitLab release entry, always source notes from the release brief file:
 
 ```bash
@@ -217,6 +230,52 @@ glab release create vX.Y.Z --ref vX.Y.Z --name vX.Y.Z -F docs/releases/vX.Y.Z.md
 ```
 
 Do not use ad-hoc inline `--notes`, as that can drift from `docs/releases/vX.Y.Z.md`.
+
+### Release token and permissions
+
+The tag pipeline creates the GitLab Release with the job token of the user who pushed the tag
+(T686; `docs/artifacts/security-review-t685-supply-chain-residuals-v1.md`, the `WIKI_TOKEN` section).
+A job token acts with the permissions of that user, so:
+
+- The pushing user needs at least the **Developer role** on the project and the permission to
+  create the tag (GitLab's Releases API requires the Developer role to create or update a release).
+  That role may be higher than the role the old `WIKI_TOKEN` carried: the release now acts with the
+  pusher's role, not with the token's.
+- Protected `v*` tags should be **restricted to Maintainers** ("Allowed to create"). Whoever can push
+  a release tag runs the tagged commit's scripts in the release job, with the job token of that
+  user in its environment. Tag protection limits who runs the release job; it does **not** limit
+  who holds a Releases-capable token: every job of every pipeline has a job token, so any Developer
+  job holds one. The real controls are the protected `v*` tags (Maintainers) and GitLab's job token
+  permission and allowlist settings (on newer GitLab versions, fine-grained job token permissions).
+- `WIKI_TOKEN` is used **only by the `wiki-sync` job** (the Wiki API does not accept job tokens). It
+  must be a **protected and masked** CI/CD variable holding a token with the minimum role that can
+  edit the wiki (typically Developer) and the `api` scope that wiki pages need. The release job does
+  not use it; its `git` and `apk` child processes also never see it.
+- What the child-process filter does, exactly: `git` and `apk` get only allowlisted variable names
+  (`PATH`, `HOME`, locale, temp directory, proxy and CA-bundle variables, and the few `GIT_*` names
+  git needs), and no variable whose value contains the job token, `WIKI_TOKEN` or the token that was
+  passed is handed to either of them. It does not hide the token from the script itself, from the
+  runner's own `.git/config` (which holds the clone credential) or from other jobs.
+- Keep the manual fallback above (`glab release create ...`) until a real tag pipeline has confirmed
+  the job token. If the `release` job fails with a 401 or 403 from the Releases API (for example
+  because a job token permission or allowlist setting denies it), create the release with the
+  fallback and report the status code in the release record.
+- Not changed by T686 and not checked by any agent: the GitLab settings themselves (tag protection,
+  the variable flags, the token's role and scope, the job token permissions) belong to the user.
+- **(unverified)** Whether job tokens work in tag pipelines on protected tags in this GitLab
+  instance, whether the Releases API accepts the job token here (the GitLab documentation says it
+  does, read 2026-10-22), whether protected tags also restrict release create, update and delete,
+  and whether `CI_JOB_TOKEN` is masked in job logs.
+
+First-tag rehearsal checklist (the user runs it on the first real tag pipeline):
+
+- [ ] The `release` job succeeded, or failed with a status code you wrote down (then use the fallback).
+- [ ] Search the whole job log of the `release` job and of `release-docs-gate` for the job token value
+      (it is not printed by the script, and masking of `CI_JOB_TOKEN` in job logs is unverified).
+- [ ] The GitLab Release shows the text of `docs/releases/vX.Y.Z.md`.
+- [ ] `git fetch` in the `release` job worked with the allowlisted environment (the runner's clone
+      credential lives in `.git/config`); if it did not, report the log line, do not widen the allowlist
+      to the job token.
 
 ### Drift detection
 
@@ -227,11 +286,27 @@ releases separate them.
 
 - **Grace window:** `main` may lag `develop` by up to 1 release. In the order of "Cutting a
   release" both branches carry the release before the tag, so the window is a tolerance, not a
-  step. `main` ahead of `develop` is always a failure.
+  step. `main` ahead of `develop` is always a failure. **The duty is yours, not the gate's:**
+  merge `release/vX.Y.Z` to `develop` and to `main` before you push the tag. A tag pushed while
+  `main` is exactly one release behind still passes the gate (the grace window is unchanged);
+  the gate prints a `NOTE` line in that case, and you check that line in the tag pipeline.
+- **An offline run proves nothing:** the check compares the `Latest release` marker on the two
+  refs it is given. Without `git fetch origin main develop` first (or with the same ref twice) it
+  reports `releases_behind=0` and passes without having seen the real `main`.
 - **Blocking gate (`main-develop-drift-gate`, `release` stage):** runs on every tag push. If
   `main` is already more than 1 release behind at the moment a new release is tagged, this job
   fails and blocks the `release` job (CHANGELOG + GitLab Release publish) until the outstanding
   `release/vX.Y.Z → main` MR is merged.
+- **Tag tree check (same job, T685):** after the marker check the job runs
+  `python3 scripts/check-release-tag-tree.py --tag vX.Y.Z --main-ref origin/main`. The tag's commit
+  must have the same tree (the same files, byte for byte) as `origin/main`; this is the check that
+  "the release is on `main` before the tag" actually holds, and it has no grace window. It compares
+  tree ids, not commit ancestry, because GitLab's API merge makes a new commit with the same tree,
+  so the tag commit is not an ancestor of `main` even for a correct release; it works in the
+  depth-1 clone of the tag job. It fails when `main` was not fetched (an offline run proves nothing),
+  when the tag was pushed before the `main` merge, and on a re-run of the tag pipeline after `main`
+  has moved on (re-tag from the right commit instead). Run it locally the same way after
+  `git fetch origin main` and with the tags fetched.
 - **Informational check (`main-develop-drift-check`, `verify` stage):** runs on every push to
   `develop`, non-blocking (`allow_failure: true`), for earlier visibility between releases.
 

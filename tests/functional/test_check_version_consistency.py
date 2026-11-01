@@ -304,6 +304,61 @@ class TestGoldenFixtureExclusion(unittest.TestCase):
         self.assertEqual(drift[rel], [(1, "v7.0.1")])
 
 
+class TestDecisionRecordExclusion(unittest.TestCase):
+    """T704 (D-T700-1, the user's 2026-11-01 decision "Exclude docs/decisions/
+    (Recommended)"): accepted ADRs are immutable dated records, so their old release
+    paths are not current-state claims. The exclusion is a prefix match and must not leak
+    to other paths."""
+
+    STALE_PATH = "See [`docs/releases/v8.0.0.md`](../releases/v8.0.0.md).\n"
+    STALE_MARKER = "Latest release: v8.0.0\n"
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.root = Path(self._tmp.name)
+        (self.root / "README.md").write_text("Project X\n\nLatest release: v9.0.0\n")
+        self.mod = _load_module()
+
+    def _drift(self) -> dict:
+        canonical, drift = self.mod.scan_repository(self.root, self.root / "README.md")
+        self.assertEqual(canonical, "v9.0.0")
+        return drift
+
+    def _write(self, rel: str, text: str) -> Path:
+        path = self.root / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text)
+        return Path(rel)
+
+    def test_is_excluded_matches_decisions_prefix(self):
+        self.assertTrue(self.mod.is_excluded(Path("docs/decisions/ADR-010-drop-cursor-platform-support.md")))
+
+    def test_stale_release_path_in_adr_is_not_reported(self):
+        adr = self._write("docs/decisions/ADR-010-x.md", self.STALE_PATH + self.STALE_MARKER)
+        drift = self._drift()
+        self.assertNotIn(adr, drift)
+        self.assertEqual(drift, {})
+
+    def test_same_lines_outside_decisions_are_still_reported(self):
+        rel = self._write("docs/wiki/x.md", self.STALE_PATH)
+        drift = self._drift()
+        self.assertIn(rel, drift)
+        # Two hits on the one line: the link text and the link target.
+        self.assertEqual(drift[rel], [(1, "v8.0.0"), (1, "v8.0.0")])
+
+    def test_path_merely_containing_docs_decisions_is_still_scanned(self):
+        rel = self._write("implementation/docs/decisions/x.md", self.STALE_MARKER)
+        drift = self._drift()
+        self.assertIn(rel, drift)
+        self.assertEqual(drift[rel], [(1, "v8.0.0")])
+
+    def test_sibling_prefix_is_still_scanned(self):
+        rel = self._write("docs/decisions-draft/x.md", self.STALE_MARKER)
+        drift = self._drift()
+        self.assertIn(rel, drift)
+
+
 class TestCli(unittest.TestCase):
     def test_help_exits_zero(self):
         code, out = _run_cli("--help")
@@ -396,11 +451,10 @@ class TestCli(unittest.TestCase):
             "SKILL.md",
             "release-manager.md",
             "release-manager.agent.md",
-            "release-manager.mdc",
         }
         checked_any_mirror = False
         for path in mirrors:
-            if not path.is_file() or path.suffix != ".md" and path.suffix != ".mdc":
+            if not path.is_file() or path.suffix != ".md":
                 continue
             if path.name not in example_basenames:
                 continue

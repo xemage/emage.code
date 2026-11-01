@@ -3,7 +3,7 @@
 These are the **canonical sources** for the project Wiki at
 <https://gitlab.com/em-age/emage.code/-/wikis/home>.
 
-Latest release: v8.0.0
+Latest release: v9.0.0
 
 The wiki is hand-curated and the source of truth lives here, in version
 control. To update a wiki page:
@@ -19,7 +19,9 @@ that touches `docs/wiki/**` and pushes the pages via the GitLab Wiki API.
 
 **Required CI/CD variable:** `WIKI_TOKEN` — Project Access Token with scope
 `api`. See [Settings → CI/CD → Variables](https://gitlab.com/em-age/emage.code/-/settings/ci_cd).
-Mark the variable as **Masked**.
+Mark the variable as **Protected** and **Masked** and give the token the minimum role. Only
+`wiki-sync` uses it; the `release` job authenticates with `CI_JOB_TOKEN` (T686, see
+`CONTRIBUTING.md`, "Release token and permissions").
 
 To sync manually (or to test before pushing):
 
@@ -82,6 +84,7 @@ The release pipeline blocks publication if this verification fails.
 | `implementation-guide.md` | `implementation-guide` |
 | `commands-and-skills-overview.md` | `commands-and-skills-overview` |
 | `instructions-overview.md` | `instructions-overview` |
+| `severity-and-grade-scales.md` | `severity-and-grade-scales` |
 
 > Wiki pages use the same Markdown flavour as the main repo. Internal wiki
 > links use the slug (no `.md` extension), e.g. `[Quick Start](quick-start)`.

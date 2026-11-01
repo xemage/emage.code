@@ -7,18 +7,32 @@ unchanged (T640 / ruling C3). The commit list generated from Conventional
 Commits (merge commits excluded, filter F1) goes into ``CHANGELOG.md`` only,
 which is the only file this script writes; no root ``release-notes.md`` is
 written. Offline rehearsal: ``scripts/dry-run-publish-release.py``.
+
+The API token is read from an environment variable named by ``--token-env``
+(CI: ``--token-env CI_JOB_TOKEN --token-header JOB-TOKEN``, the GitLab job token;
+T686), so the value never appears in argv, in the process list or in a job log.
+``--token-header`` names the one HTTP header that carries it and is limited to a
+fixed allowlist (``TOKEN_HEADERS``: ``PRIVATE-TOKEN``, the default, and
+``JOB-TOKEN``). ``--token`` is still accepted but deprecated: it prints a warning
+(never the value) because argv is world-readable on a runner.
+The API target is parsed, not prefix-matched (``validate_api_target``), the
+host can be pinned (``--expected-host``, default ``CI_SERVER_HOST``), and the
+HTTP opener refuses every redirect, so the token header is never re-sent to a
+second location (T675).
 """
 
 from __future__ import annotations
 
 import argparse
 import datetime as dt
+import http.client
 import json
 import os
 import re
 import subprocess
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 from typing import Iterable
@@ -40,10 +54,57 @@ SUBJECT_RE = re.compile(r"^(?P<type>[a-z]+)(?:\([^)]+\))?(?:!)?:\s+(?P<desc>.+)$
 MERGE_BRANCH_RE = re.compile(r"^Merge branch '([^']+)' into '([^']+)'$")
 TAG_RE = re.compile(r"^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$")  # the CI tag rule
 SIMPLE_RELEASE_BRANCH_RE = re.compile(r"^release/v\d+\.\d+\.\d+$")
+# The only API base shape: .../api/v4. A segment is never "." or "..".
+API_PATH_RE = re.compile(r"(/(?!\.{1,2}(?:/|$))[A-Za-z0-9._~-]+)*/api/v4")
+ENV_NAME_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+CONTROL_CHARS_RE = re.compile(r"[\x00-\x1f\x7f]")
+# T676 (SEC-T675-10): a commit subject also loses C1 controls and the invisible/bidirectional formatting characters
+# (zero-width, LRM/RLM, ALM, LS/PS, LRE..RLO, LRI..PDI, BOM, soft hyphen, Hangul and braille fillers, variation
+# selectors, Unicode tag characters) that make a changelog line read differently from its bytes.
+# T685 (SEC-T676-12): also U+034F COMBINING GRAPHEME JOINER and the Khmer inherent vowels U+17B4/U+17B5 (all
+# default-ignorable and invisible). Cosmetic cost, by design and tested: U+200D (ZWJ) and U+FE0F (emoji variation
+# selector) are in the class, so an emoji ZWJ sequence prints as its separate emoji and an emoji loses its
+# presentation selector; no emoji code point is removed. U+034F is rare outside collation and ligature fixes for
+# Hebrew, Arabic and Tibetan, and the Khmer vowels are discouraged in Unicode, so a real subject loses no meaning.
+# Markdown characters are NOT escaped: subjects use backticks and underscores legitimately, and the authors of
+# the tagged history are the maintainers.
+SUBJECT_UNSAFE_RE = re.compile("[\x00-\x1f\x7f-\x9f\u061c\u200b-\u200f\u202a-\u202e\u2028\u2029\u2060-\u2069\ufeff\u00ad\u034f\u115f\u1160\u17b4\u17b5\u3164\uffa0\u2800\ufe00-\ufe0f\U000e0000-\U000e007f\U000e0100-\U000e01ef]")
+HTTP_TIMEOUT_SECONDS = 30
+# T686: the only headers the token may travel in (a fixed allowlist, never taken from input); the default keeps the
+# behaviour of every earlier call. The job token goes in JOB-TOKEN (GitLab "Releases API" accepts it), a personal,
+# project or group access token in PRIVATE-TOKEN.
+DEFAULT_TOKEN_HEADER = "PRIVATE-TOKEN"
+TOKEN_HEADERS = (DEFAULT_TOKEN_HEADER, "JOB-TOKEN")
+# Never passed to git: both CI token variables by name (the job token is in every job's environment), plus
+# main() adds the --token-env name.
+WITHHELD_ENV_NAMES = {"WIKI_TOKEN", "CI_JOB_TOKEN"}
+# T686 (SEC-T686-01): withholding by name is not enough: GitLab exposes the job token under a second name
+# (CI_REGISTRY_PASSWORD) and inside URL-shaped variables (CI_REPOSITORY_URL = https://gitlab-ci-token:<token>@host/...).
+# So the child environment is (1) an ALLOWLIST of names git needs and (2) minus every variable whose value contains
+# one of the secret values (the values of the withheld names, and the token main() resolved, also from --token).
+# The same rule is mirrored in the release job's apk bootstrap in .gitlab-ci.yml (tests pin the two together).
+# git reads the checkout credential from .git/config (the clone URL the runner wrote), not from the environment.
+CHILD_ENV_APK_NAMES = frozenset({
+    "PATH", "HOME", "LANG", "LANGUAGE", "TMPDIR", "TZ", "SSL_CERT_FILE", "SSL_CERT_DIR", "CURL_CA_BUNDLE",
+    "http_proxy", "https_proxy", "no_proxy", "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "ALL_PROXY",
+})
+CHILD_ENV_NAMES = CHILD_ENV_APK_NAMES | frozenset({
+    "GIT_SSL_CAINFO", "GIT_SSL_CAPATH", "GIT_ASKPASS", "GIT_TERMINAL_PROMPT", "GIT_EXEC_PATH",
+    "GIT_CONFIG_NOSYSTEM", "GIT_CONFIG_GLOBAL", "GIT_CONFIG_SYSTEM", "GIT_CONFIG_COUNT",
+})
+CHILD_ENV_PATTERN = re.compile(r"LC_[A-Z_]+|GIT_CONFIG_(?:KEY|VALUE)_[0-9]+")
+WITHHELD_ENV_VALUES: set[str] = set()  # main() adds the resolved token (it may come from --token, not from a name)
 
 
 class ReleasePublishError(RuntimeError):
-    """Raised when release artifact generation or publishing fails."""
+    """Raised when release artifact generation or publishing fails.
+
+    ``status`` is the HTTP status code when the failure is an HTTP error response.
+    """
+
+    def __init__(self, message: str, status: int | None = None) -> None:
+        super().__init__(message)
+        self.status = status
 
 
 def validate_tag(tag: str) -> str:
@@ -53,27 +114,123 @@ def validate_tag(tag: str) -> str:
     return tag
 
 
-def validate_api_target(api_v4_url: str, project_id: str) -> None:
-    """Fail closed unless the API base is https and the project id is all ASCII digits."""
+def _api_url_problem(api_v4_url: str, expected_host: str | None) -> str | None:
+    """Return why ``api_v4_url`` is not an acceptable API base, or None when it is."""
     if not api_v4_url.startswith("https://"):
-        raise ReleasePublishError("invalid --api-v4-url: must start with https://")
+        return "must start with https://"
+    if any(ch.isspace() or ord(ch) < 32 or ord(ch) == 127 or ch == "\\" for ch in api_v4_url):
+        return "must not contain whitespace, control characters or backslashes"
+    try:
+        parts = urllib.parse.urlsplit(api_v4_url)
+        parts.port  # noqa: B018 -- raises ValueError on a malformed or out-of-range port
+    except ValueError:
+        return "is not a valid URL"
+    if parts.scheme != "https" or not parts.hostname:
+        return "must be an https URL with a host name"
+    if "@" in parts.netloc or parts.username is not None or parts.password is not None:
+        return "must not contain user information"
+    if parts.query or parts.fragment or "?" in api_v4_url or "#" in api_v4_url:
+        return "must not contain a query or a fragment"
+    if not API_PATH_RE.fullmatch(parts.path):
+        return "must end with /api/v4 (no trailing slash)"
+    if expected_host is not None and parts.hostname.lower() != expected_host.strip().lower():
+        return "host does not match the expected GitLab host"
+    return None
+
+
+def validate_api_target(api_v4_url: str, project_id: str, expected_host: str | None = None) -> None:
+    """Fail closed unless the API base is a clean https ``.../api/v4`` URL and the project id is digits.
+
+    ``expected_host`` (CI: ``CI_SERVER_HOST``) pins the host name when given, so a
+    wrong ``--api-v4-url`` can never receive the token. The checks are on a real
+    URL parse: https only, a host name, no user information, no query, no fragment.
+    """
+    problem = _api_url_problem(api_v4_url, expected_host)
+    if problem:
+        raise ReleasePublishError(f"invalid --api-v4-url: {problem}")
     if not (project_id.isascii() and project_id.isdigit()):
         raise ReleasePublishError("invalid --project-id: must be all ASCII digits")
 
 
+def resolve_expected_host(flag: str | None, environ: dict[str, str] | None = None) -> str | None:
+    """The host to pin: ``--expected-host``, else ``$CI_SERVER_HOST``; required in CI, never empty.
+
+    An empty value (an unset CI variable expands to ``""``) is an error, not "no pin".
+    In CI (``$CI`` set) the pin is mandatory.
+    """
+    environ = os.environ if environ is None else environ
+    host = flag if flag is not None else environ.get("CI_SERVER_HOST")
+    if host is None:
+        if environ.get("CI"):
+            raise ReleasePublishError("--expected-host is required in CI (pass \"${CI_SERVER_HOST}\")")
+        return None
+    if not host.strip():
+        raise ReleasePublishError("invalid --expected-host: must not be empty")
+    return host.strip()
+
+
+def resolve_token(token: str | None, token_env: str | None, environ: dict[str, str] | None = None) -> str:
+    """Return the API token from ``--token-env`` (preferred) or the deprecated ``--token``.
+
+    Messages name the variable, never the value. A token with a control character
+    is refused (it could split an HTTP header).
+    """
+    environ = os.environ if environ is None else environ
+    if token and token_env:
+        raise ReleasePublishError("give either --token-env or --token, not both")
+    if token_env:
+        if not ENV_NAME_RE.fullmatch(token_env):
+            raise ReleasePublishError("invalid --token-env: must be an environment variable name")
+        value = environ.get(token_env, "")
+        if not value:
+            raise ReleasePublishError(f"environment variable {token_env} is not set or empty")
+    elif token:
+        print(
+            "release-publish: warning: --token puts the token in argv; use --token-env NAME",
+            file=sys.stderr,
+        )
+        value = token
+    else:
+        raise ReleasePublishError("no API token: set --token-env NAME (or use --skip-api)")
+    if CONTROL_CHARS_RE.search(value):
+        raise ReleasePublishError("the API token contains a control character")
+    return value
+
+
+def secret_values(environ: dict[str, str]) -> set[str]:
+    """The non-empty values that must not reach a child: those of the withheld names, plus the resolved token."""
+    values = {environ[name] for name in WITHHELD_ENV_NAMES if environ.get(name)}
+    return values | {v for v in WITHHELD_ENV_VALUES if v}
+
+
+def child_environment(environ: dict[str, str] | None = None) -> dict[str, str]:
+    """The environment git gets: allowlisted names only, and no variable whose value contains a secret value.
+
+    Names alone do not protect the job token (``CI_REGISTRY_PASSWORD`` and ``CI_REPOSITORY_URL`` carry it too), so a
+    variable is dropped when its value contains the token, whatever it is called.
+    """
+    environ = os.environ if environ is None else environ
+    secrets = secret_values(environ)
+    return {
+        k: v for k, v in environ.items()
+        if (k in CHILD_ENV_NAMES or CHILD_ENV_PATTERN.fullmatch(k))
+        and k not in WITHHELD_ENV_NAMES and not any(secret in v for secret in secrets)
+    }
+
+
 def run_git(args: list[str]) -> str:
+    """Stdout of git, decoded from bytes: text mode would turn a lone CR in a commit subject into a line break."""
     result = subprocess.run(
         ["git", *args],
         cwd=ROOT,
         check=False,
         capture_output=True,
-        text=True,
+        env=child_environment(),
     )
     if result.returncode != 0:
-        raise ReleasePublishError(
-            f"git {' '.join(args)} failed: {result.stderr.strip() or result.stdout.strip()}"
-        )
-    return result.stdout.strip()
+        detail = (result.stderr or result.stdout).decode("utf-8", "replace").strip()
+        raise ReleasePublishError(f"git {' '.join(args)} failed: {detail}")
+    return result.stdout.decode("utf-8", "replace").strip()
 
 
 def ensure_full_history() -> None:
@@ -85,7 +242,9 @@ def ensure_full_history() -> None:
 
 def get_tag_list() -> list[str]:
     output = run_git(["tag", "--sort=-v:refname"])
-    return [line for line in output.splitlines() if line]
+    # Only release tags: a stray tag name must never become ``previous_tag`` (and so
+    # reach git arguments and CHANGELOG.md).
+    return [line for line in output.splitlines() if TAG_RE.fullmatch(line)]
 
 
 def resolve_previous_tag(current_tag: str, tags: list[str]) -> str | None:
@@ -116,8 +275,12 @@ def _revision_range(current_tag: str, previous_tag: str | None) -> str:
 def get_commit_subjects(current_tag: str, previous_tag: str | None) -> list[str]:
     revision = _revision_range(current_tag, previous_tag)
     # Filter F1: merge commits are excluded structurally, not by subject text.
-    output = run_git(["log", "--no-merges", "--pretty=%s", "--end-of-options", revision, "--"])
-    subjects = [line.strip() for line in output.splitlines() if line.strip()]
+    # Framed by NUL characters and decoded from bytes (SEC-T676-05): neither a lone CR (text mode would turn it into "\n"), nor
+    # \x0b, \x0c, \x1c-\x1e, \x85, \u2028, \u2029 (str.splitlines()), nor "\n" can split one subject into several
+    # changelog entries; git never puts a NUL inside a subject.
+    output = run_git(["log", "--no-merges", "--pretty=%s%x00", "--end-of-options", revision, "--"])
+    subjects = [SUBJECT_UNSAFE_RE.sub("", chunk).strip() for chunk in output.split("\x00")]
+    subjects = [line for line in subjects if line]
     if not subjects:
         raise ReleasePublishError(f"no commits found for revision range '{revision}'")
     return subjects
@@ -126,13 +289,22 @@ def get_commit_subjects(current_tag: str, previous_tag: str | None) -> list[str]
 def load_release_brief(tag: str) -> str:
     """Return the release document of ``tag`` exactly as stored; fail closed if missing or blank."""
     validate_tag(tag)
-    brief_path = ROOT / "docs" / "releases" / f"{tag}.md"
+    releases_dir = ROOT / "docs" / "releases"
+    brief_path = releases_dir / f"{tag}.md"
     if not brief_path.is_file():
         raise ReleasePublishError(
             f"missing release brief: docs/releases/{tag}.md "
             "(copy docs/releases/_template.md and fill Install + Highlights)"
         )
-    brief = brief_path.read_bytes().decode("utf-8")  # no newline translation: byte-for-byte
+    # The tagged commit controls this path: a symlink (or a symlinked docs/releases)
+    # could publish any file the runner can read as the release description.
+    expected_dir = ROOT.resolve() / "docs" / "releases"
+    if releases_dir.is_symlink() or brief_path.is_symlink() or not brief_path.resolve().is_relative_to(expected_dir):
+        raise ReleasePublishError(f"release brief must be a regular file under docs/releases: {tag}.md")
+    try:
+        brief = brief_path.read_bytes().decode("utf-8")  # no newline translation: byte-for-byte
+    except (OSError, UnicodeDecodeError) as exc:
+        raise ReleasePublishError(f"release brief is not readable UTF-8 text: docs/releases/{tag}.md") from exc
     if not brief.strip():
         raise ReleasePublishError(f"release brief is empty: docs/releases/{tag}.md")
     return brief
@@ -209,7 +381,10 @@ def update_changelog(tag: str, changelog_section: str) -> str:
     heading = f"## [{tag}] - {today}"
     changelog_path = ROOT / "CHANGELOG.md"
 
-    existing = changelog_path.read_text(encoding="utf-8") if changelog_path.exists() else ""
+    try:
+        existing = changelog_path.read_text(encoding="utf-8") if changelog_path.exists() else ""
+    except (OSError, UnicodeDecodeError) as exc:
+        raise ReleasePublishError("CHANGELOG.md is not readable UTF-8 text") from exc
     if heading in existing:
         return existing
 
@@ -224,10 +399,12 @@ def update_changelog(tag: str, changelog_section: str) -> str:
         return "# Changelog\n\n" + section
 
     if existing.startswith("# Changelog"):
-        parts = existing.split("\n", 2)
-        prefix = "\n".join(parts[:2]).rstrip() + "\n\n"
-        remainder = parts[2] if len(parts) > 2 else ""
-        return prefix + section + remainder.lstrip("\n")
+        # K-12: the entry goes below the introductory paragraph(s), above the newest
+        # existing entry (the first ``## `` heading); with no entry yet, after the intro.
+        first_entry = re.search(r"^## ", existing, re.M)
+        head = existing[: first_entry.start()] if first_entry else existing
+        tail = existing[first_entry.start():] if first_entry else ""
+        return head.rstrip("\n") + "\n\n" + section + tail
     return "# Changelog\n\n" + section + existing
 
 
@@ -236,25 +413,59 @@ def write_artifacts(changelog: str) -> None:
     (ROOT / "CHANGELOG.md").write_text(changelog, encoding="utf-8")
 
 
-def gitlab_request(method: str, url: str, token: str, payload: dict | None = None) -> dict:
+class _RefuseRedirects(urllib.request.HTTPRedirectHandler):
+    """Never follow a redirect: urllib would re-send the token header to the new location."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: D401
+        return None  # the caller then sees the 3xx as an HTTPError
+
+
+OPENER = urllib.request.build_opener(_RefuseRedirects)
+
+
+def validate_token_header(name: str) -> str:
+    """Fail closed unless ``name`` is exactly one of ``TOKEN_HEADERS`` (case-sensitive; the value is never echoed)."""
+    if name not in TOKEN_HEADERS:
+        raise ReleasePublishError(f"invalid --token-header: must be one of {', '.join(TOKEN_HEADERS)}")
+    return name
+
+
+def gitlab_request(
+    method: str, url: str, token: str, payload: dict | None = None, token_header: str = DEFAULT_TOKEN_HEADER,
+) -> dict:
+    validate_token_header(token_header)
     data = None if payload is None else json.dumps(payload).encode("utf-8")
     request = urllib.request.Request(url=url, method=method, data=data)
-    request.add_header("PRIVATE-TOKEN", token)
+    request.add_header(token_header, token)
     request.add_header("Content-Type", "application/json")
 
     try:
-        with urllib.request.urlopen(request, timeout=30) as response:
+        with OPENER.open(request, timeout=HTTP_TIMEOUT_SECONDS) as response:
             raw = response.read().decode("utf-8")
             return json.loads(raw) if raw else {}
-    except urllib.error.HTTPError as exc:
-        message = exc.read().decode("utf-8", errors="ignore")
-        raise ReleasePublishError(f"GitLab API {method} {url} failed: {exc.code} {message}") from exc
+    except urllib.error.HTTPError as exc:  # includes a refused redirect (3xx)
+        message = _error_body(exc)
+        raise ReleasePublishError(f"GitLab API {method} {url} failed: {exc.code} {message}", exc.code) from exc
     except urllib.error.URLError as exc:
         raise ReleasePublishError(f"GitLab API {method} {url} failed: {exc.reason}") from exc
+    except (OSError, http.client.HTTPException, ValueError) as exc:
+        # A socket timeout or reset during read(), a short read, a body that is not UTF-8 or JSON.
+        raise ReleasePublishError(f"GitLab API {method} {url} failed: {type(exc).__name__}") from exc
 
 
-def create_or_update_release(tag: str, api_v4_url: str, project_id: str, token: str, description: str) -> None:
-    validate_api_target(api_v4_url, project_id)
+def _error_body(exc: urllib.error.HTTPError) -> str:
+    try:
+        return exc.read().decode("utf-8", errors="ignore")
+    except (OSError, http.client.HTTPException):
+        return ""
+
+
+def create_or_update_release(
+    tag: str, api_v4_url: str, project_id: str, token: str, description: str,
+    expected_host: str | None = None, token_header: str = DEFAULT_TOKEN_HEADER,
+) -> None:
+    validate_token_header(token_header)
+    validate_api_target(api_v4_url, project_id, expected_host)
     endpoint = f"{api_v4_url}/projects/{project_id}/releases/{tag}"
     payload = {
         "name": tag,
@@ -265,17 +476,17 @@ def create_or_update_release(tag: str, api_v4_url: str, project_id: str, token: 
 
     exists = False
     try:
-        current = gitlab_request("GET", endpoint, token)
+        current = gitlab_request("GET", endpoint, token, token_header=token_header)
         exists = current.get("tag_name") == tag
     except ReleasePublishError as exc:
-        if " 404 " not in str(exc):
+        if exc.status != 404:
             raise
 
     if exists:
-        response = gitlab_request("PUT", endpoint, token, payload)
+        response = gitlab_request("PUT", endpoint, token, payload, token_header=token_header)
     else:
         response = gitlab_request(
-            "POST", f"{api_v4_url}/projects/{project_id}/releases", token, payload
+            "POST", f"{api_v4_url}/projects/{project_id}/releases", token, payload, token_header=token_header
         )
 
     if response.get("tag_name") != tag:
@@ -287,7 +498,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--tag", required=True)
     parser.add_argument("--api-v4-url", required=True)
     parser.add_argument("--project-id", required=True)
-    parser.add_argument("--token", required=True)
+    parser.add_argument("--token-env", help="name of the environment variable that holds the API token")
+    parser.add_argument(
+        "--token-header",
+        choices=TOKEN_HEADERS,
+        default=DEFAULT_TOKEN_HEADER,
+        help="the HTTP header that carries the token: PRIVATE-TOKEN (default; access tokens) or JOB-TOKEN (CI_JOB_TOKEN)",
+    )
+    parser.add_argument("--token", help="DEPRECATED: the token in argv is visible to every process; use --token-env")
+    parser.add_argument(
+        "--expected-host",
+        default=None,
+        help="pin the host of --api-v4-url (default: $CI_SERVER_HOST when set; required in CI)",
+    )
     parser.add_argument("--skip-api", action="store_true")
     return parser.parse_args()
 
@@ -295,7 +518,14 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     validate_tag(args.tag)
-    validate_api_target(args.api_v4_url, args.project_id)
+    validate_token_header(args.token_header)
+    expected_host = resolve_expected_host(args.expected_host)
+    validate_api_target(args.api_v4_url, args.project_id, expected_host)
+    token = None if args.skip_api else resolve_token(args.token, args.token_env)
+    if args.token_env:
+        WITHHELD_ENV_NAMES.add(args.token_env)
+    if token and not args.token_env:
+        WITHHELD_ENV_VALUES.add(token)  # the deprecated --token: no variable name to withhold, so withhold the value
     run_git(["fetch", "--tags", "--force"])
     ensure_full_history()
 
@@ -314,8 +544,10 @@ def main() -> int:
             tag=args.tag,
             api_v4_url=args.api_v4_url,
             project_id=args.project_id,
-            token=args.token,
+            token=token,
             description=description,
+            expected_host=expected_host,
+            token_header=args.token_header,
         )
 
     print(f"release-publish: regenerated CHANGELOG.md for {args.tag}")

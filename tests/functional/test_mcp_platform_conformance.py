@@ -6,13 +6,13 @@ and `test_remote_mcp_transport_shape_for_previously_uncovered_platforms`,
 `test_mcp_schema_validation.py`, `test_sync_determinism.py`'s idempotency check). None
 of them ever mutate `servers.yaml` and re-run the generator — they can prove the
 *current* committed state matches its own generated output, but they cannot prove the
-generator itself actually propagates a registry change to all 7 platforms, or that a
+generator itself actually propagates a registry change to all 6 platforms, or that a
 platform silently dropping a server would be caught. That is the specific gap plan-035
 Phase 2's acceptance criteria describe and this file closes, via two live round trips
 against a temporary copy of `implementation/` (never the real `servers.yaml`):
 
 1. Add a `core` server to a *copied* `servers.yaml`, run `node scripts/sync.mjs` for
-   real, and assert the new server is present in all 7 generated platform outputs.
+   real, and assert the new server is present in all 6 generated platform outputs.
 2. Delete a `core` server's entry from one platform's *generated* output file (simulating
    a regression) and assert the very same presence-checking helper used in (1) now
    raises — proving the assertion is load-bearing, not vacuous.
@@ -28,7 +28,7 @@ the whole `implementation/` tree into a `tempfile.TemporaryDirectory()` and invo
 `node scripts/sync.mjs` with `cwd` set to the copy. `sync.mjs`'s `ROOT` defaults to
 `path.resolve(__dirname, '..')` (the script's own directory's parent), so running the
 copied `scripts/sync.mjs` in place automatically confines every read and write —
-`knowledge/`, `platforms/`, `_extras/`, and all 7 generated output paths — to the
+`knowledge/`, `platforms/`, `_extras/`, and all 6 generated output paths — to the
 temporary copy, with no `--root`/`--knowledge`/`--platforms` flags required. The task
 brief anticipated explicit use of those flags, but `test_sync_determinism.py` (checked
 first, per the brief's own instruction) establishes copy+cwd as the actual pattern
@@ -70,7 +70,7 @@ EXISTING_CORE_SERVER = "gitlab"
 _SERVER_MAP_BY_FORMAT = {
     "claude-code": lambda doc: doc.get("mcpServers", {}),
     "cline": lambda doc: doc.get("mcpServers", {}),
-    "cursor": lambda doc: doc.get("mcpServers", {}),
+    "pi": lambda doc: doc.get("mcpServers", {}),
     "gemini": lambda doc: doc.get("mcpServers", {}),
     "vscode": lambda doc: doc.get("servers", {}),
     "opencode": lambda doc: doc.get("mcp", {}),
@@ -133,16 +133,16 @@ def _assert_core_server_present_everywhere(impl_root: Path, server_name: str) ->
     """Re-run the same presence check test 1 relies on; used by test 2 to prove the
     check is load-bearing (raises AssertionError on a real, injected regression)."""
     manifests = _platform_manifests(impl_root)
-    if len(manifests) != 7:
-        raise AssertionError(f"expected 7 platform manifests, found {len(manifests)}")
+    if len(manifests) != 6:
+        raise AssertionError(f"expected 6 platform manifests, found {len(manifests)}")
 
     missing_from: list[str] = []
     for manifest in manifests:
         mcp = manifest.get("mcp")
         if not mcp or "core" not in mcp.get("tags", []):
-            # Per docs/artifacts/mcp-platform-contract-v1.md §3, all 7 manifests'
+            # Per docs/artifacts/mcp-platform-contract-v1.md §3, all manifests (7 when it was written; 6 since ADR-010 removed cursor)
             # mcp.tags include "core" — this branch should never trigger for the
-            # real 7 manifests, but guards the helper against a future manifest
+            # real 6 manifests, but guards the helper against a future manifest
             # that legitimately excludes core servers.
             continue
         doc_path = _mcp_output_path(impl_root, manifest)
@@ -167,7 +167,7 @@ class TestMcpPlatformConformance(unittest.TestCase):
     def setUp(self):
         _require_node()
 
-    def test_adding_core_server_and_syncing_propagates_to_all_seven_platforms(self):
+    def test_adding_core_server_and_syncing_propagates_to_all_six_platforms(self):
         """Acceptance criterion 1: add-and-sync-and-assert round trip, not a static read."""
         with tempfile.TemporaryDirectory() as tmp:
             impl_root = _copy_implementation_tree(Path(tmp))
@@ -175,7 +175,7 @@ class TestMcpPlatformConformance(unittest.TestCase):
             # Sanity: the new server name must not already exist anywhere, so a false
             # positive can't hide a broken sync step.
             manifests_before = _platform_manifests(impl_root)
-            self.assertEqual(len(manifests_before), 7)
+            self.assertEqual(len(manifests_before), 6)
             for manifest in manifests_before:
                 doc_path = _mcp_output_path(impl_root, manifest)
                 if doc_path.is_file():
@@ -187,7 +187,7 @@ class TestMcpPlatformConformance(unittest.TestCase):
             _run_sync(impl_root)
 
             manifests = _platform_manifests(impl_root)
-            self.assertEqual(len(manifests), 7, "expected exactly 7 platform manifests")
+            self.assertEqual(len(manifests), 6, "expected exactly 6 platform manifests")
 
             missing: list[str] = []
             for manifest in manifests:
@@ -234,21 +234,39 @@ class TestMcpPlatformConformance(unittest.TestCase):
             # Baseline: must not raise before any mutation.
             _assert_core_server_present_everywhere(impl_root, EXISTING_CORE_SERVER)
 
-            cursor_manifest = next(
-                m for m in _platform_manifests(impl_root) if m["platform"] == "cursor"
+            cline_manifest = next(
+                m for m in _platform_manifests(impl_root) if m["platform"] == "cline"
             )
-            doc_path = _mcp_output_path(impl_root, cursor_manifest)
+            doc_path = _mcp_output_path(impl_root, cline_manifest)
             doc = json.loads(doc_path.read_text(encoding="utf-8"))
             self.assertIn(
                 EXISTING_CORE_SERVER, doc["mcpServers"],
-                "precondition failed: gitlab not present in cursor's generated output",
+                "precondition failed: gitlab not present in cline's generated output",
             )
             del doc["mcpServers"][EXISTING_CORE_SERVER]
             doc_path.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
 
             with self.assertRaises(AssertionError) as ctx:
                 _assert_core_server_present_everywhere(impl_root, EXISTING_CORE_SERVER)
-            self.assertIn("cursor", str(ctx.exception))
+            self.assertIn("cline", str(ctx.exception))
+
+    def test_retired_cursor_format_value_fails_closed(self):
+        """ADR-010 D2: the `cursor` MCP format value was renamed to `pi`. A manifest
+        (for example a fork's) that still carries `mcp.format: "cursor"` must make the
+        generator exit non-zero with `Unknown MCP format: cursor`, not emit something."""
+        with tempfile.TemporaryDirectory() as tmp:
+            impl_root = _copy_implementation_tree(Path(tmp))
+            manifest_path = impl_root / "platforms" / "pi.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            self.assertEqual(manifest["mcp"]["format"], "pi")
+            manifest["mcp"]["format"] = "cursor"
+            manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+
+            proc = subprocess.run(
+                ["node", "scripts/sync.mjs"], cwd=impl_root, capture_output=True, text=True,
+            )
+            self.assertNotEqual(proc.returncode, 0, proc.stdout)
+            self.assertIn("Unknown MCP format: cursor", proc.stderr + proc.stdout)
 
 
 if __name__ == "__main__":

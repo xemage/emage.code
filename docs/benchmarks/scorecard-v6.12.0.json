@@ -327,17 +327,17 @@
         "status": "known_failing"
       },
       {
-        "actual_result": "fail",
-        "bucket": "known_failing",
+        "actual_result": "pass",
+        "bucket": "pass",
         "case_dir": "golden/open/prepare-release-real-verdict-missing",
         "command": "/prepare-release",
         "error": null,
         "id": "prepare-release-real-verdict-missing",
-        "known_failing_category": "tracked_defect",
+        "known_failing_category": null,
         "location": "open",
         "model_outcome": null,
         "model_tier": null,
-        "status": "known_failing"
+        "status": "expected_pass"
       },
       {
         "actual_result": "pass",
@@ -379,17 +379,17 @@
         "status": "expected_pass"
       },
       {
-        "actual_result": "fail",
-        "bucket": "known_failing",
+        "actual_result": "pass",
+        "bucket": "pass",
         "case_dir": "golden/open/skillify-skill-file-template-drift",
         "command": "/skillify",
         "error": null,
         "id": "skillify-skill-file-template-drift",
-        "known_failing_category": "tracked_defect",
+        "known_failing_category": null,
         "location": "open",
         "model_outcome": null,
         "model_tier": null,
-        "status": "known_failing"
+        "status": "expected_pass"
       },
       {
         "actual_result": "pass",
@@ -457,27 +457,27 @@
         },
         "open": {
           "capability_gap": 3,
-          "known_failing": 5,
-          "pass": 23,
+          "known_failing": 3,
+          "pass": 25,
           "regression": 0,
           "total": 28,
-          "tracked_defect": 2,
+          "tracked_defect": 0,
           "unexpected_pass": 0
         }
       },
       "capability_gap": 4,
-      "known_failing": 6,
+      "known_failing": 4,
       "regressions": 0,
       "total_cases": 34,
-      "total_fail": 6,
-      "total_pass": 28,
-      "tracked_defect": 2,
+      "total_fail": 4,
+      "total_pass": 30,
+      "tracked_defect": 0,
       "unexpected_pass": 0,
       "unrecognized_status": 0
     }
   },
   "run_metadata": {
-    "generated_at": "2026-10-15T05:39:15Z",
+    "generated_at": "2026-10-16T09:01:04Z",
     "golden_version": "v6.12.0",
     "runner": "scripts/scorecard.py",
     "schema_version": "golden-scorecard-v1"

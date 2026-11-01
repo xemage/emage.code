@@ -23,7 +23,7 @@ Generated from: implementation/knowledge
 | feasibility-agent | agent | stable | agents/feasibility-agent.md |
 | frontend-developer | agent | stable | agents/frontend-developer.md |
 | integration-agent | agent | stable | agents/integration-agent.md |
-| orchestrator | agent | experimental | agents/orchestrator.md |
+| orchestrator | agent | stable | agents/orchestrator.md |
 | poc-devops-engineer | agent | stable | agents/poc-devops-engineer.md |
 | poc-orchestrator | agent | stable | agents/poc-orchestrator.md |
 | poc-qa-engineer | agent | stable | agents/poc-qa-engineer.md |

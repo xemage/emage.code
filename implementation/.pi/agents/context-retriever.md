@@ -25,7 +25,7 @@ surface. Asking for any other tool name against that server (a fabricated `write
 for the live, subprocess-over-stdio proof this is not merely asserted. **Disclosed, not
 overclaimed:** `docs/artifacts/scoped-execution-primitive-v1.md` §4 found this exact-tool-name
 mechanism confirmed for Claude Code specifically, with a mixed, still-open picture on the
-other 6 platforms — do not assume this same technical guarantee holds on every platform this
+other 5 platforms — do not assume this same technical guarantee holds on every platform this
 agent is ever projected to. This is one of three `ALLOW_WRITE=false` controls this component
 carries (`docs/decisions/ADR-005-memory-layer-design.md` Decision 3) — the other two live in
 the server module the MCP tool calls (`implementation/runtime/memory/context_retriever.py`,

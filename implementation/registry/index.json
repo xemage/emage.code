@@ -1,11 +1,10 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-10-15T19:50:21+02:00",
+  "generatedAt": "2026-11-01T08:51:36+01:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
     "cline",
-    "cursor",
     "gemini",
     "github",
     "opencode",
@@ -23,7 +22,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -32,7 +30,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -45,13 +42,12 @@
       "category": "agent",
       "name": "Context Retriever",
       "path": "agents/context-retriever.md",
-      "checksum": "19afb05d1865b2d3aa25d2dbfef005947b47fd9f526efe339f0167a33cbf093d",
+      "checksum": "db72c31c8f67fcb67cddc7e624ee61a96cd765227b92daa09d1313f2a01d337a",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -60,7 +56,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -79,7 +74,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -88,7 +82,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -107,7 +100,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -116,7 +108,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -135,7 +126,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -144,7 +134,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -157,13 +146,12 @@
       "category": "agent",
       "name": "DevOps Engineer",
       "path": "agents/devops-engineer.md",
-      "checksum": "416abe5742055500eb9fa631e29ef2e4ad1344551844f02550547625a77a5c6e",
+      "checksum": "6e2bd15b9dd5500cad6cb45d35bc740dda8ee3b5d8c1168421f4800f3bba99d8",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -172,7 +160,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -191,7 +178,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -200,7 +186,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -219,7 +204,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -228,7 +212,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -247,7 +230,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -256,7 +238,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -275,7 +256,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -284,7 +264,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -297,13 +276,12 @@
       "category": "agent",
       "name": "Orchestrator",
       "path": "agents/orchestrator.md",
-      "checksum": "42c3c85b2ec86ce80cc5134d14579dbf42e40101c7041d5c759f0e367da578a5",
-      "maturity": "experimental",
+      "checksum": "6065c377be7ae82bafbd55b9413f5a4d76f9adbe937d0533483efd1db99cda7e",
+      "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -312,7 +290,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -325,13 +302,12 @@
       "category": "agent",
       "name": "PoC DevOps Engineer",
       "path": "agents/poc-devops-engineer.md",
-      "checksum": "7eccf33b58ce9cc324fd0990334040085919bf8946f7eaf83e52316d34e7c479",
+      "checksum": "feb7c12b5700080619705e5008b9b3a0ab74735dd8606f5d1729a3c0d7c16d43",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -340,7 +316,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -353,13 +328,12 @@
       "category": "agent",
       "name": "PoC Orchestrator",
       "path": "agents/poc-orchestrator.md",
-      "checksum": "b3df83a8b18790084a3d90b4e3a94480ae1c45da5bf5096191f40ea9c4415d91",
+      "checksum": "eef3650fed061b0535d748fcc55f433edaf6ff5b709000d4e256e5ff122dd9cc",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -368,7 +342,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -387,7 +360,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -396,7 +368,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -415,7 +386,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -424,7 +394,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -443,7 +412,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -452,7 +420,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -471,7 +438,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -480,7 +446,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -493,13 +458,12 @@
       "category": "agent",
       "name": "QA Engineer",
       "path": "agents/qa-engineer.md",
-      "checksum": "e7fe824d5a50a04c2cca40d61868b78eedd040f0d8b4adbc2d50514da7a8cd10",
+      "checksum": "e5df60310d16547399acee6879c8ce498e057269303e671f47533ce1b0f44aaa",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -508,7 +472,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -521,13 +484,12 @@
       "category": "agent",
       "name": "Release Manager",
       "path": "agents/release-manager.md",
-      "checksum": "073a5994c5ed0c0f633f3311a1028186bee1cdfdfcd64152e3d5fcf34521b622",
+      "checksum": "af3eecd3f66647360288fd734a2cc53f4ea11966e6f2f049964fc526351afca8",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -536,7 +498,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -555,7 +516,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -564,7 +524,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -583,7 +542,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -592,7 +550,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -611,7 +568,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -620,7 +576,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -639,7 +594,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -648,7 +602,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -667,7 +620,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -676,7 +628,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -689,13 +640,12 @@
       "category": "agent",
       "name": "Technical Debt Narrator",
       "path": "agents/technical-debt-narrator.md",
-      "checksum": "6182a2add0100771fb5f66a8e86c0226dff35b107c7e26b983e98b730112a551",
+      "checksum": "e0ca7624a1e9b1de7fa567b7111f76a2d625dd88ef8b0fb6078d5f5cd6376dbb",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -704,7 +654,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -723,7 +672,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -732,7 +680,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -751,7 +698,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -760,7 +706,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -779,7 +724,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -788,7 +732,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -807,7 +750,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -816,7 +758,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -835,7 +776,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -844,7 +784,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -863,7 +802,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -872,7 +810,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -885,13 +822,12 @@
       "category": "command",
       "name": "consolidate-memory",
       "path": "commands/consolidate-memory.md",
-      "checksum": "840c7bdfc48f2843ebcbb3bfc06706062779d1f031bbe043cc45e63410f3ea1e",
+      "checksum": "286d938a5bf282005f5107e48c6ae8972a82d6d49ff8a75a921a3e1b464dfe0d",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -900,7 +836,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -913,13 +848,12 @@
       "category": "command",
       "name": "discover-skills",
       "path": "commands/discover-skills.md",
-      "checksum": "70bf327a0b4b0ba71e935ff97831d3c580e84886ee1ef38214d9ccdb324c339e",
+      "checksum": "229e6a3d3106642b870dd1d85b13f88bd188ab594c46facd7fcf9cf8582dbc27",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -928,7 +862,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -947,7 +880,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -956,7 +888,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -975,7 +906,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -984,7 +914,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1003,7 +932,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1012,7 +940,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1031,7 +958,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1040,7 +966,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1059,7 +984,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1068,7 +992,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1087,7 +1010,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1096,7 +1018,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1115,7 +1036,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1124,7 +1044,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1143,7 +1062,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1152,7 +1070,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1171,7 +1088,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1180,7 +1096,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1193,13 +1108,12 @@
       "category": "command",
       "name": "skillify",
       "path": "commands/skillify.md",
-      "checksum": "e1613362715d956d51fa68f492ba7bb4724a0e93ed51251e3785e5a438615dca",
+      "checksum": "c5daaff840daacc3e41288463d920da54e2f33d952ea2ea6eb2950f8d5f123cf",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1208,7 +1122,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1227,7 +1140,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1236,7 +1148,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1255,7 +1166,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1264,7 +1174,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1283,7 +1192,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1292,7 +1200,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1311,7 +1218,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1320,7 +1226,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1339,7 +1244,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1348,7 +1252,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1367,7 +1270,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1376,7 +1278,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1395,7 +1296,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1404,7 +1304,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1423,7 +1322,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1432,7 +1330,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1445,13 +1342,12 @@
       "category": "instruction",
       "name": "poc-guidelines",
       "path": "instructions/poc-guidelines.md",
-      "checksum": "108604c3cb106290eefc24309fd5feca51dcebcac049c59761226d06396dc542",
+      "checksum": "32ab9d2c5287018a02d6ddcf711fcbe4461c4a32f40dcb8f507cc664f1e4f548",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1460,7 +1356,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1479,7 +1374,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1488,7 +1382,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1507,7 +1400,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1516,7 +1408,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1535,7 +1426,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1544,7 +1434,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1563,7 +1452,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1572,7 +1460,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1585,13 +1472,12 @@
       "category": "skill",
       "name": "ci-cd-pipeline",
       "path": "skills/ci-cd-pipeline/SKILL.md",
-      "checksum": "8ca5ac5f562be95909ea6c86016f7bf8f6933253fa8eec3522974ec2956203d3",
+      "checksum": "6c0095f1a06226d66baad1bab5c9418e5225830c4b520799c150926372b44cea",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1600,7 +1486,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1619,7 +1504,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1628,7 +1512,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1647,7 +1530,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1656,7 +1538,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1675,7 +1556,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1684,7 +1564,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1703,7 +1582,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1712,7 +1590,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1731,7 +1608,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1740,7 +1616,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1759,7 +1634,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1768,7 +1642,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1787,7 +1660,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1796,7 +1668,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1809,13 +1680,12 @@
       "category": "skill",
       "name": "memory-management",
       "path": "skills/memory-management/SKILL.md",
-      "checksum": "f19d770af43e91f10416d030367c1dbca5ef422bb5256a629b09adb9cb81ea5d",
+      "checksum": "7a65a364d1edac8572ed1e6a480ae6946d49bd5da7e7c1bcb77c2da503a29459",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1824,7 +1694,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1843,7 +1712,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1852,7 +1720,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1871,7 +1738,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1880,7 +1746,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1899,7 +1764,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1908,7 +1772,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1927,7 +1790,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1936,7 +1798,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1955,7 +1816,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1964,7 +1824,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -1977,13 +1836,12 @@
       "category": "skill",
       "name": "release-workflow",
       "path": "skills/release-workflow/SKILL.md",
-      "checksum": "d1f1b69fcfae2f2d9d4ee96ecc2780960b821d05b484f44c46c1fb7fdf9b8aee",
+      "checksum": "a29df4cf2d51a45cb8e1b96c5ca59728d31f51affdec072ce3e40b4a59671989",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -1992,7 +1850,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -2005,13 +1862,12 @@
       "category": "skill",
       "name": "skillify",
       "path": "skills/skillify/SKILL.md",
-      "checksum": "a2b303f47a86416b67fdd8d8cc7a797cfe525247e51dafe99edc64b564e453e7",
+      "checksum": "33db2affb6ceda0a83b9e074bca3dae18b09759ace524dfd2fba2ca42729bf3e",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -2020,7 +1876,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -2039,7 +1894,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -2048,7 +1902,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -2067,7 +1920,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -2076,7 +1928,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -2095,7 +1946,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -2104,7 +1954,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -2123,7 +1972,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -2132,7 +1980,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -2151,7 +1998,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -2160,7 +2006,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -2179,7 +2024,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -2188,7 +2032,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -2207,7 +2050,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -2216,7 +2058,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",
@@ -2235,7 +2076,6 @@
         "supportedPlatforms": [
           "claude-code",
           "cline",
-          "cursor",
           "gemini",
           "github",
           "opencode",
@@ -2244,7 +2084,6 @@
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
-          "cursor": "pass",
           "gemini": "pass",
           "github": "pass",
           "opencode": "pass",

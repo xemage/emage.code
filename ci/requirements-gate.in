@@ -1,0 +1,6 @@
+# Direct dependencies of the `validation-super-gate` job in .gitlab-ci.yml (T676, SEC-T675-09).
+# `requirements-gate.txt` is the hash-locked output and the only file that job installs
+# (`pip install --require-hashes --only-binary=:all: -r ci/requirements-gate.txt`). Regenerate with:
+#   uv pip compile ci/requirements-gate.in --universal --python-version 3.12 --generate-hashes --exclude-newer <UTC timestamp> -o ci/requirements-gate.txt
+pyyaml
+jsonschema

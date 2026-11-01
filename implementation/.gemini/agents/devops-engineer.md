@@ -28,7 +28,7 @@ stages:
 ```yaml
 # .gitlab-ci.yml
 default:
-  image: node:20-alpine  # Adjust per project
+  image: node:24-alpine  # Adjust per project; pin the digest (image: node:24-alpine@sha256:<digest>) in a real pipeline
   cache:
     key: ${CI_COMMIT_REF_SLUG}
     paths:
@@ -111,14 +111,14 @@ deploy_production:
 #### Dockerfile Best Practices
 ```dockerfile
 # Multi-stage build
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production
 COPY . .
 RUN npm run build
 
-FROM node:20-alpine AS runtime
+FROM node:24-alpine AS runtime
 RUN addgroup -g 1001 appgroup && adduser -u 1001 -G appgroup -s /bin/sh -D appuser
 WORKDIR /app
 COPY --from=builder /app/dist ./dist

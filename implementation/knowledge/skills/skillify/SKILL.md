@@ -28,7 +28,7 @@ target** project. Check for the source tree; do not assume.
   `python3 implementation/scripts/generate-registry.py --root implementation`. Never hand-write a
   platform projection folder — `sync.mjs` deletes and rebuilds each one.
 - otherwise → write `<platform>/skills/<skill-name>/SKILL.md` into every installed platform folder
-  that exists (`.github/`, `.claude/`, `.cursor/`, `.gemini/`, `.opencode/`, `.pi/`, `.cline/`), and
+  that exists (`.github/`, `.claude/`, `.gemini/`, `.opencode/`, `.pi/`, `.cline/`), and
   warn the user that `scripts/install.sh --update` replaces those trees wholesale.
 
 `commands/skillify.md` § "Choose the Output Path" is authoritative for this rule. This section

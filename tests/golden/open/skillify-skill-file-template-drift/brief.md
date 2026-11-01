@@ -1,4 +1,4 @@
-# Case: skillify-skill-file-template-drift (known_failing / tracked_defect)
+# Case: skillify-skill-file-template-drift (expected_pass)
 
 ## Command under test
 `/skillify`
@@ -132,12 +132,17 @@ the single file the old guard admitted. Compared with the pre-`T548` checker, th
 §7's out-of-scope row forbids asserting that the skill exists in all seven folders, and that is not
 asserted.
 
-## Why this is known_failing today
-The fixture is a real, representative skill file — `.github/skills/verification-before-completion/
-SKILL.md`, copied byte-identically — and it satisfies **1 of the 5** declared sections. It has
-`## When to Use`. It has no `## Inputs`, no `## Procedure`, no `## Success Criteria` and no
+## History: formerly known_failing / tracked_defect
+Until baseline v22 this case was `known_failing` with `known_failing_category: tracked_defect`. The
+sections below record the state at which it was `known_failing`; the exit is described under
+"Provenance of the current fixture".
+
+### The old fixture
+The fixture was a real, representative skill file — `.github/skills/verification-before-completion/
+SKILL.md`, copied byte-identically — and it satisfied **1 of the 5** declared sections. It had
+`## When to Use`. It had no `## Inputs`, no `## Procedure`, no `## Success Criteria` and no
 `## Examples` section — `## Gate Procedure` is a different heading, and the `**Inputs**:` label
-inside `## Rails` is bold body text, not a heading. Its actual sections are `## Rails`,
+inside `## Rails` is bold body text, not a heading. Its actual sections were `## Rails`,
 `## Purpose`, `## When to Use`, `## Iron Rule`, `## Gate Procedure`, `## Claim → Evidence Map`,
 `## Red Flags — Stop`, `## emage.code Standard Commands`, `## Orchestrator Enforcement`.
 
@@ -180,7 +185,7 @@ green. Choosing a hand-authored fixture in the declared shape instead *would* ha
 and would have asserted a structure with zero instances in the corpus it claims to describe. Per
 `ADR-007` §5, the check is not relaxed to reach a pass.
 
-## Category
+### Category (as recorded then)
 `tracked_defect`, not `capability_gap`. Nothing prevents a conforming file from being written.
 
 This case was originally framed as two *declared contracts* disagreeing — the command and the
@@ -197,15 +202,47 @@ migrate the corpus to the declared template, or amend the declared template to t
 shape — and needs an adjudication of which side holds authority, which is exactly what a tracked
 defect is for. Resolving this case by editing
 `implementation/knowledge/commands/skillify.md` or the fixture was explicitly **out of scope** for
-the task that authored it (`T525` §1) and remains out of scope for the prose corrections at `T530`.
+the task that authored it (`T525` §1) and for the prose corrections at `T530`.
 
-## Provenance
-**Fully real.** `fixture/.github/skills/verification-before-completion/SKILL.md` is a byte-identical
-copy of `.github/skills/verification-before-completion/SKILL.md` from this repository's working
-tree, placed at the same repo-relative path. When the case was authored that path was the command's
-single declared output location; since `T532` it is the installed-target row's path for a project
-whose only platform folder is `.github/`, and the fixture was not moved.
+## Provenance of the current fixture
+The current fixture, `fixture/implementation/knowledge/skills/gitlab-api-push-fallback/SKILL.md`,
+is a byte-identical copy (`cmp`) of the real
+`implementation/knowledge/skills/gitlab-api-push-fallback/SKILL.md`: a skill produced by a genuine
+`/skillify` run (the 4-round interview with the user and the user's approval of the draft, task
+`T627`, commit `a56b0c2`), authored to the command's public text. It is the working output of that
+real run, not a file written for this case, and it was committed through the normal merge request
+flow independently of this case. It sits in the authoring row's source directory
+`implementation/knowledge/skills/`, the first of the eight declared skill roots
+(`expect.py` `DECLARED_SKILL_ROOTS`), so the fixture now exercises the **authoring-checkout row** of
+`### Choose the Output Path`, where it formerly exercised the installed-target row. It holds one
+skill in one declared directory, a level-1 title (`# GitLab API Push Fallback`) and all five `##`
+sections (`## When to Use`, `## Inputs`, `## Procedure`, `## Success Criteria`, `## Examples`).
+The frontmatter additionally carries `maturity: experimental` (the template fix applied in `T627`);
+`expect.py` does not assert the frontmatter. The old fixture file,
+`fixture/.github/skills/verification-before-completion/SKILL.md`, was a copy and was deleted; the
+shipped `.github/skills/verification-before-completion/SKILL.md` is untouched.
 
+`expect.py` is byte-identical to the file it replaces, so the check is exactly as strong as before
+(including the per-directory uniqueness rule and the every-copy-conforms rule described under "Pass
+condition"); only the example moved. The statements above in "What this checks" and "Pass
+condition" that call the fixture an installed-target one describe the old fixture. (`expect.py`'s
+docstring still says the case is expected to return `False` and describes the old fixture; that
+text predates this change and was not edited, because `expect.py` is outside the grant. The source
+of truth for the status is `case.yaml`.)
+
+### The exit
+`ADR-007` classified the case as branch 3b (fix the corpus, not the check): the corpus did not
+follow the declared template (0 of 26), and no choice of real fixture could make the case pass
+without relaxing the check or authoring a file to the check. The exit that `ADR-007` § 3b
+prescribes was taken: produce one conforming artifact of the class by the command's own process
+and re-fixture the case against it. `T627` produced it; the case moved from `known_failing` to
+`expected_pass` under `docs/tasks/task-T668.md` (grant G-2 of
+`docs/plans/plan-123-post-release-follow-ups.md`; item 11 of grant G-1 in
+`docs/artifacts/promotion-and-golden-realignment-plan-v1.md` § 6.3, deferred until now). The
+corpus measurement above (0 of 26) is the pre-`T627` record and is kept as history; the other 26
+skill files were not changed.
+
+## Reproducing the historical survey
 The historical survey table above is reproducible with the naive substring method that produced it.
 `PRE_T527` reproduces the table as recorded; `CURRENT` applies the same method to the section names
 the command declares today:

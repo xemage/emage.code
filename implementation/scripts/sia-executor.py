@@ -807,6 +807,24 @@ class SIAExecutor:
         log.info(f"SIA executor stopped (processed {self.session_count} sessions)")
 
 
+SECRET_ENV_VAR = "CWSO_JWT_SECRET"
+
+
+def resolve_jwt_secret(explicit: Optional[str]) -> str:
+    """Return the JWT secret from --jwt-secret or CWSO_JWT_SECRET (T694).
+
+    There is no secret-file fallback. Exits with status 1 and a message that
+    names the variable (never a value) when neither source is set.
+    """
+    if explicit and explicit.strip():
+        return explicit.strip()
+    secret = os.environ.get(SECRET_ENV_VAR, "").strip()
+    if secret:
+        return secret
+    log.error(f"{SECRET_ENV_VAR} is not set; export {SECRET_ENV_VAR} or pass --jwt-secret")
+    sys.exit(1)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="SIA executor — Phase 3.2 with real task polling and heartbeat"
@@ -815,7 +833,14 @@ def main():
         "--cwso-url", default="http://localhost:8080", help="CWSO orchestrator URL"
     )
     parser.add_argument("--node-id", default="sia-executor-1", help="Executor node ID")
-    parser.add_argument("--jwt-secret", required=False, help="CWSO JWT secret")
+    parser.add_argument(
+        "--jwt-secret",
+        required=False,
+        help=(
+            "CWSO JWT secret, explicit only (visible in the process list); "
+            "default: the CWSO_JWT_SECRET environment variable"
+        ),
+    )
     parser.add_argument(
         "--mock-delay", type=float, default=2.0, help="Mock execution delay (seconds)"
     )
@@ -834,15 +859,7 @@ def main():
     )
     args = parser.parse_args()
 
-    # Read JWT secret from file if not provided
-    jwt_secret = args.jwt_secret
-    if not jwt_secret:
-        secret_file = Path("/home/emage/Code/emage/CWSO/.env.jwt.dev")
-        if secret_file.exists():
-            jwt_secret = secret_file.read_text().strip()
-        else:
-            log.error("JWT secret not provided and .env.jwt.dev not found")
-            sys.exit(1)
+    jwt_secret = resolve_jwt_secret(args.jwt_secret)
 
     # Create and run executor
     executor = SIAExecutor(

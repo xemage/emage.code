@@ -32,7 +32,8 @@ class TestCwsoClientLiveIntegration(unittest.TestCase):
     """Live integration tests against running CWSO server.
 
     These tests require a running CWSO MCP server at http://127.0.0.1:8080
-    and a valid JWT secret in CWSO/.env.jwt.dev or CWSO_JWT_SECRET env var.
+    and a valid JWT secret in the CWSO_JWT_SECRET env var (or an explicit
+    CWSO_JWT_SECRET_FILE path; there is no default secret file, T694).
 
     To enable these tests:
         export CWSO_LIVE_CONTRACT_TEST=1

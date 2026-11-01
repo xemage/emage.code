@@ -6,7 +6,7 @@ import io
 import tempfile
 import unittest
 from unittest import mock
-from contextlib import redirect_stderr
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
 from tests._helpers.repo import repo_root
@@ -301,6 +301,325 @@ class TestSyncTaskDocsRefusesSymlinks(unittest.TestCase):
         actions = sync_task_docs(self.template, dest)
         self.assertEqual(len(actions), 3)
         self.assertTrue((dest / "active-tasks.md").is_file())
+
+
+TEMPLATE_LEDGER = """# Active Tasks
+
+| ID | Title | Owner | Status | Priority | Depends on | Last update |
+|----|-------|-------|--------|----------|-----------|-------------|
+
+> This ledger starts EMPTY.
+"""
+
+
+class TestTableBoundIsTheLedgerHeader(unittest.TestCase):
+    """T672 (TL-T649-08): a legend table before the ledger is not the ledger."""
+
+    LEGEND_LEDGER = """# Active Tasks
+
+Legend:
+
+| Code | Meaning |
+|------|---------|
+| P0 | critical path |
+| P1 | important |
+
+| ID | Title | Owner | Status | Priority | Depends on | Last update |
+|----|-------|-------|--------|----------|-----------|-------------|
+| T001 | First | orchestrator | pending | P0 | -- | 2026-10-16 |
+| T002 | Second | qa-engineer | pending | P1 | T001 | 2026-10-16 |
+
+> footer
+"""
+
+    def test_rows_of_a_ledger_after_a_legend_table_are_not_dropped(self):
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            merged = merge_ledger(TEMPLATE_LEDGER, self.LEGEND_LEDGER)
+        self.assertEqual(merged, self.LEGEND_LEDGER, "a healthy ledger round-trips byte for byte")
+        self.assertEqual(stderr.getvalue(), "", "no row may be reported as dropped")
+
+    def test_legend_rows_are_never_taken_for_task_rows_nor_the_ledger_for_legend(self):
+        existing = self.LEGEND_LEDGER.replace("| T002 | Second", "| BUG-9 | Second")
+        stderr = io.StringIO()
+        dropped: list[str] = []
+        with redirect_stderr(stderr):
+            merged = merge_ledger(TEMPLATE_LEDGER, existing, dropped)
+        self.assertEqual(dropped, [ln for ln in existing.splitlines() if ln.startswith("| BUG-9")])
+        self.assertIn("| P0 | critical path |", merged)
+        self.assertIn("| T001 | First |", merged)
+        self.assertNotIn("BUG-9", merged)
+
+    def test_a_ledger_with_a_legend_table_only_before_it_keeps_the_old_meaning_without_a_header(self):
+        """No `| ID | Title |` header: the first separator is the table, as before T672."""
+        existing = "| Code | Meaning |\n|---|---|\n| T001 | row |\n"
+        self.assertEqual(merge_ledger(TEMPLATE_LEDGER, existing), existing)
+
+    def test_header_with_a_separator_not_directly_below_is_not_the_ledger(self):
+        """The `| ID | Title |` line has no separator under it, so it is not the table: the first
+        separator (the Code/Meaning table) is, as before T672 -- and its non-task row is dropped."""
+        existing = "| ID | Title |\n\n| Code | Meaning |\n|---|---|\n| X | y |\n"
+        dropped: list[str] = []
+        with redirect_stderr(io.StringIO()):
+            merged = merge_ledger(TEMPLATE_LEDGER, existing, dropped)
+        self.assertEqual(dropped, ["| X | y |"])
+        self.assertEqual(merged, "| ID | Title |\n\n| Code | Meaning |\n|---|---|\n")
+
+
+class TestLedgerBackupAndAtomicWrite(unittest.TestCase):
+    """T672 (SEC-006): rows are only dropped with a copy of the ledger as it was; writes are atomic."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.tmp = Path(self._tmp.name)
+        self.template = self.tmp / "template"
+        self.template.mkdir()
+        (self.template / "active-tasks.md").write_text(TEMPLATE_LEDGER, encoding="utf-8")
+        self.dest = self.tmp / "dest"
+        self.dest.mkdir()
+        self.ledger = self.dest / "active-tasks.md"
+        self.with_bad_row = TEMPLATE_LEDGER.replace(
+            "\n> This ledger", "| T001 | ok | a | pending | P1 | -- | d |\n| bad | row |\n\n> This ledger")
+
+    def test_dropped_row_means_a_backup_of_the_original(self):
+        self.ledger.write_text(self.with_bad_row, encoding="utf-8")
+        with redirect_stderr(io.StringIO()):
+            actions = sync_task_docs(self.template, self.dest)
+        backup = self.dest / "active-tasks.md.bak"
+        self.assertEqual(backup.read_text(encoding="utf-8"), self.with_bad_row)
+        self.assertNotIn("| bad | row |", self.ledger.read_text(encoding="utf-8"))
+        self.assertTrue(any(a.startswith("back up ") and "1 row(s) dropped" in a for a in actions), actions)
+
+    def test_an_earlier_backup_is_never_overwritten(self):
+        (self.dest / "active-tasks.md.bak").write_text("older\n", encoding="utf-8")
+        self.ledger.write_text(self.with_bad_row, encoding="utf-8")
+        with redirect_stderr(io.StringIO()):
+            sync_task_docs(self.template, self.dest)
+        self.assertEqual((self.dest / "active-tasks.md.bak").read_text(encoding="utf-8"), "older\n")
+        self.assertEqual((self.dest / "active-tasks.md.bak.2").read_text(encoding="utf-8"), self.with_bad_row)
+
+    def test_a_healthy_ledger_gets_no_backup(self):
+        self.ledger.write_text(TEMPLATE_LEDGER, encoding="utf-8")
+        sync_task_docs(self.template, self.dest)
+        self.assertEqual(sorted(p.name for p in self.dest.iterdir()), ["active-tasks.md"])
+
+    def test_dry_run_writes_no_backup(self):
+        self.ledger.write_text(self.with_bad_row, encoding="utf-8")
+        with redirect_stderr(io.StringIO()):
+            actions = sync_task_docs(self.template, self.dest, dry_run=True)
+        self.assertEqual(sorted(p.name for p in self.dest.iterdir()), ["active-tasks.md"])
+        self.assertEqual(self.ledger.read_text(encoding="utf-8"), self.with_bad_row)
+        self.assertTrue(any(a.startswith("back up ") for a in actions))
+
+    def test_symlinked_backup_name_is_refused_before_any_write(self):
+        self.ledger.write_text(self.with_bad_row, encoding="utf-8")
+        (self.dest / "active-tasks.md.bak").symlink_to(self.tmp / "elsewhere")
+        with self.assertRaises(_merge.SymlinkRefused):
+            sync_task_docs(self.template, self.dest)
+        self.assertEqual(self.ledger.read_text(encoding="utf-8"), self.with_bad_row)
+
+    def test_failed_replace_leaves_the_ledger_and_no_temp_file(self):
+        self.ledger.write_text(self.with_bad_row, encoding="utf-8")
+        with mock.patch.object(_merge.os, "replace", side_effect=OSError("disk gone")):
+            with self.assertRaises(OSError), redirect_stderr(io.StringIO()):
+                sync_task_docs(self.template, self.dest)
+        self.assertEqual(self.ledger.read_text(encoding="utf-8"), self.with_bad_row)
+        self.assertNotIn(".tmp", "".join(p.name for p in self.dest.iterdir()))
+
+    def test_temp_file_has_the_old_mode_before_content_and_a_random_name(self):
+        """SEC-T672-01: never more readable than the ledger it replaces; unpredictable name."""
+        import os
+        self.ledger.write_text(self.with_bad_row, encoding="utf-8")
+        self.ledger.chmod(0o600)
+        seen = {}
+        real_fchmod, real_replace = os.fchmod, os.replace
+        def fchmod(fd, mode):
+            seen["size"] = os.fstat(fd).st_size
+            seen["mode_before"] = os.fstat(fd).st_mode & 0o7777
+            return real_fchmod(fd, mode)
+        def replace(src, dst):
+            seen["mode"] = os.stat(src).st_mode & 0o7777
+            seen["name"] = os.path.basename(src)
+            return real_replace(src, dst)
+        with mock.patch.object(_merge.os, "fchmod", side_effect=fchmod), \
+             mock.patch.object(_merge.os, "replace", side_effect=replace), redirect_stderr(io.StringIO()):
+            sync_task_docs(self.template, self.dest)
+        self.assertEqual(seen["size"], 0)
+        self.assertEqual(seen["mode_before"], 0o600)
+        self.assertEqual(seen["mode"], 0o600)
+        self.assertNotIn(str(os.getpid()), seen["name"])
+        self.assertTrue(seen["name"].startswith(".active-tasks.md.") and seen["name"].endswith(".tmp"))
+
+    def test_ledger_keeps_its_mode(self):
+        self.ledger.write_text(TEMPLATE_LEDGER.rstrip("\n"), encoding="utf-8")
+        self.ledger.chmod(0o640)
+        sync_task_docs(self.template, self.dest)
+        self.assertEqual(self.ledger.stat().st_mode & 0o7777, 0o640)
+
+    def test_seeded_files_are_not_group_or_world_writable(self):
+        (self.template / "validate-tasks.py").write_text("print(1)\n", encoding="utf-8")
+        (self.template / "validate-tasks.py").chmod(0o777)
+        sync_task_docs(self.template, self.tmp / "fresh")
+        self.assertEqual((self.tmp / "fresh" / "validate-tasks.py").stat().st_mode & 0o022, 0)
+
+    # -- T682 N-8: a failure is one line and, where it can be foreseen, comes before the first write ----
+    def _run_main(self, *extra: str):
+        out, err = io.StringIO(), io.StringIO()
+        argv = ["merge-task-docs.py", "--template-dir", str(self.template), "--dest-dir", str(self.dest), *extra]
+        with mock.patch("sys.argv", argv), redirect_stdout(out), redirect_stderr(err):
+            code = _merge.main()
+        return code, out.getvalue(), err.getvalue()
+
+    def _assert_one_line_failure(self, code: int, err: str, needle: str) -> None:
+        self.assertEqual(code, 1, err)
+        self.assertEqual(len(err.strip().splitlines()), 1, err)
+        self.assertIn("merge-task-docs: failed (", err)
+        self.assertIn(needle, err)
+        self.assertNotIn("Traceback", err)
+
+    def test_a_failed_write_is_one_line(self):
+        self.ledger.write_text(TEMPLATE_LEDGER, encoding="utf-8")
+        with mock.patch.object(_merge.os, "replace", side_effect=OSError("disk gone")):
+            code, _out, err = self._run_main()
+        self._assert_one_line_failure(code, err, "OSError: disk gone")
+        self.assertEqual(self.ledger.read_text(encoding="utf-8"), TEMPLATE_LEDGER)
+
+    def test_a_ledger_that_is_not_utf8_is_one_line_and_nothing_is_written(self):
+        (self.template / "completed-tasks.md").write_text(TEMPLATE_LEDGER, encoding="utf-8")
+        self.ledger.write_text(self.with_bad_row, encoding="utf-8")   # a row would be dropped: a write is due
+        completed = self.dest / "completed-tasks.md"
+        completed.write_bytes(b"| ID | Title |\n\xff\xfe\n")   # sorts AFTER active-tasks.md
+        code, _out, err = self._run_main()
+        self._assert_one_line_failure(code, err, "UnicodeDecodeError")
+        self.assertEqual(self.ledger.read_text(encoding="utf-8"), self.with_bad_row,
+                         "the first ledger was replaced before the second one was found unreadable")
+        self.assertEqual(sorted(p.name for p in self.dest.iterdir()), ["active-tasks.md", "completed-tasks.md"])
+
+    def test_an_unwritable_directory_is_one_line_and_nothing_is_written(self):
+        import os
+        self.ledger.write_text(self.with_bad_row, encoding="utf-8")
+        self.dest.chmod(0o555)
+        self.addCleanup(self.dest.chmod, 0o755)
+        if os.access(self.dest, os.W_OK):
+            self.skipTest("directory permissions are not enforced here (running as root)")
+        code, _out, err = self._run_main()
+        self._assert_one_line_failure(code, err, "is not writable")
+        self.assertEqual(self.ledger.read_text(encoding="utf-8"), self.with_bad_row)
+
+    # -- T684 SEC-T682-06: everything that can fail is computed before the first write ---------------
+    def _two_ledgers(self) -> Path:
+        (self.template / "completed-tasks.md").write_text(TEMPLATE_LEDGER, encoding="utf-8")
+        self.ledger.write_text(self.with_bad_row, encoding="utf-8")   # a row is dropped: a backup and a write are due
+        completed = self.dest / "completed-tasks.md"
+        completed.write_text(self.with_bad_row, encoding="utf-8")
+        return completed
+
+    def test_an_exception_in_the_second_ledgers_merge_leaves_the_first_unchanged(self):
+        completed = self._two_ledgers()
+        real = _merge.merge_ledger
+        calls = []
+        def merge(template_text, existing_text, dropped=None):
+            calls.append(1)
+            if len(calls) == 2:
+                raise ValueError("cannot merge the second ledger")
+            return real(template_text, existing_text, dropped)
+        with mock.patch.object(_merge, "merge_ledger", side_effect=merge):
+            code, _out, err = self._run_main()
+        self.assertEqual(len(calls), 2, "the second merge was not reached")
+        self.assertEqual(code, 1, err)
+        self.assertIn("ValueError: cannot merge the second ledger", err)
+        self.assertEqual(self.ledger.read_text(encoding="utf-8"), self.with_bad_row, "the first ledger was replaced")
+        self.assertEqual(completed.read_text(encoding="utf-8"), self.with_bad_row)
+        self.assertEqual(sorted(p.name for p in self.dest.iterdir()), ["active-tasks.md", "completed-tasks.md"],
+                         "a backup or a temp file was written before the failure")
+
+    def test_the_failure_message_does_not_overclaim(self):
+        self.ledger.write_text(TEMPLATE_LEDGER, encoding="utf-8")
+        with mock.patch.object(_merge.os, "replace", side_effect=OSError("disk gone")):
+            _code, _out, err = self._run_main()
+        self.assertIn("each ledger is either unchanged or fully replaced", err)
+        self.assertNotIn("never partly written", err)
+        self.assertNotIn("every file", err)
+
+    def test_a_late_write_failure_leaves_every_file_old_or_new_and_no_temp_file(self):
+        completed = self._two_ledgers()
+        real_replace = _merge.os.replace
+        def replace(src, dst):
+            if Path(dst).name == "completed-tasks.md":
+                raise OSError("disk gone")
+            return real_replace(src, dst)
+        with mock.patch.object(_merge.os, "replace", side_effect=replace):
+            code, _out, err = self._run_main()
+        self.assertEqual(code, 1, err)
+        self.assertNotIn("| bad | row |", self.ledger.read_text(encoding="utf-8"), "the first ledger is fully replaced")
+        self.assertEqual(completed.read_text(encoding="utf-8"), self.with_bad_row, "the second ledger is untouched")
+        self.assertEqual(sorted(p.name for p in self.dest.iterdir()),
+                         ["active-tasks.md", "active-tasks.md.bak", "completed-tasks.md", "completed-tasks.md.bak"])
+
+    def test_backups_and_seeds_are_written_through_the_atomic_helper(self):
+        (self.template / "validate-tasks.py").write_text("print(1)\n", encoding="utf-8")
+        (self.template / "validate-tasks.py").chmod(0o777)
+        self.ledger.write_text(self.with_bad_row, encoding="utf-8")
+        self.ledger.chmod(0o640)
+        written = {}
+        real_replace = _merge.os.replace
+        def replace(src, dst):
+            written[Path(dst).name] = (Path(src).name, _merge.os.stat(src).st_mode & 0o7777)
+            return real_replace(src, dst)
+        with mock.patch.object(_merge.os, "replace", side_effect=replace), redirect_stderr(io.StringIO()):
+            sync_task_docs(self.template, self.dest)
+        for name in ("active-tasks.md.bak", "validate-tasks.py", "active-tasks.md"):
+            self.assertIn(name, written, f"{name} was not written through os.replace")
+            self.assertTrue(written[name][0].startswith(f".{name}.") and written[name][0].endswith(".tmp"), written[name])
+        self.assertEqual(written["active-tasks.md.bak"][1], 0o640, "the backup has the mode of the ledger")
+        self.assertEqual(written["validate-tasks.py"][1] & 0o022, 0)
+
+    def test_a_failed_backup_or_seed_write_leaves_no_partial_file(self):
+        (self.template / "validate-tasks.py").write_text("print(1)\n", encoding="utf-8")
+        self.ledger.write_text(self.with_bad_row, encoding="utf-8")
+        for failing in ("active-tasks.md.bak", "validate-tasks.py"):
+            with self.subTest(failing=failing):
+                real_replace = _merge.os.replace
+                def replace(src, dst, failing=failing, real_replace=real_replace):
+                    if Path(dst).name == failing:
+                        raise OSError("disk gone")
+                    return real_replace(src, dst)
+                with mock.patch.object(_merge.os, "replace", side_effect=replace):
+                    code, _out, err = self._run_main()
+                self.assertEqual(code, 1, err)
+                self.assertFalse((self.dest / failing).exists(), f"a partial {failing} was left")
+                self.assertFalse(any(p.name.endswith(".tmp") for p in self.dest.iterdir()))
+                if failing == "active-tasks.md.bak":
+                    self.assertEqual(self.ledger.read_text(encoding="utf-8"), self.with_bad_row,
+                                     "the ledger was replaced without its backup")
+                for leftover in self.dest.iterdir():
+                    if leftover != self.ledger:
+                        leftover.unlink()
+                self.ledger.write_text(self.with_bad_row, encoding="utf-8")
+
+    def test_the_backup_is_byte_identical_to_the_ledger_it_protects(self):
+        original = self.with_bad_row.replace("\n", "\r\n").encode("utf-8")
+        self.ledger.write_bytes(original)
+        with redirect_stderr(io.StringIO()):
+            sync_task_docs(self.template, self.dest)
+        self.assertEqual((self.dest / "active-tasks.md.bak").read_bytes(), original)
+
+    def test_a_dry_run_does_not_need_a_writable_directory(self):
+        import os
+        self.ledger.write_text(TEMPLATE_LEDGER, encoding="utf-8")
+        self.dest.chmod(0o555)
+        self.addCleanup(self.dest.chmod, 0o755)
+        code, out, err = self._run_main("--dry-run")
+        self.assertEqual((code, err), (0, ""), err)
+        self.assertIn("DRY-RUN: merge ledger", out)
+
+    def test_a_symlink_is_still_its_own_message(self):
+        (self.dest / "active-tasks.md").symlink_to(self.tmp / "elsewhere")
+        code, _out, err = self._run_main()
+        self.assertEqual(code, 1)
+        self.assertIn("merge-task-docs: refusing to write through a symlink", err)
+        self.assertNotIn("failed (", err)
 
 
 if __name__ == "__main__":

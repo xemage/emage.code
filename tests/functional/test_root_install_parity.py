@@ -1,6 +1,6 @@
 """Root self-install parity gate (T543).
 
-The repo-root harness -- the eight platform trees, ``AGENTS.md``, ``CLAUDE.md``
+The repo-root harness -- the seven platform trees, ``AGENTS.md``, ``CLAUDE.md``
 and the MCP configs -- is ``scripts/install.sh`` output, not ``sync.mjs``
 output (``AGENTS.md`` § Knowledge Base). ``sync.mjs --check`` and
 ``generate-registry.py --check`` inspect only ``implementation/``, so until this
@@ -159,7 +159,7 @@ class TestRootInstallParity(unittest.TestCase):
     def test_install_contract_is_parsed(self) -> None:
         """Guard against a vacuous gate: an unparsed installer yields no trees."""
         trees = parse_replaced_trees(INSTALLER.read_text(encoding="utf-8"))
-        for tree in (".claude", ".cursor", ".gemini", ".github", ".opencode",
+        for tree in (".claude", ".gemini", ".github", ".opencode",
                      ".pi", ".cline", ".clinerules"):
             self.assertIn(tree, trees, f"install.sh no longer replaces {tree}")
         self.assertIn("settings.json", trees[".claude"])
@@ -240,10 +240,10 @@ class TestRootInstallParityDetector(unittest.TestCase):
         def stale_value(d):  # an existing leaf the source would overwrite
             d["mcpServers"]["gitlab"]["command"] = "stale"
         self._edit_json(".pi/mcp.json", stale_value)
-        (self.root / ".cursor/mcp.json.provenance.json").unlink()
+        (self.root / ".cline/mcp.json.provenance.json").unlink()
         self.assertEqual(compute_drift(self.fresh, self.root),
-                         {".pi/mcp.json", ".cursor/mcp.json",
-                          ".cursor/mcp.json.provenance.json"})
+                         {".pi/mcp.json", ".cline/mcp.json",
+                          ".cline/mcp.json.provenance.json"})
 
 
 def _main(argv: list[str]) -> int:

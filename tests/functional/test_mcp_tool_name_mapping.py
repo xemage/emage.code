@@ -31,10 +31,9 @@ PLATFORMS_DIR = implementation_root() / "platforms"
 ARTIFACT = repo_root() / "docs" / "artifacts" / "mcp-tool-name-mapping-v1.md"
 
 # platform -> mcpToolNames in the manifest. Gemini drops the tools line, Cline has no agent
-# files, so neither can carry the key; Cursor and Claude Code render verbatim.
+# files, so neither can carry the key; Claude Code renders verbatim.
 EXPECTED_STYLE = {
     "claude-code": "verbatim",
-    "cursor": "verbatim",
     "github": "slash",
     "opencode": "underscore",
     "pi": "pi",
@@ -81,7 +80,9 @@ def _projected_tools(platform: str, slug: str) -> list[str]:
         return list(fm["tools"])
     if platform == "opencode":
         fm, _ = parse_file(root / ".opencode" / "agents" / f"{slug}.md")
-        return list(fm["tools"])
+        # T663: the map also carries generated `false` entries (per-agent denials); the grant list is
+        # the `true` entries, in order.
+        return [name for name, value in fm["tools"].items() if value is True]
     raise AssertionError(platform)
 
 
@@ -190,6 +191,9 @@ class GeneratorRunTests(unittest.TestCase):
         tools = fm["tools"]
         if isinstance(tools, str):
             return [t.strip() for t in tools.split(",")]
+        if isinstance(tools, dict):
+            # T663: Opencode's map also carries generated `false` entries (the per-agent denials)
+            return [name for name, value in tools.items() if value is True]
         return list(tools)
 
     def test_generator_succeeded(self):
@@ -200,7 +204,6 @@ class GeneratorRunTests(unittest.TestCase):
             "github": (".github/agents/fx.agent.md", "slash"),
             "opencode": (".opencode/agents/fx.md", "underscore"),
             "pi": (".pi/agents/fx.md", "pi"),
-            "cursor": (".cursor/agents/fx.mdc", "verbatim"),
         }
         for platform, (rel, style) in cases.items():
             with self.subTest(platform=platform):
@@ -310,40 +313,159 @@ class ProjectedAgentTests(unittest.TestCase):
                     for name in _projected_tools(platform, source.stem):
                         self.assertFalse(name.startswith("mcp__"), name)
 
+    # T690 (K-3, D-4 b): `<server>/<tool>` tokens in a Copilot agent file name a server that the generated
+    # `.vscode/mcp.json` carries. `context-retriever` is the one server an agent lists that Copilot does not
+    # carry (an `extended` server outside T690's scope: the config for it is generated for the other platforms
+    # only); it is pinned here so that a second gap cannot appear unnoticed.
+    COPILOT_SERVERS_NOT_IN_VSCODE_CONFIG = {"context-retriever"}
+
+    def test_every_server_a_copilot_agent_lists_is_in_the_generated_vscode_config(self):
+        config = json.loads((implementation_root() / ".vscode" / "mcp.json").read_text(encoding="utf-8"))["servers"]
+        missing = set()
+        for source in sorted((knowledge_root() / "agents").glob("*.md")):
+            for name in _projected_tools("github", source.stem):
+                if "/" in name and name.split("/", 1)[0] not in config:
+                    missing.add(name.split("/", 1)[0])
+        self.assertEqual(missing, self.COPILOT_SERVERS_NOT_IN_VSCODE_CONFIG)
+        for server in ("security-audit", "poc-security-audit"):
+            self.assertIn(server, config)
+
     def test_no_projection_names_the_unsafe_tool(self):
         # T658 (SEC-T657-07): a file-count floor, so an empty glob (a renamed directory) cannot pass
-        # vacuously. Six platforms project agent files (Cline has none); every source agent is projected.
+        # vacuously. Five platforms project agent files (Cline has none); every source agent is projected.
         files = [p for p in implementation_root().glob(".*/agents/*") if p.is_file()]
         sources = len(list((knowledge_root() / "agents").glob("*.md")))
-        self.assertGreaterEqual(len(files), sources * 6)
+        self.assertGreaterEqual(len(files), sources * 5)
         for path in files:
-            self.assertNotIn("browser_run_code_unsafe", path.read_text(encoding="utf-8"), str(path))
+            text = path.read_text(encoding="utf-8")
+            if path.parent.parent.name == ".opencode":
+                # T663: an Opencode agent file names it only as the generated per-agent deny
+                for line in text.splitlines():
+                    if "browser_run_code_unsafe" in line:
+                        self.assertEqual(line, "  playwright_browser_run_code_unsafe: false", str(path))
+            else:
+                self.assertNotIn("browser_run_code_unsafe", text, str(path))
+
+
+# --- T673 (SEC-T658-06): artifact assertions anchored to the section and row they protect ---------------------
+#
+# The earlier `assertRegex(text, "(?i)verified")` was satisfied by the word "unverified" alone, the platform names
+# by any mention anywhere, and the unsafe-tool check by the word "not" anywhere in a long line. The checks below
+# read one section, one table row or one sentence, and `ArtifactAnchorTests` breaks each on an in-memory copy.
+
+PLATFORM_ROW_STATUS = {  # row prefix in section 2 -> what its Status cell must start with
+    "Claude Code (": "**verified**",
+    "GitHub Copilot, VS Code (": "**verified**",
+    "Opencode (": "**verified**",
+    "Gemini CLI (": "**verified**",
+    "Cline (": "**verified",
+    "Pi (": "**verified**",
+}
+UNSAFE_SENTENCE_PREFIX = "**Excluded from every set**: `browser_run_code_unsafe`"
+
+
+def _section(text: str, heading: str) -> str:
+    lines = text.splitlines()
+    for i, line in enumerate(lines):
+        if line.startswith(heading):
+            body = [line]
+            for nxt in lines[i + 1:]:
+                if nxt.startswith("## "):
+                    break
+                body.append(nxt)
+            return "\n".join(body)
+    return ""
+
+
+def platform_row_findings(text: str) -> list[str]:
+    table = _section(text, "## 2. Per-platform result")
+    found = []
+    if "Based on: security-review-t655-fetch-removal-v1.md" not in _section(text, "## Metadata"):
+        found.append("the Metadata section does not carry the Based-on line")
+    for prefix, status in PLATFORM_ROW_STATUS.items():
+        rows = [l for l in table.splitlines() if l.startswith("| " + prefix)]
+        if len(rows) != 1:
+            found.append(f"section 2 has {len(rows)} rows for {prefix!r}")
+            continue
+        cell = rows[0].split("|")[2].strip()
+        if not cell.startswith(status):
+            found.append(f"the {prefix!r} row has status {cell!r}")
+    if not any(l.split("|")[2].strip().startswith("**unverified") for l in table.splitlines() if l.startswith("| ")):
+        found.append("no row of section 2 is marked unverified")
+    return found
+
+
+def unsafe_tool_findings(text: str) -> list[str]:
+    """The artifact names the tool in one sentence of section 4, as the first item of its exclusion list."""
+    found = []
+    named = [(n, l) for n, l in enumerate(text.splitlines()) if "browser_run_code_unsafe" in l]
+    if len(named) != 1:
+        return [f"expected one line that names the tool, found {len(named)}"]
+    section4 = _section(text, "## 4. The four Playwright grant sets")
+    if named[0][1] not in section4.splitlines():
+        found.append("the line that names the tool is not in section 4")
+    if UNSAFE_SENTENCE_PREFIX not in named[0][1]:
+        found.append("the tool is not named as the first item of the 'Excluded from every set' list")
+    if re.search(r"(?i)\b(grant|recommend\w*|enable|give)\b", named[0][1].replace("granted", "")):
+        found.append("the line that names the tool also recommends or grants it")
+    return found
 
 
 class ArtifactTests(unittest.TestCase):
+    def setUp(self):
+        self.text = ARTIFACT.read_text(encoding="utf-8")
+
     def test_artifact_exists_and_records_every_platform(self):
-        text = ARTIFACT.read_text(encoding="utf-8")
-        self.assertIn("Based on: security-review-t655-fetch-removal-v1.md", text)
-        for platform in ("Claude Code", "GitHub Copilot", "Opencode", "Gemini CLI", "Cursor", "Cline", "Pi"):
-            self.assertIn(platform, text)
-        self.assertRegex(text, r"(?i)verified")
-        self.assertRegex(text, r"(?i)unverified")
+        self.assertEqual(platform_row_findings(self.text), [])
 
     def test_artifact_never_recommends_the_unsafe_tool(self):
-        # T658 (SEC-T657-07): the earlier pattern also accepted the word "unsafe", which is part of the
-        # tool name, so it could never fail. A line that names the tool must say it is never granted,
-        # excluded, or not removable/granted (case-insensitive, whole words).
-        text = ARTIFACT.read_text(encoding="utf-8")
-        named = [line for line in text.splitlines() if "browser_run_code_unsafe" in line]
-        self.assertTrue(named, "the artifact must name the unsafe tool in its exclusion list")
-        for line in named:
-            without_name = line.replace("browser_run_code_unsafe", "")
-            self.assertRegex(without_name, r"(?i)\b(never|excluded|not|no)\b", line)
+        # T673: the one line that names the tool is the 'Excluded from every set' sentence of section 4. The
+        # earlier test accepted any line holding the word "not" or "no" next to the name (and had a self-check
+        # for a pattern, not for the artifact).
+        self.assertEqual(unsafe_tool_findings(self.text), [])
 
-    def test_the_anchored_pattern_would_catch_a_recommendation(self):
-        # Self-check of the pattern above: a line that only recommends the tool must fail it.
-        bad = "Grant `browser_run_code_unsafe` to the QA agent for full control."
-        self.assertNotRegex(bad.replace("browser_run_code_unsafe", ""), r"(?i)\b(never|excluded|not|no)\b")
+
+class ArtifactAnchorTests(unittest.TestCase):
+    def setUp(self):
+        self.text = ARTIFACT.read_text(encoding="utf-8")
+
+    def test_unverified_alone_no_longer_stands_for_verified(self):
+        # every row's Status cell says verified or unverified; the whole-file regex `(?i)verified` was satisfied
+        # by "unverified" in any one of them
+        flipped = self.text
+        for prefix, status in PLATFORM_ROW_STATUS.items():
+            row = next(l for l in self.text.splitlines() if l.startswith("| " + prefix))
+            flipped = flipped.replace(row, row.replace(status, "**unverified**", 1), 1)
+        self.assertRegex(flipped, r"(?i)verified")  # the old assertion still passes
+        self.assertEqual(len(platform_row_findings(flipped)), len(PLATFORM_ROW_STATUS))
+
+    def test_a_platform_named_only_outside_its_row_is_noticed(self):
+        for prefix in PLATFORM_ROW_STATUS:
+            row = next(l for l in self.text.splitlines() if l.startswith("| " + prefix))
+            name = prefix.split(" (")[0]
+            moved = self.text.replace(row, "| somebody else " + row[2 + len(prefix):], 1) + f"\n{name} is mentioned here.\n"
+            with self.subTest(platform=name):
+                self.assertIn(name, moved)  # the old assertIn(platform, text) still passes
+                self.assertTrue(platform_row_findings(moved))
+
+    def test_a_missing_based_on_line_is_noticed(self):
+        moved = self.text.replace("- Based on: security-review-t655-fetch-removal-v1.md", "- Based on: x")
+        moved += "\nBased on: security-review-t655-fetch-removal-v1.md\n"
+        self.assertTrue(platform_row_findings(moved))
+
+    def test_a_recommendation_or_a_second_mention_of_the_unsafe_tool_is_noticed(self):
+        line = next(l for l in self.text.splitlines() if "browser_run_code_unsafe" in l)
+        rec = self.text.replace(line, line + " Grant `browser_run_code_unsafe` to the QA agent, no questions asked.", 1)
+        self.assertTrue(unsafe_tool_findings(rec))
+        extra = self.text + "\nGrant `browser_run_code_unsafe` to the QA agent; this is not a problem.\n"
+        self.assertTrue(unsafe_tool_findings(extra))
+        # the old check: a name-less remainder containing 'not' or 'no' passed
+        self.assertRegex(extra.splitlines()[-1].replace("browser_run_code_unsafe", ""), r"(?i)\b(never|excluded|not|no)\b")
+
+    def test_the_tool_moved_out_of_the_exclusion_sentence_is_noticed(self):
+        moved = self.text.replace(UNSAFE_SENTENCE_PREFIX, "**Excluded from every set**: `browser_evaluate`", 1)
+        moved += "\n- not even `browser_run_code_unsafe` is wanted here\n"
+        self.assertTrue(unsafe_tool_findings(moved))
 
 
 if __name__ == "__main__":
