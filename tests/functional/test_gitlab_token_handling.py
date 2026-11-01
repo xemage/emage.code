@@ -608,6 +608,39 @@ class DocumentationTests(unittest.TestCase):
             self.assertIn(fragment, check, fragment)
             self.assertIn(fragment, script, fragment)
 
+    def test_t714_hibernation_dotenv_and_keyring_chain(self):
+        """T714: SEC-T701-01 (hibernation), SEC-T701-02 (where a `.env` may live), SEC-T701-03 (full keyring chain)."""
+        steps = _section(self.prereq_token, "#### File mode")
+        lines = steps.splitlines()
+        xdg = next(l for l in lines if "- **`$XDG_RUNTIME_DIR` (the default).**" in l)
+        shm = next(l for l in lines if "**`/dev/shm`, when `$XDG_RUNTIME_DIR` does not exist**" in l)
+        for line in (xdg, shm):
+            self.assertIn("hibernation image, which is written to swap, holds the token too", line)
+        keyring = next(l for l in lines if "**Filled from a keyring or an encrypted store" in l)
+        self.assertIn('( umask 077; mkdir -p "$d" && [ ! -L "$d" ] && [ -O "$d" ] && chmod 700 "$d" && rm -f -- "$d/token" '
+                      '&& gpg --decrypt <your encrypted store> > "$d/token" && chmod 600 "$d/token" )', keyring)
+        self.assertIn("the same `rm -f --` before the write", keyring)
+        step3 = re.search(r"^3\. (.+)$", steps, re.M).group(1)
+        migration = re.search(r"^2\. (.+)$", _section(self.prereq_token, "#### Migration from v8.0.0"), re.M).group(1)
+        self.assertIn("must live **outside every project directory and is never committed**", step3)
+        self.assertIn("Immutable Security Constraint 1", step3)
+        self.assertIn("`filesystem` server", step3)
+        self.assertIn("drop the `.env` and use file mode", step3)
+        self.assertIn("only outside every project directory and never committed", migration)
+
+    def test_t714_storage_not_determined_and_descriptor_path_are_documented(self):
+        """T714: SEC-T689-04 (the result qualifier, `--strict-storage`) and SEC-T689-05 (descriptor, namespace)."""
+        check = re.search(r"^6\. (.+)$", _section(self.prereq_token, "#### File mode"), re.M).group(1)
+        script = (REPO / "scripts" / "check-gitlab-token.py").read_text(encoding="utf-8")
+        fragment = "WARNING: storage check not determined, the at-rest check was skipped"
+        self.assertIn(fragment, check)
+        self.assertIn(fragment, script)
+        for needle in ("--strict-storage", "the exit code stays 0", "never ends in a bare `ok`", "/proc/self/fd",
+                       "**as the checker sees it**", "same mount namespace as the MCP server"):
+            self.assertIn(needle, check, needle)
+        self.assertIn("--strict-storage", self.wiki_token)
+        self.assertIn(fragment, self.wiki_token)
+
     def test_the_sandbox_placeholder_warning_is_next_to_the_posture_and_the_live_check(self):
         posture = _section(self.prereq_token, "#### Per-client posture")
         warning = next(l for l in posture.splitlines() if l.startswith("**Warning: the Claude Code sandbox"))
