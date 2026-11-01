@@ -433,7 +433,7 @@ class TestGuardsAndApiPaths(unittest.TestCase):
         sent: list[tuple[str, str, dict | None]] = []
         error = self.publish_release.ReleasePublishError
 
-        def fake(method, url, token, payload=None, token_header="PRIVATE-TOKEN"):
+        def fake(method, url, credential, payload=None):
             sent.append((method, url, payload))
             if method == "GET":
                 if isinstance(get_result, tuple):
@@ -444,9 +444,9 @@ class TestGuardsAndApiPaths(unittest.TestCase):
         original = self.publish_release.gitlab_request
         self.publish_release.gitlab_request = fake
         try:
-            self.publish_release.create_or_update_release(
-                "v1.2.3", "https://gitlab.invalid/api/v4", "7", "placeholder", "desc"
-            )
+            target = self.publish_release.ApiTarget(
+                "https://gitlab.invalid/api/v4", "7", self.publish_release.ApiCredential("placeholder"))
+            self.publish_release.create_or_update_release("v1.2.3", target, "desc")
         finally:
             self.publish_release.gitlab_request = original
         return sent
@@ -687,8 +687,8 @@ class TestTokenFromEnvironment(unittest.TestCase):
         (root / "docs" / "releases" / "v1.2.3.md").write_text("# Release v1.2.3\n\nbody\n", encoding="utf-8")
         seen: list[tuple[str, str]] = []
 
-        def fake_request(method, url, token, payload=None, token_header="PRIVATE-TOKEN"):
-            seen.append((method, token))
+        def fake_request(method, url, credential, payload=None):
+            seen.append((method, credential.token))
             if method == "GET":
                 raise self.pr.ReleasePublishError("GitLab API GET u failed: 404 fake", 404)
             return {"tag_name": "v1.2.3"}
@@ -769,7 +769,7 @@ class TestRequestHardening(unittest.TestCase):
         origin = type("Origin", (_RecordingHandler,), {"seen": [], "redirect_to": target_url + "/leak"})
         origin_url = self._serve(origin)
         with self.assertRaisesRegex(self.pr.ReleasePublishError, "failed: 302"):
-            self.pr.gitlab_request("GET", origin_url + "/x", "tok-fake")
+            self.pr.gitlab_request("GET", origin_url + "/x", self.pr.ApiCredential("tok-fake"))
         self.assertEqual(origin.seen, ["tok-fake"])  # sent once to the intended host ...
         self.assertEqual(target.seen, [])  # ... and never to the redirect target
 
@@ -780,7 +780,7 @@ class TestRequestHardening(unittest.TestCase):
         origin = type("Origin", (_RecordingHandler,), {"seen": [], "redirect_to": target_url + "/leak"})
         origin_url = self._serve(origin)
         with mock.patch.object(self.pr, "OPENER", urllib.request.build_opener()):
-            self.pr.gitlab_request("GET", origin_url + "/x", "tok-fake")
+            self.pr.gitlab_request("GET", origin_url + "/x", self.pr.ApiCredential("tok-fake"))
         self.assertEqual(target.seen, ["tok-fake"])
 
     def test_an_http_error_response_carries_its_status_code(self):
@@ -797,10 +797,10 @@ class TestRequestHardening(unittest.TestCase):
         base = self._serve(Handler)
         for code in (404, 500):
             with self.subTest(code=code), self.assertRaises(self.pr.ReleasePublishError) as ctx:
-                self.pr.gitlab_request("GET", f"{base}/{code}", "tok-fake")
+                self.pr.gitlab_request("GET", f"{base}/{code}", self.pr.ApiCredential("tok-fake"))
             self.assertEqual(ctx.exception.status, code)
         with self.assertRaises(self.pr.ReleasePublishError) as ctx:
-            self.pr.gitlab_request("GET", "http://127.0.0.1:1/x", "tok-fake")
+            self.pr.gitlab_request("GET", "http://127.0.0.1:1/x", self.pr.ApiCredential("tok-fake"))
         self.assertIsNone(ctx.exception.status)
 
     def _opener_returning(self, response):
@@ -825,7 +825,7 @@ class TestRequestHardening(unittest.TestCase):
         for exc in (TimeoutError("timed out"), ConnectionResetError("reset")):
             with self.subTest(exc=type(exc).__name__), self._opener_returning(self._response(mock.Mock(side_effect=exc))):
                 with self.assertRaisesRegex(self.pr.ReleasePublishError, type(exc).__name__):
-                    self.pr.gitlab_request("GET", "https://gitlab.invalid/api/v4/x", "tok")
+                    self.pr.gitlab_request("GET", "https://gitlab.invalid/api/v4/x", self.pr.ApiCredential("tok"))
 
     def test_incomplete_read_and_non_json_or_non_utf8_bodies_are_release_errors(self):
         import http.client
@@ -837,7 +837,7 @@ class TestRequestHardening(unittest.TestCase):
         for read in bodies:
             with self.subTest(read=repr(read)[:30]), self._opener_returning(self._response(read)):
                 with self.assertRaises(self.pr.ReleasePublishError):
-                    self.pr.gitlab_request("GET", "https://gitlab.invalid/api/v4/x", "tok")
+                    self.pr.gitlab_request("GET", "https://gitlab.invalid/api/v4/x", self.pr.ApiCredential("tok"))
 
 
 class TestReleaseBriefAndTagGuards(unittest.TestCase):
@@ -1140,7 +1140,7 @@ class TestCiSupplyChainPins(unittest.TestCase):
             self.apk_invocations("    - sh -c 'apk  add git'")
 
     def test_the_release_job_bootstrap_runs_python_isolated_and_without_the_token(self):
-        self.assertIn('python3 -I -c "import os, shutil, subprocess;', self.ci)
+        self.assertIn('python3 -I -c "import os, re, shutil, subprocess;', self.ci)
         self.assertNotIn("python3 -c", self.ci)
         job = re.search(r"^release:\n(?:[ \t].*\n|\n)+", self.ci, re.M).group(0)
         bootstrap = [ln for ln in job.splitlines() if "subprocess.check_call" in ln][0]

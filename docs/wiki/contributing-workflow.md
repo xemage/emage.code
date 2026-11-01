@@ -22,6 +22,8 @@ release/*    ← from develop, MR to develop, then to main, then tag
 hotfix/*     ← from main, MR to develop, then to main, then tag
 ```
 
+Pre-release tags, retagging and a hotfix during an open release: see `CONTRIBUTING.md`, "Releasing".
+
 ## Commit messages
 
 ```

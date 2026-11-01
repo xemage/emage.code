@@ -155,8 +155,8 @@ def run_dry_run(tag: str, work: Path, source: DryRunSource | None = None) -> dic
 
     sent: list[dict[str, Any]] = []
 
-    def fake_gitlab_request(method, url, token, payload=None, token_header="PRIVATE-TOKEN"):
-        sent.append({"method": method, "url": url, "payload": payload, "token_header": token_header})
+    def fake_gitlab_request(method, url, credential, payload=None):
+        sent.append({"method": method, "url": url, "payload": payload, "token_header": credential.header})
         if method == "GET":
             raise module.ReleasePublishError(f"GitLab API GET {url} failed: 404 fake", 404)
         return {"tag_name": tag}

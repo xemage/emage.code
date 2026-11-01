@@ -275,15 +275,26 @@ def direct_roots(name: str, vulns: dict, seen: frozenset = frozenset()) -> set[s
     ``via`` sdk and zod, but only one of the two lists brave in ``effects``, which one depends on the tree). Following
     both can only add roots, so an acceptance never covers fewer pinned packages than npm reports.
     """
-    entry = vulns.get(name) or {}
+    entry = vulns.get(name) if isinstance(vulns.get(name), dict) else {}
     roots = {name} if entry.get("isDirect") else set()
-    for effect in entry.get("effects") or []:
+    effects = entry.get("effects")
+    for effect in effects if isinstance(effects, list) else []:
         if isinstance(effect, str) and effect in vulns and effect not in seen and effect != name:
             roots |= direct_roots(effect, vulns, seen | {name})
     for dependent in via_dependents(name, vulns):
         if dependent not in seen and dependent != name:
             roots |= direct_roots(dependent, vulns, seen | {name})
     return roots
+
+
+def via_list(entry: object) -> list | None:
+    """The ``via`` list of a vulnerable entry, or None when the entry or its ``via`` is not the list npm writes.
+
+    T716 (SEC-T712-05): a string ``via`` would be iterated as its characters and a dict ``via`` as its keys (which could
+    name an accepted package), so any other shape is malformed: never accepted, printed as "via a dependency".
+    """
+    via = entry.get("via") if isinstance(entry, dict) else None
+    return via if isinstance(via, list) else None
 
 
 def via_dependents(name: str, vulns: dict) -> list[str]:
@@ -295,7 +306,7 @@ def via_dependents(name: str, vulns: dict) -> list[str]:
 def fully_accepted(name: str, vulns: dict, active: set[tuple[str, str]], seen: frozenset = frozenset()) -> bool:
     """True when every advisory under ``name``, and every package it is vulnerable through, is accepted for the
     pinned package(s) the entry puts at risk (``active`` holds (advisory, package) pairs, SEC-T676-11)."""
-    vias = (vulns.get(name) or {}).get("via") or []
+    vias = via_list(vulns.get(name))
     roots = direct_roots(name, vulns)
     if name in seen or not vias or not roots:
         return False
@@ -326,7 +337,7 @@ def summarise_audit(report: dict, level: str, accepted: dict | None = None, toda
     lines, hits = [], 0
     for name, vuln in sorted(vulns.items()):
         severity = safe_text(vuln.get("severity", "unknown"))
-        via = [v for v in vuln.get("via", []) if isinstance(v, dict)]
+        via = [v for v in via_list(vuln) or [] if isinstance(v, dict)]
         titles = "; ".join(f"{safe_text(v.get('title'))} [{safe_text(v.get('range'))}] {safe_text(v.get('url'))}"
                            for v in via) or "via a dependency"
         done = fully_accepted(name, vulns, active)
