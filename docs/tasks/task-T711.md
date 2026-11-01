@@ -2,7 +2,7 @@
 
 **ID:** T711
 **Owner:** orchestrator
-**Status:** pending
+**Status:** in_progress
 **Priority:** P1
 **Tier:** standard
 **Depends on:** T710
