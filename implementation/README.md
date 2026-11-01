@@ -1,9 +1,9 @@
 # emage.code implementation
 
 Canonical knowledge and platform projections for the current release stream
-(**v8.0.0**).
+(**v9.0.0**).
 
-Latest release: v8.0.0
+Latest release: v9.0.0
 
 ## Install
 
@@ -58,7 +58,7 @@ cp -r implementation/runtime/memory   implementation/runtime/security \
       implementation/runtime/handoff  <your-project>/implementation/runtime/
 ```
 
-Per-release notes: [`docs/releases/v8.0.0.md`](../docs/releases/v8.0.0.md).
+Per-release notes: [`docs/releases/v9.0.0.md`](../docs/releases/v9.0.0.md).
 
 ## Validation commands
 
