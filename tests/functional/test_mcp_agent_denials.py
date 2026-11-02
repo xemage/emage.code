@@ -673,6 +673,28 @@ class GeneratorFixtureTests(unittest.TestCase):
         self.assertEqual(self.tools(root, "plain"), [("read", "true"), ("gl_*", "false")] + six)
         self.assertEqual(self.tools(root, "pwhole"), [("read", "true"), ("pw_*", "true"), ("gl_*", "false")] + six)
 
+    def test_a_server_named_in_extra_platforms_is_denied_like_a_tag_selected_one(self):
+        """T722 (SEV-T690-01): `skip` (tags [other]) reaches Opencode through `extraPlatforms: [opencode]` and is
+        denied per agent exactly as if its tag were selected; `skipFormats` does not remove the denials."""
+        base = self.SERVERS + "    extraPlatforms: [opencode]\n"
+        tail = [("pw_bad_one", "false"), ("pw_bad_two", "false"), ("skip_*", "false"), ("skip_skip_bad", "false")]
+        for label, servers in (("listed", base), ("listed, skipFormats opencode", base + "    skipFormats: [opencode]\n")):
+            with self.subTest(label):
+                root, result = self.run_sync(servers=servers,
+                                             agents={"plain": "[read]", "skipnamed": "[read, mcp__skip__one]"})
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertEqual(self.tools(root, "plain"), [("read", "true"), ("gl_*", "false")] + tail)
+                if "skipFormats" in servers:
+                    # SEV-T690-06: the grant of a server the config does not carry is left out, so the agent is
+                    # denied the whole server like `plain`
+                    self.assertEqual(self.tools(root, "skipnamed"), self.tools(root, "plain"))
+                else:
+                    self.assertEqual(self.tools(root, "skipnamed"),
+                                     [("skip_*", "false"), ("read", "true"), ("skip_one", "true"), ("gl_*", "false")]
+                                     + tail[:2] + tail[3:])
+                config = json.loads((root / ".opencode" / "opencode.json").read_text(encoding="utf-8"))
+                self.assertEqual("skip" in config["mcp"], "skipFormats" not in servers)
+
     def test_an_agent_without_a_tools_line_still_receives_the_denies(self):
         root, result = self.run_sync(agents={"bare": None})
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)

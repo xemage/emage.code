@@ -1216,7 +1216,7 @@ def managed_paths(projections_only: bool = False, platform: str = "all") -> list
         f"PLATFORM={platform}\nPROJECTIONS_ONLY={1 if projections_only else 0}\n"
         "DOCS_EXCLUDES=(__pycache__)\n"
         + _bash_array_definition("SUPPORTED_PLATFORMS")
-        + _bash_functions("printable", "internal_unknown_platform", "selected_platforms",
+        + _bash_functions("ascii_printable", "printable", "internal_unknown_platform", "selected_platforms",
                           "platform_managed_paths", "docs_managed_paths", "list_managed_paths")
         + "\nlist_managed_paths\n"
     )

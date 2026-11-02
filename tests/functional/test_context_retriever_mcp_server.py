@@ -213,5 +213,47 @@ class AdversarialToolScopingProbeTests(unittest.TestCase):
         }
 
 
+class DefaultIndexDirTests(unittest.TestCase):
+    """T722 (TD-T671-K5): the index directory is derived from the workspace's own project, not hard-coded."""
+
+    def test_the_directory_follows_the_workspace_remote(self):
+        from implementation.runtime.memory.context_retriever import default_index_dir
+        cases = {
+            "https://gitlab.com/em-age/emage.code.git": "em-age-emage.code",
+            "git@gitlab.com:Some-Org/Other.Repo.git": "some-org-other.repo",
+            "https://gitlab.example/group/sub/proj_x.git": "sub-proj_x",
+        }
+        for remote, slug in cases.items():
+            with self.subTest(remote=remote), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                _init_git_repo(root, remote)
+                self.assertEqual(default_index_dir(root),
+                                 root / "implementation" / "runtime" / "memory" / "_index" / slug)
+
+    def test_a_workspace_without_a_usable_remote_is_refused(self):
+        from implementation.runtime.memory.context_retriever import RemoteResolutionError, default_index_dir
+        for remote in (None, "https://gitlab.com/org/re%2Fpo.git", "https://gitlab.com/../repo.git"):
+            with self.subTest(remote=remote), tempfile.TemporaryDirectory() as tmp:
+                _init_git_repo(Path(tmp), remote)
+                with self.assertRaises(RemoteResolutionError):
+                    default_index_dir(Path(tmp))
+
+    def test_the_shipped_entry_passes_no_index_dir_and_names_no_project(self):
+        import yaml
+        servers = yaml.safe_load((implementation_root() / "knowledge" / "mcp" / "servers.yaml").read_text(encoding="utf-8"))
+        args = servers["servers"]["context-retriever"]["args"]
+        self.assertNotIn("--index-dir", args)
+        self.assertNotIn("em-age", " ".join(args))
+        for rel in (".mcp.json", ".gemini/settings.json", ".pi/mcp.json", ".cline/mcp.json"):
+            with self.subTest(file=rel):
+                self.assertNotIn("em-age-emage.code", (implementation_root() / rel).read_text(encoding="utf-8"))
+
+    @unittest.skipUnless(MCP_AVAILABLE, "mcp SDK not installed")
+    def test_the_server_parser_accepts_a_missing_index_dir(self):
+        from implementation.runtime.memory.context_retriever_mcp_server.server import _build_arg_parser
+        args = _build_arg_parser().parse_args(["--workspace-root", ".", "--platform-root", ".claude"])
+        self.assertIsNone(args.index_dir)
+
+
 if __name__ == "__main__":
     unittest.main()

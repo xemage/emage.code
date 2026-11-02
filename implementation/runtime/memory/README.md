@@ -58,6 +58,13 @@ or more times, once per foreign repo this build should also scan for
 `shared`-scope candidates (only that repo's `shared/` subtree is ever read —
 see `scanner.py`'s module docstring for the structural guarantee this gives).
 
+Write the index to `implementation/runtime/memory/_index/<org>-<repo>`, the
+`--project-id` with `/` replaced by `-` (lower case). The `context-retriever`
+MCP server entry in `servers.yaml` passes no `--index-dir` (T722,
+TD-T671-K5): the server derives this directory from the workspace's own git
+remote, so each project reads its own index. Pass `--index-dir` to the server
+to use another location.
+
 ## Query API (T453)
 
 ```python

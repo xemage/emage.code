@@ -112,7 +112,7 @@ class TestSupportedPlatformsArray(_Scratch):
         for name in self._array():
             with self.subTest(platform=name):
                 self.assertIn(f"install_{name.replace('-', '_')}() {{", INSTALL_TEXT)
-                script = ("set -eu\n" + _bash_functions("printable", "internal_unknown_platform",
+                script = ("set -eu\n" + _bash_functions("ascii_printable", "printable", "internal_unknown_platform",
                                                         "platform_managed_paths", "platform_mcp_config")
                           + f"\nplatform_managed_paths {name}\nplatform_mcp_config {name}\n")
                 self.assertIn(MCP_CONFIG[name], _bash_output(script).split())
@@ -769,7 +769,7 @@ def _harness(tmp: Path, scenario: str) -> subprocess.CompletedProcess[str]:
         "set -euo pipefail\n"
         f"TARGET={shlex.quote(str(tmp / 't'))}\nDRY_RUN=0\nORIG_UMASK=\"$(umask)\"\n"
         'SWAP_BUILD=""\nSWAP_OLD=""\nSWAP_DEST=""\nSWAP_DONE=0\nTEMP_FILES=()\nMADE_TEMP=""\nDIR_ENTRIES=()\n'
-        + _bash_functions("printable", "physical_path", "refuse_unsafe_path", "run", "make_temp_file",
+        + _bash_functions("ascii_printable", "printable", "physical_path", "refuse_unsafe_path", "run", "make_temp_file",
                           "list_dir_entries", "copy_contents_excluding", "swap_build_into_place", "replace_tree_by_swap",
                           "copy_kept_path", "discard_old_tree", "detect_mv_flags", "swap_cleanup")
         + "\nMV_T=(); detect_mv_flags\ntrap swap_cleanup EXIT\n"
@@ -1162,6 +1162,25 @@ class TestStaleSwapSiblingsAreRefused(_Scratch):
         self.assertNotIn("\u202e", stderr)
         self.assertTrue(stderr.isascii(), stderr)
 
+    def test_a_non_utf8_sibling_name_is_ascii_and_the_hint_restores_it(self) -> None:
+        """T723 (SEC-T684-06): name bytes that are no UTF-8 at all (0xff, 0xfe, a lone continuation byte)."""
+        suffix = os.fsdecode(b"4242\xff\xfe\x80")
+        for utf8 in (True, False):
+            with self.subTest(utf8=utf8):
+                target = self.installed("claude-code", f"project-bytes-{'utf8' if utf8 else 'c'}")
+                old, stderr = self._refused_with_hostile_sibling(target, suffix, utf8)
+                self.assertTrue(stderr.isascii(), stderr)
+                hint = self._hint(stderr)
+                self.assertIn("\\377\\376\\200", hint)
+                work = self.tmp / f"work-bytes-{'utf8' if utf8 else 'c'}"
+                work.mkdir()
+                ran = subprocess.run(["bash", "-c", hint], cwd=work, capture_output=True, text=True,
+                                     errors="surrogateescape", env=dict(os.environ, LC_ALL="C"))
+                self.assertEqual(ran.returncode, 0, ran.stdout + ran.stderr)
+                self.assertEqual(os.listdir(work), [])
+                self.assertTrue((target / ".claude" / "agents").is_dir(), "the old tree was not restored")
+                self.assertFalse(os.path.lexists(old))
+
     def test_a_symlink_at_a_sibling_name_is_refused_and_not_followed(self) -> None:
         target = self.installed("claude-code")
         outside = self.tmp / "outside"
@@ -1195,6 +1214,43 @@ class TestStaleSwapSiblingsAreRefused(_Scratch):
         target = self.installed("claude-code")
         proc = run_installer(INSTALLER, target, "--platform", "claude-code", "--update")
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+
+
+class TestPrintableIsByteWise(_Scratch):
+    """T723 (SEC-T684-03): `printable` no longer depends on the locale; U+202E never reaches a message."""
+
+    INPUTS = {"bidi": "a\u202eb", "accent": "caf\u00e9", "newline": "x\ny", "escape": "\x1b[31m",
+              "non-utf8": os.fsdecode(b"n\xff\xfe")}
+    EXPECTED = {"bidi": "a???b", "accent": "caf??", "newline": "x?y", "escape": "?[31m", "non-utf8": "n??"}
+
+    def _printable(self, body: str, value: str, locale: str) -> str:
+        script = body + '\nprintable "$1"\n'
+        return subprocess.run(["bash", "-c", script, "probe", value], capture_output=True, text=True,
+                              errors="surrogateescape", check=True, env=dict(os.environ, LC_ALL=locale)).stdout
+
+    def test_every_byte_outside_printable_ascii_becomes_a_question_mark_in_every_locale(self) -> None:
+        body = _bash_functions("ascii_printable", "printable")
+        for locale in ("C.UTF-8", "C"):
+            for label, value in self.INPUTS.items():
+                with self.subTest(locale=locale, value=label):
+                    self.assertEqual(self._printable(body, value, locale), self.EXPECTED[label])
+
+    def test_the_old_locale_class_let_the_bidi_override_through(self) -> None:
+        """The input is not vacuous: the pre-T723 `[:print:]` body passes U+202E in a UTF-8 locale."""
+        old = "printable() {\n  printf '%s' \"${1//[^[:print:]]/?}\"\n}\n"
+        self.assertIn("\u202e", self._printable(old, self.INPUTS["bidi"], "C.UTF-8"))
+
+    def test_a_hostile_link_target_is_ascii_in_the_refusal(self) -> None:
+        target = self.tmp / "project"
+        target.mkdir()
+        (target / ".claude").symlink_to(self.tmp / "evil\u202etxt.exe\x1b[2J", target_is_directory=True)
+        proc = subprocess.run(["bash", str(INSTALLER), "--target", str(target), "--platform", "claude-code"],
+                              capture_output=True, text=True, errors="surrogateescape",
+                              env=dict(os.environ, LC_ALL="C.UTF-8"), timeout=120)
+        self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+        self.assertIn("refusing to write through a symlink", proc.stderr)
+        self.assertIn("evil???txt.exe?[2J", proc.stderr)
+        self.assertTrue(proc.stderr.isascii(), proc.stderr)
 
 
 class TestPlatformMapsAreVerifiedBeforeAnyWrite(_Scratch):

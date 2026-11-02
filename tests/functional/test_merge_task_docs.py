@@ -431,12 +431,14 @@ class TestLedgerBackupAndAtomicWrite(unittest.TestCase):
         """SEC-T672-01: never more readable than the ledger it replaces; unpredictable name."""
         import os
         self.ledger.write_text(self.with_bad_row, encoding="utf-8")
-        self.ledger.chmod(0o600)
+        # T723 (SEC-T684-06): 0640, not 0600 -- mkstemp's own 0600 must not pass for the ledger's mode.
+        self.ledger.chmod(0o640)
         seen = {}
         real_fchmod, real_replace = os.fchmod, os.replace
         def fchmod(fd, mode):
             seen["size"] = os.fstat(fd).st_size
             seen["mode_before"] = os.fstat(fd).st_mode & 0o7777
+            seen["mode_set"] = mode
             return real_fchmod(fd, mode)
         def replace(src, dst):
             seen["mode"] = os.stat(src).st_mode & 0o7777
@@ -446,8 +448,9 @@ class TestLedgerBackupAndAtomicWrite(unittest.TestCase):
              mock.patch.object(_merge.os, "replace", side_effect=replace), redirect_stderr(io.StringIO()):
             sync_task_docs(self.template, self.dest)
         self.assertEqual(seen["size"], 0)
-        self.assertEqual(seen["mode_before"], 0o600)
-        self.assertEqual(seen["mode"], 0o600)
+        self.assertEqual(seen["mode_before"], 0o600, "mkstemp's mode, no wider than the ledger's")
+        self.assertEqual(seen["mode_set"], 0o640, "the ledger's mode is set before any content")
+        self.assertEqual(seen["mode"], 0o640)
         self.assertNotIn(str(os.getpid()), seen["name"])
         self.assertTrue(seen["name"].startswith(".active-tasks.md.") and seen["name"].endswith(".tmp"))
 
@@ -558,34 +561,43 @@ class TestLedgerBackupAndAtomicWrite(unittest.TestCase):
                          ["active-tasks.md", "active-tasks.md.bak", "completed-tasks.md", "completed-tasks.md.bak"])
 
     def test_backups_and_seeds_are_written_through_the_atomic_helper(self):
+        """Backups and seeds are published with os.link (the name must be free), ledgers with os.replace."""
         (self.template / "validate-tasks.py").write_text("print(1)\n", encoding="utf-8")
         (self.template / "validate-tasks.py").chmod(0o777)
         self.ledger.write_text(self.with_bad_row, encoding="utf-8")
         self.ledger.chmod(0o640)
         written = {}
-        real_replace = _merge.os.replace
-        def replace(src, dst):
-            written[Path(dst).name] = (Path(src).name, _merge.os.stat(src).st_mode & 0o7777)
-            return real_replace(src, dst)
-        with mock.patch.object(_merge.os, "replace", side_effect=replace), redirect_stderr(io.StringIO()):
+        real_replace, real_link = _merge.os.replace, _merge.os.link
+        def record(how, real):
+            def call(src, dst, **kwargs):
+                written[Path(dst).name] = (Path(src).name, _merge.os.stat(src).st_mode & 0o7777, how)
+                return real(src, dst, **kwargs)
+            return call
+        with mock.patch.object(_merge.os, "replace", side_effect=record("replace", real_replace)), \
+             mock.patch.object(_merge.os, "link", side_effect=record("link", real_link)), \
+             redirect_stderr(io.StringIO()):
             sync_task_docs(self.template, self.dest)
-        for name in ("active-tasks.md.bak", "validate-tasks.py", "active-tasks.md"):
-            self.assertIn(name, written, f"{name} was not written through os.replace")
+        for name, how in (("active-tasks.md.bak", "link"), ("validate-tasks.py", "link"),
+                          ("active-tasks.md", "replace")):
+            self.assertIn(name, written, f"{name} was not written through the atomic helper")
             self.assertTrue(written[name][0].startswith(f".{name}.") and written[name][0].endswith(".tmp"), written[name])
+            self.assertEqual(written[name][2], how, name)
         self.assertEqual(written["active-tasks.md.bak"][1], 0o640, "the backup has the mode of the ledger")
         self.assertEqual(written["validate-tasks.py"][1] & 0o022, 0)
+        self.assertEqual([p.name for p in self.dest.iterdir() if p.name.endswith(".tmp")], [])
 
     def test_a_failed_backup_or_seed_write_leaves_no_partial_file(self):
+        import errno
         (self.template / "validate-tasks.py").write_text("print(1)\n", encoding="utf-8")
         self.ledger.write_text(self.with_bad_row, encoding="utf-8")
         for failing in ("active-tasks.md.bak", "validate-tasks.py"):
             with self.subTest(failing=failing):
-                real_replace = _merge.os.replace
-                def replace(src, dst, failing=failing, real_replace=real_replace):
+                real_link = _merge.os.link
+                def link(src, dst, failing=failing, real_link=real_link, **kwargs):
                     if Path(dst).name == failing:
-                        raise OSError("disk gone")
-                    return real_replace(src, dst)
-                with mock.patch.object(_merge.os, "replace", side_effect=replace):
+                        raise OSError(errno.EIO, "disk gone")
+                    return real_link(src, dst, **kwargs)
+                with mock.patch.object(_merge.os, "link", side_effect=link):
                     code, _out, err = self._run_main()
                 self.assertEqual(code, 1, err)
                 self.assertFalse((self.dest / failing).exists(), f"a partial {failing} was left")
@@ -597,6 +609,91 @@ class TestLedgerBackupAndAtomicWrite(unittest.TestCase):
                     if leftover != self.ledger:
                         leftover.unlink()
                 self.ledger.write_text(self.with_bad_row, encoding="utf-8")
+
+    # -- T723 SEC-T684-05: a name taken after planning is refused, never overwritten -------------------
+    def _plant_after_planning(self, name: str, content: bytes):
+        real_plan = _merge._plan_task_docs
+        def plan(templates, dest_dir):
+            result = real_plan(templates, dest_dir)
+            (dest_dir / name).write_bytes(content)    # another process, between planning and writing
+            return result
+        return mock.patch.object(_merge, "_plan_task_docs", side_effect=plan)
+
+    def test_a_seed_or_backup_name_taken_after_planning_is_not_overwritten(self):
+        (self.template / "validate-tasks.py").write_text("print(1)\n", encoding="utf-8")
+        for name in ("validate-tasks.py", "active-tasks.md.bak"):
+            with self.subTest(name=name):
+                for leftover in self.dest.iterdir():
+                    leftover.unlink()
+                self.ledger.write_text(self.with_bad_row, encoding="utf-8")
+                with self._plant_after_planning(name, b"theirs\n"):
+                    code, _out, err = self._run_main()
+                self.assertEqual(code, 1, err)
+                self.assertIn("FileExistsError", err)
+                self.assertEqual((self.dest / name).read_bytes(), b"theirs\n", f"{name} was overwritten")
+                self.assertFalse(any(p.name.endswith(".tmp") for p in self.dest.iterdir()))
+                if name == "active-tasks.md.bak":
+                    self.assertEqual(self.ledger.read_text(encoding="utf-8"), self.with_bad_row,
+                                     "the ledger was replaced although its backup was refused")
+
+    def test_without_hard_links_a_seed_is_created_exclusively(self):
+        """A file system without hard links (EPERM): O_EXCL create -- written when free, refused when taken."""
+        import errno
+        import os
+        (self.template / "validate-tasks.py").write_text("print(1)\n", encoding="utf-8")
+        (self.template / "validate-tasks.py").chmod(0o755)
+        no_links = mock.patch.object(_merge.os, "link", side_effect=OSError(errno.EPERM, "no hard links"))
+        with no_links, redirect_stderr(io.StringIO()):
+            sync_task_docs(self.template, self.dest)
+        seeded = self.dest / "validate-tasks.py"
+        self.assertEqual(seeded.read_text(encoding="utf-8"), "print(1)\n")
+        self.assertEqual(seeded.stat().st_mode & 0o7777, 0o755)
+        # the mode does not depend on the umask
+        seeded.unlink()
+        old_umask = os.umask(0o077)
+        try:
+            with no_links, redirect_stderr(io.StringIO()):
+                sync_task_docs(self.template, self.dest)
+        finally:
+            os.umask(old_umask)
+        self.assertEqual(seeded.stat().st_mode & 0o7777, 0o755)
+        seeded.unlink()
+        with no_links, self._plant_after_planning("validate-tasks.py", b"theirs\n"):
+            code, _out, err = self._run_main()
+        self.assertEqual(code, 1, err)
+        self.assertEqual(seeded.read_bytes(), b"theirs\n")
+        self.assertFalse(any(p.name.endswith(".tmp") for p in self.dest.iterdir()))
+
+    def test_a_dry_run_creates_no_destination_directory(self):
+        self.dest = self.tmp / "missing" / "tasks"
+        code, out, err = self._run_main("--dry-run")
+        self.assertEqual((code, err), (0, ""), err)
+        self.assertIn("DRY-RUN: seed", out)
+        self.assertFalse((self.tmp / "missing").exists(), "the dry run created the destination directory")
+
+    # -- T723 SEC-T684-04: the temp file is synced before it is published, the directory after --------
+    def test_each_write_is_fsynced_before_and_its_directory_after_publishing(self):
+        import stat as _stat
+        (self.template / "validate-tasks.py").write_text("print(1)\n", encoding="utf-8")
+        self.ledger.write_text(self.with_bad_row, encoding="utf-8")
+        events = []
+        real_fsync, real_replace, real_link = _merge.os.fsync, _merge.os.replace, _merge.os.link
+        def fsync(fd):
+            events.append("fsync-dir" if _stat.S_ISDIR(_merge.os.fstat(fd).st_mode) else "fsync-file")
+            return real_fsync(fd)
+        def publish(real):
+            def call(src, dst, **kwargs):
+                events.append(f"publish {Path(dst).name}")
+                return real(src, dst, **kwargs)
+            return call
+        with mock.patch.object(_merge.os, "fsync", side_effect=fsync), \
+             mock.patch.object(_merge.os, "replace", side_effect=publish(real_replace)), \
+             mock.patch.object(_merge.os, "link", side_effect=publish(real_link)), redirect_stderr(io.StringIO()):
+            sync_task_docs(self.template, self.dest)
+        expected = []
+        for name in ("active-tasks.md.bak", "active-tasks.md", "validate-tasks.py"):
+            expected += ["fsync-file", f"publish {name}", "fsync-dir"]
+        self.assertEqual(events, expected)
 
     def test_the_backup_is_byte_identical_to_the_ledger_it_protects(self):
         original = self.with_bad_row.replace("\n", "\r\n").encode("utf-8")

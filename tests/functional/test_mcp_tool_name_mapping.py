@@ -296,13 +296,24 @@ class ManifestAndTokenValidationTests(unittest.TestCase):
 class ProjectedAgentTests(unittest.TestCase):
     """Every shipped agent file of a mapped platform equals the mapping of its source."""
 
+    # T722 (SEV-T690-06): servers that a platform's generated MCP config does not carry; their tokens are left
+    # out of that platform's agent files. Pinned as literals: Copilot carries the core servers plus the two
+    # security servers (test_github_security_servers.py), Opencode and Pi carry every server an agent lists.
+    SERVERS_LEFT_OUT = {
+        "github": {"cwso", "hf-mcp-server", "context-retriever", "filesystem", "git", "supabase", "toolradar"},
+        "opencode": set(),
+        "pi": {"hindsight", "cwso"},
+    }
+
     def test_projected_tools_equal_the_mapping_of_the_source(self):
         for platform in ("github", "opencode", "pi"):
             style = EXPECTED_STYLE[platform]
+            left_out = tuple(f"mcp__{server}__" for server in self.SERVERS_LEFT_OUT[platform])
             for source in sorted((knowledge_root() / "agents").glob("*.md")):
                 slug = source.stem
                 with self.subTest(platform=platform, agent=slug):
-                    want = [expected_name(style, t) for t in _source_tools(slug)]
+                    want = [expected_name(style, t) for t in _source_tools(slug)
+                            if not t.startswith(left_out) and t not in {p[:-2] for p in left_out}]
                     got = _projected_tools(platform, slug)
                     self.assertEqual(got, list(dict.fromkeys(want)))
 
@@ -313,12 +324,9 @@ class ProjectedAgentTests(unittest.TestCase):
                     for name in _projected_tools(platform, source.stem):
                         self.assertFalse(name.startswith("mcp__"), name)
 
-    # T690 (K-3, D-4 b): `<server>/<tool>` tokens in a Copilot agent file name a server that the generated
-    # `.vscode/mcp.json` carries. `context-retriever` is the one server an agent lists that Copilot does not
-    # carry (an `extended` server outside T690's scope: the config for it is generated for the other platforms
-    # only); it is pinned here so that a second gap cannot appear unnoticed.
-    COPILOT_SERVERS_NOT_IN_VSCODE_CONFIG = {"context-retriever"}
-
+    # T690 (K-3, D-4 b), T722 (SEV-T690-06): `<server>/<tool>` tokens in a Copilot agent file name a server that
+    # the generated `.vscode/mcp.json` carries, with no exception: the `context-retriever/retrieve` grant, whose
+    # server Copilot does not carry, is no longer rendered.
     def test_every_server_a_copilot_agent_lists_is_in_the_generated_vscode_config(self):
         config = json.loads((implementation_root() / ".vscode" / "mcp.json").read_text(encoding="utf-8"))["servers"]
         missing = set()
@@ -326,9 +334,34 @@ class ProjectedAgentTests(unittest.TestCase):
             for name in _projected_tools("github", source.stem):
                 if "/" in name and name.split("/", 1)[0] not in config:
                     missing.add(name.split("/", 1)[0])
-        self.assertEqual(missing, self.COPILOT_SERVERS_NOT_IN_VSCODE_CONFIG)
+        self.assertEqual(missing, set())
         for server in ("security-audit", "poc-security-audit"):
             self.assertIn(server, config)
+        self.assertEqual(_projected_tools("github", "context-retriever"), ["read", "search"])
+        self.assertIn("mcp__context-retriever__retrieve", _source_tools("context-retriever"))
+        self.assertIn("context-retriever_retrieve", _projected_tools("opencode", "context-retriever"))
+
+    def test_a_token_of_a_server_the_platform_does_not_carry_is_left_out_by_the_generator(self):
+        """T722 (SEV-T690-06) on a fixture root: `mcp__ext__one` (an `extended` server) reaches the agent files of
+        the platforms that carry `ext` and not Copilot's; an unknown server's token is kept as before."""
+        if shutil.which("node") is None:
+            self.skipTest("node is not installed")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            GeneratorRunTests._build(root)
+            servers = root / "knowledge" / "mcp" / "servers.yaml"
+            servers.write_text(servers.read_text(encoding="utf-8") + "  ext:\n    tags: [extended]\n"
+                               "    transport: stdio\n    command: python3\n    args: [\"-m\", \"ext\"]\n", encoding="utf-8")
+            (root / "knowledge" / "agents" / "fx.md").write_text(
+                "---\nname: \"Fixture\"\ndescription: \"fixture\"\ntools: [read, mcp__ext__one, mcp__nodef__two]\n---\n\nbody\n",
+                encoding="utf-8")
+            result = subprocess.run(["node", str(ManifestAndTokenValidationTests.SYNC), "--root", str(root)],
+                                    capture_output=True, text=True, check=False)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            github = parse_file(root / ".github" / "agents" / "fx.agent.md")[0]["tools"]
+            self.assertEqual(list(github), ["read", "nodef/two"])
+            pi = parse_file(root / ".pi" / "agents" / "fx.md")[0]["tools"]
+            self.assertIn("ext", " ".join(pi))
 
     def test_no_projection_names_the_unsafe_tool(self):
         # T658 (SEC-T657-07): a file-count floor, so an empty glob (a renamed directory) cannot pass
