@@ -109,13 +109,16 @@ def format_names(names: Any) -> str:
     return ", ".join(printable(name) for name in sorted(set(names)))
 
 
-GENERATED_REF = re.compile(r"(?:[A-Za-z]+ )?\$\{(?:env:)?[A-Za-z_][A-Za-z0-9_]*\}")
+# The reference forms the generator writes (sync.mjs): `${NAME}` (Claude Code, Gemini, Pi), `${env:NAME}`
+# (VS Code, Cline, older Pi) and `{env:NAME}` without `$` (Opencode, QA-T707-01).
+GENERATED_REF = re.compile(r"(?:[A-Za-z]+ )?(?:\$\{(?:env:)?[A-Za-z_][A-Za-z0-9_]*\}|\{env:[A-Za-z_][A-Za-z0-9_]*\})")
 
 
 def differs_from_generated(entry: Any) -> bool:
     """Whether a retired server entry looks hand-edited (SEC-T680-09). The old generated entry is not
     available, so this judges by what a generated remote entry never holds: a `url`, header or env value that
-    is not one `${NAME}` / `${env:NAME}` reference (optionally after a one-word prefix), or a non-object entry."""
+    is not one `${NAME}` / `${env:NAME}` / `{env:NAME}` reference (optionally after a one-word prefix), or a
+    non-object entry."""
     if not isinstance(entry, dict):
         return True
     values = [entry["url"]] if "url" in entry else []

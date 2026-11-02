@@ -211,11 +211,13 @@ const MCP_FORMATS = ['vscode', 'gemini', 'opencode', 'pi', 'claude-code', 'cline
 // is how the `github` platform (tags: core) carries `security-audit` and `poc-security-audit` and no other
 // `extended` server. Only platform names that a manifest declares are accepted (validateExtraPlatforms, run
 // before the first write): a misspelling would leave the server out without a word. `skipFormats` still wins.
-function emittedFor(server, manifest) {
-  const { tags, format } = manifest.mcp;
-  const selected = (server.tags || []).some((t) => tags.includes(t))
+function selectedFor(server, manifest) {
+  return (server.tags || []).some((t) => manifest.mcp.tags.includes(t))
     || (server.extraPlatforms || []).includes(manifest.platform);
-  return selected && !(server.skipFormats || []).includes(format);
+}
+
+function emittedFor(server, manifest) {
+  return selectedFor(server, manifest) && !(server.skipFormats || []).includes(manifest.mcp.format);
 }
 
 // T690: `cwd: workspace` makes the vscode projection write `"cwd": "${workspaceFolder}"` on a stdio
@@ -592,7 +594,10 @@ function validateMcpToolNamesStyle(manifest) {
 //          file order, not a distinct name, is what makes the pair safe (last match wins).
 // A holder of the whole server gets neither. Throws when the agent would hold an allow and a deny of
 // the same name: the generator never writes both.
-function agentMcpDenials(sourceTools, renderedTools, servers, tags) {
+// T722 (SEV-T690-01): a server counts when the manifest selects it by tag OR names it in `extraPlatforms`
+// (selectedFor, the predicate of emittedFor). `skipFormats` does not remove the denials: a server left out
+// of the generated config may still be defined by the user, so the deny stays (fail-closed).
+function agentMcpDenials(sourceTools, renderedTools, servers, manifest) {
   const whole = new Set();
   const named = new Set();
   for (const token of Array.isArray(sourceTools) ? sourceTools : []) {
@@ -603,7 +608,7 @@ function agentMcpDenials(sourceTools, renderedTools, servers, tags) {
   const first = [];
   const last = [];
   for (const [server, def] of Object.entries(servers)) {
-    if (!(def.tags || []).some((t) => tags.includes(t))) continue;
+    if (!selectedFor(def, manifest)) continue;
     if (def.denyUnlessGranted === true && !whole.has(server)) {
       const wildcard = MCP_TOOL_NAME_STYLES.underscore({ server, tool: '*' });
       (named.has(server) ? first : last).push(wildcard);
@@ -639,6 +644,21 @@ function sourceToolList(data) {
     return Object.entries(tools).filter(([, v]) => v).map(([k]) => k);
   }
   return Array.isArray(tools) ? tools : [];
+}
+
+// T722 (SEV-T690-06): an `mcp__<server>__...` token whose server servers.yaml defines but this platform's
+// generated MCP config does not carry (emittedFor is false: no tag, no `extraPlatforms`, or `skipFormats`) is
+// left out of the agent file. The grant could only be met by a server of that name that the user defines
+// himself, so leaving it out is fail-closed. A token of a server that servers.yaml does not define is kept as
+// before. Applies to a source `tools` array (the form every shipped agent uses).
+function withEmittedMcpTools(data, servers, manifest) {
+  if (!manifest.mcp || !Array.isArray(data.tools)) return data;
+  const kept = data.tools.filter((token) => {
+    const parts = splitMcpToolName(token);
+    if (!parts || !Object.prototype.hasOwnProperty.call(servers, parts.server)) return true;
+    return emittedFor(servers[parts.server], manifest);
+  });
+  return kept.length === data.tools.length ? data : { ...data, tools: kept };
 }
 
 function applyAgentFrontmatter(data, name, cfg) {
@@ -950,6 +970,19 @@ function instructionsRoot(manifest, outRoot) {
   return insRoot;
 }
 
+// T722 (SEC-T684-02): an allowlist, not a deny-list of inputs. The MCP config of a manifest lies strictly
+// under its own outputDir, or is one of the two root files that a client reads from the workspace root
+// (Claude Code `.mcp.json`, VS Code `.vscode/mcp.json`). Compared on the resolved path, so `x/../../.mcp.json`
+// names the same exception; the overlap checks below still run on the physical form of every mcp file.
+const MCP_ROOT_FILES = ['.mcp.json', path.join('.vscode', 'mcp.json')];
+
+function assertMcpOutputFile(manifest, outRoot) {
+  const resolved = path.resolve(outRoot, manifest.mcp.outputFile);
+  if (MCP_ROOT_FILES.some((rel) => resolved === path.join(ROOT, rel))) return;
+  assertUnder(`mcp.outputFile of ${manifest.platform} (allowed: under its outputDir, or exactly <root>/${MCP_ROOT_FILES.join(' or <root>/')})`,
+    resolved, outRoot);
+}
+
 // Called from the validation pass of main(), before the first write.
 function validateManifestPaths(manifest) {
   const outRoot = path.resolve(ROOT, manifest.outputDir);
@@ -959,9 +992,7 @@ function validateManifestPaths(manifest) {
     if (kind === 'instructions' && map.rootRelative) continue;
     assertUnder(`fileMap.${kind}.dir of ${manifest.platform}`, path.resolve(outRoot, map.dir), outRoot);
   }
-  if (manifest.mcp) {
-    assertUnderRoot(`mcp.outputFile of ${manifest.platform}`, path.resolve(outRoot, manifest.mcp.outputFile));
-  }
+  if (manifest.mcp) assertMcpOutputFile(manifest, outRoot);
   for (const extra of manifest.extras || []) {
     assertUnder(`extras.to of ${manifest.platform}`, path.resolve(outRoot, extra.to), outRoot);
     assertUnder(`extras.from of ${manifest.platform}`, path.resolve(EXTRAS, extra.from.replace(/^_extras\//, '')), EXTRAS);
@@ -978,9 +1009,10 @@ function overlaps(a, b) {
 // the rootRelative instructions directory.
 function removalTargets(manifest) {
   const outRoot = path.resolve(ROOT, manifest.outputDir);
-  const targets = [{ label: `outputDir of ${manifest.platform}`, dir: outRoot }];
+  const owner = manifest.platform;
+  const targets = [{ label: `outputDir of ${owner}`, dir: outRoot, owner }];
   if (manifest.fileMap.instructions.rootRelative) {
-    targets.push({ label: `fileMap.instructions.dir of ${manifest.platform}`, dir: instructionsRoot(manifest, outRoot) });
+    targets.push({ label: `fileMap.instructions.dir of ${owner}`, dir: instructionsRoot(manifest, outRoot), owner });
   }
   return targets;
 }
@@ -989,16 +1021,26 @@ function removalTargets(manifest) {
 function mcpFiles(manifest) {
   if (!manifest.mcp) return [];
   const outPath = path.resolve(path.resolve(ROOT, manifest.outputDir), manifest.mcp.outputFile);
+  const owner = manifest.platform;
   return [
-    { label: `mcp.outputFile of ${manifest.platform}`, dir: outPath, file: true },
-    { label: `mcp.outputFile provenance of ${manifest.platform}`, dir: outPath + '.provenance.json', file: true },
+    { label: `mcp.outputFile of ${owner}`, dir: outPath, file: true, owner },
+    { label: `mcp.outputFile provenance of ${owner}`, dir: outPath + '.provenance.json', file: true, owner },
   ];
+}
+
+// The real path of the directory that holds `current` (it exists: `current` is a link inside it).
+async function physicalParent(target, current) {
+  try {
+    return await fs.realpath(path.dirname(current));
+  } catch (error) {
+    throw new Error(`Refusing ${target}: cannot resolve ${path.dirname(current)} (${error.code || error.message})`);
+  }
 }
 
 // T684 (SEC-T682-04): the physical, case-folded form of a path that need not exist yet, for the overlap
 // checks below: the nearest existing ancestor is resolved with fs.realpath and the components below it are
-// appended as given; a dangling symlink is followed by hand (readlink), at most 40 hops (a defensive
-// bound: realpath reports ELOOP for a cycle first). The result is
+// appended as given; a dangling symlink is followed by hand (readlink, resolved from its physical parent
+// directory since T722), at most 40 hops (a defensive bound: realpath reports ELOOP for a cycle first). The result is
 // NFC-normalised and lower-cased, so `Scripts` and `scripts` are one place on a case-insensitive file
 // system; on a case-sensitive one that is a false positive, which only makes the check stricter.
 // Remaining limits (documented, not closed): the check runs once before the first write, so a link
@@ -1024,7 +1066,9 @@ async function physicalFolded(target) {
     }
     if (link !== null) {
       hops += 1;
-      current = path.resolve(path.dirname(current), link);
+      // T722 (SEC-T684-01): a relative link is resolved from the PHYSICAL directory that holds it, as the
+      // kernel does; the lexical dirname is wrong when a parent component is itself a symlink.
+      current = path.resolve(await physicalParent(target, current), link);
       continue;
     }
     const parent = path.dirname(current);
@@ -1056,11 +1100,24 @@ async function assertNoOverlappingTargets(manifests) {
       }
     });
     if (item.file) return;
-    for (const other of targets.slice(index + 1)) {
-      if (overlaps(item.dir, other.dir) || overlaps(item.physical, other.physical)) {
-        throw new Error(`Refusing ${item.label}: ${item.dir} overlaps ${other.label} (${other.dir})`);
-      }
-    }
+    for (const other of targets.slice(index + 1)) assertApart(item, other);
+  });
+  assertMcpFilesApart(files, targets);
+}
+
+function assertApart(item, other) {
+  if (overlaps(item.dir, other.dir) || overlaps(item.physical, other.physical)) {
+    throw new Error(`Refusing ${item.label}: ${item.dir} overlaps ${other.label} (${other.dir})`);
+  }
+}
+
+// T722 (SEC-T684-02): an mcp file (or its sidecar) must not lie in another manifest's removal tree, which
+// would delete or overwrite it, nor equal or contain the mcp file of another manifest (the two root
+// exceptions are the place where that could happen).
+function assertMcpFilesApart(files, targets) {
+  files.forEach((item, index) => {
+    for (const other of targets) if (other.owner !== item.owner) assertApart(item, other);
+    for (const other of files.slice(index + 1)) if (other.owner !== item.owner) assertApart(item, other);
   });
 }
 
@@ -1073,10 +1130,12 @@ async function syncAgents(manifest, outRoot, servers, filesWritten) {
     if (!file.endsWith('.md')) continue;
     const baseName = path.basename(file, '.md');
     const raw = await fs.readFile(file, 'utf8');
-    const { data, body } = parseFrontmatter(raw);
+    const parsed = parseFrontmatter(raw);
+    const body = parsed.body;
+    const data = withEmittedMcpTools(parsed.data, servers, manifest);
     const newData = applyAgentFrontmatter(data, baseName, agentCfg);
     const denies = agentCfg.mcpAgentDenies === true && manifest.mcp
-      ? agentMcpDenials(sourceToolList(data), newData.tools, servers, manifest.mcp.tags)
+      ? agentMcpDenials(sourceToolList(data), newData.tools, servers, manifest)
       : { first: [], last: [] };
     const fm = emitFrontmatter(newData, {
       toolsFormat: agentCfg.tools === 'object' ? 'object' : agentCfg.tools === 'string' ? 'string' : 'array',
@@ -1089,17 +1148,34 @@ async function syncAgents(manifest, outRoot, servers, filesWritten) {
   }
 }
 
-async function syncCommands(manifest, outRoot, filesWritten) {
+// TD-T671-P5 (T725): every command declares `audience: authoring | target | both`. The mirrors keep
+// every command (they are the authoring set); the paths of the `authoring` ones are recorded in
+// `.generated-manifest.json` (`authoringOnly`), and scripts/install.sh withholds them from a target
+// project. A missing or unknown value stops the run: the installer can only withhold what is declared.
+const COMMAND_AUDIENCES = new Set(['authoring', 'target', 'both']);
+
+function commandAudience(file, data) {
+  const audience = data.audience;
+  if (typeof audience !== 'string' || !COMMAND_AUDIENCES.has(audience)) {
+    const shown = typeof audience === 'string' ? JSON.stringify(audience.slice(0, 40)) : 'none';
+    throw new Error(`${path.relative(ROOT, file)}: \`audience:\` must be one of ${[...COMMAND_AUDIENCES].join(', ')} (got ${shown})`);
+  }
+  return audience;
+}
+
+async function syncCommands(manifest, outRoot, filesWritten, authoringOnly) {
   const cmdMap = manifest.fileMap.commands;
   for (const file of await walk(path.join(KNOWLEDGE, 'commands'))) {
     if (!file.endsWith('.md')) continue;
     const baseName = path.basename(file, '.md');
     const raw = await fs.readFile(file, 'utf8');
     const { data, body } = parseFrontmatter(raw);
+    const audience = commandAudience(file, data);
     const newData = applyGenericFrontmatter(data, manifest.frontmatter.commands);
     const outPath = path.join(outRoot, cmdMap.dir, baseName + cmdMap.ext);
     await emitFile(outPath, emitFrontmatter(newData) + body);
     filesWritten.push(outPath);
+    if (audience === 'authoring') authoringOnly.push(outPath);
   }
 }
 
@@ -1180,14 +1256,18 @@ async function syncExtras(manifest, outRoot, filesWritten) {
   }
 }
 
-async function writeGeneratedManifest(manifest, outRoot, filesWritten) {
+// `authoringOnly` (T725) lists, relative to outRoot, the emitted files that only an authoring
+// checkout receives; it is always present, empty where the platform ships none.
+async function writeGeneratedManifest(manifest, outRoot, filesWritten, authoringOnly) {
   const manifestPath = path.join(outRoot, '.generated-manifest.json');
+  const relative = (list) => list.map((f) => toPosixPath(path.relative(outRoot, f))).sort();
   const manifestContent = JSON.stringify(
     {
       generatedFrom: path.relative(ROOT, KNOWLEDGE) + '/',
       platform: manifest.platform,
       generatedAt: '<deterministic>',
-      files: filesWritten.map((f) => toPosixPath(path.relative(outRoot, f))).sort(),
+      files: relative(filesWritten),
+      authoringOnly: relative(authoringOnly),
     },
     null,
     2
@@ -1198,18 +1278,19 @@ async function writeGeneratedManifest(manifest, outRoot, filesWritten) {
 async function syncPlatform(manifest, servers) {
   const outRoot = path.resolve(ROOT, manifest.outputDir);
   const filesWritten = [];
+  const authoringOnly = [];
 
   if (!CHECK_ONLY) {
     await fs.rm(outRoot, { recursive: true, force: true });
   }
 
   if (manifest.fileMap.agents) await syncAgents(manifest, outRoot, servers, filesWritten);
-  if (manifest.fileMap.commands) await syncCommands(manifest, outRoot, filesWritten);
+  if (manifest.fileMap.commands) await syncCommands(manifest, outRoot, filesWritten, authoringOnly);
   await syncInstructions(manifest, outRoot, filesWritten);
   await syncSkills(manifest, outRoot, filesWritten);
   if (manifest.mcp) await syncMcp(manifest, outRoot, servers, filesWritten);
   await syncExtras(manifest, outRoot, filesWritten);
-  await writeGeneratedManifest(manifest, outRoot, filesWritten);
+  await writeGeneratedManifest(manifest, outRoot, filesWritten, authoringOnly);
 
   return filesWritten.length;
 }

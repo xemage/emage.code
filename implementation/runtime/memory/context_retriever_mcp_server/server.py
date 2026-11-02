@@ -60,7 +60,7 @@ from pathlib import Path
 
 from mcp.server.mcpserver import MCPServer
 
-from implementation.runtime.memory.context_retriever import ContextRetriever
+from implementation.runtime.memory.context_retriever import ContextRetriever, default_index_dir
 
 SERVER_NAME = "context-retriever"
 
@@ -109,8 +109,10 @@ def _build_arg_parser() -> argparse.ArgumentParser:
                      "retrieve(query, top_k), wrapping ContextRetriever.query(). "
                      "No flag on this parser configures a write/mutate capability.",
     )
-    parser.add_argument("--index-dir", required=True, type=Path,
-                         help="T452-built index directory")
+    parser.add_argument("--index-dir", type=Path, default=None,
+                         help="T452-built index directory (default, T722: "
+                              "<workspace-root>/implementation/runtime/memory/_index/<org>-<repo>, from the "
+                              "workspace's git remote)")
     parser.add_argument("--workspace-root", required=True, type=Path,
                          help="session workspace root -- its git remote derives project_id "
                               "for every call this server process ever makes")
@@ -128,7 +130,8 @@ def main(argv: list[str] | None = None) -> int:
     start this server; neither accepts a write/mutate operation of any kind.
     """
     args = _build_arg_parser().parse_args(argv)
-    server = build_server(args.index_dir, args.workspace_root, args.platform_root)
+    index_dir = args.index_dir if args.index_dir is not None else default_index_dir(args.workspace_root)
+    server = build_server(index_dir, args.workspace_root, args.platform_root)
     server.run("stdio")
     return 0
 

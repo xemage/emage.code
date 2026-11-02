@@ -124,6 +124,23 @@ def derive_project_id(workspace_root: Path) -> str:
     return normalize_remote_to_project_id(result.stdout)
 
 
+# T722 (TD-T671-K5): the conventional index location, `build.py --output-dir`'s documented default, relative to
+# the workspace root. One directory per project: the `project_id` with `/` replaced by `-`
+# (`em-age/emage.code` -> `em-age-emage.code`).
+INDEX_PARENT = Path("implementation", "runtime", "memory", "_index")
+_INDEX_SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,199}$")
+
+
+def default_index_dir(workspace_root: Path) -> Path:
+    """The index directory of the workspace's own project, derived from its git remote (the same trusted
+    input as `derive_project_id`). Used when the MCP server is started without `--index-dir`. A slug that
+    is not one plain path component of `[a-z0-9._-]` is refused, never used as a path."""
+    slug = derive_project_id(workspace_root).replace("/", "-")
+    if not _INDEX_SLUG_RE.fullmatch(slug):
+        raise RemoteResolutionError(f"project_id does not give a plain index directory name: {slug[:80]!r}")
+    return workspace_root / INDEX_PARENT / slug
+
+
 def resolve_platform(platform_root: Path) -> str:
     """`platform` from `<platform_root>/.generated-manifest.json`'s `platform` field —
     see module docstring for why this satisfies "build-time-injected constant... never a

@@ -312,9 +312,10 @@ class ManifestsAreValidatedBeforeTheFirstWriteTests(unittest.TestCase):
             with self.subTest(label):
                 self._assert_refused({"aaa": lambda m: None, "zzz": patch}, " overlaps ")
 
-    # -- T684 SEC-T682-04 ----------------------------------------------------------------------------
+    # -- T684 SEC-T682-04, T722 SEC-T684-02 ---------------------------------------------------------
     def test_the_mcp_files_must_not_overlap_a_generator_input(self):
-        """A manifest whose mcp.outputFile (or its .provenance.json) lands in an input would overwrite it."""
+        """A manifest whose mcp.outputFile (or its .provenance.json) lands in an input would overwrite it.
+        Since T722 a path outside the manifest's own outputDir is refused by the allowlist first."""
         cases = {
             "the servers file itself": "../knowledge/mcp/servers.yaml",
             "a new file in knowledge": "../knowledge/new.json",
@@ -328,13 +329,47 @@ class ManifestsAreValidatedBeforeTheFirstWriteTests(unittest.TestCase):
             with self.subTest(label):
                 tmp = self._assert_refused(
                     {"aaa": lambda m: None, "zzz": lambda m, o=output_file: m["mcp"].update(outputFile=o)},
-                    "overlaps the generator input",
+                    "Refusing mcp.outputFile of zzz (allowed: under its outputDir",
                     prepare=lambda tmp: [(tmp / d).mkdir(exist_ok=True) for d in ("scripts", "runtime", "_extras")])
                 self.assertEqual((tmp / "knowledge" / "mcp" / "servers.yaml").read_text(encoding="utf-8"), _entry("[a]"))
-        with self.subTest("only the provenance sidecar lands in an input"):
+        with self.subTest("only the provenance sidecar of a root exception lands in an input"):
             self._assert_refused(
-                {"aaa": lambda m: None, "zzz": lambda m: m["mcp"].update(outputFile="../out.json")},
-                "overlaps the generator input", extra_args=("--extras=out.json.provenance.json",))
+                {"aaa": lambda m: None, "zzz": lambda m: m["mcp"].update(outputFile="../.mcp.json")},
+                "overlaps the generator input", extra_args=("--extras=.mcp.json.provenance.json",))
+
+    def test_the_mcp_file_is_allowed_only_under_its_outputdir_or_at_the_two_root_files(self):
+        """T722 (SEC-T684-02): an allowlist, compared on the resolved path."""
+        refused = ("../out.json", "../.mcp.json.bak", "../.vscode/other.json", "../.vscode/mcp.json/x",
+                   "../.claude/mcp.json", "../.aaa/mcp.json", ".", "../.zzz", "/tmp/t722-never.json")
+        for output_file in refused:
+            with self.subTest(refused=output_file):
+                self._assert_refused({"aaa": lambda m: None, "zzz": lambda m, o=output_file: m["mcp"].update(outputFile=o)},
+                                     "Refusing mcp.outputFile of zzz")
+        accepted = {"mcp.json": ".zzz/mcp.json", "sub/x.json": ".zzz/sub/x.json", "../.mcp.json": ".mcp.json",
+                    "../.vscode/mcp.json": ".vscode/mcp.json", "a/../../.mcp.json": ".mcp.json"}
+        for output_file, written in accepted.items():
+            with self.subTest(accepted=output_file):
+                proc, tmp = _run_sync_with_manifests(
+                    {"aaa": lambda m: None, "zzz": lambda m, o=output_file: m["mcp"].update(outputFile=o)})
+                self.addCleanup(shutil.rmtree, tmp, ignore_errors=True)
+                self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+                self.assertTrue((tmp / written).is_file(), written)
+                self.assertTrue((tmp / f"{written}.provenance.json").is_file(), written)
+
+    def test_a_root_mcp_file_must_not_collide_with_another_manifest(self):
+        """T722 (SEC-T684-02): the two root exceptions are the only place where two manifests can meet."""
+        cases = {
+            "two manifests write the same root file": (
+                lambda m: m["mcp"].update(outputFile="../.mcp.json"), lambda m: m["mcp"].update(outputFile="../.mcp.json")),
+            "the root file lies in the other manifest's output tree": (
+                lambda m: m.update(outputDir=".vscode"), lambda m: m["mcp"].update(outputFile="../.vscode/mcp.json")),
+            "the root file lies in the other manifest's rootRelative directory": (
+                lambda m: m["fileMap"]["instructions"].update(dir=".vscode"),
+                lambda m: m["mcp"].update(outputFile="../.vscode/mcp.json")),
+        }
+        for label, (first, second) in cases.items():
+            with self.subTest(label):
+                self._assert_refused({"aaa": first, "zzz": second}, " overlaps ")
 
     def test_a_different_case_or_a_symlink_does_not_hide_an_overlap(self):
         """The comparison uses the physical, case-folded form of both sides."""
@@ -343,7 +378,7 @@ class ManifestsAreValidatedBeforeTheFirstWriteTests(unittest.TestCase):
                 os.symlink(tmp / to, tmp / name, target_is_directory=True)
             return prepare
         def link_file(tmp):
-            os.symlink(tmp / "knowledge" / "mcp" / "servers.yaml", tmp / "lnk.json")
+            os.symlink(tmp / "knowledge" / "mcp" / "servers.yaml", tmp / ".mcp.json")
         def dangling(tmp):
             os.symlink(tmp / "knowledge" / "not-yet", tmp / ".zzz")
         def two_hops(tmp):
@@ -356,13 +391,14 @@ class ManifestsAreValidatedBeforeTheFirstWriteTests(unittest.TestCase):
             "outputDir is the real directory behind a symlinked input": ({"outputDir": "real-k"}, input_is_a_link),
             "outputDir upper-case": ({"outputDir": "Knowledge"}, None),
             "outputDir inside an upper-case input": ({"outputDir": "KNOWLEDGE/sub"}, None),
-            "mcp file in an upper-case input": ({"mcp": "../Knowledge/x.json"}, None),
+            "mcp root file below an upper-case symlink spelling": ({"mcp": "../.vscode/mcp.json"},
+                                                                   link(".vscode", "KNOWLEDGE/mcp")),
             "outputDir is a symlink to knowledge": ({"outputDir": "link"}, link("link", "knowledge")),
             "outputDir inside a symlink to knowledge": ({"outputDir": "link/sub"}, link("link", "knowledge")),
             "outputDir is a dangling symlink into knowledge": ({"outputDir": ".zzz"}, dangling),
             "outputDir behind two symlinks": ({"outputDir": "hop2"}, two_hops),
-            "mcp file below a symlink to knowledge": ({"mcp": "../link/mcp/servers.yaml"}, link("link", "knowledge")),
-            "mcp file is a symlink to the servers file": ({"mcp": "../lnk.json"}, link_file),
+            "mcp root file below a symlink to knowledge": ({"mcp": "../.vscode/mcp.json"}, link(".vscode", "knowledge")),
+            "mcp root file is a symlink to the servers file": ({"mcp": "../.mcp.json"}, link_file),
             "rootRelative instructions dir is a symlink to knowledge":
                 ({"rules": "link"}, link("link", "knowledge")),
         }
@@ -379,6 +415,27 @@ class ManifestsAreValidatedBeforeTheFirstWriteTests(unittest.TestCase):
                                            prepare=prepare)
                 self.assertEqual((tmp / "knowledge" / "mcp" / "servers.yaml").read_text(encoding="utf-8"), _entry("[a]"))
                 self.assertEqual(os.listdir(tmp / "knowledge" / "mcp"), ["servers.yaml"])
+
+    # -- T722 SEC-T684-01 ----------------------------------------------------------------------------
+    def test_a_relative_dangling_link_behind_a_symlinked_parent_resolves_from_the_physical_parent(self):
+        """`alias` -> `knowledge/sub`, and `knowledge/sub/dang` -> `../not-yet` (dangling). The kernel resolves
+        the link from its physical directory, so `alias/dang` is `knowledge/not-yet`; a lexical `dirname` made it
+        `<root>/not-yet`, outside every input, and the output tree was written into `knowledge`."""
+        def prepare(tmp):
+            (tmp / "knowledge" / "sub").mkdir()
+            os.symlink("../not-yet", tmp / "knowledge" / "sub" / "dang")
+            os.symlink(tmp / "knowledge" / "sub", tmp / "alias", target_is_directory=True)
+        for output_dir in ("alias/dang", "alias/dang/deeper"):
+            with self.subTest(outputDir=output_dir):
+                tmp = self._assert_refused({"aaa": lambda m: None, "zzz": lambda m, d=output_dir: m.update(outputDir=d)},
+                                           "overlaps the generator input", prepare=prepare)
+                self.assertFalse((tmp / "knowledge" / "not-yet").exists(), "the output tree was written into knowledge")
+        with self.subTest("the mcp file of a top-level exception behind the same link"):
+            def prepare_mcp(tmp):
+                prepare(tmp)
+                os.symlink(tmp / "alias" / "dang", tmp / ".vscode", target_is_directory=True)
+            self._assert_refused({"aaa": lambda m: None, "zzz": lambda m: m["mcp"].update(outputFile="../.vscode/mcp.json")},
+                                 "overlaps the generator input", prepare=prepare_mcp)
 
     def test_an_output_tree_reached_through_a_symlink_to_another_output_tree_is_refused(self):
         def prepare(tmp):

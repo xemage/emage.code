@@ -24,6 +24,7 @@ next --update, and a fresh install still gets the full template text.
 from __future__ import annotations
 
 import argparse
+import errno
 import os
 import re
 import stat
@@ -155,29 +156,80 @@ def _refuse_symlink(path: Path) -> None:
         raise SymlinkRefused(f"refusing to write through a symlink: {path}")
 
 
-def _atomic_write_bytes(path: Path, data: bytes, mode: int | None = None) -> None:
-    """Write through a random-named temp file next to `path` and os.replace (SEC-006).
+def _fsync_dir(directory: Path) -> None:
+    """Make a rename or link in `directory` durable (T723, SEC-T684-04). A file system that cannot sync a
+    directory (EINVAL, ENOTSUP) is accepted: there the order is kill-safe, not power-loss-safe."""
+    fd = os.open(directory, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+    try:
+        os.fsync(fd)
+    except OSError as exc:
+        if exc.errno not in (errno.EINVAL, errno.ENOTSUP, errno.EOPNOTSUPP):
+            raise
+    finally:
+        os.close(fd)
+
+
+def _publish_new(tmp_name: str, path: Path) -> None:
+    """Give the complete temp file the name `path` only if no file has that name (T723, SEC-T684-05): a
+    file created after planning is never clobbered (FileExistsError). os.link is atomic; a file system
+    without hard links gets an exclusive create (O_EXCL) and a copy, which may leave a partial file there
+    after a power loss but never overwrites one; a failed copy removes the file it created."""
+    try:
+        os.link(tmp_name, path)
+        return
+    except FileExistsError:
+        raise
+    except OSError as exc:
+        if exc.errno not in (errno.EPERM, errno.ENOTSUP, errno.EOPNOTSUPP, errno.EMLINK):
+            raise
+    data, mode = Path(tmp_name).read_bytes(), stat.S_IMODE(os.stat(tmp_name).st_mode)
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0), 0o600)
+    try:
+        with os.fdopen(fd, "wb") as handle:
+            os.fchmod(handle.fileno(), mode)    # the temp file's mode, whatever the umask
+            handle.write(data)
+            handle.flush()
+            os.fsync(handle.fileno())
+    except BaseException:
+        path.unlink(missing_ok=True)    # created above with O_EXCL: it is ours
+        raise
+
+
+def _atomic_write_bytes(path: Path, data: bytes, mode: int | None = None, new: bool = False) -> None:
+    """Write through a random-named temp file next to `path`, then publish it (SEC-006).
 
     mkstemp creates it 0600; it gets `mode` -- by default the mode of the file it replaces (0666 minus
     the umask for a new file) -- BEFORE any content is written, so no content is ever more readable than
-    the old file was (SEC-T672-01). An interrupt leaves the old file or the new one; the temp file is
-    removed on failure. os.replace swaps the name, so a symlink at `path` is replaced, never followed."""
+    the old file was (SEC-T672-01). The temp file is fsynced before it is published and the directory
+    after (T723, SEC-T684-04), so the write order -- a backup ahead of its ledger -- also holds after a
+    power loss. `new`: the name must still be free (seeds, backups; _publish_new); otherwise os.replace
+    swaps the name, so a symlink at `path` is replaced, never followed. The temp file is always removed."""
     if mode is None:
-        try:
-            mode = stat.S_IMODE(path.stat().st_mode)
-        except FileNotFoundError:
-            umask = os.umask(0)
-            os.umask(umask)
-            mode = 0o666 & ~umask
+        mode = _mode_of(path)
     fd, tmp_name = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
     try:
         with os.fdopen(fd, "wb") as handle:
             os.fchmod(handle.fileno(), mode)
             handle.write(data)
-        os.replace(tmp_name, path)
-    except BaseException:
+            handle.flush()
+            os.fsync(handle.fileno())
+        if new:
+            _publish_new(tmp_name, path)
+        else:
+            os.replace(tmp_name, path)
+        _fsync_dir(path.parent)
+    finally:
         Path(tmp_name).unlink(missing_ok=True)
-        raise
+
+
+def _mode_of(path: Path) -> int:
+    """The mode of the file at `path`, or 0666 minus the umask for a file that does not exist yet."""
+    try:
+        return stat.S_IMODE(path.stat().st_mode)
+    except FileNotFoundError:
+        umask = os.umask(0)
+        os.umask(umask)
+        return 0o666 & ~umask
 
 
 def _atomic_write_text(path: Path, text: str) -> None:
@@ -201,8 +253,9 @@ def _preflight(dest_dir: Path, dry_run: bool) -> None:
         raise PermissionError(f"{dest_dir} is not writable")
 
 
-# One write of the apply phase: (destination, bytes, mode or None for "the mode of the file it replaces").
-WriteOp = tuple[Path, bytes, "int | None"]
+# One write of the apply phase: (destination, bytes, mode or None for "the mode of the file it replaces",
+# new: the destination must still be free when it is written -- a backup or a seed, T723 SEC-T684-05).
+WriteOp = tuple[Path, bytes, "int | None", bool]
 
 
 def _plan_task_docs(templates: list[Path], dest_dir: Path) -> tuple[list[str], list[WriteOp]]:
@@ -229,12 +282,13 @@ def _plan_task_docs(templates: list[Path], dest_dir: Path) -> tuple[list[str], l
                 # Rows are only ever dropped with a copy of the ledger as it was (SEC-006).
                 backup = _backup_path(dest_path)
                 actions.append(f"back up {dest_path} to {backup} ({len(dropped)} row(s) dropped)")
-                ops.append((backup, existing_bytes, stat.S_IMODE(dest_path.stat().st_mode) & ~0o022))
-            ops.append((dest_path, merged.encode("utf-8"), None))
+                ops.append((backup, existing_bytes, stat.S_IMODE(dest_path.stat().st_mode) & ~0o022, True))
+            ops.append((dest_path, merged.encode("utf-8"), None, False))
         elif not dest_path.exists():
             actions.append(f"seed {dest_path}")
             # The template's mode without group/world write: nothing seeded is group/world-writable (SEC-005).
-            ops.append((dest_path, template_path.read_bytes(), stat.S_IMODE(template_path.stat().st_mode) & ~0o022))
+            ops.append((dest_path, template_path.read_bytes(), stat.S_IMODE(template_path.stat().st_mode) & ~0o022,
+                        True))
     return actions, ops
 
 
@@ -249,11 +303,13 @@ def sync_task_docs(template_dir: Path, dest_dir: Path, dry_run: bool = False) ->
             _refuse_symlink(dest_dir / (template_path.name + ".bak"))
     _preflight(dest_dir, dry_run)
     actions, ops = _plan_task_docs(templates, dest_dir)
+    if dry_run:
+        return actions    # T723 (SEC-T684-05): a dry run creates nothing, not even dest_dir
     dest_dir.mkdir(parents=True, exist_ok=True)
-    if not dry_run:
-        # Each write is atomic: a file is as it was or fully replaced (backups, ledgers and seeds alike).
-        for path, data, mode in ops:
-            _atomic_write_bytes(path, data, mode)
+    # Each write is atomic: a file is as it was or fully replaced (backups, ledgers and seeds alike);
+    # a backup or seed whose name was taken after planning is refused, never overwritten.
+    for path, data, mode, new in ops:
+        _atomic_write_bytes(path, data, mode, new)
     return actions
 
 

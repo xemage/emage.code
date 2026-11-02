@@ -62,9 +62,12 @@ SHIPPED_TOOLING = (
 # (file, function) -> reason. Keep this list short and justified.
 ALLOWLIST = {
     ("scripts/install.sh", "usage"): (
-        "the --help text (a block of echo lines), no logic; TD-T671-FN1 ignores it"
+        "the --help text: quoted heredocs and printf lines, no command substitution and no control flow "
+        "(T723, SEC-T677-03, pinned by test_allowlisted_usage_holds_no_logic); TD-T671-FN1 ignores it"
     ),
 }
+# A line of the allowlisted `usage` outside its heredocs (T723, SEC-T677-03): only these shapes.
+_USAGE_LINE = re.compile(r"^(?:usage\(\) \{|\}|[ \t]*#.*|[ \t]*cat <<'EOF'|[ \t]*printf '[^'$`]*'(?: \"\$\{SUPPORTED_PLATFORMS\[@\]\}\")?)$")
 
 _JS_FUNC_VALUE = r"(?:async[ \t]+)?(?:function\b|(?:\([^)]*\)|[A-Za-z_$][\w$]*)[ \t]*=>[ \t]*\{[ \t]*$)"
 _JS_STARTS = (
@@ -211,6 +214,16 @@ class TestFunctionSize(unittest.TestCase):
                 sizes[name][1], MAX_LINES,
                 f"allowlisted {relpath}:{name} is within the limit; remove it from ALLOWLIST",
             )
+
+    def test_allowlisted_usage_holds_no_logic(self):
+        """T723 (SEC-T677-03): the reason "no logic" stays true -- no command substitution, no control flow."""
+        text = (repo_root() / "scripts" / "install.sh").read_text(encoding="utf-8")
+        body = re.search(r"^usage\(\) \{\n.*?^\}\n", text, re.S | re.M).group(0)
+        outside = re.sub(r"^[ \t]*cat <<'EOF'\n.*?^EOF\n", "cat <<'EOF'\n", body, flags=re.S | re.M)
+        self.assertNotIn("<<EOF", outside.replace("<<'EOF'", ""), "an unquoted heredoc expands $(...)")
+        for line in outside.splitlines():
+            self.assertRegex(line, _USAGE_LINE)
+        self.assertNotRegex("  printf '%s' \"$(join_bar a b)\"", _USAGE_LINE)
 
     def test_every_tooling_file_is_measured(self):
         root = repo_root()

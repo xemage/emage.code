@@ -601,19 +601,19 @@ class TerminalSafeNamesTests(unittest.TestCase):
 class PrunedEntryTests(unittest.TestCase):
     """SEC-T680-09: a hand-edited entry under a pruned name is named, never printed."""
 
-    def prune(self, entries: dict) -> subprocess.CompletedProcess:
+    def prune(self, entries: dict, wrapper: str = "mcpServers") -> subprocess.CompletedProcess:
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         root = Path(tmp.name)
-        (root / "s.json").write_text(json.dumps({"mcpServers": {"keep": {}}}), encoding="utf-8")
-        (root / "d.json").write_text(json.dumps({"mcpServers": {"keep": {}, **entries}}), encoding="utf-8")
+        (root / "s.json").write_text(json.dumps({wrapper: {"keep": {}}}), encoding="utf-8")
+        (root / "d.json").write_text(json.dumps({wrapper: {"keep": {}, **entries}}), encoding="utf-8")
         (root / "d.sc.json").write_text(json.dumps({"schemaVersion": 1, "generatorOwnedKeys": ["keep", *entries]}), encoding="utf-8")
         (root / "s.sc.json").write_text(json.dumps({"schemaVersion": 1, "generatorOwnedKeys": ["keep"]}), encoding="utf-8")
         result = subprocess.run([sys.executable, str(MERGER), "--source", str(root / "s.json"), "--dest", str(root / "d.json"),
                                  "--old-sidecar", str(root / "d.sc.json"), "--new-sidecar", str(root / "s.sc.json")],
                                 capture_output=True, text=True, check=False)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(list(json.loads((root / "d.json").read_text(encoding="utf-8"))["mcpServers"]), ["keep"])
+        self.assertEqual(list(json.loads((root / "d.json").read_text(encoding="utf-8"))[wrapper]), ["keep"])
         return result
 
     def test_a_hand_edited_same_name_entry_is_named_and_its_content_is_not_printed(self):
@@ -636,6 +636,30 @@ class PrunedEntryTests(unittest.TestCase):
         result = self.prune({"hindsight": {"url": "${HINDSIGHT_MCP_URL}"}})
         self.assertIn("pruned the retired generator server hindsight", result.stderr)
         self.assertNotIn("differs", result.stderr)
+
+    # QA-T707-01: Opencode writes `{env:NAME}` without `$` (sync.mjs emitMcpOpencode).
+    def test_an_unedited_opencode_entry_is_pruned_without_the_differs_note(self):
+        result = self.prune({
+            "github": {"type": "local", "command": ["npx", "-y", "some-server"],
+                       "environment": {"GITHUB_PERSONAL_ACCESS_TOKEN": "{env:GITHUB_PERSONAL_ACCESS_TOKEN}"}},
+            "cwso": {"type": "remote", "url": "{env:CWSO_MCP_URL}",
+                     "headers": {"Authorization": "Bearer {env:CWSO_BEARER_TOKEN}"}},
+        }, wrapper="mcp")
+        self.assertIn("pruned the retired generator server cwso, github", result.stderr)
+        self.assertNotIn("differs", result.stderr)
+
+    def test_an_edited_opencode_entry_still_gets_the_differs_note(self):
+        result = self.prune({
+            "github": {"type": "local", "command": ["npx"], "environment": {"GITHUB_PERSONAL_ACCESS_TOKEN": "ghp-literal"}},
+            "cwso": {"type": "remote", "url": "https://cwso-secret-host.invalid/{env:X}"},
+            "hf": {"type": "remote", "url": "{env:HF_URL}", "headers": {"Authorization": "Bearer {env:A} {env:B}"}},
+            "odd": {"type": "local", "environment": {"A": "{env:A", "B": "$${env:B}"}},
+            "same": {"type": "local", "environment": {"A": "{env:A}"}},
+        }, wrapper="mcp")
+        self.assertIn("pruned the retired generator server cwso, github, hf, odd, same", result.stderr)
+        self.assertIn("cwso, github, hf, odd differs from the generated entry", result.stderr)
+        self.assertNotIn("ghp-literal", result.stderr + result.stdout)
+        self.assertNotIn("cwso-secret-host", result.stderr + result.stdout)
 
 
 def _section(text: str, heading: str) -> str:

@@ -139,12 +139,18 @@ class GeneratedVscodeConfigTests(unittest.TestCase):
                     self.assertNotIn("cwd", json.dumps(data[name]))
 
     def test_the_other_platforms_are_unchanged_in_which_extended_servers_they_carry(self):
+        # T722 (SEV-T690-05): exact sets, not a superset; the 16 names are pinned as literals above.
+        every = CORE_ON_COPILOT | SECURITY_SERVERS | EXTENDED_NOT_ON_COPILOT
+        self.assertEqual(len(every), 16)
+        self.assertEqual(set(_servers_yaml()), every)
         for rel, wrapper in OTHER_PLATFORM_FILES:
             data = json.loads((IMPL / rel).read_text(encoding="utf-8"))[wrapper]
+            sidecar = json.loads((IMPL / f"{rel}.provenance.json").read_text(encoding="utf-8"))
+            # Pi leaves hindsight and cwso out (skipFormats), see test_pi_optional_variables.py
+            expected = every - {"hindsight", "cwso"} if rel == ".pi/mcp.json" else every
             with self.subTest(file=rel):
-                if rel == ".pi/mcp.json":
-                    continue  # Pi leaves hindsight and cwso out (skipFormats), pinned in test_pi_optional_variables.py
-                self.assertTrue((CORE_ON_COPILOT | SECURITY_SERVERS | EXTENDED_NOT_ON_COPILOT) <= set(data))
+                self.assertEqual(set(data), expected)
+                self.assertEqual(sidecar["generatorOwnedKeys"], sorted(expected))
 
 
 class CopilotAgentGrantTests(unittest.TestCase):
@@ -289,6 +295,21 @@ class GeneratorRefusalTests(_Scratch):
         # an empty inline array is already refused by the servers.yaml reader
         self.assert_refused(_probe(extraPlatforms="[]"), "an empty inline array `[]` is not supported")
 
+    def test_a_well_formed_unknown_platform_name_is_refused_under_every_selection(self):
+        """T722 (SEV-T690-05): M11 (the validateExtraPlatforms call removed, or skipped under --platform or
+        --check) is killed directly: `githb` passes the name check, so only the manifest check refuses it."""
+        for extra in ((), ("--platform", "github"), ("--platform", "claude-code"), ("--platform=cline",), ("--check",)):
+            with self.subTest(args=extra):
+                self.assert_refused(_probe(extraPlatforms="[github, githb]"),
+                                    "listed.extraPlatforms names a platform without a manifest: githb", *extra)
+
+    def test_a_known_name_passes_under_every_selection(self):
+        """The refusal above is not a false positive: the same run with only known names succeeds."""
+        for extra in ((), ("--platform", "github"), ("--platform", "claude-code")):
+            with self.subTest(args=extra):
+                root, proc = self.run_sync(_probe(extraPlatforms="[github, opencode]"), *extra)
+                self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+
     def test_only_the_workspace_value_is_accepted_for_cwd(self):
         for value in ("elsewhere", "'${workspaceFolder}'", "/tmp", "true"):
             with self.subTest(value=value):
@@ -362,6 +383,13 @@ class K3LimitationGoneTests(unittest.TestCase):
     def test_the_fail_rule_for_an_incomplete_scan_is_kept(self):
         wiki = (REPO / "docs/wiki/mcp-servers.md").read_text(encoding="utf-8")
         self.assertIn("treats a scan that did not complete (tool unavailable, error, timeout or `truncated`) as a blocker with the verdict `FAIL`", wiki)
+        # T722 (SEV-T690-05): the rule the agent acts on, in its source and in the Copilot projection
+        rule = ("A scan that did not complete (tool unavailable, error, timeout or `truncated`) is a blocker and "
+                "the verdict is `FAIL`; it is never `PASS`.")
+        for path in (IMPL / "knowledge" / "agents" / "poc-security-engineer.md",
+                     IMPL / ".github" / "agents" / "poc-security-engineer.agent.md"):
+            with self.subTest(file=path.name):
+                self.assertIn(rule, path.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

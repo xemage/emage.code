@@ -354,7 +354,17 @@ class TestProjectionsOnlyAtRepositoryRoot(_FreshInstallFixture):
     `scripts/` + `implementation/` whose installer targets its own root exercises
     exactly the code path a real root refresh takes -- without touching the real
     root.
+
+    The repository root is an authoring checkout, so the refresh keeps the
+    authoring-only commands a target never receives (T725); its oracle is an
+    authoring install, as in the parity gate.
     """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        cls.authoring_fresh = cls.tmp / "fresh-authoring"
+        parity.run_fresh_install(cls.authoring_fresh, authoring=True)
 
     def _synthetic_repo(self, name: str) -> Path:
         repo = self.tmp / name
@@ -378,7 +388,9 @@ class TestProjectionsOnlyAtRepositoryRoot(_FreshInstallFixture):
         self.assertEqual(_snapshot(repo / "docs"), docs, "docs/ moved at the repo root")
         self.assertEqual(_snapshot(repo / "implementation"), impl,
                          "implementation/ (the source) moved at the repo root")
-        self.assertEqual(parity.compute_drift(self.fresh, repo), set())
+        self.assertEqual(parity.compute_drift(self.authoring_fresh, repo), set())
+        self.assertTrue((repo / ".claude/commands/prepare-release.md").is_file(),
+                        "the authoring root lost an authoring-only command")
 
     def test_repo_root_refresh_with_rsync(self) -> None:
         self._require_rsync()

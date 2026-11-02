@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import tarfile
@@ -36,14 +37,21 @@ from tests.functional.test_install_update_root import _CopierMatrix
 INSTALLER = repo_root() / "scripts" / "install.sh"
 REMOVED = "platform 'cursor' was removed in v9.0.0"
 NOTICE = "holds a Cursor install written by an earlier emage.code release"
+# T723 (TL-T708-03): one line per case. A run that names 'filesystem' is refused and writes nothing;
+# only a run that leaves it out merges. The old sentence ran both cases together.
 CONCRETE_STEP = (
-    "Open .cursor/mcp.json and remove the 'filesystem' entry if it runs @anthropic/mcp-filesystem, "
-    "and the keys e2b, redis, figma and notion if present (M-9 of the v8.0.0 release notes). "
-    "Edit the file by hand: --force-prune-keys of scripts/merge-mcp-json.py does not help here. "
-    "It needs as --source the generated Cursor file, which exists only at the v8.0.0 tag; "
-    "with that file it refuses to prune 'filesystem' (the file has that key) and merges every entry "
-    "of the file, github included, into yours."
+    "  Open .cursor/mcp.json and remove the 'filesystem' entry if it runs @anthropic/mcp-filesystem, "
+    "and the keys e2b, redis, figma and notion if present (M-9 in docs/releases/v8.0.0.md). "
+    "Edit the file by hand: --force-prune-keys of scripts/merge-mcp-json.py does not help here.",
+    "  That option needs as --source the generated Cursor file, which exists only at the v8.0.0 tag "
+    "and earlier tags.",
+    "  With that file, a run that names 'filesystem' in --force-prune-keys is refused (the file has that key): "
+    "it exits 1 and writes nothing.",
+    "  A run that leaves 'filesystem' out writes: it merges every entry of the file, github included, "
+    "into yours. Neither run removes the 'filesystem' entry.",
 )
+# The conflated wording must not come back.
+CONFLATED_CLAIM = "refuses to prune 'filesystem' (the file has that key) and merges every entry"
 # TL-T700-01 (T704, the user's 2026-11-01 decision "Fix in T704 (Recommended)"): the
 # option belongs to scripts/merge-mcp-json.py and still exists; the old wording said it
 # existed "only in the v8.0.0 installer". The wrong claim must not come back.
@@ -201,7 +209,10 @@ class TestPreviousCursorInstallIsNoticedAndNeverTouched(_InstallCase):
                     self.assertIn("does not delete it", proc.stderr)
                     self.assertIn("@anthropic/mcp-filesystem", proc.stderr)
                     self.assertIn("M-9", proc.stderr)
-                    self.assertIn(CONCRETE_STEP, proc.stderr)
+                    lines = proc.stderr.splitlines()
+                    for step in CONCRETE_STEP:
+                        self.assertIn(step, lines)
+                    self.assertNotIn(CONFLATED_CLAIM, proc.stderr)
                     self.assertNotIn(STALE_CLAIM, proc.stderr)
                     self.assertIn("docs/releases/v9.0.0.md", proc.stderr)
                     self.assertIn("MCP server versions are frozen", proc.stderr)
@@ -291,6 +302,13 @@ class TestPreviousCursorInstallIsNoticedAndNeverTouched(_InstallCase):
         proc = self._run(target, ("--update",), None)
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         self.assertNotIn(NOTICE, proc.stderr)
+
+    def test_a_cursor_line_names_a_release_document_only_by_its_path(self) -> None:
+        """T723 (TL-T708-03, SEC-T715-02): verify-release-docs.py checks the Cursor item only for a
+        docs/releases/vX.Y.Z.md path; a "vX.Y.Z release notes" phrase on a Cursor line escapes that check."""
+        for number, line in enumerate(INSTALLER.read_text(encoding="utf-8").splitlines(), start=1):
+            if re.search(r"\bCursor\b", line):
+                self.assertNotRegex(line, r"(?i)release notes", f"scripts/install.sh:{number}")
 
     def test_installer_source_has_no_delete_or_write_path_for_cursor(self) -> None:
         """The only mentions of .cursor in the installer are the read-only detection and
