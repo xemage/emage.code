@@ -21,6 +21,7 @@ import logging
 import math
 import os
 import random
+import re
 import subprocess
 import threading
 import time
@@ -810,35 +811,86 @@ class SIAExecutor:
 SECRET_ENV_VAR = "CWSO_JWT_SECRET"
 
 
-def resolve_jwt_secret(explicit: Optional[str]) -> str:
-    """Return the JWT secret from --jwt-secret or CWSO_JWT_SECRET (T694).
+def secret_from_text(text: str) -> str:
+    """Return the first non-empty line not starting with `#`, stripped ("" if none).
 
-    There is no secret-file fallback. Exits with status 1 and a message that
-    names the variable (never a value) when neither source is set.
+    The one secret-file rule (SEC-T694-07), shared with scripts/mint-cwso-jwt.py,
+    scripts/cwso-deploy-helper.sh and runtime/cwso/mcp_client.py.
     """
-    if explicit and explicit.strip():
-        return explicit.strip()
-    secret = os.environ.get(SECRET_ENV_VAR, "").strip()
-    if secret:
-        return secret
-    log.error(f"{SECRET_ENV_VAR} is not set; export {SECRET_ENV_VAR} or pass --jwt-secret")
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if line and not line.startswith("#"):
+            return line
+    return ""
+
+
+def _exit_secret_error(message: str) -> None:
+    """Log a secret-source error (names only, never a value or path) and exit 1."""
+    log.error(message)
     sys.exit(1)
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="SIA executor — Phase 3.2 with real task polling and heartbeat"
+def _read_secret_file(secret_file: str) -> str:
+    path = Path(secret_file)
+    if not path.is_file():
+        _exit_secret_error("the file given to --jwt-secret-file is not a regular file")
+    try:
+        secret = secret_from_text(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError) as exc:
+        _exit_secret_error(f"the file given to --jwt-secret-file cannot be read ({type(exc).__name__})")
+    if not secret:
+        _exit_secret_error("the file given to --jwt-secret-file has no secret line")
+    return secret
+
+
+def resolve_jwt_secret(secret_file: Optional[str]) -> str:
+    """Return the JWT secret from --jwt-secret-file or CWSO_JWT_SECRET (T694, SEC-T694-04).
+
+    The secret is never taken from argv. There is no default secret file.
+    Exits with status 1 and a message that names the source (never a value or
+    a path) when no source holds a secret.
+    """
+    if secret_file:
+        return _read_secret_file(secret_file)
+    secret = os.environ.get(SECRET_ENV_VAR, "").strip()
+    if secret:
+        return secret
+    _exit_secret_error(
+        f"{SECRET_ENV_VAR} is not set; export {SECRET_ENV_VAR} or pass --jwt-secret-file <path>"
+    )
+    return ""  # not reached
+
+
+class QuietArgumentParser(argparse.ArgumentParser):
+    """An ArgumentParser whose errors name the option but never echo a value (SEC-T694-04)."""
+
+    def error(self, message: str):  # type: ignore[override]
+        match = re.match(r"argument (\S+?)(?:/\S+)?: ", message)
+        if match:
+            detail = f"invalid or missing value for {match.group(1)} (value not shown)"
+        else:
+            detail = "invalid arguments (values not shown)"
+        self.exit(2, f"{self.prog}: error: {detail}; see --help\n")
+
+
+def build_parser() -> argparse.ArgumentParser:
+    # allow_abbrev=False: no prefix matching, so a mistyped option never
+    # captures (and later echoes) the following value.
+    parser = QuietArgumentParser(
+        description="SIA executor — Phase 3.2 with real task polling and heartbeat",
+        allow_abbrev=False,
     )
     parser.add_argument(
         "--cwso-url", default="http://localhost:8080", help="CWSO orchestrator URL"
     )
     parser.add_argument("--node-id", default="sia-executor-1", help="Executor node ID")
     parser.add_argument(
-        "--jwt-secret",
-        required=False,
+        "--jwt-secret-file",
+        default=None,
         help=(
-            "CWSO JWT secret, explicit only (visible in the process list); "
-            "default: the CWSO_JWT_SECRET environment variable"
+            "explicit path to a file holding the CWSO JWT secret on its first "
+            "non-empty, non-comment line; default: the CWSO_JWT_SECRET "
+            "environment variable (the secret is never accepted on argv)"
         ),
     )
     parser.add_argument(
@@ -857,9 +909,27 @@ def main():
         default=DEFAULT_EXECUTION_TIMEOUT,
         help="Harness execution timeout in seconds (default 120)",
     )
-    args = parser.parse_args()
+    return parser
 
-    jwt_secret = resolve_jwt_secret(args.jwt_secret)
+
+def parse_cli(argv: Optional[List[str]] = None) -> argparse.Namespace:
+    """Parse argv; unknown arguments are counted, never echoed (one may be a secret)."""
+    args, unknown = build_parser().parse_known_args(argv)
+    if unknown:
+        print(
+            f"error: {len(unknown)} unrecognized argument(s), not shown; "
+            f"--jwt-secret was removed (SEC-T694-04), export {SECRET_ENV_VAR} "
+            "or pass --jwt-secret-file <path>",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+    return args
+
+
+def main():
+    args = parse_cli()
+
+    jwt_secret = resolve_jwt_secret(args.jwt_secret_file)
 
     # Create and run executor
     executor = SIAExecutor(

@@ -29,6 +29,24 @@ AUTO_MODE=0
 # (T694): there is no secret file default.
 SECRET_ENV_VAR="CWSO_JWT_SECRET"
 
+# Pinned downloads (SEC-T694-11, T726, looked up 2026-11-02). Each download goes
+# to a mktemp -d directory in the container and is checked with sha256sum
+# before use; a mismatch stops the setup. To update a pin, take the new
+# version and checksum from the official source named on each line.
+# Docker convenience script, pinned to a docker/docker-install commit
+# (https://github.com/docker/docker-install/commit/af185b580a79972aefcb30700ff83893adf3964e),
+# sha256 of install.sh at that commit:
+DOCKER_INSTALL_URL="https://raw.githubusercontent.com/docker/docker-install/af185b580a79972aefcb30700ff83893adf3964e/install.sh"
+DOCKER_INSTALL_SHA256="2b102d809152ea157a59f171319f489d971273b2d26dd7e9a6d1d737ce89289d"
+# Docker Engine version passed to the script's --version option
+# (https://github.com/moby/moby/releases/tag/docker-v29.9.2):
+DOCKER_VERSION="29.9.2"
+# Standalone docker-compose binary
+# (https://github.com/docker/compose/releases/tag/v5.6.1, checksums.txt):
+COMPOSE_VERSION="v5.6.1"
+COMPOSE_SHA256_X86_64="47737f4236e6d3ccea7291995203f8f018058783b4c3a9469119811a0b5db8c0"
+COMPOSE_SHA256_AARCH64="42cfa75f51ad0ccf290bad37899e0038a8c10a0069e85233ecc1d53e3ff1347d"
+
 # Functions
 print_header() {
     echo -e "\n${BLUE}=== $1 ===${NC}\n"
@@ -58,6 +76,21 @@ require_jwt_secret() {
     fi
 }
 
+# Print the .env line for CWSO_JWT_SECRET (SEC-T694-08). docker-compose
+# reads a single-quoted .env value literally ($, #, spaces and " keep their
+# meaning as plain characters); a quote is escaped as \'. A backslash has no
+# unambiguous form there, so such a value is refused. Errors name the
+# variable only, never the value.
+compose_env_line() {
+    local value
+    value="$(printf '%s' "$CWSO_JWT_SECRET" | tr -d '\r\n')"
+    if [[ "$value" == *\\* ]]; then
+        print_error "${SECRET_ENV_VAR} contains a backslash, which a docker-compose .env value cannot hold literally" >&2
+        exit 1
+    fi
+    printf "%s='%s'\n" "$SECRET_ENV_VAR" "${value//\'/\\\'}"
+}
+
 show_usage() {
     cat << 'EOF'
 CWSO Proxmox LXC Setup Script
@@ -65,9 +98,12 @@ CWSO Proxmox LXC Setup Script
 Usage: CWSO_JWT_SECRET=... bash cwso-proxmox-setup.sh [OPTIONS]
 
 Environment:
-  CWSO_JWT_SECRET          Required. Written as CWSO_JWT_SECRET to /opt/cwso/repo/.env
-                           (mode 600) in the container; docker-compose reads it
-                           there for the jwt_secret secret
+  CWSO_JWT_SECRET          Required. Written as CWSO_JWT_SECRET='<value>' (single-
+                           quoted, so docker-compose reads it literally) to
+                           /opt/cwso/repo/.env in the container, mode 600 and
+                           owner root; docker-compose reads it there for the
+                           jwt_secret secret. The value stays at rest in that
+                           file. A value with a backslash is refused.
 
 Options:
   --ctid <ID>              Container ID (default: 201)
@@ -340,9 +376,15 @@ install_docker() {
     pct exec $CTID apt-get update
     pct exec $CTID apt-get upgrade -y
 
-    print_info "Installing Docker..."
-    pct exec $CTID curl -fsSL https://get.docker.com -o /tmp/get-docker.sh
-    pct exec $CTID bash /tmp/get-docker.sh
+    print_info "Installing Docker ${DOCKER_VERSION} (pinned, checksum verified)..."
+    # $1 URL, $2 sha256, $3 Docker version; mktemp -d instead of a fixed /tmp path.
+    pct exec $CTID -- sh -c 'set -eu
+        dir="$(mktemp -d)"
+        trap "rm -rf \"$dir\"" EXIT
+        curl -fsSL "$1" -o "$dir/install.sh"
+        printf "%s  %s\n" "$2" "$dir/install.sh" | sha256sum -c -
+        sh "$dir/install.sh" --version "$3"' sh \
+        "$DOCKER_INSTALL_URL" "$DOCKER_INSTALL_SHA256" "$DOCKER_VERSION"
 
     print_info "Enabling Docker service..."
     pct exec $CTID systemctl enable docker
@@ -360,10 +402,27 @@ install_docker() {
 install_docker_compose() {
     print_header "Installing Docker Compose"
 
-    print_info "Installing docker-compose..."
-    pct exec $CTID curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" \
-        -o /usr/local/bin/docker-compose
-    pct exec $CTID chmod +x /usr/local/bin/docker-compose
+    local arch sha
+    arch="$(pct exec $CTID -- uname -m)"
+    case "$arch" in
+        x86_64) sha="$COMPOSE_SHA256_X86_64" ;;
+        aarch64) sha="$COMPOSE_SHA256_AARCH64" ;;
+        *)
+            print_error "No pinned docker-compose checksum for this architecture"
+            exit 1
+            ;;
+    esac
+
+    print_info "Installing docker-compose ${COMPOSE_VERSION} (pinned, checksum verified)..."
+    # $1 URL, $2 sha256; verified in a mktemp -d directory, then installed.
+    pct exec $CTID -- sh -c 'set -eu
+        dir="$(mktemp -d)"
+        trap "rm -rf \"$dir\"" EXIT
+        curl -fsSL "$1" -o "$dir/docker-compose"
+        printf "%s  %s\n" "$2" "$dir/docker-compose" | sha256sum -c -
+        install -m 0755 "$dir/docker-compose" /usr/local/bin/docker-compose' sh \
+        "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-linux-${arch}" \
+        "$sha"
 
     if pct exec $CTID docker-compose --version &>/dev/null; then
         print_success "docker-compose installed"
@@ -399,11 +458,15 @@ echo "PARQUET_STORE_PATH=/opt/cwso/data" >> .env
 EOF
 
     # Configure JWT: docker-compose reads CWSO_JWT_SECRET from the project .env
-    # (mode 600) for the jwt_secret secret of docker-compose.yml. The value is
-    # passed over stdin, never on argv, and never printed (T694).
+    # (mode 600, owner root) for the jwt_secret secret of docker-compose.yml.
+    # The value is passed over stdin, never on argv, and never printed (T694).
+    # It stays at rest in that file (SEC-T694-08).
     print_info "Writing ${SECRET_ENV_VAR} to /opt/cwso/repo/.env for the jwt_secret secret..."
-    printf '%s=%s\n' "$SECRET_ENV_VAR" "$(printf '%s' "$CWSO_JWT_SECRET" | tr -d '\r\n')" \
-        | pct exec $CTID -- sh -c 'cat >> /opt/cwso/repo/.env'
+    # Built first, so a refused value stops the setup (set -e) before any write.
+    local env_line
+    env_line="$(compose_env_line)"
+    printf '%s\n' "$env_line" | pct exec $CTID -- sh -c \
+        'umask 077 && cat >> /opt/cwso/repo/.env && chmod 600 /opt/cwso/repo/.env'
 
     print_info "Starting CWSO services..."
     pct exec $CTID bash << 'EOF'
