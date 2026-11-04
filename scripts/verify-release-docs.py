@@ -17,6 +17,9 @@ Migration pointers (T703, SEC-T662-01): every ``docs/releases/v*.md`` path that
 mentions "Cursor" must carry its Cursor migration item. See ``MIGRATION_POINTER_HELP``
 for the anchor and for how a pointer to a version newer than the tag is treated.
 
+Every printed line passes through ``printable``: control, bidi and zero-width characters of an
+``install.sh`` line, a release document or a tag become ``?`` in the CI log (SEC-T715-04).
+
 This gate cannot check that ``main`` already carries the release. That duty (merge the
 release branch to ``develop`` and ``main`` before the tag, stated in CONTRIBUTING.md) is
 enforced on the tag pipeline, without a grace window, by ``scripts/check-release-tag-tree.py``:
@@ -131,7 +134,18 @@ POINTER_RE = re.compile(r"docs/releases/(?P<tag>v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+
 # SEC-T703-02: "the v8.0.0 release notes" names a release document in prose; it must exist too.
 PROSE_POINTER_RE = re.compile(r"\b(?P<tag>v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?) release notes\b")
 # Anything that looks like a pointer to a release document; each hit must lie inside a parsed pointer.
-POINTER_LIKE_RE = re.compile(r"docs/releases|releases/v|\brelease notes\b", re.IGNORECASE)
+# SEC-T715-01: also a versioned .md file name, 'release-notes' and its variants, any 'releases' path
+# segment ('doc/releases'), a shell variable named for a release document ('$REL_DOC', '$RELEASE_NOTES';
+# not '$DOCS_EXCLUDES' or '$rel', which name the docs tree and a relative path) and a URL
+# that names a wiki or a release, including a GitLab '/-/wikis' path.
+POINTER_LIKE_RE = re.compile(
+    r"\bv\d[\w.-]*\.md\b"
+    r"|\brelease[-_ ]?notes?\b"
+    r"|\breleases?[/\\]|[/\\]releases?\b"
+    r"|\$\{?(?:[A-Za-z0-9]*_)*(?:rel(?:eases?)?_?(?:docs?|notes?)|releases?|notes?|changelog)(?![A-Za-z0-9])"
+    r"|https?://[^\s\"'<>]*(?:wiki|release)|/-/wikis?\b",
+    re.IGNORECASE,
+)
 TAG_CORE_RE = re.compile(r"v(\d+)\.(\d+)\.(\d+)(?:-[0-9A-Za-z.-]+)?")
 ITEM_HEADING_RE = re.compile(r"^#{3,6}[ \t]+(?P<text>.+)$")
 ITEM_BOLD_LEAD_RE = re.compile(r"^(?:[-*][ \t]+|\d+\.[ \t]+)?\*\*(?P<text>[^*\n]+)\*\*")
@@ -139,18 +153,69 @@ CURSOR_WORD_RE = re.compile(r"\bCursor\b")
 # SEC-T703-01: the anchor counts only where a reader sees it, not in fenced code or an HTML comment.
 FENCE_OPEN_RE = re.compile(r"^ {0,3}(?P<fence>`{3,}|~{3,})")
 HTML_COMMENT_RE = re.compile(r"<!--.*?(?:-->|\Z)", re.DOTALL)
+# SEC-T715-03: CommonMark raw HTML blocks (spec 0.31.2, section 4.6). Each rule is (start, end) for
+# types 1 to 6; the end pattern is searched from the end of the start match, then on each later line.
+HTML_BLOCK_TAGS = (
+    "address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|"
+    "dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h[1-6]|head|header|hr|html|"
+    "iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|search|section|"
+    "source|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul"
+)
+BLANK_LINE_RE = re.compile(r"^[ \t]*$")
+HTML_BLOCK_RULES = (
+    (re.compile(r" {0,3}<(?:script|pre|style|textarea)(?=[ \t>]|$)", re.I),
+     re.compile(r"</(?:script|pre|style|textarea)>", re.I)),
+    (re.compile(r" {0,3}<!--"), re.compile(r"-->")),
+    (re.compile(r" {0,3}<\?"), re.compile(r"\?>")),
+    (re.compile(r" {0,3}<![A-Za-z]"), re.compile(r">")),
+    (re.compile(r" {0,3}<!\[CDATA\["), re.compile(r"\]\]>")),
+    (re.compile(rf" {{0,3}}</?(?:{HTML_BLOCK_TAGS})(?=[ \t]|/?>|$)", re.I), BLANK_LINE_RE),
+)
+# Type 7: a line that is one complete open or closing tag; it ends at a blank line and cannot
+# interrupt a paragraph. Attribute syntax per spec section 6.6; each part has one way to match.
+_HTML_ATTR = r"[ \t]+[A-Za-z_:][A-Za-z0-9_.:-]*(?:[ \t]*=[ \t]*(?:[^ \t\"'=<>`]+|'[^'\n]*'|\"[^\"\n]*\"))?"
+HTML_TAG_LINE_RE = re.compile(
+    rf" {{0,3}}(?:<[A-Za-z][A-Za-z0-9-]*(?:{_HTML_ATTR})*[ \t]*/?>|</[A-Za-z][A-Za-z0-9-]*[ \t]*>)[ \t]*$"
+)
+ATX_HEADING_RE = re.compile(r" {0,3}#{1,6}(?:[ \t]|$)")
+# SEC-T731-01, SEC-T731-06: a list item line may precede a list-form anchor (see has_cursor_migration_item).
+LIST_ITEM_RE = re.compile(r" {0,3}(?:[-*+]|\d{1,9}[.)])[ \t]+\S")
+# SEC-T731-02: CommonMark ends a line only at \n, \r\n or \r; str.splitlines() also splits at
+# \v, \f, \x1c-\x1e, \x85, U+2028 and U+2029, which would end an HTML block or start a line early.
+LINE_END_RE = re.compile(r"\r\n|\r|\n")
+
+
+# The characters str.splitlines() treats as a line end and CommonMark does not; a checked document
+# that holds one fails the gate, so no check reads two visible lines as one (SEC-T731-02).
+NON_COMMONMARK_BREAK_RE = re.compile("[\v\f\x1c\x1d\x1e\x85\u2028\u2029]")
+
+
+def markdown_lines(text: str) -> list[str]:
+    """The lines of ``text`` as CommonMark splits them (SEC-T731-02); a trailing newline gives a last ''."""
+    return LINE_END_RE.split(text)
+# SEC-T715-04: the characters check-release-tag-tree.py strips from what it prints (C0/C1 controls,
+# the bidi controls and marks, zero-width characters and the BOM).
+UNSAFE_RE = re.compile("[\x00-\x1f\x7f-\x9f\u061c\u200b-\u200f\u2028\u2029\u202a-\u202e\u2060-\u2069\ufeff]")
 MIGRATION_POINTER_HELP = """\
 Migration pointers (T703, SEC-T662-01). Every docs/releases/v*.md path named in
 scripts/install.sh, and every "vX.Y.Z release notes" it names, must exist in the tree.
-A line that names 'docs/releases', 'releases/v' or 'release notes' in any other form
-(a variable, a missing patch number, no 'docs/' prefix) fails the gate: write the
-literal path docs/releases/vX.Y.Z.md (SEC-T703-02). A document named by path on an
-install.sh line that contains the word "Cursor" must carry a Cursor migration item.
+A line that names a release document in any other form fails the gate: write the
+literal path docs/releases/vX.Y.Z.md (SEC-T703-02). Such forms are a 'releases' path
+segment without the literal path (doc/releases, releases/v, a missing patch number),
+'release notes' or 'release-notes' without a version, a versioned file name alone
+(v9.0.0.md), a shell variable named for a release document ("$REL_DOC") and a URL
+that names a wiki or a release (SEC-T715-01). A document named, by path or as
+"vX.Y.Z release notes", on an install.sh line that contains the word "Cursor" must
+carry a Cursor migration item (SEC-T715-02).
 Anchor: inside the '## Migration Guide' section (up to the next '## ' heading), a
 heading of level 3 to 6 ('### ...') or a bold lead ('**...**' at the start of a line,
-optionally after a list marker) whose text contains the word "Cursor" (case-sensitive),
+optionally after a list marker) whose text contains the word "Cursor" (case-sensitive)
+and that starts a block: the line before it is blank or an ATX heading, or a list-form
+anchor continues a run of list item lines that started there (SEC-T731-06),
 for example '**Migration Guide item M-3. Cursor is no longer supported.**'. Fenced code
-(``` or ~~~) and HTML comments are ignored, so an anchor there does not count (SEC-T703-01).
+(``` or ~~~), HTML comments and raw HTML blocks (CommonMark types 1 to 7, for example
+a '<details>' block up to the next blank line) are ignored, so an anchor there does not
+count (SEC-T703-01, SEC-T715-03).
 Newer versions: a pointer to a version (major.minor.patch, any pre-release suffix
 ignored) newer than the tag being verified is an error, because the tagged tree points
 users to a document it does not ship (SEC-T703-03). --allow-newer-pointers turns that
@@ -192,7 +257,7 @@ def section_text(text: str, heading: str) -> str:
     Fenced code is blanked first, so a heading or a placeholder quoted in a code block
     neither opens a section nor counts as an unfilled value.
     """
-    lines = [line.rstrip() for line in FENCED_CODE_RE.sub("", text).splitlines()]
+    lines = [line.rstrip(" \t") for line in markdown_lines(FENCED_CODE_RE.sub("", text))]
     try:
         start = lines.index(heading)
     except ValueError:
@@ -316,6 +381,27 @@ def check_section_requirements(errors: list[str]) -> None:
                 errors.append(f"missing required content in {relative}: {snippet}")
 
 
+def check_line_breaks(relatives: list[Path], errors: list[str]) -> None:
+    """Each existing file in ``relatives`` that holds a NON_COMMONMARK_BREAK_RE character is an error.
+
+    The error names the file, the line (CommonMark lines) and the code point of the first one,
+    never the character itself.
+    """
+    for relative in relatives:
+        path = ROOT / relative
+        if not path.is_file():
+            continue
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        found = NON_COMMONMARK_BREAK_RE.search(text)
+        if found is None:
+            continue
+        number = len(LINE_END_RE.findall(text, 0, found.start())) + 1
+        errors.append(
+            f"{relative}:{number} holds U+{ord(found.group(0)):04X}, a line separator that Markdown does not "
+            "treat as a line end; remove it (SEC-T731-02)"
+        )
+
+
 def check_release_brief(tag: str, release_brief: str, errors: list[str]) -> None:
     """The release notes document has the required sections and no unfilled verdict."""
     brief_text = (ROOT / release_brief).read_text(encoding="utf-8", errors="ignore")
@@ -339,18 +425,19 @@ def check_release_brief(tag: str, release_brief: str, errors: list[str]) -> None
 
 
 def install_sh_pointers(text: str) -> dict[str, bool]:
-    """Each release document install.sh text names, mapped to whether a line naming it by path mentions Cursor.
+    """Each release document install.sh text names, mapped to whether a line naming it mentions Cursor.
 
     A ``docs/releases/vX.Y.Z.md`` path and a ``vX.Y.Z release notes`` phrase both name
-    ``docs/releases/vX.Y.Z.md``; only the path form carries the Cursor-item requirement.
+    ``docs/releases/vX.Y.Z.md``; either form on a line with the word "Cursor" carries the
+    Cursor-item requirement (SEC-T715-02: the phrase form used to be checked for existence only).
     """
     pointers: dict[str, bool] = {}
     for line in text.splitlines():
-        for match in POINTER_RE.finditer(line):
-            path = match.group(0)
-            pointers[path] = pointers.get(path, False) or CURSOR_WORD_RE.search(line) is not None
-        for match in PROSE_POINTER_RE.finditer(line):
-            pointers.setdefault(f"docs/releases/{match.group('tag')}.md", False)
+        cursor = CURSOR_WORD_RE.search(line) is not None
+        paths = [m.group(0) for m in POINTER_RE.finditer(line)]
+        paths += [f"docs/releases/{m.group('tag')}.md" for m in PROSE_POINTER_RE.finditer(line)]
+        for path in paths:
+            pointers[path] = pointers.get(path, False) or cursor
     return pointers
 
 
@@ -383,34 +470,77 @@ def pointer_applies(pointed_tag: str, tag: str) -> bool:
     return pointed <= verified
 
 
-def strip_hidden_markdown(text: str) -> str:
-    """Blank fenced code (``` and ~~~, CommonMark rules) and HTML comments; the line count is kept.
+def html_block_opening(line: str) -> tuple[re.Pattern[str], int] | None:
+    """``(end pattern, search start)`` when ``line`` opens a CommonMark HTML block, else None.
 
-    An unclosed fence or comment hides the rest of the document, as a Markdown renderer does.
+    A type 7 block (a line that is one complete tag) opens whatever the line before it is
+    (SEC-T731-01). CommonMark keeps it closed after a paragraph line, but this gate cannot tell a
+    paragraph line from a table row, a blockquote or an empty list item. Opening it wrongly hides
+    the lines up to the next blank line, so a wrong guess here is a false FAIL, never a false PASS.
+    """
+    for start, end in HTML_BLOCK_RULES:
+        found = start.match(line)
+        if found:
+            return end, found.end()
+    if HTML_TAG_LINE_RE.match(line):
+        return BLANK_LINE_RE, len(line)
+    return None
+
+
+def _filler_lines(match: re.Match[str]) -> str:
+    """One empty comment per line of ``match``: the line count is kept and no line becomes blank."""
+    return "\n".join(["<!---->"] * (match.group(0).count("\n") + 1))
+
+
+def strip_hidden_markdown(text: str) -> str:
+    """Blank fenced code (``` and ~~~), raw HTML blocks and HTML comments (CommonMark rules); the line count is kept.
+
+    An unclosed fence, HTML block or comment hides the rest of the document, as a Markdown renderer does.
+    A comment or triple-backtick span left at this point sits inside a paragraph, so each of its lines becomes
+    an empty comment, not a blank line: a blank line would end the paragraph for the anchor rule (SEC-T731-06).
+    A blank line ends an HTML block of type 6 or 7; it is blank either way.
     """
     kept: list[str] = []
     fence = ""
-    for line in text.splitlines():
+    html_end: re.Pattern[str] | None = None
+    for line in markdown_lines(text):
+        kept.append("")
         if fence:
             if re.match(rf"^ {{0,3}}{re.escape(fence[0])}{{{len(fence)},}}[ \t]*$", line):
                 fence = ""
-            kept.append("")
+            continue
+        if html_end is not None:
+            if html_end.search(line):
+                html_end = None
             continue
         opening = FENCE_OPEN_RE.match(line)
         if opening and not (opening.group("fence")[0] == "`" and "`" in line[opening.end():]):
             fence = opening.group("fence")
-            kept.append("")
             continue
-        kept.append(line)
-    return HTML_COMMENT_RE.sub(lambda m: "\n" * m.group(0).count("\n"), "\n".join(kept))
+        block = html_block_opening(line)
+        if block is not None:
+            html_end = None if block[0].search(line, block[1]) else block[0]
+            continue
+        kept[-1] = line
+    return FENCED_CODE_RE.sub(_filler_lines, HTML_COMMENT_RE.sub(_filler_lines, "\n".join(kept)))
 
 
 def has_cursor_migration_item(text: str) -> bool:
-    """The Migration Guide section holds a heading or bold lead that names Cursor (see MIGRATION_POINTER_HELP)."""
-    for line in section_text(strip_hidden_markdown(text), MIGRATION_SECTION).splitlines():
+    """The Migration Guide section holds a heading or bold lead that names Cursor (see MIGRATION_POINTER_HELP).
+
+    An anchor counts only where it starts a block, since a line inside a paragraph can be part of a
+    multi-line inline construct that the reader does not see (SEC-T731-06): the line before it, after
+    blanking, must be blank or an ATX heading, or a list-form anchor must continue a run of list item
+    lines that itself started there. Any other anchor does not count, so a wrong guess is a false FAIL.
+    """
+    clear, in_list = True, False
+    for line in markdown_lines(section_text(strip_hidden_markdown(text), MIGRATION_SECTION)):
         match = ITEM_HEADING_RE.match(line) or ITEM_BOLD_LEAD_RE.match(line)
-        if match and CURSOR_WORD_RE.search(match.group("text")):
+        is_list = LIST_ITEM_RE.match(line) is not None
+        if match and (clear or (in_list and is_list)) and CURSOR_WORD_RE.search(match.group("text")):
             return True
+        in_list = is_list and (clear or in_list)
+        clear = BLANK_LINE_RE.match(line) is not None or ATX_HEADING_RE.match(line) is not None
     return False
 
 
@@ -432,7 +562,7 @@ def check_migration_pointers(tag: str, errors: list[str], allow_newer: bool = Fa
         if not pointer_applies(Path(path).stem, tag):
             message = f"{INSTALL_SH} points users to {path}, a version newer than {tag}, which this tag does not ship"
             if allow_newer:
-                print(f"release-docs-verify: note: {message} (allowed by --allow-newer-pointers)")
+                print(f"release-docs-verify: note: {printable(message)} (allowed by --allow-newer-pointers)")
             else:
                 errors.append(f"{message}; remove the pointer or tag the newer release")
             continue
@@ -445,6 +575,17 @@ def check_migration_pointers(tag: str, errors: list[str], allow_newer: bool = Fa
                 f"{path} lacks its Cursor migration item ({INSTALL_SH} points users to it): add a "
                 f"'### ... Cursor ...' heading or a '**... Cursor ...**' lead line under '{MIGRATION_SECTION}'"
             )
+
+
+def printable(text: str) -> str:
+    """``text`` with each UNSAFE_RE character replaced by '?', for the CI log (SEC-T715-04)."""
+    return UNSAFE_RE.sub("?", text)
+
+
+def print_errors(errors: list[str]) -> None:
+    """Print each error as one ``release-docs-verify:`` line, made printable."""
+    for error in errors:
+        print(f"release-docs-verify: {printable(error)}")
 
 
 def main() -> int:
@@ -474,11 +615,11 @@ def main() -> int:
     check_migration_pointers(args.tag, errors, args.allow_newer_pointers)
 
     if errors:
-        for error in errors:
-            print(f"release-docs-verify: {error}")
+        print_errors(errors)
         return 1
 
     check_markers(marker, errors)
+    check_line_breaks([*MARKER_FILES, release_brief], errors)
     check_section_requirements(errors)
     check_release_brief(args.tag, release_brief, errors)
 
@@ -488,12 +629,11 @@ def main() -> int:
     check_version_consistency(errors)
 
     if errors:
-        for error in errors:
-            print(f"release-docs-verify: {error}")
+        print_errors(errors)
         return 1
 
     print("release-docs-verify: all documentation checks passed")
-    print(f"release-docs-verify: verified marker '{marker}'")
+    print(f"release-docs-verify: verified marker '{printable(marker)}'")
     return 0
 
 

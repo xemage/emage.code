@@ -2,9 +2,21 @@
 from __future__ import annotations
 
 import importlib.util
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import types
 import unittest
+from pathlib import Path
 
 from tests._helpers.repo import repo_root
+
+SCRIPT = repo_root() / "scripts" / "check-main-develop-drift.py"
+ENV = {"GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@example.invalid", "GIT_COMMITTER_NAME": "t",
+       "GIT_COMMITTER_EMAIL": "t@example.invalid", "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_SYSTEM": os.devnull,
+       "GIT_TERMINAL_PROMPT": "0"}
 
 
 def _load_module():
@@ -129,6 +141,110 @@ class TestEvaluate(unittest.TestCase):
     def test_fail_when_main_ahead_of_develop(self):
         code, _lines = self.mod.evaluate("v6.5.0", "v6.4.2", TAGS)
         self.assertEqual(code, 1)
+
+
+def git(cwd: Path, *args: str) -> str:
+    done = subprocess.run(["git", *args], cwd=cwd, env={**os.environ, **ENV}, check=True, capture_output=True)
+    return done.stdout.decode("utf-8", "replace").strip()
+
+
+def mutated(old: str, new: str) -> types.ModuleType:
+    text = SCRIPT.read_text(encoding="utf-8")
+    assert text.count(old) == 1, f"mutation anchor must occur exactly once: {old!r}"
+    module = types.ModuleType("check_main_develop_drift_mutant")
+    exec(compile(text.replace(old, new), str(SCRIPT), "exec"), module.__dict__)  # noqa: S102 -- our own script
+    return module
+
+
+@unittest.skipUnless(shutil.which("git"), "git is needed")
+class TestExactRefNames(unittest.TestCase):
+    """T730 (SEC-T716-01): a TAG named ``origin/main`` or ``origin/develop`` (the jobs fetch every tag) must not
+    stand in for the remote-tracking branch. main holds v1.0.0, develop v1.2.0: two releases behind, a real FAIL."""
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        base = Path(tmp.name)
+        self.work, self.origin, self.clone = base / "work", base / "origin.git", base / "clone"
+        self.work.mkdir()
+        git(self.work, "init", "-q", "-b", "main")
+        for version in ("v1.0.0", "v1.1.0", "v1.2.0"):
+            (self.work / "README.md").write_text(f"Latest release: {version}\n", encoding="utf-8")
+            git(self.work, "add", "-A")
+            git(self.work, "commit", "-q", "-m", f"chore: release {version}")
+            git(self.work, "tag", "-a", version, "-m", version)
+        git(self.work, "branch", "develop")
+        git(self.work, "reset", "-q", "--hard", "v1.0.0")
+        git(base, "init", "-q", "--bare", str(self.origin))
+        git(self.work, "remote", "add", "origin", f"file://{self.origin}")
+        git(self.work, "push", "-q", "origin", "main", "develop", "--tags")
+
+    def make_clone(self, shadow: dict[str, str], fetch: str = "main develop") -> Path:
+        """What the drift jobs have: the branches fetched, then every tag, here with tags named like the refs."""
+        for name, target in shadow.items():
+            git(self.work, "tag", name, f"{target}^{{commit}}")
+            git(self.work, "push", "-q", "--force", "origin", f"refs/tags/{name}")
+        git(self.clone.parent, "init", "-q", str(self.clone))
+        git(self.clone, "remote", "add", "origin", f"file://{self.origin}")
+        if fetch:
+            git(self.clone, "fetch", "-q", "origin", *fetch.split())
+        git(self.clone, "fetch", "-q", "--force", "origin", "refs/tags/*:refs/tags/*")
+        return self.clone
+
+    def run_script(self, cwd: Path, *args: str) -> subprocess.CompletedProcess:
+        return subprocess.run([sys.executable, "-I", str(SCRIPT), *args], cwd=cwd, env={**os.environ, **ENV},
+                              capture_output=True, text=True, check=False)
+
+    def read_in(self, module: types.ModuleType, clone: Path, ref: str) -> str:
+        cwd = os.getcwd()
+        os.chdir(clone)
+        try:
+            return module.parse_marker(module.read_file_at_ref(ref, "README.md"))
+        finally:
+            os.chdir(cwd)
+
+    def test_without_a_shadow_tag_the_real_drift_fails(self):
+        done = self.run_script(self.make_clone({}))
+        self.assertEqual(done.returncode, 1, done.stdout + done.stderr)
+        self.assertIn("main=v1.0.0 develop=v1.2.0 releases_behind=2", done.stdout)
+
+    def test_a_tag_named_origin_main_does_not_shadow_the_branch_false_pass(self):
+        clone = self.make_clone({"origin/main": "v1.2.0"})
+        self.assertIn("v1.2.0", git(clone, "show", "origin/main:README.md"))  # git's search does pick the tag
+        done = self.run_script(clone)
+        self.assertEqual(done.returncode, 1, done.stdout + done.stderr)
+        self.assertIn("main=v1.0.0 develop=v1.2.0", done.stdout)
+
+    def test_a_tag_named_origin_develop_does_not_shadow_the_branch_false_fail(self):
+        git(self.work, "push", "-q", "--force", "origin", "v1.2.0^{commit}:refs/heads/main")
+        clone = self.make_clone({"origin/develop": "v1.0.0"})
+        done = self.run_script(clone)
+        self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
+        self.assertIn("main=v1.2.0 develop=v1.2.0 releases_behind=0", done.stdout)
+
+    def test_mutation_the_short_name_search_is_detected(self):
+        mutant = mutated('    return run_git(["show", "--end-of-options", f"{oid}:{path}"])',
+                         '    return run_git(["show", f"{ref}:{path}"])')
+        clone = self.make_clone({"origin/main": "v1.2.0"})
+        self.assertEqual(self.read_in(_load_module(), clone, "origin/main"), "v1.0.0")
+        self.assertEqual(self.read_in(mutant, clone, "origin/main"), "v1.2.0")  # the tag wins: a false PASS
+
+    def test_a_tag_named_like_the_full_ref_does_not_fill_in_for_an_unfetched_branch(self):
+        clone = self.make_clone({"refs/remotes/origin/main": "v1.2.0"}, fetch="develop")
+        done = self.run_script(clone)
+        self.assertEqual(done.returncode, 1, done.stdout + done.stderr)
+        self.assertIn("refs/remotes/origin/main does not exist", done.stdout)
+        self.assertNotIn("Traceback", done.stderr)
+        done = self.run_script(clone, "--main-ref", "refs/remotes/origin/main")
+        self.assertEqual(done.returncode, 1, done.stdout + done.stderr)
+
+    def test_only_plain_ref_names_are_accepted(self):
+        clone = self.make_clone({})
+        for ref in ("--output=x", "-x", "origin/main~1", "origin/main^{tree}", "a b", "x:y", ".hidden", "a/../b", ""):
+            with self.subTest(ref=ref):
+                done = self.run_script(clone, f"--main-ref={ref}")
+                self.assertEqual(done.returncode, 1, done.stdout + done.stderr)
+                self.assertIn("not a plain ref name", done.stdout)
 
 
 if __name__ == "__main__":

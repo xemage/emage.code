@@ -12,6 +12,7 @@ Every guard has a mutation proof (the guard is removed from a copy of the source
 from __future__ import annotations
 
 import inspect
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -53,13 +54,14 @@ class TestDefaultIgnorableCodePoints(unittest.TestCase):
     def test_mutation_dropping_the_category_test_is_detected(self):
         mutant = mutated("    return unicodedata.category(char) in SUBJECT_UNSAFE_CATEGORIES or char in SUBJECT_INVISIBLE_MARKS",
                          "    return char in SUBJECT_INVISIBLE_MARKS")
-        self.assertEqual(subjects(PR, "feat: a\u206ab\ufff0c"), ["feat: abc"])
-        self.assertEqual(subjects(mutant, "feat: a\u206ab\ufff0c"), ["feat: a\u206ab\ufff0c"])
+        self.assertEqual(subjects(PR, "feat: a\u206ab\u200bc"), ["feat: abc"])  # T730: U+FFF0 is now in a range
+        self.assertEqual(subjects(mutant, "feat: a\u206ab\u200bc"), ["feat: a\u206ab\u200bc"])
 
     def test_mutation_dropping_the_unassigned_category_is_detected(self):
         mutant = mutated('"Co", "Cn", ', '"Co", ')
-        self.assertEqual(subjects(PR, "feat: a\ufff0b\U000e0fffc"), ["feat: abc"])
-        self.assertEqual(subjects(mutant, "feat: a\ufff0b\U000e0fffc"), ["feat: a\ufff0b\U000e0fffc"])
+        # T730: U+FFF0 and U+E0FFF are removed by range now; U+0378 and U+E1000 are unassigned outside the ranges
+        self.assertEqual(subjects(PR, "feat: a\u0378b\U000e1000c"), ["feat: abc"])
+        self.assertEqual(subjects(mutant, "feat: a\u0378b\U000e1000c"), ["feat: a\u0378b\U000e1000c"])
 
     def test_mutation_dropping_the_mongolian_selectors_is_detected(self):
         mutant = mutated("\\u180b\\u180c\\u180d\\u180f", "")
@@ -67,10 +69,21 @@ class TestDefaultIgnorableCodePoints(unittest.TestCase):
         self.assertEqual(subjects(mutant, "feat: a\u180bb\u180fc"), ["feat: a\u180bb\u180fc"])
 
 
-try:  # a CommonMark renderer, when one is installed, shows what GitLab would draw (GitLab itself is not tested here)
+try:  # a CommonMark renderer shows what GitLab would draw (GitLab itself is not tested here)
     from markdown_it import MarkdownIt
 except ImportError:  # pragma: no cover
     MarkdownIt = None
+
+
+def commonmark(case: unittest.TestCase):
+    """The CommonMark parser. T730 (SEC-T716-05): in CI (``CI`` set) a missing markdown-it-py FAILS the test; it is in
+    ci/requirements-ci.txt. Only outside CI does the test skip, and it says so."""
+    if MarkdownIt is not None:
+        return MarkdownIt("commonmark")
+    if os.environ.get("CI"):
+        case.fail("markdown-it-py is not installed although CI is set: ci/requirements-ci.txt must provide it")
+    case.skipTest("markdown-it-py is not installed (outside CI only; CI fails here)")
+    return None
 
 
 class TestMarkdownEscaping(unittest.TestCase):
@@ -81,28 +94,28 @@ class TestMarkdownEscaping(unittest.TestCase):
                "\\`a`", "<span title='`'>x`", "`x <a b='`'>"]
 
     def test_hostile_entries_are_escaped_exactly(self):
-        cases = {"<!-- c": "\\<!-- c", "[a](b)": "\\[a\\](b)", "&#8238;": "\\&#8238;", "# h": "\\# h", "1. o": "1\\. o",
-                 "- b": "\\- b", "***": "\\***", "```f": "\\`\\`\\`f", "~~~": "\\~~~", "> q": "\\> q",
+        # T730 (SEC-T716-03): the reference sigils @ # ! ~ % $ ^ are escaped too
+        cases = {"<!-- c": "\\<\\!-- c", "[a](b)": "\\[a\\](b)", "&#8238;": "\\&\\#8238;", "# h": "\\# h",
+                 "1. o": "1\\. o", "- b": "\\- b", "***": "\\***", "```f": "\\`\\`\\`f", "~~~": "\\~\\~\\~", "> q": "\\> q",
                  "a\\b": "a\\\\b", "x `a<b>` <c>": "x `a<b>` \\<c\\>"}
         for raw, escaped in cases.items():
             with self.subTest(raw=raw):
                 self.assertEqual(PR.markdown_entry(raw), escaped)
 
     def test_code_spans_emphasis_and_plain_text_are_kept(self):
-        for line in ("use `code` and *em* and _under_ and snake_case", "``a`b`` stays one span", "100% done, a/b-c",
-                     "-1 is not a list", "**bold** first", "v1.2.3 (#42)"):
+        for line in ("use `code` and *em* and _under_ and snake_case", "``a`b`` stays one span", "50 done, a/b-c",
+                     "-1 is not a list", "**bold** first", "v1.2.3 (`#42`)"):
             with self.subTest(line=line):
                 self.assertEqual(PR.markdown_entry(line), line)
 
     def test_the_rendered_section_escapes_every_entry(self):
         grouped = {"Features": ["<!-- x", "[a](b)"], "Other": ["# h"]}
         text = PR.render_changelog_section("v1.0.0", grouped)
-        self.assertIn("- \\<!-- x\n- \\[a\\](b)\n", text)
+        self.assertIn("- \\<\\!-- x\n- \\[a\\](b)\n", text)
         self.assertIn("- \\# h\n", text)
 
-    @unittest.skipUnless(MarkdownIt, "markdown-it-py is not installed")
     def test_commonmark_renders_each_hostile_entry_as_one_plain_list_item(self):
-        md = MarkdownIt("commonmark")
+        md = commonmark(self)
         for raw in self.HOSTILE:
             with self.subTest(raw=raw):
                 tokens = md.parse(f"- {PR.markdown_entry(raw)}\n- next\n")
@@ -115,21 +128,20 @@ class TestMarkdownEscaping(unittest.TestCase):
                 self.assertNotIn("\u202e", md.render(f"- {PR.markdown_entry(raw)}\n"))
 
     def test_mutation_dropping_the_escape_is_detected(self):
-        mutant = mutated("    out = \"\".join(part if is_code else part.translate(MARKDOWN_ESCAPES)",
-                         "    out = \"\".join(part if is_code else part")
+        mutant = mutated("chunk.translate(MARKDOWN_ESCAPES)))", "chunk))")
         self.assertEqual(mutant.markdown_entry("<!-- x"), "<!-- x")
-        self.assertEqual(PR.markdown_entry("<!-- x"), "\\<!-- x")
+        self.assertEqual(PR.markdown_entry("<!-- x"), "\\<\\!-- x")
 
     def test_mutation_escaping_inside_code_spans_is_detected(self):
-        mutant = mutated("    out = \"\".join(part if is_code else part.translate(MARKDOWN_ESCAPES)",
-                         "    out = \"\".join(part.translate(MARKDOWN_ESCAPES)")
+        mutant = mutated('            out.append((" " if last_wrapped else "") + part)',
+                         '            out.append((" " if last_wrapped else "") + part.translate(MARKDOWN_ESCAPES))')
         self.assertEqual(PR.markdown_entry("`a<b>`"), "`a<b>`")
         self.assertNotEqual(mutant.markdown_entry("`a<b>`"), "`a<b>`")
 
     def test_mutation_dropping_the_leading_block_rule_is_detected(self):
         mutant = mutated("    if lead:\n", "    if False:\n")
-        self.assertEqual(PR.markdown_entry("# h"), "\\# h")
-        self.assertEqual(mutant.markdown_entry("# h"), "# h")
+        self.assertEqual(PR.markdown_entry("- h"), "\\- h")  # T730: "#" is now escaped as a reference sigil
+        self.assertEqual(mutant.markdown_entry("- h"), "- h")
 
     def test_the_release_description_holds_no_subject(self):
         brief = "# Release v1.2.3\n\nbody\n"

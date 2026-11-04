@@ -6,6 +6,8 @@
 # To change a dependency: edit this file, then regenerate the lock (see docs/wiki/mcp-pin-bump-checklist.md,
 # section "CI Python lock files"):
 #   uv pip compile ci/requirements-ci.in --universal --python-version 3.12 --generate-hashes --exclude-newer <UTC timestamp> -o ci/requirements-ci.txt
+# <UTC timestamp> is a cooldown (SEC-T676-14): at least 7 days before the generation day, never the day itself, and
+# every new or changed package must be at least 14 days old (check its PyPI upload time).
 # tests/functional/test_ci_hash_pins.py fails when an input has no locked version or the two files drift.
 pyyaml
 jsonschema
@@ -14,3 +16,6 @@ pyarrow
 cryptography>=43.0.1
 # Same version as implementation/runtime/security/requirements-mcp-server.txt (test-enforced).
 mcp==2.2.0
+# T730 (SEC-T716-05): the CommonMark parser of tests/functional/test_publish_release_t716.py and _t730.py; with CI set
+# a missing markdown-it-py fails those tests instead of skipping them.
+markdown-it-py
