@@ -10,7 +10,7 @@ Run `python3 docs/tasks/validate-tasks.py` from the project root.
 
 Run this command:
 1. Before writing any checkpoint
-2. Before `/prepare-release`
+2. Before a release
 3. Immediately after `install.sh --update`
 
 ## Rails

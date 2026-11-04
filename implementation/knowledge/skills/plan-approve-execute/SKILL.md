@@ -112,6 +112,8 @@ Options:
 | Revise | Update plan per feedback, re-present for approval |
 | Reject | Update plan status to `rejected`, discuss alternative approaches |
 
+`/new-project` records the same three answers as `APPROVED` (Approve), `APPROVED_WITH_CHANGES` (Revise: apply the changes and present the plan again) and `REJECTED` (Reject). No answer other than Approve or `APPROVED` starts execution.
+
 ### Phase 3: Execute
 
 Begin implementation according to the approved plan.

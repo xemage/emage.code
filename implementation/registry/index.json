@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-11-02T00:14:09+01:00",
+  "generatedAt": "2026-11-04T22:48:44+01:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -276,7 +276,7 @@
       "category": "agent",
       "name": "Orchestrator",
       "path": "agents/orchestrator.md",
-      "checksum": "4f771bb0947909a3f5a564ffc5bc9b3741c0051d0645ccb78129256c7c6c90ed",
+      "checksum": "2e8b44aa8ae3b3a1c0615517d65326b65564787d25a1d53f663d2ba63442804c",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -484,7 +484,7 @@
       "category": "agent",
       "name": "Release Manager",
       "path": "agents/release-manager.md",
-      "checksum": "068eadc0a3e8e39c827b1a8738abf41df973e5739a72d434a0a61325bcca672b",
+      "checksum": "3473ab459b082fe861d1c420e02509c0084e524ec0c539584baad91166d1bc56",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -562,7 +562,7 @@
       "category": "agent",
       "name": "Security Engineer",
       "path": "agents/security-engineer.md",
-      "checksum": "ed2795b993f95d131d929ef12d2d43412de9ba11eda26cd241713f66e01eceab",
+      "checksum": "c4daf8813987fefd4f49e53fbace3f30fb875fe1f8fdc63237ab9e67a8db52b2",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1186,7 +1186,7 @@
       "category": "command",
       "name": "validate-tasks",
       "path": "commands/validate-tasks.md",
-      "checksum": "ae502f3692904c2be8c57d586910c181ffd1850223fb7394745a1591e6d98f35",
+      "checksum": "ba8e032417353bca85d68edd3a28ada08891e73e652aba2552423acd29545ae9",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1212,7 +1212,7 @@
       "category": "command",
       "name": "validate-workflow",
       "path": "commands/validate-workflow.md",
-      "checksum": "77ce6359aedc67ce6110c7958c52c5f7b871a2958a5867e4b03482619b6d1761",
+      "checksum": "f2494747cf1d880b1387c4e18fc57775d2fa9c4857ceb78d0302a5b95af98b00",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1706,7 +1706,7 @@
       "category": "skill",
       "name": "plan-approve-execute",
       "path": "skills/plan-approve-execute/SKILL.md",
-      "checksum": "7eb001713dfee884da126d581521f9aaea2b089e744fde6cd761304e4c9ac9b5",
+      "checksum": "feb4381b3685283186837c0eb50a59351698900d6d1f8c9dbfbac805d925a7e2",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1836,7 +1836,7 @@
       "category": "skill",
       "name": "release-workflow",
       "path": "skills/release-workflow/SKILL.md",
-      "checksum": "372e8e7dc2e06e43c6f4c4ce19ae9e5356483f48f6a231cfddd5f07833643824",
+      "checksum": "540a81dc28afe299004f57e421314a79daf956fd264c197435bf32009bcb98ce",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1992,7 +1992,7 @@
       "category": "skill",
       "name": "testing-strategy",
       "path": "skills/testing-strategy/SKILL.md",
-      "checksum": "8fa3f3aa77c585f66882472584cb636d03be8677a374fc7a37575fbcc1cb7b94",
+      "checksum": "60cdc0f8e174e8d116577e91dc4260f4405b5ba655a1593d8ae34a5872a2efe9",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -2018,7 +2018,7 @@
       "category": "skill",
       "name": "validation-gates",
       "path": "skills/validation-gates/SKILL.md",
-      "checksum": "38cc5f444f42901359f633ad2ea13140a24face4705af172e7928312072901d1",
+      "checksum": "2e1e35e35be697c2ef999cba36c8c4654c9dd8b2e1103b05b809e1fa58bff5c3",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
