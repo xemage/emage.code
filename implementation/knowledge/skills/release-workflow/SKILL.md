@@ -114,7 +114,7 @@ The release gate is the final validation before deployment. All items must be ch
 - [ ] Every `SECURITY:MEDIUM` that an earlier release shipped under the user's acceptance and that is not yet fixed: fixed, or accepted by the user for this release (`validation-gates` § Verdict Rules)
 
 ### Release Readiness
-- [ ] No critical or high bugs open for this release
+- [ ] No `Critical` or `High` bugs (`/bug-report` § Severity) open for this release
 - [ ] All planned tasks completed and archived
 - [ ] Changelog generated and reviewed
 - [ ] Documentation updated (README, API docs, user guides)
@@ -129,7 +129,7 @@ The release gate is the final validation before deployment. All items must be ch
 
 ### 4. Create Release Artifact
 
-The release notes are one document per release, `docs/releases/v<VERSION>.md`: the file the `orchestrator` agent § Release Workflow Preflights publishes, and the release notes document into which `/prepare-release` step 7 writes the `## RELEASE VERDICT` section. Add the sections below, from `## Summary` on, to that document. When the release is prepared with `/prepare-release`, that command's steps govern the document, and these sections accompany them: its Breaking Changes group is the `## Breaking changes` section, and `## Changelog` holds its Features, Fixes and Internal groups (step 2) as `###` headings, not the six groups of § 2. The document's first line is `# Release v<VERSION>`, the title in the block below, and it also carries the `## Install` and `## Highlights` sections that `scripts/verify-release-docs.py` requires (`docs/releases/_template.md` is the scaffold). The `Release` line under `## Gate Verdicts` carries the same value as the `**Status**` of the `## RELEASE VERDICT` section.
+The release notes are one document per release, `docs/releases/v<VERSION>.md`: the file the `orchestrator` agent § Release Workflow Preflights publishes, and the release notes document into which the authoring repository's `/prepare-release` step 7 writes the `## RELEASE VERDICT` section. Add the sections below, from `## Summary` on, to that document. When the release is prepared with `/prepare-release`, that command's steps govern the document, and these sections accompany them: its Breaking Changes group is the `## Breaking changes` section, and `## Changelog` holds its Features, Fixes and Internal groups (step 2) as `###` headings, not the six groups of § 2. The document's first line is `# Release v<VERSION>`, the title in the block below, and it also carries the `## Install` and `## Highlights` sections that `scripts/verify-release-docs.py` requires (`docs/releases/_template.md` is the scaffold). The `Release` line under `## Gate Verdicts` carries the same value as the `**Status**` of the `## RELEASE VERDICT` section.
 
 ```markdown
 # Release v<VERSION>
@@ -164,12 +164,12 @@ File location: `docs/releases/v<VERSION>.md`, one document per release (above).
 
 ### 5. Hotfix Workflow
 
-For critical issues discovered after a release:
+For issues that qualify under step 1, discovered after a release:
 
 ```
 1. TRIAGE
-   ├── Confirm the issue is critical (production-impacting)
-   └── Assign a severity on the issue's own scale, and name it: `Critical` or `High` for a bug (`/bug-report` § Severity), `SECURITY:CRITICAL` or `SECURITY:HIGH` for a security finding (`security-guidelines.md` § Security Review Workflow)
+   ├── Confirm the issue is present in the released version and eligible: graded critical or high on its own scale (next line), or, whatever its grade, a breach of an Immutable Security Constraint or a required security control omitted, removed, disabled or weakened (`security-guidelines.md`), which `@security-engineer` confirms
+   └── Assign a severity on the issue's own scale, and name it: `Critical` or `High` for a bug (`/bug-report` § Severity), `SECURITY:CRITICAL` or `SECURITY:HIGH` for a security finding (`security-guidelines.md` § Security Review Workflow); for a breach or a weakened control graded lower, name its grade and what it breaches or weakens
 
 2. BRANCH
    ├── Branch from the release tag: hotfix/v<VERSION>-<issue>
@@ -199,10 +199,10 @@ For critical issues discovered after a release:
 #### Hotfix Gate Exceptions
 
 Hotfixes use a fast-track gate process:
-- Architecture gate: **SKIPPED** (minimal change, no design impact)
+- Architecture gate: **SKIPPED** (minimal change, no design impact; a fix with design impact does not take this fast track)
 - Implementation gate: **REQUIRED** (focused review of the fix)
 - Integration gate: **ABBREVIATED** (regression test + smoke test only)
-- Security gate: **REQUIRED if security-related**, otherwise skipped
+- Security gate: **REQUIRED if security-related**, and always for an issue eligible as a breach or a weakened control; otherwise skipped
 - Release gate: **ABBREVIATED** (checklist with reduced scope; the reduced scope never drops the Release Gate input of `validation-gates` § Gate Input Requirements that lists the security findings graded medium an earlier release shipped under the user's acceptance)
 
 ## Examples
@@ -230,7 +230,7 @@ Merged back to main
 ## Guidelines
 
 - Never release without passing the release gate checklist.
-- Hotfixes are for issues graded critical or high on their own scale (§ 5, step 1) only. Medium/low issues wait for the next regular release.
+- Hotfixes are for issues graded critical or high on their own scale (§ 5, step 1), and for a breach of an Immutable Security Constraint or a required security control omitted, removed, disabled or weakened, whatever its grade. Other medium or low issues wait for the next regular release.
 - Hotfixes must be minimal — fix the issue and nothing else.
 - Always merge hotfixes back to main to prevent regression in future releases.
 - Keep release notes user-facing. Internal changes go in the "Internal" changelog section.

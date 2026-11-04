@@ -87,6 +87,8 @@ declared home for the block; fill in every field before the tag is cut.
 - **Issued at commit**: <sha the release files were at when the verdict was issued>
 - **Independent check**: <PASS | CONDITIONAL_PASS | FAIL> at <sha>, by <tech-lead | orchestrator | top-level session>
 
+If the Status is CONDITIONAL_PASS, list the conditions below the fields, in the Conditions format of the `release-manager` verdict block. A `SECURITY:MEDIUM` the user accepted for this release fills every slot of that format.
+
 ## Rollback Plan
 
 <steps to roll back if critical issues are discovered after the release; state whether they were tested>

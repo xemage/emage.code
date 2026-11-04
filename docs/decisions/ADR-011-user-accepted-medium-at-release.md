@@ -6,6 +6,7 @@
   - The user chose option (a) with the end date "Until the next release", not the 90-day limit of the draft. The text below is revised to that choice: an acceptance covers only the release it was given for, it is renewed by the user at the next release that ships the finding, and there is no time-based maximum.
   - Drafted as Proposed in T718. Until it was accepted, no ruling could cite it as authority. Only the user accepts it (ADR-008 P5; plan-127 § User decisions 1). The acceptance is recorded in this header through a normal merge request (`git-workflow.md`).
   - The answer on the command part (O1) was given in the same decision. It is ruled in `docs/artifacts/rulings-batch-d-v1.md` § 1.5 under ADR-007; it is not part of this ADR's rule.
+  - **Superseded in part by `docs/decisions/ADR-012-medium-acceptance-record.md`** (rows A1, A8 and A12, and what the verdict records). The rest stands.
 - **Date**: 2026-11-01
 - **Decider(s)**: the user (2026-11-01). solution-architect drafted it.
 - **Tasks**: T718 (draft and revision); T720 (applies it); T721 (text pins).
