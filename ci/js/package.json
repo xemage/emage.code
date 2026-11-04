@@ -1,0 +1,14 @@
+{
+  "name": "emage-code-ci-js",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CI-only JavaScript tooling: the acorn parser for tests/functional/test_function_size.py (T732, SEC-T677-01). See README.md.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "acorn": "8.19.0"
+  }
+}

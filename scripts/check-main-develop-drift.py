@@ -27,6 +27,11 @@ Limits (T675, QA-T648-03 / TL-T649-13):
   ``scripts/check-release-tag-tree.py``, which requires the tag commit's TREE to equal the tree of
   ``origin/main`` (a tree comparison, for the same reason as above: SHA ancestry is unreliable after a GitLab
   API merge). A tag pushed before the release reached ``main`` therefore fails there even though this check passes.
+* T730 (SEC-T716-01): the two refs are read EXACTLY. git's short-name search tries ``refs/tags/<name>`` before
+  ``refs/remotes/<name>``, and the jobs fetch every tag, so a tag named ``origin/main`` would otherwise stand in for
+  the remote-tracking branch. ``origin/main`` means ``refs/remotes/origin/main`` (a ``refs/...`` name stays as
+  given); it is resolved with ``git show-ref --verify --hash``, which does no search, and the marker file is read
+  by object id, as ``scripts/check-release-tag-tree.py`` does. A ref that does not exist exactly fails the check.
 """
 
 from __future__ import annotations
@@ -38,6 +43,8 @@ import sys
 
 MARKER_RE = re.compile(r"Latest release:\s*(v\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?)")
 TAG_RE = re.compile(r"^v(\d+)\.(\d+)\.(\d+)(?:-([A-Za-z0-9.-]+))?$")
+REF_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")  # no leading dash, no revision syntax
+OID_RE = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
 GRACE_RELEASES = 1  # main may lag develop by up to 1 release (the normal window between
                      # develop's tag and the release/*->main sync MR) before this is drift.
 
@@ -47,8 +54,32 @@ def run_git(args: list[str]) -> str:
     return result.stdout
 
 
+class RefError(Exception):
+    """A ref that is not a plain name or that does not exist exactly (never carries file contents)."""
+
+
+def full_ref_name(ref: str) -> str:
+    """``origin/main`` is the remote-tracking branch ``refs/remotes/origin/main``; a ``refs/...`` name stays as given."""
+    return ref if ref.startswith("refs/") else f"refs/remotes/{ref}"
+
+
+def ref_object(full_ref: str) -> str | None:
+    """The object id of exactly ``full_ref``, or None: ``show-ref --verify`` does no short-name search."""
+    done = subprocess.run(["git", "show-ref", "--verify", "--hash", full_ref], capture_output=True, text=True,
+                          check=False, shell=False)
+    out = done.stdout.strip()
+    return out if done.returncode == 0 and OID_RE.fullmatch(out) else None
+
+
 def read_file_at_ref(ref: str, path: str) -> str:
-    return run_git(["show", f"{ref}:{path}"])
+    """The content of ``path`` in the commit that exactly ``ref`` names, read by object id (SEC-T716-01)."""
+    if not REF_RE.fullmatch(ref) or ".." in ref:
+        raise RefError(f"{ref!r} is not a plain ref name")
+    full_ref = full_ref_name(ref)
+    oid = ref_object(full_ref)
+    if oid is None:
+        raise RefError(f"{full_ref} does not exist (exact ref; fetch the branch first)")
+    return run_git(["show", "--end-of-options", f"{oid}:{path}"])
 
 
 def parse_marker(text: str) -> str | None:
@@ -143,8 +174,13 @@ def main() -> int:
     parser.add_argument("--marker-file", default="README.md")
     args = parser.parse_args()
 
-    main_text = read_file_at_ref(args.main_ref, args.marker_file)
-    develop_text = read_file_at_ref(args.develop_ref, args.marker_file)
+    try:
+        main_text = read_file_at_ref(args.main_ref, args.marker_file)
+        develop_text = read_file_at_ref(args.develop_ref, args.marker_file)
+    except RefError as exc:
+        print(f"drift-check: {exc}")
+        print("MAIN-DEVELOP DRIFT: FAIL")
+        return 1
     main_version = parse_marker(main_text)
     develop_version = parse_marker(develop_text)
 

@@ -7,6 +7,10 @@ T715: the anchor counts only outside fenced code and HTML comments (SEC-T703-01)
 form the gate cannot parse fails (SEC-T703-02), a pointer to a newer version fails unless
 --allow-newer-pointers is given (SEC-T703-03), main() is pinned to call check_section_requirements
 (SEC-T677-02), and the gate-wiring tests no longer depend on the current release (TL-T708-04/-05).
+
+T731: more unparsed pointer forms fail (SEC-T715-01), a "vX.Y.Z release notes" phrase on a Cursor line
+needs the Cursor item (SEC-T715-02), an anchor in a raw HTML block does not count (SEC-T715-03), and
+every printed line is stripped of control and bidi characters (SEC-T715-04).
 """
 from __future__ import annotations
 
@@ -463,6 +467,259 @@ class MigrationPointerTests(_MainRunner):
         self.assertIn("$CI_COMMIT_TAG =~", rules[0]["if"])
         self.assertNotIn("when", rules[0])
 
+
+
+UNSAFE_SAMPLES = "\x00\x07\t\x1b\x7f\x85\x9b؜​‎‏  ‪‮⁠⁦⁩﻿"
+
+
+class PointerFormTests(_MainRunner):
+    """T731 (SEC-T715-01, SEC-T715-02): more pointer forms fail; a prose pointer on a Cursor line needs the item."""
+
+    allow_newer = False
+    _pointer_errors = MigrationPointerTests._pointer_errors
+
+    def test_more_pointer_forms_the_gate_cannot_parse_fail(self):
+        """SEC-T715-01: each of these forms used to pass unchecked."""
+        for line in (
+            "see v9.0.0.md for Cursor",
+            "see the release-notes",
+            "see RELEASE_NOTES.md",
+            "see doc/releases",
+            "see docs\\releases\\v9.0.0.md",
+            'echo "see $REL_DOC"',
+            'echo "see ${RELEASE_NOTES} for Cursor"',
+            'echo "see $release_doc"',
+            "see https://gitlab.com/emage/emage.code/-/wikis/Release-v9",
+            "see https://example.org/wiki/Migration",
+            "see gitlab.com/emage/emage.code/-/wikis/home",
+            "see https://gitlab.com/emage/emage.code/-/releases/v9.0.0",
+        ):
+            with self.subTest(line=line):
+                errors = self._pointer_errors("v9.0.0", CURSOR_ITEM_DOC, install=INSTALL_SH + line + "\n")
+                self.assertEqual(len(errors), 1, errors)
+                self.assertIn("scripts/install.sh:3 names a release document in a form the gate cannot check", errors[0])
+
+    def test_lines_that_name_no_release_document_still_pass(self):
+        for line in (
+            'for e in "${DOCS_EXCLUDES[@]}"; do',
+            'rel="$rel/x"; req_rel="$req_rel"',
+            "the v8.x releases are the last that support it",
+            "see AGENTS.md and docs/wiki/quick-start.md",
+            "see M-9 of the v8.0.0 release notes and docs/releases/v8.0.0.md",
+        ):
+            with self.subTest(line=line):
+                self.assertEqual(self.mod.unparsed_pointer_lines(line + "\n"), [])
+
+    def test_a_release_notes_phrase_on_a_cursor_line_needs_the_cursor_item(self):
+        """SEC-T715-02: the phrase form used to be checked for existence only."""
+        install = "see the Cursor item in the v9.0.0 release notes\n"
+        self.assertEqual(self.mod.install_sh_pointers(install), {"docs/releases/v9.0.0.md": True})
+        broken = CURSOR_ITEM_DOC.replace("Cursor is no longer", "The platform is no longer")
+        errors = self._pointer_errors("v9.0.0", broken, install=install)
+        self.assertEqual(len(errors), 1, errors)
+        self.assertIn("lacks its Cursor migration item", errors[0])
+        self.assertEqual(self._pointer_errors("v9.0.0", CURSOR_ITEM_DOC, install=install), [])
+
+    def test_no_prose_pointer_on_this_tree_sits_on_a_cursor_line(self):
+        """T723 reworded install.sh so the v8.0.0 phrase is on a line without the word Cursor."""
+        text = (repo_root() / "scripts" / "install.sh").read_text(encoding="utf-8")
+        prose = [line for line in text.splitlines() if self.mod.PROSE_POINTER_RE.search(line)]
+        self.assertTrue(prose)
+        self.assertEqual([line for line in prose if self.mod.CURSOR_WORD_RE.search(line)], [])
+
+
+class HtmlBlockAnchorTests(unittest.TestCase):
+    """T731 (SEC-T715-03): an anchor inside a CommonMark raw HTML block does not count."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load()
+
+    def has_item(self, body: str) -> bool:
+        return self.mod.has_cursor_migration_item(f"# Release v9.0.0\n\n## Migration Guide\n\n{body}\n\n## Changelog\n")
+
+    def test_an_anchor_inside_an_html_block_does_not_count(self):
+        for body in (
+            "<details>\n**Migration Guide item M-3. Cursor is no longer supported.**\n</details>",
+            "<div>\n### M-3. Cursor removed",
+            "  <DIV class=\"x\">\n**Cursor removed.**",
+            "<pre>\n### Cursor\n</pre>",
+            "<script type=\"text/plain\">\n\n### Cursor\n\n</script>",
+            "<?php\n### Cursor\n?>",
+            "<!DOCTYPE note\n### Cursor\n>",
+            "<![CDATA[\n### Cursor\n]]>",
+            "<!-- x\n### Cursor\n-->",
+            "<span class=\"note\">\n### M-3. Cursor removed",
+            "<custom-tag data-x='1'/>\n**Cursor removed.**",
+            "</section>\n**Cursor removed.**",
+            # SEC-T731-01: a type 7 block may follow any block that is not a paragraph
+            "***\n<span>\n**Migration Guide item M-3. Cursor removed.**",
+            "Title\n=====\n<span>\n**Migration Guide item M-3. Cursor removed.**",
+            "    indented code\n<span>\n**Migration Guide item M-3. Cursor removed.**",
+        ):
+            with self.subTest(body=body[:40]):
+                self.assertFalse(self.has_item(body))
+
+    def test_a_tag_line_after_a_line_that_is_no_paragraph_hides_the_anchor(self):
+        """SEC-T731-01: these previous lines end the paragraph, so the tag line opens a type 7 block."""
+        for previous in ("> ---", "> # h", "> ```", "*", "+", "1.", "| a | b |", ">>>"):
+            with self.subTest(previous=previous):
+                self.assertFalse(self.has_item(f"{previous}\n<span>\n**M-3. Cursor removed.**"))
+                self.assertFalse(self.has_item(f"{previous}\n<span>\n- a\n- **M-3. Cursor removed.**"))
+                self.assertFalse(self.has_item(f"{previous}\n<span>\n### h\n**M-3. Cursor removed.**"))
+                self.assertFalse(self.has_item(f"{previous}\n<span>\n### h\n### M-3. Cursor removed"))
+
+    def test_an_anchor_inside_a_multi_line_inline_construct_does_not_count(self):
+        """SEC-T731-06: the reader sees no bold lead; the closing part is on the line after the anchor."""
+        for body in (
+            '[x]: /u "\n**M-3. Cursor removed.**\n"',
+            '<a title="\n**M-3. Cursor removed.**\n">',
+            "x <?\n**M-3. Cursor removed.**\n?>",
+            "![\n**M-3. Cursor removed.**\n](u)",
+            "x <?\n2. a\n3. **M-3. Cursor removed.**\n?>",
+            "x <?\n    <!-- c -->\n**M-3. Cursor removed.**\n?>",
+            "x <?  <!--\nc -->\n**M-3. Cursor removed.**\n?>",
+            "x <?\n``` a ```\n**M-3. Cursor removed.**\n?>",
+            *(f"x <?\n{char}\n**M-3. Cursor removed.**\n?>" for char in ("\v", "\f", "\x85", "\u2028")),
+        ):
+            with self.subTest(body=body[:30]):
+                self.assertFalse(self.has_item(body))
+
+    def test_an_anchor_right_after_a_paragraph_line_is_a_false_fail_by_design(self):
+        """T731: the rule cannot tell these visible anchors from the hidden ones above, so they do not count."""
+        for body in (
+            "Some text\n<span>\n**M-3. Cursor removed.**",  # counted before: type 7 cannot interrupt a paragraph
+            "Some text\n**M-3. Cursor removed.**",
+            "Some text\n### M-3. Cursor removed",
+            "x\n- a\n- **M-3. Cursor removed.**",
+        ):
+            with self.subTest(body=body[:30]):
+                self.assertFalse(self.has_item(body))
+
+    def test_an_anchor_outside_an_html_block_still_counts(self):
+        for body in (
+            "<details>\n<summary>x</summary>\n</details>\n\n**Migration Guide item M-3. Cursor is no longer supported.**",
+            "<pre>code</pre>\n### M-3. Cursor removed",
+            "<!-- note -->\n### M-3. Cursor removed",
+            "- a\n- **M-3. Cursor removed.**",
+            "1. a\n2. **M-3. Cursor removed.**",
+            "### h\n**M-3. Cursor removed.**",
+            "Text with <span>inline</span> HTML.\n\n### M-3. Cursor removed",
+            "<div>\n</div>\n\n```\n<div>\n```\n### M-3. Cursor removed",
+        ):
+            with self.subTest(body=body[:40]):
+                self.assertTrue(self.has_item(body))
+
+    def test_only_commonmark_line_ends_end_a_line(self):
+        """SEC-T731-02: str.splitlines() also split at these, which ended the block or made a line start."""
+        for char in ("\v", "\f", "\x1c", "\x1d", "\x1e", "\x85", "\u2028", "\u2029"):
+            with self.subTest(char=hex(ord(char))):
+                body = f"<details>\n{char}\n**Migration Guide item M-3. Cursor removed.**\n</details>"
+                self.assertFalse(self.has_item(body))
+                self.assertFalse(self.has_item(f"Some text{char}**Migration Guide item M-3. Cursor removed.**"))
+        for end in ("\n", "\r\n", "\r"):
+            with self.subTest(end=repr(end)):
+                self.assertTrue(self.has_item(f"<div>{end}{end}### M-3. Cursor removed"))
+                self.assertEqual(len(self.mod.strip_hidden_markdown(f"a{end}<div>{end}b{end}{end}c").split("\n")), 5)
+
+    def test_the_line_count_is_kept(self):
+        text = "a\n<div>\nb\n\nc\n<pre>\nd\n</pre>\ne"
+        stripped = self.mod.strip_hidden_markdown(text)
+        self.assertEqual(stripped.split("\n"), ["a", "", "", "", "c", "", "", "", "e"])
+
+    def test_tag_line_matching_does_not_backtrack_on_long_lines(self):
+        import time
+        start = time.monotonic()
+        for line in ("<a" + " " * 60000 + "!", "<a" + " b=c" * 20000 + " !", "<a" + " b" * 30000 + "!"):
+            self.mod.strip_hidden_markdown("\n" + line + "\n")
+        self.assertLess(time.monotonic() - start, 1.0)
+
+    def test_the_v9_document_keeps_its_cursor_item(self):
+        text = (repo_root() / "docs" / "releases" / "v9.0.0.md").read_text(encoding="utf-8")
+        self.assertTrue(self.mod.has_cursor_migration_item(text))
+
+
+class LineBreakCharacterTests(_MainRunner):
+    """T731 (SEC-T731-02 follow-up): a checked document holding a non-CommonMark line separator fails the gate."""
+
+    CHARS = ("\v", "\f", "\x1c", "\x1d", "\x1e", "\x85", " ", " ")
+
+    def _errors(self, relative: str, text: str) -> list[str]:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / relative).parent.mkdir(parents=True, exist_ok=True)
+            (root / relative).write_text(text, encoding="utf-8")
+            errors: list[str] = []
+            with mock.patch.object(self.mod, "ROOT", root):
+                self.mod.check_line_breaks([*self.mod.MARKER_FILES, Path("docs/releases/v9.0.0.md")], errors)
+            return errors
+
+    def test_each_character_in_the_release_document_fails(self):
+        for char in self.CHARS:
+            with self.subTest(char=hex(ord(char))):
+                text = f"# R\r\n\n## RELEASE VERDICT\r- **Status**: PASS{char}- **Status**: pending\n{char}\n"
+                errors = self._errors("docs/releases/v9.0.0.md", text)
+                self.assertEqual(errors, [
+                    f"docs/releases/v9.0.0.md:4 holds U+{ord(char):04X}, a line separator that Markdown does not "
+                    "treat as a line end; remove it (SEC-T731-02)"
+                ])
+                self.assertNotIn(char, errors[0])
+
+    def test_a_marker_file_with_the_character_fails(self):
+        errors = self._errors("docs/wiki/home.md", "# Home\n\nLatest release: v9.0.0 \n")
+        self.assertEqual(len(errors), 1, errors)
+        self.assertTrue(errors[0].startswith("docs/wiki/home.md:3 holds U+2028"), errors[0])
+
+    def test_clean_documents_pass(self):
+        self.assertEqual(self._errors("README.md", "# R\r\n\tok\n"), [])
+        errors: list[str] = []
+        self.mod.check_line_breaks([*self.mod.MARKER_FILES, Path("docs/releases/v9.0.0.md")], errors)
+        self.assertEqual(errors, [])
+
+    def test_main_checks_the_release_document_and_the_marker_files(self):
+        with mock.patch.object(self.mod, "check_line_breaks") as check:
+            code, output = _run_past_release_without_markers(self, "v8.0.0")
+        self.assertEqual(code, 0, output)
+        check.assert_called_once()
+        self.assertEqual(check.call_args.args[0], [*self.mod.MARKER_FILES, Path("docs/releases/v8.0.0.md")])
+
+
+class PrintableOutputTests(_MainRunner):
+    """T731 (SEC-T715-04): no control or bidi character of a checked file reaches the CI log."""
+
+    def assert_clean(self, output: str) -> None:
+        self.assertEqual([c for c in UNSAFE_SAMPLES if c in output.replace("\n", "")], [])
+
+    def test_printable_replaces_each_unsafe_character(self):
+        self.assertEqual(self.mod.printable("a" + UNSAFE_SAMPLES + "b"), "a" + "?" * len(UNSAFE_SAMPLES) + "b")
+        self.assertEqual(self.mod.printable("plain v9.0.0 text: ok"), "plain v9.0.0 text: ok")
+
+    def test_the_pattern_matches_check_release_tag_tree(self):
+        path = repo_root() / "scripts" / "check-release-tag-tree.py"
+        spec = importlib.util.spec_from_file_location("check_release_tag_tree", path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        self.assertEqual(self.mod.UNSAFE_RE.pattern, module.UNSAFE_RE.pattern)
+
+    def test_an_install_sh_line_is_printed_without_control_characters(self):
+        install = "see \x1b[2Jdocs/releases‮/v9.0.md\x07 now\n"
+        code, output = self._run_with_install_sh("v8.0.0", install, "--allow-newer-pointers")
+        self.assertEqual(code, 1)
+        self.assertIn("names a release document in a form the gate cannot check", output)
+        self.assertIn("see ?[2Jdocs/releases?/v9.0.md? now", output)
+        self.assert_clean(output)
+
+    def test_a_verdict_line_is_printed_without_control_characters(self):
+        real = self.mod.verdict_placeholder_problems
+        dirty = "**Status**: pending \x1b]8;;https://x\x07⁦x⁩"
+        with mock.patch.object(
+            self.mod, "verdict_placeholder_problems",
+            side_effect=lambda text: real(text.replace("**Status**: CONDITIONAL_PASS", dirty)),
+        ):
+            code, output = _run_past_release_without_markers(self, "v8.0.0")
+        self.assertEqual(code, 1)
+        self.assertIn("still pending", output)
+        self.assert_clean(output)
 
 if __name__ == "__main__":
     unittest.main()

@@ -19,7 +19,7 @@
 # Both bases are supported (T676 replaced the end-of-life node:20-alpine and alpine:3.20: the jobs
 # that held WIKI_TOKEN or ran the repository's Python scripts now share the one python image, which
 # is also the interpreter the tests run on). Every `apk add` package carries a fuzzy `~=MAJOR.MINOR`
-# pin (`nodejs` and `docker-cli`: MAJOR): an exact `=` pin breaks as soon as Alpine ships a security
+# pin (`nodejs`, `npm` and `docker-cli`: MAJOR): an exact `=` pin breaks as soon as Alpine ships a security
 # rebuild of the same upstream version, which would fail the release job. To bump an image:
 # re-read the digest, read the Alpine version of its base layer, re-read the package versions
 # in that branch's APKINDEX, and change digest and pins together. Do not add an unpinned
@@ -97,6 +97,11 @@ unit-tests:
     DOCKER_HOST: unix:///var/run/docker.sock
   before_script:
     - apk add --no-cache 'git~=2.54' 'bash~=5.3' 'nodejs~=24' 'docker-cli~=29' 'ripgrep~=15.1'
+    # T732 (SEC-T677-01): acorn for the JavaScript function-size guard, exact pin and sha512 integrity
+    # from ci/js/package-lock.json; --ignore-scripts runs no lifecycle script (ci/js/README.md).
+    # With CI set, test_function_size fails instead of skipping when the parser is missing.
+    - apk add --no-cache 'npm~=11'
+    - npm ci --ignore-scripts --prefix ci/js --no-audit --no-fund
     # ripgrep and mcp==2.2.0 (the version in implementation/runtime/security/requirements-mcp-server.txt)
     # let the grep_content and live audit-server tests run here; with CI set they fail instead of skipping.
     # test_install_cursor_removal installs a real `git archive v8.0.0` tree; GIT_DEPTH is shallow and

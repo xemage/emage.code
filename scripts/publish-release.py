@@ -24,6 +24,7 @@ second location (T675).
 from __future__ import annotations
 
 import argparse
+import bisect
 import datetime as dt
 import http.client
 import json
@@ -78,6 +79,15 @@ SUBJECT_INVISIBLE_MARKS = frozenset(
     "\u034f\u115f\u1160\u17b4\u17b5\u180b\u180c\u180d\u180f\u2800\u3164\uffa0"
     + "".join(map(chr, range(0xFE00, 0xFE10))) + "".join(map(chr, range(0xE0100, 0xE01F0)))
 )
+# T730 (SEC-T716-02): the Cn test above depends on the Unicode database of the Python that runs the release. A newer
+# database could ASSIGN a code point in a reserved Default_Ignorable_Code_Point range (DerivedCoreProperties.txt), and
+# the category test would then keep it. These ranges are therefore removed by number, whatever the database says:
+# U+2065, U+FFF0-FFF8 and U+E0000-E0FFF (the whole block; its reserved members are U+E0000, U+E0002-E001F,
+# U+E0080-E00FF and U+E01F0-E0FFF). The database this table was reviewed against is the release image's
+# (python:3.12-alpine: Unicode 15.0.0, asserted by tests/functional/test_publish_release_t730.py); re-read the
+# Default_Ignorable list of the new version when that image changes.
+SUBJECT_REVIEWED_UNICODE_VERSION = "15.0.0"
+SUBJECT_RESERVED_IGNORABLE_RANGES = ((0x2065, 0x2065), (0xFFF0, 0xFFF8), (0xE0000, 0xE0FFF))
 HTTP_TIMEOUT_SECONDS = 30
 # T686: the only headers the token may travel in (a fixed allowlist, never taken from input); the default keeps the
 # behaviour of every earlier call. The job token goes in JOB-TOKEN (GitLab "Releases API" accepts it), a personal,
@@ -325,6 +335,8 @@ def _revision_range(current_tag: str, previous_tag: str | None) -> str:
 
 def subject_char_is_unsafe(char: str) -> bool:
     """True for a character a changelog subject must not keep (see SUBJECT_UNSAFE_CATEGORIES)."""
+    if any(lo <= ord(char) <= hi for lo, hi in SUBJECT_RESERVED_IGNORABLE_RANGES):
+        return True
     return unicodedata.category(char) in SUBJECT_UNSAFE_CATEGORIES or char in SUBJECT_INVISIBLE_MARKS
 
 
@@ -412,33 +424,118 @@ def classify_subjects(subjects: Iterable[str]) -> dict[str, list[str]]:
 # (an unclosed "<!--" would hide every later entry), no link or image, no character reference (``&#8238;`` would bring
 # back the bidi override the subject lost), no heading, list, rule or fence at the start of the item. Outside code
 # spans the characters \ < > [ ] & and a backtick of an unmatched run are backslash-escaped (CommonMark renders an
-# escaped punctuation character as itself); code spans, emphasis and underscores are kept, because subjects use them.
+# escaped punctuation character as itself); code spans (of at most MAX_CODE_SPAN_BACKTICKS backticks, see below),
+# emphasis and underscores are kept, because subjects use them.
 # The GitLab Release description never holds a subject: it is the release document, whole (render_release_description).
-MARKDOWN_ESCAPES = str.maketrans({char: "\\" + char for char in "\\<>[]&`"})
+# T730 (SEC-T716-03): GitLab turns text into links that CommonMark leaves alone. (1) References: ``@user``, ``#123``,
+# ``!12``, ``~label``, ``%milestone``, ``$snippet``, ``^alert``. The sigils are backslash-escaped too: CommonMark renders
+# an escaped ASCII punctuation character as itself, and GitLab keeps a backslash-escaped reference character literal
+# (its Markdown pre/post escape filters, gitlab-org/gitlab!45922; not observed on a live instance here). The rendered
+# text is unchanged; the cost, by design, is that ``(#42)`` in a subject no longer links to issue 42. (2) Bare URLs:
+# GitLab autolinks ``scheme://...`` and ``www....`` in text, and a backslash does not stop that, so a token (a run
+# without whitespace or backticks) holding ``://``, or ``www.`` not preceded by an ASCII letter or digit (GFM also
+# starts a www autolink after ``(``, ``*``, ``_`` and ``~``), becomes a code span: shown in monospace, never linked or
+# rendered. A wrapped token next to a kept code span is set off by one space, so the two backtick runs cannot merge.
+# T730 (SEC-T730-01/-02): the output is parsed again as rendered Markdown (rendered_code_parts); if any ``://`` or
+# ``www.`` is still outside a code span, the entry falls back to escaping only (fail closed). Tokenising by a split on
+# ``[\s`]+`` and finding closers by bisection keep this linear-time on long subjects. Residual, documented: a bare
+# e-mail address can still be autolinked as ``mailto:``.
+# T730 (SEC-T730-05): the claim "a backtick run opens a code span" holds only up to a renderer's limit: comrak reads an
+# opening run above 80 backticks, and cmark one above 1000, as literal text, so the inside of a longer "code span" is
+# parsed as Markdown (both limits read from their source, not run). A run above MAX_CODE_SPAN_BACKTICKS therefore opens
+# no code span here: it is escaped like any other unmatched run, and what it enclosed is neutralised as plain text.
+MAX_CODE_SPAN_BACKTICKS = 32
+REFERENCE_SIGILS = "@#!~%$^"
+MARKDOWN_ESCAPES = str.maketrans({char: "\\" + char for char in "\\<>[]&`" + REFERENCE_SIGILS})
+URL_HINT_RE = re.compile(r"://|(?<![A-Za-z0-9])www\.", re.IGNORECASE)
+TOKEN_SEPARATOR_RE = re.compile(r"([\s`]+)")
 BACKTICK_RUN_RE = re.compile(r"`+")
+ESCAPE_OR_RUN_RE = re.compile(r"\\[\s\S]|`+")
 LEADING_BLOCK_RE = re.compile(r"(?:#{1,6}|[-+*]|\d{1,9}(?P<num>[.)]))(?=[ \t]|$)|(?P<rule>[-*_])(?:[ \t]*(?P=rule)){2,}[ \t]*$|~{3}")
 
 
+def closer_finder(text: str):
+    """A function (length, after) -> end of the first backtick run of exactly ``length`` that starts at or after
+    ``after``, or None. Bisection over the run starts per length, so a long subject costs O(n log n), not O(n^2)."""
+    starts_by_length: dict[int, list[int]] = {}
+    for run in BACKTICK_RUN_RE.finditer(text):
+        starts_by_length.setdefault(len(run.group()), []).append(run.start())
+
+    def closer_end(length: int, after: int) -> int | None:
+        starts = starts_by_length.get(length, [])
+        k = bisect.bisect_left(starts, after)
+        return starts[k] + length if k < len(starts) else None
+
+    return closer_end
+
+
 def code_span_parts(text: str) -> list[tuple[bool, str]]:
-    """``text`` as (is_code_span, part) pairs, matched as CommonMark matches them: a backtick run opens a code span that
-    the next run of the SAME length closes; a run with no closer is literal text."""
-    runs = list(BACKTICK_RUN_RE.finditer(text))
+    """``text`` as (is_code_span, part) pairs: a backtick run of at most MAX_CODE_SPAN_BACKTICKS opens a code span that
+    the next run of the SAME length closes; a longer run, or a run with no closer, is literal text. This is CommonMark's
+    matching with a limit stricter than the renderers' (SEC-T730-05)."""
+    closer_end = closer_finder(text)
     parts: list[tuple[bool, str]] = []
-    start, i = 0, 0
-    while i < len(runs):
-        opener = runs[i]
-        closer = next((j for j in range(i + 1, len(runs)) if len(runs[j].group()) == len(opener.group())), None)
-        if closer is None:
-            i += 1
-            continue
-        parts += [(False, text[start:opener.start()]), (True, text[opener.start():runs[closer].end()])]
-        start, i = runs[closer].end(), closer + 1
+    start = 0
+    for opener in BACKTICK_RUN_RE.finditer(text):
+        if opener.start() < start or len(opener.group()) > MAX_CODE_SPAN_BACKTICKS:
+            continue  # inside the code span just closed, or too long to open one
+        end = closer_end(len(opener.group()), opener.end())
+        if end is not None:
+            parts += [(False, text[start:opener.start()]), (True, text[opener.start():end])]
+            start = end
     return parts + [(False, text[start:])]
+
+
+def rendered_code_parts(text: str) -> list[tuple[bool, str]]:
+    """Like code_span_parts, for OUTPUT Markdown: outside code spans a backslash escapes the next character, so an
+    escaped backtick opens nothing; inside a code span it is literal (CommonMark). A run above
+    MAX_CODE_SPAN_BACKTICKS opens nothing either, so what it encloses counts as text (SEC-T730-05)."""
+    closer_end = closer_finder(text)
+    parts: list[tuple[bool, str]] = []
+    start = pos = 0
+    while (found := ESCAPE_OR_RUN_RE.search(text, pos)) is not None:
+        pos = found.end()
+        opens = found.group()[0] != "\\" and len(found.group()) <= MAX_CODE_SPAN_BACKTICKS
+        end = closer_end(len(found.group()), found.end()) if opens else None
+        if end is not None:
+            parts += [(False, text[start:found.start()]), (True, text[found.start():end])]
+            start = pos = end
+    return parts + [(False, text[start:])]
+
+
+def neutralised_text(part: str) -> list[tuple[bool, str]]:
+    """A part outside code spans as (wrapped, piece) pairs: a URL-like token (URL_HINT_RE) becomes a code span, every
+    other token and every separator is escaped (MARKDOWN_ESCAPES)."""
+    pieces: list[tuple[bool, str]] = []
+    for index, chunk in enumerate(TOKEN_SEPARATOR_RE.split(part)):
+        wrapped = index % 2 == 0 and URL_HINT_RE.search(chunk) is not None
+        if chunk:
+            pieces.append((wrapped, f"`{chunk}`" if wrapped else chunk.translate(MARKDOWN_ESCAPES)))
+    return pieces
+
+
+def wrapped_entry(text: str) -> str:
+    """The entry with URL-like tokens wrapped; one space between a wrapped token and a neighbouring kept code span."""
+    out: list[str] = []
+    last_wrapped = after_code = False
+    for is_code, part in code_span_parts(text):
+        if is_code:
+            out.append((" " if last_wrapped else "") + part)
+            last_wrapped, after_code = False, True
+            continue
+        pieces = neutralised_text(part)
+        if pieces and pieces[0][0] and after_code:
+            out.append(" ")
+        out += [piece for _, piece in pieces]
+        last_wrapped, after_code = bool(pieces) and pieces[-1][0], False
+    return "".join(out)
 
 
 def markdown_entry(text: str) -> str:
     """One changelog entry with every Markdown structure outside code spans escaped (see MARKDOWN_ESCAPES)."""
-    out = "".join(part if is_code else part.translate(MARKDOWN_ESCAPES) for is_code, part in code_span_parts(text))
+    out = wrapped_entry(text)
+    if any(URL_HINT_RE.search(part) for is_code, part in rendered_code_parts(out) if not is_code):
+        out = "".join(part if is_code else part.translate(MARKDOWN_ESCAPES) for is_code, part in code_span_parts(text))
     lead = LEADING_BLOCK_RE.match(out)
     if lead:
         cut = lead.start("num") if lead.group("num") else 0
@@ -529,11 +626,28 @@ def validate_token_header(name: str) -> str:
     return name
 
 
-class ApiCredential(NamedTuple):
-    """The API token and the one header that carries it (T716, TL-T708-06); the repr never shows the token."""
+class ApiCredential:
+    """The API token and the one header that carries it (T716, TL-T708-06).
 
-    token: str
-    header: str = DEFAULT_TOKEN_HEADER
+    T730 (SEC-T716-04): not a tuple, so ``tuple()``, unpacking, iteration, ``_asdict()`` and ``%``-formatting have
+    nothing to expose; ``__slots__`` leaves no ``__dict__`` (``vars()``, ``dataclasses.asdict``); pickling and copying
+    are refused; it is immutable; ``repr``/``str``/``format`` show the header only.
+    """
+
+    __slots__ = ("token", "header")
+
+    def __init__(self, token: str, header: str = DEFAULT_TOKEN_HEADER) -> None:
+        object.__setattr__(self, "token", token)
+        object.__setattr__(self, "header", header)
+
+    def __setattr__(self, name: str, value: object) -> None:
+        raise AttributeError("ApiCredential is immutable")
+
+    def __delattr__(self, name: str) -> None:
+        raise AttributeError("ApiCredential is immutable")
+
+    def __reduce_ex__(self, protocol: object) -> object:
+        raise TypeError("ApiCredential cannot be pickled or copied")
 
     def __repr__(self) -> str:
         return f"ApiCredential(header={self.header!r})"
