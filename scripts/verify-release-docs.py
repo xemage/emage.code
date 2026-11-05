@@ -15,7 +15,12 @@ golden suite encodes.
 Migration pointers (T703, SEC-T662-01): every ``docs/releases/v*.md`` path that
 ``scripts/install.sh`` names must exist, and a document named on an install.sh line that
 mentions "Cursor" must carry its Cursor migration item. See ``MIGRATION_POINTER_HELP``
-for the anchor and for how a pointer to a version newer than the tag is treated.
+for the anchor, for what stays open, and for how a pointer to a version newer than the tag is treated.
+
+The Cursor item is looked for with markdown-it-py (T739, plan-136), so the gate reads the same blocks as a
+CommonMark renderer. Only ``has_cursor_migration_item`` uses it. ``main()`` refuses to run without it, on every
+run; there is no fallback to line rules and no skip. The ``release-docs-gate`` job installs it from
+``ci/requirements-release.txt``.
 
 Every printed line passes through ``printable``: control, bidi and zero-width characters of an
 ``install.sh`` line, a release document or a tag become ``?`` in the CI log (SEC-T715-04).
@@ -35,6 +40,11 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+
+try:
+    from markdown_it import MarkdownIt
+except ImportError:  # main() reports it; nothing else may run without the parser (T739)
+    MarkdownIt = None
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -130,6 +140,14 @@ PENDING_ON_RE = re.compile(r"\bon\s+pending\b", re.IGNORECASE)
 
 INSTALL_SH = Path("scripts/install.sh")
 MIGRATION_SECTION = "## Migration Guide"
+MIGRATION_SECTION_TITLE = "Migration Guide"
+PARSER_INSTALL_COMMAND = (
+    "python3 -m pip install --require-hashes --only-binary=:all: -r ci/requirements-release.txt"
+)
+PARSER_MISSING = (
+    "the CommonMark parser markdown-it-py is not installed, and this gate has no fallback; "
+    f"install it with: {PARSER_INSTALL_COMMAND}"
+)
 POINTER_RE = re.compile(r"docs/releases/(?P<tag>v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)\.md")
 # SEC-T703-02: "the v8.0.0 release notes" names a release document in prose; it must exist too.
 PROSE_POINTER_RE = re.compile(r"\b(?P<tag>v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?) release notes\b")
@@ -147,42 +165,9 @@ POINTER_LIKE_RE = re.compile(
     re.IGNORECASE,
 )
 TAG_CORE_RE = re.compile(r"v(\d+)\.(\d+)\.(\d+)(?:-[0-9A-Za-z.-]+)?")
-ITEM_HEADING_RE = re.compile(r"^#{3,6}[ \t]+(?P<text>.+)$")
-ITEM_BOLD_LEAD_RE = re.compile(r"^(?:[-*][ \t]+|\d+\.[ \t]+)?\*\*(?P<text>[^*\n]+)\*\*")
 CURSOR_WORD_RE = re.compile(r"\bCursor\b")
-# SEC-T703-01: the anchor counts only where a reader sees it, not in fenced code or an HTML comment.
-FENCE_OPEN_RE = re.compile(r"^ {0,3}(?P<fence>`{3,}|~{3,})")
-HTML_COMMENT_RE = re.compile(r"<!--.*?(?:-->|\Z)", re.DOTALL)
-# SEC-T715-03: CommonMark raw HTML blocks (spec 0.31.2, section 4.6). Each rule is (start, end) for
-# types 1 to 6; the end pattern is searched on the whole start line, then on each later line, so '<!-->'
-# and '<?>' close on their own line (SEC-T731-09). A start line is not blank, so a blank-line end never fits it.
-HTML_BLOCK_TAGS = (
-    "address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|"
-    "dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h[1-6]|head|header|hr|html|"
-    "iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|search|section|"
-    "source|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul"
-)
-BLANK_LINE_RE = re.compile(r"^[ \t]*$")
-HTML_BLOCK_RULES = (
-    (re.compile(r" {0,3}<(?:script|pre|style|textarea)(?=[ \t>]|$)", re.I),
-     re.compile(r"</(?:script|pre|style|textarea)>", re.I)),
-    (re.compile(r" {0,3}<!--"), re.compile(r"-->")),
-    (re.compile(r" {0,3}<\?"), re.compile(r"\?>")),
-    (re.compile(r" {0,3}<![A-Za-z]"), re.compile(r">")),
-    (re.compile(r" {0,3}<!\[CDATA\["), re.compile(r"\]\]>")),
-    (re.compile(rf" {{0,3}}</?(?:{HTML_BLOCK_TAGS})(?=[ \t]|/?>|$)", re.I), BLANK_LINE_RE),
-)
-# Type 7: a line that is one complete open or closing tag; it ends at a blank line and cannot
-# interrupt a paragraph. Attribute syntax per spec section 6.6; each part has one way to match.
-_HTML_ATTR = r"[ \t]+[A-Za-z_:][A-Za-z0-9_.:-]*(?:[ \t]*=[ \t]*(?:[^ \t\"'=<>`]+|'[^'\n]*'|\"[^\"\n]*\"))?"
-HTML_TAG_LINE_RE = re.compile(
-    rf" {{0,3}}(?:<[A-Za-z][A-Za-z0-9-]*(?:{_HTML_ATTR})*[ \t]*/?>|</[A-Za-z][A-Za-z0-9-]*[ \t]*>)[ \t]*$"
-)
-ATX_HEADING_RE = re.compile(r" {0,3}#{1,6}(?:[ \t]|$)")
-# SEC-T731-01, SEC-T731-06: a list item line may precede a list-form anchor (see has_cursor_migration_item).
-LIST_ITEM_RE = re.compile(r" {0,3}(?:[-*+]|\d{1,9}[.)])[ \t]+\S")
 # SEC-T731-02: CommonMark ends a line only at \n, \r\n or \r; str.splitlines() also splits at
-# \v, \f, \x1c-\x1e, \x85, U+2028 and U+2029, which would end an HTML block or start a line early.
+# \v, \f, \x1c-\x1e, \x85, U+2028 and U+2029, which would start a line early.
 LINE_END_RE = re.compile(r"\r\n|\r|\n")
 
 
@@ -209,15 +194,25 @@ segment without the literal path (doc/releases, releases/v, a missing patch numb
 that names a wiki or a release (SEC-T715-01). A document named, by path or as
 "vX.Y.Z release notes", on an install.sh line that contains the word "Cursor" must
 carry a Cursor migration item (SEC-T715-02).
-Anchor: inside the '## Migration Guide' section (up to the next '## ' heading), a
-heading of level 3 to 6 ('### ...') or a bold lead ('**...**' at the start of a line,
-optionally after a list marker) whose text contains the word "Cursor" (case-sensitive)
-and that starts a block: the line before it is blank or an ATX heading, or a list-form
-anchor continues a run of list item lines that started there (SEC-T731-06),
-for example '**Migration Guide item M-3. Cursor is no longer supported.**'. Fenced code
-(``` or ~~~), HTML comments and raw HTML blocks (CommonMark types 1 to 7, for example
-a '<details>' block up to the next blank line) are ignored, so an anchor there does not
-count (SEC-T703-01, SEC-T715-03).
+Anchor: the gate reads the document with markdown-it-py's CommonMark parser (T739). The
+section is the first top-level level 2 heading whose text is exactly 'Migration Guide',
+in ATX or setext form. It ends at the next top-level level 1 or 2 heading, in either
+form. A heading inside a blockquote or a list neither opens nor ends it. An anchor is,
+in that section, with text that contains the word "Cursor" (case-sensitive), either:
+  - a top-level heading of level 3 to 6, for example '### M-3. Cursor removed';
+  - a paragraph, top-level or with only list containers around it, that opens with a
+    '**' strong span, for example '**Migration Guide item M-3. Cursor is no longer
+    supported.**'. Only the text inside that span counts.
+Text means text and inline code, with a line break read as a space. An image's alt text
+and inline HTML never count. What the parser reads as code, an HTML comment or a raw
+HTML block is not an anchor (SEC-T703-01, SEC-T715-03). '__bold__', an anchor in a
+blockquote and a heading in a list do not count either.
+What stays open (SEC-T738-04). The gate reads CommonMark, and GitLab's renderer may
+differ, for example on front matter at the start of a document (unverified). Raw HTML
+around an anchor, such as '<details>' or '<div hidden>' followed by a blank line, is not
+modelled, so such an anchor counts because CommonMark parses it as live. The install.sh
+rules are per line and do not defend against a crafted script: they catch an omission on
+one line, and a pointer on a line without the word "Cursor" needs no item.
 Newer versions: a pointer to a version (major.minor.patch, any pre-release suffix
 ignored) newer than the tag being verified is an error, because the tagged tree points
 users to a document it does not ship (SEC-T703-03). --allow-newer-pointers turns that
@@ -472,85 +467,73 @@ def pointer_applies(pointed_tag: str, tag: str) -> bool:
     return pointed <= verified
 
 
-def html_block_opening(line: str) -> re.Pattern[str] | None:
-    """The end pattern when ``line`` opens a CommonMark HTML block, else None.
+def inline_text(children: list) -> str:
+    """The text of inline tokens: ``text`` and ``code_inline``, a soft or hard break as a space, nothing else.
 
-    A type 7 block (a line that is one complete tag) opens whatever the line before it is
-    (SEC-T731-01). CommonMark keeps it closed after a paragraph line, but this gate cannot tell a
-    paragraph line from a table row, a blockquote or an empty list item. Opening it wrongly hides
-    the lines up to the next blank line. That is a false FAIL when an anchor is among them. It can be a
-    false PASS when a fence or an HTML block start is among them: in 'Some text', '<span>', '```', '',
-    '**M-3. Cursor removed.**', '```' CommonMark hides the anchor and this gate counts it.
+    An image's alt text and ``html_inline`` never count. The parser has already resolved entities and backslash
+    escapes into ``text`` (both on markdown-it-py 3.0.0 and 4.2.0).
     """
-    for start, end in HTML_BLOCK_RULES:
-        if start.match(line):
-            return end
-    if HTML_TAG_LINE_RE.match(line):
-        return BLANK_LINE_RE
-    return None
+    parts: list[str] = []
+    for token in children:
+        if token.type in ("text", "code_inline"):
+            parts.append(token.content)
+        elif token.type in ("softbreak", "hardbreak"):
+            parts.append(" ")
+    return "".join(parts)
 
 
-def _filler_lines(match: re.Match[str]) -> str:
-    """One empty comment per line of ``match``: the line count is kept and no line becomes blank."""
-    return "\n".join(["<!---->"] * (match.group(0).count("\n") + 1))
+def bold_lead_text(children: list) -> str:
+    """The text inside the ``**`` span that opens ``children``, or '' when no such span opens them.
 
-
-def strip_hidden_markdown(text: str) -> str:
-    """Blank fenced code (``` and ~~~), raw HTML blocks and HTML comments (CommonMark rules); the line count is kept.
-
-    An unclosed fence, HTML block or comment hides the rest of the document, as a Markdown renderer does.
-    A comment or triple-backtick span left at this point sits inside a paragraph, so each of its lines becomes
-    an empty comment, not a blank line: a blank line would end the paragraph for the anchor rule (SEC-T731-06).
-    A blank line ends an HTML block of type 6 or 7; it is blank either way.
+    The parser emits an empty ``text`` token before a span at the start of a paragraph, so empty ones are skipped.
+    ``__bold__`` is also ``strong_open``, and only its ``markup`` tells it apart. A span can nest another: its end
+    is found by depth.
     """
-    kept: list[str] = []
-    fence = ""
-    html_end: re.Pattern[str] | None = None
-    for line in markdown_lines(text):
-        kept.append("")
-        if fence:
-            if re.match(rf"^ {{0,3}}{re.escape(fence[0])}{{{len(fence)},}}[ \t]*$", line):
-                fence = ""
+    tokens = [token for token in children if token.type != "text" or token.content]
+    if not tokens or tokens[0].type != "strong_open" or tokens[0].markup != "**":
+        return ""
+    depth = 0
+    for index, token in enumerate(tokens):
+        depth += {"strong_open": 1, "strong_close": -1}.get(token.type, 0)
+        if depth == 0:
+            return inline_text(tokens[:index])
+    return ""
+
+
+def migration_section_tokens(tokens: list) -> list:
+    """The block tokens of the Migration Guide section, as MIGRATION_POINTER_HELP defines it; [] when there is none.
+
+    ``level == 0`` keeps out a heading inside a blockquote or a list. A heading token is followed by its inline token.
+    """
+    start: int | None = None
+    for index, token in enumerate(tokens):
+        if token.type != "heading_open" or token.level != 0 or token.tag not in ("h1", "h2"):
             continue
-        if html_end is not None:
-            if html_end.search(line):
-                html_end = None
-            continue
-        opening = FENCE_OPEN_RE.match(line)
-        if opening and not (opening.group("fence")[0] == "`" and "`" in line[opening.end():]):
-            fence = opening.group("fence")
-            continue
-        block_end = html_block_opening(line)
-        if block_end is not None:
-            html_end = None if block_end.search(line) else block_end
-            continue
-        kept[-1] = line
-    return FENCED_CODE_RE.sub(_filler_lines, HTML_COMMENT_RE.sub(_filler_lines, "\n".join(kept)))
+        if start is not None:
+            return tokens[start:index]
+        if token.tag == "h2" and inline_text(tokens[index + 1].children or []).strip() == MIGRATION_SECTION_TITLE:
+            start = index + 1
+    return [] if start is None else tokens[start:]
 
 
 def has_cursor_migration_item(text: str) -> bool:
     """The Migration Guide section holds a heading or bold lead that names Cursor (see MIGRATION_POINTER_HELP).
 
-    An anchor counts only where it starts a block, since a line inside a paragraph can be part of a
-    multi-line inline construct that the reader does not see (SEC-T731-06): the line before it, after
-    blanking, must be blank or an ATX heading, or a list-form anchor must continue a run of list item
-    lines that itself started there. Refusing any other anchor can only cause a false FAIL.
-
-    The check as a whole can still give a false PASS, because strip_hidden_markdown can hide too much
-    and a blanked line counts as blank here. A crafted document can use this. SEC-T731-09 residual (b):
-    the gate can pair two fences that CommonMark does not, so in '- a', '  ```', 'x', '  ```',
-    '**M-3. Cursor removed.**' CommonMark hides the anchor and this gate counts it. A wrongly opened
-    type 7 block is a second route (see html_block_opening). The gate has no Markdown parser and no model of
-    list containers; these are examples, not a full list.
+    The commonmark preset has two block containers, blockquotes and lists, so "only list containers around it"
+    means no open blockquote. ``paragraph_open`` is ``hidden`` in a tight list and is still rendered, so it counts.
+    A paragraph or heading token is followed by its inline token.
     """
-    clear, in_list = True, False
-    for line in markdown_lines(section_text(strip_hidden_markdown(text), MIGRATION_SECTION)):
-        match = ITEM_HEADING_RE.match(line) or ITEM_BOLD_LEAD_RE.match(line)
-        is_list = LIST_ITEM_RE.match(line) is not None
-        if match and (clear or (in_list and is_list)) and CURSOR_WORD_RE.search(match.group("text")):
+    section = migration_section_tokens(MarkdownIt("commonmark").parse(text))
+    quotes = 0
+    for index, token in enumerate(section):
+        quotes += {"blockquote_open": 1, "blockquote_close": -1}.get(token.type, 0)
+        anchor = ""
+        if token.type == "heading_open" and token.level == 0 and token.tag in ("h3", "h4", "h5", "h6"):
+            anchor = inline_text(section[index + 1].children or [])
+        elif token.type == "paragraph_open" and quotes == 0:
+            anchor = bold_lead_text(section[index + 1].children or [])
+        if CURSOR_WORD_RE.search(anchor):
             return True
-        in_list = is_list and (clear or in_list)
-        clear = BLANK_LINE_RE.match(line) is not None or ATX_HEADING_RE.match(line) is not None
     return False
 
 
@@ -598,7 +581,7 @@ def print_errors(errors: list[str]) -> None:
         print(f"release-docs-verify: {printable(error)}")
 
 
-def main() -> int:
+def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Release documentation verification gate.",
         epilog=MIGRATION_POINTER_HELP,
@@ -610,7 +593,14 @@ def main() -> int:
         help="report an install.sh pointer to a version newer than --tag as a note, not an error "
         "(for verifying a past tag on a later tree; never in CI)",
     )
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def main() -> int:
+    args = parse_arguments()
+    if MarkdownIt is None:
+        print_errors([PARSER_MISSING])
+        return 1
 
     marker = f"Latest release: {args.tag}"
     errors: list[str] = []

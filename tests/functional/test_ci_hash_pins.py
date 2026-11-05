@@ -1,6 +1,6 @@
 """T676 (SEC-T675-09, SEC-T675-03, SEC-T646-04, SEC-014) -- hash-locked Python packages and supported CI images.
 
-Four contracts, each with a mutation proof (the guard's input is damaged in memory and the checker must
+Five contracts, each with a mutation proof (the guard's input is damaged in memory and the checker must
 then report an error):
 
   1. every `pip install` in .gitlab-ci.yml is `--require-hashes -r ci/requirements-*.txt`, with no extra
@@ -10,7 +10,9 @@ then report an error):
      version the input allows, and the two runtime locks are identical;
   3. `httpx2` is at least 2.12.0 (GHSA-8xx6-hgc6-gc2m) in both runtime requirement files and every lock;
   4. no CI image is end of life (Node <= 20 or an odd Node major, Alpine <= 3.21, Python <= 3.9; table dated
-     2026-10-22), and every image still carries its sha256 digest.
+     2026-10-22), and every image still carries its sha256 digest;
+  5. T739 (plan-136): `release-docs-gate` installs `ci/requirements-release.txt` before the gate runs, in the exact
+     form, and that lock holds only markdown-it-py and mdurl, at the versions and hashes of the CI lock.
 """
 from __future__ import annotations
 
@@ -28,6 +30,7 @@ CI_YML = ROOT / ".gitlab-ci.yml"
 LOCKS = {
     "ci/requirements-ci.txt": "ci/requirements-ci.in",
     "ci/requirements-gate.txt": "ci/requirements-gate.in",
+    "ci/requirements-release.txt": "ci/requirements-release.in",
     "implementation/runtime/security/requirements-mcp-server.lock.txt":
         "implementation/runtime/security/requirements-mcp-server.txt",
     "implementation/runtime/memory/requirements-mcp-server.lock.txt":
@@ -37,6 +40,11 @@ HTTPX2_FLOOR = (2, 12, 0)
 ENTRY = re.compile(r"^(?P<name>[A-Za-z0-9][A-Za-z0-9._-]*)==(?P<version>[0-9][0-9A-Za-z.!+_-]*)(?P<marker>\s*;[^\\]*)?\s*\\?$")
 HASH = re.compile(r"^\s+--hash=sha256:[0-9a-f]{64}\s*\\?$")
 INPUT_REQ = re.compile(r"^(?P<name>[A-Za-z0-9][A-Za-z0-9._-]*)\s*(?P<op>==|>=)?\s*(?P<version>[0-9][0-9A-Za-z.]*)?\s*$")
+RELEASE_GATE_JOB = "release-docs-gate"
+RELEASE_GATE_INSTALL = ("python3 -m pip install --no-cache-dir --disable-pip-version-check --quiet --require-hashes "
+                        "--only-binary=:all: -r ci/requirements-release.txt")
+RELEASE_GATE_COMMAND = 'python3 scripts/verify-release-docs.py --tag "${CI_COMMIT_TAG}"'
+RELEASE_LOCK_PACKAGES = {"markdown-it-py", "mdurl"}
 FORBIDDEN_PIP_FLAGS = ("-i", "--index-url", "--extra-index-url", "-f", "--find-links", "--trusted-host",
                        "-e", "--editable", "--no-deps", "--pre", "--no-index", "--break-system-packages")
 
@@ -167,6 +175,46 @@ def lock_problems(lock_text: str, input_text: str) -> list[str]:
     return problems
 
 
+# ---- 5. the release gate's parser ---------------------------------------------------------------------
+
+def release_gate_job_problems(ci_text: str) -> list[str]:
+    """`before_script` runs before `script`, and it must be exactly the one install line."""
+    job = yaml.safe_load(ci_text).get(RELEASE_GATE_JOB) or {}
+    problems = []
+    if job.get("before_script") != [RELEASE_GATE_INSTALL]:
+        problems.append(f"{RELEASE_GATE_JOB} must have exactly this before_script: {RELEASE_GATE_INSTALL!r}")
+    if RELEASE_GATE_COMMAND not in (job.get("script") or []):
+        problems.append(f"{RELEASE_GATE_JOB} does not run the gate: {RELEASE_GATE_COMMAND!r}")
+    return problems
+
+
+def lock_hashes(text: str) -> dict[tuple[str, str], set[str]]:
+    """{(normalized name, version): the sha256 hashes of that entry}."""
+    found: dict[tuple[str, str], set[str]] = {}
+    current: tuple[str, str] | None = None
+    for line in text.splitlines():
+        entry = ENTRY.match(line)
+        if entry:
+            current = (norm(entry["name"]), entry["version"])
+            found[current] = set()
+        elif current is not None and HASH.match(line):
+            found[current].add(line.split("sha256:")[1].split()[0])
+    return found
+
+
+def release_lock_problems(release_text: str, ci_text: str) -> list[str]:
+    """The release lock adds no package, version or wheel that the CI lock does not already hold."""
+    release, ci = lock_hashes(release_text), lock_hashes(ci_text)
+    names = {name for name, _ in release}
+    problems = [f"unexpected package set in the release lock: {sorted(names)}"] if names != RELEASE_LOCK_PACKAGES else []
+    for key, hashes in release.items():
+        if key not in ci:
+            problems.append(f"{key[0]}=={key[1]} is not the version of ci/requirements-ci.txt")
+        elif hashes != ci[key]:
+            problems.append(f"{key[0]}=={key[1]} has other hashes than ci/requirements-ci.txt")
+    return problems
+
+
 # ---- 4. images -----------------------------------------------------------------------------------------
 
 def eol_image_problems(ci_text: str) -> list[str]:
@@ -196,9 +244,10 @@ class TestCiPipInstallsAreHashLocked(unittest.TestCase):
     def test_every_pip_install_is_hash_locked(self):
         self.assertEqual(pip_install_problems(self.ci), [])
 
-    def test_the_two_install_lines_use_their_own_locks(self):
+    def test_the_install_lines_use_their_own_locks(self):
         self.assertIn("-r ci/requirements-ci.txt", self.ci)
         self.assertIn("-r ci/requirements-gate.txt", self.ci)
+        self.assertIn("-r ci/requirements-release.txt", self.ci)
         self.assertNotIn("pip install --no-cache-dir pyyaml", self.ci)
 
     def test_mutation_a_floating_package_is_detected(self):
@@ -213,7 +262,7 @@ class TestCiPipInstallsAreHashLocked(unittest.TestCase):
         bad = self.ci.replace(" --only-binary=:all:", "", 1)
         self.assertNotEqual(bad, self.ci)
         self.assertTrue(any("--only-binary" in p for p in pip_install_problems(bad)))
-        self.assertEqual(self.ci.count("--only-binary=:all:"), 2)  # both install lines carry it
+        self.assertEqual(self.ci.count("--only-binary=:all:"), 3)  # all three install lines carry it
 
     def test_mutation_an_extra_package_beside_the_lock_is_detected(self):
         bad = self.ci.replace("-r ci/requirements-ci.txt", "-r ci/requirements-ci.txt requests")
@@ -312,6 +361,66 @@ class TestLockFiles(unittest.TestCase):
         self.assertNotEqual(bad, lock)
         problems = lock_problems(bad, self.read("implementation/runtime/security/requirements-mcp-server.txt"))
         self.assertTrue(any("httpx2>=2.12.0 required" in p for p in problems))
+
+
+class TestReleaseGateParserInstall(unittest.TestCase):
+    """T739 (plan-136): no MR pipeline runs this job, so these pins are what guards its install until a tag pipeline."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.ci = CI_YML.read_text(encoding="utf-8")
+        cls.release = (ROOT / "ci/requirements-release.txt").read_text(encoding="utf-8")
+        cls.ci_lock = (ROOT / "ci/requirements-ci.txt").read_text(encoding="utf-8")
+
+    def _mutated_ci(self, old: str, new: str) -> str:
+        bad = self.ci.replace(old, new)
+        self.assertNotEqual(bad, self.ci)
+        return bad
+
+    def test_the_job_installs_the_lock_before_the_gate_runs(self):
+        self.assertEqual(release_gate_job_problems(self.ci), [])
+
+    def test_mutation_removing_the_install_is_detected(self):
+        bad = self._mutated_ci(f"  before_script:\n    - '{RELEASE_GATE_INSTALL}'\n", "")
+        self.assertTrue(any("before_script" in p for p in release_gate_job_problems(bad)))
+
+    def test_mutation_installing_after_the_gate_is_detected(self):
+        bad = self._mutated_ci(f"  before_script:\n    - '{RELEASE_GATE_INSTALL}'\n", "")
+        bad = bad.replace(f"    - {RELEASE_GATE_COMMAND}\n", f"    - {RELEASE_GATE_COMMAND}\n    - '{RELEASE_GATE_INSTALL}'\n")
+        self.assertTrue(any("before_script" in p for p in release_gate_job_problems(bad)))
+
+    def test_mutation_another_form_or_lock_is_detected(self):
+        for old, new in (("--require-hashes --only-binary=:all: -r ci/requirements-release.txt",
+                          "--only-binary=:all: -r ci/requirements-release.txt"),
+                         ("--only-binary=:all: -r ci/requirements-release.txt", "-r ci/requirements-release.txt"),
+                         ("-r ci/requirements-release.txt", "-r ci/requirements-ci.txt")):
+            with self.subTest(new):
+                self.assertTrue(release_gate_job_problems(self._mutated_ci(old, new)))
+
+    def test_mutation_dropping_the_gate_is_detected(self):
+        bad = self._mutated_ci(f"    - {RELEASE_GATE_COMMAND}\n", "    - echo skipped\n")
+        self.assertTrue(any("does not run the gate" in p for p in release_gate_job_problems(bad)))
+
+    def test_the_release_lock_matches_the_ci_lock(self):
+        self.assertEqual(release_lock_problems(self.release, self.ci_lock), [])
+        self.assertEqual({key[0] for key in lock_hashes(self.release)}, RELEASE_LOCK_PACKAGES)
+
+    def test_mutation_another_version_on_either_side_is_detected(self):
+        problems = release_lock_problems(self.release.replace("markdown-it-py==4.2.0", "markdown-it-py==4.3.0"), self.ci_lock)
+        self.assertTrue(any("not the version" in p for p in problems), problems)
+        problems = release_lock_problems(self.release, self.ci_lock.replace("mdurl==0.1.2", "mdurl==0.1.3"))
+        self.assertTrue(any("not the version" in p for p in problems), problems)
+
+    def test_mutation_another_hash_is_detected(self):
+        bad = re.sub(r"--hash=sha256:[0-9a-f]{64}", "--hash=sha256:" + "0" * 64, self.release, count=1)
+        self.assertNotEqual(bad, self.release)
+        self.assertTrue(any("other hashes" in p for p in release_lock_problems(bad, self.ci_lock)))
+
+    def test_mutation_an_extra_or_a_missing_package_is_detected(self):
+        extra = self.release + "pyyaml==6.0.3 \\\n    --hash=sha256:" + "0" * 64 + "\n"
+        self.assertTrue(any("package set" in p for p in release_lock_problems(extra, self.ci_lock)))
+        missing = re.sub(r"(?ms)^mdurl==.*", "", self.release)
+        self.assertTrue(any("package set" in p for p in release_lock_problems(missing, self.ci_lock)))
 
 
 EOL_TABLE_DATE = dt.date(2026, 10, 22)  # the day the table in eol_image_problems was written

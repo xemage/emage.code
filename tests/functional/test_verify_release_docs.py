@@ -14,12 +14,17 @@ every printed line is stripped of control and bidi characters (SEC-T715-04).
 
 T738: scripts/install.sh is inside the line-separator refusal (SEC-T731-07), and the end of an HTML
 block is searched on the whole start line, so <!--> and <?> close on their own line (SEC-T731-09(a)).
+
+T739 (plan-136): the Migration Guide check reads the document with markdown-it-py. That closes SEC-T731-09(b),
+SEC-T738-01, SEC-T738-03 and SEC-T731-08, and a run without the parser exits 1 (ParserMissingTests).
 """
 from __future__ import annotations
 
 import contextlib
 import importlib.util
 import io
+import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -39,6 +44,16 @@ def _load():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def require_parser(case: unittest.TestCase) -> None:
+    """The gate's parser. As in test_publish_release_t716.py: with ``CI`` set a missing markdown-it-py FAILS the test
+    (ci/requirements-ci.txt provides it); only outside CI does the test skip, and it says so."""
+    if case.mod.MarkdownIt is not None:
+        return
+    if os.environ.get("CI"):
+        case.fail("markdown-it-py is not installed although CI is set: ci/requirements-ci.txt must provide it")
+    case.skipTest("markdown-it-py is not installed (outside CI only; CI fails here)")
 
 
 def _run_past_release_without_markers(test: unittest.TestCase, tag: str) -> tuple[int, str]:
@@ -79,6 +94,7 @@ class _MainRunner(unittest.TestCase):
         cls.mod = _load()
 
     def _run_main(self, tag: str, *extra: str) -> tuple[int, str]:
+        require_parser(self)
         out = io.StringIO()
         with mock.patch.object(sys, "argv", ["verify-release-docs.py", "--tag", tag, *extra]), \
                 mock.patch.object(self.mod, "check_version_consistency"), \
@@ -325,6 +341,7 @@ class MigrationPointerTests(_MainRunner):
     allow_newer = False  # passed to check_migration_pointers; a test sets it on its own instance
 
     def _pointer_errors(self, tag: str, document: str | None, install: str = INSTALL_SH) -> list[str]:
+        require_parser(self)
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / "scripts").mkdir()
@@ -399,6 +416,7 @@ class MigrationPointerTests(_MainRunner):
                 self.assertEqual(self._pointer_errors("v9.0.0", document), [])
 
     def test_the_adr_010_appendix_a_item_satisfies_the_anchor(self):
+        require_parser(self)
         adr = next((repo_root() / "docs" / "decisions").glob("ADR-010-*.md")).read_text(encoding="utf-8")
         item = next(line for line in adr.splitlines() if line.startswith("**Migration Guide item"))
         self.assertTrue(self.mod.has_cursor_migration_item(f"## Migration Guide\n\n{item}\n"))
@@ -451,6 +469,7 @@ class MigrationPointerTests(_MainRunner):
                 self.assertEqual(len(self._pointer_errors(tag, None)), 1)
 
     def test_develop_is_unaffected_v8_still_passes_on_this_tree(self):
+        require_parser(self)
         errors: list[str] = []
         with contextlib.redirect_stdout(io.StringIO()):
             self.mod.check_migration_pointers("v8.0.0", errors, allow_newer=True)
@@ -532,11 +551,14 @@ class PointerFormTests(_MainRunner):
 
 
 class HtmlBlockAnchorTests(unittest.TestCase):
-    """T731 (SEC-T715-03): an anchor inside a CommonMark raw HTML block does not count."""
+    """T731 (SEC-T715-03): an anchor inside a CommonMark raw HTML block does not count. T739: the parser decides."""
 
     @classmethod
     def setUpClass(cls):
         cls.mod = _load()
+
+    def setUp(self):
+        require_parser(self)
 
     def has_item(self, body: str) -> bool:
         return self.mod.has_cursor_migration_item(f"# Release v9.0.0\n\n## Migration Guide\n\n{body}\n\n## Changelog\n")
@@ -565,12 +587,19 @@ class HtmlBlockAnchorTests(unittest.TestCase):
 
     def test_a_tag_line_after_a_line_that_is_no_paragraph_hides_the_anchor(self):
         """SEC-T731-01: these previous lines end the paragraph, so the tag line opens a type 7 block."""
-        for previous in ("> ---", "> # h", "> ```", "*", "+", "1.", "| a | b |", ">>>"):
+        for previous in ("> ---", "> # h", "> ```", "*", "+", "1.", ">>>"):
             with self.subTest(previous=previous):
                 self.assertFalse(self.has_item(f"{previous}\n<span>\n**M-3. Cursor removed.**"))
                 self.assertFalse(self.has_item(f"{previous}\n<span>\n- a\n- **M-3. Cursor removed.**"))
                 self.assertFalse(self.has_item(f"{previous}\n<span>\n### h\n**M-3. Cursor removed.**"))
                 self.assertFalse(self.has_item(f"{previous}\n<span>\n### h\n### M-3. Cursor removed"))
+
+    def test_a_table_row_is_a_paragraph_line_so_a_tag_line_after_it_hides_nothing(self):
+        """T739: the commonmark preset has no tables. '| a | b |' is a paragraph, and '<span>' cannot interrupt one."""
+        self.assertFalse(self.has_item("| a | b |\n<span>\n**M-3. Cursor removed.**"))  # one paragraph: no lead
+        self.assertTrue(self.has_item("| a | b |\n<span>\n- a\n- **M-3. Cursor removed.**"))
+        self.assertTrue(self.has_item("| a | b |\n<span>\n### h\n**M-3. Cursor removed.**"))
+        self.assertTrue(self.has_item("| a | b |\n<span>\n### h\n### M-3. Cursor removed"))
 
     def test_an_anchor_inside_a_multi_line_inline_construct_does_not_count(self):
         """SEC-T731-06: the reader sees no bold lead; the closing part is on the line after the anchor."""
@@ -588,16 +617,17 @@ class HtmlBlockAnchorTests(unittest.TestCase):
             with self.subTest(body=body[:30]):
                 self.assertFalse(self.has_item(body))
 
-    def test_an_anchor_right_after_a_paragraph_line_is_a_false_fail_by_design(self):
-        """T731: the rule cannot tell these visible anchors from the hidden ones above, so they do not count."""
-        for body in (
-            "Some text\n<span>\n**M-3. Cursor removed.**",  # counted before: type 7 cannot interrupt a paragraph
-            "Some text\n**M-3. Cursor removed.**",
-            "Some text\n### M-3. Cursor removed",
-            "x\n- a\n- **M-3. Cursor removed.**",
-        ):
+    def test_a_lead_inside_a_paragraph_is_not_a_lead(self):
+        """The line joins the paragraph, so the strong span does not open it (T731's false FAIL, now by the parser)."""
+        for body in ("Some text\n<span>\n**M-3. Cursor removed.**", "Some text\n**M-3. Cursor removed.**"):
             with self.subTest(body=body[:30]):
                 self.assertFalse(self.has_item(body))
+
+    def test_a_heading_or_a_list_that_interrupts_a_paragraph_counts(self):
+        """T739: batch G's deliberate false FAILs are gone: CommonMark renders these as a heading and a list."""
+        for body in ("Some text\n### M-3. Cursor removed", "x\n- a\n- **M-3. Cursor removed.**"):
+            with self.subTest(body=body[:30]):
+                self.assertTrue(self.has_item(body))
 
     def test_an_anchor_outside_an_html_block_still_counts(self):
         for body in (
@@ -638,14 +668,18 @@ class HtmlBlockAnchorTests(unittest.TestCase):
     def test_a_non_blank_start_line_does_not_end_a_block_of_type_6_or_7(self):
         for line in ("<div>", "  <div>  ", "</div>", "<span>", "<custom-tag data-x='1'/>"):
             with self.subTest(line=line):
-                self.assertIs(self.mod.html_block_opening(line), self.mod.BLANK_LINE_RE)
-                self.assertIsNone(self.mod.BLANK_LINE_RE.search(line))
                 self.assertFalse(self.has_item(f"{line}\n### M-3. Cursor removed"))
 
-    def test_the_known_false_passes_named_in_the_docstrings(self):
-        """Not wanted behaviour: CommonMark hides each anchor and the gate counts it. A real fix flips these asserts."""
-        self.assertTrue(self.has_item("- a\n  ```\nx\n  ```\n**M-3. Cursor removed.**"))  # SEC-T731-09 residual (b)
-        self.assertTrue(self.has_item("Some text\n<span>\n```\n\n**M-3. Cursor removed.**\n```"))
+    def test_the_former_false_passes_are_refused(self):
+        """CommonMark hides each anchor, and the hand-written rules counted it (T739 flipped these asserts)."""
+        for name, body in (
+            ("SEC-T731-09(b), fence", "- a\n  ```\nx\n  ```\n**M-3. Cursor removed.**"),
+            ("SEC-T731-09(b), no fence", "- a\n  <!--\nx\n<? -->\n\n**M-3. Cursor removed.**\n?>"),
+            ("SEC-T738-01, fence", "Some text\n<span>\n```\n\n**M-3. Cursor removed.**\n```"),
+            ("SEC-T738-01, <?", "Some text\n<span>\n<?\n\n**M-3. Cursor removed.**\n?>"),
+        ):
+            with self.subTest(name):
+                self.assertFalse(self.has_item(body))
 
     def test_only_commonmark_line_ends_end_a_line(self):
         """SEC-T731-02: str.splitlines() also split at these, which ended the block or made a line start."""
@@ -657,23 +691,251 @@ class HtmlBlockAnchorTests(unittest.TestCase):
         for end in ("\n", "\r\n", "\r"):
             with self.subTest(end=repr(end)):
                 self.assertTrue(self.has_item(f"<div>{end}{end}### M-3. Cursor removed"))
-                self.assertEqual(len(self.mod.strip_hidden_markdown(f"a{end}<div>{end}b{end}{end}c").split("\n")), 5)
+                self.assertFalse(self.has_item(f"<div>{end}### M-3. Cursor removed"))
 
-    def test_the_line_count_is_kept(self):
-        text = "a\n<div>\nb\n\nc\n<pre>\nd\n</pre>\ne"
-        stripped = self.mod.strip_hidden_markdown(text)
-        self.assertEqual(stripped.split("\n"), ["a", "", "", "", "c", "", "", "", "e"])
-
-    def test_tag_line_matching_does_not_backtrack_on_long_lines(self):
+    def test_a_long_tag_line_does_not_slow_the_gate(self):
         import time
         start = time.monotonic()
         for line in ("<a" + " " * 60000 + "!", "<a" + " b=c" * 20000 + " !", "<a" + " b" * 30000 + "!"):
-            self.mod.strip_hidden_markdown("\n" + line + "\n")
-        self.assertLess(time.monotonic() - start, 1.0)
+            self.assertFalse(self.has_item(line))
+        # Catches a hang, not a slow runner: this took 1.23 s under load in CI (pipeline 3031259271), about 0.2 s locally.
+        self.assertLess(time.monotonic() - start, 5.0)
 
     def test_the_v9_document_keeps_its_cursor_item(self):
         text = (repo_root() / "docs" / "releases" / "v9.0.0.md").read_text(encoding="utf-8")
         self.assertTrue(self.mod.has_cursor_migration_item(text))
+
+
+def _section(body: str) -> str:
+    return f"# Release v9.0.0\n\n## Migration Guide\n\n{body}\n"
+
+
+class ParserAnchorTests(unittest.TestCase):
+    """T739 (plan-136): what the parser gives for each listed shape, on the section and on the anchor."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load()
+
+    def setUp(self):
+        require_parser(self)
+
+    def _assert_all(self, wanted: bool, documents: dict[str, str]) -> None:
+        for name, document in documents.items():
+            with self.subTest(name):
+                self.assertIs(self.mod.has_cursor_migration_item(document), wanted)
+
+    def test_the_section_ends_at_the_next_top_level_heading_of_any_form(self):
+        """SEC-T731-08, SEC-T738-03: the anchor is visible, in the wrong section."""
+        self._assert_all(False, {
+            "setext h2": _section("Next\n---\n\n### M-3. Cursor removed"),
+            "setext h1": _section("Next\n===\n\n### M-3. Cursor removed"),
+            "indented ATX": _section(" ## Next\n\n### M-3. Cursor removed"),
+            "tab after the marks": _section("##\tNext\n\n### M-3. Cursor removed"),
+            "level 1": _section("# Next\n\n### M-3. Cursor removed"),
+            "x <!--> then a section": _section("x <!-->\n## Other\n-->\n\n### M-3. Cursor removed"),
+            "x <!-- then a section": _section("x <!--\n## Other\n-->\n\n### M-3. Cursor removed"),
+            "x <!---> then a section": _section("x <!--->\n## Other\n-->\n\n### M-3. Cursor removed"),
+            "x <!--> then a section, lead": _section("x <!-->\n## Other\n-->\n\n**M-3. Cursor removed.**"),
+            "x <!-- then a section, lead": _section("x <!--\n## Other\n-->\n\n**M-3. Cursor removed.**"),
+        })
+
+    def test_a_nested_heading_neither_opens_nor_ends_the_section(self):
+        self._assert_all(True, {
+            "in a blockquote": _section("> ## Next\n\n### M-3. Cursor removed"),
+            "in a list": _section("- ## Next\n\n### M-3. Cursor removed"),
+            "in a fence": _section("```\n## Next\n```\n\n### M-3. Cursor removed"),
+            "in a comment": _section("<!--\n## Next\n-->\n\n### M-3. Cursor removed"),
+            "level 3": _section("### Next\n\n### M-3. Cursor removed"),
+        })
+        self._assert_all(False, {
+            "open in a blockquote": "> ## Migration Guide\n\n### M-3. Cursor removed\n",
+            "open in a list": "- ## Migration Guide\n\n### M-3. Cursor removed\n",
+            "open in a fence": "```\n## Migration Guide\n```\n\n### M-3. Cursor removed\n",
+        })
+
+    def test_only_the_first_exact_level_two_heading_is_the_section(self):
+        self._assert_all(True, {
+            "setext": "Migration Guide\n---\n\n### M-3. Cursor removed\n",
+            "closing marks": "## Migration Guide ##\n\n### M-3. Cursor removed\n",
+            "inline comment": "## Migration Guide <!-- x -->\n\n### M-3. Cursor removed\n",
+            "a later section after the anchor": _section("### M-3. Cursor removed\n\n## Next\n\nText."),
+        })
+        self._assert_all(False, {
+            "a second section": "## Migration Guide\n\nNone.\n\n## Migration Guide\n\n### M-3. Cursor removed\n",
+            "level 1": "# Migration Guide\n\n### M-3. Cursor removed\n",
+            "level 3": "### Migration Guide\n\n### M-3. Cursor removed\n",
+            "more text": "## Migration Guide notes\n\n### M-3. Cursor removed\n",
+            "another case": "## migration guide\n\n### M-3. Cursor removed\n",
+            "image alt": "## ![Migration Guide](u)\n\n### M-3. Cursor removed\n",
+            "before the section": "### M-3. Cursor removed\n\n## Migration Guide\n\nNone.\n",
+            "no section": "### M-3. Cursor removed\n",
+        })
+
+    def test_an_anchor_is_a_top_level_heading_or_a_lead_with_only_list_containers(self):
+        self._assert_all(True, {
+            "heading": _section("### M-3. Cursor removed"),
+            "level 6": _section("###### M-3. Cursor removed"),
+            "lead": _section("**M-3. Cursor removed.**"),
+            "lead and more": _section("**M-3. Cursor removed.** Do this."),
+            "bullet": _section("- **M-3. Cursor removed.**"),
+            "tight list, second item": _section("- a\n- **M-3. Cursor removed.**"),
+            "ordered": _section("1. **M-3. Cursor removed.**"),
+            "nested lists": _section("- a\n  1. **M-3. Cursor removed.**"),
+            "second paragraph of an item": _section("- a\n\n  **M-3. Cursor removed.**"),
+        })
+        self._assert_all(False, {
+            "blockquote lead": _section("> **M-3. Cursor removed.**"),
+            "blockquote heading": _section("> ### M-3. Cursor removed"),
+            "list in a blockquote": _section("> - **M-3. Cursor removed.**"),
+            "blockquote in a list": _section("- > **M-3. Cursor removed.**"),
+            "heading in a list": _section("- ### M-3. Cursor removed"),
+            "__bold__": _section("__M-3. Cursor removed.__"),
+            "*em*": _section("*M-3. Cursor removed.*"),
+            "plain": _section("Cursor removed."),
+            "another case": _section("### M-3. cursor removed"),
+            "part of a word": _section("### M-3. Cursors removed"),
+        })
+
+    def test_only_the_text_inside_the_opening_span_counts(self):
+        self._assert_all(True, {
+            "nested em": _section("**M-3. *Cursor* removed.**"),
+            "nested link": _section("**M-3. [Cursor](u) removed.**"),
+            "nested code": _section("**M-3. `Cursor` removed.**"),
+            "nested strong, name after it": _section("**a **b** Cursor**"),
+            "soft break": _section("**M-3.\nCursor removed.**"),
+            "hard break": _section("**M-3.  \nCursor removed.**"),
+            "entity": _section("**&#67;ursor removed.**"),
+        })
+        self._assert_all(False, {
+            "name after the span": _section("**M-3.** Cursor removed."),
+            "name after a nested span": _section("**a **b** c** Cursor"),
+            "span not first": _section("M-3. **Cursor removed.**"),
+            "escaped": _section("\\*\\*Cursor removed.\\*\\*"),
+            "entity space first": _section("&#32;**Cursor removed.**"),
+            "unclosed": _section("**Cursor removed."),
+            "an inline tag first": _section("<span></span>**Cursor removed.**"),
+            "broken word": _section("**Curs\nor removed.**"),
+        })
+
+    def test_image_alt_text_and_inline_html_never_count(self):
+        self._assert_all(False, {
+            "alt in a lead": _section("**![Cursor](u)**"),
+            "alt as a paragraph": _section("![**Cursor**](u)"),
+            "alt in a heading": _section("### ![Cursor](u)"),
+            "comment in a lead": _section("**M-3 <!-- Cursor -->**"),
+            "comment in a heading": _section("### M-3 <!-- Cursor -->"),
+            "attribute in a heading": _section('### <span title="Cursor">x</span>'),
+        })
+        self.assertTrue(self.mod.has_cursor_migration_item(_section("### ![x](u) Cursor <!-- y -->")))
+
+    def test_a_real_anchor_after_a_block_that_closes_on_its_start_line_counts(self):
+        """The review's <!--> and <?> shapes (SEC-T731-09(a)): the true results stay, and the hidden one stays hidden."""
+        self._assert_all(True, {
+            "<!-->": _section("<!-->\n### M-3. Cursor removed"),
+            "<?>": _section("<?>\n### M-3. Cursor removed"),
+            "<!--> and a lead": _section("<!-->\n\n**M-3. Cursor removed.**"),
+            "<?> and a lead": _section("<?>\n\n**M-3. Cursor removed.**"),
+            "SEC-T738-03's false FAIL": _section("x <!-->\n\n### M-3. Cursor removed\n\n-->"),
+            "the same with <!--->": _section("x <!--->\n\n### M-3. Cursor removed\n\n-->"),
+            "the same in a list item": _section("- x <!-->\n\n### M-3. Cursor removed\n\n-->"),
+            "the same in a blockquote": _section("> x <!-->\n\n### M-3. Cursor removed\n\n-->"),
+        })
+        self._assert_all(False, {
+            "<!-->, hidden": _section('<!-->\n<a title="\n-->\n**M-3. Cursor removed.**\n">'),
+            "<?>, hidden": _section('<?>\n<a title="\n?>\n**M-3. Cursor removed.**\n">'),
+        })
+
+    def test_the_real_v9_document(self):
+        text = (repo_root() / "docs" / "releases" / "v9.0.0.md").read_text(encoding="utf-8")
+        self.assertTrue(self.mod.has_cursor_migration_item(text))
+
+
+class ParserMissingTests(unittest.TestCase):
+    """T739: without the parser the gate exits 1 with one clear error, on every run. There is no fallback and no skip."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load()
+
+    def _main_without_parser(self, root: Path) -> tuple[int, str]:
+        out = io.StringIO()
+        with mock.patch.object(self.mod, "MarkdownIt", None), mock.patch.object(self.mod, "ROOT", root), \
+                mock.patch.object(sys, "argv", ["verify-release-docs.py", "--tag", "v9.0.0"]), \
+                contextlib.redirect_stdout(out):
+            return self.mod.main(), out.getvalue()
+
+    def _assert_only_the_parser_error(self, code: int, output: str) -> None:
+        self.assertEqual(code, 1, output)
+        self.assertEqual(_error_lines(output), [f"release-docs-verify: {self.mod.PARSER_MISSING}"])
+        self.assertIn("markdown-it-py", output)
+        self.assertIn(self.mod.PARSER_INSTALL_COMMAND, output)
+        self.assertNotIn("Traceback", output)
+
+    def test_a_tree_with_no_cursor_pointer_still_fails(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "scripts").mkdir()
+            (root / "scripts" / "install.sh").write_text("#!/bin/sh\necho hello\n", encoding="utf-8")
+            self._assert_only_the_parser_error(*self._main_without_parser(root))
+
+    def test_a_tree_with_a_cursor_pointer_fails_the_same_way(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "scripts").mkdir()
+            (root / "scripts" / "install.sh").write_text(INSTALL_SH, encoding="utf-8")
+            self._assert_only_the_parser_error(*self._main_without_parser(root))
+
+    def test_this_tree_fails_the_same_way(self):
+        self._assert_only_the_parser_error(*self._main_without_parser(repo_root()))
+
+    def test_a_real_process_without_the_module_exits_1_with_no_traceback(self):
+        """The import itself fails here (sys.modules[name] = None), so this also proves the guarded import."""
+        code = (
+            "import runpy, sys\n"
+            "sys.modules['markdown_it'] = None\n"
+            "sys.argv = ['verify-release-docs.py', '--tag', 'v9.0.0']\n"
+            f"runpy.run_path({str(repo_root() / 'scripts' / 'verify-release-docs.py')!r}, run_name='__main__')\n"
+        )
+        run = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=60, check=False)
+        self.assertEqual(run.returncode, 1, run.stdout + run.stderr)
+        self.assertNotIn("Traceback", run.stdout + run.stderr)
+        self.assertEqual(_error_lines(run.stdout), [f"release-docs-verify: {self.mod.PARSER_MISSING}"])
+
+    def test_the_help_still_prints_without_the_module(self):
+        code = (
+            "import runpy, sys\n"
+            "sys.modules['markdown_it'] = None\n"
+            "sys.argv = ['verify-release-docs.py', '--help']\n"
+            f"runpy.run_path({str(repo_root() / 'scripts' / 'verify-release-docs.py')!r}, run_name='__main__')\n"
+        )
+        run = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=60, check=False)
+        self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
+        self.assertIn("markdown-it-py", run.stdout)
+
+
+class HelpTextTests(unittest.TestCase):
+    """T739 (SEC-T738-04): --help describes the parser, drops the blank-line rule and says what stays open."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load()
+
+    def _collapsed_help(self) -> str:
+        return " ".join(self.mod.MIGRATION_POINTER_HELP.split())
+
+    def test_the_help_states_what_stays_open(self):
+        text = self._collapsed_help()
+        for phrase in ("markdown-it-py", "GitLab's renderer may differ", "front matter", "(unverified)",
+                       "<details>", "<div hidden>", "not modelled", "do not defend against a crafted script"):
+            with self.subTest(phrase):
+                self.assertIn(phrase, text)
+
+    def test_the_old_claims_are_gone(self):
+        text = self._collapsed_help()
+        for phrase in ("are ignored", "the line before it is blank", "at the start of a line", "up to the next '## '"):
+            with self.subTest(phrase):
+                self.assertNotIn(phrase, text)
 
 
 class LineBreakCharacterTests(_MainRunner):
