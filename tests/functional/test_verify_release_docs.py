@@ -11,6 +11,9 @@ form the gate cannot parse fails (SEC-T703-02), a pointer to a newer version fai
 T731: more unparsed pointer forms fail (SEC-T715-01), a "vX.Y.Z release notes" phrase on a Cursor line
 needs the Cursor item (SEC-T715-02), an anchor in a raw HTML block does not count (SEC-T715-03), and
 every printed line is stripped of control and bidi characters (SEC-T715-04).
+
+T738: scripts/install.sh is inside the line-separator refusal (SEC-T731-07), and the end of an HTML
+block is searched on the whole start line, so <!--> and <?> close on their own line (SEC-T731-09(a)).
 """
 from __future__ import annotations
 
@@ -610,6 +613,40 @@ class HtmlBlockAnchorTests(unittest.TestCase):
             with self.subTest(body=body[:40]):
                 self.assertTrue(self.has_item(body))
 
+    def test_a_block_whose_end_overlaps_its_start_closes_on_the_start_line(self):
+        """SEC-T731-09(a): CommonMark searches the whole start line; the gate stayed open and hid too much."""
+        for opener, end in (("<!-->", "-->"), ("<!--->", "-->"), ("<?>", "?>")):
+            with self.subTest(opener=opener):
+                self.assertFalse(self.has_item(f'{opener}\n<a title="\n{end}\n**M-3. Cursor removed.**\n">'))
+                self.assertTrue(self.has_item(f"{opener}\n### M-3. Cursor removed"))
+
+    def test_other_html_block_ends_are_unchanged_by_the_whole_line_search(self):
+        for body in ("<!-- x\n### Cursor\n-->", "<!--\n### Cursor\n-->", "<?php\n### Cursor\n?>"):
+            with self.subTest(spans_lines=body[:20]):
+                self.assertFalse(self.has_item(body))
+        for body in (
+            "<!-- x\n-->\n### M-3. Cursor removed",
+            "<!-- note -->\n### M-3. Cursor removed",
+            "<?php x ?>\n### M-3. Cursor removed",
+            "<pre>code</pre>\n### M-3. Cursor removed",
+            "<![CDATA[x]]>\n### M-3. Cursor removed",
+            "<!DOCTYPE x>\n### M-3. Cursor removed",
+        ):
+            with self.subTest(closes=body[:20]):
+                self.assertTrue(self.has_item(body))
+
+    def test_a_non_blank_start_line_does_not_end_a_block_of_type_6_or_7(self):
+        for line in ("<div>", "  <div>  ", "</div>", "<span>", "<custom-tag data-x='1'/>"):
+            with self.subTest(line=line):
+                self.assertIs(self.mod.html_block_opening(line), self.mod.BLANK_LINE_RE)
+                self.assertIsNone(self.mod.BLANK_LINE_RE.search(line))
+                self.assertFalse(self.has_item(f"{line}\n### M-3. Cursor removed"))
+
+    def test_the_known_false_passes_named_in_the_docstrings(self):
+        """Not wanted behaviour: CommonMark hides each anchor and the gate counts it. A real fix flips these asserts."""
+        self.assertTrue(self.has_item("- a\n  ```\nx\n  ```\n**M-3. Cursor removed.**"))  # SEC-T731-09 residual (b)
+        self.assertTrue(self.has_item("Some text\n<span>\n```\n\n**M-3. Cursor removed.**\n```"))
+
     def test_only_commonmark_line_ends_end_a_line(self):
         """SEC-T731-02: str.splitlines() also split at these, which ended the block or made a line start."""
         for char in ("\v", "\f", "\x1c", "\x1d", "\x1e", "\x85", "\u2028", "\u2029"):
@@ -640,7 +677,7 @@ class HtmlBlockAnchorTests(unittest.TestCase):
 
 
 class LineBreakCharacterTests(_MainRunner):
-    """T731 (SEC-T731-02 follow-up): a checked document holding a non-CommonMark line separator fails the gate."""
+    """T731 (SEC-T731-02 follow-up), T738 (SEC-T731-07): a checked file holding one of these line separators fails."""
 
     CHARS = ("\v", "\f", "\x1c", "\x1d", "\x1e", "\x85", " ", " ")
 
@@ -651,8 +688,29 @@ class LineBreakCharacterTests(_MainRunner):
             (root / relative).write_text(text, encoding="utf-8")
             errors: list[str] = []
             with mock.patch.object(self.mod, "ROOT", root):
-                self.mod.check_line_breaks([*self.mod.MARKER_FILES, Path("docs/releases/v9.0.0.md")], errors)
+                self.mod.check_line_breaks(
+                    [*self.mod.MARKER_FILES, Path("docs/releases/v9.0.0.md"), self.mod.INSTALL_SH], errors
+                )
             return errors
+
+    def _main_on_crafted_tree(self, install: str) -> tuple[int, str]:
+        """main() in its real call order: this tree's required files, ``install``, and a v9.0.0 document with no Cursor item.
+
+        The links, the markers and the version consistency check are patched out; they read the rest of the tree.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for relative in self.mod.REQUIRED_FILES:
+                (root / relative).parent.mkdir(parents=True, exist_ok=True)
+                (root / relative).write_bytes((repo_root() / relative).read_bytes())
+            (root / self.mod.INSTALL_SH).write_text(install, encoding="utf-8", newline="")
+            (root / "docs/releases/v9.0.0.md").write_text(
+                f"Latest release: v9.0.0\n\n## Install\n\n## Highlights\n\n## Migration Guide\n\nNo item.\n\n{GOOD}",
+                encoding="utf-8",
+            )
+            with mock.patch.object(self.mod, "ROOT", root), mock.patch.object(self.mod, "check_links"), \
+                    mock.patch.object(self.mod, "check_markers"):
+                return self._run_main("v9.0.0")
 
     def test_each_character_in_the_release_document_fails(self):
         for char in self.CHARS:
@@ -660,8 +718,8 @@ class LineBreakCharacterTests(_MainRunner):
                 text = f"# R\r\n\n## RELEASE VERDICT\r- **Status**: PASS{char}- **Status**: pending\n{char}\n"
                 errors = self._errors("docs/releases/v9.0.0.md", text)
                 self.assertEqual(errors, [
-                    f"docs/releases/v9.0.0.md:4 holds U+{ord(char):04X}, a line separator that Markdown does not "
-                    "treat as a line end; remove it (SEC-T731-02)"
+                    f"docs/releases/v9.0.0.md:4 holds U+{ord(char):04X}, which str.splitlines() treats as a line end "
+                    "and neither Markdown nor a shell does; remove it (SEC-T731-02, SEC-T731-07)"
                 ])
                 self.assertNotIn(char, errors[0])
 
@@ -670,18 +728,52 @@ class LineBreakCharacterTests(_MainRunner):
         self.assertEqual(len(errors), 1, errors)
         self.assertTrue(errors[0].startswith("docs/wiki/home.md:3 holds U+2028"), errors[0])
 
+    def test_an_install_sh_with_the_character_fails(self):
+        for char in self.CHARS:
+            with self.subTest(char=hex(ord(char))):
+                errors = self._errors("scripts/install.sh", f"#!/bin/sh\necho 'a{char}b'\n")
+                self.assertEqual(len(errors), 1, errors)
+                self.assertTrue(errors[0].startswith(f"scripts/install.sh:2 holds U+{ord(char):04X}, "), errors[0])
+                self.assertIn("a shell", errors[0])
+                self.assertNotIn(char, errors[0])
+
+    def test_main_refuses_a_pointer_split_from_cursor_in_install_sh(self):
+        """SEC-T731-07: the split pointer passes check_migration_pointers, so check_line_breaks must refuse it."""
+        for char in self.CHARS:
+            with self.subTest(char=hex(ord(char))):
+                code, output = self._main_on_crafted_tree(f"#!/bin/sh\necho 'docs/releases/v9.0.0.md{char}Cursor'\n")
+                self.assertEqual(code, 1, output)
+                self.assertNotIn("lacks its Cursor migration item", output)
+                self.assertIn(f"scripts/install.sh:2 holds U+{ord(char):04X}, ", output)
+                self.assertNotIn(char, output)
+
+    def test_the_crafted_tree_fails_only_for_the_reason_under_test(self):
+        """Controls for the test above: the same pointer on one plain line needs the item; without Cursor it passes."""
+        code, output = self._main_on_crafted_tree("#!/bin/sh\necho 'docs/releases/v9.0.0.md Cursor'\n")
+        self.assertEqual(code, 1, output)
+        self.assertIn("docs/releases/v9.0.0.md lacks its Cursor migration item", output)
+        code, output = self._main_on_crafted_tree("#!/bin/sh\necho 'docs/releases/v9.0.0.md'\n")
+        self.assertEqual(code, 0, output)
+
+    def test_the_install_sh_of_this_tree_holds_none(self):
+        errors: list[str] = []
+        self.mod.check_line_breaks([self.mod.INSTALL_SH], errors)
+        self.assertEqual(errors, [])
+
     def test_clean_documents_pass(self):
         self.assertEqual(self._errors("README.md", "# R\r\n\tok\n"), [])
         errors: list[str] = []
         self.mod.check_line_breaks([*self.mod.MARKER_FILES, Path("docs/releases/v9.0.0.md")], errors)
         self.assertEqual(errors, [])
 
-    def test_main_checks_the_release_document_and_the_marker_files(self):
+    def test_main_checks_the_release_document_the_marker_files_and_install_sh(self):
         with mock.patch.object(self.mod, "check_line_breaks") as check:
             code, output = _run_past_release_without_markers(self, "v8.0.0")
         self.assertEqual(code, 0, output)
         check.assert_called_once()
-        self.assertEqual(check.call_args.args[0], [*self.mod.MARKER_FILES, Path("docs/releases/v8.0.0.md")])
+        self.assertEqual(
+            check.call_args.args[0], [*self.mod.MARKER_FILES, Path("docs/releases/v8.0.0.md"), self.mod.INSTALL_SH]
+        )
 
 
 class PrintableOutputTests(_MainRunner):
