@@ -154,7 +154,8 @@ CURSOR_WORD_RE = re.compile(r"\bCursor\b")
 FENCE_OPEN_RE = re.compile(r"^ {0,3}(?P<fence>`{3,}|~{3,})")
 HTML_COMMENT_RE = re.compile(r"<!--.*?(?:-->|\Z)", re.DOTALL)
 # SEC-T715-03: CommonMark raw HTML blocks (spec 0.31.2, section 4.6). Each rule is (start, end) for
-# types 1 to 6; the end pattern is searched from the end of the start match, then on each later line.
+# types 1 to 6; the end pattern is searched on the whole start line, then on each later line, so '<!-->'
+# and '<?>' close on their own line (SEC-T731-09). A start line is not blank, so a blank-line end never fits it.
 HTML_BLOCK_TAGS = (
     "address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|"
     "dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h[1-6]|head|header|hr|html|"
@@ -185,8 +186,9 @@ LIST_ITEM_RE = re.compile(r" {0,3}(?:[-*+]|\d{1,9}[.)])[ \t]+\S")
 LINE_END_RE = re.compile(r"\r\n|\r|\n")
 
 
-# The characters str.splitlines() treats as a line end and CommonMark does not; a checked document
-# that holds one fails the gate, so no check reads two visible lines as one (SEC-T731-02).
+# The characters str.splitlines() treats as a line end and neither CommonMark nor a shell does. A checked
+# document (SEC-T731-02) or scripts/install.sh (SEC-T731-07) that holds one fails the gate, so none of them
+# splits a line in two for a check: a pointer split from the word "Cursor" would drop the Cursor requirement.
 NON_COMMONMARK_BREAK_RE = re.compile("[\v\f\x1c\x1d\x1e\x85\u2028\u2029]")
 
 
@@ -397,8 +399,8 @@ def check_line_breaks(relatives: list[Path], errors: list[str]) -> None:
             continue
         number = len(LINE_END_RE.findall(text, 0, found.start())) + 1
         errors.append(
-            f"{relative}:{number} holds U+{ord(found.group(0)):04X}, a line separator that Markdown does not "
-            "treat as a line end; remove it (SEC-T731-02)"
+            f"{relative}:{number} holds U+{ord(found.group(0)):04X}, which str.splitlines() treats as a line end "
+            "and neither Markdown nor a shell does; remove it (SEC-T731-02, SEC-T731-07)"
         )
 
 
@@ -470,20 +472,21 @@ def pointer_applies(pointed_tag: str, tag: str) -> bool:
     return pointed <= verified
 
 
-def html_block_opening(line: str) -> tuple[re.Pattern[str], int] | None:
-    """``(end pattern, search start)`` when ``line`` opens a CommonMark HTML block, else None.
+def html_block_opening(line: str) -> re.Pattern[str] | None:
+    """The end pattern when ``line`` opens a CommonMark HTML block, else None.
 
     A type 7 block (a line that is one complete tag) opens whatever the line before it is
     (SEC-T731-01). CommonMark keeps it closed after a paragraph line, but this gate cannot tell a
     paragraph line from a table row, a blockquote or an empty list item. Opening it wrongly hides
-    the lines up to the next blank line, so a wrong guess here is a false FAIL, never a false PASS.
+    the lines up to the next blank line. That is a false FAIL when an anchor is among them. It can be a
+    false PASS when a fence or an HTML block start is among them: in 'Some text', '<span>', '```', '',
+    '**M-3. Cursor removed.**', '```' CommonMark hides the anchor and this gate counts it.
     """
     for start, end in HTML_BLOCK_RULES:
-        found = start.match(line)
-        if found:
-            return end, found.end()
+        if start.match(line):
+            return end
     if HTML_TAG_LINE_RE.match(line):
-        return BLANK_LINE_RE, len(line)
+        return BLANK_LINE_RE
     return None
 
 
@@ -517,9 +520,9 @@ def strip_hidden_markdown(text: str) -> str:
         if opening and not (opening.group("fence")[0] == "`" and "`" in line[opening.end():]):
             fence = opening.group("fence")
             continue
-        block = html_block_opening(line)
-        if block is not None:
-            html_end = None if block[0].search(line, block[1]) else block[0]
+        block_end = html_block_opening(line)
+        if block_end is not None:
+            html_end = None if block_end.search(line) else block_end
             continue
         kept[-1] = line
     return FENCED_CODE_RE.sub(_filler_lines, HTML_COMMENT_RE.sub(_filler_lines, "\n".join(kept)))
@@ -531,7 +534,14 @@ def has_cursor_migration_item(text: str) -> bool:
     An anchor counts only where it starts a block, since a line inside a paragraph can be part of a
     multi-line inline construct that the reader does not see (SEC-T731-06): the line before it, after
     blanking, must be blank or an ATX heading, or a list-form anchor must continue a run of list item
-    lines that itself started there. Any other anchor does not count, so a wrong guess is a false FAIL.
+    lines that itself started there. Refusing any other anchor can only cause a false FAIL.
+
+    The check as a whole can still give a false PASS, because strip_hidden_markdown can hide too much
+    and a blanked line counts as blank here. A crafted document can use this. SEC-T731-09 residual (b):
+    the gate can pair two fences that CommonMark does not, so in '- a', '  ```', 'x', '  ```',
+    '**M-3. Cursor removed.**' CommonMark hides the anchor and this gate counts it. A wrongly opened
+    type 7 block is a second route (see html_block_opening). The gate has no Markdown parser and no model of
+    list containers; these are examples, not a full list.
     """
     clear, in_list = True, False
     for line in markdown_lines(section_text(strip_hidden_markdown(text), MIGRATION_SECTION)):
@@ -619,7 +629,7 @@ def main() -> int:
         return 1
 
     check_markers(marker, errors)
-    check_line_breaks([*MARKER_FILES, release_brief], errors)
+    check_line_breaks([*MARKER_FILES, release_brief, INSTALL_SH], errors)
     check_section_requirements(errors)
     check_release_brief(args.tag, release_brief, errors)
 
