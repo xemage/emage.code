@@ -160,11 +160,14 @@ The project uses **Semantic Versioning** (`vMAJOR.MINOR.PATCH`) and
    skill `release-workflow` § 4 prescribes (Summary, Migration Guide, Changelog, Known Issues,
    Gate Verdicts, Rollback Plan). The `## RELEASE VERDICT` block is the release gate outcome
    required by step 7 of `/prepare-release`; the release notes document is its declared home.
-4. Run the local docs verification gate for the target tag:
+4. Run the local docs verification gate for the target tag. The gate reads the release document with
+   `markdown-it-py` and exits 1 without it, so install it first, in a virtual environment:
    ```bash
+   python3 -m pip install --require-hashes --only-binary=:all: -r ci/requirements-release.txt
    python3 scripts/verify-release-docs.py --tag vX.Y.Z
    ```
-   This must pass before opening the release MR.
+   This must pass before opening the release MR. A system package of another version also runs the gate;
+   the locked run in the `release-docs-gate` job is the one that decides.
 5. Open two MRs from `release/vX.Y.Z`: first `release/vX.Y.Z → develop`, then
    `release/vX.Y.Z → main` using the **Release** MR template. Both are merged (step 6) before
    the tag is created, `develop` first, because the `main-develop-drift-gate` fails a tag push
