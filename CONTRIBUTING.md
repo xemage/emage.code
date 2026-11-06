@@ -400,7 +400,7 @@ Sometimes a hotfix must ship from `main` while a `release/vX.Y.Z` branch is stil
 2. **Bring the hotfix into the release branch.** After the hotfix tag, merge `origin/main` into
    `release/vX.Y.Z`. Both branches changed the `Latest release:` marker line, so expect a conflict
    in `README.md`, `docs/wiki/README.md` and `docs/wiki/home.md`. Keep `vX.Y.Z`. Then run step 4
-   again:
+   again, in the virtual environment that holds step 4's install of `markdown-it-py`:
    ```bash
    git fetch origin
    git checkout release/vX.Y.Z
@@ -436,7 +436,8 @@ of `vX.Y.Z`. There is no lighter path:
 
 - **Docs gate:** `docs/releases/vX.Y.Z-rc.N.md` must exist. The marker
   `Latest release: vX.Y.Z-rc.N` must be in `README.md`, `docs/wiki/README.md`, `docs/wiki/home.md`
-  and in that release document. Run `python3 scripts/verify-release-docs.py --tag vX.Y.Z-rc.N`.
+  and in that release document. Install `markdown-it-py` as in step 4, then run
+  `python3 scripts/verify-release-docs.py --tag vX.Y.Z-rc.N`.
   A migration pointer in `install.sh` to a release document newer than the tag fails the gate;
   `--allow-newer-pointers` turns that into a note and is only for checking a past tag on a later
   tree (the CI job does not pass it).

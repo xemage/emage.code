@@ -37,9 +37,14 @@ Usage:
 
 This script is read-only: it never edits any file, it only reads and reports.
 
+Every file it scans must be valid UTF-8 (SEC-T741-06): reading with errors="ignore" let a byte
+such as `v8.0.0\xffabc` hide a stale claim, so an invalid file now ends the run, and the message
+names the path and the offset and none of the file's content.
+
 Exit codes:
     0  no version references older than the canonical marker were found
-    1  stale version reference(s) found, or the canonical marker could not be parsed
+    1  stale version reference(s) found, the canonical marker could not be parsed, or a
+       scanned file is not valid UTF-8
     2  usage/environment error (e.g. the marker file does not exist)
 """
 from __future__ import annotations
@@ -103,6 +108,31 @@ RELEASES_LINK_TEMPLATE = "docs/releases/{version}.md"
 DEFAULT_ROOT = Path(__file__).resolve().parent.parent
 
 
+class NotUtf8Error(Exception):
+    """A scanned file is not valid UTF-8. It holds where, never what: see refusal_line."""
+
+    def __init__(self, path: Path, offset: int) -> None:
+        super().__init__(f"not valid UTF-8 at file offset {offset}")
+        self.path = path
+        self.offset = offset
+
+
+def read_strict(path: Path) -> str:
+    """The text of ``path``, or NotUtf8Error (SEC-T741-06). A whole-file read in text mode decodes all of the file at once,
+    so the offset counts from its start, and the newlines are translated as before."""
+    try:
+        return path.read_text(encoding="utf-8")
+    except UnicodeDecodeError as failure:
+        raise NotUtf8Error(path, failure.start) from None
+
+
+def refusal_line(refused: NotUtf8Error, root: Path) -> str:
+    """One ASCII line: ascii() escapes a newline or an escape sequence in a file name, so a name cannot forge a log line."""
+    shown = refused.path.relative_to(root) if refused.path.is_relative_to(root) else refused.path
+    return (f"version-consistency: {ascii(shown.as_posix())} is not valid UTF-8: the first invalid byte is at "
+            f"file offset {refused.offset} (from 0); fix its encoding (SEC-T741-06)")
+
+
 def is_excluded(rel_path: Path) -> bool:
     """True if rel_path (relative to the scan root) falls under an excluded prefix."""
     rel_posix = rel_path.as_posix()
@@ -145,7 +175,7 @@ def scan_file(path: Path, canonical_key: tuple[int, int, int]) -> list[tuple[int
     `path` that is numerically older than canonical_key AND passes the "current state"
     context gate (see module docstring / `_is_current_state_claim`)."""
     findings: list[tuple[int, str]] = []
-    text = path.read_text(encoding="utf-8", errors="ignore")
+    text = read_strict(path)
     for match in VERSION_RE.finditer(text):
         key = (int(match.group(1)), int(match.group(2)), int(match.group(3)))
         if key >= canonical_key:
@@ -174,7 +204,7 @@ def scan_repository(
     root: Path, marker_path: Path
 ) -> tuple[str | None, dict[Path, list[tuple[int, str]]]]:
     """Read-only scan. Returns (canonical_raw_version_or_None, {rel_path: findings})."""
-    marker_text = marker_path.read_text(encoding="utf-8", errors="ignore")
+    marker_text = read_strict(marker_path)
     found = find_marker_version(marker_text)
     if found is None:
         return None, {}
@@ -244,7 +274,12 @@ def main(argv: list[str] | None = None) -> int:
         print(f"version-consistency: marker file not found: {marker_path}", file=sys.stderr)
         return 2
 
-    canonical_raw, drift = scan_repository(root, marker_path)
+    try:
+        canonical_raw, drift = scan_repository(root, marker_path)
+    except NotUtf8Error as refused:
+        print(refusal_line(refused, root))
+        print("VERSION CONSISTENCY: FAIL")
+        return 1
     exit_code, lines = evaluate(canonical_raw, drift)
     for line in lines:
         print(line)

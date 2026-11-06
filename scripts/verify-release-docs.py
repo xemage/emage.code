@@ -18,17 +18,18 @@ mentions "Cursor" must carry its Cursor migration item. See ``MIGRATION_POINTER_
 for the anchor, for what stays open, and for how a pointer to a version newer than the tag is treated.
 
 The Cursor item is looked for with markdown-it-py (T739, plan-136), so the gate reads the same blocks as a
-CommonMark renderer. Only ``has_cursor_migration_item`` uses it. ``main()`` refuses to run without it, on every
-run; there is no fallback to line rules and no skip. The ``release-docs-gate`` job installs it from
-``ci/requirements-release.txt``.
+CommonMark renderer, up to the parser's nesting limit; past it nothing counts as an anchor (SEC-T739-09). Only
+``has_cursor_migration_item`` uses it. ``main()`` refuses to run without it, on every run; there is no fallback to
+line rules and no skip. The ``release-docs-gate`` job installs it from ``ci/requirements-release.txt``.
 
 Every printed line passes through ``printable``: control, bidi and zero-width characters of an
 ``install.sh`` line, a release document or a tag become ``?`` in the CI log (SEC-T715-04).
 
 Every file the gate reads in this process must be valid UTF-8 (SEC-T739-01): the gate exits 1 on the first one that is
 not, naming its path and the file offset of the first invalid byte and never its content, and no check runs on that
-file. Newlines are read as before: CRLF and CR become LF. ``scripts/check-version-consistency.py`` runs as a child
-process with its own reads, and this does not cover them.
+file. Newlines are read as before: CRLF and CR become LF, except that ``scripts/install.sh`` must hold no CR at all
+(SEC-T738-02). ``scripts/check-version-consistency.py`` runs as a child process with its own reads, and this does not
+cover them.
 
 This gate cannot check that ``main`` already carries the release. That duty (merge the
 release branch to ``develop`` and ``main`` before the tag, stated in CONTRIBUTING.md) is
@@ -144,6 +145,15 @@ TEMPLATE_PROSE_MARKERS = ("[list ", "[if FAIL")
 PENDING_ON_RE = re.compile(r"\bon\s+pending\b", re.IGNORECASE)
 
 INSTALL_SH = Path("scripts/install.sh")
+# TD-T739-01: the parser's time on one long tag grows worse than linearly, so a longer line is refused unparsed.
+MAX_LINE_CHARS = 65536
+# SEC-T739-04: what opens front matter in GitLab's lib/gitlab/front_matter.rb (PATTERN_UNTRUSTED, read 2026-11-06), an
+# optional "coding:" line, then white space, then a delimiter at the start of a line with anything after it. The BOM is
+# dropped first: that pattern leaves it to whatever runs before it. No closing delimiter is required here: fail closed.
+FRONT_MATTER_OPENING_RE = re.compile(r"\A(?:[^\n]*coding:[^\n]*\n)?\s*^(?:---|\+\+\+|;;;)", re.MULTILINE)
+# SEC-T739-02, -03: HTML that is nothing but comments. An HTML parser ends a comment at "--!>", and at once in the short
+# "<!-->" and "<!--->", where CommonMark may read on, so a tag after those could be live: such text is no comment here.
+COMMENTS_ONLY_RE = re.compile(r"\s*(?:(?:<!---?>|<!--(?!-?>)(?:(?!--!?>).)*-->)\s*)*", re.DOTALL)
 MIGRATION_SECTION = "## Migration Guide"
 MIGRATION_SECTION_TITLE = "Migration Guide"
 PARSER_INSTALL_COMMAND = (
@@ -209,15 +219,36 @@ in that section, with text that contains the word "Cursor" (case-sensitive), eit
     '**' strong span, for example '**Migration Guide item M-3. Cursor is no longer
     supported.**'. Only the text inside that span counts.
 Text means text and inline code, with a line break read as a space. An image's alt text
-and inline HTML never count. What the parser reads as code, an HTML comment or a raw
-HTML block is not an anchor (SEC-T703-01, SEC-T715-03). '__bold__', an anchor in a
-blockquote and a heading in a list do not count either.
-What stays open (SEC-T738-04). The gate reads CommonMark, and GitLab's renderer may
-differ, for example on front matter at the start of a document (unverified). Raw HTML
-around an anchor, such as '<details>' or '<div hidden>' followed by a blank line, is not
-modelled, so such an anchor counts because CommonMark parses it as live. The install.sh
-rules are per line and do not defend against a crafted script: they catch an omission on
-one line, and a pointer on a line without the word "Cursor" needs no item.
+never counts. What the parser reads as code, an HTML comment or a raw HTML block is not
+an anchor (SEC-T703-01, SEC-T715-03). '__bold__', an anchor in a blockquote and a heading
+in a list do not count either.
+HTML (SEC-T739-02, SEC-T739-03): the gate does not balance tags, so it refuses rather than
+models. Reading the document from its start, the first raw HTML block or inline HTML tag
+that is not only comments, such as '<details>' or 'text <div hidden>', ends the search, at
+any depth: above the section, in its title or in the section, even if the tag closes
+itself. No later anchor counts, so such a document fails the gate. An anchor above it still
+counts, and HTML after an anchor does not matter. An anchor that holds a tag does not
+count, on either side of the word, as in '**<span hidden>Cursor</span>**'. A comment is
+allowed and its text does not count; a tag in a code span is code, not HTML, and neither
+is an image's alt text.
+Nesting (SEC-T739-09): the parser stops at 20 nested levels (maxNesting), where a list
+item counts as two, and skips the rest of the document, so no anchor that deep or later
+counts and the gate fails closed.
+A refused document: a release document the gate reads, which is the tag's own and any
+named on a line with the word "Cursor", is refused, naming its path, in two cases. If it
+opens with '---', '+++' or ';;;', optionally after a BOM, white space or a 'coding:' line,
+because GitLab may read what follows as front matter and hide it, in the Release
+description too (unverified) (SEC-T739-04). If a line is longer than 65536 characters,
+named with its number and no content, before any parsing (TD-T739-01).
+scripts/install.sh must hold no CR, CRLF included: a shell does not end a line at a CR,
+and the gate's per-line rules would. The gate refuses it from the unconverted text and
+names the line (SEC-T738-02).
+What stays open. The gate reads CommonMark, and GitLab's renderer may differ (unverified,
+SEC-T716-03). The install.sh rules are per line and do not defend against a
+crafted script: they catch an omission on one line, and a pointer on a line without the
+word "Cursor" needs no item. A document named only on such lines, other than the tag's
+own, is checked for existence only: the gate does not read it, so none of these rules
+reaches it (SEC-T741-07).
 Newer versions: a pointer to a version (major.minor.patch, any pre-release suffix
 ignored) newer than the tag being verified is an error, because the tagged tree points
 users to a document it does not ship (SEC-T703-03). --allow-newer-pointers turns that
@@ -226,8 +257,9 @@ and is not used by the CI job. A tag that is not vX.Y.Z[-pre] enforces every poi
 Encoding (SEC-T739-01): every file the gate reads in this process must be valid UTF-8.
 The gate exits 1 on the first one that is not, naming its path and the file offset of the
 first invalid byte and never its content, and no check runs on that file. Newlines are
-read as before: CRLF and CR become LF. scripts/check-version-consistency.py runs as a
-child process with its own reads, and this does not cover them."""
+read as before: CRLF and CR become LF, apart from the install.sh rule above.
+scripts/check-version-consistency.py runs as a child process with its own reads, and this
+does not cover them."""
 
 FENCED_CODE_RE = re.compile(r"```.*?```", re.DOTALL)
 INLINE_CODE_RE = re.compile(r"`[^`\n]*`")
@@ -238,12 +270,12 @@ class NotUtf8Error(Exception):
     """A file the gate reads is not valid UTF-8. The message holds its path and an offset, never its content."""
 
 
-def read_strict(path: Path) -> str:
+def read_strict(path: Path, keep_cr: bool = False) -> str:
     """The text of ``path``, or NotUtf8Error (SEC-T739-01). Every read in this process goes through here.
 
     The whole file is decoded at once, so the offset counts from the start of the file and nothing partly decoded
-    is ever returned. The newlines are translated as text mode translates them: this helper changes what happens to
-    invalid bytes and nothing else, so SEC-T738-02 (a CR in install.sh splits its line) stays as it was.
+    is ever returned. The newlines are translated as text mode translates them, unless ``keep_cr`` asks for the text
+    as the file holds it, which is how a CR in install.sh is seen at all (SEC-T738-02).
     """
     raw = path.read_bytes()
     try:
@@ -254,7 +286,7 @@ def read_strict(path: Path) -> str:
             f"{shown} is not valid UTF-8: the first invalid byte is at file offset {failure.start} (from 0); "
             "the gate refuses this file, fix its encoding (SEC-T739-01)"
         ) from None
-    return text.replace("\r\n", "\n").replace("\r", "\n")
+    return text if keep_cr else text.replace("\r\n", "\n").replace("\r", "\n")
 
 
 def normalize_target(current_file: Path, raw_target: str) -> Path | None:
@@ -432,9 +464,40 @@ def check_line_breaks(relatives: list[Path], errors: list[str]) -> None:
         )
 
 
-def check_release_brief(tag: str, release_brief: str, errors: list[str]) -> None:
+def long_line_number(text: str) -> int | None:
+    """The number of the first line of ``text`` longer than MAX_LINE_CHARS; None when there is none (TD-T739-01)."""
+    for number, line in enumerate(text.split("\n"), start=1):
+        if len(line) > MAX_LINE_CHARS:
+            return number
+    return None
+
+
+def document_refusal(relative: Path, text: str) -> str | None:
+    """Why the gate refuses this release document, before reading it for anything else; None when it does not.
+
+    Each message holds the path and at most a line number, never the content.
+    """
+    number = long_line_number(text)
+    if number is not None:
+        return (
+            f"{relative}:{number} is longer than {MAX_LINE_CHARS} characters; the gate refuses it before parsing, "
+            "because parsing time grows worse than linearly with such a line (TD-T739-01)"
+        )
+    if FRONT_MATTER_OPENING_RE.match(text.removeprefix("\ufeff")) is not None:
+        return (
+            f"{relative} opens with a front matter delimiter ('---', '+++' or ';;;'); GitLab may read what follows as "
+            "front matter and hide it, so start the document with '# Release' (SEC-T739-04)"
+        )
+    return None
+
+
+def check_release_brief(tag: str, release_brief: Path, errors: list[str]) -> None:
     """The release notes document has the required sections and no unfilled verdict."""
     brief_text = read_strict(ROOT / release_brief)
+    refusal = document_refusal(release_brief, brief_text)
+    if refusal is not None:
+        errors.append(refusal)
+        return
     if not has_marker(brief_text, f"Latest release: {tag}"):
         errors.append(f"missing required content in {release_brief}: Latest release: {tag}")
     for snippet in (
@@ -515,6 +578,22 @@ def inline_text(children: list) -> str:
     return "".join(parts)
 
 
+def holds_only_comments(html: str) -> bool:
+    """The raw HTML ``html`` is nothing but comments and white space (see COMMENTS_ONLY_RE)."""
+    return COMMENTS_ONLY_RE.fullmatch(html) is not None
+
+
+def anchor_text(children: list) -> str:
+    """``inline_text`` of an anchor, or '' when it holds inline HTML other than a comment (SEC-T739-02).
+
+    Only the flat list is walked: the tag inside a link is in it, and an image's alt text is not HTML, so what is
+    nested in an ``image`` token is not looked at. A code span is ``code_inline``, an autolink is ``link_open``.
+    """
+    if any(token.type == "html_inline" and not holds_only_comments(token.content) for token in children):
+        return ""
+    return inline_text(children)
+
+
 def bold_lead_text(children: list) -> str:
     """The text inside the ``**`` span that opens ``children``, or '' when no such span opens them.
 
@@ -529,24 +608,38 @@ def bold_lead_text(children: list) -> str:
     for index, token in enumerate(tokens):
         depth += {"strong_open": 1, "strong_close": -1}.get(token.type, 0)
         if depth == 0:
-            return inline_text(tokens[:index])
+            return anchor_text(tokens[:index])
     return ""
 
 
-def migration_section_tokens(tokens: list) -> list:
-    """The block tokens of the Migration Guide section, as MIGRATION_POINTER_HELP defines it; [] when there is none.
+def migration_section_span(tokens: list) -> tuple[int, int] | None:
+    """Where the Migration Guide section lies, as MIGRATION_POINTER_HELP defines it: ``tokens[start:end]``, or None.
 
-    ``level == 0`` keeps out a heading inside a blockquote or a list. A heading token is followed by its inline token.
+    ``level == 0`` keeps out a heading inside a blockquote or a list. A heading token is followed by its inline token,
+    and ``start`` is that inline token of the title.
     """
     start: int | None = None
     for index, token in enumerate(tokens):
         if token.type != "heading_open" or token.level != 0 or token.tag not in ("h1", "h2"):
             continue
         if start is not None:
-            return tokens[start:index]
+            return start, index
         if token.tag == "h2" and inline_text(tokens[index + 1].children or []).strip() == MIGRATION_SECTION_TITLE:
             start = index + 1
-    return [] if start is None else tokens[start:]
+    return None if start is None else (start, len(tokens))
+
+
+def holds_live_html(token) -> bool:
+    """A block token that is, or an inline token that holds, HTML other than comments (SEC-T739-02, -03).
+
+    The token list is flat, so a list item or a blockquote needs no descent. An image's children are not walked: alt
+    text is not HTML (see ``anchor_text``).
+    """
+    if token.type == "html_block":
+        return not holds_only_comments(token.content)
+    if token.type != "inline":
+        return False
+    return any(child.type == "html_inline" and not holds_only_comments(child.content) for child in token.children or [])
 
 
 def has_cursor_migration_item(text: str) -> bool:
@@ -554,20 +647,60 @@ def has_cursor_migration_item(text: str) -> bool:
 
     The commonmark preset has two block containers, blockquotes and lists, so "only list containers around it"
     means no open blockquote. ``paragraph_open`` is ``hidden`` in a tight list and is still rendered, so it counts.
-    A paragraph or heading token is followed by its inline token.
+    A paragraph or heading token is followed by its inline token, so an anchor is judged before its own inline token
+    is walked: a tag after a lead's span comes after the anchor. Without tag balancing nothing tells what live HTML
+    leaves open, so the first one from the start of the document ends the search (SEC-T739-02, -03). A long line is
+    never parsed (TD-T739-01): ``document_refusal`` names it for the gate, and this keeps any other caller off the parser.
     """
-    section = migration_section_tokens(MarkdownIt("commonmark").parse(text))
+    if long_line_number(text) is not None:
+        return False
+    tokens = MarkdownIt("commonmark").parse(text)
+    span = migration_section_span(tokens)
+    if span is None:
+        return False
+    start, end = span
     quotes = 0
-    for index, token in enumerate(section):
+    for index, token in enumerate(tokens[:end]):
+        if holds_live_html(token):
+            return False
         quotes += {"blockquote_open": 1, "blockquote_close": -1}.get(token.type, 0)
+        if index < start:
+            continue
         anchor = ""
         if token.type == "heading_open" and token.level == 0 and token.tag in ("h3", "h4", "h5", "h6"):
-            anchor = inline_text(section[index + 1].children or [])
+            anchor = anchor_text(tokens[index + 1].children or [])
         elif token.type == "paragraph_open" and quotes == 0:
-            anchor = bold_lead_text(section[index + 1].children or [])
+            anchor = bold_lead_text(tokens[index + 1].children or [])
         if CURSOR_WORD_RE.search(anchor):
             return True
     return False
+
+
+def install_sh_cr_problem(raw: str) -> str | None:
+    """The refusal of a CR in install.sh text read with ``keep_cr`` (SEC-T738-02), by line as a shell counts lines."""
+    position = raw.find("\r")
+    if position < 0:
+        return None
+    number = raw.count("\n", 0, position) + 1
+    return (
+        f"{INSTALL_SH}:{number} holds a CR (U+000D): a shell does not end a line there, and the gate's per-line rules "
+        "would, so a pointer could be split from the word 'Cursor'; use LF line ends only (SEC-T738-02)"
+    )
+
+
+def cursor_item_problem(path: str) -> str | None:
+    """Why the release document ``path``, named on a line with the word "Cursor", fails; None when it passes."""
+    text = read_strict(ROOT / path)
+    refusal = document_refusal(Path(path), text)
+    if refusal is not None:
+        return refusal
+    if has_cursor_migration_item(text):
+        return None
+    return (
+        f"{path} lacks its Cursor migration item ({INSTALL_SH} points users to it): add, under '{MIGRATION_SECTION}', "
+        "a '### ... Cursor ...' heading or a paragraph that opens with a '**' span holding the word, optionally in a "
+        "list, with no HTML other than comments in it or anywhere above it in the document"
+    )
 
 
 def check_migration_pointers(tag: str, errors: list[str], allow_newer: bool = False) -> None:
@@ -578,7 +711,11 @@ def check_migration_pointers(tag: str, errors: list[str], allow_newer: bool = Fa
     install = ROOT / INSTALL_SH
     if not install.is_file():
         return  # reported as a missing required file
-    text = read_strict(install)
+    text = read_strict(install, keep_cr=True)
+    cr_problem = install_sh_cr_problem(text)
+    if cr_problem is not None:
+        errors.append(cr_problem)
+        return
     for number, line in unparsed_pointer_lines(text):
         errors.append(
             f"{INSTALL_SH}:{number} names a release document in a form the gate cannot check; "
@@ -596,11 +733,9 @@ def check_migration_pointers(tag: str, errors: list[str], allow_newer: bool = Fa
         if not document.is_file():
             errors.append(f"{INSTALL_SH} points users to {path}, which does not exist; write it before the tag is cut")
             continue
-        if needs_cursor and not has_cursor_migration_item(read_strict(document)):
-            errors.append(
-                f"{path} lacks its Cursor migration item ({INSTALL_SH} points users to it): add a "
-                f"'### ... Cursor ...' heading or a '**... Cursor ...**' lead line under '{MIGRATION_SECTION}'"
-            )
+        problem = cursor_item_problem(path) if needs_cursor else None
+        if problem is not None:
+            errors.append(problem)
 
 
 def printable(text: str) -> str:
