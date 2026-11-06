@@ -217,7 +217,12 @@ The project uses **Semantic Versioning** (`vMAJOR.MINOR.PATCH`) and
 
    The `release-docs-gate` fails when the release document's Gate Verdicts or RELEASE VERDICT section
    still holds `pending`, `YYYY-MM-DD` or another template placeholder (fill every row and field before
-   the tag). Since T686 the `release` job authenticates with the GitLab job token: it reads
+   the tag). It also refuses a release document longer than 131072 characters, one with a line longer than
+   65536 characters, one that opens like front matter, one that reaches the parser's nesting limit, and one
+   that holds HTML other than comments, anywhere.
+   The parser decides what is HTML, so many `<placeholder>`s left outside code count, though not all:
+   replace each one with its value. A code span is for literal text that keeps its angle brackets: an
+   unfilled placeholder in one passes this rule. Since T686 the `release` job authenticates with the GitLab job token: it reads
    `CI_JOB_TOKEN` through `--token-env CI_JOB_TOKEN --token-header JOB-TOKEN`, so the value is never
    in argv, is sent only in the `JOB-TOKEN` header (the script accepts only `PRIVATE-TOKEN` and
    `JOB-TOKEN` as header names, and never follows a redirect), and the API host is pinned to
@@ -258,7 +263,8 @@ A job token acts with the permissions of that user, so:
   (`PATH`, `HOME`, locale, temp directory, proxy and CA-bundle variables, and the few `GIT_*` names
   git needs), and no variable whose value contains the job token, `WIKI_TOKEN` or the token that was
   passed is handed to either of them. It does not hide the token from the script itself, from the
-  runner's own `.git/config` (which holds the clone credential) or from other jobs.
+  runner's clone credential (on GitLab Runner 19.5.2 `.git/config` reaches it through a file in
+  `$CI_PROJECT_DIR.tmp`, by source reading, T750) or from other jobs.
 - Keep the manual fallback above (`glab release create ...`) until a real tag pipeline has confirmed
   the job token. If the `release` job fails with a 401 or 403 from the Releases API (for example
   because a job token permission or allowlist setting denies it), create the release with the
@@ -277,8 +283,13 @@ First-tag rehearsal checklist (the user runs it on the first real tag pipeline):
       (it is not printed by the script, and masking of `CI_JOB_TOKEN` in job logs is unverified).
 - [ ] The GitLab Release shows the text of `docs/releases/vX.Y.Z.md`.
 - [ ] `git fetch` in the `release` job worked with the allowlisted environment (the runner's clone
-      credential lives in `.git/config`); if it did not, report the log line, do not widen the allowlist
-      to the job token.
+      credential is reached through `.git/config`); if it did not, report the log line, do not widen the
+      allowlist to the job token.
+- [ ] `release-docs-gate` ran `rm -rf .git "${CI_PROJECT_DIR}.tmp"`, pip and the gate through
+      `scripts/run-allowlisted.py`, and the runner's later stages survived the removal.
+- [ ] `main-develop-drift-gate` ran `apk`, both fetches and both scripts through
+      `scripts/run-allowlisted.py`, and the fetches worked with `--keep CI_JOB_TOKEN`. If a fetch failed,
+      report the log line.
 
 ### Drift detection
 

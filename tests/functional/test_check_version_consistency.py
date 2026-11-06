@@ -5,6 +5,8 @@ import importlib.util
 import shutil
 import subprocess
 import sys
+import contextlib
+import io
 import tempfile
 import unittest
 from pathlib import Path
@@ -161,8 +163,19 @@ class TestEvaluate(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertTrue(any("FAIL" in line for line in lines))
         self.assertTrue(
-            any("implementation/README.md:4" in line and "v6.0.1" in line for line in lines)
+            any("'implementation/README.md':4" in line and "v6.0.1" in line for line in lines)
         )
+
+    def test_a_drift_line_escapes_the_path(self):
+        """SEC-T745-10: a newline or an escape sequence in a file name cannot forge a log line."""
+        name = "a\x1b[31m\nversion-consistency: PASS.md"
+        code, lines = self.mod.evaluate("v6.10.0", {Path(name): [(4, "v6.0.1")]})
+        self.assertEqual(code, 1)
+        self.assertEqual(len(lines), 2)
+        self.assertTrue(lines[1].isascii())
+        self.assertNotIn("\x1b", lines[1])
+        self.assertNotIn("\n", lines[1])
+        self.assertIn(f"{ascii(name)}:4: found v6.0.1", lines[1])
 
     def test_fail_when_marker_unparseable(self):
         code, lines = self.mod.evaluate(None, {})
@@ -187,7 +200,7 @@ class TestStrictRead(unittest.TestCase):
         (self.root / "notes.md").write_bytes(b"Latest release: v8.0.0 abc\n")
         code, out = self._run()
         self.assertEqual(code, 1)
-        self.assertIn("notes.md:1: found v8.0.0", out)
+        self.assertIn("'notes.md':1: found v8.0.0", out)
 
     def test_a_byte_hiding_a_stale_claim_fails_naming_path_and_offset_only(self):
         (self.root / "notes.md").write_bytes(b"Latest release: v8.0.0\xffabc\n")
@@ -348,6 +361,74 @@ class TestScanRepositoryFixtures(unittest.TestCase):
         self.mod.scan_repository(self.root, self.root / "README.md")
         self.assertEqual(target.stat().st_mtime_ns, before_mtime)
         self.assertEqual(target.read_bytes(), before_content)
+
+
+class TestDependencyTrees(unittest.TestCase):
+    """SEC-T745-09: only exact paths from the root are skipped, so no committed file can silence the check for docs/wiki."""
+
+    README = b"Latest release: v9.0.0\n"
+    STALE = b"Latest release: v8.0.0\n"
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load_module()
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.root = Path(tmp.name)
+        self._write("README.md", self.README)
+
+    def _write(self, relative: str, data: bytes = b"text\n") -> None:
+        path = self.root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+
+    def _found(self) -> list[str]:
+        return [path.relative_to(self.root).as_posix() for path in self.mod.find_markdown_files(self.root)]
+
+    def _exit(self) -> tuple[int, str]:
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
+            code = self.mod.main(["--root", str(self.root)])
+        return code, output.getvalue()
+
+    def test_exact_paths_are_skipped_and_nothing_else(self):
+        for skipped in ("ci/js/node_modules/pkg/x.md", ".venv/lib/x.md", ".venv/x.md", "venv/lib/x.md", "venv/x.md", ".git/x.md"):
+            self._write(skipped)
+        kept = ["README.md", "ci/js/node_modules.md", "ci/js/node_modules2/x.md", "ci/js/x.md", "ci/node_modules/x.md",
+                "docs/node_modules/x.md", "docs/wiki/.venv/x.md", "docs/wiki/venv/x.md", "node_modules/x.md",
+                "other/x.md", "venv.md", "venv2/x.md", "x/ci/js/node_modules/a.md"]
+        for name in kept:
+            self._write(name)
+        self._write("other/pyvenv.cfg")
+        self.assertEqual(self._found(), sorted(kept))
+
+    def test_a_stale_claim_in_docs_wiki_still_fails_with_a_marker_file_beside_it(self):
+        self._write("docs/wiki/guide.md", self.STALE)
+        for name, marker in (("pyvenv.cfg", "docs/wiki/pyvenv.cfg"), ("node_modules", "docs/wiki/node_modules/x.md")):
+            with self.subTest(name):
+                self._write(marker)
+                code, output = self._exit()
+                self.assertEqual(code, 1)
+                self.assertIn("'docs/wiki/guide.md':1: found v8.0.0", output)
+
+    def test_a_marker_at_the_root_silences_nothing(self):
+        self._write("docs/wiki/guide.md", self.STALE)
+        self._write("pyvenv.cfg")
+        self.assertEqual(self._exit()[0], 1)
+
+    def test_the_finding_a_byte_under_the_exact_paths_does_not_fail_the_scan(self):
+        for path in ("ci/js/node_modules/pkg/bad.md", ".venv/lib/bad.md", "venv/lib/bad.md"):
+            self._write(path, b"\xff\n")
+        self.assertEqual(self._exit()[0], 0)
+
+    def test_the_accepted_residual_another_virtual_environment_fails_naming_the_path(self):
+        self._write("env2/pyvenv.cfg")
+        self._write("env2/lib/bad.md", b"\xff\n")
+        code, output = self._exit()
+        self.assertEqual(code, 1)
+        self.assertIn("env2/lib/bad.md", output)
 
 
 class TestGoldenFixtureExclusion(unittest.TestCase):
