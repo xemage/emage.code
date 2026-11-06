@@ -10,7 +10,8 @@ template placeholder (``YYYY-MM-DD``, ``<count>``, ``<ISO-8601>``,
 ``<PASS/CONDITIONAL_PASS>``, the unfilled ``PASS | CONDITIONAL_PASS | FAIL``) fails
 the gate. The gate does not require the Gate Verdicts section to exist (only the
 RELEASE VERDICT section, as before) and does not check the field-level contract, which the
-golden suite encodes.
+golden suite encodes. The sections are found with markdown-it-py (T747, plan-142, SEC-T739-07), not by line rules; which
+lines are fields is still read line by line, from their source lines. See ``MIGRATION_POINTER_HELP``.
 
 Migration pointers (T703, SEC-T662-01): every ``docs/releases/v*.md`` path that
 ``scripts/install.sh`` names must exist, and a document named on an install.sh line that
@@ -19,8 +20,9 @@ for the anchor, for what stays open, and for how a pointer to a version newer th
 
 The Cursor item is looked for with markdown-it-py (T739, plan-136), so the gate reads the same blocks as a
 CommonMark renderer, up to the parser's nesting limit; past it nothing counts as an anchor (SEC-T739-09). Only
-``has_cursor_migration_item`` uses it. ``main()`` refuses to run without it, on every run; there is no fallback to
-line rules and no skip. The ``release-docs-gate`` job installs it from ``ci/requirements-release.txt``.
+``markdown_tokens`` calls it, for ``has_cursor_migration_item`` and for the verdict sections, and it never parses a
+long line (TD-T739-01) or the same text twice. ``main()`` refuses to run without it, on every run; there is no fallback
+to line rules and no skip. The ``release-docs-gate`` job installs it from ``ci/requirements-release.txt``.
 
 Every printed line passes through ``printable``: control, bidi and zero-width characters of an
 ``install.sh`` line, a release document or a tag become ``?`` in the CI log (SEC-T715-04).
@@ -42,9 +44,11 @@ one-release grace window applies only to ``main`` lagging ``develop`` (SEC-T685-
 from __future__ import annotations
 
 import argparse
+import functools
 import re
 import subprocess
 import sys
+import unicodedata
 from pathlib import Path
 
 try:
@@ -130,6 +134,7 @@ SECTION_REQUIREMENTS: dict[Path, list[str]] = {
 }
 
 VERDICT_SECTIONS = ("## Gate Verdicts", "## RELEASE VERDICT")
+REQUIRED_VERDICT_SECTION = "## RELEASE VERDICT"
 PLACEHOLDER_MARKERS = (
     "YYYY-MM-DD",
     "<PASS/CONDITIONAL_PASS>",
@@ -259,7 +264,23 @@ The gate exits 1 on the first one that is not, naming its path and the file offs
 first invalid byte and never its content, and no check runs on that file. Newlines are
 read as before: CRLF and CR become LF, apart from the install.sh rule above.
 scripts/check-version-consistency.py runs as a child process with its own reads, and this
-does not cover them."""
+does not cover them.
+Verdict sections (T747, SEC-T739-07): '## Gate Verdicts' and '## RELEASE VERDICT' are found
+with the same parser. A section starts at the first top-level level 2 heading whose text is
+exactly its name, in ATX or setext form, and ends at the next top-level level 1 or 2 heading
+whose text is not empty, in either form. Text is as above, so a heading such as '## &#32;'
+or '## <!-- x -->' does not end a section. Nor does one holding only format characters such
+as U+200B, or one holding any HTML other than comments. Such a heading's own line is still
+read. A section is empty if it holds nothing but closed fences and headings with no text
+before the next top-level level 1 or 2 heading with text. A second top-level heading with the same name is an
+error, and so is the heading's line inside an HTML block other than comments. Only the lines of a closed ``` fence, at any depth, do not count. An indented code
+block, a ~~~ fence, an unclosed fence and a fence whose last line has trailing text or too
+few backticks are read like any other lines, and so are HTML lines, so a hidden 'pending'
+still fails. RELEASE VERDICT must be a real
+top-level heading. Gate Verdicts is optional, but its raw line with no real heading is an
+error, so a section swallowed by an unclosed fence or comment fails. Past the nesting limit
+the parser gives no tokens: a section with no later heading runs to the end of the document
+and a heading there is absent, so both fail closed."""
 
 FENCED_CODE_RE = re.compile(r"```.*?```", re.DOTALL)
 INLINE_CODE_RE = re.compile(r"`[^`\n]*`")
@@ -313,32 +334,151 @@ def strip_code(text: str) -> str:
     return INLINE_CODE_RE.sub("", text)
 
 
-def section_text(text: str, heading: str) -> str:
-    """The body of ``heading`` (a ``## `` line) up to the next ``## `` heading; '' when absent.
+@functools.lru_cache(maxsize=None)
+def markdown_tokens(text: str) -> list | None:
+    """The tokens of ``text``, or None for a line over MAX_LINE_CHARS, which is never parsed (TD-T739-01).
 
-    Fenced code is blanked first, so a heading or a placeholder quoted in a code block
-    neither opens a section nor counts as an unfilled value.
+    The only call of the parser. Every text is remembered, not only the last: check_migration_pointers reads the
+    pointed documents in sorted order and check_release_brief reads the tag's own after them, so with v9.0.0 and
+    v10.0.0 both pointed to, a cache of one would parse v10.0.0 twice and double SEC-T745-01's worst case. A run holds
+    few documents and ends. The list is shared, so a caller must not change it.
     """
-    lines = [line.rstrip(" \t") for line in markdown_lines(FENCED_CODE_RE.sub("", text))]
-    try:
-        start = lines.index(heading)
-    except ValueError:
+    if long_line_number(text) is not None:
+        return None
+    return MarkdownIt("commonmark").parse(text)
+
+
+def heading_text(tokens: list, index: int) -> str:
+    """The text of the heading whose ``heading_open`` is ``tokens[index]``: its inline token follows it."""
+    return inline_text(tokens[index + 1].children or []).strip()
+
+
+def section_heading_indexes(tokens: list, title: str) -> list[int]:
+    """The index of each top-level level 2 ``heading_open`` whose text is exactly ``title``, in ATX or setext form."""
+    return [
+        index for index, token in enumerate(tokens)
+        if token.type == "heading_open" and token.level == 0 and token.tag == "h2"
+        and heading_text(tokens, index) == title
+    ]
+
+
+def is_top_heading(token) -> bool:
+    """``token`` opens a top-level heading of level 1 or 2."""
+    return token.type == "heading_open" and token.level == 0 and token.tag in ("h1", "h2")
+
+
+def heading_has_text(tokens: list, index: int) -> bool:
+    """The heading at ``tokens[index]`` has text other than format characters.
+
+    ``str.strip`` keeps U+200B, U+00AD and U+2060, which render as nothing (SEC-T748-02).
+    """
+    return any(unicodedata.category(char) != "Cf" and not char.isspace() for char in heading_text(tokens, index))
+
+
+def heading_is_visible(tokens: list, index: int) -> bool:
+    """The heading at ``tokens[index]`` ends a section for the field scan: it has text and holds no live HTML.
+
+    HTML such as ``<span hidden>x</span>`` may hide a heading, so the scan reads on past it, which fails closed.
+    """
+    return heading_has_text(tokens, index) and not holds_live_html(tokens[index + 1])
+
+
+def section_line_span(tokens: list, start: int, line_count: int) -> tuple[int, int]:
+    """The source lines ``[first, end)`` below the heading at ``tokens[start]``.
+
+    They end at the next visible top-level level 1 or 2 heading, so a heading that renders as nothing does not end a
+    section. A later heading past the nesting limit has no token, so the section runs on: that fails closed.
+    """
+    first = tokens[start].map[1]
+    for index in range(start + 1, len(tokens)):
+        if is_top_heading(tokens[index]) and heading_is_visible(tokens, index):
+            return first, tokens[index].map[0]
+    return first, line_count
+
+
+def html_block_holds_line(tokens: list, line: str) -> bool:
+    """An HTML block other than comments holds ``line``: a reader may see it, and the parser reads no heading in it."""
+    return any(
+        token.type == "html_block" and holds_live_html(token)
+        and line in (raw.rstrip(" \t") for raw in token.content.split("\n"))
+        for token in tokens
+    )
+
+
+def is_closed_backtick_fence(token) -> bool:
+    """``token`` is a ``` fence that the parser closed.
+
+    The parser decides what closes a fence (length, indent, containers, trailing text), and it records the decision
+    only in the numbers: ``map`` holds the opening line, the content lines and a closing line if there is one, while
+    ``content`` holds the content lines alone, so two lines more than the content means closed. The last content line
+    of a document with no final newline has no LF. Pinned on markdown-it-py 3.0.0 and 4.2.0 by the tests.
+    """
+    if token.type != "fence" or not token.markup.startswith("`") or not token.map:
+        return False
+    first, end = token.map
+    content_lines = token.content.count("\n") + (1 if token.content and not token.content.endswith("\n") else 0)
+    return end - first - content_lines == 2
+
+
+def section_text(text: str, heading: str) -> str:
+    """The source of the first real section ``heading`` (``## name``) as defined in MIGRATION_POINTER_HELP; '' when absent.
+
+    The lines of a closed ``` fence are blanked, not dropped, so the line after it is not read as following the line
+    before it. Nothing else is skipped: a heading that does not end the section is read too (SEC-T748-10). The lines are split where the parser splits them, so that its ``map`` numbers fit them. A character that only
+    str.splitlines() treats as a line end (SEC-T731-02) cannot move a line here.
+    """
+    tokens = markdown_tokens(text) or []
+    starts = section_heading_indexes(tokens, heading[3:])
+    if not starts:
         return ""
-    end = next((i for i in range(start + 1, len(lines)) if lines[i].startswith("## ")), len(lines))
-    return "\n".join(lines[start + 1 : end])
+    lines = markdown_lines(text)
+    first, end = section_line_span(tokens, starts[0], len(lines))
+    code = {number for token in tokens if is_closed_backtick_fence(token) for number in range(*token.map)}
+    kept = lines[first:end]
+    return "\n".join("" if first + i in code else line.rstrip(" \t") for i, line in enumerate(kept))
+
+
+def section_is_empty(tokens: list, text: str, start: int) -> bool:
+    """The real section at ``tokens[start]`` holds nothing but closed fences and headings with no text.
+
+    It ends here at the next top-level heading with text, even one holding live HTML: what follows such a heading is
+    not the verdict's content (SEC-T748-01, -11). The field scan reads further, so the two spans differ on purpose.
+    """
+    lines = markdown_lines(text)
+    first = tokens[start].map[1]
+    end = next(
+        (tokens[i].map[0] for i in range(start + 1, len(tokens)) if is_top_heading(tokens[i]) and heading_has_text(tokens, i)),
+        len(lines),
+    )
+    skipped = {
+        number for index, token in enumerate(tokens)
+        if is_closed_backtick_fence(token) or (is_top_heading(token) and not heading_has_text(tokens, index))
+        for number in range(*token.map)
+    }
+    return not any(lines[number].strip() for number in range(first, end) if number not in skipped)
 
 
 def verdict_placeholder_problems(text: str) -> list[str]:
-    """Problems for each unfilled row or field in the Gate Verdicts / RELEASE VERDICT sections."""
+    """Problems for each unfilled row or field in the Gate Verdicts / RELEASE VERDICT sections, and a repeated heading."""
+    tokens = markdown_tokens(text)
+    if tokens is None:
+        return [f"a line is longer than {MAX_LINE_CHARS} characters, so the verdict sections were not read (TD-T739-01)"]
     problems: list[str] = []
     for heading in VERDICT_SECTIONS:
+        title = heading[3:]
+        starts = section_heading_indexes(tokens, title)
+        count = len(starts)
+        if count > 1:
+            problems.append(f"{title}: {count} top-level headings have this name; the gate reads the first, so keep one")
+        if count and html_block_holds_line(tokens, heading):
+            problems.append(f"{title}: its heading line is inside an HTML block, which a reader may see; move it out")
         body = section_text(text, heading)
-        if re.search(rf"^{re.escape(heading)}", text, re.M) and not body.strip():
-            problems.append(f"{heading[3:]}: the heading is present but the section is empty or only inside a code block")
+        if section_is_empty(tokens, text, starts[0]) if starts else re.search(rf"^{re.escape(heading)}", text, re.M):
+            problems.append(f"{title}: the heading is present but the section is empty or only inside a code block")
         lines = body.splitlines()
         for i, line in enumerate(lines):
             nested = i + 1 < len(lines) and re.match(r"[ \t]+[-*][ \t]", lines[i + 1]) is not None
-            problems.extend(_line_problems(heading[3:], line, nested))
+            problems.extend(_line_problems(title, line, nested))
     return problems
 
 
@@ -503,15 +643,16 @@ def check_release_brief(tag: str, release_brief: Path, errors: list[str]) -> Non
     for snippet in (
         "## Install",
         "## Highlights",
-        # Placement of the release gate VERDICT, declared by step 7 of
-        # implementation/knowledge/commands/prepare-release.md: the release notes
-        # document is the block's home. Presence of the section is checked here; the
-        # field-level contract (11 fields, Status enum) is encoded once, in the golden
-        # suite, and is deliberately not duplicated in this gate.
-        "## RELEASE VERDICT",
     ):
         if snippet not in brief_text:
             errors.append(f"missing required content in {release_brief}: {snippet}")
+    # Placement of the release gate VERDICT, declared by step 7 of
+    # implementation/knowledge/commands/prepare-release.md: the release notes
+    # document is the block's home. Presence of the section is checked here, as a real
+    # top-level heading (T747); the field-level contract (11 fields, Status enum) is encoded
+    # once, in the golden suite, and is deliberately not duplicated in this gate.
+    if not section_heading_indexes(markdown_tokens(brief_text) or [], REQUIRED_VERDICT_SECTION[3:]):
+        errors.append(f"missing required content in {release_brief}: {REQUIRED_VERDICT_SECTION}")
 
     for problem in verdict_placeholder_problems(brief_text):
         errors.append(f"unfilled verdict in {release_brief}: {problem}")
@@ -652,9 +793,9 @@ def has_cursor_migration_item(text: str) -> bool:
     leaves open, so the first one from the start of the document ends the search (SEC-T739-02, -03). A long line is
     never parsed (TD-T739-01): ``document_refusal`` names it for the gate, and this keeps any other caller off the parser.
     """
-    if long_line_number(text) is not None:
+    tokens = markdown_tokens(text)
+    if tokens is None:
         return False
-    tokens = MarkdownIt("commonmark").parse(text)
     span = migration_section_span(tokens)
     if span is None:
         return False

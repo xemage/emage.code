@@ -184,6 +184,9 @@ class VerdictPlaceholderTests(unittest.TestCase):
     def setUpClass(cls):
         cls.mod = _load()
 
+    def setUp(self):
+        require_parser(self)
+
     def problems(self, text: str) -> list[str]:
         return self.mod.verdict_placeholder_problems(text)
 
@@ -280,6 +283,320 @@ class VerdictPlaceholderTests(unittest.TestCase):
 
     def test_a_document_without_a_gate_verdicts_section_is_not_newly_rejected(self):
         self.assertEqual(self.problems(GOOD.replace("## Gate Verdicts", "## Other")), [])
+
+
+class VerdictSectionTokenTests(unittest.TestCase):
+    """T747 (plan-142, SEC-T739-07): the verdict sections come from the parser's tokens, the field logic is unchanged."""
+
+    PENDING = "- Status: pending"
+    STILL_PENDING = "RELEASE VERDICT: value is still pending: - Status: pending"
+    SECOND_HEADING = "RELEASE VERDICT: 2 top-level headings have this name; the gate reads the first, so keep one"
+    EMPTY = "RELEASE VERDICT: the heading is present but the section is empty or only inside a code block"
+    ABSENT = "missing required content in doc.md: ## RELEASE VERDICT"
+    OPENING = "# Release v9.0.0\n\nLatest release: v9.0.0\n\n## Install\n\nx\n\n## Highlights\n\nx\n\n"
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load()
+
+    def setUp(self):
+        require_parser(self)
+
+    def problems(self, body: str) -> list[str]:
+        return self.mod.verdict_placeholder_problems(f"# R\n\n{body}\n")
+
+    def in_section(self, body: str) -> list[str]:
+        return self.problems(f"## RELEASE VERDICT\n\n- Version: v9.0.0\n\n{body}")
+
+    def gate_errors(self, body: str) -> list[str]:
+        """The errors of check_release_brief, the gate's own route, on a document with ``body`` as its verdict."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "doc.md").write_text(self.OPENING + body + "\n", encoding="utf-8")
+            errors: list[str] = []
+            with mock.patch.object(self.mod, "ROOT", root):
+                self.mod.check_release_brief("v9.0.0", Path("doc.md"), errors)
+            return errors
+
+    def unfilled(self, problem: str) -> str:
+        return f"unfilled verdict in doc.md: {problem}"
+
+    def test_control_a_heading_and_a_pending_field(self):
+        self.assertEqual(self.gate_errors(f"## RELEASE VERDICT\n\n{self.PENDING}"), [self.unfilled(self.STILL_PENDING)])
+
+    def test_shape_a_the_heading_first_inside_a_comment(self):
+        body = f"<!--\n## RELEASE VERDICT\n-->\n\n## RELEASE VERDICT\n\n{self.PENDING}"
+        self.assertEqual(self.gate_errors(body), [self.unfilled(self.STILL_PENDING)])
+
+    def test_shape_b_a_comment_holding_a_heading_line(self):
+        body = f"## RELEASE VERDICT\n\n<!--\n## x\n-->\n\n{self.PENDING}"
+        self.assertEqual(self.gate_errors(body), [self.unfilled(self.STILL_PENDING)])
+
+    def test_shape_c_two_fence_marks_in_paragraphs_pair_up_around_the_field(self):
+        """SEC-T739-07 (c): "FENCED_CODE_RE pairing two ``` in a paragraph"."""
+        body = f"## RELEASE VERDICT\n\nSee the ``` mark.\n\n{self.PENDING}\n\nThe other ``` mark."
+        self.assertNotIn("Status", self.mod.FENCED_CODE_RE.sub("", body))  # what the line rules read
+        self.assertEqual(self.gate_errors(body), [self.unfilled(self.STILL_PENDING)])
+
+    def test_shape_d_a_filled_heading_then_a_second_with_the_pending_field(self):
+        body = f"## RELEASE VERDICT\n\n- Status: PASS\n\n## RELEASE VERDICT\n\n{self.PENDING}"
+        self.assertEqual(self.gate_errors(body), [self.unfilled(self.SECOND_HEADING)])
+
+    def test_the_first_of_two_headings_is_the_one_read(self):
+        body = f"## RELEASE VERDICT\n\n{self.PENDING}\n\n## RELEASE VERDICT\n\n- Status: PASS"
+        self.assertEqual(self.gate_errors(body), [self.unfilled(self.SECOND_HEADING), self.unfilled(self.STILL_PENDING)])
+
+    def test_a_repeat_of_the_heading_in_code_or_a_comment_is_no_second_heading(self):
+        for repeat in ("```\n## RELEASE VERDICT\n```", "<!--\n## RELEASE VERDICT\n-->", "> ## RELEASE VERDICT"):
+            with self.subTest(repeat):
+                self.assertEqual(self.gate_errors(f"## RELEASE VERDICT\n\n- Status: PASS\n\n{repeat}"), [])
+
+    def test_shape_f_the_heading_and_a_filled_field_only_in_a_comment(self):
+        body = "<!--\n## RELEASE VERDICT\n\n- Status: PASS\n-->"
+        self.assertEqual(self.gate_errors(body), [self.ABSENT, self.unfilled(self.EMPTY)])
+
+    def test_shape_h_a_setext_heading_fails_on_the_placeholder(self):
+        self.assertEqual(self.gate_errors(f"RELEASE VERDICT\n---\n\n{self.PENDING}"), [self.unfilled(self.STILL_PENDING)])
+
+    def test_shape_i_the_heading_only_in_a_blockquote(self):
+        self.assertEqual(self.gate_errors("> ## RELEASE VERDICT\n>\n> - Status: PASS"), [self.ABSENT])
+
+    def test_every_form_of_a_real_heading_is_read(self):
+        for heading in (" ## RELEASE VERDICT", "## RELEASE VERDICT ##", "##\tRELEASE VERDICT", "## RELEASE&#32;VERDICT",
+                        "## `RELEASE VERDICT`", "RELEASE VERDICT\n----"):
+            with self.subTest(heading):
+                self.assertEqual(self.gate_errors(f"{heading}\n\n{self.PENDING}"), [self.unfilled(self.STILL_PENDING)])
+
+    def test_a_real_heading_with_an_empty_section_stays_a_problem_in_every_form(self):
+        for heading in ("## RELEASE VERDICT", " ## RELEASE VERDICT", "RELEASE VERDICT\n---"):
+            with self.subTest(heading):
+                self.assertEqual(self.gate_errors(f"{heading}\n\n## Next"), [self.unfilled(self.EMPTY)])
+
+    def test_a_section_holding_only_a_heading_that_renders_as_nothing_is_empty(self):
+        """SEC-T748-01: the old line rule ended the section at such a heading, which left it empty."""
+        for empty in ("## &#32;", "## <!-- x -->", "##", "&#32;\n---", "## &#8203;", "## <span hidden>x</span>"):
+            with self.subTest(empty):
+                self.assertEqual(self.gate_errors(f"## RELEASE VERDICT\n\n{empty}"), [self.unfilled(self.EMPTY)])
+
+    def test_a_heading_a_reader_cannot_see_does_not_end_a_section(self):
+        """SEC-T748-02: format characters survive str.strip, and HTML may hide the heading. Each form, each level."""
+        hidden = ("## &#8203;", "## &#8203; &#8203;", "## &shy;", "## &#x2060;", " ## &#8203;", "##\t&#8203;", "# &#8203;", "&#8203;\n---",
+                  "&#8203;\n===", "## <span hidden>x</span>", "# <b>x</b>", "<b>x</b>\n---")
+        for heading in hidden:
+            with self.subTest(heading):
+                self.assertEqual(self.in_section(f"{heading}\n\n{self.PENDING}"), [self.STILL_PENDING])
+
+    def test_a_marker_on_the_line_of_a_heading_that_does_not_end_a_section_is_read(self):
+        """SEC-T748-10: the old check read these lines, in every form but ``## `` at column 0."""
+        for line in ("# <span>TBD</span>", "<span>TBD</span>\n---", " ## <span>TBD</span>", "##\t<span>TBD</span>",
+                     "# <b>YYYY-MM-DD</b>", "# <!-- TBD -->", " ## <!-- TBD -->", "# ![TBD](u)", "## <span>TBD</span>"):
+            with self.subTest(line):
+                self.assertTrue(self.in_section(line))
+
+    def test_a_field_inside_a_setext_heading_that_does_not_end_a_section_is_read(self):
+        """SEC-T748-10: a line indented 4 spaces continues the paragraph, so it lies inside the heading's map."""
+        self.assertEqual(self.in_section(f"<b>Note</b>\n    {self.PENDING}\n---"), [
+            f"RELEASE VERDICT: value is still pending: {self.PENDING}"])
+
+    def test_a_visible_heading_holding_html_ends_the_empty_test(self):
+        """SEC-T748-11: an anchor in the next heading must not lend its section's text to an empty verdict."""
+        for heading in ('## <a name="x"></a>Rollback Plan', "<b>Rollback Plan</b>\n---"):
+            with self.subTest(heading):
+                self.assertEqual(self.gate_errors(f"## RELEASE VERDICT\n\n{heading}\n\nSome text"), [self.unfilled(self.EMPTY)])
+
+    def test_a_heading_a_reader_can_see_still_ends_a_section(self):
+        for heading in ("## Next", "## Next <!-- x -->", "# Next", "Next\n---", "## `Next`"):
+            with self.subTest(heading):
+                self.assertEqual(self.in_section(f"{heading}\n\n{self.PENDING}"), [])
+
+    def test_the_heading_line_in_a_displayed_html_block_is_refused(self):
+        """SEC-T748-04: the block's text is shown, and the old check read the section from that line."""
+        filled = "## RELEASE VERDICT\n\n- Status: PASS"
+        problem = "RELEASE VERDICT: its heading line is inside an HTML block, which a reader may see; move it out"
+        for block in ("<div>\n## RELEASE VERDICT\n- Status: pending\n</div>", "<details>\n## RELEASE VERDICT  \n</details>"):
+            with self.subTest(block):
+                self.assertEqual(self.problems(f"{block}\n\n{filled}"), [problem])
+        self.assertEqual(self.problems(f"<div>\n- x: y\n</div>\n\n{filled}"), [], "another line in the block")
+        self.assertEqual(self.problems(f"<!--\n## RELEASE VERDICT\n- Status: pending\n-->\n\n{filled}"), [], "a comment is hidden")
+
+    def test_a_heading_of_another_level_is_no_section(self):
+        for heading in ("# RELEASE VERDICT", "### RELEASE VERDICT", "RELEASE VERDICT\n==="):
+            with self.subTest(heading):
+                self.assertIn(self.ABSENT, self.gate_errors(f"{heading}\n\n- Status: PASS"))
+
+    def test_the_name_of_a_section_is_exact(self):
+        for heading in ("## The RELEASE VERDICT", "## release verdict", "## RELEASE VERDICTS", "## RELEASE VERDICT draft"):
+            with self.subTest(heading):
+                self.assertIn(self.ABSENT, self.gate_errors(f"{heading}\n\n- Status: PASS"))
+
+    def test_an_empty_heading_does_not_end_a_section(self):
+        for empty in ("## &#32;", "## <!-- x -->", "##", "# &#32;", "## ![alt](u)", "&#32;\n---"):
+            with self.subTest(empty):
+                self.assertEqual(self.in_section(f"{empty}\n\n{self.PENDING}"), [self.STILL_PENDING])
+
+    def test_a_heading_with_text_ends_a_section_in_either_form_and_at_either_level(self):
+        for heading in ("## Next", "# Next", "Next\n---", "Next\n===", "## `code`"):
+            with self.subTest(heading):
+                self.assertEqual(self.in_section(f"{heading}\n\n{self.PENDING}"), [])
+
+    def test_what_is_not_a_top_level_level_one_or_two_heading_does_not_end_a_section(self):
+        for line in ("### Next", "###### Next", "> ## Next", "- ## Next", "<!--\n## Next\n-->", "```\n## Next\n```",
+                     "    ## Next"):
+            with self.subTest(line):
+                self.assertEqual(self.in_section(f"{line}\n\n{self.PENDING}"), [self.STILL_PENDING])
+
+    def test_a_field_in_a_closed_backtick_fence_is_skipped_at_any_depth_and_a_field_after_it_is_read(self):
+        field = "- Date: YYYY-MM-DD"
+        for code in (f"```\n{field}\n```", f"```\n{field}\n```  \t", f"```\n{field}\n`````", f"````\n{field}\n````",
+                     f"``` info\n{field}\n```", f"Text.\n\n  ```\n{field}\n  ```", f"- item\n\n  ```\n  {field}\n  ```",
+                     f"- ```\n  {field}\n  ```", f"> ```\n> {field}\n> ```", f"- item\n\n  > ```\n  > {field}\n  > ```",
+                     f"> - ```\n>   {field}\n>   ```", f"1. item\n\n   ```\n   {field}\n   ```"):
+            with self.subTest(code):
+                self.assertEqual(self.in_section(code), [])
+                self.assertEqual(self.in_section(f"{code}\n\nAfter.\n\n{self.PENDING}"), [self.STILL_PENDING])
+
+    def test_a_closed_fence_at_the_very_end_of_the_document_is_skipped(self):
+        text = f"## RELEASE VERDICT\n\n- Version: 1\n\n```\n{self.PENDING}\n```"
+        self.assertEqual(self.mod.verdict_placeholder_problems(text), [])
+
+    def test_other_code_is_read_like_any_other_lines(self):
+        for code in (f"~~~\n{self.PENDING}\n~~~", f"```\n{self.PENDING}", f"```\n{self.PENDING}\n``` trailing",
+                     f"````\n{self.PENDING}\n```", f"Text.\n\n    {self.PENDING}", f"- item\n\n      {self.PENDING}",
+                     f"- item\n\n  ```\n  {self.PENDING}\n\nAfter.", f"```\n{self.PENDING}\n     ```",
+                     f"```\n{self.PENDING}\n> ```", f"~~~\n{self.PENDING}\n```"):
+            with self.subTest(code):
+                self.assertEqual(self.in_section(code), [self.STILL_PENDING])
+
+    def test_an_unclosed_fence_in_a_blockquote_is_read(self):
+        """The field rule does not read a ``> `` line, so a placeholder stands in for the pending field."""
+        found = self.in_section("> ```\n> - Date: YYYY-MM-DD\n\nAfter.")
+        self.assertEqual(found, ["RELEASE VERDICT: unfilled placeholder 'YYYY-MM-DD': > - Date: YYYY-MM-DD"])
+
+    def test_an_unclosed_fence_at_the_end_of_a_document_with_no_final_newline_is_read(self):
+        marker = "RELEASE VERDICT: unfilled placeholder 'YYYY-MM-DD': "
+        for tail, line in ((f"```\n{self.PENDING}", None), (f"```\n{self.PENDING}\n   ", None),
+                           (f"- ```\n  {self.PENDING}\n  ", None), ("> ```\n> YYYY-MM-DD\n>", "> YYYY-MM-DD")):
+            with self.subTest(tail):
+                text = f"## RELEASE VERDICT\n\n{tail}"
+                wanted = self.STILL_PENDING if line is None else marker + line
+                self.assertEqual(self.mod.verdict_placeholder_problems(text), [wanted])
+
+    def test_a_section_with_only_an_indented_block_is_read_as_lines(self):
+        self.assertEqual(self.problems("## RELEASE VERDICT\n\n    - Status: PASS"), [])
+
+    def test_a_code_line_outside_the_section_changes_nothing_inside_it(self):
+        self.assertEqual(self.problems(f"```\nx\n```\n\n## RELEASE VERDICT\n\n{self.PENDING}"), [self.STILL_PENDING])
+
+    def test_a_block_that_ends_with_its_container_leaves_the_next_line_a_field(self):
+        self.assertEqual(self.in_section(f"> ```\n{self.PENDING}"), [self.STILL_PENDING])
+
+    def test_html_lines_stay_scanned(self):
+        for html in (f"<!--\n{self.PENDING}\n-->", f"<div hidden>\n{self.PENDING}\n</div>", "<!-- TBD -->"):
+            with self.subTest(html):
+                self.assertTrue(self.in_section(html))
+
+    def test_a_code_block_is_blanked_and_does_not_join_the_lines_around_it(self):
+        """As with the old blanking, a sub-list after a block is not the value of the field before the block."""
+        found = self.in_section("- Features:\n```\nx\n```\n  - a")
+        self.assertEqual(found, ["RELEASE VERDICT: field has no value: - Features:"])
+
+    def test_a_section_with_only_code_is_empty(self):
+        self.assertEqual(self.problems("## RELEASE VERDICT\n\n```\n- Status: PASS\n```"), [self.EMPTY])
+
+    def test_gate_verdicts_stays_optional_and_a_raw_heading_with_no_real_one_is_a_problem(self):
+        self.assertEqual(self.problems("no sections"), [])
+        empty = "Gate Verdicts: the heading is present but the section is empty or only inside a code block"
+        for swallowed in ("```\n## Gate Verdicts\n\n- x: PASS", "<!--\n## Gate Verdicts\n\n- x: PASS"):
+            with self.subTest(swallowed):
+                self.assertEqual(self.problems(swallowed), [empty])
+
+    def test_a_misspelt_optional_heading_still_passes(self):
+        """plan-142 § Not changed: visible to a reader, and the name is exact."""
+        self.assertEqual(self.problems("## Gate verdicts\n\n- x: pending"), [])
+
+    def test_a_heading_past_the_nesting_limit_is_absent(self):
+        self.assertEqual(self.gate_errors("- " * 9 + "x\n\n## RELEASE VERDICT\n\n- Status: PASS"), [])
+        body = "- " * 10 + "x\n\n## RELEASE VERDICT\n\n- Status: PASS"
+        self.assertEqual(self.gate_errors(body), [self.ABSENT, self.unfilled(self.EMPTY)])
+
+    def test_a_section_runs_on_past_the_nesting_limit(self):
+        self.assertEqual(self.in_section("- " * 9 + f"x\n\n## Next\n\n{self.PENDING}"), [])
+        self.assertEqual(self.in_section("- " * 10 + f"x\n\n## Next\n\n{self.PENDING}"), [self.STILL_PENDING])
+
+    def test_a_character_that_only_splitlines_breaks_at_keeps_the_lines_aligned(self):
+        """Reached directly; the gate itself refuses such a document in check_line_breaks (SEC-T731-02)."""
+        for char in ("\f", "\u2028", "\v", "\x85"):
+            with self.subTest(char=hex(ord(char))):
+                above = f"a{char * 9}b\n\n## RELEASE VERDICT\n\n{self.PENDING}\n\n## Next\n\nx\n"
+                self.assertEqual(self.mod.verdict_placeholder_problems(above), [self.STILL_PENDING])
+                inside = f"## RELEASE VERDICT\n\n```\nx{char * 9}\n```\n\n{self.PENDING}\n"
+                self.assertEqual(self.mod.verdict_placeholder_problems(inside), [self.STILL_PENDING])
+
+    def test_such_a_character_still_splits_a_field_for_the_field_logic(self):
+        """What the old check caught when reached directly stays caught."""
+        self.assertEqual(self.in_section(f"text\f{self.PENDING}"), [self.STILL_PENDING])
+
+    def test_a_carriage_return_reached_directly_keeps_the_lines_aligned(self):
+        for ending in ("\r", "\r\n"):
+            with self.subTest(ending=repr(ending)):
+                text = f"a{ending}b{ending}{ending}## RELEASE VERDICT{ending}{ending}{self.PENDING}{ending}"
+                self.assertEqual(self.mod.verdict_placeholder_problems(text), [self.STILL_PENDING])
+
+    def test_a_long_line_is_never_parsed_and_the_direct_call_fails_closed(self):
+        document = f"## RELEASE VERDICT\n\n- Status: PASS\n\n{'x' * (self.mod.MAX_LINE_CHARS + 1)}\n"
+        with mock.patch.object(self.mod, "MarkdownIt", side_effect=AssertionError("the parser ran")):
+            found = self.mod.verdict_placeholder_problems(document)
+            self.assertEqual(self.mod.section_text(document, "## RELEASE VERDICT"), "")
+        self.assertEqual(len(found), 1)
+        self.assertIn(f"longer than {self.mod.MAX_LINE_CHARS} characters", found[0])
+
+    def _parses_of_a_run(self, documents: dict[str, str], tag: str) -> int:
+        """How often the parser runs over check_migration_pointers and check_release_brief, as run_checks calls them."""
+        install = "#!/bin/sh\n" + "".join(f"echo 'the Cursor item in docs/releases/{name}.md'\n" for name in documents)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "scripts").mkdir()
+            (root / self.mod.INSTALL_SH).write_text(install, encoding="utf-8")
+            (root / "docs" / "releases").mkdir(parents=True)
+            for name, text in documents.items():
+                (root / "docs" / "releases" / f"{name}.md").write_text(text, encoding="utf-8")
+            self.mod.markdown_tokens.cache_clear()
+            errors: list[str] = []
+            with mock.patch.object(self.mod, "ROOT", root), \
+                    mock.patch.object(self.mod, "MarkdownIt", wraps=self.mod.MarkdownIt) as parser:
+                self.mod.check_migration_pointers(tag, errors)
+                self.mod.check_release_brief(tag, Path(f"docs/releases/{tag}.md"), errors)
+            self.assertEqual(errors, [])
+            return parser.call_count
+
+    def _release_document(self, tag: str) -> str:
+        return (f"# Release {tag}\n\nLatest release: {tag}\n\n## Install\n\nx\n\n## Highlights\n\nx\n\n"
+                "## Gate Verdicts\n\n- Security: PASS\n\n## RELEASE VERDICT\n\n- Status: PASS\n\n"
+                "## Migration Guide\n\n### M-3. Cursor removed\n")
+
+    def test_the_document_is_parsed_once_per_run(self):
+        self.assertEqual(self._parses_of_a_run({"v9.0.0": self._release_document("v9.0.0")}, "v9.0.0"), 1)
+
+    def test_the_own_document_is_parsed_once_when_another_sorts_after_it(self):
+        """'v10.0.0' sorts before 'v9.0.0', so a cache of the last text alone would parse the own document twice."""
+        documents = {name: self._release_document(name) for name in ("v10.0.0", "v9.0.0")}
+        self.assertEqual(self._parses_of_a_run(documents, "v10.0.0"), 2)
+
+    def test_the_help_and_the_docstring_describe_this_check(self):
+        collapsed = " ".join(self.mod.MIGRATION_POINTER_HELP.split())
+        for phrase in ("(T747, SEC-T739-07)", "the first top-level level 2 heading", "whose text is not empty", "format characters such as U+200B",
+                       "inside an HTML block other than comments",
+                       "A second top-level heading with the same name is an error",
+                       "Only the lines of a closed ``` fence, at any depth, do not count", "An indented code block",
+                       "a ~~~ fence", "an unclosed fence", "trailing text or too few backticks",
+                       "a hidden 'pending' still fails", "RELEASE VERDICT must be a real top-level heading",
+                       "Gate Verdicts is optional", "both fail closed"):
+            with self.subTest(phrase):
+                self.assertIn(phrase, collapsed)
+        docstring = " ".join(self.mod.__doc__.split())
+        self.assertIn("``markdown_tokens`` calls it", docstring)
+        self.assertIn("the verdict sections", docstring)
+        self.assertNotIn("``has_cursor_migration_item`` uses it", docstring)
 
 
 class GateWiringTests(_MainRunner):
@@ -1585,7 +1902,15 @@ class StrictReadTests(_MainRunner):
         self.assertEqual(len(calls), 1)
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef) and any(call in ast.walk(node) for call in calls):
-                self.assertEqual(node.name, "has_cursor_migration_item")
+                self.assertEqual(node.name, "markdown_tokens")
+
+    def test_the_only_call_of_the_parser_sits_behind_the_long_line_check(self):
+        tree = ast.parse((repo_root() / "scripts" / "verify-release-docs.py").read_text(encoding="utf-8"))
+        helper = next(node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef) and node.name == "markdown_tokens")
+        guard = next(node for node in helper.body if isinstance(node, ast.If))
+        self.assertIn("long_line_number", ast.dump(guard.test))
+        self.assertTrue(any(isinstance(node, ast.Return) for node in guard.body))
+        self.assertNotIn("MarkdownIt", ast.dump(guard))
 
     def test_the_help_and_the_docstring_say_so(self):
         for name, text in (("--help", self.mod.MIGRATION_POINTER_HELP), ("docstring", self.mod.__doc__)):
