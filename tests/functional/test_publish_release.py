@@ -1134,6 +1134,7 @@ class TestCiSupplyChainPins(unittest.TestCase):
                 continue
             if code.startswith("- "):
                 code = code[2:]
+            code = code.removeprefix("python3 -I scripts/run-allowlisted.py -- ")  # T750: the drift gate's form
             literal = re.search(r"\[apk,\s*'add'((?:,\s*'[^']*')*)\]", code)
             if literal:
                 found.append(["add", *re.findall(r"'([^']*)'", literal.group(1))])

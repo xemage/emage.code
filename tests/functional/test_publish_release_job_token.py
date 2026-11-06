@@ -25,7 +25,7 @@ from pathlib import Path
 from unittest import mock
 
 from tests._helpers.repo import repo_root
-from tests.functional.test_ci_hash_pins import RELEASE_GATE_JOB, RELEASE_GATE_UNSET
+from tests.functional.test_ci_hash_pins import DRIFT_GATE_FETCHES, DRIFT_GATE_JOB
 
 SCRIPT = repo_root() / "scripts" / "publish-release.py"
 CI = repo_root() / ".gitlab-ci.yml"
@@ -542,9 +542,6 @@ class TestTheCiJobs(unittest.TestCase):
                     self.assertEqual(len(hits), 1)
                     self.assertIn("k in ('CI_JOB_TOKEN', 'WIKI_TOKEN')", hits[0])
                     self.assertNotIn("--token-env", hits[0])
-                elif name == RELEASE_GATE_JOB:
-                    # the only mention is the line that removes it from the job's shell (SEC-T739-06)
-                    self.assertEqual(hits, [f"    - {RELEASE_GATE_UNSET}"])
                 else:
                     self.assertEqual(hits, [])
 
@@ -553,7 +550,9 @@ class TestTheCiJobs(unittest.TestCase):
             if name == "release":
                 continue
             with self.subTest(job=name):
-                code = [ln for ln in self.code(job) if not (name == RELEASE_GATE_JOB and ln == f"    - {RELEASE_GATE_UNSET}")]
+                # T750: the drift gate's two fetches keep it by name, for a runner whose credential helper reads it
+                kept = [f"    - {line}" for line in DRIFT_GATE_FETCHES] if name == DRIFT_GATE_JOB else []
+                code = [ln for ln in self.code(job) if ln not in kept]
                 self.assertNotIn("CI_JOB_TOKEN", "\n".join(code))
                 self.assertNotIn("--token-header", job)
 

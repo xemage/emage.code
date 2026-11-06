@@ -74,6 +74,11 @@ VERSION_RE = re.compile(r"\bv(\d+)\.(\d+)\.(\d+)(?:-[A-Za-z0-9.]+)?\b")
 # decision "Exclude docs/decisions/ (Recommended)" (D-T700-1, release-v9-audit-v1.md):
 # accepted ADRs are immutable per AGENTS.md (superseded, never edited), so a path such as
 # docs/releases/v8.0.0.md in ADR-010 is a dated record, not a current-state claim.
+# SEC-T745-09: the dependency trees of a local run, as exact paths from the root. A name or a marker file is not enough: a
+# committed pyvenv.cfg or node_modules elsewhere must not be able to silence this check for docs/wiki. So a virtual
+# environment under another name still fails a local run on a non-UTF-8 .md, naming the path: an accepted residual.
+DEPENDENCY_TREES = ("ci/js/node_modules/", ".venv/", "venv/")
+
 EXCLUDED_PREFIXES = (
     "docs/releases/",
     "docs/checkpoints/",
@@ -188,13 +193,17 @@ def scan_file(path: Path, canonical_key: tuple[int, int, int]) -> list[tuple[int
 
 
 def find_markdown_files(root: Path) -> list[Path]:
-    """All non-excluded *.md files under root, skipping .git entirely."""
+    """All non-excluded *.md files under root.
+
+    Skipped: .git; ``DEPENDENCY_TREES``, exact paths from the root, whose residual is stated there (SEC-T745-09); and the
+    paths ``is_excluded`` lists.
+    """
     files: list[Path] = []
     for path in sorted(root.rglob("*.md")):
         if ".git" in path.parts:
             continue
         rel = path.relative_to(root)
-        if is_excluded(rel):
+        if rel.as_posix().startswith(DEPENDENCY_TREES) or is_excluded(rel):
             continue
         files.append(path)
     return files
@@ -243,7 +252,7 @@ def evaluate(
     for rel_path in sorted(drift):
         for line_no, version in drift[rel_path]:
             lines.append(
-                f"  {rel_path.as_posix()}:{line_no}: found {version} "
+                f"  {ascii(rel_path.as_posix())}:{line_no}: found {version} "
                 f"(older than canonical {canonical_raw})"
             )
     return 1, lines

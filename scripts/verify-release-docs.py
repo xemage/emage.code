@@ -19,10 +19,13 @@ mentions "Cursor" must carry its Cursor migration item. See ``MIGRATION_POINTER_
 for the anchor, for what stays open, and for how a pointer to a version newer than the tag is treated.
 
 The Cursor item is looked for with markdown-it-py (T739, plan-136), so the gate reads the same blocks as a
-CommonMark renderer, up to the parser's nesting limit; past it nothing counts as an anchor (SEC-T739-09). Only
-``markdown_tokens`` calls it, for ``has_cursor_migration_item`` and for the verdict sections, and it never parses a
-long line (TD-T739-01) or the same text twice. ``main()`` refuses to run without it, on every run; there is no fallback
+CommonMark renderer, up to the parser's nesting limit. A document that reaches it is refused; on a direct call nothing past it counts as an anchor (SEC-T739-09). Only
+``markdown_tokens`` calls it, for ``document_refusal``, ``has_cursor_migration_item`` and the verdict sections, and it
+never parses a text over the size cap (SEC-T745-01), a long line (TD-T739-01) or the same text twice. ``main()`` refuses to run without it, on every run; there is no fallback
 to line rules and no skip. The ``release-docs-gate`` job installs it from ``ci/requirements-release.txt``.
+
+A release document the gate reads may hold no HTML other than comments, anywhere (SEC-T745-03): ``document_refusal``
+refuses it from the parser's tokens, after the size and line limits. See ``MIGRATION_POINTER_HELP``.
 
 Every printed line passes through ``printable``: control, bidi and zero-width characters of an
 ``install.sh`` line, a release document or a tag become ``?`` in the CI log (SEC-T715-04).
@@ -152,10 +155,17 @@ PENDING_ON_RE = re.compile(r"\bon\s+pending\b", re.IGNORECASE)
 INSTALL_SH = Path("scripts/install.sh")
 # TD-T739-01: the parser's time on one long tag grows worse than linearly, so a longer line is refused unparsed.
 MAX_LINE_CHARS = 65536
+# SEC-T745-01, TD-T739-01: lines join into a paragraph, so a line limit does not bound the parser's time. 128 KiB is about
+# twice the largest release document (v8.0.0.md, 66,745 characters). A longer text is refused unparsed.
+MAX_DOCUMENT_CHARS = 131072
+# SEC-T739-09: passed to the parser as its maxNesting, so the parser and ``nesting_limit_line`` read one value. It is the
+# commonmark preset's own value on 3.0.0 and 4.2.0, and a test holds that.
+MAX_NESTING = 20
 # SEC-T739-04: what opens front matter in GitLab's lib/gitlab/front_matter.rb (PATTERN_UNTRUSTED, read 2026-11-06), an
 # optional "coding:" line, then white space, then a delimiter at the start of a line with anything after it. The BOM is
 # dropped first: that pattern leaves it to whatever runs before it. No closing delimiter is required here: fail closed.
-FRONT_MATTER_OPENING_RE = re.compile(r"\A(?:[^\n]*coding:[^\n]*\n)?\s*^(?:---|\+\+\+|;;;)", re.MULTILINE)
+# SEC-T745-02: this is the part after the optional line; ``opens_with_front_matter`` handles that line, in linear time.
+FRONT_MATTER_BODY_RE = re.compile(r"\s*^(?:---|\+\+\+|;;;)", re.MULTILINE)
 # SEC-T739-02, -03: HTML that is nothing but comments. An HTML parser ends a comment at "--!>", and at once in the short
 # "<!-->" and "<!--->", where CommonMark may read on, so a tag after those could be live: such text is no comment here.
 COMMENTS_ONLY_RE = re.compile(r"\s*(?:(?:<!---?>|<!--(?!-?>)(?:(?!--!?>).)*-->)\s*)*", re.DOTALL)
@@ -227,24 +237,35 @@ Text means text and inline code, with a line break read as a space. An image's a
 never counts. What the parser reads as code, an HTML comment or a raw HTML block is not
 an anchor (SEC-T703-01, SEC-T715-03). '__bold__', an anchor in a blockquote and a heading
 in a list do not count either.
-HTML (SEC-T739-02, SEC-T739-03): the gate does not balance tags, so it refuses rather than
-models. Reading the document from its start, the first raw HTML block or inline HTML tag
-that is not only comments, such as '<details>' or 'text <div hidden>', ends the search, at
-any depth: above the section, in its title or in the section, even if the tag closes
-itself. No later anchor counts, so such a document fails the gate. An anchor above it still
-counts, and HTML after an anchor does not matter. An anchor that holds a tag does not
-count, on either side of the word, as in '**<span hidden>Cursor</span>**'. A comment is
-allowed and its text does not count; a tag in a code span is code, not HTML, and neither
-is an image's alt text.
+HTML (SEC-T745-03, SEC-T739-02, SEC-T739-03): the gate does not balance tags, so it refuses
+rather than models. A release document the gate reads may hold no HTML other than comments,
+anywhere, at any depth, before or after an anchor: no raw HTML block and no inline tag, such
+as '<details>', 'text <div hidden>' or '<style>', even if the tag closes itself. The parser
+decides what is HTML, so prose such as <your-project> outside code counts too: put it in a
+code span. The document is refused, as below, and a direct call of the anchor check gives
+False for it. An anchor that holds a tag does not count either, on either side of the word,
+as in '**<span hidden>Cursor</span>**'. A comment is allowed and its text does not count; a
+tag in a code span is code, not HTML, and neither is an image's alt text.
 Nesting (SEC-T739-09): the parser stops at 20 nested levels (maxNesting), where a list
-item counts as two, and skips the rest of the document, so no anchor that deep or later
-counts and the gate fails closed.
+item counts as two. In a list it skips the rest of the document, or of the blockquote around
+the list, and in a blockquote the rest of that blockquote, so no HTML, anchor or verdict
+there has tokens. The gate therefore refuses a document that reaches the limit, as below. A
+paragraph one level short of it counts too, though nothing is skipped there. On a direct
+call no anchor that deep or later counts, which fails closed.
 A refused document: a release document the gate reads, which is the tag's own and any
-named on a line with the word "Cursor", is refused, naming its path, in two cases. If it
-opens with '---', '+++' or ';;;', optionally after a BOM, white space or a 'coding:' line,
-because GitLab may read what follows as front matter and hide it, in the Release
-description too (unverified) (SEC-T739-04). If a line is longer than 65536 characters,
-named with its number and no content, before any parsing (TD-T739-01).
+named on a line with the word "Cursor", is refused, naming its path, in five cases, in this
+order. If it is longer than 131072 characters, before any parsing (SEC-T745-01). If a line
+is longer than 65536 characters, named with its number and no content, before any parsing
+(TD-T739-01). If it opens with '---', '+++' or ';;;', optionally after a BOM, white space or
+a 'coding:' line, because GitLab may read what follows as front matter and hide it, in the
+Release description too (unverified) (SEC-T739-04). If it reaches the nesting limit, named
+with the line of the block that does and no content (SEC-T739-09). If the parser finds HTML other than
+comments, named with the line its block starts on and no content (SEC-T745-03).
+Time (SEC-T745-01): the cap limits the parser's time and does not make it small; the job's
+timeout is what stops a run. Measured on 2026-11-06 on one machine, with markdown-it-py 4.2.0
+and the whole gate on one crafted document at the cap: the worst of 41 shapes tried, unclosed
+'<?' repeated in one paragraph of 1 KB lines, took 48 s. That is a measurement, not a bound:
+another machine or a shape not tried may differ, and each document parsed adds its own time.
 scripts/install.sh must hold no CR, CRLF included: a shell does not end a line at a CR,
 and the gate's per-line rules would. The gate refuses it from the unconverted text and
 names the line (SEC-T738-02).
@@ -270,16 +291,16 @@ with the same parser. A section starts at the first top-level level 2 heading wh
 exactly its name, in ATX or setext form, and ends at the next top-level level 1 or 2 heading
 whose text is not empty, in either form. Text is as above, so a heading such as '## &#32;'
 or '## <!-- x -->' does not end a section. Nor does one holding only format characters such
-as U+200B, or one holding any HTML other than comments. Such a heading's own line is still
-read. A section is empty if it holds nothing but closed fences and headings with no text
+as U+200B, or, on a direct call (the gate refuses the document first), one holding any HTML
+other than comments. Such a heading's own line is still read. A section is empty if it holds nothing but closed fences and headings with no text
 before the next top-level level 1 or 2 heading with text. A second top-level heading with the same name is an
-error, and so is the heading's line inside an HTML block other than comments. Only the lines of a closed ``` fence, at any depth, do not count. An indented code
+error, and so, on a direct call, is the heading's line inside an HTML block other than comments. Only the lines of a closed ``` fence, at any depth, do not count. An indented code
 block, a ~~~ fence, an unclosed fence and a fence whose last line has trailing text or too
 few backticks are read like any other lines, and so are HTML lines, so a hidden 'pending'
 still fails. RELEASE VERDICT must be a real
 top-level heading. Gate Verdicts is optional, but its raw line with no real heading is an
-error, so a section swallowed by an unclosed fence or comment fails. Past the nesting limit
-the parser gives no tokens: a section with no later heading runs to the end of the document
+error, so a section swallowed by an unclosed fence or comment fails. On a direct call, past
+the nesting limit the parser gives no tokens: a section with no later heading runs to the end of the document
 and a heading there is absent, so both fail closed."""
 
 FENCED_CODE_RE = re.compile(r"```.*?```", re.DOTALL)
@@ -336,16 +357,18 @@ def strip_code(text: str) -> str:
 
 @functools.lru_cache(maxsize=None)
 def markdown_tokens(text: str) -> list | None:
-    """The tokens of ``text``, or None for a line over MAX_LINE_CHARS, which is never parsed (TD-T739-01).
+    """The tokens of ``text``, or None over MAX_DOCUMENT_CHARS or for a line over MAX_LINE_CHARS: never parsed.
+
+    SEC-T745-01, TD-T739-01: the limits are checked here, so no route reaches the parser without them.
 
     The only call of the parser. Every text is remembered, not only the last: check_migration_pointers reads the
     pointed documents in sorted order and check_release_brief reads the tag's own after them, so with v9.0.0 and
     v10.0.0 both pointed to, a cache of one would parse v10.0.0 twice and double SEC-T745-01's worst case. A run holds
     few documents and ends. The list is shared, so a caller must not change it.
     """
-    if long_line_number(text) is not None:
+    if len(text) > MAX_DOCUMENT_CHARS or long_line_number(text) is not None:
         return None
-    return MarkdownIt("commonmark").parse(text)
+    return MarkdownIt("commonmark", {"maxNesting": MAX_NESTING}).parse(text)
 
 
 def heading_text(tokens: list, index: int) -> str:
@@ -462,7 +485,10 @@ def verdict_placeholder_problems(text: str) -> list[str]:
     """Problems for each unfilled row or field in the Gate Verdicts / RELEASE VERDICT sections, and a repeated heading."""
     tokens = markdown_tokens(text)
     if tokens is None:
-        return [f"a line is longer than {MAX_LINE_CHARS} characters, so the verdict sections were not read (TD-T739-01)"]
+        return [
+            f"the document is longer than {MAX_DOCUMENT_CHARS} characters or a line is longer than {MAX_LINE_CHARS} "
+            "characters, so the verdict sections were not read (SEC-T745-01, TD-T739-01)"
+        ]
     problems: list[str] = []
     for heading in VERDICT_SECTIONS:
         title = heading[3:]
@@ -612,21 +638,74 @@ def long_line_number(text: str) -> int | None:
     return None
 
 
-def document_refusal(relative: Path, text: str) -> str | None:
-    """Why the gate refuses this release document, before reading it for anything else; None when it does not.
+def opens_with_front_matter(text: str) -> bool:
+    """``text`` opens as front matter does (SEC-T739-04), in linear time (SEC-T745-02): with or without a "coding:" line."""
+    text = text.removeprefix("\ufeff")
+    first, _, rest = text.partition("\n")
+    if "coding:" in first and FRONT_MATTER_BODY_RE.match(rest) is not None:
+        return True
+    return FRONT_MATTER_BODY_RE.match(text) is not None
 
-    Each message holds the path and at most a line number, never the content.
+
+def live_html_line(tokens: list) -> int | None:
+    """The line on which the first block holding HTML other than comments starts; None when there is none (SEC-T745-03)."""
+    for token in tokens:
+        if holds_live_html(token):
+            return token.map[0] + 1
+    return None
+
+
+def nesting_limit_line(tokens: list) -> int | None:
+    """The line of the first block that reaches the parser's nesting limit; None when none does (SEC-T739-09).
+
+    At the limit the block parser reads no further in that container, and a list takes the rest of what holds it along,
+    so nothing there has tokens. Only a pushed token with ``nesting`` 1 raises the level, so the opener that reaches the
+    limit is always in the list. A paragraph or heading one level short counts too, though nothing is skipped: fail closed.
     """
+    for token in tokens:
+        if token.level + token.nesting >= MAX_NESTING:
+            return token.map[0] + 1
+    return None
+
+
+def document_refusal(relative: Path, text: str) -> str | None:
+    """Why the gate refuses this release document; None when it does not.
+
+    The size and line limits and the front matter check read the text as it is, in that order, before any parsing. Only
+    the nesting and HTML rules then parse it, through ``markdown_tokens``, which remembers the tokens, so the checks that
+    follow do not parse it again. Nesting comes first because the tokens stop at that limit: whatever lies past it, the
+    document is refused, so the HTML rule never passes a text it could not read. This is not the first read of the tag's own document: ``check_line_breaks`` runs before it, and
+    ``check_links`` runs after it even on a refusal. Each message holds the path and at most a line number, never the content.
+    """
+    if len(text) > MAX_DOCUMENT_CHARS:
+        return (
+            f"{relative} is longer than {MAX_DOCUMENT_CHARS} characters; the gate refuses it before parsing, because "
+            "parsing time grows worse than linearly with the size of a paragraph (SEC-T745-01)"
+        )
     number = long_line_number(text)
     if number is not None:
         return (
             f"{relative}:{number} is longer than {MAX_LINE_CHARS} characters; the gate refuses it before parsing, "
             "because parsing time grows worse than linearly with such a line (TD-T739-01)"
         )
-    if FRONT_MATTER_OPENING_RE.match(text.removeprefix("\ufeff")) is not None:
+    if opens_with_front_matter(text):
         return (
             f"{relative} opens with a front matter delimiter ('---', '+++' or ';;;'); GitLab may read what follows as "
             "front matter and hide it, so start the document with '# Release' (SEC-T739-04)"
+        )
+    tokens = markdown_tokens(text)
+    number = nesting_limit_line(tokens)
+    if number is not None:
+        return (
+            f"{relative}:{number} reaches the parser's limit of {MAX_NESTING} nested levels, where a list item counts as "
+            "two; the gate cannot read what lies past it, so nest less (SEC-T739-09)"
+        )
+    number = live_html_line(tokens)
+    if number is not None:
+        return (
+            f"{relative}:{number} the block that starts on this line holds HTML other than comments, which can hide text "
+            "from a reader; a release document may hold none, so remove the tag or replace the placeholder with its value, "
+            "and put only literal text in a code span (SEC-T745-03)"
         )
     return None
 
@@ -788,25 +867,21 @@ def has_cursor_migration_item(text: str) -> bool:
 
     The commonmark preset has two block containers, blockquotes and lists, so "only list containers around it"
     means no open blockquote. ``paragraph_open`` is ``hidden`` in a tight list and is still rendered, so it counts.
-    A paragraph or heading token is followed by its inline token, so an anchor is judged before its own inline token
-    is walked: a tag after a lead's span comes after the anchor. Without tag balancing nothing tells what live HTML
-    leaves open, so the first one from the start of the document ends the search (SEC-T739-02, -03). A long line is
-    never parsed (TD-T739-01): ``document_refusal`` names it for the gate, and this keeps any other caller off the parser.
+    A paragraph or heading token is followed by its inline token. Without tag balancing nothing tells what live HTML
+    leaves open, so any in the document, before or after an anchor, gives False (SEC-T745-03, SEC-T739-02, -03):
+    ``document_refusal`` names it for the gate, and this holds for a direct call. A text over the limits is never parsed
+    (SEC-T745-01, TD-T739-01): ``document_refusal`` names that too, and this keeps any other caller off the parser.
     """
     tokens = markdown_tokens(text)
-    if tokens is None:
+    if tokens is None or live_html_line(tokens) is not None:
         return False
     span = migration_section_span(tokens)
     if span is None:
         return False
     start, end = span
     quotes = 0
-    for index, token in enumerate(tokens[:end]):
-        if holds_live_html(token):
-            return False
+    for index, token in enumerate(tokens[start:end], start):
         quotes += {"blockquote_open": 1, "blockquote_close": -1}.get(token.type, 0)
-        if index < start:
-            continue
         anchor = ""
         if token.type == "heading_open" and token.level == 0 and token.tag in ("h3", "h4", "h5", "h6"):
             anchor = anchor_text(tokens[index + 1].children or [])
@@ -840,7 +915,7 @@ def cursor_item_problem(path: str) -> str | None:
     return (
         f"{path} lacks its Cursor migration item ({INSTALL_SH} points users to it): add, under '{MIGRATION_SECTION}', "
         "a '### ... Cursor ...' heading or a paragraph that opens with a '**' span holding the word, optionally in a "
-        "list, with no HTML other than comments in it or anywhere above it in the document"
+        "list"
     )
 
 

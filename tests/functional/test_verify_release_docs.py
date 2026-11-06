@@ -26,10 +26,13 @@ import ast
 import contextlib
 import importlib.util
 import io
+import itertools
 import os
+import re
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -176,6 +179,54 @@ def _read_route_problems(source: str) -> list[str]:
                and isinstance(node.func, ast.Attribute) and node.func.attr == "decode"]
     if any(len(call.args) != 1 or call.keywords for call in decodes):
         problems.append("the decode in read_strict takes more than the codec")
+    for node in ast.walk(tree):  # SEC-T745-08: str(raw, "utf-8", "ignore") decodes as leniently as errors="ignore"
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "str" and (
+                len(node.args) > 1 or node.keywords):
+            problems.append(f"line {node.lineno}: str() with a codec")
+    return problems
+
+
+GATE_IMPORT = "from markdown_it import MarkdownIt\n"
+
+
+def _parser_import_problems(tree: ast.AST) -> list[str]:
+    """The parser is imported once, under its own name, and never reached through its module (SEC-T745-08)."""
+    problems: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Attribute) and node.attr == "MarkdownIt":
+            problems.append(f"line {node.lineno}: .MarkdownIt")
+        elif isinstance(node, ast.Import) and any(alias.name.split(".")[0] == "markdown_it" for alias in node.names):
+            problems.append(f"line {node.lineno}: import markdown_it")
+        elif isinstance(node, ast.ImportFrom) and (node.module or "").split(".")[0] == "markdown_it":
+            if [(alias.name, alias.asname) for alias in node.names] != [("MarkdownIt", None)]:
+                problems.append(f"line {node.lineno}: another name from markdown_it")
+    return problems
+
+
+def _parser_route_problems(source: str) -> list[str]:
+    """Each route to the parser other than the one call in ``markdown_tokens`` (TD-T739-01, SEC-T745-08).
+
+    Exactly one call, inside exactly one function, which is ``markdown_tokens``. Every other load of the name is refused,
+    so neither a module-level parser nor an alias passes; the only exception is ``MarkdownIt is None``, as ``main`` asks.
+    """
+    tree = ast.parse(source)
+    problems = _parser_import_problems(tree)
+    calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call)
+             and isinstance(node.func, ast.Name) and node.func.id == "MarkdownIt"]
+    if len(calls) != 1:
+        return [*problems, f"{len(calls)} calls of the parser"]
+    enclosing = [node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef) and calls[0] in ast.walk(node)]
+    if [node.name for node in enclosing] != ["markdown_tokens"]:
+        problems.append(f"the call sits in {[node.name for node in enclosing]}, not only in markdown_tokens")
+    allowed = {id(calls[0].func)}
+    for node in ast.walk(tree):
+        if (isinstance(node, ast.Compare) and isinstance(node.left, ast.Name) and node.left.id == "MarkdownIt"
+                and [type(op) for op in node.ops] == [ast.Is]
+                and isinstance(node.comparators[0], ast.Constant) and node.comparators[0].value is None):
+            allowed.add(id(node.left))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Name) and node.id == "MarkdownIt" and isinstance(node.ctx, ast.Load) and id(node) not in allowed:
+            problems.append(f"line {node.lineno}: another load of MarkdownIt")
     return problems
 
 
@@ -374,9 +425,13 @@ class VerdictSectionTokenTests(unittest.TestCase):
 
     def test_a_section_holding_only_a_heading_that_renders_as_nothing_is_empty(self):
         """SEC-T748-01: the old line rule ended the section at such a heading, which left it empty."""
-        for empty in ("## &#32;", "## <!-- x -->", "##", "&#32;\n---", "## &#8203;", "## <span hidden>x</span>"):
+        for empty in ("## &#32;", "## <!-- x -->", "##", "&#32;\n---", "## &#8203;"):
             with self.subTest(empty):
                 self.assertEqual(self.gate_errors(f"## RELEASE VERDICT\n\n{empty}"), [self.unfilled(self.EMPTY)])
+        # SEC-T745-03: the gate refuses HTML first, so this shape is guarded on a direct call and refused on the route.
+        html = "## <span hidden>x</span>"
+        self.assertEqual(self.problems(f"## RELEASE VERDICT\n\n{html}"), [self.EMPTY])
+        self.assertIn("holds HTML other than comments", self.gate_errors(f"## RELEASE VERDICT\n\n{html}")[0])
 
     def test_a_heading_a_reader_cannot_see_does_not_end_a_section(self):
         """SEC-T748-02: format characters survive str.strip, and HTML may hide the heading. Each form, each level."""
@@ -402,7 +457,8 @@ class VerdictSectionTokenTests(unittest.TestCase):
         """SEC-T748-11: an anchor in the next heading must not lend its section's text to an empty verdict."""
         for heading in ('## <a name="x"></a>Rollback Plan', "<b>Rollback Plan</b>\n---"):
             with self.subTest(heading):
-                self.assertEqual(self.gate_errors(f"## RELEASE VERDICT\n\n{heading}\n\nSome text"), [self.unfilled(self.EMPTY)])
+                self.assertEqual(self.problems(f"## RELEASE VERDICT\n\n{heading}\n\nSome text"), [self.EMPTY])
+                self.assertIn("holds HTML other than comments", self.gate_errors(f"## RELEASE VERDICT\n\n{heading}")[0])
 
     def test_a_heading_a_reader_can_see_still_ends_a_section(self):
         for heading in ("## Next", "## Next <!-- x -->", "# Next", "Next\n---", "## `Next`"):
@@ -517,7 +573,10 @@ class VerdictSectionTokenTests(unittest.TestCase):
     def test_a_heading_past_the_nesting_limit_is_absent(self):
         self.assertEqual(self.gate_errors("- " * 9 + "x\n\n## RELEASE VERDICT\n\n- Status: PASS"), [])
         body = "- " * 10 + "x\n\n## RELEASE VERDICT\n\n- Status: PASS"
-        self.assertEqual(self.gate_errors(body), [self.ABSENT, self.unfilled(self.EMPTY)])
+        self.assertEqual(self.problems(body), [self.EMPTY], "a direct call fails closed")
+        errors = self.gate_errors(body)
+        self.assertEqual(len(errors), 1)
+        self.assertIn("reaches the parser's limit of 20 nested levels", errors[0])
 
     def test_a_section_runs_on_past_the_nesting_limit(self):
         self.assertEqual(self.in_section("- " * 9 + f"x\n\n## Next\n\n{self.PENDING}"), [])
@@ -751,6 +810,14 @@ class MigrationPointerTests(_MainRunner):
         self.assertEqual(len(errors), 1)
         self.assertIn("docs/releases/v9.0.0.md, which does not exist", errors[0])
 
+    def test_an_unclosed_comment_is_refused_and_gives_no_anchor(self):
+        """It runs to the end of the document, so a reader sees nothing below it. SEC-T745-03 refuses it as HTML."""
+        document = "# Release v9.0.0\n\n## Migration Guide\n\n<!-- draft\n### M-3. Cursor removed\n"
+        self.assertFalse(self.mod.has_cursor_migration_item(document))
+        errors = self._pointer_errors("v9.0.0", document)
+        self.assertEqual(len(errors), 1)
+        self.assertIn(":5 the block that starts on this line holds HTML other than comments", errors[0])
+
     def test_a_document_without_the_cursor_item_fails(self):
         for document in (
             CURSOR_ITEM_DOC.replace("Cursor is no longer", "The platform is no longer"),
@@ -762,7 +829,6 @@ class MigrationPointerTests(_MainRunner):
             "# Release v9.0.0\n\n## Migration Guide\n\n~~~\n### Cursor\n~~~\n",
             "# Release v9.0.0\n\n## Migration Guide\n\n````md\n**Cursor removed.**\n```\nstill code\n````\n",
             "# Release v9.0.0\n\n## Migration Guide\n\n<!--\n**Migration Guide item M-3. Cursor is no longer supported.**\n-->\n",
-            "# Release v9.0.0\n\n## Migration Guide\n\n<!-- draft\n### M-3. Cursor removed\n",
             "# Release v9.0.0\n\n## Migration Guide\n\n```\nunclosed\n### M-3. Cursor removed\n",
         ):
             with self.subTest(document=document[:60]):
@@ -962,7 +1028,7 @@ class HtmlBlockAnchorTests(unittest.TestCase):
 
     def test_a_table_row_is_a_paragraph_line_and_a_tag_line_after_it_is_live_html(self):
         """T739: the commonmark preset has no tables. '| a | b |' is a paragraph, and '<span>' cannot interrupt one.
-        So the tag is inline HTML in that paragraph, and since T743's ruling it ends the search."""
+        So the tag is inline HTML in that paragraph, and any such HTML gives False (SEC-T745-03)."""
         self.assertFalse(self.has_item("| a | b |\n<span>\n**M-3. Cursor removed.**"))  # one paragraph: no lead
         self.assertFalse(self.has_item("| a | b |\n<span>\n- a\n- **M-3. Cursor removed.**"))
         self.assertFalse(self.has_item("| a | b |\n<span>\n### h\n**M-3. Cursor removed.**"))
@@ -1255,7 +1321,6 @@ class ParserAnchorTests(unittest.TestCase):
             "an autolink": _section("**<https://example.com> Cursor**"),
             "an escaped tag": _section("**\\<span hidden> Cursor**"),
             "an entity": _section("**&lt;span hidden&gt; Cursor**"),
-            "a tag after the span": _section("**Cursor** <span>x</span>"),
         })
 
     def test_an_anchor_after_a_raw_html_block_does_not_count(self):
@@ -1282,7 +1347,6 @@ class ParserAnchorTests(unittest.TestCase):
             "empty": _section("<!---->\n\n### M-3. Cursor removed"),
             "short": _section("<!-->\n\n### M-3. Cursor removed"),
             "short, a dash more": _section("<!--->\n\n### M-3. Cursor removed"),
-            "a block after the anchor": _section("### M-3. Cursor removed\n\n<div hidden>"),
             "in a fence": _section("```\n<div hidden>\n```\n\n### M-3. Cursor removed"),
             "indented code": _section("    <div hidden>\n\n### M-3. Cursor removed"),
             "a code span": _section("`<div hidden>`\n\n### M-3. Cursor removed"),
@@ -1326,13 +1390,21 @@ class ParserAnchorTests(unittest.TestCase):
             "before a lead": _section("text <b>x</b>\n\n**M-3. Cursor removed.**"),
         })
 
-    def test_html_after_the_anchor_or_only_comments_or_not_html_stays_true(self):
+    def test_html_after_the_anchor_gives_false(self):
+        """SEC-T745-03: '<style>h3{display:none}</style>' after the anchor hides it, so where the HTML lies does not matter."""
         anchor = "### M-3. Cursor removed"
-        self._assert_all(True, {
+        self._assert_all(False, {
+            "the finding": _section(f"{anchor}\n\n<style>h3{{display:none}}</style>"),
             "a block after": _section(f"{anchor}\n\n<div hidden>"),
             "inline after": _section(f"{anchor}\n\ntext <div hidden>"),
             "in the lead's paragraph, after its span": _section("**M-3. Cursor removed.** <div hidden>"),
+            "a tag after the span": _section("**Cursor** <span>x</span>"),
             "after the section": f"{_section(anchor)}\n## Other\n\n<div hidden>\n",
+        })
+
+    def test_only_comments_or_not_html_stays_true(self):
+        anchor = "### M-3. Cursor removed"
+        self._assert_all(True, {
             "a comment in the title": f"# R\n\n## Migration Guide <!-- x -->\n\n{anchor}\n",
             "a comment block above": f"<!-- x -->\n\n{_section(anchor)}",
             "a comment inline above": f"text <!-- x -->\n\n{_section(anchor)}",
@@ -1344,7 +1416,7 @@ class ParserAnchorTests(unittest.TestCase):
         })
 
     def test_an_anchor_above_the_section_does_not_count(self):
-        """Control: the walk starts at the document's start, and an anchor only counts inside the section."""
+        """Control: an anchor only counts inside the section."""
         self.assertFalse(self.mod.has_cursor_migration_item("### M-3. Cursor removed\n\n" + _section("No item.")))
         self.assertFalse(self.mod.has_cursor_migration_item("**M-3. Cursor removed.**\n\n" + _section("No item.")))
         self.assertFalse(self.mod.has_cursor_migration_item("# R\n\nNo section, **Cursor**.\n\n### Cursor\n"))
@@ -1463,14 +1535,17 @@ class HelpTextTests(unittest.TestCase):
     def test_the_help_states_each_rule_of_batch_s(self):
         text = self._collapsed_help()
         for phrase in (
-            "(SEC-T739-02, SEC-T739-03)", "the gate does not balance tags, so it refuses rather than models",
-            "from its start", "that is not only comments", "'<details>'", "'text <div hidden>'",
-            "above the section, in its title or in the section", "at any depth", "even if the tag closes itself",
-            "An anchor above it still counts", "HTML after an anchor does not matter",
+            "(SEC-T745-03, SEC-T739-02, SEC-T739-03)", "the gate does not balance tags, so it refuses rather than models",
+            "may hold no HTML other than comments, anywhere", "before or after an anchor", "'<details>'",
+            "'text <div hidden>'", "'<style>'", "at any depth", "even if the tag closes itself",
+            "<your-project> outside code counts too: put it in a code span", "in five cases, in this order",
+            "If it reaches the nesting limit", "so no HTML, anchor or verdict there has tokens",
+            "(SEC-T745-01)", "longer than 131072 characters", "the line its block starts on",
+            "markdown-it-py 4.2.0", "unclosed '<?' repeated in one paragraph", "took 48 s", "a measurement, not a bound",
             "An anchor that holds a tag does not count", "A comment is allowed",
             "a tag in a code span is code, not HTML", "an image's alt text",
             "(SEC-T739-09)", "20 nested levels (maxNesting)", "a list item counts as two",
-            "skips the rest of the document", "the gate fails closed",
+            "skips the rest of the document", "which fails closed",
             "(SEC-T739-04)", "'---', '+++' or ';;;'", "front matter", "in the Release description too (unverified)",
             "(TD-T739-01)", "longer than 65536 characters", "no content", "before any parsing",
             "(SEC-T738-02)", "must hold no CR, CRLF included", "names the line",
@@ -1895,20 +1970,51 @@ class StrictReadTests(_MainRunner):
         self.assertEqual(_read_route_problems(source), [])
 
     def test_the_parser_has_one_call_site(self):
-        """TD-T739-01: no route to the parser goes round the long line check."""
-        tree = ast.parse((repo_root() / "scripts" / "verify-release-docs.py").read_text(encoding="utf-8"))
-        calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call)
-                 and isinstance(node.func, ast.Name) and node.func.id == "MarkdownIt"]
-        self.assertEqual(len(calls), 1)
-        for node in ast.walk(tree):
-            if isinstance(node, ast.FunctionDef) and any(call in ast.walk(node) for call in calls):
-                self.assertEqual(node.name, "markdown_tokens")
+        """TD-T739-01: no route to the parser goes round the limits."""
+        source = (repo_root() / "scripts" / "verify-release-docs.py").read_text(encoding="utf-8")
+        self.assertEqual(_parser_route_problems(source), [])
+
+    def test_a_second_route_to_the_parser_is_seen(self):
+        """SEC-T745-08: each of these passed the old walk, which only looked inside the functions that hold a call."""
+        call = 'def markdown_tokens(text):\n    return MarkdownIt("commonmark").parse(text)\n'
+        self.assertEqual(_parser_route_problems(f"{GATE_IMPORT}{call}"), [])
+        for name, extra in (
+            ("at module level", 'PARSER = MarkdownIt("commonmark")\n'),
+            ("an alias", "Parser = MarkdownIt\n"),
+            ("an alias in a function", "def f():\n    p = MarkdownIt\n"),
+            ("an alias of the module", "import markdown_it as m\n"),
+            ("another import name", "from markdown_it import MarkdownIt as Parser\n"),
+            ("through the module", 'def f(m):\n    return m.MarkdownIt("commonmark")\n'),
+            ("a second call", 'def f():\n    return MarkdownIt("commonmark")\n'),
+            ("a load in a test of something else", "def f():\n    return MarkdownIt is not None\n"),
+        ):
+            with self.subTest(name):
+                self.assertNotEqual(_parser_route_problems(f"{GATE_IMPORT}{call}{extra}"), [])
+        for name, source in (
+            ("no call", GATE_IMPORT),
+            ("two enclosing functions", f'{GATE_IMPORT}def outer():\n    {call.replace(chr(10) + "    ", chr(10) + "        ")}'),
+            ("in another function", f'{GATE_IMPORT}def other(text):\n    return MarkdownIt("commonmark").parse(text)\n'),
+        ):
+            with self.subTest(name):
+                self.assertNotEqual(_parser_route_problems(source), [])
+
+    def test_str_with_a_codec_is_a_lenient_decode(self):
+        """SEC-T745-08: ``str(raw, "utf-8", "ignore")`` decodes as leniently as ``errors=`` and passed the old walk."""
+        strict = 'def read_strict(path):\n    raw = path.read_bytes()\n    return raw.decode("utf-8")\n'
+        self.assertEqual(_read_route_problems(strict), [])
+        self.assertEqual(_read_route_problems(f"{strict}def f(x):\n    return str(x)\n"), [])
+        for snippet in ('str(raw, "utf-8", "ignore")', 'str(raw, "utf-8")', 'str(raw, encoding="utf-8")', 'str(object=raw)'):
+            with self.subTest(snippet):
+                self.assertNotEqual(_read_route_problems(f"{strict}def f(raw):\n    return {snippet}\n"), [])
+                inside = strict.replace('raw.decode("utf-8")', f'raw.decode("utf-8") + {snippet}')
+                self.assertNotEqual(_read_route_problems(inside), [])
 
     def test_the_only_call_of_the_parser_sits_behind_the_long_line_check(self):
         tree = ast.parse((repo_root() / "scripts" / "verify-release-docs.py").read_text(encoding="utf-8"))
         helper = next(node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef) and node.name == "markdown_tokens")
         guard = next(node for node in helper.body if isinstance(node, ast.If))
         self.assertIn("long_line_number", ast.dump(guard.test))
+        self.assertIn("MAX_DOCUMENT_CHARS", ast.dump(guard.test))
         self.assertTrue(any(isinstance(node, ast.Return) for node in guard.body))
         self.assertNotIn("MarkdownIt", ast.dump(guard))
 
@@ -2028,6 +2134,211 @@ class DocumentRefusalTests(_MainRunner):
                 self.assertIsNone(self.mod.document_refusal(path, self.mod.read_strict(path)))
 
 
+    def _html_refusal(self, number: int) -> str:
+        return (f"{self.DOC}:{number} the block that starts on this line holds HTML other than comments, which can hide "
+                "text from a reader; a release document may hold none, so remove the tag or replace the placeholder with its "
+                "value, and put only literal text in a code span (SEC-T745-03)")
+
+    def test_html_anywhere_is_refused_by_line_on_both_routes(self):
+        """SEC-T745-03, SEC-T748-13, the wrappers of SEC-T748-04, -12: the anchor is there, and the document is refused."""
+        for name, html in {
+            "the finding": "<style>h3{display:none}</style>",
+            "a wrapper": "<div hidden>\n\n## RELEASE VERDICT\n\n- Status: PASS\n\n</div>",
+            "a hidden heading": "## <span hidden>x</span>",
+            "a tag that closes itself": "<br/>",
+            "inline": "text <div hidden>",
+            "a placeholder in prose": "Run it with <your-project> as the target.",
+            "in a list": "- <div hidden>",
+            "in a blockquote": "> text <b>x</b>",
+            "in link text": "[<b>x</b>](u)",
+            "a processing instruction": "<?x y?>",
+            "a declaration": "<!X y>",
+            "CDATA": "<![CDATA[x]]>",
+            "an unclosed comment": "<!-- x",
+            "a comment an HTML parser ends early": "<!-- x --!> <b> y -->",
+            "a tag after a comment": "<!-- x --> <b>",
+        }.items():
+            with self.subTest(name):
+                self._assert_refused(f"{self.GOOD_DOC}\n{html}\n", self._html_refusal(7))
+        with self.subTest("above the section"):
+            self._assert_refused(f"<details>\n\n{self.GOOD_DOC}", self._html_refusal(1))
+
+    def test_what_is_not_html_is_not_refused(self):
+        for name, text in {
+            "a comment": "<!-- <b>x</b> -->",
+            "a comment over lines": "<!-- x\n<b>\n-->",
+            "two comments": "<!-- a --> <!-- b -->",
+            "a comment inline": "text <!-- x --> text",
+            "a code span": "`<your-project>`",
+            "a fence": "```\n<div hidden>\n```",
+            "indented code": "    <div hidden>",
+            "alt text": "![<div hidden>](u)",
+            "a link title": '[x](u "<span hidden>")',
+            "an autolink": "<https://example.com>",
+            "an escaped tag": "\\<span hidden>",
+            "an entity": "&lt;span hidden&gt;",
+            "a lone angle bracket": "a < b and c > d",
+        }.items():
+            with self.subTest(name):
+                self.assertIsNone(self.mod.document_refusal(self.DOC, f"{self.GOOD_DOC}\n{text}\n"))
+
+    def test_the_html_message_holds_no_content(self):
+        require_parser(self)
+        refusal = self.mod.document_refusal(self.DOC, f"{self.GOOD_DOC}\n<zq-secret-word title='zq-value'>\n")
+        self.assertNotIn("zq-", refusal)
+
+    def test_the_limits_and_the_front_matter_come_before_the_parser(self):
+        """SEC-T745-11: the refusal parses only for HTML, and only after the rules that read the text as it is."""
+        over = "x\n" * (self.mod.MAX_DOCUMENT_CHARS // 2 + 1)
+        for name, text in {"size": over, "line": "x" * (self.mod.MAX_LINE_CHARS + 1), "front matter": "---\n"}.items():
+            with self.subTest(name), mock.patch.object(self.mod, "MarkdownIt", side_effect=AssertionError("parsed")):
+                self.mod.markdown_tokens.cache_clear()
+                self.assertIsNotNone(self.mod.document_refusal(self.DOC, text))
+
+    def test_the_docstring_says_where_the_refusal_parses(self):
+        doc = " ".join(self.mod.document_refusal.__doc__.split())
+        self.assertNotIn("before reading it for anything else", doc)
+        self.assertIn("before any parsing", doc)
+        self.assertIn("Only the nesting and HTML rules then parse it", doc)
+
+    def test_the_document_is_parsed_once_in_a_run(self):
+        require_parser(self)
+        real = self.mod.MarkdownIt
+        with mock.patch.object(self.mod, "MarkdownIt", side_effect=real) as parser:
+            self.mod.markdown_tokens.cache_clear()
+            routes = self._routes(f"{self.GOOD_DOC}\n## RELEASE VERDICT\n\n- Status: PASS\n")
+        self.assertEqual(routes["pointed"], [])
+        self.assertEqual(parser.call_count, 1)
+
+    def test_a_document_over_the_cap_is_refused_on_both_routes_and_never_parsed(self):
+        """SEC-T745-01, TD-T739-01: the lines are short, so the line limit alone passes this."""
+        cap = self.mod.MAX_DOCUMENT_CHARS
+        self.assertEqual(cap, 131072)
+        document = self.GOOD_DOC + "\n" + "x\n" * (cap // 2)
+        self.assertGreater(len(document), cap)
+        self._assert_refused(document, (
+            f"{self.DOC} is longer than {cap} characters; the gate refuses it before parsing, because parsing time "
+            "grows worse than linearly with the size of a paragraph (SEC-T745-01)"))
+        with mock.patch.object(self.mod, "MarkdownIt", side_effect=AssertionError("parsed")):
+            self.mod.markdown_tokens.cache_clear()
+            self.assertIsNone(self.mod.markdown_tokens(document))
+            self.assertFalse(self.mod.has_cursor_migration_item(document))
+            found = self.mod.verdict_placeholder_problems(document)
+        self.assertEqual(len(found), 1)
+        self.assertIn(f"longer than {cap} characters", found[0])
+
+    def test_a_document_at_the_cap_is_read(self):
+        cap = self.mod.MAX_DOCUMENT_CHARS
+        padding = "\n" + "x\n" * (cap // 2)
+        document = (self.GOOD_DOC + padding)[:cap]
+        self.assertEqual(len(document), cap)
+        require_parser(self)
+        self.assertIsNone(self.mod.document_refusal(self.DOC, document))
+        self.assertTrue(self.mod.has_cursor_migration_item(document))
+        self.assertIsNotNone(self.mod.document_refusal(self.DOC, document + "x"))
+
+    def test_a_long_line_still_comes_after_the_size_in_the_message(self):
+        document = "x" * (self.mod.MAX_DOCUMENT_CHARS + 1)
+        self.assertIn(f"longer than {self.mod.MAX_DOCUMENT_CHARS} characters", self.mod.document_refusal(self.DOC, document))
+
+    def _nesting_refusal(self, number: int) -> str:
+        return (f"{self.DOC}:{number} reaches the parser's limit of {self.mod.MAX_NESTING} nested levels, where a list item "
+                "counts as two; the gate cannot read what lies past it, so nest less (SEC-T739-09)")
+
+    def test_a_document_that_reaches_the_nesting_limit_is_refused_on_both_routes(self):
+        """The list route hid the HTML after it from the tokens, so such a document passed the gate. Each route, then mixed."""
+        html = "\n\n<style>h3{display:none}</style>\n"
+        for name, deep, line in (
+            ("a list, the finding", "- " * 15 + "x" + html, 7),
+            ("a list at the limit", "- " * 10 + "x" + html, 7),
+            ("an ordered list", "1. " * 10 + "x" + html, 7),
+            ("indented items", "".join("  " * i + "- a\n" for i in range(10)) + html, 16),
+            ("a blockquote, HTML inside", ">" * 25 + " x\n" + ">" * 25 + "\n" + ">" * 25 + " <b>y</b>\n", 7),
+            ("a blockquote, no HTML", ">" * 25 + " x\n", 7),
+            ("a blockquote in a list", "- " * 8 + ">" * 6 + " x" + html, 7),
+            ("a list in a blockquote", ">" * 5 + " " + "- " * 9 + "x" + html, 7),
+        ):
+            with self.subTest(name):
+                self._assert_refused(f"{self.GOOD_DOC}\n{deep}", self._nesting_refusal(line))
+
+    def test_one_level_short_is_read(self):
+        self.assertIsNone(self.mod.document_refusal(self.DOC, f"{self.GOOD_DOC}\n{'- ' * 9}x\n"))
+        self.assertIsNone(self.mod.document_refusal(self.DOC, f"{self.GOOD_DOC}\n{'>' * 18} x\n"))
+        # One level strict: nothing is skipped for this paragraph, and it is refused all the same.
+        self.assertEqual(self.mod.document_refusal(self.DOC, f"{self.GOOD_DOC}\n{'>' * 19} x\n"), self._nesting_refusal(7))
+
+    def test_the_limit_is_the_parser_s_own(self):
+        require_parser(self)
+        self.assertEqual(self.mod.MarkdownIt("commonmark").options["maxNesting"], self.mod.MAX_NESTING)
+        real = self.mod.MarkdownIt
+        with mock.patch.object(self.mod, "MarkdownIt", side_effect=real) as parser:
+            self.mod.markdown_tokens.cache_clear()
+            self.mod.markdown_tokens("x\n")
+        self.assertEqual(parser.call_args.args[1]["maxNesting"], self.mod.MAX_NESTING)
+
+    def test_below_the_limit_nothing_is_skipped(self):
+        """What the rule rests on: a document it passes parses the same with no effective limit, on every mix tried."""
+        require_parser(self)
+        free = self.mod.MarkdownIt("commonmark", {"maxNesting": 10000})
+        kinds = lambda tokens: [(token.type, token.level) for token in tokens]
+        passed = refused = 0
+        for quotes, items, tail in itertools.product(range(23), range(13), ("x\n\n<b>y</b>\n", "x\n\n- z\n", "x\n> z\n")):
+            for text in (">" * quotes + " " + "- " * items + tail, "- " * items + ">" * quotes + " " + tail):
+                tokens = self.mod.markdown_tokens(text)
+                if self.mod.nesting_limit_line(tokens) is None:
+                    passed += 1
+                    self.assertEqual(kinds(tokens), kinds(free.parse(text)), repr(text))
+                else:
+                    refused += 1
+        self.assertGreater(passed, 100)
+        self.assertGreater(refused, 100)
+
+    def test_the_depth_cannot_make_the_refusal_skip_an_earlier_rule(self):
+        """The text rules read the source, and past the limit the document is refused whatever the tokens lack."""
+        deep = "- " * 15 + "x\n"
+        self.assertIn("front matter delimiter", self.mod.document_refusal(self.DOC, f"---\n\n{deep}"))
+        self.assertIn(f"longer than {self.mod.MAX_LINE_CHARS}", self.mod.document_refusal(self.DOC, f"{deep}\n{'x' * (self.mod.MAX_LINE_CHARS + 1)}\n"))
+        self.assertIn("longer than 131072", self.mod.document_refusal(self.DOC, deep + "x\n" * (self.mod.MAX_DOCUMENT_CHARS // 2)))
+        for html in (f"<b>x</b>\n\n{deep}", f"{deep}\n<b>x</b>\n"):
+            with self.subTest(html[:8]):
+                self.assertIn("nested levels", self.mod.document_refusal(self.DOC, html))
+
+    def test_a_direct_call_still_fails_closed_on_nesting(self):
+        deep = "- " * 15 + "x\n\n"
+        self.assertFalse(self.mod.has_cursor_migration_item(f"{deep}{self.GOOD_DOC}"))
+        self.assertFalse(self.mod.has_cursor_migration_item(f"{self.GOOD_DOC}\n<b>x</b>\n\n{deep}"), "HTML above the limit")
+        self.assertEqual(self.mod.section_heading_indexes(self.mod.markdown_tokens(f"{deep}## RELEASE VERDICT\n"), "RELEASE VERDICT"), [])
+
+    def test_no_release_document_is_refused_and_the_template_is(self):
+        """Every v*.md under docs/releases passes each rule; the template's first placeholder that reads as HTML is refused."""
+        require_parser(self)
+        documents = sorted((repo_root() / "docs" / "releases").glob("v*.md"))
+        self.assertGreater(len(documents), 30)
+        for path in documents:
+            with self.subTest(path.name):
+                self.assertIsNone(self.mod.document_refusal(Path(path.name), path.read_text(encoding="utf-8")))
+        template = (repo_root() / "docs" / "releases" / "_template.md").read_text(encoding="utf-8")
+        self.assertIn("holds HTML other than comments", self.mod.document_refusal(Path("_template.md"), template))
+        self.assertIn("Replace every `<placeholder>`", template)
+
+    def test_the_front_matter_check_gives_the_old_answer(self):
+        """SEC-T745-02: the old pattern is kept here as the reference, on crafted shapes and every short combination."""
+        old = re.compile(r"\A(?:[^\n]*coding:[^\n]*\n)?\s*^(?:---|\+\+\+|;;;)", re.MULTILINE)
+        pieces = ("---", "+++", ";;;", "\n", " ", "\t", "\v", "\x85", " ", "coding:", "x", "﻿", "--", "\r")
+        for length in range(5):
+            for combination in itertools.product(pieces, repeat=length):
+                text = "".join(combination)
+                self.assertEqual(self.mod.opens_with_front_matter(text),
+                                 old.match(text.removeprefix("﻿")) is not None, repr(text))
+
+    def test_the_front_matter_check_on_the_slow_shape_is_fast(self):
+        """SEC-T745-02: 12.75 s measured on the old pattern. This shape does not open with front matter."""
+        shape = "coding:" * 9362 + "\n" + "\n" * 100000 + "x"
+        started = time.monotonic()
+        self.assertFalse(self.mod.opens_with_front_matter(shape))
+        self.assertLess(time.monotonic() - started, 1.0)
+
+
 class AnchorWordingTests(unittest.TestCase):
     """SEC-T739-08: the words a release author reads match the parser, and the gate's commands name the install."""
 
@@ -2052,7 +2363,7 @@ class AnchorWordingTests(unittest.TestCase):
             with mock.patch.object(self.mod, "ROOT", Path(tmp)):
                 problem = self.mod.cursor_item_problem("v9.md")
         self.assertIn("a paragraph that opens with a '**' span holding the word, optionally in a list", problem)
-        self.assertIn("with no HTML other than comments in it or anywhere above it in the document", problem)
+        self.assertNotIn("HTML", problem, "document_refusal names HTML; this message is for a document that has none")
 
     def test_contributing_points_each_gate_command_to_the_install(self):
         text = " ".join((repo_root() / "CONTRIBUTING.md").read_text(encoding="utf-8").split())
