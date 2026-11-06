@@ -25,6 +25,11 @@ run; there is no fallback to line rules and no skip. The ``release-docs-gate`` j
 Every printed line passes through ``printable``: control, bidi and zero-width characters of an
 ``install.sh`` line, a release document or a tag become ``?`` in the CI log (SEC-T715-04).
 
+Every file the gate reads in this process must be valid UTF-8 (SEC-T739-01): the gate exits 1 on the first one that is
+not, naming its path and the file offset of the first invalid byte and never its content, and no check runs on that
+file. Newlines are read as before: CRLF and CR become LF. ``scripts/check-version-consistency.py`` runs as a child
+process with its own reads, and this does not cover them.
+
 This gate cannot check that ``main`` already carries the release. That duty (merge the
 release branch to ``develop`` and ``main`` before the tag, stated in CONTRIBUTING.md) is
 enforced on the tag pipeline, without a grace window, by ``scripts/check-release-tag-tree.py``:
@@ -217,11 +222,39 @@ Newer versions: a pointer to a version (major.minor.patch, any pre-release suffi
 ignored) newer than the tag being verified is an error, because the tagged tree points
 users to a document it does not ship (SEC-T703-03). --allow-newer-pointers turns that
 error into a printed note; it exists for verifying a past tag on a later tree (tests)
-and is not used by the CI job. A tag that is not vX.Y.Z[-pre] enforces every pointer."""
+and is not used by the CI job. A tag that is not vX.Y.Z[-pre] enforces every pointer.
+Encoding (SEC-T739-01): every file the gate reads in this process must be valid UTF-8.
+The gate exits 1 on the first one that is not, naming its path and the file offset of the
+first invalid byte and never its content, and no check runs on that file. Newlines are
+read as before: CRLF and CR become LF. scripts/check-version-consistency.py runs as a
+child process with its own reads, and this does not cover them."""
 
 FENCED_CODE_RE = re.compile(r"```.*?```", re.DOTALL)
 INLINE_CODE_RE = re.compile(r"`[^`\n]*`")
 LINK_RE = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
+
+
+class NotUtf8Error(Exception):
+    """A file the gate reads is not valid UTF-8. The message holds its path and an offset, never its content."""
+
+
+def read_strict(path: Path) -> str:
+    """The text of ``path``, or NotUtf8Error (SEC-T739-01). Every read in this process goes through here.
+
+    The whole file is decoded at once, so the offset counts from the start of the file and nothing partly decoded
+    is ever returned. The newlines are translated as text mode translates them: this helper changes what happens to
+    invalid bytes and nothing else, so SEC-T738-02 (a CR in install.sh splits its line) stays as it was.
+    """
+    raw = path.read_bytes()
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError as failure:
+        shown = path.relative_to(ROOT) if path.is_relative_to(ROOT) else path
+        raise NotUtf8Error(
+            f"{shown} is not valid UTF-8: the first invalid byte is at file offset {failure.start} (from 0); "
+            "the gate refuses this file, fix its encoding (SEC-T739-01)"
+        ) from None
+    return text.replace("\r\n", "\n").replace("\r", "\n")
 
 
 def normalize_target(current_file: Path, raw_target: str) -> Path | None:
@@ -298,7 +331,7 @@ def _line_problems(section: str, line: str, nested_follows: bool = False) -> lis
 
 
 def check_links(file_path: Path, errors: list[str]) -> None:
-    text = file_path.read_text(encoding="utf-8", errors="ignore")
+    text = read_strict(file_path)
     visible_text = strip_code(text)
 
     rel = file_path.relative_to(ROOT)
@@ -364,7 +397,7 @@ def has_marker(text: str, marker: str) -> bool:
 def check_markers(marker: str, errors: list[str]) -> None:
     """Every MARKER_FILES entry carries the `Latest release: <tag>` marker as a whole token."""
     for relative in MARKER_FILES:
-        text = (ROOT / relative).read_text(encoding="utf-8", errors="ignore")
+        text = read_strict(ROOT / relative)
         if not has_marker(text, marker):
             errors.append(f"missing marker '{marker}' in {relative}")
 
@@ -372,7 +405,7 @@ def check_markers(marker: str, errors: list[str]) -> None:
 def check_section_requirements(errors: list[str]) -> None:
     """Every SECTION_REQUIREMENTS file holds each of its required snippets."""
     for relative, required_snippets in SECTION_REQUIREMENTS.items():
-        text = (ROOT / relative).read_text(encoding="utf-8", errors="ignore")
+        text = read_strict(ROOT / relative)
         for snippet in required_snippets:
             if snippet not in text:
                 errors.append(f"missing required content in {relative}: {snippet}")
@@ -388,7 +421,7 @@ def check_line_breaks(relatives: list[Path], errors: list[str]) -> None:
         path = ROOT / relative
         if not path.is_file():
             continue
-        text = path.read_text(encoding="utf-8", errors="ignore")
+        text = read_strict(path)
         found = NON_COMMONMARK_BREAK_RE.search(text)
         if found is None:
             continue
@@ -401,7 +434,7 @@ def check_line_breaks(relatives: list[Path], errors: list[str]) -> None:
 
 def check_release_brief(tag: str, release_brief: str, errors: list[str]) -> None:
     """The release notes document has the required sections and no unfilled verdict."""
-    brief_text = (ROOT / release_brief).read_text(encoding="utf-8", errors="ignore")
+    brief_text = read_strict(ROOT / release_brief)
     if not has_marker(brief_text, f"Latest release: {tag}"):
         errors.append(f"missing required content in {release_brief}: Latest release: {tag}")
     for snippet in (
@@ -545,7 +578,7 @@ def check_migration_pointers(tag: str, errors: list[str], allow_newer: bool = Fa
     install = ROOT / INSTALL_SH
     if not install.is_file():
         return  # reported as a missing required file
-    text = install.read_text(encoding="utf-8", errors="ignore")
+    text = read_strict(install)
     for number, line in unparsed_pointer_lines(text):
         errors.append(
             f"{INSTALL_SH}:{number} names a release document in a form the gate cannot check; "
@@ -563,7 +596,7 @@ def check_migration_pointers(tag: str, errors: list[str], allow_newer: bool = Fa
         if not document.is_file():
             errors.append(f"{INSTALL_SH} points users to {path}, which does not exist; write it before the tag is cut")
             continue
-        if needs_cursor and not has_cursor_migration_item(document.read_text(encoding="utf-8", errors="ignore")):
+        if needs_cursor and not has_cursor_migration_item(read_strict(document)):
             errors.append(
                 f"{path} lacks its Cursor migration item ({INSTALL_SH} points users to it): add a "
                 f"'### ... Cursor ...' heading or a '**... Cursor ...**' lead line under '{MIGRATION_SECTION}'"
@@ -596,43 +629,49 @@ def parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main() -> int:
-    args = parse_arguments()
-    if MarkdownIt is None:
-        print_errors([PARSER_MISSING])
-        return 1
-
-    marker = f"Latest release: {args.tag}"
-    errors: list[str] = []
-
-    release_brief = release_brief_path(args.tag)
+def run_checks(tag: str, allow_newer: bool, errors: list[str]) -> None:
+    """Every check, in order, into ``errors``. A missing file or a pointer error ends the run before the others."""
+    release_brief = release_brief_path(tag)
     required_for_tag = [*REQUIRED_FILES, release_brief]
 
     for relative in required_for_tag:
         absolute = ROOT / relative
         if not absolute.is_file():
             errors.append(f"missing required file: {relative}")
-    check_migration_pointers(args.tag, errors, args.allow_newer_pointers)
+    check_migration_pointers(tag, errors, allow_newer)
 
     if errors:
-        print_errors(errors)
-        return 1
+        return
 
-    check_markers(marker, errors)
+    check_markers(f"Latest release: {tag}", errors)
     check_line_breaks([*MARKER_FILES, release_brief, INSTALL_SH], errors)
     check_section_requirements(errors)
-    check_release_brief(args.tag, release_brief, errors)
+    check_release_brief(tag, release_brief, errors)
 
     for relative in required_for_tag:
         check_links(ROOT / relative, errors)
 
     check_version_consistency(errors)
 
+
+def main() -> int:
+    args = parse_arguments()
+    if MarkdownIt is None:
+        print_errors([PARSER_MISSING])
+        return 1
+
+    errors: list[str] = []
+    try:
+        run_checks(args.tag, args.allow_newer_pointers, errors)
+    except NotUtf8Error as refused:  # ends the run: the errors so far are reported, and no later check runs
+        errors.append(str(refused))
+
     if errors:
         print_errors(errors)
         return 1
 
     print("release-docs-verify: all documentation checks passed")
+    marker = f"Latest release: {args.tag}"
     print(f"release-docs-verify: verified marker '{printable(marker)}'")
     return 0
 

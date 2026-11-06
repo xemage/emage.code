@@ -2,7 +2,7 @@
 
 The devops-engineer agent and the ci-cd-pipeline skill show `image:` and `FROM` lines that adopters copy. They showed
 node:20-alpine and alpine:3.19, both end of life. The end-of-life rules are the ones of the repository's own pipeline
-(tests/functional/test_ci_hash_pins.py, eol_image_problems); a template example needs no digest, so that finding is
+(tests/functional/test_ci_hash_pins.py, eol_problems_of); a template example needs no digest, so that finding is
 dropped. Mutation proofs run the check on the old examples.
 """
 from __future__ import annotations
@@ -11,7 +11,7 @@ import re
 import unittest
 
 from tests._helpers.repo import repo_root
-from tests.functional.test_ci_hash_pins import eol_image_problems
+from tests.functional.test_ci_hash_pins import eol_problems_of
 
 KNOWLEDGE = repo_root() / "implementation" / "knowledge"
 FILES = ("agents/devops-engineer.md", "skills/ci-cd-pipeline/SKILL.md")
@@ -22,12 +22,16 @@ def image_references(text: str) -> list[str]:
 
 
 def template_problems(text: str) -> list[str]:
-    refs = image_references(text)
-    found = eol_image_problems("\n".join(f"image: {r}" for r in refs))
+    found = eol_problems_of([("a template", ref) for ref in image_references(text)])
     return [p for p in found if "no digest" not in p]
 
 
 class TestKnowledgeTemplateImages(unittest.TestCase):
+    def test_every_image_of_a_file_is_checked_not_only_the_last(self):
+        """T741: each reference on its own. Parsed as one YAML mapping, the last `image:` would hide the others."""
+        self.assertTrue(template_problems("image: node:20-alpine\nimage: node:24-alpine\n"))
+        self.assertEqual(template_problems("no image here\n"), [])
+
     def test_no_knowledge_file_shows_an_end_of_life_image(self):
         for path in sorted(KNOWLEDGE.rglob("*.md")):
             with self.subTest(path=str(path.relative_to(KNOWLEDGE))):

@@ -17,6 +17,8 @@ block is searched on the whole start line, so <!--> and <?> close on their own l
 
 T739 (plan-136): the Migration Guide check reads the document with markdown-it-py. That closes SEC-T731-09(b),
 SEC-T738-01, SEC-T738-03 and SEC-T731-08, and a run without the parser exits 1 (ParserMissingTests).
+
+T741 (SEC-T739-01): a file the gate reads that is not valid UTF-8 ends the run with exit 1 (StrictReadTests).
 """
 from __future__ import annotations
 
@@ -322,7 +324,7 @@ class MarkerTokenTests(_MainRunner):
         doc = (repo_root() / "docs" / "releases" / "v8.0.0.md").read_text(encoding="utf-8")
         self.assertIn("Latest release: v8.0.0\n", doc)
         broken = doc.replace("Latest release: v8.0.0\n", "Latest release: v8.0.0-rc.1\n")
-        with mock.patch.object(Path, "read_text", side_effect=lambda *a, **k: broken):
+        with mock.patch.object(self.mod, "read_strict", return_value=broken):
             errors: list[str] = []
             self.mod.check_release_brief("v8.0.0", "docs/releases/v8.0.0.md", errors)
         self.assertEqual(errors, ["missing required content in docs/releases/v8.0.0.md: Latest release: v8.0.0"])
@@ -1036,6 +1038,257 @@ class LineBreakCharacterTests(_MainRunner):
         self.assertEqual(
             check.call_args.args[0], [*self.mod.MARKER_FILES, Path("docs/releases/v8.0.0.md"), self.mod.INSTALL_SH]
         )
+
+
+RELEASE_DOC = (
+    b"Latest release: v9.0.0\n\n## Install\n\n## Highlights\n\n## Migration Guide\n\n### M-3. Cursor removed\n\n"
+    + GOOD.encode("utf-8")
+)
+# SEC-T739-01: the invalid byte is dropped, so the comment closes on its first line and the anchor below it counts.
+# A renderer that replaces the byte keeps the comment open down to the last line, and the anchor is hidden.
+HIDDEN_ANCHOR_DOC = RELEASE_DOC.replace(
+    b"### M-3. Cursor removed\n", b"<!-- x --\xff>\n\n### M-3. Cursor removed\n\n-->\n"
+)
+
+
+def _refusal(relative: object, offset: int) -> str:
+    return (f"{relative} is not valid UTF-8: the first invalid byte is at file offset {offset} (from 0); "
+            "the gate refuses this file, fix its encoding (SEC-T739-01)")
+
+
+class StrictReadTests(_MainRunner):
+    """T741 (SEC-T739-01): a file the gate reads that is not valid UTF-8 ends the run with exit 1, and that is all."""
+
+    TAG = "v9.0.0"
+    DOC = Path("docs/releases/v9.0.0.md")
+    MARKER_LINE = b"\nLatest release: v9.0.0\n"
+
+    def _tree(self, root: Path, overrides: dict[object, bytes]) -> None:
+        """This tree's required files with a v9.0.0 marker, a Cursor pointer in install.sh, its document, overrides."""
+        files: dict[object, bytes] = {
+            relative: (repo_root() / relative).read_bytes() for relative in self.mod.REQUIRED_FILES
+        }
+        for relative in self.mod.MARKER_FILES:
+            files[relative] += self.MARKER_LINE
+        files[self.mod.INSTALL_SH] = b"#!/bin/sh\necho 'see the Cursor item in docs/releases/v9.0.0.md'\n"
+        files[self.DOC] = RELEASE_DOC
+        files.update(overrides)
+        for relative, raw in files.items():
+            (root / relative).parent.mkdir(parents=True, exist_ok=True)
+            (root / relative).write_bytes(raw)
+
+    def _main(self, overrides: dict[object, bytes]) -> tuple[int, str]:
+        """main() on a crafted tree. Its links are patched out, because they point into the rest of this tree."""
+        with tempfile.TemporaryDirectory() as tmp:
+            self._tree(Path(tmp), overrides)
+            with mock.patch.object(self.mod, "ROOT", Path(tmp)), mock.patch.object(self.mod, "check_links"):
+                return self._run_main(self.TAG)
+
+    def _assert_refused(self, overrides: dict[object, bytes], relative: object, offset: int) -> None:
+        code, output = self._main(overrides)
+        self.assertEqual(code, 1, output)
+        self.assertEqual(_error_lines(output), [f"release-docs-verify: {_refusal(relative, offset)}"])
+        self.assertNotIn("Traceback", output)
+
+    def _spoiled(self, relative: object) -> tuple[bytes, int]:
+        """The bytes of a required file that passes every check if the invalid byte is dropped, and that byte's offset."""
+        raw = (repo_root() / relative).read_bytes() + self.MARKER_LINE
+        return raw + b"\xff", len(raw)
+
+    def test_the_crafted_tree_passes_without_an_invalid_byte(self):
+        code, output = self._main({})
+        self.assertEqual((code, _error_lines(output)[0]), (0, "release-docs-verify: all documentation checks passed"))
+
+    def test_the_hidden_comment_shape_is_refused(self):
+        offset = HIDDEN_ANCHOR_DOC.index(b"\xff")
+        self._assert_refused({self.DOC: HIDDEN_ANCHOR_DOC}, self.DOC, offset)
+
+    def test_the_hidden_comment_shape_is_the_finding(self):
+        """Control: the two decodings of this fixture really do disagree on the anchor."""
+        require_parser(self)
+        self.assertTrue(self.mod.has_cursor_migration_item(HIDDEN_ANCHOR_DOC.decode("utf-8", "ignore")))
+        self.assertFalse(self.mod.has_cursor_migration_item(HIDDEN_ANCHOR_DOC.decode("utf-8", "replace")))
+
+    def test_invalid_bytes_in_install_sh_are_refused(self):
+        raw = b"#!/bin/sh\necho 'see the Cursor item in docs/releases/v9.0.0.md'\n# \xff\n"
+        self._assert_refused({self.mod.INSTALL_SH: raw}, self.mod.INSTALL_SH, raw.index(b"\xff"))
+
+    def test_invalid_bytes_in_a_marker_file_are_refused(self):
+        relative = Path("docs/wiki/home.md")
+        raw, offset = self._spoiled(relative)
+        self._assert_refused({relative: raw}, relative, offset)
+
+    def test_invalid_bytes_in_a_document_install_sh_points_to_are_refused(self):
+        older = Path("docs/releases/v8.0.0.md")
+        raw = b"## Migration Guide\n\n### Cursor removed\n\xff\n"
+        self._assert_refused(
+            {self.mod.INSTALL_SH: f"echo 'the Cursor item in {older.as_posix()}'\n".encode(), older: raw},
+            older, raw.index(b"\xff"),
+        )
+
+    def test_invalid_bytes_in_a_file_read_only_for_its_sections_are_refused(self):
+        for relative in (Path("CONTRIBUTING.md"), Path("docs/wiki/quick-start.md"), Path("implementation/README.md")):
+            with self.subTest(str(relative)):
+                raw, offset = self._spoiled(relative)
+                self._assert_refused({relative: raw}, relative, offset)
+
+    def test_each_read_of_the_gate_refuses_on_its_own(self):
+        """main() reads most files several times and the first read hides the others, so each call is taken alone."""
+        template, section = Path("docs/releases/_template.md"), Path("implementation/README.md")
+        home, install = Path("docs/wiki/home.md"), self.mod.INSTALL_SH
+        reads = {
+            "check_links": (template, lambda root, errors: self.mod.check_links(root / template, errors)),
+            "check_markers": (home, lambda root, errors: self.mod.check_markers("Latest release: v9.0.0", errors)),
+            "check_section_requirements": (section, lambda root, errors: self.mod.check_section_requirements(errors)),
+            "check_line_breaks": (self.DOC, lambda root, errors: self.mod.check_line_breaks([self.DOC], errors)),
+            "check_release_brief": (
+                self.DOC, lambda root, errors: self.mod.check_release_brief(self.TAG, self.DOC, errors)
+            ),
+            "install.sh": (install, lambda root, errors: self.mod.check_migration_pointers(self.TAG, errors, False)),
+            "pointed document": (
+                self.DOC, lambda root, errors: self.mod.check_migration_pointers(self.TAG, errors, False)
+            ),
+        }
+        for name, (relative, call) in reads.items():
+            with self.subTest(name), tempfile.TemporaryDirectory() as tmp:
+                raw = b"Latest release: v9.0.0 \xff\n"
+                self._tree(Path(tmp), {relative: raw})
+                with mock.patch.object(self.mod, "ROOT", Path(tmp)), \
+                        self.assertRaises(self.mod.NotUtf8Error) as refused:
+                    call(Path(tmp), [])
+                self.assertEqual(str(refused.exception), _refusal(relative, raw.index(b"\xff")))
+
+    def test_the_offset_past_the_first_decoding_chunk_is_exact(self):
+        """A byte offset in the file: the padding is two bytes a character, so a character count is off by half."""
+        for size in (8192, 8193, 70000):
+            with self.subTest(size):
+                raw = RELEASE_DOC + "é".encode("utf-8") * (size // 2) + b"\xff tail\n"
+                offset = len(RELEASE_DOC) + 2 * (size // 2)
+                self.assertGreater(offset, 8192)
+                self._assert_refused({self.DOC: raw}, self.DOC, offset)
+
+    def test_the_first_invalid_byte_is_the_one_named(self):
+        raw = RELEASE_DOC + b"\xff middle \xfe\n"
+        self._assert_refused({self.DOC: raw}, self.DOC, len(RELEASE_DOC))
+
+    def test_each_form_of_invalid_utf8_is_refused(self):
+        forms = {"a bad lead byte": b"\xff", "an overlong form": b"\xc0\xaf", "a surrogate": b"\xed\xa0\x80",
+                 "a stray continuation": b"\x80", "a sequence cut at the end of the file": b"\xe2\x82"}
+        for name, bad in forms.items():
+            with self.subTest(name):
+                self._assert_refused({self.DOC: RELEASE_DOC + bad}, self.DOC, len(RELEASE_DOC))
+
+    def test_the_error_holds_no_byte_of_the_content(self):
+        raw = RELEASE_DOC + b"SECRET-BEFORE \xfe SECRET-AFTER\n"
+        code, output = self._main({self.DOC: raw})
+        self.assertEqual(code, 1, output)
+        for piece in ("SECRET", "0xfe", "xfe", "�", "Install", "Highlights"):
+            with self.subTest(piece):
+                self.assertNotIn(piece, output)
+
+    def test_no_later_check_runs_after_a_refusal(self):
+        relative = Path("docs/wiki/README.md")
+        raw, _ = self._spoiled(relative)
+        with tempfile.TemporaryDirectory() as tmp:
+            self._tree(Path(tmp), {relative: raw})
+            with mock.patch.object(self.mod, "ROOT", Path(tmp)), \
+                    mock.patch.object(self.mod, "check_line_breaks") as line_breaks, \
+                    mock.patch.object(self.mod, "check_section_requirements") as sections, \
+                    mock.patch.object(self.mod, "check_release_brief") as brief, \
+                    mock.patch.object(self.mod, "check_links") as links, \
+                    mock.patch.object(self.mod, "check_version_consistency") as version:
+                with self.assertRaises(self.mod.NotUtf8Error):
+                    self.mod.run_checks(self.TAG, False, [])
+        for later in (line_breaks, sections, brief, links, version):
+            later.assert_not_called()
+
+    def test_errors_found_before_the_refusal_are_still_reported(self):
+        home = Path("docs/wiki/home.md")
+        raw = b"# no marker\n"
+        spoiled = RELEASE_DOC + b"\xff"
+        code, output = self._main({home: raw, self.mod.INSTALL_SH: b"#!/bin/sh\n", self.DOC: spoiled})
+        self.assertEqual(code, 1, output)
+        self.assertEqual(_error_lines(output), [
+            f"release-docs-verify: missing marker 'Latest release: v9.0.0' in {home}",
+            f"release-docs-verify: {_refusal(self.DOC, len(RELEASE_DOC))}",
+        ])
+
+    def test_a_real_process_exits_1_with_one_line_and_no_traceback(self):
+        require_parser(self)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._tree(root, {self.DOC: HIDDEN_ANCHOR_DOC})
+            script = root / "scripts" / "verify-release-docs.py"
+            script.write_bytes((repo_root() / "scripts" / "verify-release-docs.py").read_bytes())
+            run = subprocess.run([sys.executable, str(script), "--tag", self.TAG], capture_output=True, text=True,
+                                 timeout=60, check=False)
+        self.assertEqual((run.returncode, run.stderr), (1, ""), run.stdout + run.stderr)
+        offset = HIDDEN_ANCHOR_DOC.index(b"\xff")
+        self.assertEqual(run.stdout.splitlines(), [f"release-docs-verify: {_refusal(self.DOC, offset)}"])
+
+    def test_a_path_outside_the_root_is_shown_whole(self):
+        with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as other:
+            outside = Path(other) / "install.sh"
+            outside.write_bytes(b"\xff")
+            with mock.patch.object(self.mod, "ROOT", Path(tmp)), self.assertRaises(self.mod.NotUtf8Error) as refused:
+                self.mod.read_strict(outside)
+        self.assertEqual(str(refused.exception), _refusal(outside, 0))
+
+    def test_newlines_are_read_as_text_mode_reads_them(self):
+        """Control: read_text without an errors argument, on CRLF, CR and mixed ends, one across the 8192 boundary."""
+        samples = (b"a\r\nb\rc\nd", b"\r", b"\r\n", b"\n\r", b"\r\r\n\n", b"x" * 8191 + b"\r\ny", b"x" * 8192 + b"\ry",
+                   b"\xef\xbb\xbfa\r\nb\r", "é\r\n \r".encode("utf-8"), b"")
+        for raw in samples:
+            with self.subTest(raw[:20]), tempfile.TemporaryDirectory() as tmp:
+                path = Path(tmp) / "f"
+                path.write_bytes(raw)
+                text = self.mod.read_strict(path)
+                self.assertEqual(text, path.read_text(encoding="utf-8"))
+                self.assertNotIn("\r", text)
+
+    def test_a_tree_with_crlf_still_passes(self):
+        """Control: only the invalid bytes are refused. A valid file with CRLF ends passes as it did."""
+        crlf = {self.DOC: RELEASE_DOC.replace(b"\n", b"\r\n"),
+                self.mod.INSTALL_SH: b"#!/bin/sh\r\necho 'see the Cursor item in docs/releases/v9.0.0.md'\r\n"}
+        for relative in self.mod.MARKER_FILES:
+            raw = (repo_root() / relative).read_bytes() + self.MARKER_LINE
+            crlf[relative] = raw.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")
+        code, output = self._main(crlf)
+        self.assertEqual(code, 0, output)
+        self.assertEqual(_error_lines(output)[0], "release-docs-verify: all documentation checks passed")
+
+    def test_a_cr_in_install_sh_still_splits_its_line(self):
+        """SEC-T738-02 stays open: this fix neither closes nor widens it. Fixing that id changes this test."""
+        document = RELEASE_DOC.replace(b"### M-3. Cursor removed\n", b"No item.\n")
+        install = b"#!/bin/sh\necho 'docs/releases/v9.0.0.md\rCursor'\n"
+        code, output = self._main({self.DOC: document, self.mod.INSTALL_SH: install})
+        self.assertEqual(code, 0, output)
+        code, output = self._main({self.DOC: document, self.mod.INSTALL_SH: install.replace(b"\r", b" ")})
+        self.assertEqual(code, 1, output)
+        self.assertIn("lacks its Cursor migration item", output)
+
+    def test_every_file_the_gate_reads_on_this_tree_is_valid_utf8(self):
+        reads = {*self.mod.REQUIRED_FILES, *map(Path, self.mod.install_sh_pointers(self.mod.read_strict(
+            repo_root() / self.mod.INSTALL_SH)))}
+        for relative in sorted(reads):
+            with self.subTest(str(relative)):
+                self.assertEqual(self.mod.read_strict(repo_root() / relative),
+                                 (repo_root() / relative).read_text(encoding="utf-8"))
+
+    def test_the_script_has_one_way_to_read_a_file(self):
+        source = (repo_root() / "scripts" / "verify-release-docs.py").read_text(encoding="utf-8")
+        self.assertNotIn('errors="ignore"', source)
+        self.assertNotIn(".read_text(", source)
+        self.assertEqual(source.count(".read_bytes("), 1)
+
+    def test_the_help_and_the_docstring_say_so(self):
+        for name, text in (("--help", self.mod.MIGRATION_POINTER_HELP), ("docstring", self.mod.__doc__)):
+            collapsed = " ".join(text.split())
+            for phrase in ("(SEC-T739-01)", "reads in this process must be valid UTF-8", "exits 1",
+                           "file offset of the first invalid byte", "never its content", "CRLF and CR become LF",
+                           "scripts/check-version-consistency.py", "does not cover them"):
+                with self.subTest(name=name, phrase=phrase):
+                    self.assertIn(phrase, collapsed)
 
 
 class PrintableOutputTests(_MainRunner):
