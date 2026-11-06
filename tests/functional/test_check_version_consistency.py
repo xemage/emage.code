@@ -2,10 +2,13 @@
 from __future__ import annotations
 
 import importlib.util
+import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from tests._helpers.repo import repo_root
 
@@ -164,6 +167,94 @@ class TestEvaluate(unittest.TestCase):
     def test_fail_when_marker_unparseable(self):
         code, lines = self.mod.evaluate(None, {})
         self.assertEqual(code, 1)
+
+
+class TestStrictRead(unittest.TestCase):
+    """T744 (SEC-T741-06): the gate's child read with errors="ignore", so `v8.0.0\\xffabc` hid a stale claim."""
+
+    README = b"Latest release: v9.0.0\n"
+
+    def setUp(self) -> None:
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.root = Path(tmp.name).resolve()
+        (self.root / "README.md").write_bytes(self.README)
+
+    def _run(self) -> tuple[int, str]:
+        return _run_cli("--root", str(self.root))
+
+    def test_control_the_valid_claim_is_flagged_without_the_byte(self):
+        (self.root / "notes.md").write_bytes(b"Latest release: v8.0.0 abc\n")
+        code, out = self._run()
+        self.assertEqual(code, 1)
+        self.assertIn("notes.md:1: found v8.0.0", out)
+
+    def test_a_byte_hiding_a_stale_claim_fails_naming_path_and_offset_only(self):
+        (self.root / "notes.md").write_bytes(b"Latest release: v8.0.0\xffabc\n")
+        code, out = self._run()
+        self.assertEqual(code, 1, out)
+        self.assertIn("'notes.md' is not valid UTF-8: the first invalid byte is at file offset 22 (from 0)", out)
+        self.assertIn("VERSION CONSISTENCY: FAIL", out)
+        self.assertNotIn("abc", out)
+        self.assertNotIn("Traceback", out)
+
+    def test_an_invalid_marker_file_fails(self):
+        (self.root / "README.md").write_bytes(b"Latest release: v9.\xff0.0\n")
+        code, out = self._run()
+        self.assertEqual(code, 1, out)
+        self.assertIn("'README.md' is not valid UTF-8", out)
+        self.assertIn("file offset 19 ", out)
+
+    def test_an_invalid_marker_file_outside_the_scan_fails(self):
+        """A file the scan does not read itself, so only the marker's own read can see the byte."""
+        (self.root / "MARKER.txt").write_bytes(b"Latest release: v9.\xff0.0\n")
+        code, out = _run_cli("--root", str(self.root), "--marker-file", "MARKER.txt")
+        self.assertEqual(code, 1, out)
+        self.assertIn("'MARKER.txt' is not valid UTF-8", out)
+
+    def test_the_offset_counts_from_the_start_of_a_large_file(self):
+        """Past any read buffer: the offset counts from the start of the file."""
+        (self.root / "notes.md").write_bytes(b"x" * 100000 + b"\xff")
+        code, out = self._run()
+        self.assertEqual(code, 1, out)
+        self.assertIn("file offset 100000 ", out)
+
+    def test_a_file_name_cannot_forge_a_log_line(self):
+        (self.root / "a\nVERSION CONSISTENCY: PASS\x1b.md").write_bytes(b"\xff")
+        code, out = self._run()
+        self.assertEqual(code, 1, out)
+        self.assertEqual(len(out.splitlines()), 2, out)
+        self.assertIn("\\nVERSION CONSISTENCY: PASS\\x1b.md", out)
+
+    def test_an_excluded_file_is_not_read(self):
+        (self.root / "docs" / "releases").mkdir(parents=True)
+        (self.root / "docs" / "releases" / "v1.0.0.md").write_bytes(b"\xff")
+        self.assertEqual(self._run()[0], 0)
+
+    def test_newlines_count_as_they_did_in_text_mode(self):
+        mod = _load_module()
+        path = self.root / "notes.md"
+        path.write_bytes(b"one\r\ntwo\rLatest release: v8.0.0\n")
+        self.assertEqual(mod.scan_file(path, (9, 0, 0)), [(3, "v8.0.0")])
+
+    def test_the_gate_fails_and_its_log_line_is_safe(self):
+        """The real caller: scripts/verify-release-docs.py folds a non-zero child into its errors."""
+        name = "verify_release_docs_t744"
+        spec = importlib.util.spec_from_file_location(name, repo_root() / "scripts" / "verify-release-docs.py")
+        verify = importlib.util.module_from_spec(spec)
+        sys.modules[name] = verify
+        self.addCleanup(sys.modules.pop, name, None)
+        spec.loader.exec_module(verify)
+        (self.root / "scripts").mkdir()
+        shutil.copy(repo_root() / "scripts" / "check-version-consistency.py", self.root / "scripts")
+        (self.root / "notes\x1b.md").write_bytes(b"secret-content\xff")
+        errors: list[str] = []
+        with mock.patch.object(verify, "ROOT", self.root):
+            verify.check_version_consistency(errors)
+        self.assertIn("version-consistency check failed (scripts/check-version-consistency.py exited 1):", errors)
+        self.assertTrue(any("'notes\\x1b.md' is not valid UTF-8" in e and "file offset 14 " in e for e in errors), errors)
+        self.assertNotIn("secret-content", "\n".join(errors))
+        self.assertTrue(all(error.isascii() and error.isprintable() for error in errors), errors)
 
 
 class TestScanRepositoryFixtures(unittest.TestCase):

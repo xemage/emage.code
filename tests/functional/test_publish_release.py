@@ -1,9 +1,11 @@
 """Focused tests for release note classification logic."""
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import http.server
 import importlib.util
+import io
 import os
 import re
 import sys
@@ -1050,6 +1052,33 @@ class TestDryRunHardening(unittest.TestCase):
                 self.dry_run.run_dry_run("v1.2.3", Path(tmp) / "work", source)
         self.assertEqual(seen, [True])
         self.assertEqual(dict(os.environ), before)
+
+    def test_an_invalid_byte_in_the_readme_is_refused_not_dropped(self):
+        """T744 (SEC-T741-06): errors="ignore" made `v9.\\xff8.7` read as the marker v9.8.7."""
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            (repo / "README.md").write_bytes(b"Latest release: v9.\xff8.7\n")
+            with self.assertRaisesRegex(self.dry_run.ReadmeNotUtf8Error, r"README\.md .*file offset 19 "):
+                self.dry_run.current_release_tag(repo)
+            (repo / "README.md").write_bytes(b"x" * 100000 + b"\xff")
+            with self.assertRaisesRegex(self.dry_run.ReadmeNotUtf8Error, "file offset 100000 "):
+                self.dry_run.current_release_tag(repo)
+            for newline in (b"\r\n", b"\r"):  # as text mode translated them
+                (repo / "README.md").write_bytes(b"one" + newline + b"Latest release: v9.8.7" + newline)
+                self.assertEqual(self.dry_run.current_release_tag(repo), "v9.8.7")
+
+    def test_main_refuses_the_invalid_readme_with_the_offset_and_no_content(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            (repo / "README.md").write_bytes(b"secret-content\xff\n")
+            out = io.StringIO()
+            real = self.dry_run.current_release_tag
+            with mock.patch.object(self.dry_run, "current_release_tag", lambda: real(repo)), \
+                    mock.patch.object(sys, "argv", ["dry-run"]), contextlib.redirect_stdout(out):
+                self.assertEqual(self.dry_run.main(), 2)
+        self.assertIn("dry run refused: README.md is not valid UTF-8", out.getvalue())
+        self.assertIn("file offset 14 ", out.getvalue())
+        self.assertNotIn("secret-content", out.getvalue())
 
     def test_current_release_tag_reads_the_readme_marker(self):
         with tempfile.TemporaryDirectory() as tmp:

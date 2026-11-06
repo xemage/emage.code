@@ -25,6 +25,7 @@ from pathlib import Path
 from unittest import mock
 
 from tests._helpers.repo import repo_root
+from tests.functional.test_ci_hash_pins import RELEASE_GATE_JOB, RELEASE_GATE_UNSET
 
 SCRIPT = repo_root() / "scripts" / "publish-release.py"
 CI = repo_root() / ".gitlab-ci.yml"
@@ -541,6 +542,9 @@ class TestTheCiJobs(unittest.TestCase):
                     self.assertEqual(len(hits), 1)
                     self.assertIn("k in ('CI_JOB_TOKEN', 'WIKI_TOKEN')", hits[0])
                     self.assertNotIn("--token-env", hits[0])
+                elif name == RELEASE_GATE_JOB:
+                    # the only mention is the line that removes it from the job's shell (SEC-T739-06)
+                    self.assertEqual(hits, [f"    - {RELEASE_GATE_UNSET}"])
                 else:
                     self.assertEqual(hits, [])
 
@@ -549,7 +553,8 @@ class TestTheCiJobs(unittest.TestCase):
             if name == "release":
                 continue
             with self.subTest(job=name):
-                self.assertNotIn("CI_JOB_TOKEN", "\n".join(self.code(job)))
+                code = [ln for ln in self.code(job) if not (name == RELEASE_GATE_JOB and ln == f"    - {RELEASE_GATE_UNSET}")]
+                self.assertNotIn("CI_JOB_TOKEN", "\n".join(code))
                 self.assertNotIn("--token-header", job)
 
     def test_wiki_sync_still_runs_the_wiki_script_with_the_wiki_token(self):

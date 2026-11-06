@@ -22,6 +22,7 @@ T741 (SEC-T739-01): a file the gate reads that is not valid UTF-8 ends the run w
 """
 from __future__ import annotations
 
+import ast
 import contextlib
 import importlib.util
 import io
@@ -130,6 +131,52 @@ GOOD = """# Release v1.2.3
 
 Nothing is pending here and YYYY-MM-DD outside the verdict sections is not checked.
 """
+
+
+# SEC-T741-08: reading a file by any of these goes round read_strict.
+_FORBIDDEN_READ_NAMES = {"open", "getattr", "__import__", "eval", "exec"}
+_FORBIDDEN_READ_MODULES = {"io", "os", "codecs", "fileinput", "mmap", "tempfile", "importlib", "shutil"}
+
+
+def _forbidden_read_nodes(tree: ast.AST) -> list[str]:
+    """What no function of the gate may hold, read_strict included: a lenient route, or a module that offers one."""
+    problems: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Name) and node.id in _FORBIDDEN_READ_NAMES:
+            problems.append(f"line {node.lineno}: {node.id}")
+        elif isinstance(node, ast.Attribute) and node.attr in ("open", "read_text"):
+            problems.append(f"line {node.lineno}: .{node.attr}")
+        elif isinstance(node, ast.Call) and any(keyword.arg == "errors" for keyword in node.keywords):
+            problems.append(f"line {node.lineno}: an errors keyword")
+        elif isinstance(node, (ast.Import, ast.ImportFrom)):
+            names = [alias.name for alias in node.names] if isinstance(node, ast.Import) else [node.module or ""]
+            problems += [f"line {node.lineno}: import {n}" for n in names if n.split(".")[0] in _FORBIDDEN_READ_MODULES]
+    return problems
+
+
+def _read_route_problems(source: str) -> list[str]:
+    """Each way ``source`` reads or decodes a file other than through ``read_strict`` (SEC-T741-08).
+
+    ``read_bytes`` and ``decode`` occur exactly once each, in ``read_strict``, and that decode takes only the codec.
+    """
+    tree = ast.parse(source)
+    problems = _forbidden_read_nodes(tree)
+    strict = [node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef) and node.name == "read_strict"]
+    if len(strict) != 1:
+        return [*problems, "not exactly one read_strict"]
+    inside = {id(node) for node in ast.walk(strict[0])}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Attribute) and node.attr in ("read_bytes", "decode") and id(node) not in inside:
+            problems.append(f"line {node.lineno}: .{node.attr} outside read_strict")
+    inner = [node for node in ast.walk(strict[0]) if isinstance(node, ast.Attribute)]
+    for name in ("read_bytes", "decode"):
+        if sum(node.attr == name for node in inner) != 1:
+            problems.append(f"read_strict does not hold exactly one .{name}")
+    decodes = [node for node in ast.walk(strict[0]) if isinstance(node, ast.Call)
+               and isinstance(node.func, ast.Attribute) and node.func.attr == "decode"]
+    if any(len(call.args) != 1 or call.keywords for call in decodes):
+        problems.append("the decode in read_strict takes more than the codec")
+    return problems
 
 
 class VerdictPlaceholderTests(unittest.TestCase):
@@ -493,7 +540,7 @@ class MigrationPointerTests(_MainRunner):
 
 
 
-UNSAFE_SAMPLES = "\x00\x07\t\x1b\x7f\x85\x9b؜​‎‏  ‪‮⁠⁦⁩﻿"
+UNSAFE_SAMPLES = "\x00\x07\t\x1b\x7f\x85\x9b\u061c\u200b\u200e\u200f\u2028\u2029\u202a\u202e\u2060\u2066\u2069\ufeff"
 
 
 class PointerFormTests(_MainRunner):
@@ -596,12 +643,15 @@ class HtmlBlockAnchorTests(unittest.TestCase):
                 self.assertFalse(self.has_item(f"{previous}\n<span>\n### h\n**M-3. Cursor removed.**"))
                 self.assertFalse(self.has_item(f"{previous}\n<span>\n### h\n### M-3. Cursor removed"))
 
-    def test_a_table_row_is_a_paragraph_line_so_a_tag_line_after_it_hides_nothing(self):
-        """T739: the commonmark preset has no tables. '| a | b |' is a paragraph, and '<span>' cannot interrupt one."""
+    def test_a_table_row_is_a_paragraph_line_and_a_tag_line_after_it_is_live_html(self):
+        """T739: the commonmark preset has no tables. '| a | b |' is a paragraph, and '<span>' cannot interrupt one.
+        So the tag is inline HTML in that paragraph, and since T743's ruling it ends the search."""
         self.assertFalse(self.has_item("| a | b |\n<span>\n**M-3. Cursor removed.**"))  # one paragraph: no lead
-        self.assertTrue(self.has_item("| a | b |\n<span>\n- a\n- **M-3. Cursor removed.**"))
-        self.assertTrue(self.has_item("| a | b |\n<span>\n### h\n**M-3. Cursor removed.**"))
-        self.assertTrue(self.has_item("| a | b |\n<span>\n### h\n### M-3. Cursor removed"))
+        self.assertFalse(self.has_item("| a | b |\n<span>\n- a\n- **M-3. Cursor removed.**"))
+        self.assertFalse(self.has_item("| a | b |\n<span>\n### h\n**M-3. Cursor removed.**"))
+        self.assertFalse(self.has_item("| a | b |\n<span>\n### h\n### M-3. Cursor removed"))
+        self.assertTrue(self.has_item("| a | b |\n- a\n- **M-3. Cursor removed.**"))
+        self.assertTrue(self.has_item("| a | b |\n### M-3. Cursor removed"))
 
     def test_an_anchor_inside_a_multi_line_inline_construct_does_not_count(self):
         """SEC-T731-06: the reader sees no bold lead; the closing part is on the line after the anchor."""
@@ -633,14 +683,11 @@ class HtmlBlockAnchorTests(unittest.TestCase):
 
     def test_an_anchor_outside_an_html_block_still_counts(self):
         for body in (
-            "<details>\n<summary>x</summary>\n</details>\n\n**Migration Guide item M-3. Cursor is no longer supported.**",
-            "<pre>code</pre>\n### M-3. Cursor removed",
             "<!-- note -->\n### M-3. Cursor removed",
             "- a\n- **M-3. Cursor removed.**",
             "1. a\n2. **M-3. Cursor removed.**",
             "### h\n**M-3. Cursor removed.**",
-            "Text with <span>inline</span> HTML.\n\n### M-3. Cursor removed",
-            "<div>\n</div>\n\n```\n<div>\n```\n### M-3. Cursor removed",
+            "```\n<div>\n```\n### M-3. Cursor removed",
         ):
             with self.subTest(body=body[:40]):
                 self.assertTrue(self.has_item(body))
@@ -650,7 +697,8 @@ class HtmlBlockAnchorTests(unittest.TestCase):
         for opener, end in (("<!-->", "-->"), ("<!--->", "-->"), ("<?>", "?>")):
             with self.subTest(opener=opener):
                 self.assertFalse(self.has_item(f'{opener}\n<a title="\n{end}\n**M-3. Cursor removed.**\n">'))
-                self.assertTrue(self.has_item(f"{opener}\n### M-3. Cursor removed"))
+                # SEC-T739-03: a raw block that is not a comment stops the search, even one that closes at once.
+                self.assertIs(self.has_item(f"{opener}\n### M-3. Cursor removed"), opener != "<?>")
 
     def test_other_html_block_ends_are_unchanged_by_the_whole_line_search(self):
         for body in ("<!-- x\n### Cursor\n-->", "<!--\n### Cursor\n-->", "<?php\n### Cursor\n?>"):
@@ -659,13 +707,17 @@ class HtmlBlockAnchorTests(unittest.TestCase):
         for body in (
             "<!-- x\n-->\n### M-3. Cursor removed",
             "<!-- note -->\n### M-3. Cursor removed",
+        ):
+            with self.subTest(closes=body[:20]):
+                self.assertTrue(self.has_item(body))
+        for body in (  # SEC-T739-03: these close too, and they are not comments, so nothing after them counts
             "<?php x ?>\n### M-3. Cursor removed",
             "<pre>code</pre>\n### M-3. Cursor removed",
             "<![CDATA[x]]>\n### M-3. Cursor removed",
             "<!DOCTYPE x>\n### M-3. Cursor removed",
         ):
-            with self.subTest(closes=body[:20]):
-                self.assertTrue(self.has_item(body))
+            with self.subTest(raw=body[:20]):
+                self.assertFalse(self.has_item(body))
 
     def test_a_non_blank_start_line_does_not_end_a_block_of_type_6_or_7(self):
         for line in ("<div>", "  <div>  ", "</div>", "<span>", "<custom-tag data-x='1'/>"):
@@ -692,13 +744,18 @@ class HtmlBlockAnchorTests(unittest.TestCase):
                 self.assertFalse(self.has_item(f"Some text{char}**Migration Guide item M-3. Cursor removed.**"))
         for end in ("\n", "\r\n", "\r"):
             with self.subTest(end=repr(end)):
-                self.assertTrue(self.has_item(f"<div>{end}{end}### M-3. Cursor removed"))
-                self.assertFalse(self.has_item(f"<div>{end}### M-3. Cursor removed"))
+                self.assertTrue(self.has_item(f"Some text{end}{end}**M-3. Cursor removed.**"))
+                self.assertFalse(self.has_item(f"Some text{end}**M-3. Cursor removed.**"))
+                self.assertTrue(self.has_item(f"<!-- x{end}-->{end}### M-3. Cursor removed"))
+                self.assertFalse(self.has_item(f"<!-- x{end}### M-3. Cursor removed{end}-->"))
 
     def test_a_long_tag_line_does_not_slow_the_gate(self):
         import time
         start = time.monotonic()
-        for line in ("<a" + " " * 60000 + "!", "<a" + " b=c" * 20000 + " !", "<a" + " b" * 30000 + "!"):
+        lines = ("<a" + " " * 60000 + "!", "<a" + " b=c" * 16000 + " !", "<a" + " b" * 30000 + "!",
+                 "<a" + ' x="y"' * 10900 + "!")
+        for line in lines:
+            self.assertLessEqual(len(line), self.mod.MAX_LINE_CHARS)  # past the limit nothing is parsed (TD-T739-01)
             self.assertFalse(self.has_item(line))
         # Catches a hang, not a slow runner: this took 1.23 s under load in CI (pipeline 3031259271), about 0.2 s locally.
         self.assertLess(time.monotonic() - start, 5.0)
@@ -835,9 +892,7 @@ class ParserAnchorTests(unittest.TestCase):
         """The review's <!--> and <?> shapes (SEC-T731-09(a)): the true results stay, and the hidden one stays hidden."""
         self._assert_all(True, {
             "<!-->": _section("<!-->\n### M-3. Cursor removed"),
-            "<?>": _section("<?>\n### M-3. Cursor removed"),
             "<!--> and a lead": _section("<!-->\n\n**M-3. Cursor removed.**"),
-            "<?> and a lead": _section("<?>\n\n**M-3. Cursor removed.**"),
             "SEC-T738-03's false FAIL": _section("x <!-->\n\n### M-3. Cursor removed\n\n-->"),
             "the same with <!--->": _section("x <!--->\n\n### M-3. Cursor removed\n\n-->"),
             "the same in a list item": _section("- x <!-->\n\n### M-3. Cursor removed\n\n-->"),
@@ -846,7 +901,161 @@ class ParserAnchorTests(unittest.TestCase):
         self._assert_all(False, {
             "<!-->, hidden": _section('<!-->\n<a title="\n-->\n**M-3. Cursor removed.**\n">'),
             "<?>, hidden": _section('<?>\n<a title="\n?>\n**M-3. Cursor removed.**\n">'),
+            "<?>, SEC-T739-03": _section("<?>\n### M-3. Cursor removed"),
+            "<?> and a lead, SEC-T739-03": _section("<?>\n\n**M-3. Cursor removed.**"),
         })
+
+    def test_an_anchor_holding_inline_html_does_not_count(self):
+        """SEC-T739-02. Both sides of the word, and a tag inside a link, which is in the same flat token list."""
+        self._assert_all(False, {
+            "the finding, a lead": _section("**<span hidden>Cursor</span>**"),
+            "the finding, a heading": _section('### <span style="display:none">Cursor</span>'),
+            "in a list": _section("- **<span hidden>Cursor</span>**"),
+            "tag after the word": _section("**Cursor <span hidden>x</span>**"),
+            "tag before the word": _section("**<span hidden>x</span> Cursor**"),
+            "a closing tag": _section("### Cursor </span>"),
+            "opened inside, closed outside": _section("**<span hidden>Cursor**</span>"),
+            "in a link": _section("**[<span hidden>Cursor</span>](u)**"),
+            "nested strong": _section("**a **<b>**b** Cursor**"),
+            "a void tag": _section("**<br>Cursor**"),
+            "a processing instruction": _section("**<?x y?> Cursor**"),
+            "a declaration": _section("**<!X y> Cursor**"),
+            "a CDATA section": _section("**<![CDATA[x]]> Cursor**"),
+            "a comment an HTML parser ends early": _section("**Cursor <!-- x --!> <b> y -->**"),
+        })
+
+    def test_what_is_not_inline_html_stays_allowed(self):
+        self._assert_all(True, {
+            "a comment before the word": _section("**<!-- x --> Cursor**"),
+            "a comment in a heading": _section("### Cursor <!-- y -->"),
+            "a code span in a lead": _section("**`<span hidden>` Cursor**"),
+            "a code span in a heading": _section("### `<br>` Cursor"),
+            "a code span holding the word": _section("**`Cursor`**"),
+            "alt text with a tag": _section("**![<span>x</span>](u) Cursor**"),
+            "alt text with a tag, heading": _section("### ![<b>x</b>](u) Cursor"),
+            "a link": _section("**[Cursor](u)**"),
+            "a link title with a tag": _section('**[x](u "<span hidden>") Cursor**'),
+            "an autolink": _section("**<https://example.com> Cursor**"),
+            "an escaped tag": _section("**\\<span hidden> Cursor**"),
+            "an entity": _section("**&lt;span hidden&gt; Cursor**"),
+            "a tag after the span": _section("**Cursor** <span>x</span>"),
+        })
+
+    def test_an_anchor_after_a_raw_html_block_does_not_count(self):
+        """SEC-T739-03, fail closed: no tag balancing, so a block that closes itself stops the search as well."""
+        self._assert_all(False, {
+            "the finding": _section("<div hidden>\n\n### M-3. Cursor removed"),
+            "details": _section("<details>\n\n**M-3. Cursor removed.**"),
+            "closed": _section("<details>\n<summary>x</summary>\n</details>\n\n**M-3. Cursor removed.**"),
+            "a closing tag": _section("</details>\n\n### M-3. Cursor removed"),
+            "a comment first": _section("<!-- x -->\n<div hidden>\n\n### M-3. Cursor removed"),
+            "a tag after a comment": _section("<!-- x --> <div hidden>\n\n### M-3. Cursor removed"),
+            "a tag after the short comment": _section("<!--> <div hidden>\n\n### M-3. Cursor removed"),
+            "a tag in a short comment": _section("<!--><div hidden>-->\n\n### M-3. Cursor removed"),
+            "a tag after --!>": _section("<!-- x --!> <div hidden> -->\n\n### M-3. Cursor removed"),
+            "in a blockquote": _section("> <div hidden>\n\n### M-3. Cursor removed"),
+            "in a list": _section("- <div hidden>\n\n**M-3. Cursor removed.**"),
+        })
+
+    def test_a_comment_or_code_or_a_later_block_does_not_trip_the_raw_block_rule(self):
+        self._assert_all(True, {
+            "a comment": _section("<!-- x -->\n\n### M-3. Cursor removed"),
+            "over lines": _section("<!-- x\ny\n-->\n\n**M-3. Cursor removed.**"),
+            "two on a line": _section("<!-- a --><!-- b -->\n\n### M-3. Cursor removed"),
+            "empty": _section("<!---->\n\n### M-3. Cursor removed"),
+            "short": _section("<!-->\n\n### M-3. Cursor removed"),
+            "short, a dash more": _section("<!--->\n\n### M-3. Cursor removed"),
+            "a block after the anchor": _section("### M-3. Cursor removed\n\n<div hidden>"),
+            "in a fence": _section("```\n<div hidden>\n```\n\n### M-3. Cursor removed"),
+            "indented code": _section("    <div hidden>\n\n### M-3. Cursor removed"),
+            "a code span": _section("`<div hidden>`\n\n### M-3. Cursor removed"),
+        })
+
+    def test_holds_only_comments(self):
+        for html in ("", " \n", "<!-- x -->", "<!---->", "<!-->", "<!--->", "<!-- a --> <!-- b -->\n", "<!-- <!-- -->"):
+            with self.subTest(html):
+                self.assertTrue(self.mod.holds_only_comments(html))
+        for html in ("<b>", "x", "<!-- x", "<!-- x --> y", "y <!-- x -->", "<!-- x --!>", "<!-- x --!> y -->",
+                     "<!-->x-->", "<!--->x-->", "<!-- x --><b>", "<?x?>", "<!X y>", "<![CDATA[x]]>"):
+            with self.subTest(html):
+                self.assertFalse(self.mod.holds_only_comments(html))
+
+    def test_a_long_comment_does_not_slow_the_check(self):
+        import time
+        start = time.monotonic()
+        self.assertTrue(self.mod.holds_only_comments("<!--" + "-" * 65000 + " -->"))
+        self.assertFalse(self.mod.holds_only_comments("<!--" + "- " * 32000))
+        self.assertFalse(self.mod.holds_only_comments("<!-- -->" * 8000 + "<b>"))
+        self.assertLess(time.monotonic() - start, 5.0)  # catches a hang, not a slow runner
+
+    def test_live_html_anywhere_before_the_anchor_ends_the_search(self):
+        """The orchestrator's ruling on T743: one rule from the start of the document, not a list of dangerous places."""
+        anchor = "### M-3. Cursor removed"
+        self._assert_all(False, {
+            "a paragraph in the section": _section(f"text <div hidden>\n\n{anchor}"),
+            "a raw block above the section": f"<div hidden>\n\n{_section(anchor)}",
+            "the section's own title": f"# R\n\n## <span hidden>Migration Guide</span>\n\n{anchor}\n",
+            "a tag after the title": f"# R\n\n## Migration Guide <span>x</span>\n\n{anchor}\n",
+            "a paragraph above the section": f"text <div hidden>\n\n{_section(anchor)}",
+            "a list item above the section": f"- text <div hidden>\n\n{_section(anchor)}",
+            "a blockquote above the section": f"> text <div hidden>\n\n{_section(anchor)}",
+            "a raw block in a list above": f"- <div hidden>\n\n{_section(anchor)}",
+            "the level 1 heading above": f"# <b>R</b>\n\n## Migration Guide\n\n{anchor}\n",
+            "a level 2 heading above": f"# R\n\n## <b>Other</b>\n\n## Migration Guide\n\n{anchor}\n",
+            "a level 3 heading above": f"### <b>x</b>\n\n{_section(anchor)}",
+            "a list item in the section": _section(f"- text <b>x</b>\n\n{anchor}"),
+            "a blockquote in the section": _section(f"> text <b>x</b>\n\n{anchor}"),
+            "a closed tag in the section": _section(f"Text with <span>inline</span> HTML.\n\n{anchor}"),
+            "before a lead": _section("text <b>x</b>\n\n**M-3. Cursor removed.**"),
+        })
+
+    def test_html_after_the_anchor_or_only_comments_or_not_html_stays_true(self):
+        anchor = "### M-3. Cursor removed"
+        self._assert_all(True, {
+            "a block after": _section(f"{anchor}\n\n<div hidden>"),
+            "inline after": _section(f"{anchor}\n\ntext <div hidden>"),
+            "in the lead's paragraph, after its span": _section("**M-3. Cursor removed.** <div hidden>"),
+            "after the section": f"{_section(anchor)}\n## Other\n\n<div hidden>\n",
+            "a comment in the title": f"# R\n\n## Migration Guide <!-- x -->\n\n{anchor}\n",
+            "a comment block above": f"<!-- x -->\n\n{_section(anchor)}",
+            "a comment inline above": f"text <!-- x -->\n\n{_section(anchor)}",
+            "a comment inline in a list above": f"- text <!-- x -->\n\n{_section(anchor)}",
+            "a code span above": f"`<div hidden>`\n\n{_section(anchor)}",
+            "a fence above": f"```\n<div hidden>\n```\n\n{_section(anchor)}",
+            "alt text above": f"![<div hidden>](u)\n\n{_section(anchor)}",
+            "an autolink above": f"<https://example.com>\n\n{_section(anchor)}",
+        })
+
+    def test_an_anchor_above_the_section_does_not_count(self):
+        """Control: the walk starts at the document's start, and an anchor only counts inside the section."""
+        self.assertFalse(self.mod.has_cursor_migration_item("### M-3. Cursor removed\n\n" + _section("No item.")))
+        self.assertFalse(self.mod.has_cursor_migration_item("**M-3. Cursor removed.**\n\n" + _section("No item.")))
+        self.assertFalse(self.mod.has_cursor_migration_item("# R\n\nNo section, **Cursor**.\n\n### Cursor\n"))
+
+    def test_nesting_past_the_limit_fails_closed(self):
+        """SEC-T739-09. The word '20' in --help is this limit; a parser release that changes it fails here."""
+        self.assertEqual(self.mod.MarkdownIt("commonmark").options.maxNesting, 20)
+        self._assert_all(False, {"a lead": _section("- " * 25 + "**M-3. Cursor removed.**"),
+                                 "a heading": _section("- " * 25 + "### M-3. Cursor removed"),
+                                 "a blockquote": _section("> " * 25 + "**M-3. Cursor removed.**")})
+        self.assertTrue(self.mod.has_cursor_migration_item(_section("- " * 9 + "**M-3. Cursor removed.**")))
+        self.assertFalse(self.mod.has_cursor_migration_item(_section("- " * 10 + "**M-3. Cursor removed.**")))
+        # The parser skips the rest of the document there, so an anchor after it is gone too. A nest above the limit
+        # fails closed; one below it hides nothing.
+        self.assertTrue(self.mod.has_cursor_migration_item(_section("- " * 9 + "x\n\n### M-3. Cursor removed")))
+        self.assertFalse(self.mod.has_cursor_migration_item(_section("- " * 10 + "x\n\n### M-3. Cursor removed")))
+
+    def test_an_anchor_in_a_reference_definition_title_does_not_count(self):
+        """SEC-T739-09: a definition renders nothing."""
+        self._assert_all(False, {"a lead": _section('[x]: /u "**Cursor**"'), "a heading": _section('[x]: /u "### Cursor"'),
+                                 "on the next line": _section('[x]: /u\n"**Cursor**"')})
+
+    def test_lazy_continuation(self):
+        """SEC-T739-09: a lazy line joins the paragraph above it, so it opens nothing, and a span may run through it."""
+        self._assert_all(False, {"a blockquote": _section("> text\n**M-3. Cursor removed.**"),
+                                 "a list item": _section("- text\n**M-3. Cursor removed.**"),
+                                 "a span lazily out of a blockquote": _section("> **M-3.\nCursor removed.**")})
+        self.assertTrue(self.mod.has_cursor_migration_item(_section("- **M-3.\nCursor removed.**")))
 
     def test_the_real_v9_document(self):
         text = (repo_root() / "docs" / "releases" / "v9.0.0.md").read_text(encoding="utf-8")
@@ -928,14 +1137,39 @@ class HelpTextTests(unittest.TestCase):
 
     def test_the_help_states_what_stays_open(self):
         text = self._collapsed_help()
-        for phrase in ("markdown-it-py", "GitLab's renderer may differ", "front matter", "(unverified)",
-                       "<details>", "<div hidden>", "not modelled", "do not defend against a crafted script"):
+        for phrase in ("markdown-it-py", "GitLab's renderer may differ", "(unverified, SEC-T716-03)",
+                       "What stays open.", "do not defend against a crafted script",
+                       "they catch an omission on one line"):
             with self.subTest(phrase):
                 self.assertIn(phrase, text)
 
+    def test_the_help_states_each_rule_of_batch_s(self):
+        text = self._collapsed_help()
+        for phrase in (
+            "(SEC-T739-02, SEC-T739-03)", "the gate does not balance tags, so it refuses rather than models",
+            "from its start", "that is not only comments", "'<details>'", "'text <div hidden>'",
+            "above the section, in its title or in the section", "at any depth", "even if the tag closes itself",
+            "An anchor above it still counts", "HTML after an anchor does not matter",
+            "An anchor that holds a tag does not count", "A comment is allowed",
+            "a tag in a code span is code, not HTML", "an image's alt text",
+            "(SEC-T739-09)", "20 nested levels (maxNesting)", "a list item counts as two",
+            "skips the rest of the document", "the gate fails closed",
+            "(SEC-T739-04)", "'---', '+++' or ';;;'", "front matter", "in the Release description too (unverified)",
+            "(TD-T739-01)", "longer than 65536 characters", "no content", "before any parsing",
+            "(SEC-T738-02)", "must hold no CR, CRLF included", "names the line",
+            "(SEC-T741-07)", "checked for existence only", "the gate does not read it",
+        ):
+            with self.subTest(phrase):
+                self.assertIn(phrase, text)
+
+    def test_the_limit_in_the_help_is_the_limit_in_the_code(self):
+        self.assertIn(f"longer than {self.mod.MAX_LINE_CHARS} characters", self._collapsed_help())
+
     def test_the_old_claims_are_gone(self):
         text = self._collapsed_help()
-        for phrase in ("are ignored", "the line before it is blank", "at the start of a line", "up to the next '## '"):
+        for phrase in ("are ignored", "the line before it is blank", "at the start of a line", "up to the next '## '",
+                       "(SEC-T738-04)", "counts because CommonMark parses it as live", "inline HTML never count",
+                       "are not modelled", "Raw HTML above the section", "inline HTML in an earlier paragraph"):
             with self.subTest(phrase):
                 self.assertNotIn(phrase, text)
 
@@ -943,7 +1177,7 @@ class HelpTextTests(unittest.TestCase):
 class LineBreakCharacterTests(_MainRunner):
     """T731 (SEC-T731-02 follow-up), T738 (SEC-T731-07): a checked file holding one of these line separators fails."""
 
-    CHARS = ("\v", "\f", "\x1c", "\x1d", "\x1e", "\x85", " ", " ")
+    CHARS = ("\v", "\f", "\x1c", "\x1d", "\x1e", "\x85", "\u2028", "\u2029")
 
     def _errors(self, relative: str, text: str) -> list[str]:
         with tempfile.TemporaryDirectory() as tmp:
@@ -988,7 +1222,7 @@ class LineBreakCharacterTests(_MainRunner):
                 self.assertNotIn(char, errors[0])
 
     def test_a_marker_file_with_the_character_fails(self):
-        errors = self._errors("docs/wiki/home.md", "# Home\n\nLatest release: v9.0.0 \n")
+        errors = self._errors("docs/wiki/home.md", "# Home\n\nLatest release: v9.0.0\u2028\n")
         self.assertEqual(len(errors), 1, errors)
         self.assertTrue(errors[0].startswith("docs/wiki/home.md:3 holds U+2028"), errors[0])
 
@@ -1237,7 +1471,7 @@ class StrictReadTests(_MainRunner):
     def test_newlines_are_read_as_text_mode_reads_them(self):
         """Control: read_text without an errors argument, on CRLF, CR and mixed ends, one across the 8192 boundary."""
         samples = (b"a\r\nb\rc\nd", b"\r", b"\r\n", b"\n\r", b"\r\r\n\n", b"x" * 8191 + b"\r\ny", b"x" * 8192 + b"\ry",
-                   b"\xef\xbb\xbfa\r\nb\r", "é\r\n \r".encode("utf-8"), b"")
+                   b"\xef\xbb\xbfa\r\nb\r", "é\r\n\u2028\r".encode("utf-8"), b"")
         for raw in samples:
             with self.subTest(raw[:20]), tempfile.TemporaryDirectory() as tmp:
                 path = Path(tmp) / "f"
@@ -1248,8 +1482,7 @@ class StrictReadTests(_MainRunner):
 
     def test_a_tree_with_crlf_still_passes(self):
         """Control: only the invalid bytes are refused. A valid file with CRLF ends passes as it did."""
-        crlf = {self.DOC: RELEASE_DOC.replace(b"\n", b"\r\n"),
-                self.mod.INSTALL_SH: b"#!/bin/sh\r\necho 'see the Cursor item in docs/releases/v9.0.0.md'\r\n"}
+        crlf = {self.DOC: RELEASE_DOC.replace(b"\n", b"\r\n")}  # install.sh keeps LF: SEC-T738-02 refuses a CR in it
         for relative in self.mod.MARKER_FILES:
             raw = (repo_root() / relative).read_bytes() + self.MARKER_LINE
             crlf[relative] = raw.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")
@@ -1257,15 +1490,45 @@ class StrictReadTests(_MainRunner):
         self.assertEqual(code, 0, output)
         self.assertEqual(_error_lines(output)[0], "release-docs-verify: all documentation checks passed")
 
-    def test_a_cr_in_install_sh_still_splits_its_line(self):
-        """SEC-T738-02 stays open: this fix neither closes nor widens it. Fixing that id changes this test."""
+    def test_a_cr_in_install_sh_is_refused_and_names_the_line(self):
+        """SEC-T738-02, flipped from test_a_cr_in_install_sh_still_splits_its_line: this shape used to exit 0."""
         document = RELEASE_DOC.replace(b"### M-3. Cursor removed\n", b"No item.\n")
-        install = b"#!/bin/sh\necho 'docs/releases/v9.0.0.md\rCursor'\n"
-        code, output = self._main({self.DOC: document, self.mod.INSTALL_SH: install})
-        self.assertEqual(code, 0, output)
-        code, output = self._main({self.DOC: document, self.mod.INSTALL_SH: install.replace(b"\r", b" ")})
+        for name, install, line in (
+            ("alone", b"#!/bin/sh\necho 'docs/releases/v9.0.0.md\rCursor'\n", 2),
+            ("first line", b"\r#!/bin/sh\n", 1),
+            ("CRLF", b"#!/bin/sh\r\necho 'the Cursor item in docs/releases/v9.0.0.md'\r\n", 1),
+            ("last byte", b"#!/bin/sh\n\n\r", 3),
+        ):
+            with self.subTest(name):
+                code, output = self._main({self.DOC: document, self.mod.INSTALL_SH: install})
+                self.assertEqual(code, 1, output)
+                self.assertEqual(_error_lines(output), [
+                    f"release-docs-verify: {self.mod.INSTALL_SH}:{line} holds a CR (U+000D): a shell does not end a line "
+                    "there, and the gate's per-line rules would, so a pointer could be split from the word 'Cursor'; "
+                    "use LF line ends only (SEC-T738-02)"])
+                self.assertNotIn("echo", output)
+
+    def test_the_same_install_sh_without_the_cr_fails_for_the_missing_item(self):
+        """Control for the test above: the crafted tree holds a real omission, which the CR used to hide."""
+        document = RELEASE_DOC.replace(b"### M-3. Cursor removed\n", b"No item.\n")
+        code, output = self._main({self.DOC: document, self.mod.INSTALL_SH: b"#!/bin/sh\necho 'docs/releases/v9.0.0.md Cursor'\n"})
         self.assertEqual(code, 1, output)
         self.assertIn("lacks its Cursor migration item", output)
+
+    def test_invalid_bytes_are_named_before_a_cr(self):
+        code, output = self._main({self.mod.INSTALL_SH: b"a\rb\xff\n"})
+        self.assertEqual(code, 1, output)
+        self.assertEqual(_error_lines(output), [f"release-docs-verify: {_refusal(self.mod.INSTALL_SH, 3)}"])
+
+    def test_keep_cr_is_the_only_way_a_cr_comes_back(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "f"
+            path.write_bytes(b"a\r\nb\rc\n")
+            self.assertEqual(self.mod.read_strict(path), "a\nb\nc\n")
+            self.assertEqual(self.mod.read_strict(path, keep_cr=True), "a\r\nb\rc\n")
+
+    def test_the_install_sh_of_this_tree_holds_no_cr(self):
+        self.assertNotIn(b"\r", (repo_root() / self.mod.INSTALL_SH).read_bytes())
 
     def test_every_file_the_gate_reads_on_this_tree_is_valid_utf8(self):
         reads = {*self.mod.REQUIRED_FILES, *map(Path, self.mod.install_sh_pointers(self.mod.read_strict(
@@ -1276,10 +1539,53 @@ class StrictReadTests(_MainRunner):
                                  (repo_root() / relative).read_text(encoding="utf-8"))
 
     def test_the_script_has_one_way_to_read_a_file(self):
+        """SEC-T741-08: an AST walk, so a comment or a docstring cannot trip it and quote style cannot hide a call."""
         source = (repo_root() / "scripts" / "verify-release-docs.py").read_text(encoding="utf-8")
-        self.assertNotIn('errors="ignore"', source)
-        self.assertNotIn(".read_text(", source)
-        self.assertEqual(source.count(".read_bytes("), 1)
+        self.assertEqual(_read_route_problems(source), [])
+
+    def test_the_walk_catches_each_way_around_it(self):
+        strict = 'def read_strict(path):\n    raw = path.read_bytes()\n    return raw.decode("utf-8")\n'
+        self.assertEqual(_read_route_problems(strict), [])
+        for name, snippet in {
+            "open": 'def f(path):\n    return open(path, errors="replace").read()\n',
+            "open, single quotes": "def f(path):\n    return open(path, errors='ignore').read()\n",
+            "open, kept as a name": "reader = open\n",
+            "a method named open": "def f(path):\n    return path.open().read()\n",
+            "read_text": "def f(path):\n    return path.read_text()\n",
+            "read_text, kept as a name": "def f(path):\n    reader = path.read_text\n",
+            "read_bytes elsewhere": "def f(path):\n    return path.read_bytes()\n",
+            "decode elsewhere": 'def f(raw):\n    return raw.decode("utf-8", "ignore")\n',
+            "decode at module level": 'value = b"x".decode("utf-8", "ignore")\n',
+            "an errors keyword anywhere": 'def f(raw):\n    return str(raw, errors="ignore")\n',
+            "import io": "import io\n",
+            "from codecs": "from codecs import open as o\n",
+            "getattr": 'def f(path):\n    return getattr(path, "read_text")()\n',
+        }.items():
+            with self.subTest(name):
+                self.assertNotEqual(_read_route_problems(strict + snippet), [])
+        for name, body in {
+            "lenient decode in read_strict": 'raw = path.read_bytes()\n    return raw.decode("utf-8", "ignore")\n',
+            "a keyword in read_strict": 'raw = path.read_bytes()\n    return raw.decode("utf-8", errors="replace")\n',
+            "two reads in read_strict": 'raw = path.read_bytes()\n    path.read_bytes()\n    return raw.decode("utf-8")\n',
+            "no read in read_strict": 'return path.decode("utf-8")\n',
+        }.items():
+            with self.subTest(name):
+                self.assertNotEqual(_read_route_problems(f"def read_strict(path):\n    {body}"), [])
+
+    def test_a_comment_or_a_string_does_not_trip_the_walk(self):
+        source = ('def read_strict(path):\n    """path.read_text() and open(path)."""\n'
+                  '    raw = path.read_bytes()  # open(path, errors="ignore")\n    return raw.decode("utf-8")\n')
+        self.assertEqual(_read_route_problems(source), [])
+
+    def test_the_parser_has_one_call_site(self):
+        """TD-T739-01: no route to the parser goes round the long line check."""
+        tree = ast.parse((repo_root() / "scripts" / "verify-release-docs.py").read_text(encoding="utf-8"))
+        calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call)
+                 and isinstance(node.func, ast.Name) and node.func.id == "MarkdownIt"]
+        self.assertEqual(len(calls), 1)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef) and any(call in ast.walk(node) for call in calls):
+                self.assertEqual(node.name, "has_cursor_migration_item")
 
     def test_the_help_and_the_docstring_say_so(self):
         for name, text in (("--help", self.mod.MIGRATION_POINTER_HELP), ("docstring", self.mod.__doc__)):
@@ -1289,6 +1595,164 @@ class StrictReadTests(_MainRunner):
                            "scripts/check-version-consistency.py", "does not cover them"):
                 with self.subTest(name=name, phrase=phrase):
                     self.assertIn(phrase, collapsed)
+
+
+class DocumentRefusalTests(_MainRunner):
+    """SEC-T739-04 (front matter) and TD-T739-01 (a long line): the document is refused, by path, on both routes."""
+
+    TAG = "v9.0.0"
+    DOC = Path("docs/releases/v9.0.0.md")
+    INSTALL = "#!/bin/sh\necho 'see the Cursor item in docs/releases/v9.0.0.md'\n"
+    GOOD_DOC = "# Release v9.0.0\n\n## Migration Guide\n\n### M-3. Cursor removed\n"
+
+    def _routes(self, document: str) -> dict[str, list[str]]:
+        """The errors of ``document`` as the pointed document and as the tag's own document."""
+        require_parser(self)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "scripts").mkdir()
+            (root / self.mod.INSTALL_SH).write_text(self.INSTALL, encoding="utf-8")
+            (root / "docs" / "releases").mkdir(parents=True)
+            (root / self.DOC).write_bytes(document.encode("utf-8"))
+            pointed: list[str] = []
+            own: list[str] = []
+            with mock.patch.object(self.mod, "ROOT", root):
+                self.mod.check_migration_pointers(self.TAG, pointed)
+                self.mod.check_release_brief(self.TAG, self.DOC, own)
+            return {"pointed": pointed, "own": own}
+
+    def _assert_refused(self, document: str, wanted: str) -> None:
+        for route, errors in self._routes(document).items():
+            with self.subTest(route):
+                self.assertEqual(errors, [wanted])
+
+    def test_each_front_matter_opening_is_refused(self):
+        wanted = (f"{self.DOC} opens with a front matter delimiter ('---', '+++' or ';;;'); GitLab may read what follows "
+                  "as front matter and hide it, so start the document with '# Release' (SEC-T739-04)")
+        for opening in ("---\n", "+++\n", ";;;\n", "---", "--- \n", "--- yaml\n", "---yaml\n", "----\n", "\ufeff---\n",
+                        "\n\n---\n", "  \n---\n", "\ufeff\n---\n", "# coding: utf-8\n---\n", "\ufeffcoding: x\n\n+++\n"):
+            with self.subTest(opening):
+                self._assert_refused(f"{opening}\n{self.GOOD_DOC}", wanted)
+
+    def test_crlf_and_cr_are_read_as_lf_before_the_check(self):
+        for opening in ("---\r\n", "---\r", "\r\n;;;\r\n"):
+            with self.subTest(opening):
+                self.assertIn("front matter delimiter", self._routes(f"{opening}{self.GOOD_DOC}")["pointed"][0])
+
+    def test_a_delimiter_elsewhere_is_not_refused(self):
+        for document in (f"{self.GOOD_DOC}\n---\n", "# Release\n---\n", "  ---\n", "-- x\n", "+ a\n", "; a\n", "\ufeff# R\n"):
+            with self.subTest(document):
+                self.assertIsNone(self.mod.document_refusal(self.DOC, document))
+
+    def test_a_line_over_the_limit_is_refused_by_path_and_line_with_no_content(self):
+        limit = self.mod.MAX_LINE_CHARS
+        document = f"{self.GOOD_DOC}\nSECRETWORD{'x' * limit}\n"
+        self._assert_refused(document, (
+            f"{self.DOC}:7 is longer than {limit} characters; the gate refuses it before parsing, "
+            "because parsing time grows worse than linearly with such a line (TD-T739-01)"))
+
+    def test_the_limit_is_exact_and_counts_characters(self):
+        limit = self.mod.MAX_LINE_CHARS
+        self.assertIsNone(self.mod.long_line_number("x" * limit))
+        self.assertIsNone(self.mod.long_line_number("\U0001F600" * limit))
+        self.assertEqual(self.mod.long_line_number("x" * (limit + 1)), 1)
+        self.assertEqual(self.mod.long_line_number("a\n\n" + "x" * (limit + 1) + "\n" + "y" * (limit + 1)), 3)
+        self.assertEqual(limit, 65536)
+
+    def test_the_long_line_is_refused_before_the_parser_runs(self):
+        document = f"{self.GOOD_DOC}\n{'x' * (self.mod.MAX_LINE_CHARS + 1)}\n"
+        with mock.patch.object(self.mod, "MarkdownIt", side_effect=AssertionError("the parser ran")):
+            self.assertIs(self.mod.has_cursor_migration_item(document), False)
+            self.assertIn("is longer than", self._routes(document)["pointed"][0])
+
+    def test_a_document_at_the_limit_is_parsed(self):
+        document = f"{self.GOOD_DOC}\n{'x' * self.mod.MAX_LINE_CHARS}\n"
+        self.assertEqual(self._routes(document)["pointed"], [])
+        self.assertTrue(self.mod.has_cursor_migration_item(document))
+
+    def test_the_gate_as_a_whole_refuses_with_one_line(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for relative in self.mod.REQUIRED_FILES:
+                (root / relative).parent.mkdir(parents=True, exist_ok=True)
+                (root / relative).write_bytes((repo_root() / relative).read_bytes())
+            (root / self.mod.INSTALL_SH).write_text(self.INSTALL, encoding="utf-8")
+            (root / self.DOC).write_text(f"---\n{self.GOOD_DOC}", encoding="utf-8")
+            with mock.patch.object(self.mod, "ROOT", root):
+                code, output = self._run_main(self.TAG)
+        self.assertEqual(code, 1, output)
+        self.assertEqual(len(_error_lines(output)), 1, output)
+        self.assertIn("(SEC-T739-04)", output)
+
+    def test_a_document_on_a_line_without_cursor_is_not_read(self):
+        """SEC-T741-07: existence only. Neither its bytes nor these rules reach it, as --help says."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "scripts").mkdir()
+            (root / self.mod.INSTALL_SH).write_text("#!/bin/sh\necho 'docs/releases/v9.0.0.md'\n", encoding="utf-8")
+            (root / "docs" / "releases").mkdir(parents=True)
+            (root / self.DOC).write_bytes(b"---\n\xff\n" + b"x" * (self.mod.MAX_LINE_CHARS + 1))
+            errors: list[str] = []
+            with mock.patch.object(self.mod, "ROOT", root):
+                self.mod.check_migration_pointers(self.TAG, errors)
+        self.assertEqual(errors, [])
+
+    def test_no_release_document_of_this_tree_is_refused(self):
+        for path in sorted((repo_root() / "docs" / "releases").glob("v*.md")):
+            with self.subTest(path.name):
+                self.assertIsNone(self.mod.document_refusal(path, self.mod.read_strict(path)))
+
+
+class AnchorWordingTests(unittest.TestCase):
+    """SEC-T739-08: the words a release author reads match the parser, and the gate's commands name the install."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load()
+
+    def test_the_template_and_the_error_say_paragraph(self):
+        template = " ".join((repo_root() / "docs/releases/_template.md").read_text(encoding="utf-8").split())
+        script = " ".join((repo_root() / "scripts/verify-release-docs.py").read_text(encoding="utf-8").split())
+        for name, text in (("template", template), ("script", script)):
+            with self.subTest(name):
+                self.assertNotIn("lead line", text)
+                self.assertNotIn("a line that starts with a bold lead", text)
+        self.assertIn("a paragraph that opens with a `**` span holding the word, optionally in a list", template)
+        self.assertIn("a paragraph that opens with a '**' span holding the word, optionally in a", script)
+
+    def test_the_error_says_it_too(self):
+        require_parser(self)
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "v9.md").write_text("# R\n", encoding="utf-8")
+            with mock.patch.object(self.mod, "ROOT", Path(tmp)):
+                problem = self.mod.cursor_item_problem("v9.md")
+        self.assertIn("a paragraph that opens with a '**' span holding the word, optionally in a list", problem)
+        self.assertIn("with no HTML other than comments in it or anywhere above it in the document", problem)
+
+    def test_contributing_points_each_gate_command_to_the_install(self):
+        text = " ".join((repo_root() / "CONTRIBUTING.md").read_text(encoding="utf-8").split())
+        self.assertIn("Then run step 4 again, in the virtual environment that holds step 4's install of `markdown-it-py`:", text)
+        self.assertIn("Install `markdown-it-py` as in step 4, then run `python3 scripts/verify-release-docs.py --tag vX.Y.Z-rc.N`", text)
+
+
+class RawSeparatorTests(unittest.TestCase):
+    """SEC-T738-06: this file writes U+2028 and U+2029 as escapes, and the samples still hold them."""
+
+    def test_this_file_holds_neither_character(self):
+        raw = Path(__file__).read_bytes()
+        self.assertNotIn(b"\xe2\x80\xa8", raw)
+        self.assertNotIn(b"\xe2\x80\xa9", raw)
+
+    def test_the_samples_still_hold_them(self):
+        self.assertEqual(LineBreakCharacterTests.CHARS[-2:], (chr(0x2028), chr(0x2029)))
+        for code in (0x2028, 0x2029, 0x061c, 0x200b, 0x202e, 0x2066, 0xfeff):
+            with self.subTest(hex(code)):
+                self.assertIn(chr(code), UNSAFE_SAMPLES)
+
+    def test_each_sample_line_of_the_file_is_ascii(self):
+        for line in Path(__file__).read_text(encoding="utf-8").splitlines():
+            if line.startswith("UNSAFE_SAMPLES = ") or line.lstrip().startswith("CHARS = "):
+                self.assertTrue(line.isascii(), line[:40])
 
 
 class PrintableOutputTests(_MainRunner):
