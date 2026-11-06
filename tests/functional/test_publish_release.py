@@ -15,6 +15,7 @@ from pathlib import Path
 from unittest import mock
 
 from tests._helpers.repo import repo_root
+from tests.functional.test_ci_hash_pins import ci_images, image_pin_problems
 
 
 def _load_publish_release_module():
@@ -1081,15 +1082,13 @@ class TestCiSupplyChainPins(unittest.TestCase):
         cls.ci = (repo_root() / ".gitlab-ci.yml").read_text(encoding="utf-8")
 
     def test_every_image_has_a_sha256_digest(self):
-        images = re.findall(r"^\s*image:\s*(\S+)\s*$", self.ci, re.M)
-        self.assertGreaterEqual(len(images), 8)
-        for image in images:
-            with self.subTest(image=image):
-                self.assertRegex(image, r"^[a-z0-9./-]+:[A-Za-z0-9._-]+@sha256:[0-9a-f]{64}$")
+        """T741 (SEC-T741-04): the parsed values, so `image: x # comment` and the mapping forms are not skipped."""
+        self.assertGreaterEqual(len(ci_images(self.ci)), 8)
+        self.assertEqual(image_pin_problems(self.ci), [])
 
     def test_the_same_tag_is_pinned_to_the_same_digest_everywhere(self):
         pairs = {}
-        for image in re.findall(r"^\s*image:\s*(\S+)\s*$", self.ci, re.M):
+        for _, image in ci_images(self.ci):
             name, digest = image.split("@")
             self.assertEqual(pairs.setdefault(name, digest), digest, name)
 
