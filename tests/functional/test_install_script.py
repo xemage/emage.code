@@ -1656,5 +1656,29 @@ class TestMergeScriptsRefuseSymlinkedDestinations(unittest.TestCase):
         self.assertTrue(dest.read_text().strip())
 
 
+def index_note_problems(install_sh: str) -> list[str]:
+    """TL-T753-04: the note on building the search index must name the directory the server reads, and not --index-dir."""
+    start, end = install_sh.find("@context-retriever also needs"), install_sh.find("\nfi", install_sh.find("@context-retriever also needs"))
+    if start < 0 or end < 0:
+        return ["the note on the @context-retriever index is gone from scripts/install.sh"]
+    note = install_sh[start:end]
+    problems = ["the note still names --index-dir, which no generated config has since T722"] if "--index-dir" in note else []
+    if "--output-dir implementation/runtime/memory/_index/<org>-<repo>" not in note:
+        problems.append("the note does not give the directory the server reads as --output-dir")
+    return problems
+
+
+class TestContextRetrieverIndexNote(unittest.TestCase):
+    def test_the_note_matches_where_the_server_reads_the_index(self):
+        self.assertEqual(index_note_problems((repo_root() / "scripts" / "install.sh").read_text(encoding="utf-8")), [])
+
+    def test_mutation_the_old_note_and_a_missing_note_are_detected(self):
+        real = (repo_root() / "scripts" / "install.sh").read_text(encoding="utf-8")
+        self.assertTrue(index_note_problems(real.replace("<org>-<repo>\"", "<org-repo-slug>\"")))
+        self.assertTrue(index_note_problems(real.replace("from this workspace's", "from the --index-dir of this workspace's")))
+        self.assertTrue(index_note_problems(real.replace("@context-retriever also needs", "@context-retriever needs")))
+
+
+
 if __name__ == "__main__":
     unittest.main()

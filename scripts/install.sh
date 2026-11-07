@@ -1744,8 +1744,9 @@ if [[ -d "$TARGET/implementation/runtime/memory" ]]; then
   printf 'dependency install above, before it can answer real queries. Run from %q:\n' "$TARGET"
   echo "  python3 -m implementation.runtime.memory.build \\"
   echo "      --project-id <org>/<repo> --own-repo-root . --general-repo-root . \\"
-  echo "      --output-dir implementation/runtime/memory/_index/<org-repo-slug>"
+  echo "      --output-dir implementation/runtime/memory/_index/<org>-<repo>"
   echo "  (see implementation/runtime/memory/README.md for the full option reference,"
-  echo "  including --shared-source-root for cross-repo shared-scope indexing, and match"
-  echo "  --output-dir to the --index-dir already set in the generated mcp.json for this project)"
+  echo "  including --shared-source-root for cross-repo shared-scope indexing. The server"
+  echo "  reads the index from that directory, with <org>-<repo> in lower case and taken"
+  echo "  from this workspace's git remote 'origin'; without that remote it does not start)"
 fi

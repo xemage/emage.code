@@ -1284,12 +1284,13 @@ class TestCiImages(unittest.TestCase):
         self.assertEqual(review_problems(self.ci, dt.date.today()), [])
 
     def test_mutation_a_stale_missing_or_future_review_date_is_detected(self):
-        reviewed = dt.date(2026, 10, 22)
+        # The date under test is the one in the file, so bumping it needs no edit here (T765).
+        reviewed = dt.date.fromisoformat(re.search(r"^# ci_images_reviewed_on: (\S+)", self.ci, re.M).group(1))
         self.assertEqual(review_problems(self.ci, reviewed + dt.timedelta(days=120)), [])
         self.assertTrue(review_problems(self.ci, reviewed + dt.timedelta(days=121)))
         self.assertTrue(review_problems(self.ci.replace("ci_images_reviewed_on", "reviewed"), reviewed))
         self.assertTrue(review_problems(self.ci, reviewed - dt.timedelta(days=1)))
-        self.assertTrue(review_problems(self.ci.replace("2026-10-22   (tests", "2026-01-01   (tests"), reviewed))
+        self.assertTrue(review_problems(self.ci.replace(f"{reviewed}   (tests", "2026-01-01   (tests"), reviewed))
 
     def test_the_bases_are_the_two_supported_lines(self):
         names = {image.split("@")[0] for _, image in ci_images(self.ci)}
