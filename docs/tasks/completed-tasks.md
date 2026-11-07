@@ -564,3 +564,4 @@ Append-only log. Entries move here after the orchestrator marks a task `done`.
 | T760 | QA release gate for v10.0.0: CONDITIONAL_PASS; the suite and gates pass; three medium findings on M-2 | qa-engineer | 2026-11-07 | `docs/artifacts/qa-release-v10-v1.md` |
 | T761 | Tech Lead release review for v10.0.0: CONDITIONAL_PASS, no code change | tech-lead | 2026-11-07 | `docs/artifacts/tech-lead-release-v10-v1.md` |
 | T762 | Security re-check for v10.0.0: CONDITIONAL_PASS; SEC-T756-01 closed; five MEDIUMs accepted by the user | security-engineer | 2026-11-07 | `docs/artifacts/security-review-release-v10-v1.md` |
+| T763 | Release manager verdict for v10.0.0: CONDITIONAL_PASS, 0 open blockers; independent check PASS at `cd803b28` by tech-lead | release-manager | 2026-11-07 | `docs/releases/v10.0.0.md`; `docs/artifacts/independent-check-t763-v1.md` |
