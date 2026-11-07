@@ -2,7 +2,6 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T774 | Pi removal step S3, root refresh (user approval) | orchestrator | pending | P1 | T773 | 2026-11-07 |
 | T775 | Gemini CLI scoping review, SEC-T657-01/SEC-T658-01 remainder (plan-146 C) | security-engineer | pending | P1 | T774 | 2026-11-07 |
 | T776 | Implement the user's Gemini scoping option | devops-engineer | pending | P1 | T775, user choice | 2026-11-07 |
 | T777 | Security review and re-grade of SEC-T657-01/SEC-T658-01 | security-engineer | pending | P1 | T776 | 2026-11-07 |
