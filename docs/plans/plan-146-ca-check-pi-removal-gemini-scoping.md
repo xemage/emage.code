@@ -166,3 +166,19 @@ T778 → checkpoint-042, plan-146 Outcome
 - [ ] User approved on YYYY-MM-DD
 
 Owner change before dispatch (orchestrator, 2026-11-07): T767 moved from security-engineer to devops-engineer, because the Security Engineer has no shell and T767 must extract image layers.
+
+## Addendum (2026-11-07): Part C becomes the Gemini removal
+
+T775's review (`docs/artifacts/security-review-t775-gemini-scoping-v1.md`) found that Gemini CLI v0.67.0 enforces per-agent MCP tool lists, while this harness drops them (`gemini.json` `"tools": "drop"`) and its 28 Gemini agent files probably fail Gemini's loader; the remainder of SEC-T657-01/SEC-T658-01 stays MEDIUM. Asked how to fix it, the user answered (AskUserQuestion, option labels verbatim) "Agent lists + GitLab allowlist (Recommended)", "Yes, I use glab/web/other (Recommended)" and, for the servers no agent uses, "Drop Gemini support". Asked to resolve the conflict, the user chose "Drop Gemini instead of fixing (Recommended)".
+
+Part C therefore removes Gemini support completely, in the steps of Part B (ADR-013) and ADR-010; it closes the remainder by removal. It ships in the same MAJOR release as the Pi removal (v11.0.0, a separate plan). Tasks, replacing items 11 to 14 of Part C:
+
+- **T776, inventory** (tech-lead): `docs/artifacts/gemini-removal-inventory-v1.md`, in the shape of `pi-removal-inventory-v1.md`.
+- **T777, ADR-014** (solution-architect): `docs/decisions/ADR-014-drop-gemini-platform-support.md`; the user accepts or changes it before any removal.
+- **T778, step S1, code** (devops-engineer), with a byte-equality proof for every remaining platform.
+- **T779, step S2, docs** (technical-writer; devops-engineer regenerates).
+- **T780, reviews of S1 and S2** (security-engineer and tech-lead).
+- **T781, step S3, root refresh** (orchestrator), only with the user's approval at that moment; run `--print-drift` after the refresh (the rsync size-and-time skip found in T774).
+- **T782, checkpoint-042 and this plan's Outcome** (orchestrator).
+
+Budget for the re-scoped Part C: 300k.

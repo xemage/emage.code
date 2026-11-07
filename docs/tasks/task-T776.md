@@ -1,24 +1,24 @@
-# T776 — Implement the user's Gemini scoping option
+# T776 — Gemini removal inventory
 
 **ID:** T776
-**Owner:** devops-engineer
-**Status:** pending
+**Owner:** tech-lead
+**Status:** in_progress
 **Priority:** P1
 **Tier:** standard
-**Depends on:** T775
+**Depends on:** —
 **Affects:** —
 **Created:** 2026-11-07
 **Based on:**
-- `docs/plans/plan-146-ca-check-pi-removal-gemini-scoping.md` (task T776, § Task decomposition, Part C, item 13; starts only after the user picks)
-- The user's request of 2026-11-07, verbatim: "Plan for: Fix of SEC-T756-02, Remove PI support completely, then review and work on SEC-T657-01/SEC-T658-01"; the user's answer, AskUserQuestion, option label verbatim: "Approve (Recommended)"
+- `docs/plans/plan-146-ca-check-pi-removal-gemini-scoping.md` (§ Addendum (2026-11-07): Part C becomes the Gemini removal, task T776)
+- The user's request of 2026-11-07, verbatim: "then review and work on SEC-T657-01/SEC-T658-01"; the user's answer, AskUserQuestion, option label verbatim: "Drop Gemini instead of fixing (Recommended)"
 
 ## 1. What and why
 
-As `docs/plans/plan-146-ca-check-pi-removal-gemini-scoping.md` § Task decomposition specifies for T776.
+As `docs/plans/plan-146-ca-check-pi-removal-gemini-scoping.md` § Addendum specifies for T776.
 
 ## 2. Output
 
-The chosen option, committed on `agent/devops-engineer/T776`.
+`docs/artifacts/gemini-removal-inventory-v1.md`, committed on `agent/tech-lead/T776`. Read-only otherwise.
 
 ## 3. Constraints
 
@@ -29,7 +29,7 @@ The chosen option, committed on `agent/devops-engineer/T776`.
 
 ## 4. Acceptance criteria
 
-As in the plan, § Task decomposition, T776.
+As in the plan, § Addendum, T776, and the matching step of ADR-014 once accepted.
 
 ## 5. Blocker protocol
 
