@@ -36,6 +36,8 @@ Refresh only the harness projections, leaving `docs/` and `implementation/` unto
 scripts/install.sh --target <your-project> --platform claude-code --projections-only
 ```
 
+Do not use `--projections-only` as the step from v9 to v10, or across any release that changes `implementation/runtime/`: use `--update`.
+
 The PoC security scan runs on the `poc-security-audit` MCP server, which needs `mcp` (Python), `git` 2.40 or newer and, on Claude Code, an allow rule you add to your own `.claude/settings.json`: see [MCP Servers](mcp-servers#poc-security-scan-server-poc-security-audit).
 
 Or see [Quick Start](quick-start) and [`docs/releases/v10.0.0.md`](https://gitlab.com/em-age/emage.code/-/blob/main/docs/releases/v10.0.0.md).

@@ -147,6 +147,8 @@ Every other `docs/` file is seeded when missing and otherwise left alone.
 scripts/install.sh --target /path/to/your-project --platform all --projections-only
 ```
 
+Do not use `--projections-only` as the step from v9 to v10, or across any release that changes `implementation/runtime/`: use `--update`.
+
 It refreshes the platform trees (with the same spared files as `--update`),
 their MCP/settings configs (merged, as every mode does), `AGENTS.md`, and
 `CLAUDE.md` when Claude Code is among the selected platforms. It never writes or
