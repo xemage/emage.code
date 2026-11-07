@@ -108,9 +108,11 @@ unit-tests:
     - npm ci --ignore-scripts --prefix ci/js --no-audit --no-fund
     # ripgrep and mcp==2.2.0 (the version in implementation/runtime/security/requirements-mcp-server.txt)
     # let the grep_content and live audit-server tests run here; with CI set they fail instead of skipping.
-    # test_install_cursor_removal installs a real `git archive v8.0.0` tree; GIT_DEPTH is shallow and
-    # tags are not fetched by default (the test FAILS in CI when the tag is missing).
+    # test_install_cursor_removal installs a real `git archive v8.0.0` tree, test_install_removed_platform_v11 one of
+    # v10.0.0 (T771, ADR-013 D5); GIT_DEPTH is shallow and tags are not fetched by default (each test FAILS
+    # in CI when its tag is missing).
     - git fetch --depth=1 origin tag v8.0.0
+    - git fetch --depth=1 origin tag v10.0.0
     # Hash-locked (SEC-T675-09): the job binds the host Docker socket, so nothing floats. The lock holds
     # pyyaml, jsonschema, requests, pyarrow, cryptography and mcp==2.2.0 with every transitive dependency.
     - 'python3 -m pip install --no-cache-dir --disable-pip-version-check --require-hashes --only-binary=:all: -r ci/requirements-ci.txt'

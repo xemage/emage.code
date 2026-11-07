@@ -17,7 +17,7 @@ IMPLEMENTATION="${REPO_ROOT}/implementation"
 # implementation/platforms/*.json. Adding a platform means adding it here, to
 # platform_managed_paths, platform_mcp_config and an install_<name> function (dashes as
 # underscores) -- a missing piece fails closed (exit 70), it is never skipped.
-SUPPORTED_PLATFORMS=(github gemini opencode pi claude-code cline)
+SUPPORTED_PLATFORMS=(github gemini opencode claude-code cline)
 
 # Prints $@ joined with ", " (for messages).
 join_comma() {
@@ -69,7 +69,7 @@ EOF
   -h, --help           Show this help
 
 MCP/settings configs (.vscode/mcp.json, .gemini/settings.json, .opencode/opencode.json,
-.pi/mcp.json, .mcp.json, .cline/mcp.json): an existing one is MERGED in every mode, a plain
+.mcp.json, .cline/mcp.json): an existing one is MERGED in every mode, a plain
 install included, never overwritten -- your own servers, keys and rules are kept, generator-owned
 keys are refreshed, and the generated Playwright permission/excludeTools denials are put back.
 A note on stderr names exactly: a permission rule or hooks value of yours that was replaced, a
@@ -89,7 +89,7 @@ into such a directory at all: --update replaces a tree by building a sibling nex
 
 Examples:
   scripts/install.sh --target ~/projects/my-app --platform claude-code
-  scripts/install.sh --target ~/projects/my-app --platform pi --update
+  scripts/install.sh --target ~/projects/my-app --platform cline --update
   scripts/install.sh --target . --platform all
 
 After install, set MCP env vars from the generated mcp.json, then run:
@@ -186,6 +186,10 @@ if [[ "$PLATFORM" != "all" ]] && ! is_supported_platform "$PLATFORM"; then
     [Cc][Uu][Rr][Ss][Oo][Rr])
       echo "error: platform 'cursor' was removed in v9.0.0 (see the Cursor migration item in docs/releases/v9.0.0.md; the v8.x releases are the last that support it)." >&2
       echo "  Existing .cursor/ files in your project are not touched. Nothing was written." >&2
+      exit 1
+      ;;
+    [Pp][Ii])
+      echo "error: platform 'pi' was removed in v11.0.0 (see docs/releases/v11.0.0.md). Existing .pi/ files in your project are not touched. Nothing was written." >&2
       exit 1
       ;;
     *)
@@ -465,7 +469,6 @@ platform_managed_paths() {
     github) printf '%s\n' .github .vscode .vscode/mcp.json .vscode/mcp.json.provenance.json ;;
     gemini) printf '%s\n' .gemini .gemini/settings.json .gemini/settings.json.provenance.json ;;
     opencode) printf '%s\n' .opencode .opencode/opencode.json .opencode/opencode.json.provenance.json ;;
-    pi) printf '%s\n' .pi .pi/mcp.json .pi/mcp.json.provenance.json ;;
     claude-code) printf '%s\n' .claude .mcp.json .mcp.json.provenance.json CLAUDE.md ;;
     cline) printf '%s\n' .cline .clinerules .cline/mcp.json .cline/mcp.json.provenance.json ;;
     *) internal_unknown_platform "$1" ;;
@@ -480,7 +483,6 @@ platform_mcp_config() {
     github) printf '%s\n' .vscode/mcp.json ;;
     gemini) printf '%s\n' .gemini/settings.json ;;
     opencode) printf '%s\n' .opencode/opencode.json ;;
-    pi) printf '%s\n' .pi/mcp.json ;;
     claude-code) printf '%s\n' .mcp.json ;;
     cline) printf '%s\n' .cline/mcp.json ;;
     *) internal_unknown_platform "$1" ;;
@@ -1301,17 +1303,39 @@ notice_previous_cursor_install() {
   echo "  Remove the folder or edit it by hand; see the Cursor migration item in docs/releases/v9.0.0.md." >&2
 }
 
+# Read-only notice (ADR-013 D5): Pi support was removed in v11.0.0, so a .pi/
+# that an earlier release generated is no longer written, pruned or checked here
+# -- and is never deleted (it may also be Pi's own project folder). Detection
+# reads, and never writes, the generator's own markers; a symlinked .pi or
+# marker is not read.
+notice_previous_pi_install() {
+  local dir="$TARGET/.pi"
+  local found=0
+  if [[ ! -d "$dir" || -L "$dir" ]]; then return 0; fi
+  if [[ -f "$dir/.generated-manifest.json" && ! -L "$dir/.generated-manifest.json" ]] \
+     && grep -Eq '"platform"[[:space:]]*:[[:space:]]*"pi"' "$dir/.generated-manifest.json"; then
+    found=1
+  elif [[ -e "$dir/mcp.json.provenance.json" && ! -L "$dir/mcp.json.provenance.json" ]]; then
+    found=1
+  fi
+  if [[ "$found" -ne 1 ]]; then return 0; fi
+  echo "warning: $(printable "$dir") holds a Pi install written by an earlier emage.code release." >&2
+  echo "  Pi support was removed in v11.0.0: .pi/ is no longer updated, pruned or checked, and this installer does not delete it." >&2
+  echo "  The MCP server pins, the Playwright hardening and the GitLab tool grants in .pi/mcp.json and .pi/agents/*.md are frozen at the version that wrote them." >&2
+  echo "  Clean it up by hand; see the Pi migration item in docs/releases/v11.0.0.md." >&2
+}
+
 validate_before_update() {
   # Pre-flight checks before --update to prevent propagating corrupted state.
   if [[ "$UPDATE" -eq 1 ]]; then
     notice_previous_cursor_install
-    for d in .github .gemini .opencode .pi .claude .cline .clinerules; do
+    notice_previous_pi_install
+    for d in .github .gemini .opencode .claude .cline .clinerules; do
       if [[ -d "$TARGET/$d" ]]; then
         local exception=""
         case "$d" in
           .gemini) exception=" (except $d/settings.json, which is merged, not overwritten)" ;;
           .opencode) exception=" (except $d/opencode.json, which is merged, not overwritten)" ;;
-          .pi) exception=" (except $d/mcp.json, which is merged, not overwritten)" ;;
           .cline) exception=" (except $d/mcp.json, which is merged, not overwritten)" ;;
           .claude) exception=" (except $d/settings.json and $d/settings.local.json, which are project-local and left untouched)" ;;
           .github) exception=" (except workflows/, ISSUE_TEMPLATE/, PULL_REQUEST_TEMPLATE*, CODEOWNERS, dependabot.y*ml, FUNDING.yml and copilot-instructions.md, which are project-local and left untouched)" ;;
@@ -1385,7 +1409,6 @@ merge_task_docs() {
 merge_or_copy_mcp_json() {
   local src="$1"
   local dest="$2"
-  local extra_flag="${3:-}"   # T680: --drop-env-form for .pi/mcp.json only
   local src_sidecar="${src}.provenance.json"
   local dest_sidecar="${dest}.provenance.json"
   refuse_unsafe_path "$dest"
@@ -1397,9 +1420,6 @@ merge_or_copy_mcp_json() {
     local args=("$REPO_ROOT/scripts/merge-mcp-json.py" --source "$src" --dest "$dest")
     if [[ -f "$src_sidecar" ]]; then
       args+=(--old-sidecar "$dest_sidecar" --new-sidecar "$src_sidecar")
-    fi
-    if [[ -n "$extra_flag" ]]; then
-      args+=("$extra_flag")
     fi
     if [[ "$DRY_RUN" -eq 1 ]]; then
       args+=(--dry-run)
@@ -1599,12 +1619,6 @@ install_opencode() {
   install_tree_into "$IMPLEMENTATION/.opencode" "$TARGET/.opencode" "opencode.json" "opencode.json.provenance.json"
   withhold_authoring_only .opencode
   merge_or_copy_mcp_json "$IMPLEMENTATION/.opencode/opencode.json" "$TARGET/.opencode/opencode.json"
-}
-
-install_pi() {
-  install_tree_into "$IMPLEMENTATION/.pi" "$TARGET/.pi" "mcp.json" "mcp.json.provenance.json"
-  withhold_authoring_only .pi
-  merge_or_copy_mcp_json "$IMPLEMENTATION/.pi/mcp.json" "$TARGET/.pi/mcp.json" --drop-env-form
 }
 
 install_claude_code() {

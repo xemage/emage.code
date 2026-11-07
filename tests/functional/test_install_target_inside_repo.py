@@ -8,8 +8,8 @@ two kinds of target did damage:
   Measured on the pre-T559 script against a synthetic repository:
   ``--target <repo>/implementation --update`` re-rendered ``AGENTS.md`` over its
   own source, created ``implementation/implementation/`` and exited 1 at the
-  ``CLAUDE.md`` self-copy; ``--target <repo>/implementation/.pi`` under
-  ``rsync`` copied ``.pi`` into its own subdirectory, several levels deep;
+  ``CLAUDE.md`` self-copy; ``--target <repo>/implementation/<platform tree>`` under
+  ``rsync`` copied that tree into its own subdirectory, several levels deep;
   ``--target <repo>/implementation/new-dir`` exited 0 having written a second
   harness into the source tree.
 * Anywhere else below the root, an install writes a second copy of the harness
@@ -85,32 +85,32 @@ class TestTargetInsideRepositoryIsRefused(_CopierMatrix):
                              ("--platform", "all", "--update", "--dry-run"), SOURCE_TREE)
 
     def test_a_platform_tree_inside_implementation_is_refused(self) -> None:
-        """Under rsync this nested .pi inside itself before T559."""
-        self._assert_refused("implementation/.pi", ("--platform", "pi"), SOURCE_TREE)
+        """Under rsync this nested the platform tree inside itself before T559."""
+        self._assert_refused("implementation/.cline", ("--platform", "cline"), SOURCE_TREE)
 
     def test_a_new_directory_inside_implementation_is_refused(self) -> None:
         """Exited 0 before T559, writing a whole harness into the source."""
-        self._assert_refused("implementation/new-dir", ("--platform", "pi"), SOURCE_TREE)
+        self._assert_refused("implementation/new-dir", ("--platform", "cline"), SOURCE_TREE)
 
     def test_a_symlink_to_implementation_is_refused(self) -> None:
         self._assert_refused(None, ("--platform", "all", "--update"), SOURCE_TREE,
                              via_alias_of="implementation")
 
     def test_a_directory_elsewhere_in_the_repository_is_refused(self) -> None:
-        self._assert_refused("tmp/scratch-install", ("--platform", "pi"), INSIDE_REPO)
+        self._assert_refused("tmp/scratch-install", ("--platform", "cline"), INSIDE_REPO)
 
     def test_an_existing_repository_directory_is_refused(self) -> None:
-        self._assert_refused("docs", ("--platform", "pi"), INSIDE_REPO)
+        self._assert_refused("docs", ("--platform", "cline"), INSIDE_REPO)
 
     def test_a_subdirectory_of_an_alias_of_the_root_is_refused(self) -> None:
-        self._assert_refused("tmp/x", ("--platform", "pi"), INSIDE_REPO, via_alias_of=".")
+        self._assert_refused("tmp/x", ("--platform", "cline"), INSIDE_REPO, via_alias_of=".")
 
     def test_a_sibling_sharing_the_repository_name_prefix_is_allowed(self) -> None:
         """Non-vacuity: `<repo>-extra` is outside `<repo>`; a string-prefix check
         would refuse it."""
         repo = synthetic_repo(self.fresh, self.tmp / "repo-prefix")
         target = self.tmp / "repo-prefix-extra"
-        proc = run_installer(repo / "scripts" / "install.sh", target, "--platform", "pi")
+        proc = run_installer(repo / "scripts" / "install.sh", target, "--platform", "cline")
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         self.assertTrue((target / "AGENTS.md").is_file())
 

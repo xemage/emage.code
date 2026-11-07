@@ -26,7 +26,6 @@ SE_MIRRORS = (
     ".gemini/agents/poc-security-engineer.md",
     ".github/agents/poc-security-engineer.agent.md",
     ".opencode/agents/poc-security-engineer.md",
-    ".pi/agents/poc-security-engineer.md",
 )
 OR_MIRRORS = tuple(p.replace("poc-security-engineer", "poc-orchestrator") for p in SE_MIRRORS)
 

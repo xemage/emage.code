@@ -45,7 +45,6 @@ class TestInstallAgentsMapping(unittest.TestCase):
         self.assertIn("`.github/skills/`", content)
         self.assertIn("`.gemini/skills/`", content)
         self.assertIn("`.opencode/skills/`", content)
-        self.assertIn("`.pi/skills/`", content)
         self.assertIn("`.claude/skills/`", content)
         self.assertIn("`.vscode/mcp.json`", content)
         self.assertIn("`.gemini/settings.json`", content)

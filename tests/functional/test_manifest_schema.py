@@ -30,7 +30,7 @@ class TestManifestSchema(unittest.TestCase):
 
     def test_every_manifest_references_the_schema_and_validates(self) -> None:
         manifests = list_platform_manifests()
-        self.assertGreaterEqual(len(manifests), 6)
+        self.assertGreaterEqual(len(manifests), 5)
         for path in manifests:
             with self.subTest(platform=path.stem):
                 data = json.loads(path.read_text(encoding="utf-8"))
@@ -47,7 +47,7 @@ class TestManifestSchema(unittest.TestCase):
              "s.loader.exec_module(m);print(','.join(m._detect_platforms(__import__('pathlib').Path(sys.argv[2]))))",
              str(implementation_root() / "scripts" / "generate-registry.py"), str(implementation_root().parent)],
             capture_output=True, text=True, check=True).stdout.strip()
-        self.assertEqual(registry, "claude-code,cline,gemini,github,opencode,pi")
+        self.assertEqual(registry, "claude-code,cline,gemini,github,opencode")
 
     def test_only_the_schema_may_start_with_an_underscore(self) -> None:
         """T672 (SEC-T672-10): the registry generator and the test helper stop on any other `_*.json`."""
@@ -65,11 +65,11 @@ class TestManifestSchema(unittest.TestCase):
             root = Path(tmp)
             platforms = root / "implementation" / "platforms"
             platforms.mkdir(parents=True)
-            for name in ("pi.json", "_manifest.schema.json"):
+            for name in ("cline.json", "_manifest.schema.json"):
                 (platforms / name).write_text("{}", encoding="utf-8")
-            self.assertEqual(registry._detect_platforms(root), ["pi"])
+            self.assertEqual(registry._detect_platforms(root), ["cline"])
             with mock.patch.object(helpers, "implementation_root", return_value=root / "implementation"):
-                self.assertEqual([p.name for p in helpers.list_platform_manifests()], ["pi.json"])
+                self.assertEqual([p.name for p in helpers.list_platform_manifests()], ["cline.json"])
             (platforms / "_other.json").write_text("{}", encoding="utf-8")
             with self.assertRaises(SystemExit) as raised:
                 registry._detect_platforms(root)
@@ -118,6 +118,27 @@ class TestManifestSchema(unittest.TestCase):
                 data = copy.deepcopy(base)
                 mutate(data)
                 self.assertTrue(list(self.validator.iter_errors(data)), f"{label} was accepted")
+
+    def test_the_removed_pi_values_are_refused(self) -> None:
+        """ADR-013 D7: `pi` left both enums of the manifest schema and the pack schema's platform list."""
+        base = json.loads((PLATFORMS / "claude-code.json").read_text(encoding="utf-8"))
+        mutations = {
+            "mcp.format pi": lambda d: d["mcp"].update(format="pi"),
+            "mcpToolNames pi": lambda d: d["frontmatter"]["agents"].update(mcpToolNames="pi"),
+        }
+        for label, mutate in mutations.items():
+            with self.subTest(label):
+                data = copy.deepcopy(base)
+                mutate(data)
+                self.assertTrue(list(self.validator.iter_errors(data)), f"{label} was accepted")
+        pack_schema = json.loads((implementation_root() / "registry" / "package.schema.json").read_text(encoding="utf-8"))
+        pack_validator = jsonschema.Draft202012Validator(pack_schema)
+        pack = json.loads((implementation_root().parent / "tests" / "fixtures" / "packs" / "sample-pack" / "pack.json")
+                          .read_text(encoding="utf-8"))
+        self.assertEqual([e.message for e in pack_validator.iter_errors(pack)], [])
+        refused = copy.deepcopy(pack)
+        refused["compatibility"]["supportedPlatforms"] = ["github", "pi"]
+        self.assertTrue(list(pack_validator.iter_errors(refused)), "a pack that declares pi was accepted")
 
 
 if __name__ == "__main__":

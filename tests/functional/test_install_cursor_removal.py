@@ -150,7 +150,7 @@ class TestPlatformValidationIsEarly(_InstallCase):
                 proc = run_installer(INSTALLER, target, "--platform", "curser", *flags)
                 self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
                 self.assertIn("error: unknown platform 'curser'", proc.stderr)
-                for name in ("github", "gemini", "opencode", "pi", "claude-code", "cline", "all"):
+                for name in ("github", "gemini", "opencode", "claude-code", "cline", "all"):
                     self.assertIn(name, proc.stderr)
                 self.assertNotIn(REMOVED, proc.stderr)
                 self.assertFalse(target.exists(), "the target directory was created")
@@ -179,12 +179,12 @@ class TestPlatformValidationIsEarly(_InstallCase):
     def test_help_and_the_default_do_not_list_cursor_as_a_platform(self) -> None:
         proc = subprocess.run(["bash", str(INSTALLER), "--help"], capture_output=True, text=True, check=False)
         self.assertEqual(proc.returncode, 0)
-        self.assertIn("github | gemini | opencode | pi | claude-code | cline | all", proc.stdout)
+        self.assertIn("github | gemini | opencode | claude-code | cline | all", proc.stdout)
         self.assertNotIn("cursor", proc.stdout.lower())
 
-    def test_all_installs_six_platforms_and_no_cursor_folder(self) -> None:
+    def test_all_installs_five_platforms_and_no_cursor_folder(self) -> None:
         self.assertFalse((self.fresh / ".cursor").exists())
-        for tree in (".github", ".gemini", ".opencode", ".pi", ".claude", ".cline"):
+        for tree in (".github", ".gemini", ".opencode", ".claude", ".cline"):
             self.assertTrue((self.fresh / tree).is_dir(), tree)
 
 
@@ -237,7 +237,7 @@ class TestPreviousCursorInstallIsNoticedAndNeverTouched(_InstallCase):
     def test_manifest_of_another_platform_does_not_count(self) -> None:
         target = self._target("marker-other-platform")
         cursor = plant_cursor_install(target, sidecar=False)
-        (cursor / ".generated-manifest.json").write_text('{"platform": "pi"}\n', encoding="utf-8")
+        (cursor / ".generated-manifest.json").write_text('{"platform": "cline"}\n', encoding="utf-8")
         before = _snapshot(cursor)
         proc = self._run(target, ("--update",), None)
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
@@ -388,8 +388,8 @@ class TestUpgradeFromARealV8Install(unittest.TestCase):
                                      "this installer changed a file under .cursor/")
                     self.assertEqual((target / ".cursor" / "rules" / "own.mdc").read_text(encoding="utf-8"),
                                      USER_RULE)
-                    # the other six platforms were refreshed as usual
-                    for tree in (".github", ".gemini", ".opencode", ".pi", ".claude", ".cline"):
+                    # the other platforms were refreshed as usual
+                    for tree in (".github", ".gemini", ".opencode", ".claude", ".cline"):
                         self.assertTrue((target / tree).is_dir(), tree)
 
     def test_platform_cursor_fails_early_and_writes_nothing(self) -> None:

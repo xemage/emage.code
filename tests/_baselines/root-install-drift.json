@@ -71,7 +71,37 @@
     "Declared 2026-11-02 by T725 (plan-128, LOW batch A; the user's answer \"A go\"): TD-T671-P5 makes sync.mjs record the authoring-only commands under a new `authoringOnly` key of each generated tree's .generated-manifest.json (6 paths: the manifests of .claude, .cline, .gemini, .github, .opencode and .pi; .cline's lists none); the parity oracle is now an authoring install (a fresh install into a directory holding implementation/registry/index.json), so the root, an authoring checkout, keeps /prepare-release without drift; 12 paths in all; no refresh of the root install (a refresh needs the user's explicit approval).",
     "Emptied 2026-11-02 by the twenty-fourth --projections-only refresh (plan-128, LOW batch A; the user's answer of 2026-11-02 \"Yes, refresh now (Recommended)\"): `scripts/install.sh --target <worktree> --platform all --projections-only` from `docs/plan-128-batch-a` (sources touched first) rewrote exactly the 12 paths declared by T722 (the context-retriever `--index-dir` argument dropped from .mcp.json, .gemini/settings.json, .opencode/opencode.json, .cline/mcp.json, .pi/mcp.json; .github/agents/context-retriever.agent.md without the Copilot grant) and T725 (the six .generated-manifest.json files with `authoringOnly`); the root stays an authoring checkout and keeps /prepare-release; no file under `docs/` or `implementation/` changed.",
     "Declared 2026-11-04 by T736 (plan-133, LOW batch H; the user's answer \"H go\"): the T735 knowledge edits under ADR-012 and plan-133 (orchestrator, release-manager and security-engineer agents; validate-tasks and validate-workflow commands; plan-approve-execute, release-workflow, testing-strategy and validation-gates skills): 49 paths = the 3 agents and 2 commands on 5 platforms (25; .cline maps neither) and the 4 skills on 6 platforms (24); no refresh of the root install here (the user approved the refresh for this merge request and the orchestrator runs it).",
-    "Emptied by the root refresh of plan-133 (the user, 2026-11-04: \"Yes, refresh in this MR (Recommended)\"): the 49 changed paths equal the 49 declared."
+    "Emptied by the root refresh of plan-133 (the user, 2026-11-04: \"Yes, refresh in this MR (Recommended)\"): the 49 changed paths equal the 49 declared.",
+    "Declared 2026-11-07 by T771 (ADR-013 step S1: Pi support removed; the tracked root `.pi/` and `implementation/.pi/` are deleted with `git rm -r` per the user's answer Q3 \"Delete both in S1 (Recommended)\", and the generator, installer, renderer and registry no longer name Pi): 1 new path = the installed AGENTS.md (the `all` platform map of scripts/render_installed_agents.py no longer lists the `.pi` paths); the root `.pi/` is simply gone and adds no drift; root not refreshed (S3, T774, needs the user's approval).",
+    "Declared 2026-11-07 by T772 (ADR-013 step S2: Pi removed from the live docs and knowledge sources, per the user's request \"Remove PI support completely\"): 26 new paths = the consolidate-memory, discover-skills and skillify commands on 4 platforms (12; .cline maps no command), the memory-management and skillify skills on 5 platforms (10) and the context-retriever agent on 4 platforms (4; .cline maps no agent); AGENTS.md was already declared by T771 and stays declared (27 in total); root not refreshed (S3, T774, needs the user's approval)."
   ],
-  "drift": []
+  "drift": [
+    ".claude/agents/context-retriever.md",
+    ".claude/commands/consolidate-memory.md",
+    ".claude/commands/discover-skills.md",
+    ".claude/commands/skillify.md",
+    ".claude/skills/memory-management/SKILL.md",
+    ".claude/skills/skillify/SKILL.md",
+    ".cline/skills/memory-management/SKILL.md",
+    ".cline/skills/skillify/SKILL.md",
+    ".gemini/agents/context-retriever.md",
+    ".gemini/commands/consolidate-memory.md",
+    ".gemini/commands/discover-skills.md",
+    ".gemini/commands/skillify.md",
+    ".gemini/skills/memory-management/SKILL.md",
+    ".gemini/skills/skillify/SKILL.md",
+    ".github/agents/context-retriever.agent.md",
+    ".github/prompts/consolidate-memory.prompt.md",
+    ".github/prompts/discover-skills.prompt.md",
+    ".github/prompts/skillify.prompt.md",
+    ".github/skills/memory-management/SKILL.md",
+    ".github/skills/skillify/SKILL.md",
+    ".opencode/agents/context-retriever.md",
+    ".opencode/commands/consolidate-memory.md",
+    ".opencode/commands/discover-skills.md",
+    ".opencode/commands/skillify.md",
+    ".opencode/skills/memory-management/SKILL.md",
+    ".opencode/skills/skillify/SKILL.md",
+    "AGENTS.md"
+  ]
 }

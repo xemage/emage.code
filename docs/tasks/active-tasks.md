@@ -2,11 +2,6 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T769 | Pi removal inventory (plan-146 B) | tech-lead | in_progress | P1 | — | 2026-11-07 |
-| T770 | ADR-013 drop Pi platform support (plan-146 B) | solution-architect | pending | P1 | T769 | 2026-11-07 |
-| T771 | Pi removal step S1, code (ADR-013) | devops-engineer | pending | P1 | T770, user acceptance of ADR-013 | 2026-11-07 |
-| T772 | Pi removal step S2, docs (ADR-013) | technical-writer | pending | P1 | T771 | 2026-11-07 |
-| T773 | Reviews of the Pi removal S1 and S2 | security-engineer | pending | P1 | T772 | 2026-11-07 |
 | T774 | Pi removal step S3, root refresh (user approval) | orchestrator | pending | P1 | T773 | 2026-11-07 |
 | T775 | Gemini CLI scoping review, SEC-T657-01/SEC-T658-01 remainder (plan-146 C) | security-engineer | pending | P1 | T774 | 2026-11-07 |
 | T776 | Implement the user's Gemini scoping option | devops-engineer | pending | P1 | T775, user choice | 2026-11-07 |

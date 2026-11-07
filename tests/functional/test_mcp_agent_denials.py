@@ -329,7 +329,7 @@ class EmittedPerAgentClassTests(unittest.TestCase):
                 self.assertEqual(body, source_body)
 
     def test_other_platforms_carry_no_false_tool_entry_and_no_gitlab_wildcard(self):
-        for platform, pattern in ((".github", "*.agent.md"), (".pi", "*.md"), (".claude", "*.md"),
+        for platform, pattern in ((".github", "*.agent.md"), (".claude", "*.md"),
                                   (".gemini", "*.md")):
             files = sorted((IMPL / platform / "agents").glob(pattern))
             self.assertGreaterEqual(len(files), 28, platform)
@@ -675,25 +675,18 @@ class GeneratorFixtureTests(unittest.TestCase):
 
     def test_a_server_named_in_extra_platforms_is_denied_like_a_tag_selected_one(self):
         """T722 (SEV-T690-01): `skip` (tags [other]) reaches Opencode through `extraPlatforms: [opencode]` and is
-        denied per agent exactly as if its tag were selected; `skipFormats` does not remove the denials."""
+        denied per agent exactly as if its tag were selected. (The `skipFormats` case was removed with the key,
+        ADR-013 D3.)"""
         base = self.SERVERS + "    extraPlatforms: [opencode]\n"
         tail = [("pw_bad_one", "false"), ("pw_bad_two", "false"), ("skip_*", "false"), ("skip_skip_bad", "false")]
-        for label, servers in (("listed", base), ("listed, skipFormats opencode", base + "    skipFormats: [opencode]\n")):
-            with self.subTest(label):
-                root, result = self.run_sync(servers=servers,
-                                             agents={"plain": "[read]", "skipnamed": "[read, mcp__skip__one]"})
-                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-                self.assertEqual(self.tools(root, "plain"), [("read", "true"), ("gl_*", "false")] + tail)
-                if "skipFormats" in servers:
-                    # SEV-T690-06: the grant of a server the config does not carry is left out, so the agent is
-                    # denied the whole server like `plain`
-                    self.assertEqual(self.tools(root, "skipnamed"), self.tools(root, "plain"))
-                else:
-                    self.assertEqual(self.tools(root, "skipnamed"),
-                                     [("skip_*", "false"), ("read", "true"), ("skip_one", "true"), ("gl_*", "false")]
-                                     + tail[:2] + tail[3:])
-                config = json.loads((root / ".opencode" / "opencode.json").read_text(encoding="utf-8"))
-                self.assertEqual("skip" in config["mcp"], "skipFormats" not in servers)
+        root, result = self.run_sync(servers=base, agents={"plain": "[read]", "skipnamed": "[read, mcp__skip__one]"})
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(self.tools(root, "plain"), [("read", "true"), ("gl_*", "false")] + tail)
+        self.assertEqual(self.tools(root, "skipnamed"),
+                         [("skip_*", "false"), ("read", "true"), ("skip_one", "true"), ("gl_*", "false")]
+                         + tail[:2] + tail[3:])
+        config = json.loads((root / ".opencode" / "opencode.json").read_text(encoding="utf-8"))
+        self.assertIn("skip", config["mcp"])
 
     def test_an_agent_without_a_tools_line_still_receives_the_denies(self):
         root, result = self.run_sync(agents={"bare": None})
@@ -704,7 +697,7 @@ class GeneratorFixtureTests(unittest.TestCase):
     def test_other_platforms_are_unchanged_by_the_flags(self):
         root, result = self.run_sync()
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        for rel in (".github/agents/plain.agent.md", ".pi/agents/plain.md", ".claude/agents/plain.md"):
+        for rel in (".github/agents/plain.agent.md", ".claude/agents/plain.md"):
             text = (root / rel).read_text(encoding="utf-8")
             with self.subTest(file=rel):
                 self.assertNotIn("false", text)
@@ -790,7 +783,7 @@ class GeneratorFixtureTests(unittest.TestCase):
         root, result = self.run_sync(mutate_platform=lambda d: d["frontmatter"]["agents"].__setitem__("mcpAgentDenies", "yes"))
         self.assertNotEqual(result.returncode, 0)
         # claude-code sorts before opencode and used to be written before the bad manifest was read
-        for folder in (".claude", ".github", ".gemini", ".opencode", ".pi"):
+        for folder in (".claude", ".github", ".gemini", ".opencode"):
             self.assertFalse((root / folder).exists(), folder)
 
     def test_the_shipped_servers_yaml_passes_the_key_check(self):

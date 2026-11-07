@@ -2,7 +2,7 @@
 
 **ID:** T772
 **Owner:** technical-writer
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Tier:** standard
 **Depends on:** T771

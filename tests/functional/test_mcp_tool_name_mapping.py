@@ -36,7 +36,6 @@ EXPECTED_STYLE = {
     "claude-code": "verbatim",
     "github": "slash",
     "opencode": "underscore",
-    "pi": "pi",
 }
 NO_AGENT_TOOL_RENDERING = ("gemini", "cline")
 
@@ -55,9 +54,6 @@ def expected_name(style: str, token: str) -> str:
     if style == "underscore":
         clean = lambda s: re.sub(r"[^a-zA-Z0-9_-]", "_", s)  # noqa: E731
         return f"{clean(server)}_*" if tool == "*" else f"{clean(server)}_{clean(tool)}"
-    if style == "pi":
-        clean = lambda s: re.sub(r"[^a-zA-Z0-9_]", "_", s)  # noqa: E731
-        return f"mcp__{clean(server)}__" + ("*" if tool == "*" else clean(tool))
     raise AssertionError(style)
 
 
@@ -74,9 +70,6 @@ def _projected_tools(platform: str, slug: str) -> list[str]:
     root = implementation_root()
     if platform == "github":
         fm, _ = parse_file(root / ".github" / "agents" / f"{slug}.agent.md")
-        return list(fm["tools"])
-    if platform == "pi":
-        fm, _ = parse_file(root / ".pi" / "agents" / f"{slug}.md")
         return list(fm["tools"])
     if platform == "opencode":
         fm, _ = parse_file(root / ".opencode" / "agents" / f"{slug}.md")
@@ -126,14 +119,6 @@ class RenderingRuleTests(unittest.TestCase):
             "mcp__gitlab": "gitlab_*",
             "mcp__sequential-thinking": "sequential-thinking_*",
             "mcp__security-audit__grep_content": "security-audit_grep_content",
-            "read": "read",
-        },
-        "pi": {
-            "mcp__playwright__browser_navigate": "mcp__playwright__browser_navigate",
-            "mcp__gitlab": "mcp__gitlab__*",
-            "mcp__sequential-thinking": "mcp__sequential_thinking__*",
-            "mcp__security-audit__grep_content": "mcp__security_audit__grep_content",
-            "mcp__poc-security-audit__ref_containment": "mcp__poc_security_audit__ref_containment",
             "read": "read",
         },
         "verbatim": {
@@ -203,7 +188,6 @@ class GeneratorRunTests(unittest.TestCase):
         cases = {
             "github": (".github/agents/fx.agent.md", "slash"),
             "opencode": (".opencode/agents/fx.md", "underscore"),
-            "pi": (".pi/agents/fx.md", "pi"),
         }
         for platform, (rel, style) in cases.items():
             with self.subTest(platform=platform):
@@ -280,14 +264,14 @@ class ManifestAndTokenValidationTests(unittest.TestCase):
 
     def test_a_star_that_is_not_the_whole_tool_part_stops_the_run(self):
         for token in ("mcp__srv__foo*", "mcp__srv__*foo", "mcp__srv__fo*o", "mcp__s*rv__tool", "mcp__s*rv", "mcp__srv*"):
-            for platform in ("github", "opencode", "pi"):
+            for platform in ("github", "opencode"):
                 with self.subTest(platform=platform, token=token):
                     result = self._run(platform, tools=["read", token])
                     self.assertNotEqual(result.returncode, 0)
                     self.assertIn("Non-terminal '*'", result.stderr)
 
     def test_a_star_as_the_whole_tool_part_is_still_accepted(self):
-        for platform in ("github", "opencode", "pi"):
+        for platform in ("github", "opencode"):
             with self.subTest(platform=platform):
                 result = self._run(platform, tools=["read", "mcp__srv__*", "mcp__srv"])
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
@@ -298,15 +282,14 @@ class ProjectedAgentTests(unittest.TestCase):
 
     # T722 (SEV-T690-06): servers that a platform's generated MCP config does not carry; their tokens are left
     # out of that platform's agent files. Pinned as literals: Copilot carries the core servers plus the two
-    # security servers (test_github_security_servers.py), Opencode and Pi carry every server an agent lists.
+    # security servers (test_github_security_servers.py), Opencode carries every server an agent lists.
     SERVERS_LEFT_OUT = {
         "github": {"cwso", "hf-mcp-server", "context-retriever", "filesystem", "git", "supabase", "toolradar"},
         "opencode": set(),
-        "pi": {"hindsight", "cwso"},
     }
 
     def test_projected_tools_equal_the_mapping_of_the_source(self):
-        for platform in ("github", "opencode", "pi"):
+        for platform in ("github", "opencode"):
             style = EXPECTED_STYLE[platform]
             left_out = tuple(f"mcp__{server}__" for server in self.SERVERS_LEFT_OUT[platform])
             for source in sorted((knowledge_root() / "agents").glob("*.md")):
@@ -360,15 +343,15 @@ class ProjectedAgentTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             github = parse_file(root / ".github" / "agents" / "fx.agent.md")[0]["tools"]
             self.assertEqual(list(github), ["read", "nodef/two"])
-            pi = parse_file(root / ".pi" / "agents" / "fx.md")[0]["tools"]
-            self.assertIn("ext", " ".join(pi))
+            opencode = parse_file(root / ".opencode" / "agents" / "fx.md")[0]["tools"]
+            self.assertIs(opencode.get("ext_one"), True)
 
     def test_no_projection_names_the_unsafe_tool(self):
         # T658 (SEC-T657-07): a file-count floor, so an empty glob (a renamed directory) cannot pass
-        # vacuously. Five platforms project agent files (Cline has none); every source agent is projected.
+        # vacuously. Four platforms project agent files (Cline has none); every source agent is projected.
         files = [p for p in implementation_root().glob(".*/agents/*") if p.is_file()]
         sources = len(list((knowledge_root() / "agents").glob("*.md")))
-        self.assertGreaterEqual(len(files), sources * 5)
+        self.assertGreaterEqual(len(files), sources * 4)
         for path in files:
             text = path.read_text(encoding="utf-8")
             if path.parent.parent.name == ".opencode":
@@ -392,7 +375,6 @@ PLATFORM_ROW_STATUS = {  # row prefix in section 2 -> what its Status cell must 
     "Opencode (": "**verified**",
     "Gemini CLI (": "**verified**",
     "Cline (": "**verified",
-    "Pi (": "**verified**",
 }
 UNSAFE_SENTENCE_PREFIX = "**Excluded from every set**: `browser_run_code_unsafe`"
 

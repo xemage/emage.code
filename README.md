@@ -32,7 +32,7 @@ emage.code/
 │   ├── scripts/               ← sync, verify, check, packaging, registry
 │   ├── cookbooks/             ← managed-agent definitions
 │   ├── triggers/              ← trigger specs and examples
-│   └── .github/ … .pi/        ← generated platform outputs (do not edit by hand)
+│   └── .github/ … .cline/     ← generated platform outputs (do not edit by hand)
 ├── scripts/
 │   └── install.sh             ← one-command install into your project
 ├── docs/                      ← runtime workspace state + wiki sources
@@ -57,11 +57,14 @@ Use [`implementation/`](implementation/README.md) for all development work.
 | GitHub Copilot (VS Code) | `.github/` + `.vscode/mcp.json` | `.agent.md`, `.prompt.md`, `.instructions.md` |
 | Gemini CLI | `.gemini/` | `.md` (no `tools` field), `settings.json` with hooks |
 | Opencode | `.opencode/` | `.md` (object `tools`), `opencode.json` |
-| Pi | `.pi/` | agents, prompts, instructions, skills (`.md`) |
 | Claude Code | `.claude/` + `.mcp.json` | `.md` (string `tools`), subagents + skills + rules |
 | Cline | `.clinerules/` (root) + `.cline/skills/` + `.cline/mcp.json` | `.md` rules (`paths` frontmatter) + skills; MCP config is a staging file, not auto-applied |
 
 Cursor support was removed in v9.0.0 (see the release notes).
+
+Pi support was removed in v11.0.0 (see `docs/releases/v11.0.0.md`).
+`--platform pi` exits with an error before anything is written, and the
+installer never writes, updates or deletes an existing `.pi/` in your project.
 
 Adding a new platform = adding a `platforms/<name>.json` manifest under
 `implementation/`. Usually no script changes are required; add a new
@@ -85,7 +88,6 @@ scripts/install.sh --target /path/to/your-project --platform claude-code
 | GitHub Copilot (VS Code) | `github` |
 | Gemini CLI | `gemini` |
 | Opencode | `opencode` |
-| Pi | `pi` |
 | Claude Code | `claude-code` |
 | Cline | `cline` |
 | All platforms | `all` |
@@ -101,7 +103,7 @@ scripts/install.sh --target /path/to/your-project --platform claude-code --updat
 An existing single-file MCP/settings config of a selected platform —
 `.vscode/mcp.json` (`github`), `.mcp.json` (`claude-code`),
 `.gemini/settings.json` (`gemini`), `.opencode/opencode.json`
-(`opencode`), `.pi/mcp.json` (`pi`), or `.cline/mcp.json` (`cline`) — is
+(`opencode`), or `.cline/mcp.json` (`cline`) — is
 merged, not overwritten, in every mode: on `--update`, on `--projections-only`
 and on a plain install over an existing config. Any existing top-level key the generator doesn't
 know about (e.g. a hand-added MCP server entry, or a top-level `inputs`
@@ -113,7 +115,7 @@ JSON, or that cannot be replaced, is refused up front, naming the file, before
 anything is written; the installer prints a one-line note on stderr for each
 kind of user content the merge replaced or kept. The rest of each
 platform's directory tree (`.github/`, `.gemini/`, `.opencode/`,
-`.pi/`, `.claude/`, `.cline/`, `.clinerules/`) is replaced on `--update`, with
+`.claude/`, `.cline/`, `.clinerules/`) is replaced on `--update`, with
 files that no longer exist upstream deleted: hand-written files inside those
 trees are lost, so keep project-specific content in `docs/`. Only each
 platform's one MCP/settings file gets the merge treatment above. The temporary
@@ -165,7 +167,7 @@ refused in every mode.
 The `poc-security-audit` MCP server backs the PoC security review. It exposes
 exactly two tools, `scan_secrets` and `ref_containment`; a clean result means
 "no match for the fixed rule set at the scanned refs", not "no secrets". Its
-config is generated for Claude Code, Gemini CLI, Opencode, Pi, Cline and
+config is generated for Claude Code, Gemini CLI, Opencode, Cline and
 GitHub Copilot (`.vscode/mcp.json`, with `"cwd": "${workspaceFolder}"`). The
 agent's rule is that a scan which did not complete is `FAIL`, never `PASS`.
 Setup, once per project, after a
@@ -364,7 +366,7 @@ BENCH_STRESS=1 python3 tests/run.py --suite performance -v
 
 ## Contributing
 
-1. Edit canonical knowledge under [`implementation/knowledge/`](implementation/knowledge/) — **never** the generated `.github/`, `.gemini/`, `.opencode/`, `.pi/`, `.claude/`, `.cline/`, `.clinerules/` folders.
+1. Edit canonical knowledge under [`implementation/knowledge/`](implementation/knowledge/) — **never** the generated `.github/`, `.gemini/`, `.opencode/`, `.claude/`, `.cline/`, `.clinerules/` folders.
 2. Run the sync engine from the repo root:
    ```bash
    make sync

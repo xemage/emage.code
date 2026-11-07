@@ -2,7 +2,7 @@
 
 **ID:** T771
 **Owner:** devops-engineer
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Tier:** standard
 **Depends on:** T770
