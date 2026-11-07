@@ -2,7 +2,7 @@
 
 **ID:** T768
 **Owner:** security-engineer
-**Status:** pending
+**Status:** done
 **Priority:** P0
 **Tier:** standard
 **Depends on:** T766, T767
