@@ -2,10 +2,9 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T759 | Rehearse the release job in the real CI image (the user: "release go") | devops-engineer | in_progress | P0 | T758 | 2026-11-06 |
-| T760 | QA release gate for v10.0.0 (the user: "release go") | qa-engineer | pending | P0 | T759 | 2026-11-06 |
-| T761 | Tech Lead release review for v10.0.0 (the user: "release go") | tech-lead | pending | P0 | T758 | 2026-11-06 |
-| T762 | Security re-check for v10.0.0 (the user: "release go") | security-engineer | pending | P0 | T758 | 2026-11-06 |
+| T760 | QA release gate for v10.0.0 (the user: "release go") | qa-engineer | in_progress | P0 | T759 | 2026-11-06 |
+| T761 | Tech Lead release review for v10.0.0 (the user: "release go") | tech-lead | in_progress | P0 | T758 | 2026-11-06 |
+| T762 | Security re-check for v10.0.0 (the user: "release go") | security-engineer | in_progress | P0 | T758 | 2026-11-06 |
 | T763 | Release manager verdict for v10.0.0 (the user: "release go") | release-manager | pending | P0 | T760, T761, T762 | 2026-11-06 |
 | T764 | Publish v10.0.0 (the user: "release go") | orchestrator | pending | P0 | T763 | 2026-11-06 |
 

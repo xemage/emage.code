@@ -2,7 +2,7 @@
 
 **ID:** T760
 **Owner:** qa-engineer
-**Status:** pending
+**Status:** in_progress
 **Priority:** P0
 **Tier:** standard
 **Depends on:** T759

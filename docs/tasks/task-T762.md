@@ -2,7 +2,7 @@
 
 **ID:** T762
 **Owner:** security-engineer
-**Status:** pending
+**Status:** in_progress
 **Priority:** P0
 **Tier:** standard
 **Depends on:** T758
