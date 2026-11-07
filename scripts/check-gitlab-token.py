@@ -10,7 +10,9 @@ standard-library only and read-only: two ``GET`` requests, nothing is created, c
   GET <api>/personal_access_tokens/self   scopes (or granular_scopes), expiry, revoked/active
   GET <api>/user                          owner: bot, administrator, state
 
-Findings (exit code 1 when any warning is printed):
+Findings (each is a warning line, and any warning line makes the exit code 1; the undetermined-storage
+qualifier of the result line described below is not a warning line and keeps exit code 0 unless
+``--strict-storage`` is given):
   - a scope outside ``api``, ``read_api`` (``read_user``, ``write_repository``, ``ai_features``,
     ``sudo``, ``admin_mode``, ``create_runner`` ...): the roles need ``api`` and nothing else;
   - no expiry, or an expiry more than 90 days away;
@@ -21,9 +23,16 @@ Findings (exit code 1 when any warning is printed):
   - a token file on a persistent file system, i.e. anything but ``tmpfs`` or ``ramfs`` (T689,
     SEC-T665-03): the token is then at rest on disk, and the harness no longer assumes disk encryption.
     The file system is read from ``/proc/self/mountinfo`` (the device of the open descriptor first,
-    else the longest mount point that contains the resolved path). Where no mount table can be read
-    (non-Linux) or nothing matches, the check fails soft: an information line says the storage was
-    not determined and no warning is raised. The message names the variable, never the path.
+    else the longest mount point that contains the path the kernel holds for that descriptor,
+    ``/proc/self/fd/<n>``, so the check describes the file that was opened, never what the name
+    points at later; T714, SEC-T689-05). The result describes the file system as THIS process sees
+    it: a checker run in another mount namespace than the MCP server (a container, a devcontainer, a
+    different host) can see another file system for the same path. Where no mount table can be read
+    (non-Linux, e.g. macOS) or nothing matches, the check fails soft: an information line says the
+    storage was not determined and the result line ends with
+    ``WARNING: storage check not determined, the at-rest check was skipped`` (T714, SEC-T689-04);
+    the exit code stays 0 unless ``--strict-storage`` makes it a warning (exit 1). The message names
+    the variable, never the path.
 The role is NOT checked in the usual case: the two endpoints above are not documented to report it.
 The script then always prints "role: NOT checked ..." (verify Planner, Reporter or Developer in the
 project's Members page) and ends with "result: ok (scope, expiry and owner only; the role was not
@@ -85,6 +94,10 @@ MAX_TOKEN_FILE_BYTES = 4096
 PREFIX = "gitlab-token-check"
 MEMORY_FS_TYPES = frozenset({"tmpfs", "ramfs"})
 MOUNTINFO_PATH = "/proc/self/mountinfo"  # Linux only; elsewhere the storage check is skipped (fail soft)
+FD_LINK_DIR = "/proc/self/fd"  # Linux only: the path of an open descriptor (SEC-T689-05)
+STORAGE_NOT_DETERMINED = ("token file storage: not determined (no readable or matching mount table); "
+                          "the at-rest check was skipped")
+STORAGE_NOT_DETERMINED_RESULT = "WARNING: storage check not determined, the at-rest check was skipped"
 MAX_MOUNTINFO_BYTES = 4_000_000
 ROLE_NOT_CHECKED = (
     "role: NOT checked (the endpoints do not report it); verify Planner, Reporter or Developer "
@@ -116,6 +129,11 @@ class TokenSource:
 
     def __repr__(self) -> str:  # a stray print() or traceback must not show the value
         return f"TokenSource(description={self.description!r}, token=<redacted>)"
+
+    @property
+    def storage_not_determined(self) -> bool:
+        """True when a token file was read but where it is stored could not be determined (SEC-T689-04)."""
+        return STORAGE_NOT_DETERMINED in self.notes
 
 
 @dataclass
@@ -203,9 +221,13 @@ def _device_fs_type(st_dev: int, table: list[tuple[str, str, str]]) -> str | Non
     return types.pop() if len(types) == 1 else None
 
 
-def _path_fs_type(path: str, table: list[tuple[str, str, str]]) -> str | None:
-    """The fs type of the longest mount point that contains the resolved path (a later mount wins a tie)."""
-    real = os.path.realpath(path)
+def _path_fs_type(real: str | None, table: list[tuple[str, str, str]]) -> str | None:
+    """The fs type of the longest mount point that contains ``real`` (a later mount wins a tie).
+
+    ``real`` is the path of the open descriptor (``_descriptor_path``), already resolved by the
+    kernel; it is not resolved again here, so a renamed or relinked directory cannot change it."""
+    if not real:
+        return None
     best_len, best = -1, None
     for _, mount, fs in table:
         if (real == mount or real.startswith(mount.rstrip("/") + "/")) and len(mount) >= best_len:
@@ -213,8 +235,23 @@ def _path_fs_type(path: str, table: list[tuple[str, str, str]]) -> str | None:
     return best
 
 
-def filesystem_type(st_dev: int, path: str) -> str | None:
-    """The file system type that holds the token file, or None where it cannot be determined (fail soft)."""
+def _descriptor_path(fd: int) -> str | None:
+    """The path the kernel holds for the open descriptor ``fd`` (Linux ``/proc/self/fd``), or None.
+
+    SEC-T689-05: the path fallback uses this instead of resolving the name again, so the check describes
+    the file that was opened and checked, not whatever the name points at by then."""
+    try:
+        target = os.readlink(f"{FD_LINK_DIR}/{fd}")
+    except (OSError, ValueError, TypeError):
+        return None
+    target = target.removesuffix(" (deleted)")
+    return target if target.startswith("/") else None
+
+
+def filesystem_type(st_dev: int, path: str | None) -> str | None:
+    """The file system type that holds the token file, or None where it cannot be determined (fail soft).
+
+    ``path`` is the descriptor's path (``_descriptor_path``); None skips the path fallback."""
     try:
         table = _mount_table()
         if not table:
@@ -227,12 +264,11 @@ def filesystem_type(st_dev: int, path: str) -> str | None:
     return fs if FS_TYPE_RE.fullmatch(fs) else "unrecognised"
 
 
-def _storage_findings(st_dev: int, path: str, file_env: str) -> tuple[list[str], list[str]]:
+def _storage_findings(st_dev: int, path: str | None, file_env: str) -> tuple[list[str], list[str]]:
     """``(warnings, notes)`` about where the token file is stored. Neither ever holds the path."""
     fs = filesystem_type(st_dev, path)
     if fs is None:
-        return [], ["token file storage: not determined (no readable or matching mount table); "
-                    "the at-rest check was skipped"]
+        return [], [STORAGE_NOT_DETERMINED]
     if fs in MEMORY_FS_TYPES:
         return [], [f"token file storage: {fs} (in memory, not at rest on disk; swap is not checked)"]
     return [f"the token file named by {file_env} is on a persistent file system ({fs}), at rest on disk; "
@@ -277,7 +313,7 @@ def _read_token_file(path: str, file_env: str) -> tuple[str, list[str], list[str
                 f"the token file is accessible by group or others (mode {stat.S_IMODE(info.st_mode):04o}); "
                 "use chmod 600"
             )
-        storage_warnings, notes = _storage_findings(info.st_dev, path, file_env)
+        storage_warnings, notes = _storage_findings(info.st_dev, _descriptor_path(fd), file_env)
         warnings.extend(storage_warnings)
         data = os.read(fd, MAX_TOKEN_FILE_BYTES + 1)
     except OSError as exc:
@@ -483,11 +519,17 @@ class Reporter:
         print(f"{PREFIX}: {label}{self.clean(text)}", file=stream)
 
 
-def _result_text(findings: Findings) -> str:
+def _checks_text(findings: Findings) -> str:
     """`ok` is only claimed for what was checked: scope, expiry and owner, and the role only if it was seen."""
     if findings.warnings:
         return f"{len(findings.warnings)} warning(s)"
     return "ok" if findings.role_checked else "ok (scope, expiry and owner only; the role was not verified)"
+
+
+def _result_text(findings: Findings, storage_unknown: bool = False) -> str:
+    """The result line; a token file whose storage could not be determined is named in it (SEC-T689-04)."""
+    text = _checks_text(findings)
+    return f"{text}; {STORAGE_NOT_DETERMINED_RESULT}" if storage_unknown else text
 
 
 def _server_text(info: Mapping, key: str) -> str:
@@ -510,14 +552,25 @@ class _QuietParser(argparse.ArgumentParser):
         raise SystemExit(EXIT_ERROR)
 
 
+HELP_EPILOG = (
+    "Exit codes: 0 ok, 1 warnings, 2 error. Where the file system of the token file cannot be determined "
+    "(no readable or matching /proc/self/mountinfo, e.g. on macOS), the at-rest check is skipped: the "
+    "result line then ends with '" + STORAGE_NOT_DETERMINED_RESULT + "' and the exit code stays 0, "
+    "unless --strict-storage is given (then it is a warning, exit 1). The storage is the file system as "
+    "this process sees it; an MCP server in another mount namespace (container) can see another one."
+)
+
+
 def build_parser() -> argparse.ArgumentParser:
-    parser = _QuietParser(description="Check the GitLab token of the MCP server (read-only).")
+    parser = _QuietParser(description="Check the GitLab token of the MCP server (read-only).", epilog=HELP_EPILOG)
     parser.add_argument("--token-env", default=DEFAULT_TOKEN_ENV,
                         help=f"NAME of the variable that holds the token (default {DEFAULT_TOKEN_ENV}); not the token")
     parser.add_argument("--token-file-env", default=DEFAULT_FILE_ENV,
                         help=f"NAME of the variable that holds the token file path (default {DEFAULT_FILE_ENV})")
     parser.add_argument("--api-url", default=None, help="API base, https://<host>/api/v4 (default $GITLAB_API_URL, else gitlab.com)")
     parser.add_argument("--expected-host", default=None, help="the only host that may receive the token (default $CI_SERVER_HOST, else gitlab.com)")
+    parser.add_argument("--strict-storage", action="store_true",
+                        help="treat a token file whose storage could not be determined as a warning (exit 1)")
     return parser
 
 
@@ -540,7 +593,7 @@ def _report(reporter: Reporter, source: TokenSource, findings: Findings, user: M
         reporter.line(text, "error")
     if findings.errors:
         return EXIT_ERROR
-    reporter.line("result: " + _result_text(findings))
+    reporter.line("result: " + _result_text(findings, source.storage_not_determined))
     return EXIT_WARNINGS if findings.warnings else EXIT_OK
 
 
@@ -552,6 +605,9 @@ def _run(args: argparse.Namespace, environ: Mapping[str, str], opener) -> int:
         reporter.line(f"token source: {source.description}")
         reporter.line(f"GitLab API: {api_url}")
         findings, user = run_check(api_url, source.token, opener or make_opener(), dt.date.today())
+        if args.strict_storage and source.storage_not_determined:
+            source.warnings.append(f"the storage of {source.description} was not determined (--strict-storage); "
+                                   "check that the disk is encrypted or move the file to $XDG_RUNTIME_DIR or /dev/shm")
     except CheckError as exc:
         reporter.line(str(exc), "error")
         return EXIT_ERROR

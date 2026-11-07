@@ -57,7 +57,7 @@ from pathlib import Path
 from mcp.server.mcpserver import MCPServer
 
 from implementation.runtime.security import commands, executor
-from implementation.runtime.security.validation import parse_extra_roots, parse_worktree_list
+from implementation.runtime.security.validation import parse_extra_roots, parse_worktree_list, validate_allowed_root
 
 SERVER_NAME = "security-audit"
 EXTRA_ROOTS_ENV = "SECURITY_AUDIT_EXTRA_ROOTS"
@@ -85,8 +85,9 @@ def build_server(
     This is the ONLY function in this module that registers a tool. No fifth
     `@server.tool()` call exists anywhere else in this file or this package.
     `extra_roots` / `allow_git_worktrees` are launch-time options (module docstring).
+    An `allowed_root` of `/`, `$HOME` or an ancestor of `$HOME` is refused (T714, SEV-T690-04).
     """
-    allowed_root = allowed_root.resolve()
+    allowed_root = validate_allowed_root(allowed_root)
 
     def roots() -> tuple[Path, ...]:
         found = list(extra_roots)
@@ -187,7 +188,7 @@ def main(argv: list[str] | None = None) -> int:
     """
     args = _build_arg_parser().parse_args(argv)
     raw_roots = [*args.extra_root, *os.environ.get(EXTRA_ROOTS_ENV, "").split(os.pathsep)]
-    server = build_server(
+    server = build_server(  # a too-broad allowed or extra root raises PathValidationError: no start
         args.allowed_root,
         extra_roots=tuple(parse_extra_roots(raw_roots, args.allowed_root)),
         allow_git_worktrees=args.allow_git_worktrees,

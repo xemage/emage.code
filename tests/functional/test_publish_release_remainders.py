@@ -115,7 +115,7 @@ class TestEveryRedirectStatusIsRefused(unittest.TestCase):
             with self.subTest(code=code):
                 target, origin, url = self.pair(code)
                 with self.assertRaisesRegex(PR.ReleasePublishError, f"failed: {code}"):
-                    PR.gitlab_request("GET", url + "/x", "tok-fake")
+                    PR.gitlab_request("GET", url + "/x", PR.ApiCredential("tok-fake"))
                 self.assertEqual(origin.seen, ["tok-fake"])
                 self.assertEqual(target.seen, [])
 
@@ -124,14 +124,14 @@ class TestEveryRedirectStatusIsRefused(unittest.TestCase):
             with self.subTest(code=code):
                 target, _origin, url = self.pair(code)
                 with mock.patch.object(PR, "OPENER", urllib.request.build_opener()):
-                    PR.gitlab_request("GET", url + "/x", "tok-fake")
+                    PR.gitlab_request("GET", url + "/x", PR.ApiCredential("tok-fake"))
                 self.assertEqual(target.seen, ["tok-fake"], "the stdlib follows this status and re-sends the header")
 
     def test_mutation_following_redirects_is_detected(self):
         mutant = mutated("        return None  # the caller then sees the 3xx as an HTTPError",
                          "        return super().redirect_request(req, fp, code, msg, headers, newurl)")
         target, _origin, url = self.pair(307)
-        mutant.gitlab_request("GET", url + "/x", "tok-fake")
+        mutant.gitlab_request("GET", url + "/x", mutant.ApiCredential("tok-fake"))
         self.assertEqual(target.seen, ["tok-fake"])  # the mutant leaks the token to the redirect target
 
 
@@ -219,10 +219,10 @@ class TestSubjectSanitising(unittest.TestCase):
         self.assertIn("\u17b5", self.subjects(no_khmer, line)[0])
 
     def test_mutation_dropping_zwj_and_the_variation_selector_is_detected(self):
-        no_zwj = mutated("\\u200b-\\u200f", "\\u200b-\\u200c\\u200e\\u200f")
-        no_vs16 = mutated("\\ufe00-\\ufe0f", "\\ufe00-\\ufe0e")
+        no_cf = mutated('SUBJECT_UNSAFE_CATEGORIES = frozenset({"Cc", "Cf", ', 'SUBJECT_UNSAFE_CATEGORIES = frozenset({"Cc", ')
+        no_vs16 = mutated("range(0xFE00, 0xFE10)", "range(0xFE00, 0xFE0F)")
         self.assertEqual(self.subjects(PR, "feat: a\u200db\ufe0f"), ["feat: ab"])
-        self.assertEqual(self.subjects(no_zwj, "feat: a\u200db"), ["feat: a\u200db"])
+        self.assertEqual(self.subjects(no_cf, "feat: a\u200db"), ["feat: a\u200db"])
         self.assertEqual(self.subjects(no_vs16, "feat: b\ufe0f"), ["feat: b\ufe0f"])
 
     def test_markdown_and_ordinary_unicode_are_kept(self):
@@ -240,7 +240,7 @@ class TestSubjectSanitising(unittest.TestCase):
         self.assertEqual(len(self.subjects(PR, "fix: first feat: injected")), 1)
 
     def test_mutation_dropping_the_new_pattern_is_detected(self):
-        mutant = mutated('subjects = [SUBJECT_UNSAFE_RE.sub("", chunk)', 'subjects = [CONTROL_CHARS_RE.sub("", chunk)')
+        mutant = mutated('subjects = [strip_unsafe_subject(chunk)', 'subjects = [CONTROL_CHARS_RE.sub("", chunk)')
         line = "feat: a‮b\x85c­\U000e0041"
         self.assertEqual(self.subjects(PR, line), ["feat: abc"])
         self.assertEqual(self.subjects(mutant, line), [line])  # the ASCII-only class leaves all of it in

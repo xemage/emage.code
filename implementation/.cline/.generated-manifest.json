@@ -46,5 +46,6 @@
     "skills/validation-gates/SKILL.md",
     "skills/verification-before-completion/SKILL.md",
     "skills/worktree-isolation/SKILL.md"
-  ]
+  ],
+  "authoringOnly": []
 }

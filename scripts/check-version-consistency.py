@@ -37,9 +37,14 @@ Usage:
 
 This script is read-only: it never edits any file, it only reads and reports.
 
+Every file it scans must be valid UTF-8 (SEC-T741-06): reading with errors="ignore" let a byte
+such as `v8.0.0\xffabc` hide a stale claim, so an invalid file now ends the run, and the message
+names the path and the offset and none of the file's content.
+
 Exit codes:
     0  no version references older than the canonical marker were found
-    1  stale version reference(s) found, or the canonical marker could not be parsed
+    1  stale version reference(s) found, the canonical marker could not be parsed, or a
+       scanned file is not valid UTF-8
     2  usage/environment error (e.g. the marker file does not exist)
 """
 from __future__ import annotations
@@ -69,6 +74,11 @@ VERSION_RE = re.compile(r"\bv(\d+)\.(\d+)\.(\d+)(?:-[A-Za-z0-9.]+)?\b")
 # decision "Exclude docs/decisions/ (Recommended)" (D-T700-1, release-v9-audit-v1.md):
 # accepted ADRs are immutable per AGENTS.md (superseded, never edited), so a path such as
 # docs/releases/v8.0.0.md in ADR-010 is a dated record, not a current-state claim.
+# SEC-T745-09: the dependency trees of a local run, as exact paths from the root. A name or a marker file is not enough: a
+# committed pyvenv.cfg or node_modules elsewhere must not be able to silence this check for docs/wiki. So a virtual
+# environment under another name still fails a local run on a non-UTF-8 .md, naming the path: an accepted residual.
+DEPENDENCY_TREES = ("ci/js/node_modules/", ".venv/", "venv/")
+
 EXCLUDED_PREFIXES = (
     "docs/releases/",
     "docs/checkpoints/",
@@ -101,6 +111,31 @@ CONTEXT_WINDOW_CHARS = 80
 RELEASES_LINK_TEMPLATE = "docs/releases/{version}.md"
 
 DEFAULT_ROOT = Path(__file__).resolve().parent.parent
+
+
+class NotUtf8Error(Exception):
+    """A scanned file is not valid UTF-8. It holds where, never what: see refusal_line."""
+
+    def __init__(self, path: Path, offset: int) -> None:
+        super().__init__(f"not valid UTF-8 at file offset {offset}")
+        self.path = path
+        self.offset = offset
+
+
+def read_strict(path: Path) -> str:
+    """The text of ``path``, or NotUtf8Error (SEC-T741-06). A whole-file read in text mode decodes all of the file at once,
+    so the offset counts from its start, and the newlines are translated as before."""
+    try:
+        return path.read_text(encoding="utf-8")
+    except UnicodeDecodeError as failure:
+        raise NotUtf8Error(path, failure.start) from None
+
+
+def refusal_line(refused: NotUtf8Error, root: Path) -> str:
+    """One ASCII line: ascii() escapes a newline or an escape sequence in a file name, so a name cannot forge a log line."""
+    shown = refused.path.relative_to(root) if refused.path.is_relative_to(root) else refused.path
+    return (f"version-consistency: {ascii(shown.as_posix())} is not valid UTF-8: the first invalid byte is at "
+            f"file offset {refused.offset} (from 0); fix its encoding (SEC-T741-06)")
 
 
 def is_excluded(rel_path: Path) -> bool:
@@ -145,7 +180,7 @@ def scan_file(path: Path, canonical_key: tuple[int, int, int]) -> list[tuple[int
     `path` that is numerically older than canonical_key AND passes the "current state"
     context gate (see module docstring / `_is_current_state_claim`)."""
     findings: list[tuple[int, str]] = []
-    text = path.read_text(encoding="utf-8", errors="ignore")
+    text = read_strict(path)
     for match in VERSION_RE.finditer(text):
         key = (int(match.group(1)), int(match.group(2)), int(match.group(3)))
         if key >= canonical_key:
@@ -158,13 +193,17 @@ def scan_file(path: Path, canonical_key: tuple[int, int, int]) -> list[tuple[int
 
 
 def find_markdown_files(root: Path) -> list[Path]:
-    """All non-excluded *.md files under root, skipping .git entirely."""
+    """All non-excluded *.md files under root.
+
+    Skipped: .git; ``DEPENDENCY_TREES``, exact paths from the root, whose residual is stated there (SEC-T745-09); and the
+    paths ``is_excluded`` lists.
+    """
     files: list[Path] = []
     for path in sorted(root.rglob("*.md")):
         if ".git" in path.parts:
             continue
         rel = path.relative_to(root)
-        if is_excluded(rel):
+        if rel.as_posix().startswith(DEPENDENCY_TREES) or is_excluded(rel):
             continue
         files.append(path)
     return files
@@ -174,7 +213,7 @@ def scan_repository(
     root: Path, marker_path: Path
 ) -> tuple[str | None, dict[Path, list[tuple[int, str]]]]:
     """Read-only scan. Returns (canonical_raw_version_or_None, {rel_path: findings})."""
-    marker_text = marker_path.read_text(encoding="utf-8", errors="ignore")
+    marker_text = read_strict(marker_path)
     found = find_marker_version(marker_text)
     if found is None:
         return None, {}
@@ -213,7 +252,7 @@ def evaluate(
     for rel_path in sorted(drift):
         for line_no, version in drift[rel_path]:
             lines.append(
-                f"  {rel_path.as_posix()}:{line_no}: found {version} "
+                f"  {ascii(rel_path.as_posix())}:{line_no}: found {version} "
                 f"(older than canonical {canonical_raw})"
             )
     return 1, lines
@@ -244,7 +283,12 @@ def main(argv: list[str] | None = None) -> int:
         print(f"version-consistency: marker file not found: {marker_path}", file=sys.stderr)
         return 2
 
-    canonical_raw, drift = scan_repository(root, marker_path)
+    try:
+        canonical_raw, drift = scan_repository(root, marker_path)
+    except NotUtf8Error as refused:
+        print(refusal_line(refused, root))
+        print("VERSION CONSISTENCY: FAIL")
+        return 1
     exit_code, lines = evaluate(canonical_raw, drift)
     for line in lines:
         print(line)

@@ -194,11 +194,14 @@ servers:
     # `--platform-root .claude` is a disclosed, Claude-Code-specific default today (per
     # scoped-execution-primitive-v1.md §4's own honest per-platform scoping) -- other
     # platforms' `.generated-manifest.json` resolution is not solved by this entry.
+    # T722 (TD-T671-K5): no `--index-dir`: the server derives the index directory of the workspace's own
+    # project from its git remote, `implementation/runtime/memory/_index/<org>-<repo>` (the build.py
+    # `--output-dir` convention); it was hard-coded as `em-age-emage.code` for every project.
     tags: [extended]
     denyUnlessGranted: true
     transport: stdio
     command: python3
-    args: ["-m", "implementation.runtime.memory.context_retriever_mcp_server", "--index-dir", "implementation/runtime/memory/_index/em-age-emage.code", "--workspace-root", ".", "--platform-root", ".claude"]
+    args: ["-m", "implementation.runtime.memory.context_retriever_mcp_server", "--workspace-root", ".", "--platform-root", ".claude"]
 
   security-audit:
     # T497 -- fixed-command audit-command server for @security-engineer, per

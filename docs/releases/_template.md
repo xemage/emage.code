@@ -1,6 +1,6 @@
 # Release vX.Y.Z
 
-Copy this file to `docs/releases/vX.Y.Z.md` on the `release/vX.Y.Z` branch before the tag is cut, and delete this paragraph. It is the release's one document: `scripts/verify-release-docs.py --tag vX.Y.Z` checks it, its sections follow skill `release-workflow` § 4, the release job publishes it whole as the GitLab Release description, and `/prepare-release` step 7 writes the release gate verdict into it. Keep the first line as `# Release vX.Y.Z`. Do not quote the verdict section's heading text above that section. Cite repository files as code spans or absolute URLs, not relative links. If `scripts/install.sh` points users to this document for the Cursor migration item, the gate requires that item under `## Migration Guide`: a `###` to `######` heading, or a line that starts with a bold lead (`**...**`, optionally after a list marker), whose text contains the word `Cursor` (see `scripts/verify-release-docs.py --help`).
+Copy this file to `docs/releases/vX.Y.Z.md` on the `release/vX.Y.Z` branch before the tag is cut, and delete this paragraph. It is the release's one document: `scripts/verify-release-docs.py --tag vX.Y.Z` checks it, its sections follow skill `release-workflow` § 4, the release job publishes it whole as the GitLab Release description, and `/prepare-release` step 7 writes the release gate verdict into it. Keep the first line as `# Release vX.Y.Z`. Do not quote the verdict section's heading text above that section. Replace every `<placeholder>` in this file: the gate refuses a release document that holds HTML other than comments, and it reads many placeholders left outside code as HTML, though not all, and it does not read the others. Only literal text that keeps its angle brackets goes in a code span: an unfilled placeholder in one passes. Cite repository files as code spans or absolute URLs, not relative links. If `scripts/install.sh` points users to this document for the Cursor migration item, the gate requires that item under `## Migration Guide`: a `###` to `######` heading whose text contains the word `Cursor`, or a paragraph that opens with a `**` span holding the word, optionally in a list (see `scripts/verify-release-docs.py --help`).
 
 ## Summary
 
@@ -84,6 +84,10 @@ declared home for the block; fill in every field before the tag is cut.
 - **Blocker IDs**: [if FAIL — list blocking issues with owners]
 - **Release manager**: release-manager
 - **Timestamp**: <ISO-8601>
+- **Issued at commit**: <sha the release files were at when the verdict was issued>
+- **Independent check**: <PASS | CONDITIONAL_PASS | FAIL> at <sha>, by <tech-lead | orchestrator | top-level session>
+
+If the Status is CONDITIONAL_PASS, list the conditions below the fields, in the Conditions format of the `release-manager` verdict block. A `SECURITY:MEDIUM` the user accepted for this release fills every slot of that format.
 
 ## Rollback Plan
 

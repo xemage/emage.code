@@ -164,7 +164,7 @@ quality_gates:
   - Defect routing closure (QA findings mapped to owners and resolved state).
   - Security-to-release blocking logic consistency.
 - Command regression checks:
-  - `new-project`, `new-poc`, `evaluate-poc`, `code-review`, `prepare-release`, `team-status`.
+  - `new-project`, `new-poc`, `evaluate-poc`, `code-review`, `prepare-release` (authoring repository only), `team-status`.
 
 ### Scorecard Template
 Use this scorecard for each scenario:

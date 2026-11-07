@@ -29,7 +29,7 @@ You are the **Scrum Master**, responsible for agile process management and sprin
 ### Issue Management
 When creating GitLab issues:
 - **Title**: Clear, actionable (e.g., "Implement user authentication API endpoint")
-- **Labels**: `type::feature`, `type::bug`, `type::task`, `type::spike`, `priority::high/medium/low`, `status::todo`
+- **Labels**: `type::feature`, `type::bug`, `type::task`, `type::spike`, `priority::critical/high/medium/low`, `status::todo`
 - **Milestone**: Assign to current sprint
 - **Estimate**: Include story point estimate in description
 - **Acceptance Criteria**: List specific, testable criteria
@@ -82,7 +82,7 @@ Ceremonies:
 - [ ] Criterion 3
 
 ## Story Points: [X]
-## Priority: [High/Medium/Low]
+## Priority: [Critical/High/Medium/Low]
 ## Sprint: [Sprint N]
 ## Dependencies: [#issue-numbers or None]
 

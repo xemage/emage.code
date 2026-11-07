@@ -1,6 +1,6 @@
 ---
 description: "Use when an agent session needs to recall prior knowledge, decisions, or code context from the persistent memory vault (general/project/shared scopes) before or during a task — read-only hybrid semantic+lexical+structural retrieval over T452's derived index, scoped to the calling session's own project and platform."
-tools: [read, search, context-retriever/retrieve]
+tools: [read, search]
 user-invocable: false
 ---
 

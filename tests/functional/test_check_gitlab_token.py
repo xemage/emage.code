@@ -588,6 +588,150 @@ def run_main_with(module: types.ModuleType, environ: dict):
     return code, out.getvalue(), err.getvalue()
 
 
+class StorageResultTests(unittest.TestCase):
+    """T714 (SEC-T689-04): a token file whose storage was not determined never ends in a bare `result: ok`;
+    the result line carries a WARNING qualifier (exit code unchanged, 0) and `--strict-storage` makes it a
+    warning (exit 1). Documented in `--help`."""
+
+    QUALIFIER = "; WARNING: storage check not determined, the at-rest check was skipped"
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.dir = os.path.realpath(self.tmp.name)
+        self.file = Path(self.dir) / "token"
+        self.file.write_text(FAKE_TOKEN + "\n", encoding="utf-8")
+        self.file.chmod(0o600)
+        self.env = {"GITLAB_PERSONAL_ACCESS_TOKEN_FILE": str(self.file)}
+        self.absent = str(Path(self.dir) / "absent")
+
+    def run_with(self, module, argv, mountinfo):
+        from unittest import mock
+        out, err = io.StringIO(), io.StringIO()
+        with mock.patch.object(module, "MOUNTINFO_PATH", mountinfo), \
+                contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = module.main(argv, environ=self.env, opener=fresh_opener())
+        return code, out.getvalue(), err.getvalue()
+
+    def test_an_undetermined_storage_is_named_in_the_result_line_and_stays_exit_0(self):
+        code, out, err = self.run_with(M, [], self.absent)
+        self.assertEqual((code, err), (0, ""))
+        self.assertIn("result: ok (scope, expiry and owner only; the role was not verified)" + self.QUALIFIER + "\n", out)
+        self.assertNotRegex(out, r"result: ok(\n| \(scope, expiry and owner only; the role was not verified\)\n)")
+        self.assertNotIn(FAKE_TOKEN, out)
+
+    def test_strict_storage_makes_it_a_warning_and_exit_1(self):
+        code, out, err = self.run_with(M, ["--strict-storage"], self.absent)
+        self.assertEqual((code, err), (1, ""))
+        self.assertIn("warning: the storage of the file named by GITLAB_PERSONAL_ACCESS_TOKEN_FILE was not "
+                      "determined (--strict-storage)", out)
+        self.assertIn("result: 1 warning(s)" + self.QUALIFIER + "\n", out)
+        self.assertNotIn(self.dir, out)
+
+    def test_a_determined_storage_and_the_variable_mode_carry_no_qualifier(self):
+        tmpfs = write_mountinfo(self.dir, [mountinfo_line(device_of(self.dir), self.dir, "tmpfs")])
+        for argv in ([], ["--strict-storage"]):
+            with self.subTest(argv=argv):
+                code, out, _ = self.run_with(M, argv, tmpfs)
+                self.assertEqual(code, 0)
+                self.assertNotIn("WARNING", out)
+        self.env = {"GITLAB_PERSONAL_ACCESS_TOKEN": FAKE_TOKEN}
+        code, out, _ = self.run_with(M, ["--strict-storage"], self.absent)
+        self.assertEqual(code, 0)
+        self.assertNotIn("WARNING", out)
+
+    def test_the_help_documents_the_qualifier_the_exit_code_and_the_flag(self):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out), self.assertRaises(SystemExit) as stop:
+            M.main(["--help"], environ={})
+        self.assertEqual(stop.exception.code, 0)
+        text = " ".join(out.getvalue().split())
+        for needle in ("--strict-storage", "Exit codes: 0 ok, 1 warnings, 2 error",
+                       "WARNING: storage check not determined, the at-rest check was skipped",
+                       "the exit code stays 0", "mount namespace"):
+            self.assertIn(needle, text, needle)
+
+    def test_mutation_proof_without_the_qualifier_the_result_is_a_bare_ok(self):
+        mutant = mutated('    return f"{text}; {STORAGE_NOT_DETERMINED_RESULT}" if storage_unknown else text',
+                         "    return text")
+        code, out, _ = self.run_with(mutant, [], self.absent)
+        self.assertEqual(code, 0)
+        self.assertNotIn(self.QUALIFIER, out)
+
+    def test_mutation_proof_without_strict_storage_wiring_the_exit_code_stays_0(self):
+        mutant = mutated("        if args.strict_storage and source.storage_not_determined:",
+                         "        if False:")
+        code, _, _ = self.run_with(mutant, ["--strict-storage"], self.absent)
+        self.assertEqual(code, 0)
+
+
+@unittest.skipUnless(os.path.isdir("/proc/self/fd"), "no /proc/self/fd on this host")
+class DescriptorPathTests(unittest.TestCase):
+    """T714 (SEC-T689-05): the path fallback uses the path of the OPEN descriptor, not the name resolved again,
+    so a directory renamed or replaced between the open and the storage check cannot change the answer."""
+
+    OTHER = "999:999"
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.base = Path(os.path.realpath(self.tmp.name))
+        self.named, self.moved = self.base / "named", self.base / "moved"
+        self.named.mkdir()
+        (self.named / "token").write_text(FAKE_TOKEN, encoding="utf-8")
+        (self.named / "token").chmod(0o600)
+        # no device row matches, so the path fallback decides: the old name lies on "ext4", the rest on tmpfs
+        self.mountinfo = write_mountinfo(self.base, [mountinfo_line(self.OTHER, "/", "tmpfs", 1),
+                                                     mountinfo_line("999:998", str(self.named), "ext4")])
+
+    def load_after_a_swap(self, module):
+        """Open the file, then move its directory away and put an empty directory under the old name."""
+        from unittest import mock
+        real_open = module._open_token_file
+
+        def open_then_swap(path, file_env):
+            fd = real_open(path, file_env)
+            os.rename(self.named, self.moved)
+            self.named.mkdir()
+            return fd
+
+        with mock.patch.object(module, "_open_token_file", open_then_swap), \
+                mock.patch.object(module, "MOUNTINFO_PATH", self.mountinfo):
+            return module.load_token("T", "F", {"F": str(self.named / "token")})
+
+    def test_the_descriptor_path_follows_the_opened_file(self):
+        fd = os.open(self.named / "token", os.O_RDONLY)
+        self.addCleanup(os.close, fd)
+        self.assertEqual(M._descriptor_path(fd), str(self.named / "token"))
+        os.rename(self.named, self.moved)
+        self.assertEqual(M._descriptor_path(fd), str(self.moved / "token"))
+
+    def test_after_a_swap_the_opened_file_decides(self):
+        source = self.load_after_a_swap(M)
+        self.assertEqual(source.warnings, [])
+        self.assertEqual(source.notes, ["token file storage: tmpfs (in memory, not at rest on disk; swap is not checked)"])
+
+    def test_the_name_is_not_resolved_again(self):
+        from unittest import mock
+        with mock.patch.object(M.os.path, "realpath", side_effect=AssertionError("realpath called")), \
+                mock.patch.object(M, "MOUNTINFO_PATH", self.mountinfo):
+            source = M.load_token("T", "F", {"F": str(self.named / "token")})
+        self.assertTrue(source.warnings)  # under "named", on ext4 in the fake table
+
+    def test_without_a_descriptor_path_the_fallback_is_not_determined(self):
+        from unittest import mock
+        with mock.patch.object(M, "FD_LINK_DIR", str(self.base / "no-proc")), \
+                mock.patch.object(M, "MOUNTINFO_PATH", self.mountinfo):
+            source = M.load_token("T", "F", {"F": str(self.named / "token")})
+        self.assertTrue(source.storage_not_determined)
+        self.assertEqual(source.warnings, [])
+
+    def test_mutation_proof_the_name_would_decide_after_a_swap(self):
+        mutant = mutated("        storage_warnings, notes = _storage_findings(info.st_dev, _descriptor_path(fd), file_env)",
+                         "        storage_warnings, notes = _storage_findings(info.st_dev, os.path.realpath(path), file_env)")
+        self.assertTrue(self.load_after_a_swap(mutant).warnings)
+
+
 # -------------------------------------------------------------------- analysis ----
 
 class AnalysisTests(unittest.TestCase):

@@ -24,6 +24,7 @@ second location (T675).
 from __future__ import annotations
 
 import argparse
+import bisect
 import datetime as dt
 import http.client
 import json
@@ -31,11 +32,12 @@ import os
 import re
 import subprocess
 import sys
+import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, NamedTuple
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -54,21 +56,38 @@ SUBJECT_RE = re.compile(r"^(?P<type>[a-z]+)(?:\([^)]+\))?(?:!)?:\s+(?P<desc>.+)$
 MERGE_BRANCH_RE = re.compile(r"^Merge branch '([^']+)' into '([^']+)'$")
 TAG_RE = re.compile(r"^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$")  # the CI tag rule
 SIMPLE_RELEASE_BRANCH_RE = re.compile(r"^release/v\d+\.\d+\.\d+$")
+# A released changelog entry: any H2 except ``## [Unreleased]`` (T716, D-T710-2).
+RELEASED_HEADING_RE = re.compile(r"^## (?!\[Unreleased\][ \t]*$)", re.M | re.I)
 # The only API base shape: .../api/v4. A segment is never "." or "..".
 API_PATH_RE = re.compile(r"(/(?!\.{1,2}(?:/|$))[A-Za-z0-9._~-]+)*/api/v4")
 ENV_NAME_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 CONTROL_CHARS_RE = re.compile(r"[\x00-\x1f\x7f]")
-# T676 (SEC-T675-10): a commit subject also loses C1 controls and the invisible/bidirectional formatting characters
-# (zero-width, LRM/RLM, ALM, LS/PS, LRE..RLO, LRI..PDI, BOM, soft hyphen, Hangul and braille fillers, variation
-# selectors, Unicode tag characters) that make a changelog line read differently from its bytes.
-# T685 (SEC-T676-12): also U+034F COMBINING GRAPHEME JOINER and the Khmer inherent vowels U+17B4/U+17B5 (all
-# default-ignorable and invisible). Cosmetic cost, by design and tested: U+200D (ZWJ) and U+FE0F (emoji variation
-# selector) are in the class, so an emoji ZWJ sequence prints as its separate emoji and an emoji loses its
-# presentation selector; no emoji code point is removed. U+034F is rare outside collation and ligature fixes for
-# Hebrew, Arabic and Tibetan, and the Khmer vowels are discouraged in Unicode, so a real subject loses no meaning.
-# Markdown characters are NOT escaped: subjects use backticks and underscores legitimately, and the authors of
-# the tagged history are the maintainers.
-SUBJECT_UNSAFE_RE = re.compile("[\x00-\x1f\x7f-\x9f\u061c\u200b-\u200f\u202a-\u202e\u2028\u2029\u2060-\u2069\ufeff\u00ad\u034f\u115f\u1160\u17b4\u17b5\u3164\uffa0\u2800\ufe00-\ufe0f\U000e0000-\U000e007f\U000e0100-\U000e01ef]")
+# T676 (SEC-T675-10), T685 (SEC-T676-12), T716 (SEC-T685-02): a commit subject loses every character that makes a
+# changelog line read differently from its bytes. A CATEGORY test, so a code point the old explicit class missed
+# (U+180E, U+206A-206F, U+FFF0-FFF8, U+1BCA0-1BCA3, U+1D173-1D17A, the unassigned rest of U+E0000-E0FFF) cannot slip
+# through: Cc (C0 and C1 controls), Cf (format: zero-width, LRM/RLM, ALM, bidi embeddings and isolates, BOM, soft
+# hyphen, Unicode tags), Cs (surrogates), Co (private use), Cn (unassigned in this Python's Unicode database), Zl and
+# Zp (line and paragraph separators). Plus the default-ignorable or blank code points whose category is Mn, Lo or So:
+# U+034F COMBINING GRAPHEME JOINER, the Hangul fillers U+115F/U+1160/U+3164/U+FFA0, the Khmer inherent vowels
+# U+17B4/U+17B5, the Mongolian variation selectors U+180B-180D and U+180F, the braille blank U+2800, and the variation
+# selectors U+FE00-FE0F and U+E0100-E01EF. Cosmetic cost, by design and tested: U+200D (ZWJ, Cf) and U+FE0F (VS16) go,
+# so an emoji ZWJ sequence prints as its separate emoji and an emoji loses its presentation selector; no emoji code
+# point is removed. A character newer than this Python's Unicode database counts as Cn and is removed too.
+# Markdown is escaped when the changelog is rendered (markdown_entry), not here.
+SUBJECT_UNSAFE_CATEGORIES = frozenset({"Cc", "Cf", "Cs", "Co", "Cn", "Zl", "Zp"})
+SUBJECT_INVISIBLE_MARKS = frozenset(
+    "\u034f\u115f\u1160\u17b4\u17b5\u180b\u180c\u180d\u180f\u2800\u3164\uffa0"
+    + "".join(map(chr, range(0xFE00, 0xFE10))) + "".join(map(chr, range(0xE0100, 0xE01F0)))
+)
+# T730 (SEC-T716-02): the Cn test above depends on the Unicode database of the Python that runs the release. A newer
+# database could ASSIGN a code point in a reserved Default_Ignorable_Code_Point range (DerivedCoreProperties.txt), and
+# the category test would then keep it. These ranges are therefore removed by number, whatever the database says:
+# U+2065, U+FFF0-FFF8 and U+E0000-E0FFF (the whole block; its reserved members are U+E0000, U+E0002-E001F,
+# U+E0080-E00FF and U+E01F0-E0FFF). The database this table was reviewed against is the release image's
+# (python:3.12-alpine: Unicode 15.0.0, asserted by tests/functional/test_publish_release_t730.py); re-read the
+# Default_Ignorable list of the new version when that image changes.
+SUBJECT_REVIEWED_UNICODE_VERSION = "15.0.0"
+SUBJECT_RESERVED_IGNORABLE_RANGES = ((0x2065, 0x2065), (0xFFF0, 0xFFF8), (0xE0000, 0xE0FFF))
 HTTP_TIMEOUT_SECONDS = 30
 # T686: the only headers the token may travel in (a fixed allowlist, never taken from input); the default keeps the
 # behaviour of every earlier call. The job token goes in JOB-TOKEN (GitLab "Releases API" accepts it), a personal,
@@ -84,15 +103,42 @@ WITHHELD_ENV_NAMES = {"WIKI_TOKEN", "CI_JOB_TOKEN"}
 # one of the secret values (the values of the withheld names, and the token main() resolved, also from --token).
 # The same rule is mirrored in the release job's apk bootstrap in .gitlab-ci.yml (tests pin the two together).
 # git reads the checkout credential from .git/config (the clone URL the runner wrote), not from the environment.
-CHILD_ENV_APK_NAMES = frozenset({
-    "PATH", "HOME", "LANG", "LANGUAGE", "TMPDIR", "TZ", "SSL_CERT_FILE", "SSL_CERT_DIR", "CURL_CA_BUNDLE",
-    "http_proxy", "https_proxy", "no_proxy", "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "ALL_PROXY",
-})
-CHILD_ENV_NAMES = CHILD_ENV_APK_NAMES | frozenset({
-    "GIT_SSL_CAINFO", "GIT_SSL_CAPATH", "GIT_ASKPASS", "GIT_TERMINAL_PROMPT", "GIT_EXEC_PATH",
-    "GIT_CONFIG_NOSYSTEM", "GIT_CONFIG_GLOBAL", "GIT_CONFIG_SYSTEM", "GIT_CONFIG_COUNT",
-})
-CHILD_ENV_PATTERN = re.compile(r"LC_[A-Z_]+|GIT_CONFIG_(?:KEY|VALUE)_[0-9]+")
+# T716 (SEC-T686-07): every name with the reason it is passed. Dropped, because each is a configuration or execution
+# channel that neither the image's git nor apk needs: GIT_EXEC_PATH (the directory git runs its sub-commands from),
+# GIT_ASKPASS (a program git runs to ask for a credential; the checkout credential is in .git/config and
+# GIT_TERMINAL_PROMPT=0 makes a missing one fail), GIT_CONFIG_GLOBAL and GIT_CONFIG_SYSTEM (another configuration file,
+# which can set core.fsmonitor, core.sshCommand or a credential helper) and GIT_CONFIG_COUNT/KEY_n/VALUE_n (configuration
+# entries from the environment: the same channel, and a re-encoded token inside a VALUE_n passed the substring filter).
+# With them gone git reads its defaults. That the runner sets none of them for the job is (unverified) until a tag
+# pipeline runs. The apk bootstrap in .gitlab-ci.yml passes exactly the CHILD_ENV_APK_REASONS names and the LC_ rule.
+_PROXY = "egress proxy of a runner without direct access (libcurl for git, apk); TLS still checks the server"
+_CA = "trust anchor of a private CA or a TLS-inspecting proxy; a path only, it adds no code or configuration"
+CHILD_ENV_APK_REASONS = {
+    "PATH": "finds git and apk",
+    "HOME": "per-user files of git and apk live under it; without it git warns and guesses",
+    "LANG": "locale of messages and of path-name decoding",
+    "LANGUAGE": "message language (gettext)",
+    "TMPDIR": "where temporary files go",
+    "TZ": "time zone of the dates git prints",
+    "SSL_CERT_FILE": _CA + " (OpenSSL)",
+    "SSL_CERT_DIR": _CA + " (OpenSSL)",
+    "CURL_CA_BUNDLE": _CA + " (curl; whether libcurl inside git reads it is unverified)",
+    "http_proxy": _PROXY, "https_proxy": _PROXY, "HTTP_PROXY": _PROXY, "HTTPS_PROXY": _PROXY,
+    "ALL_PROXY": _PROXY + " (libcurl's proxy for every scheme)",
+    "no_proxy": "hosts that bypass the proxy (an internal GitLab host)",
+    "NO_PROXY": "hosts that bypass the proxy (an internal GitLab host)",
+}
+CHILD_ENV_REASONS = {
+    **CHILD_ENV_APK_REASONS,
+    "GIT_SSL_CAINFO": _CA + " (git's https, a self-managed GitLab)",
+    "GIT_SSL_CAPATH": _CA + " (git's https, a self-managed GitLab)",
+    "GIT_TERMINAL_PROMPT": "only turns the credential prompt off, so a missing credential fails instead of waiting",
+    "GIT_CONFIG_NOSYSTEM": "only turns the system configuration file off; it cannot add configuration",
+}
+CHILD_ENV_APK_NAMES = frozenset(CHILD_ENV_APK_REASONS)
+CHILD_ENV_NAMES = frozenset(CHILD_ENV_REASONS)
+# T716 (SEC-T686-08): the locale variables (LC_ALL, LC_CTYPE, ...); the apk bootstrap uses this same pattern text.
+CHILD_ENV_PATTERN = re.compile(r"LC_[A-Z_]+")
 WITHHELD_ENV_VALUES: set[str] = set()  # main() adds the resolved token (it may come from --token, not from a name)
 
 
@@ -240,11 +286,26 @@ def ensure_full_history() -> None:
         run_git(["fetch", "--unshallow", "--tags", "origin"])
 
 
+def tag_sort_key(tag: str) -> tuple:
+    """Semantic-version precedence of a release tag (T716, T717-D3): ``v1.0.0-rc.1`` < ``v1.0.0`` < ``v1.1.0``.
+
+    git's ``--sort=v:refname`` without ``versionsort.suffix`` puts ``v1.0.0-rc.1`` AFTER ``v1.0.0``, so the commit range
+    of the next release would start at the rc. As ``semver_key`` in check-main-develop-drift.py, a pre-release sorts
+    before its final; pre-release identifiers compare as SemVer 2.0.0 says (numbers numerically, below names).
+    """
+    core, _, pre = tag[1:].partition("-")
+    major, minor, patch = (int(x) for x in core.split("."))
+    idents = tuple((0, int(x), "") if x.isdigit() else (1, 0, x) for x in pre.split(".")) if pre else ()
+    return (major, minor, patch, 0 if pre else 1, idents)
+
+
 def get_tag_list() -> list[str]:
-    output = run_git(["tag", "--sort=-v:refname"])
+    """Release tags, newest first by semantic version (not git's version sort)."""
+    output = run_git(["tag", "--list"])
     # Only release tags: a stray tag name must never become ``previous_tag`` (and so
     # reach git arguments and CHANGELOG.md).
-    return [line for line in output.splitlines() if TAG_RE.fullmatch(line)]
+    tags = [line for line in output.splitlines() if TAG_RE.fullmatch(line)]
+    return sorted(tags, key=tag_sort_key, reverse=True)
 
 
 def resolve_previous_tag(current_tag: str, tags: list[str]) -> str | None:
@@ -272,6 +333,17 @@ def _revision_range(current_tag: str, previous_tag: str | None) -> str:
     return f"{previous_tag}..{current_tag}"
 
 
+def subject_char_is_unsafe(char: str) -> bool:
+    """True for a character a changelog subject must not keep (see SUBJECT_UNSAFE_CATEGORIES)."""
+    if any(lo <= ord(char) <= hi for lo, hi in SUBJECT_RESERVED_IGNORABLE_RANGES):
+        return True
+    return unicodedata.category(char) in SUBJECT_UNSAFE_CATEGORIES or char in SUBJECT_INVISIBLE_MARKS
+
+
+def strip_unsafe_subject(text: str) -> str:
+    return "".join(char for char in text if not subject_char_is_unsafe(char))
+
+
 def get_commit_subjects(current_tag: str, previous_tag: str | None) -> list[str]:
     revision = _revision_range(current_tag, previous_tag)
     # Filter F1: merge commits are excluded structurally, not by subject text.
@@ -279,7 +351,7 @@ def get_commit_subjects(current_tag: str, previous_tag: str | None) -> list[str]
     # \x0b, \x0c, \x1c-\x1e, \x85, \u2028, \u2029 (str.splitlines()), nor "\n" can split one subject into several
     # changelog entries; git never puts a NUL inside a subject.
     output = run_git(["log", "--no-merges", "--pretty=%s%x00", "--end-of-options", revision, "--"])
-    subjects = [SUBJECT_UNSAFE_RE.sub("", chunk).strip() for chunk in output.split("\x00")]
+    subjects = [strip_unsafe_subject(chunk).strip() for chunk in output.split("\x00")]
     subjects = [line for line in subjects if line]
     if not subjects:
         raise ReleasePublishError(f"no commits found for revision range '{revision}'")
@@ -348,6 +420,129 @@ def classify_subjects(subjects: Iterable[str]) -> dict[str, list[str]]:
     return grouped
 
 
+# T716 (SEC-T675-10): a changelog entry is a commit subject, so it must not become Markdown structure: no raw HTML
+# (an unclosed "<!--" would hide every later entry), no link or image, no character reference (``&#8238;`` would bring
+# back the bidi override the subject lost), no heading, list, rule or fence at the start of the item. Outside code
+# spans the characters \ < > [ ] & and a backtick of an unmatched run are backslash-escaped (CommonMark renders an
+# escaped punctuation character as itself); code spans (of at most MAX_CODE_SPAN_BACKTICKS backticks, see below),
+# emphasis and underscores are kept, because subjects use them.
+# The GitLab Release description never holds a subject: it is the release document, whole (render_release_description).
+# T730 (SEC-T716-03): GitLab turns text into links that CommonMark leaves alone. (1) References: ``@user``, ``#123``,
+# ``!12``, ``~label``, ``%milestone``, ``$snippet``, ``^alert``. The sigils are backslash-escaped too: CommonMark renders
+# an escaped ASCII punctuation character as itself, and GitLab keeps a backslash-escaped reference character literal
+# (its Markdown pre/post escape filters, gitlab-org/gitlab!45922; not observed on a live instance here). The rendered
+# text is unchanged; the cost, by design, is that ``(#42)`` in a subject no longer links to issue 42. (2) Bare URLs:
+# GitLab autolinks ``scheme://...`` and ``www....`` in text, and a backslash does not stop that, so a token (a run
+# without whitespace or backticks) holding ``://``, or ``www.`` not preceded by an ASCII letter or digit (GFM also
+# starts a www autolink after ``(``, ``*``, ``_`` and ``~``), becomes a code span: shown in monospace, never linked or
+# rendered. A wrapped token next to a kept code span is set off by one space, so the two backtick runs cannot merge.
+# T730 (SEC-T730-01/-02): the output is parsed again as rendered Markdown (rendered_code_parts); if any ``://`` or
+# ``www.`` is still outside a code span, the entry falls back to escaping only (fail closed). Tokenising by a split on
+# ``[\s`]+`` and finding closers by bisection keep this linear-time on long subjects. Residual, documented: a bare
+# e-mail address can still be autolinked as ``mailto:``.
+# T730 (SEC-T730-05): the claim "a backtick run opens a code span" holds only up to a renderer's limit: comrak reads an
+# opening run above 80 backticks, and cmark one above 1000, as literal text, so the inside of a longer "code span" is
+# parsed as Markdown (both limits read from their source, not run). A run above MAX_CODE_SPAN_BACKTICKS therefore opens
+# no code span here: it is escaped like any other unmatched run, and what it enclosed is neutralised as plain text.
+MAX_CODE_SPAN_BACKTICKS = 32
+REFERENCE_SIGILS = "@#!~%$^"
+MARKDOWN_ESCAPES = str.maketrans({char: "\\" + char for char in "\\<>[]&`" + REFERENCE_SIGILS})
+URL_HINT_RE = re.compile(r"://|(?<![A-Za-z0-9])www\.", re.IGNORECASE)
+TOKEN_SEPARATOR_RE = re.compile(r"([\s`]+)")
+BACKTICK_RUN_RE = re.compile(r"`+")
+ESCAPE_OR_RUN_RE = re.compile(r"\\[\s\S]|`+")
+LEADING_BLOCK_RE = re.compile(r"(?:#{1,6}|[-+*]|\d{1,9}(?P<num>[.)]))(?=[ \t]|$)|(?P<rule>[-*_])(?:[ \t]*(?P=rule)){2,}[ \t]*$|~{3}")
+
+
+def closer_finder(text: str):
+    """A function (length, after) -> end of the first backtick run of exactly ``length`` that starts at or after
+    ``after``, or None. Bisection over the run starts per length, so a long subject costs O(n log n), not O(n^2)."""
+    starts_by_length: dict[int, list[int]] = {}
+    for run in BACKTICK_RUN_RE.finditer(text):
+        starts_by_length.setdefault(len(run.group()), []).append(run.start())
+
+    def closer_end(length: int, after: int) -> int | None:
+        starts = starts_by_length.get(length, [])
+        k = bisect.bisect_left(starts, after)
+        return starts[k] + length if k < len(starts) else None
+
+    return closer_end
+
+
+def code_span_parts(text: str) -> list[tuple[bool, str]]:
+    """``text`` as (is_code_span, part) pairs: a backtick run of at most MAX_CODE_SPAN_BACKTICKS opens a code span that
+    the next run of the SAME length closes; a longer run, or a run with no closer, is literal text. This is CommonMark's
+    matching with a limit stricter than the renderers' (SEC-T730-05)."""
+    closer_end = closer_finder(text)
+    parts: list[tuple[bool, str]] = []
+    start = 0
+    for opener in BACKTICK_RUN_RE.finditer(text):
+        if opener.start() < start or len(opener.group()) > MAX_CODE_SPAN_BACKTICKS:
+            continue  # inside the code span just closed, or too long to open one
+        end = closer_end(len(opener.group()), opener.end())
+        if end is not None:
+            parts += [(False, text[start:opener.start()]), (True, text[opener.start():end])]
+            start = end
+    return parts + [(False, text[start:])]
+
+
+def rendered_code_parts(text: str) -> list[tuple[bool, str]]:
+    """Like code_span_parts, for OUTPUT Markdown: outside code spans a backslash escapes the next character, so an
+    escaped backtick opens nothing; inside a code span it is literal (CommonMark). A run above
+    MAX_CODE_SPAN_BACKTICKS opens nothing either, so what it encloses counts as text (SEC-T730-05)."""
+    closer_end = closer_finder(text)
+    parts: list[tuple[bool, str]] = []
+    start = pos = 0
+    while (found := ESCAPE_OR_RUN_RE.search(text, pos)) is not None:
+        pos = found.end()
+        opens = found.group()[0] != "\\" and len(found.group()) <= MAX_CODE_SPAN_BACKTICKS
+        end = closer_end(len(found.group()), found.end()) if opens else None
+        if end is not None:
+            parts += [(False, text[start:found.start()]), (True, text[found.start():end])]
+            start = pos = end
+    return parts + [(False, text[start:])]
+
+
+def neutralised_text(part: str) -> list[tuple[bool, str]]:
+    """A part outside code spans as (wrapped, piece) pairs: a URL-like token (URL_HINT_RE) becomes a code span, every
+    other token and every separator is escaped (MARKDOWN_ESCAPES)."""
+    pieces: list[tuple[bool, str]] = []
+    for index, chunk in enumerate(TOKEN_SEPARATOR_RE.split(part)):
+        wrapped = index % 2 == 0 and URL_HINT_RE.search(chunk) is not None
+        if chunk:
+            pieces.append((wrapped, f"`{chunk}`" if wrapped else chunk.translate(MARKDOWN_ESCAPES)))
+    return pieces
+
+
+def wrapped_entry(text: str) -> str:
+    """The entry with URL-like tokens wrapped; one space between a wrapped token and a neighbouring kept code span."""
+    out: list[str] = []
+    last_wrapped = after_code = False
+    for is_code, part in code_span_parts(text):
+        if is_code:
+            out.append((" " if last_wrapped else "") + part)
+            last_wrapped, after_code = False, True
+            continue
+        pieces = neutralised_text(part)
+        if pieces and pieces[0][0] and after_code:
+            out.append(" ")
+        out += [piece for _, piece in pieces]
+        last_wrapped, after_code = bool(pieces) and pieces[-1][0], False
+    return "".join(out)
+
+
+def markdown_entry(text: str) -> str:
+    """One changelog entry with every Markdown structure outside code spans escaped (see MARKDOWN_ESCAPES)."""
+    out = wrapped_entry(text)
+    if any(URL_HINT_RE.search(part) for is_code, part in rendered_code_parts(out) if not is_code):
+        out = "".join(part if is_code else part.translate(MARKDOWN_ESCAPES) for is_code, part in code_span_parts(text))
+    lead = LEADING_BLOCK_RE.match(out)
+    if lead:
+        cut = lead.start("num") if lead.group("num") else 0
+        out = out[:cut] + "\\" + out[cut:]
+    return out
+
+
 def render_changelog_section(previous_tag: str | None, grouped: dict[str, list[str]]) -> str:
     lines: list[str] = ["## Changelog"]
     if previous_tag:
@@ -362,7 +557,7 @@ def render_changelog_section(previous_tag: str | None, grouped: dict[str, list[s
             continue
         wrote = True
         lines.append(f"### {section}")
-        lines.extend(f"- {entry}" for entry in entries)
+        lines.extend(f"- {markdown_entry(entry)}" for entry in entries)
         lines.append("")
 
     if not wrote:
@@ -400,8 +595,9 @@ def update_changelog(tag: str, changelog_section: str) -> str:
 
     if existing.startswith("# Changelog"):
         # K-12: the entry goes below the introductory paragraph(s), above the newest
-        # existing entry (the first ``## `` heading); with no entry yet, after the intro.
-        first_entry = re.search(r"^## ", existing, re.M)
+        # existing entry; with no entry yet, at the end. T716 (D-T710-2): ``## [Unreleased]``
+        # is not an entry and stays on top, as Keep a Changelog orders it.
+        first_entry = RELEASED_HEADING_RE.search(existing)
         head = existing[: first_entry.start()] if first_entry else existing
         tail = existing[first_entry.start():] if first_entry else ""
         return head.rstrip("\n") + "\n\n" + section + tail
@@ -430,13 +626,47 @@ def validate_token_header(name: str) -> str:
     return name
 
 
-def gitlab_request(
-    method: str, url: str, token: str, payload: dict | None = None, token_header: str = DEFAULT_TOKEN_HEADER,
-) -> dict:
-    validate_token_header(token_header)
+class ApiCredential:
+    """The API token and the one header that carries it (T716, TL-T708-06).
+
+    T730 (SEC-T716-04): not a tuple, so ``tuple()``, unpacking, iteration, ``_asdict()`` and ``%``-formatting have
+    nothing to expose; ``__slots__`` leaves no ``__dict__`` (``vars()``, ``dataclasses.asdict``); pickling and copying
+    are refused; it is immutable; ``repr``/``str``/``format`` show the header only.
+    """
+
+    __slots__ = ("token", "header")
+
+    def __init__(self, token: str, header: str = DEFAULT_TOKEN_HEADER) -> None:
+        object.__setattr__(self, "token", token)
+        object.__setattr__(self, "header", header)
+
+    def __setattr__(self, name: str, value: object) -> None:
+        raise AttributeError("ApiCredential is immutable")
+
+    def __delattr__(self, name: str) -> None:
+        raise AttributeError("ApiCredential is immutable")
+
+    def __reduce_ex__(self, protocol: object) -> object:
+        raise TypeError("ApiCredential cannot be pickled or copied")
+
+    def __repr__(self) -> str:
+        return f"ApiCredential(header={self.header!r})"
+
+
+class ApiTarget(NamedTuple):
+    """Where a release goes: the API base, the project id, the credential and the host pin (T716, TL-T708-06)."""
+
+    api_v4_url: str
+    project_id: str
+    credential: ApiCredential
+    expected_host: str | None = None
+
+
+def gitlab_request(method: str, url: str, credential: ApiCredential, payload: dict | None = None) -> dict:
+    validate_token_header(credential.header)
     data = None if payload is None else json.dumps(payload).encode("utf-8")
     request = urllib.request.Request(url=url, method=method, data=data)
-    request.add_header(token_header, token)
+    request.add_header(credential.header, credential.token)
     request.add_header("Content-Type", "application/json")
 
     try:
@@ -460,13 +690,10 @@ def _error_body(exc: urllib.error.HTTPError) -> str:
         return ""
 
 
-def create_or_update_release(
-    tag: str, api_v4_url: str, project_id: str, token: str, description: str,
-    expected_host: str | None = None, token_header: str = DEFAULT_TOKEN_HEADER,
-) -> None:
-    validate_token_header(token_header)
-    validate_api_target(api_v4_url, project_id, expected_host)
-    endpoint = f"{api_v4_url}/projects/{project_id}/releases/{tag}"
+def create_or_update_release(tag: str, target: ApiTarget, description: str) -> None:
+    validate_token_header(target.credential.header)
+    validate_api_target(target.api_v4_url, target.project_id, target.expected_host)
+    endpoint = f"{target.api_v4_url}/projects/{target.project_id}/releases/{tag}"
     payload = {
         "name": tag,
         "tag_name": tag,
@@ -476,18 +703,17 @@ def create_or_update_release(
 
     exists = False
     try:
-        current = gitlab_request("GET", endpoint, token, token_header=token_header)
+        current = gitlab_request("GET", endpoint, target.credential)
         exists = current.get("tag_name") == tag
     except ReleasePublishError as exc:
         if exc.status != 404:
             raise
 
     if exists:
-        response = gitlab_request("PUT", endpoint, token, payload, token_header=token_header)
+        response = gitlab_request("PUT", endpoint, target.credential, payload)
     else:
-        response = gitlab_request(
-            "POST", f"{api_v4_url}/projects/{project_id}/releases", token, payload, token_header=token_header
-        )
+        collection = f"{target.api_v4_url}/projects/{target.project_id}/releases"
+        response = gitlab_request("POST", collection, target.credential, payload)
 
     if response.get("tag_name") != tag:
         raise ReleasePublishError(f"GitLab release publish failed: unexpected response {response}")
@@ -540,15 +766,8 @@ def main() -> int:
     write_artifacts(changelog)
 
     if not args.skip_api:
-        create_or_update_release(
-            tag=args.tag,
-            api_v4_url=args.api_v4_url,
-            project_id=args.project_id,
-            token=token,
-            description=description,
-            expected_host=expected_host,
-            token_header=args.token_header,
-        )
+        target = ApiTarget(args.api_v4_url, args.project_id, ApiCredential(token, args.token_header), expected_host)
+        create_or_update_release(args.tag, target, description)
 
     print(f"release-publish: regenerated CHANGELOG.md for {args.tag}")
     if args.skip_api:

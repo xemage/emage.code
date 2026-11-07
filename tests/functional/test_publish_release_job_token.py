@@ -25,6 +25,7 @@ from pathlib import Path
 from unittest import mock
 
 from tests._helpers.repo import repo_root
+from tests.functional.test_ci_hash_pins import DRIFT_GATE_FETCHES, DRIFT_GATE_JOB
 
 SCRIPT = repo_root() / "scripts" / "publish-release.py"
 CI = repo_root() / ".gitlab-ci.yml"
@@ -81,7 +82,7 @@ class TestTheHeaderTheTokenTravelsIn(unittest.TestCase):
     def send(self, module=PR, **kwargs) -> urllib.request.Request:
         opener = _RecordingOpener()
         with mock.patch.object(module, "OPENER", opener):
-            module.gitlab_request("GET", API + "/x", SECRET, **kwargs)
+            module.gitlab_request("GET", API + "/x", module.ApiCredential(SECRET, kwargs.get("token_header", "PRIVATE-TOKEN")))
         self.assertEqual(len(opener.requests), 1)
         return opener.requests[0]
 
@@ -110,7 +111,7 @@ class TestTheHeaderTheTokenTravelsIn(unittest.TestCase):
             with self.subTest(header=name):
                 opener = _RecordingOpener(lambda r: _raise404(r) if r.get_method() == "GET" else _TagResponse())
                 with mock.patch.object(PR, "OPENER", opener):
-                    PR.create_or_update_release("v1.2.3", API, "7", SECRET, "desc", "gitlab.invalid", token_header=name)
+                    PR.create_or_update_release("v1.2.3", PR.ApiTarget(API, "7", PR.ApiCredential(SECRET, name), "gitlab.invalid"), "desc")
                 self.assertEqual([r.get_method() for r in opener.requests], ["GET", "POST"])
                 for request in opener.requests:
                     self.assertEqual(headers_of(request).get(name.lower()), SECRET)
@@ -121,7 +122,7 @@ class TestTheHeaderTheTokenTravelsIn(unittest.TestCase):
             with self.subTest(header=name):
                 opener = _RecordingOpener(lambda r: _TagResponse())  # the GET finds the release, so the call is a PUT
                 with mock.patch.object(PR, "OPENER", opener):
-                    PR.create_or_update_release("v1.2.3", API, "7", SECRET, "desc", "gitlab.invalid", token_header=name)
+                    PR.create_or_update_release("v1.2.3", PR.ApiTarget(API, "7", PR.ApiCredential(SECRET, name), "gitlab.invalid"), "desc")
                 self.assertEqual([r.get_method() for r in opener.requests], ["GET", "PUT"])
                 for request in opener.requests:
                     self.assertEqual(headers_of(request).get(name.lower()), SECRET)
@@ -129,20 +130,22 @@ class TestTheHeaderTheTokenTravelsIn(unittest.TestCase):
     def test_the_default_through_create_or_update_release_is_private_token(self):
         opener = _RecordingOpener(lambda r: _TagResponse())
         with mock.patch.object(PR, "OPENER", opener):
-            PR.create_or_update_release("v1.2.3", API, "7", SECRET, "desc", "gitlab.invalid")
+            PR.create_or_update_release("v1.2.3", PR.ApiTarget(API, "7", PR.ApiCredential(SECRET), "gitlab.invalid"), "desc")
         self.assertTrue(all("private-token" in headers_of(r) for r in opener.requests))
 
     def test_mutation_sending_every_token_as_private_token_is_detected(self):
-        mutant = mutated("request.add_header(token_header, token)", 'request.add_header("PRIVATE-TOKEN", token)')
+        mutant = mutated("request.add_header(credential.header, credential.token)",
+                         'request.add_header("PRIVATE-TOKEN", credential.token)')
         headers = headers_of(self.send(mutant, token_header="JOB-TOKEN"))
         self.assertNotIn("job-token", headers)  # the mutant ignores the choice; the test above would fail
 
     def test_mutation_create_or_update_release_dropping_the_header_is_detected(self):
-        mutant = mutated('"POST", f"{api_v4_url}/projects/{project_id}/releases", token, payload, token_header=token_header',
-                         '"POST", f"{api_v4_url}/projects/{project_id}/releases", token, payload')
+        mutant = mutated('gitlab_request("POST", collection, target.credential, payload)',
+                         'gitlab_request("POST", collection, ApiCredential(target.credential.token), payload)')
         opener = _RecordingOpener(lambda r: _raise404(r) if r.get_method() == "GET" else _TagResponse())
         with mock.patch.object(mutant, "OPENER", opener):
-            mutant.create_or_update_release("v1.2.3", API, "7", SECRET, "d", "gitlab.invalid", token_header="JOB-TOKEN")
+            mutant.create_or_update_release(
+                "v1.2.3", mutant.ApiTarget(API, "7", mutant.ApiCredential(SECRET, "JOB-TOKEN"), "gitlab.invalid"), "d")
         post = [r for r in opener.requests if r.get_method() == "POST"][0]
         self.assertNotIn("job-token", headers_of(post))
 
@@ -173,14 +176,15 @@ class TestTheAllowlist(unittest.TestCase):
             with self.subTest(name=name):
                 opener = _RecordingOpener()
                 with mock.patch.object(PR, "OPENER", opener), self.assertRaises(PR.ReleasePublishError):
-                    PR.gitlab_request("GET", API + "/x", SECRET, token_header=name)
+                    PR.gitlab_request("GET", API + "/x", PR.ApiCredential(SECRET, name))
                 self.assertEqual(opener.requests, [])
 
     def test_create_or_update_release_refuses_an_unknown_header_before_any_network_call(self):
         opener = _RecordingOpener()
         with mock.patch.object(PR, "OPENER", opener), mock.patch.object(PR, "gitlab_request") as request, \
                 self.assertRaises(PR.ReleasePublishError):
-            PR.create_or_update_release("v1.2.3", API, "7", SECRET, "d", "gitlab.invalid", token_header="Authorization")
+            PR.create_or_update_release(
+                "v1.2.3", PR.ApiTarget(API, "7", PR.ApiCredential(SECRET, "Authorization"), "gitlab.invalid"), "d")
         self.assertEqual(opener.requests, [])
         request.assert_not_called()  # the check is its own, not only the one inside gitlab_request
 
@@ -215,7 +219,7 @@ class TestTheAllowlist(unittest.TestCase):
         self.assertEqual(mutant.validate_token_header("Authorization"), "Authorization")  # the mutant accepts any name
         opener = _RecordingOpener()
         with mock.patch.object(mutant, "OPENER", opener):
-            mutant.gitlab_request("GET", API + "/x", SECRET, token_header="X-Evil")
+            mutant.gitlab_request("GET", API + "/x", mutant.ApiCredential(SECRET, "X-Evil"))
         self.assertIn("x-evil", headers_of(opener.requests[0]))  # ... and sends the token in it
 
     def test_mutation_dropping_the_argparse_choices_is_detected(self):
@@ -317,10 +321,12 @@ class TestNoVariableHoldingTheJobTokenReachesAChild(unittest.TestCase):
         "http_proxy": f"http://user:{SECRET}@proxy.invalid:3128",
     }
     FINE = {"PATH": "/usr/bin:/bin", "HOME": "/root", "LC_ALL": "C", "https_proxy": "http://proxy.invalid:3128",
-            "GIT_SSL_CAINFO": "/etc/ssl/ca.pem", "GIT_CONFIG_COUNT": "1", "GIT_CONFIG_KEY_0": "http.sslVerify",
-            "GIT_CONFIG_VALUE_0": "true", "TMPDIR": "/tmp"}
+            "GIT_SSL_CAINFO": "/etc/ssl/ca.pem", "GIT_TERMINAL_PROMPT": "0", "TMPDIR": "/tmp"}
+    # T716 (SEC-T686-07): the configuration and execution channels are no longer passed
     NOT_LISTED = {"KEEP_ME": "1", "CI_COMMIT_TAG": "v1.2.3", "CI_API_V4_URL": API, "GIT_TRACE": "1",
-                  "GIT_DEPTH": "0", "CI_PROJECT_ID": "1", "GIT_CONFIG_PARAMETERS": "'a=b'"}
+                  "GIT_DEPTH": "0", "CI_PROJECT_ID": "1", "GIT_CONFIG_PARAMETERS": "'a=b'", "GIT_CONFIG_COUNT": "1",
+                  "GIT_CONFIG_KEY_0": "http.sslVerify", "GIT_CONFIG_VALUE_0": "true", "GIT_EXEC_PATH": "/tmp/x",
+                  "GIT_ASKPASS": "/tmp/askpass", "GIT_CONFIG_GLOBAL": "/tmp/gitconfig", "GIT_CONFIG_SYSTEM": "/tmp/sys"}
 
     def git_env(self, module=PR, environ=None) -> dict:
         seen: list[dict] = []
@@ -448,6 +454,45 @@ class TestNoVariableHoldingTheJobTokenReachesAChild(unittest.TestCase):
         self.assertFalse([n for n in names if n.startswith("GIT_")])
         self.assertTrue(set(PR.CHILD_ENV_APK_NAMES) <= set(PR.CHILD_ENV_NAMES))
 
+    def test_the_lc_rule_is_the_same_in_the_bootstrap_and_the_script(self):
+        """T716 (SEC-T686-08): the same pattern text, and the same names pass both filters."""
+        match = re.search(r"re\.fullmatch\('([^']+)', i\[0\]\)", self.bootstrap())
+        self.assertIsNotNone(match)
+        self.assertEqual(match.group(1), PR.CHILD_ENV_PATTERN.pattern)
+        names = {"LC_ALL": "C", "LC_CTYPE": "C.UTF-8", "LC_MESSAGES": "C", "LC_": "x", "LC_all": "x", "LC_X1": "x",
+                 "LC_A-B": "x", "LCALL": "x", "XLC_ALL": "x", "LC_ALL_": "x"}
+        seen = self.run_bootstrap(self.bootstrap(), {**names, "HOME": "/root"})
+        apk = {n for n in names if n in seen}
+        git = {n for n in names if n in self.git_env(environ={**names, "HOME": "/root"})}
+        self.assertEqual(apk, git)
+        self.assertEqual(apk, {"LC_ALL", "LC_CTYPE", "LC_MESSAGES", "LC_ALL_"})
+
+    def test_mutation_the_old_prefix_rule_in_the_bootstrap_is_detected(self):
+        code = self.bootstrap().replace("re.fullmatch('LC_[A-Z_]+', i[0])", "i[0].startswith('LC_')")
+        self.assertNotEqual(code, self.bootstrap())
+        seen = self.run_bootstrap(code, {"LC_all": "x", "LC_X1": "x", "HOME": "/root"})
+        self.assertTrue({"LC_all", "LC_X1"} <= set(seen))  # the prefix rule lets names through that git never gets
+
+    def test_every_passed_name_has_a_reason_and_no_channel_is_passed(self):
+        """T716 (SEC-T686-07): a reason per allowlisted name; the configuration and execution channels are gone."""
+        self.assertEqual(set(PR.CHILD_ENV_NAMES), set(PR.CHILD_ENV_REASONS))
+        self.assertEqual(set(PR.CHILD_ENV_APK_NAMES), set(PR.CHILD_ENV_APK_REASONS))
+        for name, reason in PR.CHILD_ENV_REASONS.items():
+            self.assertGreater(len(reason.strip()), 10, name)
+        dropped = {"GIT_EXEC_PATH", "GIT_ASKPASS", "GIT_CONFIG_GLOBAL", "GIT_CONFIG_SYSTEM", "GIT_CONFIG_COUNT",
+                   "GIT_CONFIG_KEY_0", "GIT_CONFIG_VALUE_0", "GIT_CONFIG_PARAMETERS", "GIT_SSH_COMMAND", "GIT_PROXY_COMMAND"}
+        for name in dropped:
+            self.assertFalse(name in PR.CHILD_ENV_NAMES or PR.CHILD_ENV_PATTERN.fullmatch(name), name)
+        env = self.git_env(environ={**{n: "/tmp/x" for n in dropped}, "PATH": "/bin"})
+        self.assertEqual(env, {"PATH": "/bin"})
+
+    def test_mutation_passing_git_config_entries_again_is_detected(self):
+        mutant = mutated('CHILD_ENV_PATTERN = re.compile(r"LC_[A-Z_]+")',
+                         'CHILD_ENV_PATTERN = re.compile(r"LC_[A-Z_]+|GIT_CONFIG_(?:KEY|VALUE)_[0-9]+")')
+        environ = {"GIT_CONFIG_KEY_0": "core.fsmonitor", "GIT_CONFIG_VALUE_0": "/tmp/x", "PATH": "/bin"}
+        self.assertEqual(self.git_env(environ=environ), {"PATH": "/bin"})
+        self.assertIn("GIT_CONFIG_VALUE_0", self.git_env(mutant, environ))
+
     def test_the_apk_bootstrap_names_both_ci_tokens_as_the_secret_sources(self):
         self.assertIn("k in ('CI_JOB_TOKEN', 'WIKI_TOKEN')", self.bootstrap())
 
@@ -458,7 +503,7 @@ class TestNoVariableHoldingTheJobTokenReachesAChild(unittest.TestCase):
         self.assertIn("LANG", seen)  # the mutant lets an allowlisted name carry the token
 
     def test_mutation_the_apk_bootstrap_without_the_allowlist_is_detected(self):
-        code = self.bootstrap().replace("(i[0] in ok or i[0].startswith('LC_')) and ", "")
+        code = self.bootstrap().replace("(i[0] in ok or re.fullmatch('LC_[A-Z_]+', i[0])) and ", "")
         seen = self.run_bootstrap(code, {"CI_REGISTRY_PASSWORD": "other", "KEEP_ME": "1", "HOME": "/root"})
         self.assertIn("KEEP_ME", seen)
 
@@ -505,7 +550,10 @@ class TestTheCiJobs(unittest.TestCase):
             if name == "release":
                 continue
             with self.subTest(job=name):
-                self.assertNotIn("CI_JOB_TOKEN", "\n".join(self.code(job)))
+                # T750: the drift gate's two fetches keep it by name, for a runner whose credential helper reads it
+                kept = [f"    - {line}" for line in DRIFT_GATE_FETCHES] if name == DRIFT_GATE_JOB else []
+                code = [ln for ln in self.code(job) if ln not in kept]
+                self.assertNotIn("CI_JOB_TOKEN", "\n".join(code))
                 self.assertNotIn("--token-header", job)
 
     def test_wiki_sync_still_runs_the_wiki_script_with_the_wiki_token(self):
@@ -563,21 +611,21 @@ class TestRedirectsAreStillRefusedWithTheNewHeader(unittest.TestCase):
             with self.subTest(code=code):
                 target, origin, url = self.pair(code)
                 with self.assertRaisesRegex(PR.ReleasePublishError, f"failed: {code}"):
-                    PR.gitlab_request("GET", url + "/x", SECRET, token_header="JOB-TOKEN")
+                    PR.gitlab_request("GET", url + "/x", PR.ApiCredential(SECRET, "JOB-TOKEN"))
                 self.assertEqual(origin.seen, [(SECRET, None)])
                 self.assertEqual(target.seen, [])
 
     def test_control_the_default_opener_would_resend_the_job_token_header(self):
         target, _origin, url = self.pair(307)
         with mock.patch.object(PR, "OPENER", urllib.request.build_opener()):
-            PR.gitlab_request("GET", url + "/x", SECRET, token_header="JOB-TOKEN")
+            PR.gitlab_request("GET", url + "/x", PR.ApiCredential(SECRET, "JOB-TOKEN"))
         self.assertEqual(target.seen, [(SECRET, None)])
 
     def test_mutation_following_redirects_is_detected_for_the_new_header(self):
         mutant = mutated("        return None  # the caller then sees the 3xx as an HTTPError",
                          "        return super().redirect_request(req, fp, code, msg, headers, newurl)")
         target, _origin, url = self.pair(302)
-        mutant.gitlab_request("GET", url + "/x", SECRET, token_header="JOB-TOKEN")
+        mutant.gitlab_request("GET", url + "/x", mutant.ApiCredential(SECRET, "JOB-TOKEN"))
         self.assertEqual(target.seen, [(SECRET, None)])  # the mutant leaks the job token
 
 

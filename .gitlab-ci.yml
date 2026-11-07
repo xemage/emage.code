@@ -12,14 +12,16 @@
 
 # Supply-chain pins (T675, SEC-T650-04; T676, SEC-T675-03 and SEC-T675-09). Every image is pinned
 # by the digest of its multi-arch index (tag kept for readers; the digest is what is pulled).
-# Digests read from the Docker Hub registry API on 2026-10-22 (python:3.12-alpine was bumped from the
-# 2026-10-16 digest at the same time); each was re-fetched and its body hashes to the digest. Alpine in
-# each image: node:24-alpine = 3.24.3 (Node 24.22.1), python:3.12-alpine = 3.24.3 (Python 3.12.15).
-# ci_images_reviewed_on: 2026-10-22   (tests/functional/test_ci_hash_pins.py fails when this is older than 120 days)
+# Digests read from the Docker Hub registry API, each image on its own date; each was re-fetched and its body hashes to the digest.
+# python:3.12-alpine: read 2026-11-06 (T765, SEC-T756-01: CVE-2026-115557, bumped from the 2026-10-22 digest) = Alpine 3.24.4, Python 3.12.16.
+# node:24-alpine: read 2026-10-22 = Alpine 3.24.3, Node 24.22.1. Not bumped on 2026-11-06, though a newer digest exists: a Node security release is announced for
+# 2026-11-11, no tag job uses Node, so the tag need not wait for it, and this image is bumped at the next review (SEC-T756-05). That day the pinned digest was re-fetched and re-hashed unchanged (T765), and the tag's state read (T755).
+# The date below is one date for both images: the day each was last looked at, which for node:24-alpine does not mean a newer digest was taken.
+# ci_images_reviewed_on: 2026-11-06   (tests/functional/test_ci_hash_pins.py fails when this is older than 120 days)
 # Both bases are supported (T676 replaced the end-of-life node:20-alpine and alpine:3.20: the jobs
 # that held WIKI_TOKEN or ran the repository's Python scripts now share the one python image, which
 # is also the interpreter the tests run on). Every `apk add` package carries a fuzzy `~=MAJOR.MINOR`
-# pin (`nodejs` and `docker-cli`: MAJOR): an exact `=` pin breaks as soon as Alpine ships a security
+# pin (`nodejs`, `npm` and `docker-cli`: MAJOR): an exact `=` pin breaks as soon as Alpine ships a security
 # rebuild of the same upstream version, which would fail the release job. To bump an image:
 # re-read the digest, read the Alpine version of its base layer, re-read the package versions
 # in that branch's APKINDEX, and change digest and pins together. Do not add an unpinned
@@ -48,7 +50,7 @@ variables:
 
 markdown-links:
   stage: lint
-  image: python:3.12-alpine@sha256:92abd2ba1bdfb48b1e2ac224b582dd1558d0d4bb11c903b126b5bf9c448fd656
+  image: python:3.12-alpine@sha256:e064671ca452259bab50e8e2c7bd896e39e9a343bb06ca25234adf6fe18d0fc7
   allow_failure: true
   script:
     - |
@@ -89,7 +91,7 @@ markdown-links:
 
 unit-tests:
   stage: test
-  image: python:3.12-alpine@sha256:92abd2ba1bdfb48b1e2ac224b582dd1558d0d4bb11c903b126b5bf9c448fd656
+  image: python:3.12-alpine@sha256:e064671ca452259bab50e8e2c7bd896e39e9a343bb06ca25234adf6fe18d0fc7
   tags:
     - dind  # Docker socket binding for T223 docker availability test
   variables:
@@ -97,6 +99,11 @@ unit-tests:
     DOCKER_HOST: unix:///var/run/docker.sock
   before_script:
     - apk add --no-cache 'git~=2.54' 'bash~=5.3' 'nodejs~=24' 'docker-cli~=29' 'ripgrep~=15.1'
+    # T732 (SEC-T677-01): acorn for the JavaScript function-size guard, exact pin and sha512 integrity
+    # from ci/js/package-lock.json; --ignore-scripts runs no lifecycle script (ci/js/README.md).
+    # With CI set, test_function_size fails instead of skipping when the parser is missing.
+    - apk add --no-cache 'npm~=11'
+    - npm ci --ignore-scripts --prefix ci/js --no-audit --no-fund
     # ripgrep and mcp==2.2.0 (the version in implementation/runtime/security/requirements-mcp-server.txt)
     # let the grep_content and live audit-server tests run here; with CI set they fail instead of skipping.
     # test_install_cursor_removal installs a real `git archive v8.0.0` tree; GIT_DEPTH is shallow and
@@ -126,7 +133,7 @@ verify-knowledge-drift:
 
 validation-super-gate:
   stage: verify
-  image: python:3.12-alpine@sha256:92abd2ba1bdfb48b1e2ac224b582dd1558d0d4bb11c903b126b5bf9c448fd656
+  image: python:3.12-alpine@sha256:e064671ca452259bab50e8e2c7bd896e39e9a343bb06ca25234adf6fe18d0fc7
   before_script:
     - 'python3 -m pip install --no-cache-dir --disable-pip-version-check --quiet --require-hashes --only-binary=:all: -r ci/requirements-gate.txt'
   script:
@@ -137,7 +144,7 @@ validation-super-gate:
 
 main-develop-drift-check:
   stage: verify
-  image: python:3.12-alpine@sha256:92abd2ba1bdfb48b1e2ac224b582dd1558d0d4bb11c903b126b5bf9c448fd656
+  image: python:3.12-alpine@sha256:e064671ca452259bab50e8e2c7bd896e39e9a343bb06ca25234adf6fe18d0fc7
   variables:
     GIT_DEPTH: "1"
   before_script:
@@ -172,7 +179,7 @@ sync-no-diff:
 wiki-sync:
   stage: wiki-sync
   needs: ["sync-no-diff"]
-  image: python:3.12-alpine@sha256:92abd2ba1bdfb48b1e2ac224b582dd1558d0d4bb11c903b126b5bf9c448fd656
+  image: python:3.12-alpine@sha256:e064671ca452259bab50e8e2c7bd896e39e9a343bb06ca25234adf6fe18d0fc7
   script:
     - |
       if [ -z "$WIKI_TOKEN" ]; then
@@ -190,36 +197,60 @@ wiki-sync:
 
 release-docs-gate:
   stage: release
-  image: python:3.12-alpine@sha256:92abd2ba1bdfb48b1e2ac224b582dd1558d0d4bb11c903b126b5bf9c448fd656
+  image: python:3.12-alpine@sha256:e064671ca452259bab50e8e2c7bd896e39e9a343bb06ca25234adf6fe18d0fc7
+  # T739 (plan-136): the gate reads release documents with markdown-it-py and exits 1 without it. This job runs only
+  # in a tag pipeline, so no merge request pipeline runs this install: watch it in the next release or release candidate.
+  # T744 (SEC-T741-17): a clean checkout, so a job on a shared runner leaves nothing in the build directory for this one.
+  # T750 (SEC-T745-01): a crafted document at the gate's size cap takes 48 s on the locked parser (T749, measured), and this
+  # job took 6 s for v9.0.0. Ten minutes stops it well before the project's 3600 s; a job stopped here fails closed.
+  timeout: 10 minutes
+  variables:
+    GIT_STRATEGY: clone
+  before_script:
+    # T750 (SEC-T745-05): nothing in this job uses git, so the clone credential goes. On GitLab Runner 19.5.2 it is not in
+    # .git/config: that file includes $CI_PROJECT_DIR.tmp/.gitlab-runner.ext.conf, and the token sits there until the
+    # runner's cleanup stage (shells/abstract.go). The later stages need nothing in that directory: cleanup uses rm -f, and
+    # a cleanup failure only warns (source reading).
+    - rm -rf .git "${CI_PROJECT_DIR}.tmp"
+    # An allowlist, so a project variable added later stays out too. The shell that runs these lines keeps its variables.
+    - 'python3 -I scripts/run-allowlisted.py -- python3 -m pip install --no-cache-dir --disable-pip-version-check --quiet --require-hashes --only-binary=:all: -r ci/requirements-release.txt'
   script:
-    - python3 scripts/verify-release-docs.py --tag "${CI_COMMIT_TAG}"
+    - python3 -I scripts/run-allowlisted.py -- python3 scripts/verify-release-docs.py --tag "${CI_COMMIT_TAG}"
   rules:
     - if: '$CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$/'
 
 main-develop-drift-gate:
   stage: release
-  image: python:3.12-alpine@sha256:92abd2ba1bdfb48b1e2ac224b582dd1558d0d4bb11c903b126b5bf9c448fd656
+  image: python:3.12-alpine@sha256:e064671ca452259bab50e8e2c7bd896e39e9a343bb06ca25234adf6fe18d0fc7
+  # T744 (SEC-T741-17): a clean checkout, as on release-docs-gate. No dedicated runner tag: that needs a runner first.
   variables:
     GIT_DEPTH: "1"
+    GIT_STRATEGY: clone
   before_script:
-    - apk add --no-cache 'git~=2.54'
+    # T750 (SEC-T745-04): each line under an allowlist, so only the fetches get a credential variable. This filters the
+    # environment only: the clone credential stays readable in its file, because the fetches need it. --keep CI_JOB_TOKEN
+    # is for a runner with FF_GIT_URLS_WITHOUT_TOKENS on, whose credential helper reads that variable; with the flag off,
+    # git takes the token from the runner's external config file. Only a tag pipeline proves the fetches.
+    - python3 -I scripts/run-allowlisted.py -- apk add --no-cache 'git~=2.54'
   script:
-    - git fetch origin main develop --depth=1
-    - git fetch --force origin 'refs/tags/*:refs/tags/*'
-    - python3 scripts/check-main-develop-drift.py --main-ref origin/main --develop-ref origin/develop
+    - python3 -I scripts/run-allowlisted.py --keep CI_JOB_TOKEN -- git fetch origin main develop --depth=1
+    - python3 -I scripts/run-allowlisted.py --keep CI_JOB_TOKEN -- git fetch --force origin 'refs/tags/*:refs/tags/*'
+    - python3 -I scripts/run-allowlisted.py -- python3 scripts/check-main-develop-drift.py --main-ref origin/main --develop-ref origin/develop
     # T685 (TL-T649-13): the tag must carry the content of main (tree comparison, not SHA ancestry; depth 1 is enough).
-    - python3 scripts/check-release-tag-tree.py --tag "${CI_COMMIT_TAG}" --main-ref origin/main
+    - python3 -I scripts/run-allowlisted.py -- python3 scripts/check-release-tag-tree.py --tag "${CI_COMMIT_TAG}" --main-ref origin/main
   rules:
     - if: '$CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$/'
 
 release:
   stage: release
   needs: ["release-docs-gate", "main-develop-drift-gate"]
-  image: python:3.12-alpine@sha256:92abd2ba1bdfb48b1e2ac224b582dd1558d0d4bb11c903b126b5bf9c448fd656
+  image: python:3.12-alpine@sha256:e064671ca452259bab50e8e2c7bd896e39e9a343bb06ca25234adf6fe18d0fc7
+  # T750 (SEC-T745-07): a clean checkout for the job that publishes with the token, as on the two gates.
   variables:
     GIT_DEPTH: "0"
+    GIT_STRATEGY: clone
   before_script:
-    - python3 -I -c "import os, shutil, subprocess; apk=shutil.which('apk'); secrets=[v for k, v in os.environ.items() if k in ('CI_JOB_TOKEN', 'WIKI_TOKEN') and v]; ok=('PATH', 'HOME', 'LANG', 'LANGUAGE', 'TMPDIR', 'TZ', 'SSL_CERT_FILE', 'SSL_CERT_DIR', 'CURL_CA_BUNDLE', 'http_proxy', 'https_proxy', 'no_proxy', 'HTTP_PROXY', 'HTTPS_PROXY', 'NO_PROXY', 'ALL_PROXY'); env=dict(i for i in os.environ.items() if (i[0] in ok or i[0].startswith('LC_')) and not any(x in i[1] for x in secrets)); subprocess.check_call([apk, 'add', '--no-cache', 'git~=2.54'], env=env) if apk else None"
+    - python3 -I -c "import os, re, shutil, subprocess; apk=shutil.which('apk'); secrets=[v for k, v in os.environ.items() if k in ('CI_JOB_TOKEN', 'WIKI_TOKEN') and v]; ok=('PATH', 'HOME', 'LANG', 'LANGUAGE', 'TMPDIR', 'TZ', 'SSL_CERT_FILE', 'SSL_CERT_DIR', 'CURL_CA_BUNDLE', 'http_proxy', 'https_proxy', 'no_proxy', 'HTTP_PROXY', 'HTTPS_PROXY', 'NO_PROXY', 'ALL_PROXY'); env=dict(i for i in os.environ.items() if (i[0] in ok or re.fullmatch('LC_[A-Z_]+', i[0])) and not any(x in i[1] for x in secrets)); subprocess.check_call([apk, 'add', '--no-cache', 'git~=2.54'], env=env) if apk else None"
   script:
     # T686: the release job authenticates with the GitLab job token (CI_JOB_TOKEN, sent only in the JOB-TOKEN header),
     # not with WIKI_TOKEN, which only the wiki-sync job reads. The value is read by name (--token-env); it is never in argv.

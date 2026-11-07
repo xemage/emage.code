@@ -19,15 +19,6 @@ IMPLEMENTATION="${REPO_ROOT}/implementation"
 # underscores) -- a missing piece fails closed (exit 70), it is never skipped.
 SUPPORTED_PLATFORMS=(github gemini opencode pi claude-code cline)
 
-# Prints $@ joined with " | " (for usage) -- bash has no join builtin.
-join_bar() {
-  local out="$1"
-  shift
-  local item
-  for item in "$@"; do out="$out | $item"; done
-  printf '%s' "$out"
-}
-
 # Prints $@ joined with ", " (for messages).
 join_comma() {
   local out="$1"
@@ -48,7 +39,10 @@ Options:
                        repository: its root accepts only --projections-only, and any
                        directory below its root is refused in every mode.
 EOF
-  printf '  --platform <name>    %s (default: all)\n' "$(join_bar "${SUPPORTED_PLATFORMS[@]}" all)"
+  # T723 (SEC-T677-03): printf of the array, no command substitution -- usage stays free of logic.
+  printf '  --platform <name>    '
+  printf '%s | ' "${SUPPORTED_PLATFORMS[@]}"
+  printf 'all (default: all)\n'
   cat <<'EOF'
   -u, --update         Update an existing install. Replaces the platform trees, EXCEPT
                        project-local files the harness never ships and therefore does not
@@ -273,11 +267,12 @@ if target_is_repo_root; then
   fi
 fi
 
-# $1 with every character that is not printable replaced by `?`, for messages:
-# a path component or a link target comes from the target tree, so it may hold
-# newlines or terminal escape sequences (T636).
+# $1 for a message: a path component or a link target comes from the target tree, so
+# it may hold newlines or terminal escape sequences (T636). Byte-wise like
+# ascii_printable (T723, SEC-T684-03): `[:print:]` depends on the locale, and in a
+# UTF-8 locale it lets the bidi override U+202E through.
 printable() {
-  printf '%s' "${1//[^[:print:]]/?}"
+  ascii_printable "$1"
 }
 
 # The physical path of $1 -- every symlink on it resolved -- for a path that
@@ -1297,7 +1292,12 @@ notice_previous_cursor_install() {
   echo "  Cursor support was removed in v9.0.0: that folder is no longer updated, pruned or checked, and this installer does not delete it." >&2
   echo "  Its MCP server versions are frozen at the version that wrote it, and nothing prunes it." >&2
   echo "  An install from v7.x or older can still contain unpinned or non-existent launchers (for example 'npx -y @anthropic/mcp-filesystem', see M-9 of the v8.0.0 release notes)." >&2
-  echo "  Open .cursor/mcp.json and remove the 'filesystem' entry if it runs @anthropic/mcp-filesystem, and the keys e2b, redis, figma and notion if present (M-9 of the v8.0.0 release notes). Edit the file by hand: --force-prune-keys of scripts/merge-mcp-json.py does not help here. It needs as --source the generated Cursor file, which exists only at the v8.0.0 tag; with that file it refuses to prune 'filesystem' (the file has that key) and merges every entry of the file, github included, into yours." >&2
+  # T723 (TL-T708-03): one line per case. The release-document pointer is the parsed path form, on a line
+  # without the word "Cursor" (scripts/verify-release-docs.py, SEC-T715-02).
+  echo "  Open .cursor/mcp.json and remove the 'filesystem' entry if it runs @anthropic/mcp-filesystem, and the keys e2b, redis, figma and notion if present (M-9 in docs/releases/v8.0.0.md). Edit the file by hand: --force-prune-keys of scripts/merge-mcp-json.py does not help here." >&2
+  echo "  That option needs as --source the generated Cursor file, which exists only at the v8.0.0 tag and earlier tags." >&2
+  echo "  With that file, a run that names 'filesystem' in --force-prune-keys is refused (the file has that key): it exits 1 and writes nothing." >&2
+  echo "  A run that leaves 'filesystem' out writes: it merges every entry of the file, github included, into yours. Neither run removes the 'filesystem' entry." >&2
   echo "  Remove the folder or edit it by hand; see the Cursor migration item in docs/releases/v9.0.0.md." >&2
 }
 
@@ -1468,6 +1468,74 @@ install_agents_doc() {
   run python3 "${args[@]}"
 }
 
+# --- Authoring-only commands (TD-T671-P5, T725) ------------------------------------------
+# A command declares `audience: authoring | target | both`. sync.mjs keeps every command in the
+# generated trees (the authoring set) and lists the `authoring` ones, relative to the tree, under
+# `authoringOnly` in the tree's .generated-manifest.json. A target project never receives them: after
+# a tree is installed, each listed path is removed from the target tree again. Removing after the
+# copy, rather than passing an rsync --exclude, is what makes --update and --projections-only delete
+# a copy an older install left behind (an excluded path is also protected from --delete).
+#
+# An authoring checkout keeps them. It is recognised by the rule /discover-skills uses: the registry
+# file implementation/registry/index.json exists in the target. Never test for implementation/: the
+# installer creates implementation/runtime/ in every target. The repository root, refreshed with
+# --projections-only, is such a checkout.
+target_is_authoring_checkout() {
+  [[ -f "$TARGET/implementation/registry/index.json" ]]
+}
+
+# Prints the authoringOnly paths of the generated tree $1 (a directory under $IMPLEMENTATION), one
+# per line. Fails (exit 1) on an unreadable manifest or on an entry that is not a plain relative
+# path inside the tree; a tree without a manifest (.clinerules) lists nothing.
+authoring_only_paths() {
+  local manifest="$IMPLEMENTATION/$1/.generated-manifest.json"
+  if [[ ! -f "$manifest" ]]; then return 0; fi
+  python3 - "$manifest" <<'PY_AUTHORING'
+import json
+import re
+import sys
+
+try:
+    with open(sys.argv[1], encoding="utf-8") as handle:
+        entries = json.load(handle).get("authoringOnly", [])
+except (OSError, ValueError, AttributeError) as exc:
+    sys.exit(f"error: cannot read the authoringOnly list of {sys.argv[1]}: {type(exc).__name__}")
+if not isinstance(entries, list):
+    sys.exit(f"error: {sys.argv[1]}: authoringOnly is not a list")
+SAFE = re.compile(r"[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)*")
+for rel in entries:
+    if not isinstance(rel, str) or not SAFE.fullmatch(rel) or ".." in rel.split("/"):
+        sys.exit(f"error: {sys.argv[1]}: authoringOnly entry {rel!r} is not a plain relative path")
+    print(rel)
+PY_AUTHORING
+}
+
+# Checks the authoringOnly list of every generated tree of the selected platform(s) before the
+# first write of any mode, so a bad entry stops the run with nothing written.
+verify_authoring_only_lists() {
+  local platform rel
+  while IFS= read -r platform; do
+    while IFS= read -r rel; do
+      authoring_only_paths "$rel" >/dev/null || exit 1
+    done < <(platform_managed_paths "$platform")
+  done < <(selected_platforms)
+}
+
+# Removes from $TARGET/$1 every authoring-only path of the generated tree $1, unless the target
+# is an authoring checkout. Runs after the tree is installed, in every mode.
+withhold_authoring_only() {
+  local tree="$1" listing rel
+  if target_is_authoring_checkout; then return 0; fi
+  listing="$(authoring_only_paths "$tree")" || exit 1
+  while IFS= read -r rel; do
+    if [[ -z "$rel" ]]; then continue; fi
+    refuse_unsafe_path "$TARGET/$tree/$rel"
+    if [[ -e "$TARGET/$tree/$rel" ]]; then
+      run rm -f -- "$TARGET/$tree/$rel"
+    fi
+  done <<< "$listing"
+}
+
 # Copies the Python source these two MCP servers actually import at
 # runtime (implementation/runtime/memory/, implementation/runtime/security/)
 # into the target project. Config generation alone (.mcp.json etc.) is not
@@ -1515,6 +1583,7 @@ install_common() {
 
 install_github() {
   install_tree_into "$IMPLEMENTATION/.github" "$TARGET/.github" "${GITHUB_LOCAL_PATHS[@]}"
+  withhold_authoring_only .github
   refuse_unsafe_paths .vscode
   run mkdir -p "$TARGET/.vscode"
   merge_or_copy_mcp_json "$IMPLEMENTATION/.vscode/mcp.json" "$TARGET/.vscode/mcp.json"
@@ -1522,21 +1591,25 @@ install_github() {
 
 install_gemini() {
   install_tree_into "$IMPLEMENTATION/.gemini" "$TARGET/.gemini" "settings.json" "settings.json.provenance.json"
+  withhold_authoring_only .gemini
   merge_or_copy_mcp_json "$IMPLEMENTATION/.gemini/settings.json" "$TARGET/.gemini/settings.json"
 }
 
 install_opencode() {
   install_tree_into "$IMPLEMENTATION/.opencode" "$TARGET/.opencode" "opencode.json" "opencode.json.provenance.json"
+  withhold_authoring_only .opencode
   merge_or_copy_mcp_json "$IMPLEMENTATION/.opencode/opencode.json" "$TARGET/.opencode/opencode.json"
 }
 
 install_pi() {
   install_tree_into "$IMPLEMENTATION/.pi" "$TARGET/.pi" "mcp.json" "mcp.json.provenance.json"
+  withhold_authoring_only .pi
   merge_or_copy_mcp_json "$IMPLEMENTATION/.pi/mcp.json" "$TARGET/.pi/mcp.json" --drop-env-form
 }
 
 install_claude_code() {
   install_tree_into "$IMPLEMENTATION/.claude" "$TARGET/.claude" "${CLAUDE_LOCAL_PATHS[@]}"
+  withhold_authoring_only .claude
   merge_or_copy_mcp_json "$IMPLEMENTATION/.mcp.json" "$TARGET/.mcp.json"
   refuse_unsafe_paths CLAUDE.md
   # CLAUDE.md is generator-owned and replaced in every mode; say so when that discards a file of the
@@ -1549,6 +1622,7 @@ install_claude_code() {
 
 install_cline() {
   install_tree_into "$IMPLEMENTATION/.cline" "$TARGET/.cline" "mcp.json" "mcp.json.provenance.json"
+  withhold_authoring_only .cline
   install_tree_into "$IMPLEMENTATION/.clinerules" "$TARGET/.clinerules"
   merge_or_copy_mcp_json "$IMPLEMENTATION/.cline/mcp.json" "$TARGET/.cline/mcp.json"
 }
@@ -1556,6 +1630,7 @@ install_cline() {
 # --- Main flow: every function above is defined; nothing is written before the checks below. ---
 # Before the first write of any mode, dry-run included (T636, SEC-001).
 verify_platform_maps
+verify_authoring_only_lists
 guard_managed_paths
 guard_stale_swap_siblings
 validate_existing_mcp_configs
@@ -1669,8 +1744,9 @@ if [[ -d "$TARGET/implementation/runtime/memory" ]]; then
   printf 'dependency install above, before it can answer real queries. Run from %q:\n' "$TARGET"
   echo "  python3 -m implementation.runtime.memory.build \\"
   echo "      --project-id <org>/<repo> --own-repo-root . --general-repo-root . \\"
-  echo "      --output-dir implementation/runtime/memory/_index/<org-repo-slug>"
+  echo "      --output-dir implementation/runtime/memory/_index/<org>-<repo>"
   echo "  (see implementation/runtime/memory/README.md for the full option reference,"
-  echo "  including --shared-source-root for cross-repo shared-scope indexing, and match"
-  echo "  --output-dir to the --index-dir already set in the generated mcp.json for this project)"
+  echo "  including --shared-source-root for cross-repo shared-scope indexing. The server"
+  echo "  reads the index from that directory, with <org>-<repo> in lower case and taken"
+  echo "  from this workspace's git remote 'origin'; without that remote it does not start)"
 fi

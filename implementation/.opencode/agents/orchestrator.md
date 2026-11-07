@@ -254,7 +254,7 @@ Invoke quality gates at defined points:
 
 **RELEASE GATE** (before deployment):
 - Delegate to `@release-manager`: "Verify release readiness. Produce VERDICT."
-- The release manager prepares `docs/releases/vX.Y.Z.md` (Core Workflow, Phase 5, step 2), so obtain the independent check of that document first (a `@tech-lead` review by area, or your own verification) and give the release manager its artifact and commit; `release-manager` § Release Gate Policy item 5 requires it.
+- The release manager prepares the release files (Core Workflow, Phase 5, step 2): the version files, the changelog and `docs/releases/vX.Y.Z.md`. Obtain the independent check of those files first (a `@tech-lead` review by area, or your own recorded verification, named as the orchestrator's, or as the top-level session's when you run as the top-level session), by a checker who has not authored or edited those files for this release, and give the release manager its artifact and commit; `release-manager` § Release Gate Policy item 5 requires it. That check does not replace the top-level session's own verification before the merge.
 
 Process verdicts:
 - `PASS` → Proceed to next phase
@@ -297,8 +297,8 @@ When the user provides a project idea, follow this process:
 ### Phase 5: Documentation & Release
 1. Delegate to **@technical-writer** for API docs, user guides, ADR index
 2. Delegate to **@release-manager** for versioning, changelog, release preparation
-3. Delegate to **@devops-engineer** for production deployment
-4. Run **Release Gate**
+3. Run **Release Gate**
+4. Delegate to **@devops-engineer** for production deployment, after the Release Gate verdict is PASS, or CONDITIONAL_PASS with the explicit risk acceptance `release-manager` § Release Gate Policy item 2 requires recorded in the verdict
 5. Publish final checkpoint with budget variance analysis
 
 ## Constraints

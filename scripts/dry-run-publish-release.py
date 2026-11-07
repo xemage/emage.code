@@ -155,8 +155,8 @@ def run_dry_run(tag: str, work: Path, source: DryRunSource | None = None) -> dic
 
     sent: list[dict[str, Any]] = []
 
-    def fake_gitlab_request(method, url, token, payload=None, token_header="PRIVATE-TOKEN"):
-        sent.append({"method": method, "url": url, "payload": payload, "token_header": token_header})
+    def fake_gitlab_request(method, url, credential, payload=None):
+        sent.append({"method": method, "url": url, "payload": payload, "token_header": credential.header})
         if method == "GET":
             raise module.ReleasePublishError(f"GitLab API GET {url} failed: 404 fake", 404)
         return {"tag_name": tag}
@@ -247,12 +247,22 @@ def check_result(result: dict[str, Any], tag: str) -> list[str]:
     return problems
 
 
+class ReadmeNotUtf8Error(RuntimeError):
+    """README.md is not valid UTF-8. The message names the file and the offset and none of its content."""
+
+
 def current_release_tag(repo: Path = REPO) -> str | None:
-    """The ``Latest release: vX.Y.Z`` marker of README.md, or None when it is absent."""
+    """The ``Latest release: vX.Y.Z`` marker of README.md, or None when it is absent. An invalid byte is refused, not
+    dropped (SEC-T741-06): dropping it would make a marker of bytes that no reader sees as that marker."""
     readme = repo / "README.md"
     if not readme.is_file():
         return None
-    match = MARKER_RE.search(readme.read_text(encoding="utf-8", errors="ignore"))
+    try:
+        text = readme.read_text(encoding="utf-8")
+    except UnicodeDecodeError as failure:
+        raise ReadmeNotUtf8Error(f"README.md is not valid UTF-8: the first invalid byte is at file offset "
+                                 f"{failure.start} (from 0)") from None
+    match = MARKER_RE.search(text)
     return match.group(1) if match else None
 
 
@@ -262,7 +272,11 @@ def main() -> int:
     parser.add_argument("--template-shaped", action="store_true",
                         help=f"rehearse a template-shaped document ({TEMPLATE_TAG}); needs exactly one title line")
     args = parser.parse_args()
-    tag = TEMPLATE_TAG if args.template_shaped else (args.tag or current_release_tag())
+    try:
+        tag = TEMPLATE_TAG if args.template_shaped else (args.tag or current_release_tag())
+    except ReadmeNotUtf8Error as refused:
+        print(f"dry run refused: {refused}")
+        return 2
     if tag is None:
         print("dry run refused: no --tag and no 'Latest release: vX.Y.Z' marker in README.md")
         return 2

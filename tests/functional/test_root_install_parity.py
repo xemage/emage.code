@@ -86,7 +86,18 @@ def parse_replaced_trees(text: str) -> dict[str, list[str]]:
     return trees
 
 
-def run_fresh_install(target: Path) -> None:
+# The file by which install.sh recognises an authoring checkout (T725): the
+# rule /discover-skills uses. The repository root is one, so its oracle is a
+# fresh install into a directory that holds this file -- an install that keeps
+# the authoring-only commands a target project never receives.
+AUTHORING_MARKER = Path("implementation") / "registry" / "index.json"
+
+
+def run_fresh_install(target: Path, authoring: bool = False) -> None:
+    if authoring:
+        marker = target / AUTHORING_MARKER
+        marker.parent.mkdir(parents=True)
+        marker.write_text("{}\n", encoding="utf-8")
     subprocess.run(
         ["bash", str(INSTALLER), "--target", str(target), "--platform", "all"],
         check=True, capture_output=True, text=True, timeout=300,
@@ -147,7 +158,7 @@ def compute_drift(fresh: Path, root: Path) -> set[str]:
 def current_drift() -> set[str]:
     with tempfile.TemporaryDirectory(prefix="emage-root-parity-") as tmp:
         fresh = Path(tmp) / "fresh"
-        run_fresh_install(fresh)
+        run_fresh_install(fresh, authoring=True)
         return compute_drift(fresh, repo_root())
 
 

@@ -21,8 +21,17 @@ resolve to a commit (for example because ``main`` was not fetched: an offline ru
 Exit 2: git itself is unavailable. The script only reads the repository. Run it after
 ``git fetch origin main --depth=1`` and ``git fetch --force origin 'refs/tags/*:refs/tags/*'`` (the CI job does).
 
+Exact ref names (T716, SEC-T685-01): git's short-name search tries ``refs/tags/<name>`` before
+``refs/remotes/<name>``, so a tag NAMED ``origin/main`` (the job fetches every tag one line earlier) would stand in for
+the remote-tracking branch. ``--main-ref`` is therefore a remote-tracking name (``origin/main`` means exactly
+``refs/remotes/origin/main``) or a full ``refs/...`` name, and both refs are read with ``git show-ref --verify``, which
+takes the full name literally (no search, so a tag named ``refs/remotes/origin/main`` cannot fill in for a branch that
+was not fetched either).
+
 Known limit: ``main`` moving after the tag was pushed (a hotfix, the next release) makes a RE-RUN of the tag pipeline
-fail, by design: the gate states that the tag matched ``main`` when the pipeline ran. Re-tag from the right commit.
+fail, by design: the gate states that the tag matched ``main`` when the pipeline ran. For a correct tag no other
+commit exists to re-tag from: the release is then created by hand, see CONTRIBUTING.md "Moving or deleting a pushed
+tag (retag)" and the manual release fallback.
 """
 
 from __future__ import annotations
@@ -35,6 +44,7 @@ import sys
 TAG_RE = re.compile(r"^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$")  # the CI tag rule
 REF_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")  # no leading dash, no revision syntax
 MAX_LISTED_PATHS = 20
+OID_RE = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
 UNSAFE_RE = re.compile("[\x00-\x1f\x7f-\x9f\u061c\u200b-\u200f\u2028\u2029\u202a-\u202e\u2060-\u2069\ufeff]")
 
 
@@ -55,7 +65,25 @@ def resolve_tree(rev: str) -> str | None:
         return None  # a missing ref, or a tag that points at a tree or a blob
     done = run_git(["rev-parse", "--verify", "--quiet", "--end-of-options", f"{rev}^{{tree}}"])
     out = done.stdout.strip()
-    return out if done.returncode == 0 and re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", out) else None
+    return out if done.returncode == 0 and OID_RE.fullmatch(out) else None
+
+
+def ref_object(full_ref: str) -> str | None:
+    """The object id of exactly ``full_ref`` (``refs/...``), or None: ``show-ref --verify`` does no short-name search."""
+    done = run_git(["show-ref", "--verify", "--hash", full_ref])
+    out = done.stdout.strip()
+    return out if done.returncode == 0 and OID_RE.fullmatch(out) else None
+
+
+def exact_tree(full_ref: str) -> str | None:
+    """The tree id of the commit that exactly ``full_ref`` names (annotated tags peeled), or None."""
+    oid = ref_object(full_ref)
+    return resolve_tree(oid) if oid else None
+
+
+def full_ref_name(main_ref: str) -> str:
+    """``origin/main`` is the remote-tracking branch ``refs/remotes/origin/main``; a ``refs/...`` name stays as given."""
+    return main_ref if main_ref.startswith("refs/") else f"refs/remotes/{main_ref}"
 
 
 def differing_paths(tree_a: str, tree_b: str) -> list[str]:
@@ -86,8 +114,8 @@ def check(tag: str, main_ref: str) -> tuple[int, list[str]]:
         return 1, [f"release-tree: FAIL - {UNSAFE_RE.sub('?', tag)!r} is not a release tag name"]
     if not REF_RE.fullmatch(main_ref):
         return 1, [f"release-tree: FAIL - {UNSAFE_RE.sub('?', main_ref)!r} is not a plain ref name"]
-    tag_tree = resolve_tree(f"refs/tags/{tag}")
-    main_tree = resolve_tree(main_ref)
+    tag_tree = exact_tree(f"refs/tags/{tag}")
+    main_tree = exact_tree(full_ref_name(main_ref))
     diff = differing_paths(tag_tree, main_tree) if tag_tree and main_tree and tag_tree != main_tree else None
     return evaluate(tag, main_ref, tag_tree, main_tree, diff)
 
@@ -95,7 +123,8 @@ def check(tag: str, main_ref: str) -> tuple[int, list[str]]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     parser.add_argument("--tag", required=True, help="the release tag, vX.Y.Z (CI_COMMIT_TAG)")
-    parser.add_argument("--main-ref", default="origin/main")
+    parser.add_argument("--main-ref", default="origin/main",
+                        help="a remote-tracking branch (origin/main = refs/remotes/origin/main) or a full refs/... name")
     args = parser.parse_args(argv)
     try:
         code, lines = check(args.tag, args.main_ref)

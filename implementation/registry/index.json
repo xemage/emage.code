@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-11-01T08:51:36+01:00",
+  "generatedAt": "2026-11-04T22:48:44+01:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -276,7 +276,7 @@
       "category": "agent",
       "name": "Orchestrator",
       "path": "agents/orchestrator.md",
-      "checksum": "6065c377be7ae82bafbd55b9413f5a4d76f9adbe937d0533483efd1db99cda7e",
+      "checksum": "2e8b44aa8ae3b3a1c0615517d65326b65564787d25a1d53f663d2ba63442804c",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -458,7 +458,7 @@
       "category": "agent",
       "name": "QA Engineer",
       "path": "agents/qa-engineer.md",
-      "checksum": "e5df60310d16547399acee6879c8ce498e057269303e671f47533ce1b0f44aaa",
+      "checksum": "8b25f26ce46395e291045770bbef1e6cacb86bfd42f6f3c30f82567eb950eb44",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -484,7 +484,7 @@
       "category": "agent",
       "name": "Release Manager",
       "path": "agents/release-manager.md",
-      "checksum": "af3eecd3f66647360288fd734a2cc53f4ea11966e6f2f049964fc526351afca8",
+      "checksum": "3473ab459b082fe861d1c420e02509c0084e524ec0c539584baad91166d1bc56",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -536,7 +536,7 @@
       "category": "agent",
       "name": "Scrum Master",
       "path": "agents/scrum-master.md",
-      "checksum": "14def9e7b1555c2d93c9a0008e37db6b4ac4b62e6c6b836c634bb2557c2913d4",
+      "checksum": "144112be581b8cbb9f76748496d562239ec042337b5f0394399d7d503a55079b",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -562,7 +562,7 @@
       "category": "agent",
       "name": "Security Engineer",
       "path": "agents/security-engineer.md",
-      "checksum": "ac810d8e5875478ed51cedf5f2ede9fb251f8a62ceeb82b8a56613f8ff54c19a",
+      "checksum": "c4daf8813987fefd4f49e53fbace3f30fb875fe1f8fdc63237ab9e67a8db52b2",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -744,7 +744,7 @@
       "category": "command",
       "name": "batch",
       "path": "commands/batch.md",
-      "checksum": "c683c3517f2a550300b981376b8bb1c36eea2375483f9a765e3ea7881cd627f4",
+      "checksum": "6c8107e39e3120321c2cd25f43ec58eafa8f9ec361855e7214159b1127de0c43",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -848,7 +848,7 @@
       "category": "command",
       "name": "discover-skills",
       "path": "commands/discover-skills.md",
-      "checksum": "229e6a3d3106642b870dd1d85b13f88bd188ab594c46facd7fcf9cf8582dbc27",
+      "checksum": "d225578f243165e9cc5b4a0a9dda64b39b8fd8c469a50af842960eaa87af1af9",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1056,7 +1056,7 @@
       "category": "command",
       "name": "prepare-release",
       "path": "commands/prepare-release.md",
-      "checksum": "26ad2badb0df181cb5f89b3f0c286e4cbbc215d5fd4698364d7f10d1949ec088",
+      "checksum": "c1bb3b74b1057f3e8f5d51c30b62efa7c897ad3ec25a0b3335738051fd94a351",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1186,7 +1186,7 @@
       "category": "command",
       "name": "validate-tasks",
       "path": "commands/validate-tasks.md",
-      "checksum": "ae502f3692904c2be8c57d586910c181ffd1850223fb7394745a1591e6d98f35",
+      "checksum": "ba8e032417353bca85d68edd3a28ada08891e73e652aba2552423acd29545ae9",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1212,7 +1212,7 @@
       "category": "command",
       "name": "validate-workflow",
       "path": "commands/validate-workflow.md",
-      "checksum": "77ce6359aedc67ce6110c7958c52c5f7b871a2958a5867e4b03482619b6d1761",
+      "checksum": "f2494747cf1d880b1387c4e18fc57775d2fa9c4857ceb78d0302a5b95af98b00",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -1602,7 +1602,7 @@
       "category": "skill",
       "name": "dependency-graphing",
       "path": "skills/dependency-graphing/SKILL.md",
-      "checksum": "6a1677c5f429693834360a3fc23631e8d95ba397da7add39499a132720a8ba8f",
+      "checksum": "853698b7ed9b162495ae06f1768afe6f90cd7fca117cb1bbf49677c60594bae2",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1706,7 +1706,7 @@
       "category": "skill",
       "name": "plan-approve-execute",
       "path": "skills/plan-approve-execute/SKILL.md",
-      "checksum": "7eb001713dfee884da126d581521f9aaea2b089e744fde6cd761304e4c9ac9b5",
+      "checksum": "feb4381b3685283186837c0eb50a59351698900d6d1f8c9dbfbac805d925a7e2",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1836,7 +1836,7 @@
       "category": "skill",
       "name": "release-workflow",
       "path": "skills/release-workflow/SKILL.md",
-      "checksum": "a29df4cf2d51a45cb8e1b96c5ca59728d31f51affdec072ce3e40b4a59671989",
+      "checksum": "540a81dc28afe299004f57e421314a79daf956fd264c197435bf32009bcb98ce",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1992,7 +1992,7 @@
       "category": "skill",
       "name": "testing-strategy",
       "path": "skills/testing-strategy/SKILL.md",
-      "checksum": "8fa3f3aa77c585f66882472584cb636d03be8677a374fc7a37575fbcc1cb7b94",
+      "checksum": "60cdc0f8e174e8d116577e91dc4260f4405b5ba655a1593d8ae34a5872a2efe9",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -2018,7 +2018,7 @@
       "category": "skill",
       "name": "validation-gates",
       "path": "skills/validation-gates/SKILL.md",
-      "checksum": "f6595ffdb374c6fb12aa31e2a7c90fe19df815630c2b44ad582936033fe8f56d",
+      "checksum": "2e1e35e35be697c2ef999cba36c8c4654c9dd8b2e1103b05b809e1fa58bff5c3",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [

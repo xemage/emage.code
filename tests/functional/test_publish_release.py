@@ -1,9 +1,11 @@
 """Focused tests for release note classification logic."""
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import http.server
 import importlib.util
+import io
 import os
 import re
 import sys
@@ -15,6 +17,7 @@ from pathlib import Path
 from unittest import mock
 
 from tests._helpers.repo import repo_root
+from tests.functional.test_ci_hash_pins import ci_images, image_pin_problems
 
 
 def _load_publish_release_module():
@@ -433,7 +436,7 @@ class TestGuardsAndApiPaths(unittest.TestCase):
         sent: list[tuple[str, str, dict | None]] = []
         error = self.publish_release.ReleasePublishError
 
-        def fake(method, url, token, payload=None, token_header="PRIVATE-TOKEN"):
+        def fake(method, url, credential, payload=None):
             sent.append((method, url, payload))
             if method == "GET":
                 if isinstance(get_result, tuple):
@@ -444,9 +447,9 @@ class TestGuardsAndApiPaths(unittest.TestCase):
         original = self.publish_release.gitlab_request
         self.publish_release.gitlab_request = fake
         try:
-            self.publish_release.create_or_update_release(
-                "v1.2.3", "https://gitlab.invalid/api/v4", "7", "placeholder", "desc"
-            )
+            target = self.publish_release.ApiTarget(
+                "https://gitlab.invalid/api/v4", "7", self.publish_release.ApiCredential("placeholder"))
+            self.publish_release.create_or_update_release("v1.2.3", target, "desc")
         finally:
             self.publish_release.gitlab_request = original
         return sent
@@ -687,8 +690,8 @@ class TestTokenFromEnvironment(unittest.TestCase):
         (root / "docs" / "releases" / "v1.2.3.md").write_text("# Release v1.2.3\n\nbody\n", encoding="utf-8")
         seen: list[tuple[str, str]] = []
 
-        def fake_request(method, url, token, payload=None, token_header="PRIVATE-TOKEN"):
-            seen.append((method, token))
+        def fake_request(method, url, credential, payload=None):
+            seen.append((method, credential.token))
             if method == "GET":
                 raise self.pr.ReleasePublishError("GitLab API GET u failed: 404 fake", 404)
             return {"tag_name": "v1.2.3"}
@@ -769,7 +772,7 @@ class TestRequestHardening(unittest.TestCase):
         origin = type("Origin", (_RecordingHandler,), {"seen": [], "redirect_to": target_url + "/leak"})
         origin_url = self._serve(origin)
         with self.assertRaisesRegex(self.pr.ReleasePublishError, "failed: 302"):
-            self.pr.gitlab_request("GET", origin_url + "/x", "tok-fake")
+            self.pr.gitlab_request("GET", origin_url + "/x", self.pr.ApiCredential("tok-fake"))
         self.assertEqual(origin.seen, ["tok-fake"])  # sent once to the intended host ...
         self.assertEqual(target.seen, [])  # ... and never to the redirect target
 
@@ -780,7 +783,7 @@ class TestRequestHardening(unittest.TestCase):
         origin = type("Origin", (_RecordingHandler,), {"seen": [], "redirect_to": target_url + "/leak"})
         origin_url = self._serve(origin)
         with mock.patch.object(self.pr, "OPENER", urllib.request.build_opener()):
-            self.pr.gitlab_request("GET", origin_url + "/x", "tok-fake")
+            self.pr.gitlab_request("GET", origin_url + "/x", self.pr.ApiCredential("tok-fake"))
         self.assertEqual(target.seen, ["tok-fake"])
 
     def test_an_http_error_response_carries_its_status_code(self):
@@ -797,10 +800,10 @@ class TestRequestHardening(unittest.TestCase):
         base = self._serve(Handler)
         for code in (404, 500):
             with self.subTest(code=code), self.assertRaises(self.pr.ReleasePublishError) as ctx:
-                self.pr.gitlab_request("GET", f"{base}/{code}", "tok-fake")
+                self.pr.gitlab_request("GET", f"{base}/{code}", self.pr.ApiCredential("tok-fake"))
             self.assertEqual(ctx.exception.status, code)
         with self.assertRaises(self.pr.ReleasePublishError) as ctx:
-            self.pr.gitlab_request("GET", "http://127.0.0.1:1/x", "tok-fake")
+            self.pr.gitlab_request("GET", "http://127.0.0.1:1/x", self.pr.ApiCredential("tok-fake"))
         self.assertIsNone(ctx.exception.status)
 
     def _opener_returning(self, response):
@@ -825,7 +828,7 @@ class TestRequestHardening(unittest.TestCase):
         for exc in (TimeoutError("timed out"), ConnectionResetError("reset")):
             with self.subTest(exc=type(exc).__name__), self._opener_returning(self._response(mock.Mock(side_effect=exc))):
                 with self.assertRaisesRegex(self.pr.ReleasePublishError, type(exc).__name__):
-                    self.pr.gitlab_request("GET", "https://gitlab.invalid/api/v4/x", "tok")
+                    self.pr.gitlab_request("GET", "https://gitlab.invalid/api/v4/x", self.pr.ApiCredential("tok"))
 
     def test_incomplete_read_and_non_json_or_non_utf8_bodies_are_release_errors(self):
         import http.client
@@ -837,7 +840,7 @@ class TestRequestHardening(unittest.TestCase):
         for read in bodies:
             with self.subTest(read=repr(read)[:30]), self._opener_returning(self._response(read)):
                 with self.assertRaises(self.pr.ReleasePublishError):
-                    self.pr.gitlab_request("GET", "https://gitlab.invalid/api/v4/x", "tok")
+                    self.pr.gitlab_request("GET", "https://gitlab.invalid/api/v4/x", self.pr.ApiCredential("tok"))
 
 
 class TestReleaseBriefAndTagGuards(unittest.TestCase):
@@ -1050,6 +1053,33 @@ class TestDryRunHardening(unittest.TestCase):
         self.assertEqual(seen, [True])
         self.assertEqual(dict(os.environ), before)
 
+    def test_an_invalid_byte_in_the_readme_is_refused_not_dropped(self):
+        """T744 (SEC-T741-06): errors="ignore" made `v9.\\xff8.7` read as the marker v9.8.7."""
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            (repo / "README.md").write_bytes(b"Latest release: v9.\xff8.7\n")
+            with self.assertRaisesRegex(self.dry_run.ReadmeNotUtf8Error, r"README\.md .*file offset 19 "):
+                self.dry_run.current_release_tag(repo)
+            (repo / "README.md").write_bytes(b"x" * 100000 + b"\xff")
+            with self.assertRaisesRegex(self.dry_run.ReadmeNotUtf8Error, "file offset 100000 "):
+                self.dry_run.current_release_tag(repo)
+            for newline in (b"\r\n", b"\r"):  # as text mode translated them
+                (repo / "README.md").write_bytes(b"one" + newline + b"Latest release: v9.8.7" + newline)
+                self.assertEqual(self.dry_run.current_release_tag(repo), "v9.8.7")
+
+    def test_main_refuses_the_invalid_readme_with_the_offset_and_no_content(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            (repo / "README.md").write_bytes(b"secret-content\xff\n")
+            out = io.StringIO()
+            real = self.dry_run.current_release_tag
+            with mock.patch.object(self.dry_run, "current_release_tag", lambda: real(repo)), \
+                    mock.patch.object(sys, "argv", ["dry-run"]), contextlib.redirect_stdout(out):
+                self.assertEqual(self.dry_run.main(), 2)
+        self.assertIn("dry run refused: README.md is not valid UTF-8", out.getvalue())
+        self.assertIn("file offset 14 ", out.getvalue())
+        self.assertNotIn("secret-content", out.getvalue())
+
     def test_current_release_tag_reads_the_readme_marker(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = Path(tmp)
@@ -1081,15 +1111,13 @@ class TestCiSupplyChainPins(unittest.TestCase):
         cls.ci = (repo_root() / ".gitlab-ci.yml").read_text(encoding="utf-8")
 
     def test_every_image_has_a_sha256_digest(self):
-        images = re.findall(r"^\s*image:\s*(\S+)\s*$", self.ci, re.M)
-        self.assertGreaterEqual(len(images), 8)
-        for image in images:
-            with self.subTest(image=image):
-                self.assertRegex(image, r"^[a-z0-9./-]+:[A-Za-z0-9._-]+@sha256:[0-9a-f]{64}$")
+        """T741 (SEC-T741-04): the parsed values, so `image: x # comment` and the mapping forms are not skipped."""
+        self.assertGreaterEqual(len(ci_images(self.ci)), 8)
+        self.assertEqual(image_pin_problems(self.ci), [])
 
     def test_the_same_tag_is_pinned_to_the_same_digest_everywhere(self):
         pairs = {}
-        for image in re.findall(r"^\s*image:\s*(\S+)\s*$", self.ci, re.M):
+        for _, image in ci_images(self.ci):
             name, digest = image.split("@")
             self.assertEqual(pairs.setdefault(name, digest), digest, name)
 
@@ -1106,6 +1134,7 @@ class TestCiSupplyChainPins(unittest.TestCase):
                 continue
             if code.startswith("- "):
                 code = code[2:]
+            code = code.removeprefix("python3 -I scripts/run-allowlisted.py -- ")  # T750: the drift gate's form
             literal = re.search(r"\[apk,\s*'add'((?:,\s*'[^']*')*)\]", code)
             if literal:
                 found.append(["add", *re.findall(r"'([^']*)'", literal.group(1))])
@@ -1140,7 +1169,7 @@ class TestCiSupplyChainPins(unittest.TestCase):
             self.apk_invocations("    - sh -c 'apk  add git'")
 
     def test_the_release_job_bootstrap_runs_python_isolated_and_without_the_token(self):
-        self.assertIn('python3 -I -c "import os, shutil, subprocess;', self.ci)
+        self.assertIn('python3 -I -c "import os, re, shutil, subprocess;', self.ci)
         self.assertNotIn("python3 -c", self.ci)
         job = re.search(r"^release:\n(?:[ \t].*\n|\n)+", self.ci, re.M).group(0)
         bootstrap = [ln for ln in job.splitlines() if "subprocess.check_call" in ln][0]

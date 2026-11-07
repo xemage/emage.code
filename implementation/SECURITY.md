@@ -70,6 +70,14 @@ The PoC security reviewer (`poc-security-engineer`) is the exception to the `exe
 - **Submodules are not scanned.** The scan runs `git grep` without `--recurse-submodules`, so with default git configuration the content of a submodule is outside every scope (a repo-local `submodule.recurse` setting could change that; unverified); scan a submodule as a repository of its own (whether the server accepts a submodule's top level as `root_dir` was not tested). Details: [MCP Servers](../docs/wiki/mcp-servers.md#poc-security-scan-server-poc-security-audit).
 - **Permissions are yours to grant.** The installer never writes `.claude/settings.json` or `.claude/settings.local.json` (`--update` and `--projections-only` leave both untouched). To pre-approve the tools in Claude Code, add `"mcp__poc-security-audit__*"` (and `"mcp__security-audit__*"` for `grep_content`) to `permissions.allow` in your own `.claude/settings.json`. Grant only what you have reviewed; the rule is a standing approval for every tool of that server. Requirements, platform availability and limits: [MCP Servers](../docs/wiki/mcp-servers.md#poc-security-scan-server-poc-security-audit).
 
+### 4.2 Trust boundary of the scan servers
+
+The `security-audit` and `poc-security-audit` servers are Python code under `implementation/runtime/`, and the client starts them from the workspace they scan (`python3 -m implementation.runtime.security...`, launched in the project root). **The scanner lives in the workspace it scans.** A hostile or compromised branch can therefore replace the scanner, or place a module that Python imports in its stead, and its results are then only as trustworthy as that checkout: a clean result from a branch you have not reviewed proves nothing, and the substituted code runs with your user's rights when the client starts the server (SEV-T690-02).
+
+- **Open only trusted workspaces.** Do not start an assistant with these servers enabled on a checkout of a branch, fork or merge request whose `implementation/runtime/` you have not reviewed. Review such a change first, or scan it from a separate, trusted checkout.
+- **In an adopter project, put `implementation/runtime/` under code-owner review.** Add a `CODEOWNERS` rule (GitLab: `CODEOWNERS`, `docs/CODEOWNERS` or `.gitlab/CODEOWNERS`; GitHub: `.github/CODEOWNERS`), for example `/implementation/runtime/ @<your-security-reviewers>`, and require code-owner approval on the protected branches. This guards what is merged, not what a reviewer opens: a checkout of the unmerged branch still runs that branch's code. Code-owner approval rules depend on your GitLab tier or GitHub plan (not checked here; unverified).
+- **Longer term** the servers should run from a pinned runtime package installed in a virtual environment outside the workspace, so that a branch cannot change the scanner. That change is tracked debt (SEV-T690-02) and not built yet.
+
 ---
 
 ## 5. Reporting

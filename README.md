@@ -11,7 +11,7 @@
 emage.code brings a **structured multi-agent development team** to your
 favourite AI assistant. Every project follows the same protocol:
 
-Latest release: v9.0.0
+Latest release: v10.0.0
 
 - **Plan → Approve → Execute** lifecycle, never silent execution
 - **DAG-based task management** with explicit dependencies
@@ -147,6 +147,8 @@ Every other `docs/` file is seeded when missing and otherwise left alone.
 scripts/install.sh --target /path/to/your-project --platform all --projections-only
 ```
 
+Do not use `--projections-only` as the step from v9 to v10, or across any release that changes `implementation/runtime/`: use `--update`.
+
 It refreshes the platform trees (with the same spared files as `--update`),
 their MCP/settings configs (merged, as every mode does), `AGENTS.md`, and
 `CLAUDE.md` when Claude Code is among the selected platforms. It never writes or
@@ -219,7 +221,7 @@ already-reviewed retirement gap on an already-installed project with no prior
 history — it is opt-in only, never invoked automatically by `--update`, and
 prunes exactly the named keys and nothing else.
 
-Per-release install steps live in [`docs/releases/v9.0.0.md`](docs/releases/v9.0.0.md)
+Per-release install steps live in [`docs/releases/v10.0.0.md`](docs/releases/v10.0.0.md)
 and are embedded in [GitLab Releases](https://gitlab.com/em-age/emage.code/-/releases).
 
 ## Quick start

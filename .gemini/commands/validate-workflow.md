@@ -15,7 +15,7 @@ Run a workflow validation pass for the AI development team configuration.
    - QA defect routing closure
    - Security-to-release blocking consistency
 4. Command regression checks:
-   - `new-project`, `new-poc`, `evaluate-poc`, `code-review`, `prepare-release`, `team-status`
+   - `new-project`, `new-poc`, `evaluate-poc`, `code-review`, `prepare-release` (authoring repository only), `team-status`
 
 ## Validation Gate References
 
