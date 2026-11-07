@@ -117,7 +117,7 @@ def _collect_entries(source_root: Path, platforms: list[str]) -> list[dict]:
 def _detect_platforms(repo_root: Path) -> list[str]:
     platform_dir = repo_root / "implementation" / "platforms"
     if not platform_dir.is_dir():
-        return ["claude-code", "cline", "gemini", "github", "opencode", "pi"]
+        return ["claude-code", "cline", "gemini", "github", "opencode"]
     # Only the manifest schema is skipped; any other `_*.json` is a mistake (T672), as in sync.mjs.
     names = [item.name for item in platform_dir.glob("*.json") if item.name != MANIFEST_SCHEMA_FILE]
     stray = sorted(name for name in names if name.startswith("_"))

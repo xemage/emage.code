@@ -38,20 +38,11 @@ is refreshed silently, because refreshing them is what an update is for:
   - the top level of your file is not a JSON object, so the whole file was replaced;
   - there is no provenance sidecar, so no retired generator entry could be pruned: your servers
     that the generated config lacks are named, with a pointer to `--force-prune-keys`;
-  - `--drop-env-form` only (T680, Pi): an `env` / `headers` entry of a generator-owned server that the
-    generated config no longer has and whose value holds the `${env:` form was dropped (names only, with
-    a hint that the dropped values were placeholder text);
   - a retired generator server was pruned through the provenance sidecar (names only);
   - WARNING (T680, SEC-T680-01): a key of yours kept inside a generator-owned `env`, `environment` or
     `headers` block has a credential-like name (TOKEN, KEY, SECRET, PASSWORD, AUTHORIZATION) and holds a
     literal value, not a `${...}` / `$VAR` / `{env:...}` placeholder or a `!command`. The value stays in
     the file (the merge never deletes your key); the line names the key, never the value.
-
-`--drop-env-form` (install.sh passes it for `.pi/mcp.json` only): Pi does not expand `${env:VAR}` (it stays
-literal text, observed on four releases: 0.99.0, 1.0.0, 1.3.0, 1.4.0) and the generator now leaves its optional variables out, so
-an older generated `"GITLAB_PERSONAL_ACCESS_TOKEN": "${env:GITLAB_PERSONAL_ACCESS_TOKEN}"` would otherwise
-survive the merge as a user key and hand the literal text to the server as the token. Such an entry never
-worked on Pi, so dropping it loses nothing; every other key of yours is kept.
 
 Writes are atomic (SEC-006): the merged file is written next to the destination and moved over
 it with os.replace, so an interrupt leaves the old file or the new one, never a half-written
@@ -109,8 +100,8 @@ def format_names(names: Any) -> str:
     return ", ".join(printable(name) for name in sorted(set(names)))
 
 
-# The reference forms the generator writes (sync.mjs): `${NAME}` (Claude Code, Gemini, Pi), `${env:NAME}`
-# (VS Code, Cline, older Pi) and `{env:NAME}` without `$` (Opencode, QA-T707-01).
+# The reference forms the generator writes (sync.mjs): `${NAME}` (Claude Code, Gemini), `${env:NAME}`
+# (VS Code, Cline) and `{env:NAME}` without `$` (Opencode, QA-T707-01).
 GENERATED_REF = re.compile(r"(?:[A-Za-z]+ )?(?:\$\{(?:env:)?[A-Za-z_][A-Za-z0-9_]*\}|\{env:[A-Za-z_][A-Za-z0-9_]*\})")
 
 
@@ -129,37 +120,6 @@ def differs_from_generated(entry: Any) -> bool:
         elif parent in entry:
             return True
     return any(not isinstance(v, str) or GENERATED_REF.fullmatch(v) is None for v in values)
-
-
-def drop_dead_env_form(dest: Any, source: Any, notes: list[tuple[str, str]]) -> Any:
-    """T680: a copy of `dest` without the `env`/`headers` entries (of servers that `source` also lists)
-    that `source` lacks and whose value holds `${env:`. Names go into `notes` as kind "dropped"."""
-    if not isinstance(dest, dict) or not isinstance(source, dict):
-        return dest
-    result = dict(dest)
-    for wrapper in SERVER_WRAPPERS:
-        servers, source_servers = result.get(wrapper), source.get(wrapper)
-        if not isinstance(servers, dict) or not isinstance(source_servers, dict):
-            continue
-        servers = dict(servers)
-        for name, server in list(servers.items()):
-            source_server = source_servers.get(name)
-            if not isinstance(server, dict) or not isinstance(source_server, dict):
-                continue
-            server = dict(server)
-            for parent in sorted(KEPT_KEY_PARENTS):
-                block, source_block = server.get(parent), source_server.get(parent)
-                if not isinstance(block, dict):
-                    continue
-                source_block = source_block if isinstance(source_block, dict) else {}
-                dead = [k for k, v in block.items()
-                        if k not in source_block and isinstance(v, str) and "${env:" in v]
-                for key in dead:
-                    notes.append(("dropped", f"{wrapper}.{name}.{parent}.{key}"))
-                server[parent] = {k: v for k, v in block.items() if k not in dead}
-            servers[name] = server
-        result[wrapper] = servers
-    return result
 
 
 def merge_exclude_tools(dest_value: Any, source_value: Any) -> Any:
@@ -347,14 +307,10 @@ def print_notes(dest: Path, notes: list[tuple[str, str]]) -> None:
         print(f"merge-mcp-json: note: {dest}: the top level of your file is not a JSON object, so the whole "
               f"file was replaced by the generated config", file=sys.stderr)
     for kind, text in (("replaced", "replaced your value for"), ("kept", "kept your key"),
-                       ("dropped", "dropped the retired `${env:` entry"),
                        ("pruned", "pruned the retired generator server")):
         names = [name for note_kind, name in notes if note_kind == kind]
         if names:
             print(f"merge-mcp-json: note: {dest}: {text} {format_names(names)}", file=sys.stderr)
-        if names and kind == "dropped":
-            print(f"merge-mcp-json: note: {dest}: restore by hand if you need them: the dropped keys held "
-                  f"`${{env:...}}` placeholder text, which the client does not expand", file=sys.stderr)
     differing = [name for note_kind, name in notes if note_kind == "pruned_differs"]
     if differing:
         print(f"merge-mcp-json: note: {dest}: {format_names(differing)} differs from the generated entry; its old "
@@ -420,9 +376,6 @@ def build_parser() -> argparse.ArgumentParser:
                          help="Only check that --dest (and --old-sidecar, if it exists) parse as JSON; write nothing")
     parser.add_argument("--force-prune-keys", type=str, default=None,
                          help="Comma-separated dest-only key names to prune exactly once, explicitly")
-    parser.add_argument("--drop-env-form", action="store_true",
-                         help="Pi only (T680): drop env/headers entries of generator-owned servers that the "
-                              "generated config lacks and whose value holds the `${env:` form")
     return parser
 
 
@@ -513,8 +466,6 @@ def _main() -> int:
         source_data = load_json(args.source)
         if not isinstance(dest_data, dict):
             notes.append(("top", "level"))
-        if args.drop_env_form:
-            dest_data = drop_dead_env_form(dest_data, source_data, notes)
         merged = merge_json(dest_data, source_data, notes=notes)
         use_sidecars = bool(args.old_sidecar and args.new_sidecar and args.old_sidecar.is_file())
         old_keys = load_sidecar_keys(args.old_sidecar) if use_sidecars else set()

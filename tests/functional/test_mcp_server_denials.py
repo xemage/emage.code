@@ -64,7 +64,6 @@ GRANTED_LOOKALIKE = "browser_network_requests"
 GENERATED_MCP = {
     "claude-code": (".mcp.json", "mcpServers"),
     "github": (".vscode/mcp.json", "servers"),
-    "pi": (".pi/mcp.json", "mcpServers"),
     "cline": (".cline/mcp.json", "mcpServers"),
     "gemini": (".gemini/settings.json", "mcpServers"),
     "opencode": (".opencode/opencode.json", "mcp"),
@@ -159,7 +158,7 @@ class ShippedProjectionTests(unittest.TestCase):
             self.assertFalse(tool.startswith("mcp_"), tool)
 
     def test_other_platforms_carry_no_denial_and_are_documented_as_open_or_enforced_elsewhere(self):
-        for platform in ("claude-code", "github", "pi", "cline"):
+        for platform in ("claude-code", "github", "cline"):
             rel, wrapper = GENERATED_MCP[platform]
             text = (IMPL / rel).read_text(encoding="utf-8")
             with self.subTest(platform=platform):
@@ -339,7 +338,7 @@ class GeneratorFixtureTests(unittest.TestCase):
     def test_other_platforms_ignore_the_list(self):
         root, result = self.run_sync(self.SERVERS)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        for platform in ("claude-code", "github", "pi", "cline"):
+        for platform in ("claude-code", "github", "cline"):
             rel, _ = GENERATED_MCP[platform]
             self.assertNotIn("dangerous_tool", (root / rel).read_text(encoding="utf-8"), platform)
 

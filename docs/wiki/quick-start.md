@@ -17,7 +17,6 @@ scripts/install.sh --target /path/to/your-project --platform claude-code
 | GitHub Copilot (VS Code) | `github` |
 | Gemini CLI | `gemini` |
 | Opencode | `opencode` |
-| Pi | `pi` |
 | Claude Code | `claude-code` |
 | Cline | `cline` |
 | All platforms | `all` |
@@ -30,7 +29,7 @@ Makefile shortcut: `make install TARGET=/path/to/your-project PLATFORM=claude-co
 scripts/install.sh --target /path/to/your-project --platform claude-code --update
 ```
 
-`--update` replaces each platform tree (`.github/`, `.gemini/`, `.opencode/`, `.pi/`, `.claude/`, `.cline/`, `.clinerules/`) and keeps the files the harness never ships: `.claude/settings.json`, `.claude/settings.local.json`, and under `.github/` the `workflows/`, `ISSUE_TEMPLATE/`, `PULL_REQUEST_TEMPLATE.md`, `PULL_REQUEST_TEMPLATE`, `CODEOWNERS`, `dependabot.yml`, `dependabot.yaml`, `FUNDING.yml` and `copilot-instructions.md`. Each platform's MCP/settings config is merged, and so is an existing one on a plain install (no `--update`): the installer never overwrites a config wholesale. In `docs/tasks/`, the two ledgers are rewritten: `T<NNN>` task rows and the prose around the table are kept, other table rows are dropped with a warning, and a copy of the ledger as it was is saved first (`<ledger>.bak`, see below).
+`--update` replaces each platform tree (`.github/`, `.gemini/`, `.opencode/`, `.claude/`, `.cline/`, `.clinerules/`) and keeps the files the harness never ships: `.claude/settings.json`, `.claude/settings.local.json`, and under `.github/` the `workflows/`, `ISSUE_TEMPLATE/`, `PULL_REQUEST_TEMPLATE.md`, `PULL_REQUEST_TEMPLATE`, `CODEOWNERS`, `dependabot.yml`, `dependabot.yaml`, `FUNDING.yml` and `copilot-instructions.md`. Each platform's MCP/settings config is merged, and so is an existing one on a plain install (no `--update`): the installer never overwrites a config wholesale. In `docs/tasks/`, the two ledgers are rewritten: `T<NNN>` task rows and the prose around the table are kept, other table rows are dropped with a warning, and a copy of the ledger as it was is saved first (`<ledger>.bak`, see below).
 
 To refresh only the harness projections (platform trees, MCP configs, `AGENTS.md`, and `CLAUDE.md` for Claude Code) and touch nothing under `docs/` or `implementation/`:
 
@@ -78,7 +77,6 @@ A full install or `--update` (not `--projections-only`) also prints the command 
 | GitHub Copilot | `.github/` + `.vscode/mcp.json` |
 | Gemini CLI | `.gemini/` |
 | Opencode | `.opencode/` |
-| Pi | `.pi/` |
 | Claude Code | `.claude/` + `.mcp.json` + `CLAUDE.md` |
 | Cline | `.clinerules/` + `.cline/` (its MCP file is a staging file, not applied automatically: [Cline Setup](cline-setup)) |
 
@@ -127,6 +125,6 @@ See [Implementation Guide](implementation-guide) for cookbooks, triggers, packag
 
 ## Troubleshooting
 
-- **Agents not loading?** Confirm format: `.agent.md` (Copilot), `.md` (Gemini/Opencode/Pi/Claude Code).
+- **Agents not loading?** Confirm format: `.agent.md` (Copilot), `.md` (Gemini/Opencode/Claude Code).
 - **MCP failing?** Check env vars and network access.
 - **Drift after editing knowledge?** Run `make sync` from repo root.

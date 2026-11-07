@@ -2,7 +2,7 @@
 
 **ID:** T769
 **Owner:** tech-lead
-**Status:** in_progress
+**Status:** done
 **Priority:** P1
 **Tier:** standard
 **Depends on:** —

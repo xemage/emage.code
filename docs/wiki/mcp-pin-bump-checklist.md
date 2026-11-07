@@ -67,7 +67,7 @@ The Gemini and Opencode denials of the six Playwright tools (`browser_run_code_u
 2. Ask the model to call `mcp_playwright_browser_evaluate`; expect "tool not found" or a refusal.
 3. If a tool of the six is listed, `excludeTools` did not match the reported name: stop the release and open a finding.
 
-**Other items of K-20, observation only** **(unverified)**: GitHub Copilot per-agent MCP grants (do the `qa-engineer` and `frontend-developer` agents get the Playwright tools, and the others not?), Pi's handling of the agent tool list, the `--sandbox` flag of the `playwright` entry on a host with unprivileged user namespaces disabled (expect a start failure; record the message).
+**Other items of K-20, observation only** **(unverified)**: GitHub Copilot per-agent MCP grants (do the `qa-engineer` and `frontend-developer` agents get the Playwright tools, and the others not?), the `--sandbox` flag of the `playwright` entry on a host with unprivileged user namespaces disabled (expect a start failure; record the message).
 
 | Date | Client and version | Check | Result |
 |---|---|---|---|

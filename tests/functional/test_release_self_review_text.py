@@ -58,7 +58,6 @@ RM_MIRRORS = (
     ".gemini/agents/release-manager.md",
     ".github/agents/release-manager.agent.md",
     ".opencode/agents/release-manager.md",
-    ".pi/agents/release-manager.md",
 )
 OR_MIRRORS = tuple(p.replace("release-manager", "orchestrator") for p in RM_MIRRORS)
 PR_MIRRORS = (
@@ -66,11 +65,10 @@ PR_MIRRORS = (
     ".gemini/commands/prepare-release.md",
     ".github/prompts/prepare-release.prompt.md",
     ".opencode/commands/prepare-release.md",
-    ".pi/prompts/prepare-release.md",
 )
 VG_MIRRORS = tuple(
     f".{platform}/skills/validation-gates/SKILL.md"
-    for platform in ("claude", "cline", "gemini", "github", "opencode", "pi")
+    for platform in ("claude", "cline", "gemini", "github", "opencode")
 )
 RW_MIRRORS = tuple(p.replace("validation-gates", "release-workflow") for p in VG_MIRRORS)
 

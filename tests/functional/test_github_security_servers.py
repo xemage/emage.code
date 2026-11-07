@@ -13,7 +13,8 @@ Before T690 the `github` platform (`mcp.tags: ["core"]`) emitted only the core s
 - the Copilot agent files hold the tools in Copilot's `<server>/<tool>` form, and only the two agents that
   hold them on every other platform (`security-engineer`, `poc-security-engineer`) list them;
 - the generator refuses an unknown or misspelled platform name (and a bad `cwd`) before it writes a file,
-  honours `skipFormats` over `extraPlatforms`, and does not leak an `extended` server to `github`;
+  and does not leak an `extended` server to `github` (the `skipFormats` key it used to honour over
+  `extraPlatforms` was removed by ADR-013 D3; test_mcp_platform_conformance.py pins that a leftover key stops it);
 - the K-3 limitation sentences are gone from the live documentation and the new statement is there.
 
 Local `node` runs on temporary directories; no network, no token, no VS Code (a live VS Code run was not made).
@@ -58,7 +59,7 @@ EXPECTED_HOLDERS = {
 
 OTHER_PLATFORM_FILES = (
     (".mcp.json", "mcpServers"), (".gemini/settings.json", "mcpServers"),
-    (".opencode/opencode.json", "mcp"), (".pi/mcp.json", "mcpServers"), (".cline/mcp.json", "mcpServers"),
+    (".opencode/opencode.json", "mcp"), (".cline/mcp.json", "mcpServers"),
 )
 
 
@@ -146,8 +147,7 @@ class GeneratedVscodeConfigTests(unittest.TestCase):
         for rel, wrapper in OTHER_PLATFORM_FILES:
             data = json.loads((IMPL / rel).read_text(encoding="utf-8"))[wrapper]
             sidecar = json.loads((IMPL / f"{rel}.provenance.json").read_text(encoding="utf-8"))
-            # Pi leaves hindsight and cwso out (skipFormats), see test_pi_optional_variables.py
-            expected = every - {"hindsight", "cwso"} if rel == ".pi/mcp.json" else every
+            expected = every
             with self.subTest(file=rel):
                 self.assertEqual(set(data), expected)
                 self.assertEqual(sidecar["generatorOwnedKeys"], sorted(expected))
@@ -243,7 +243,7 @@ class GeneratorPlatformListTests(_Scratch):
         listed = json.loads((root / ".vscode" / "mcp.json").read_text(encoding="utf-8"))["servers"]["listed"]
         self.assertEqual(listed["cwd"], "${workspaceFolder}")
         self.assertEqual(list(listed), ["command", "args", "cwd"])
-        for rel in (".mcp.json", ".gemini/settings.json", ".opencode/opencode.json", ".cline/mcp.json", ".pi/mcp.json"):
+        for rel in (".mcp.json", ".gemini/settings.json", ".opencode/opencode.json", ".cline/mcp.json"):
             with self.subTest(file=rel):
                 self.assertEqual(self.names(root, rel), {"coreprobe", "listed", "unlisted"})
                 self.assertNotIn("cwd", (root / rel).read_text(encoding="utf-8"))
@@ -253,13 +253,6 @@ class GeneratorPlatformListTests(_Scratch):
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         self.assertEqual(self.names(root, ".vscode/mcp.json"), {"coreprobe"})
         self.assertNotIn("cwd", (root / ".vscode" / "mcp.json").read_text(encoding="utf-8"))
-
-    def test_skip_formats_still_wins_over_the_platform_list(self):
-        root, proc = self.run_sync(_probe(extraPlatforms="[github]", skipFormats="[vscode]"))
-        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
-        self.assertEqual(self.names(root, ".vscode/mcp.json"), {"coreprobe"})
-        sidecar = json.loads((root / ".vscode" / "mcp.json.provenance.json").read_text(encoding="utf-8"))
-        self.assertEqual(sidecar["generatorOwnedKeys"], ["coreprobe"])
 
     def test_the_platform_list_adds_no_server_to_a_platform_that_is_not_named(self):
         # `claude-code` already carries every extended server; a list that names it changes nothing there,

@@ -1,14 +1,13 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-11-04T22:48:44+01:00",
+  "generatedAt": "2026-11-07T17:24:51+01:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
     "cline",
     "gemini",
     "github",
-    "opencode",
-    "pi"
+    "opencode"
   ],
   "entries": [
     {
@@ -24,16 +23,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -42,7 +39,7 @@
       "category": "agent",
       "name": "Context Retriever",
       "path": "agents/context-retriever.md",
-      "checksum": "db72c31c8f67fcb67cddc7e624ee61a96cd765227b92daa09d1313f2a01d337a",
+      "checksum": "b0c3961528409ffe860496ed1ef8df92f50ac9d472225711edb4229cf04f96bf",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -50,16 +47,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -76,16 +71,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -102,16 +95,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -128,16 +119,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -154,16 +143,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -180,16 +167,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -206,16 +191,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -232,16 +215,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -258,16 +239,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -284,16 +263,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -310,16 +287,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -336,16 +311,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -362,16 +335,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -388,16 +359,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -414,16 +383,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -440,16 +407,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -466,16 +431,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -492,16 +455,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -518,16 +479,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -544,16 +503,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -570,16 +527,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -596,16 +551,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -622,16 +575,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -648,16 +599,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -674,16 +623,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -700,16 +647,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -726,16 +671,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -752,16 +695,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -778,16 +719,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -804,16 +743,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -822,7 +759,7 @@
       "category": "command",
       "name": "consolidate-memory",
       "path": "commands/consolidate-memory.md",
-      "checksum": "286d938a5bf282005f5107e48c6ae8972a82d6d49ff8a75a921a3e1b464dfe0d",
+      "checksum": "528d41ffeb45189345367cbb595fc234fe4bf507784fc2aab26ff78a7599e7d5",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -830,16 +767,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -848,7 +783,7 @@
       "category": "command",
       "name": "discover-skills",
       "path": "commands/discover-skills.md",
-      "checksum": "d225578f243165e9cc5b4a0a9dda64b39b8fd8c469a50af842960eaa87af1af9",
+      "checksum": "ce9848a8fcd99ee525bbc90774b355cd55945a34e9b9e0a556a1190d667410c9",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -856,16 +791,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -882,16 +815,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -908,16 +839,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -934,16 +863,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -960,16 +887,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -986,16 +911,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1012,16 +935,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1038,16 +959,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1064,16 +983,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1090,16 +1007,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1108,7 +1023,7 @@
       "category": "command",
       "name": "skillify",
       "path": "commands/skillify.md",
-      "checksum": "c5daaff840daacc3e41288463d920da54e2f33d952ea2ea6eb2950f8d5f123cf",
+      "checksum": "bc3333785f549afcb64d921f51822b5f3933b47a61ac7e43e9061657b76b97d4",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1116,16 +1031,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1142,16 +1055,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1168,16 +1079,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1194,16 +1103,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1220,16 +1127,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1246,16 +1151,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1272,16 +1175,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1298,16 +1199,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1324,16 +1223,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1350,16 +1247,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1376,16 +1271,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1402,16 +1295,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1428,16 +1319,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1454,16 +1343,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1480,16 +1367,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1506,16 +1391,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1532,16 +1415,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1558,16 +1439,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1584,16 +1463,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1610,16 +1487,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1636,16 +1511,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1662,16 +1535,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1680,7 +1551,7 @@
       "category": "skill",
       "name": "memory-management",
       "path": "skills/memory-management/SKILL.md",
-      "checksum": "7a65a364d1edac8572ed1e6a480ae6946d49bd5da7e7c1bcb77c2da503a29459",
+      "checksum": "6a4273856bc76f723879742da6a0f4e4f274e9257bd0b64c08b4761bc040b87a",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1688,16 +1559,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1714,16 +1583,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1740,16 +1607,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1766,16 +1631,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1792,16 +1655,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1818,16 +1679,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1844,16 +1703,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1862,7 +1719,7 @@
       "category": "skill",
       "name": "skillify",
       "path": "skills/skillify/SKILL.md",
-      "checksum": "33db2affb6ceda0a83b9e074bca3dae18b09759ace524dfd2fba2ca42729bf3e",
+      "checksum": "145c9a9a741a577986179cff2783637dfcfa1d83217ee6aae4cd53582fdb3292",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1870,16 +1727,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1896,16 +1751,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1922,16 +1775,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1948,16 +1799,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -1974,16 +1823,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -2000,16 +1847,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -2026,16 +1871,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -2052,16 +1895,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     },
@@ -2078,16 +1919,14 @@
           "cline",
           "gemini",
           "github",
-          "opencode",
-          "pi"
+          "opencode"
         ],
         "projectionStatus": {
           "claude-code": "pass",
           "cline": "pass",
           "gemini": "pass",
           "github": "pass",
-          "opencode": "pass",
-          "pi": "pass"
+          "opencode": "pass"
         }
       }
     }

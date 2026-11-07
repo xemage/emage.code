@@ -36,7 +36,6 @@ GUIDE_PATHS = (
     ".gemini/instructions/poc-guidelines.md",
     ".github/instructions/poc-guidelines.instructions.md",
     ".opencode/instructions/poc-guidelines.md",
-    ".pi/instructions/poc-guidelines.md",
 )
 NARRATOR_PATHS = (
     "knowledge/agents/technical-debt-narrator.md",
@@ -44,7 +43,6 @@ NARRATOR_PATHS = (
     ".gemini/agents/technical-debt-narrator.md",
     ".github/agents/technical-debt-narrator.agent.md",
     ".opencode/agents/technical-debt-narrator.md",
-    ".pi/agents/technical-debt-narrator.md",
 )
 
 

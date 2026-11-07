@@ -1925,7 +1925,18 @@ class StrictReadTests(_MainRunner):
     def test_every_file_the_gate_reads_on_this_tree_is_valid_utf8(self):
         reads = {*self.mod.REQUIRED_FILES, *map(Path, self.mod.install_sh_pointers(self.mod.read_strict(
             repo_root() / self.mod.INSTALL_SH)))}
+        # T771 (ADR-013 D5.1): install.sh may point at the release document of the release that will ship the
+        # change (the Pi removal message names docs/releases/v11.0.0.md before that document exists). The gate
+        # skips such a pointer for every older tag (pointer_applies), so the tree skips it only while it is
+        # missing AND newer than the newest release document present; at its own tag the gate reads it.
+        present = [f.stem for f in (repo_root() / "docs" / "releases").glob("v*.md")
+                   if self.mod.tag_core(f.stem) is not None]
+        newest = max(present, key=self.mod.tag_core)
         for relative in sorted(reads):
+            if not (repo_root() / relative).exists() and relative.parent == Path("docs/releases") \
+                    and self.mod.tag_core(relative.stem) is not None \
+                    and not self.mod.pointer_applies(relative.stem, newest):
+                continue
             with self.subTest(str(relative)):
                 self.assertEqual(self.mod.read_strict(repo_root() / relative),
                                  (repo_root() / relative).read_text(encoding="utf-8"))

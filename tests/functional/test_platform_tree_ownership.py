@@ -8,10 +8,11 @@ gate. This test closes that gap: a directory that carries a
 ``.generated-manifest.json`` must be the ``outputDir`` of a platform manifest
 whose ``platform`` equals the one the directory's own manifest declares.
 
-``.cursor`` (support removed in v9.0.0, ADR-010) is also asserted untracked by name,
-at the repository root and under ``implementation/``, so that a revert is loud. The
-by-name check uses ``git ls-files``: a tracked ``.cursor`` fails, while a ``.cursor``
-that only exists locally and untracked (a developer's own Cursor IDE folder) does not.
+``.cursor`` (support removed in v9.0.0, ADR-010) and ``.pi`` (support removed in
+v11.0.0, ADR-013) are also asserted untracked by name, at the repository root and under
+``implementation/``, so that a revert is loud. The by-name check uses ``git ls-files``:
+a tracked ``.cursor`` fails, while a ``.cursor`` that only exists locally and untracked
+(a developer's own Cursor IDE folder) does not; the same holds for ``.pi``.
 """
 from __future__ import annotations
 
@@ -26,7 +27,7 @@ from pathlib import Path
 from tests._helpers.repo import implementation_root, repo_root
 
 MANIFEST_NAME = ".generated-manifest.json"
-REMOVED_PLATFORM_DIRS = (".cursor",)
+REMOVED_PLATFORM_DIRS = (".cursor", ".pi")
 
 
 def owned_output_dirs(platforms_dir: Path) -> dict[str, str]:
@@ -75,7 +76,7 @@ class TestPlatformTreeOwnership(unittest.TestCase):
                 marker = json.loads((impl / output_dir / MANIFEST_NAME).read_text(encoding="utf-8"))
                 self.assertEqual(marker["platform"], platform)
 
-    def test_cursor_is_not_tracked_at_either_level(self) -> None:
+    def _assert_removed_platform(self, name: str, platform: str, adr: str) -> None:
         git = shutil.which("git")
         probe = None
         if git:
@@ -86,29 +87,35 @@ class TestPlatformTreeOwnership(unittest.TestCase):
             if os.environ.get("CI"):
                 self.fail(reason + " (CI must run this check)")
             self.skipTest(reason)
+        self.assertIn(name, REMOVED_PLATFORM_DIRS)
         for base in (repo_root(), implementation_root()):
-            for name in REMOVED_PLATFORM_DIRS:
-                rel = (base / name).relative_to(repo_root()).as_posix()
-                with self.subTest(path=rel):
-                    listed = subprocess.run([git, "-C", str(repo_root()), "ls-files", "--", rel],
-                                            capture_output=True, text=True, check=True).stdout
-                    self.assertEqual(listed.strip(), "",
-                                     f"{rel} is tracked: Cursor support was removed (ADR-010)")
-        self.assertNotIn("cursor", owned_output_dirs(implementation_root() / "platforms").values())
-        self.assertFalse((implementation_root() / "platforms" / "cursor.json").exists())
+            rel = (base / name).relative_to(repo_root()).as_posix()
+            with self.subTest(path=rel):
+                listed = subprocess.run([git, "-C", str(repo_root()), "ls-files", "--", rel],
+                                        capture_output=True, text=True, check=True).stdout
+                self.assertEqual(listed.strip(), "",
+                                 f"{rel} is tracked: {platform} support was removed ({adr})")
+        self.assertNotIn(platform.lower(), owned_output_dirs(implementation_root() / "platforms").values())
+        self.assertFalse((implementation_root() / "platforms" / f"{platform.lower()}.json").exists())
+
+    def test_cursor_is_not_tracked_at_either_level(self) -> None:
+        self._assert_removed_platform(".cursor", "Cursor", "ADR-010")
+
+    def test_pi_is_not_tracked_at_either_level(self) -> None:
+        self._assert_removed_platform(".pi", "Pi", "ADR-013")
 
 
 class TestOrphanGuardIsLoadBearing(unittest.TestCase):
-    """The guard fails on a scratch copy that regains a Cursor tree (ADR-010 Validation 4)."""
+    """The guard fails on a scratch copy that regains a Cursor or Pi tree (ADR-010 Validation 4, ADR-013 S1)."""
 
     def _scratch(self, tmp: Path) -> tuple[Path, Path]:
         platforms = tmp / "platforms"
         platforms.mkdir()
-        (platforms / "pi.json").write_text(
-            json.dumps({"platform": "pi", "outputDir": ".pi"}), encoding="utf-8")
+        (platforms / "cline.json").write_text(
+            json.dumps({"platform": "cline", "outputDir": ".cline"}), encoding="utf-8")
         (platforms / "_manifest.schema.json").write_text("{}", encoding="utf-8")
-        (tmp / ".pi").mkdir()
-        (tmp / ".pi" / MANIFEST_NAME).write_text(json.dumps({"platform": "pi"}), encoding="utf-8")
+        (tmp / ".cline").mkdir()
+        (tmp / ".cline" / MANIFEST_NAME).write_text(json.dumps({"platform": "cline"}), encoding="utf-8")
         return tmp, platforms
 
     def test_clean_scratch_copy_passes(self) -> None:
@@ -124,18 +131,26 @@ class TestOrphanGuardIsLoadBearing(unittest.TestCase):
                 json.dumps({"platform": "cursor", "files": []}), encoding="utf-8")
             self.assertEqual(find_orphan_trees(base, platforms), [".cursor"])
 
+    def test_regrown_pi_tree_is_reported(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base, platforms = self._scratch(Path(tmp))
+            (base / ".pi").mkdir()
+            (base / ".pi" / MANIFEST_NAME).write_text(
+                json.dumps({"platform": "pi", "files": []}), encoding="utf-8")
+            self.assertEqual(find_orphan_trees(base, platforms), [".pi"])
+
     def test_tree_claimed_by_the_wrong_platform_is_reported(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             base, platforms = self._scratch(Path(tmp))
-            (base / ".pi" / MANIFEST_NAME).write_text(
+            (base / ".cline" / MANIFEST_NAME).write_text(
                 json.dumps({"platform": "cursor"}), encoding="utf-8")
-            self.assertEqual(find_orphan_trees(base, platforms), [".pi"])
+            self.assertEqual(find_orphan_trees(base, platforms), [".cline"])
 
     def test_unreadable_manifest_is_reported(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             base, platforms = self._scratch(Path(tmp))
-            (base / ".pi" / MANIFEST_NAME).write_text("not json", encoding="utf-8")
-            self.assertEqual(find_orphan_trees(base, platforms), [".pi"])
+            (base / ".cline" / MANIFEST_NAME).write_text("not json", encoding="utf-8")
+            self.assertEqual(find_orphan_trees(base, platforms), [".cline"])
 
 
 if __name__ == "__main__":

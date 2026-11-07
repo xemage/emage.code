@@ -34,7 +34,6 @@ PROJECTIONS = [
         ".gemini/settings.json",
         ".opencode/opencode.json",
         ".cline/mcp.json",
-        ".pi/mcp.json",
         ".vscode/mcp.json",
     )
 ]
@@ -78,7 +77,6 @@ PLAYWRIGHT_ENTRY_PATHS = {
     ".vscode/mcp.json": ("servers", "str"),
     ".gemini/settings.json": ("mcpServers", "str"),
     ".opencode/opencode.json": ("mcp", "list"),
-    ".pi/mcp.json": ("mcpServers", "str"),
     ".cline/mcp.json": ("mcpServers", "str"),
 }
 REMOVED_OR_NONEXISTENT = (
@@ -461,11 +459,11 @@ class PlaywrightGrantSetTests(unittest.TestCase):
                     self.assertRegex(tool, r"^mcp__playwright__[a-z_]+$", path.stem)
 
     def test_projections_hold_no_whole_server_playwright_form_and_no_excluded_tool(self):
-        """Claude Code, Copilot, Opencode and Pi projections of every agent."""
+        """Claude Code, Copilot and Opencode projections of every agent."""
         root = REPO_ROOT / "implementation"
         files = (list((root / ".claude" / "agents").glob("*.md")) + list((root / ".github" / "agents").glob("*.agent.md"))
-                 + list((root / ".opencode" / "agents").glob("*.md")) + list((root / ".pi" / "agents").glob("*.md")))
-        self.assertGreaterEqual(len(files), 4 * 20)
+                 + list((root / ".opencode" / "agents").glob("*.md")))
+        self.assertGreaterEqual(len(files), 3 * 20)
         for path in files:
             front = path.read_text(encoding="utf-8").split("---", 2)[1]
             # T663: an Opencode `name: false` line is a generated per-agent deny, not a grant; its names
@@ -500,7 +498,7 @@ class PlaywrightGrantSetTests(unittest.TestCase):
         opencode = json.loads((root / ".opencode" / "opencode.json").read_text(encoding="utf-8"))
         self.assertEqual(set(opencode["permission"]), {f"playwright_{t}" for t in PLAYWRIGHT_EXCLUDED})
         self.assertEqual(set(opencode["permission"].values()), {"deny"})
-        for rel in (".mcp.json", ".vscode/mcp.json", ".pi/mcp.json", ".cline/mcp.json"):
+        for rel in (".mcp.json", ".vscode/mcp.json", ".cline/mcp.json"):
             text = (root / rel).read_text(encoding="utf-8")
             self.assertNotIn("excludeTools", text, rel)
             self.assertNotIn('"permission"', text, rel)
@@ -716,10 +714,10 @@ class GitLabGrantSetTests(unittest.TestCase):
         self.assertIn("get_pipeline_job_output", snap["tools"])
 
     def test_the_tool_is_absent_from_every_projection_of_every_agent(self):
-        """T688: source, Claude Code, Pi, Copilot, Opencode and Gemini projections (the name in each platform's
+        """T688: source, Claude Code, Copilot, Opencode and Gemini projections (the name in each platform's
         form). The Opencode form `gitlab_get_pipeline_job_output` must not appear as an allow either."""
         root = REPO_ROOT / "implementation"
-        for platform, glob in ((".claude", "*.md"), (".pi", "*.md"), (".github", "*.agent.md"),
+        for platform, glob in ((".claude", "*.md"), (".github", "*.agent.md"),
                                (".opencode", "*.md"), (".gemini", "*.md")):
             files = sorted((root / platform / "agents").glob(glob))
             self.assertGreaterEqual(len(files), 20, platform)
@@ -736,7 +734,7 @@ class GitLabGrantSetTests(unittest.TestCase):
         root = REPO_ROOT / "implementation"
         paths = [AGENTS_DIR / "qa-engineer.md"] + [
             root / platform / "agents" / name for platform, name in (
-                (".claude", "qa-engineer.md"), (".pi", "qa-engineer.md"), (".github", "qa-engineer.agent.md"),
+                (".claude", "qa-engineer.md"), (".github", "qa-engineer.agent.md"),
                 (".opencode", "qa-engineer.md"), (".gemini", "qa-engineer.md"))]
         for path in paths:
             with self.subTest(path=str(path.relative_to(root))):
@@ -774,13 +772,12 @@ class GitLabGrantSetTests(unittest.TestCase):
             self.assertIsNotNone(GITLAB_FORBIDDEN_NAME.search(name), name)
 
     def test_every_projection_renders_the_same_sets(self):
-        """Claude Code keeps the source form; Pi, Copilot and Opencode render it (T657 mapping)."""
+        """Claude Code keeps the source form; Copilot and Opencode render it (T657 mapping)."""
         root = REPO_ROOT / "implementation"
         seven = set(EXPECTED_GITLAB_GRANTS)
         # platform -> (agent file suffix, prefix of a named tool)
         platforms = {
             ".claude": (".md", "mcp__gitlab__"),
-            ".pi": (".md", "mcp__gitlab__"),
             ".github": (".agent.md", "gitlab/"),
             ".opencode": (".md", "gitlab_"),
         }

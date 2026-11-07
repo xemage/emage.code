@@ -136,11 +136,11 @@ class TestUpdateRefusedAtRepositoryRoot(_CopierMatrix):
                 self._assert_refused(repo, alias, path)
 
     def test_projections_only_at_an_alias_still_requires_platform_all(self) -> None:
-        repo = synthetic_repo(self.fresh, self.tmp / "repo-alias-pi")
-        alias = self.tmp / "alias-pi"
+        repo = synthetic_repo(self.fresh, self.tmp / "repo-alias-cline")
+        alias = self.tmp / "alias-cline"
         alias.symlink_to(repo, target_is_directory=True)
         before = _snapshot(repo)
-        proc = run_installer(repo / "scripts" / "install.sh", alias, "--platform", "pi",
+        proc = run_installer(repo / "scripts" / "install.sh", alias, "--platform", "cline",
                              "--projections-only")
         self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
         self.assertIn("requires --platform all", proc.stderr)

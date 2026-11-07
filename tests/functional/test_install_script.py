@@ -21,7 +21,7 @@ class TestInstallScript(unittest.TestCase):
         if not cls.bash:
             raise unittest.SkipTest("bash not available on PATH")
 
-    def _run_install(self, target: Path, platform: str = "pi", update: bool = False) -> subprocess.CompletedProcess[str]:
+    def _run_install(self, target: Path, platform: str = "cline", update: bool = False) -> subprocess.CompletedProcess[str]:
         args = [
             self.bash,
             str(repo_root() / "scripts" / "install.sh"),
@@ -41,37 +41,37 @@ class TestInstallScript(unittest.TestCase):
         )
 
     def test_install_merges_into_existing_platform_and_docs_dirs(self):
-        implementation_pi = repo_root() / "implementation" / ".pi"
+        implementation_cline = repo_root() / "implementation" / ".cline"
 
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "project"
             target.mkdir()
-            (target / ".pi").mkdir()
+            (target / ".cline").mkdir()
             (target / "docs").mkdir()
-            (target / ".pi" / "keep-pi.txt").write_text("existing", encoding="utf-8")
+            (target / ".cline" / "keep-cline.txt").write_text("existing", encoding="utf-8")
             (target / "docs" / "keep-docs.txt").write_text("existing", encoding="utf-8")
 
-            proc = self._run_install(target, platform="pi")
+            proc = self._run_install(target, platform="cline")
             self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
 
             self.assertFalse(
-                (target / ".pi" / ".pi").exists(),
-                "install must not nest platform files under .pi/.pi",
+                (target / ".cline" / ".cline").exists(),
+                "install must not nest platform files under .cline/.cline",
             )
             self.assertFalse(
                 (target / "docs" / "docs").exists(),
                 "install must not nest docs under docs/docs",
             )
-            self.assertTrue((target / ".pi" / "keep-pi.txt").is_file())
+            self.assertTrue((target / ".cline" / "keep-cline.txt").is_file())
             self.assertTrue((target / "docs" / "keep-docs.txt").is_file())
             self.assertTrue((target / "AGENTS.md").is_file())
 
-            # Sanity: installed tree contains at least one file from implementation/.pi
-            installed_names = {p.name for p in implementation_pi.rglob("*") if p.is_file()}
-            copied_names = {p.name for p in (target / ".pi").rglob("*") if p.is_file()}
+            # Sanity: installed tree contains at least one file from implementation/.cline
+            installed_names = {p.name for p in implementation_cline.rglob("*") if p.is_file()}
+            copied_names = {p.name for p in (target / ".cline").rglob("*") if p.is_file()}
             self.assertTrue(
                 installed_names & copied_names,
-                "expected install to copy files from implementation/.pi into target/.pi",
+                "expected install to copy files from implementation/.cline into target/.cline",
             )
 
     def test_update_requires_existing_install(self):
@@ -79,7 +79,7 @@ class TestInstallScript(unittest.TestCase):
             target = Path(tmp) / "project"
             target.mkdir()
 
-            proc = self._run_install(target, platform="pi", update=True)
+            proc = self._run_install(target, platform="cline", update=True)
             self.assertNotEqual(proc.returncode, 0)
             self.assertIn("AGENTS.md", proc.stderr)
 
@@ -88,12 +88,12 @@ class TestInstallScript(unittest.TestCase):
             target = Path(tmp) / "project"
             target.mkdir()
             (target / "AGENTS.md").write_text("# existing", encoding="utf-8")
-            (target / ".pi").mkdir()
-            (target / ".pi" / "stale-agent.md").write_text("remove me", encoding="utf-8")
+            (target / ".cline").mkdir()
+            (target / ".cline" / "stale-agent.md").write_text("remove me", encoding="utf-8")
 
-            proc = self._run_install(target, platform="pi", update=True)
+            proc = self._run_install(target, platform="cline", update=True)
             self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
-            self.assertFalse((target / ".pi" / "stale-agent.md").exists())
+            self.assertFalse((target / ".cline" / "stale-agent.md").exists())
             self.assertIn("Updated emage.code", proc.stdout)
 
     def test_update_preserves_merged_docs(self):
@@ -104,7 +104,7 @@ class TestInstallScript(unittest.TestCase):
             (target / "docs").mkdir()
             (target / "docs" / "custom-task.md").write_text("keep me", encoding="utf-8")
 
-            proc = self._run_install(target, platform="pi", update=True)
+            proc = self._run_install(target, platform="cline", update=True)
             self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
             self.assertTrue((target / "docs" / "custom-task.md").is_file())
 
@@ -145,7 +145,7 @@ class TestInstallScript(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            proc = self._run_install(target, platform="pi", update=True)
+            proc = self._run_install(target, platform="cline", update=True)
             self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
 
             completed = (tasks / "completed-tasks.md").read_text(encoding="utf-8")
@@ -355,7 +355,7 @@ class TestInstallScript(unittest.TestCase):
             )
 
     # -- .gemini/settings.json / .opencode/opencode.json /
-    #    .pi/mcp.json / .cline/mcp.json merge-on-update (T377) --
+    #    .cline/mcp.json merge-on-update (T377) --
 
     def test_gemini_settings_json_merge_on_update(self):
         implementation_mcp = repo_root() / "implementation" / ".gemini" / "settings.json"
@@ -476,59 +476,6 @@ class TestInstallScript(unittest.TestCase):
             # opencode-specific: sibling non-MCP keys must survive untouched
             self.assertEqual(updated.get("$schema"), source_data.get("$schema"))
             self.assertEqual(updated.get("instructions"), source_data.get("instructions"))
-
-    def test_pi_mcp_json_merge_on_update(self):
-        implementation_mcp = repo_root() / "implementation" / ".pi" / "mcp.json"
-        source_data = json.loads(implementation_mcp.read_text(encoding="utf-8"))
-        source_context7 = source_data["mcpServers"]["context7"]
-
-        with tempfile.TemporaryDirectory() as tmp:
-            target = Path(tmp) / "project"
-            target.mkdir()
-
-            # (a) fresh install: byte-identical plain copy
-            proc = self._run_install(target, platform="pi")
-            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
-            mcp_path = target / ".pi" / "mcp.json"
-            self.assertEqual(
-                mcp_path.read_text(encoding="utf-8"),
-                implementation_mcp.read_text(encoding="utf-8"),
-                "fresh (non --update) install must plain-copy .pi/mcp.json byte-for-byte",
-            )
-
-            # inject an unknown server key + corrupt a generator-known key
-            data = json.loads(mcp_path.read_text(encoding="utf-8"))
-            data["mcpServers"]["my-custom-server"] = {"url": "https://example.invalid/mcp"}
-            data["mcpServers"]["context7"] = {"url": "https://stale.example.invalid/mcp"}
-            mcp_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
-
-            # (d) a stale non-MCP file elsewhere in the same tree
-            stale = target / ".pi" / "stale-agent-that-should-be-deleted.md"
-            stale.write_text("remove me", encoding="utf-8")
-
-            proc2 = self._run_install(target, platform="pi", update=True)
-            self.assertEqual(proc2.returncode, 0, proc2.stdout + proc2.stderr)
-
-            updated = json.loads(mcp_path.read_text(encoding="utf-8"))
-            # (b) unknown key survives
-            self.assertEqual(
-                updated["mcpServers"].get("my-custom-server"),
-                {"url": "https://example.invalid/mcp"},
-                "unknown pre-existing server key must survive --update merge",
-            )
-            # (c) generator-known key refreshed
-            self.assertEqual(
-                updated["mcpServers"]["context7"],
-                source_context7,
-                "generator-known server key must be refreshed to match the generated source on --update",
-            )
-            # (d) stale non-MCP file in the same tree still correctly deleted —
-            # proves the exclude is scoped to exactly mcp.json, not the whole tree
-            self.assertFalse(
-                stale.exists(),
-                "--update must still stale-clean the rest of .pi/ via rsync --delete; "
-                "only mcp.json is exempted",
-            )
 
     def test_cline_mcp_json_merge_on_update(self):
         implementation_mcp = repo_root() / "implementation" / ".cline" / "mcp.json"
@@ -748,10 +695,6 @@ class TestInstallScript(unittest.TestCase):
     def test_update_prunes_retired_generator_owned_key_via_sidecar_history_opencode(self):
         """Sidecar-survival assertion for platform opencode (ADR-002 "Risks introduced")."""
         self._assert_retired_key_pruned_and_sidecar_survives("opencode", ".opencode/opencode.json", "mcp")
-
-    def test_update_prunes_retired_generator_owned_key_via_sidecar_history_pi(self):
-        """Sidecar-survival assertion for platform pi (ADR-002 "Risks introduced")."""
-        self._assert_retired_key_pruned_and_sidecar_survives("pi", ".pi/mcp.json", "mcpServers")
 
     def test_update_prunes_retired_generator_owned_key_via_sidecar_history_cline(self):
         """Sidecar-survival assertion for platform cline (ADR-002 "Risks introduced")."""
@@ -1132,7 +1075,7 @@ Append-only log. Entries move here after the orchestrator marks a task `done`.
         return subprocess.run(
             [
                 self.bash, str(repo_root() / "scripts" / "install.sh"),
-                "--target", str(target), "--platform", "pi", "--update",
+                "--target", str(target), "--platform", "cline", "--update",
             ],
             cwd=repo_root(), capture_output=True, text=True, check=False, env=env,
         )
@@ -1346,7 +1289,7 @@ class TestInstallRefusesSymlinkedManagedPaths(unittest.TestCase):
         ("agents-md-file", "AGENTS.md", "file", HARNESS_MODES),
         ("ledger-file", "docs/tasks/active-tasks.md", "file", ALL_MODES),
         ("completed-ledger-file", "docs/tasks/completed-tasks.md", "file", ALL_MODES),
-        ("pi-mcp-file", ".pi/mcp.json", "file", HARNESS_MODES),
+        ("cline-mcp-file", ".cline/mcp.json", "file", HARNESS_MODES),
         ("mcp-sidecar-file", ".mcp.json.provenance.json", "file", HARNESS_MODES),
     )
 
@@ -1358,10 +1301,10 @@ class TestInstallRefusesSymlinkedManagedPaths(unittest.TestCase):
                         self._assert_refused(case, rel, kind, flags, label, path)
 
     def test_single_platform_install_checks_only_its_own_managed_paths(self):
-        # claude-code touches .claude: refused; a symlinked .pi is not its path.
+        # claude-code touches .claude: refused; a symlinked .cline is not its path.
         self._assert_refused("single", ".claude", "dir", ("--update",), "rsync", None,
                              platform="claude-code")
-        target, outside = self._scenario("single-other", ".pi", "dir")
+        target, outside = self._scenario("single-other", ".cline", "dir")
         proc = self._install(target, "--update", platform="claude-code")
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         self.assertEqual((outside / "canary.txt").read_text(), self.CANARY)
@@ -1415,14 +1358,14 @@ class TestInstallRefusesSymlinkedManagedPaths(unittest.TestCase):
         real.mkdir()
         link = self.tmp / "linked-target"
         link.symlink_to(real)
-        proc = self._install(link, platform="pi")
+        proc = self._install(link, platform="cline")
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
-        self.assertTrue((real / ".pi").is_dir())
+        self.assertTrue((real / ".cline").is_dir())
 
     # --- fix round (security review LOW findings) -----------------------------
 
     def _sentinel_target(self, name: str) -> tuple[Path, Path]:
-        """An installed target whose AGENTS.md and a .pi file differ from what the
+        """An installed target whose AGENTS.md and a .gemini file differ from what the
         installer would write: a partial write before the refusal rewrites them."""
         target = self.tmp / name / "target"
         outside = self.tmp / name / "outside"
@@ -1430,7 +1373,7 @@ class TestInstallRefusesSymlinkedManagedPaths(unittest.TestCase):
         outside.mkdir(parents=True)
         (outside / "canary.txt").write_text(self.CANARY)
         (target / "AGENTS.md").write_text("# sentinel: not the rendered file\n")
-        (target / ".pi" / "instructions" / "coding-standards.md").write_text("sentinel\n")
+        (target / ".gemini" / "instructions" / "coding-standards.md").write_text("sentinel\n")
         return target, outside
 
     def _assert_refusal(self, target: Path, outside: Path, rel: str, flags, path=None,
@@ -1453,7 +1396,7 @@ class TestInstallRefusesSymlinkedManagedPaths(unittest.TestCase):
         harness = set(managed_paths(projections_only=True))
         for rel in ("docs/plans", "docs/tasks/_template.md", "docs/tasks/validate-tasks.py",
                     "implementation/__init__.py", "implementation/runtime/handoff",
-                    ".github", ".gemini", ".opencode", ".pi", ".cline", ".clinerules",
+                    ".github", ".gemini", ".opencode", ".cline", ".clinerules",
                     ".vscode/mcp.json.provenance.json"):
             self.assertIn(rel, every)
         self.assertNotIn("docs", harness)
@@ -1503,12 +1446,12 @@ class TestInstallRefusesSymlinkedManagedPaths(unittest.TestCase):
     def test_link_pointing_inside_the_target_is_refused(self):
         target, outside = self._sentinel_target("inside")
         shutil.rmtree(target / ".claude")
-        (target / ".claude").symlink_to(target / ".pi")
+        (target / ".claude").symlink_to(target / ".gemini")
         self._assert_refusal(target, outside, ".claude", ("--update",))
         target, outside = self._sentinel_target("inside-relative")
-        shutil.rmtree(target / ".pi")
-        (target / ".pi").symlink_to(Path("docs"))
-        self._assert_refusal(target, outside, ".pi", ())
+        shutil.rmtree(target / ".cline")
+        (target / ".cline").symlink_to(Path("docs"))
+        self._assert_refusal(target, outside, ".cline", ())
 
     def test_claude_md_linked_to_agents_md_is_refused(self):
         # L5: the plausible real-world link; writing CLAUDE.md would rewrite AGENTS.md.
@@ -1543,7 +1486,7 @@ class TestInstallRefusesSymlinkedManagedPaths(unittest.TestCase):
         if os.geteuid() == 0:
             self.skipTest("root can enter mode-000 directories")
         target, outside = self._sentinel_target("noperm")
-        locked = target / ".pi"
+        locked = target / ".cline"
         locked.chmod(0o000)
         self.addCleanup(locked.chmod, 0o755)
         proc = self._install(target, "--update")

@@ -17,7 +17,7 @@ By participating you agree to follow the collaboration and review expectations d
 |------------------|--------|--------|
 | Update an agent, skill, command, instruction, or MCP server | `implementation/knowledge/**` | re-run sync (see "Working with implementation") |
 | Update workspace conventions | `AGENTS.md` (root) and `implementation/AGENTS.md` | — |
-| **Never** edit by hand | `.github/`, `.gemini/`, `.opencode/`, `.pi/`, `.claude/`, `.cline/`, `.clinerules/` (generated under `implementation/`) | these are generated |
+| **Never** edit by hand | `.github/`, `.gemini/`, `.opencode/`, `.claude/`, `.cline/`, `.clinerules/` (generated under `implementation/`) | these are generated |
 
 ## Workflow
 
@@ -65,7 +65,7 @@ Refs #<issue>
 
 ## Sync engine — required before every commit
 
-The platform folders (`.github/`, `.gemini/`, `.opencode/`, `.pi/`,
+The platform folders (`.github/`, `.gemini/`, `.opencode/`,
 `.claude/`, `.cline/`, `.clinerules/`) are **generated**. CI fails if they drift from `knowledge/`.
 
 From the repository root:
@@ -138,7 +138,7 @@ another platform already wired up. Never assume a new platform's remote-server
 shape by copying a sibling platform's `format` branch verbatim (a `format`
 value that is named after one platform but silently reused by another is
 exactly that mistake, which is why each `format` value now names its own
-platform, as `pi.json` does with `"pi"`) without checking that platform's *own* current
+platform, as `cline.json` does with `"cline"`) without checking that platform's *own* current
 official MCP docs for the `context7`/`hf-mcp-server` remote-transport case
 specifically — training-data memory and cross-platform analogy are exactly
 what caused this drift in the first place. See

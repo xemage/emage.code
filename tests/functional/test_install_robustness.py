@@ -43,11 +43,10 @@ MCP_CONFIG = {
     "github": ".vscode/mcp.json",
     "gemini": ".gemini/settings.json",
     "opencode": ".opencode/opencode.json",
-    "pi": ".pi/mcp.json",
     "claude-code": ".mcp.json",
     "cline": ".cline/mcp.json",
 }
-TREE = {"github": ".github", "gemini": ".gemini", "opencode": ".opencode", "pi": ".pi",
+TREE = {"github": ".github", "gemini": ".gemini", "opencode": ".opencode",
         "claude-code": ".claude", "cline": ".cline"}
 DENIED = ("playwright_browser_run_code_unsafe", "playwright_browser_evaluate",
           "playwright_browser_file_upload", "playwright_browser_drag",
@@ -155,7 +154,7 @@ class TestMissingOrDashOptionValues(_Scratch):
                               cwd=str(self.tmp))
 
     def test_missing_target_value(self) -> None:
-        for args in (("--target",), ("--platform", "pi", "--target"), ("--target", "--update")):
+        for args in (("--target",), ("--platform", "cline", "--target"), ("--target", "--update")):
             with self.subTest(args=args):
                 proc = self._run(*args)
                 self.assertEqual(proc.returncode, 1, proc.stderr)
@@ -180,7 +179,7 @@ class TestMissingOrDashOptionValues(_Scratch):
         self.assertEqual(os.listdir(self.tmp), [])
 
     def test_dot_slash_dash_target_is_accepted(self) -> None:
-        proc = self._run("--target", "./-ok", "--platform", "pi", "--dry-run")
+        proc = self._run("--target", "./-ok", "--platform", "cline", "--dry-run")
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertEqual(os.listdir(self.tmp), [], "--dry-run created something")
 
@@ -193,7 +192,7 @@ class TestDryRunCreatesNothing(_Scratch):
         for flags, code in (((), 0), (("--update",), 1), (("--projections-only",), 1)):
             with self.subTest(flags=flags):
                 target = self.tmp / "parent" / "sub"
-                proc = run_installer(INSTALLER, target, "--platform", "pi", "--dry-run", *flags)
+                proc = run_installer(INSTALLER, target, "--platform", "cline", "--dry-run", *flags)
                 self.assertEqual(proc.returncode, code, proc.stdout + proc.stderr)
                 if code:
                     self.assertIn("requires an existing emage.code install", proc.stderr)
@@ -249,7 +248,7 @@ class TestExistingMcpConfigIsMerged(_Scratch):
         self._check_opencode(target, proc.stderr)
 
     def test_plain_install_keeps_a_hand_added_server_in_every_json_config(self) -> None:
-        for platform in ("github", "claude-code", "pi", "cline"):
+        for platform in ("github", "claude-code", "cline"):
             with self.subTest(platform=platform):
                 target = self.installed(platform, f"p-{platform}")
                 path = target / MCP_CONFIG[platform]
@@ -509,7 +508,7 @@ class TestHintsAndShellHygiene(_Scratch):
 
     def test_hints_are_shell_quoted(self) -> None:
         target = self.tmp / "my proj's $(dir)"
-        proc = run_installer(INSTALLER, target, "--platform", "pi")
+        proc = run_installer(INSTALLER, target, "--platform", "cline")
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         quoted = _bash_output(f"printf '%q' {shlex.quote(str(target))}")
         self.assertIn(f"Run from {quoted}:", proc.stdout)
@@ -518,11 +517,11 @@ class TestHintsAndShellHygiene(_Scratch):
         self.assertIn(f"pip install -r {rel}\n", proc.stdout)
 
     def test_only_the_shipped_runtime_directories_are_searched(self) -> None:
-        target = self.installed("pi")
+        target = self.installed("cline")
         stray = target / "implementation/runtime/other/requirements-mcp-server.txt"
         stray.parent.mkdir(parents=True)
         stray.write_text("mcp==0\n", encoding="utf-8")
-        proc = run_installer(INSTALLER, target, "--platform", "pi", "--update")
+        proc = run_installer(INSTALLER, target, "--platform", "cline", "--update")
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         self.assertNotIn("runtime/other", proc.stdout)
         self.assertIn("runtime/security/requirements-mcp-server.txt", proc.stdout)
@@ -580,10 +579,10 @@ class TestPlaywrightNotice(_Scratch):
         shutil.copytree(repo_root() / "scripts", repo / "scripts", ignore=shutil.ignore_patterns("__pycache__"))
         shutil.copytree(implementation_root(), repo / "implementation",
                         ignore=shutil.ignore_patterns("__pycache__", "_index"))
-        cfg = repo / "implementation" / MCP_CONFIG["pi"]
+        cfg = repo / "implementation" / MCP_CONFIG["cline"]
         cfg.write_text(cfg.read_text(encoding="utf-8").replace('"playwright"', '"other-browser"'),
                        encoding="utf-8")
-        proc = run_installer(repo / "scripts/install.sh", self.tmp / "t", "--platform", "pi")
+        proc = run_installer(repo / "scripts/install.sh", self.tmp / "t", "--platform", "cline")
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         self.assertNotIn("Playwright", proc.stdout)
 
@@ -1257,9 +1256,9 @@ class TestPlatformMapsAreVerifiedBeforeAnyWrite(_Scratch):
     """SEC-T672-04: a platform missing from any one per-platform piece stops the run up front."""
 
     BREAKS = {
-        "install function": ("install_pi() {", "install_pix() {"),
-        "managed paths": ("    pi) printf '%s\\n' .pi .pi/mcp.json .pi/mcp.json.provenance.json ;;\n", ""),
-        "mcp config": ("    pi) printf '%s\\n' .pi/mcp.json ;;\n", ""),
+        "install function": ("install_cline() {", "install_clinex() {"),
+        "managed paths": ("    cline) printf '%s\\n' .cline .clinerules .cline/mcp.json .cline/mcp.json.provenance.json ;;\n", ""),
+        "mcp config": ("    cline) printf '%s\\n' .cline/mcp.json ;;\n", ""),
     }
 
     def _broken_installer(self, label: str) -> Path:
@@ -1273,15 +1272,15 @@ class TestPlatformMapsAreVerifiedBeforeAnyWrite(_Scratch):
         script.write_text(text.replace(old, new), encoding="utf-8")
         return script
 
-    def test_each_missing_piece_stops_all_and_pi_runs_before_the_target_exists(self) -> None:
+    def test_each_missing_piece_stops_all_and_cline_runs_before_the_target_exists(self) -> None:
         for label in self.BREAKS:
             script = self._broken_installer(label)
-            for platform in ("all", "pi"):
+            for platform in ("all", "cline"):
                 with self.subTest(missing=label, platform=platform):
                     target = self.tmp / f"t-{label.replace(' ', '-')}-{platform}"
                     proc = run_installer(script, target, "--platform", platform)
                     self.assertEqual(proc.returncode, 70, proc.stdout + proc.stderr)
-                    self.assertIn("internal: platform 'pi' is in SUPPORTED_PLATFORMS", proc.stderr)
+                    self.assertIn("internal: platform 'cline' is in SUPPORTED_PLATFORMS", proc.stderr)
                     self.assertFalse(target.exists(), "something was written before the check")
 
     def test_only_selected_platforms_are_verified(self) -> None:
