@@ -2,7 +2,7 @@
 
 **ID:** T775
 **Owner:** security-engineer
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Tier:** standard
 **Depends on:** T774
