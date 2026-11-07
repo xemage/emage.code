@@ -561,3 +561,6 @@ Append-only log. Entries move here after the orchestrator marks a task `done`.
 | T757 | Open release/v10.0.0 and bump the version markers | release-manager | 2026-11-07 | `README.md`; `docs/wiki/README.md`; `docs/wiki/home.md`; `docs/wiki/implementation-guide.md`; `implementation/README.md` |
 | T758 | Write the v10.0.0 release document, verdicts left for T763 | release-manager | 2026-11-07 | `docs/releases/v10.0.0.md` |
 | T759 | Rehearse the release job in the real CI image: passes with the real HTTP path against a double, no defect; the block is compiled into `_ssl`; host state unchanged | devops-engineer | 2026-11-07 | `docs/artifacts/release-rehearsal-t759-v1.md` |
+| T760 | QA release gate for v10.0.0: CONDITIONAL_PASS; the suite and gates pass; three medium findings on M-2 | qa-engineer | 2026-11-07 | `docs/artifacts/qa-release-v10-v1.md` |
+| T761 | Tech Lead release review for v10.0.0: CONDITIONAL_PASS, no code change | tech-lead | 2026-11-07 | `docs/artifacts/tech-lead-release-v10-v1.md` |
+| T762 | Security re-check for v10.0.0: CONDITIONAL_PASS; SEC-T756-01 closed; five MEDIUMs accepted by the user | security-engineer | 2026-11-07 | `docs/artifacts/security-review-release-v10-v1.md` |
