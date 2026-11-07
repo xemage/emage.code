@@ -12,6 +12,7 @@ import importlib.util
 import io
 import json
 import os
+import re
 import stat
 import tempfile
 import unittest
@@ -150,7 +151,7 @@ class TestMergeMcpJsonRobustness(unittest.TestCase):
     def test_temp_file_has_the_old_mode_before_any_content_is_written_and_a_random_name(self) -> None:
         dest = self.write("dest.json", {"a": 1, "env": {"TOKEN": "secret-value"}})
         dest.chmod(0o600)
-        seen: dict = {}
+        seen: dict = {"tmp_names": []}
         real_fchmod, real_replace = os.fchmod, os.replace
         def fchmod(fd, mode):
             seen["size_at_fchmod"] = os.fstat(fd).st_size
@@ -158,16 +159,21 @@ class TestMergeMcpJsonRobustness(unittest.TestCase):
             return real_fchmod(fd, mode)
         def replace(src, dst):
             seen["mode_at_replace"] = stat.S_IMODE(os.stat(src).st_mode)
-            seen["tmp_name"] = os.path.basename(src)
+            seen["tmp_names"].append(os.path.basename(src))
             return real_replace(src, dst)
         with mock.patch.object(merge.os, "fchmod", side_effect=fchmod), \
              mock.patch.object(merge.os, "replace", side_effect=replace):
             merge.atomic_write_text(dest, '{"env": {"TOKEN": "secret-value"}}\n')
+            merge.atomic_write_text(dest, '{"env": {"TOKEN": "secret-value"}}\n')
+        first, second = seen["tmp_names"]
         self.assertEqual(seen["size_at_fchmod"], 0, "the mode must be set before the first byte is written")
         self.assertEqual(seen["mode_before_fchmod"], 0o600)
         self.assertEqual(seen["mode_at_replace"], 0o600, "no wider than the old file")
-        self.assertNotIn(str(os.getpid()), seen["tmp_name"], "a predictable temp name")
-        self.assertTrue(seen["tmp_name"].startswith(".dest.json.") and seen["tmp_name"].endswith(".tmp"))
+        # A whole field, not a substring: a random name may hold the process id by chance (TD-T746-01).
+        # Not split on "_", which is in mkstemp's alphabet, so that a random name cannot make such a field.
+        self.assertNotIn(str(os.getpid()), re.split(r"[.-]", first), "a predictable temp name")
+        self.assertNotEqual(first, second, "a predictable temp name")
+        self.assertTrue(first.startswith(".dest.json.") and first.endswith(".tmp"))
         self.assertEqual(stat.S_IMODE(dest.stat().st_mode), 0o600)
 
     def test_new_file_gets_the_umask_mode_and_a_failed_write_leaves_no_temp_file(self) -> None:

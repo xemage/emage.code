@@ -2,6 +2,14 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
+| T757 | Open release/v10.0.0 and bump the version markers (the user: "release go") | release-manager | pending | P0 | T753, T754, T756, T765 | 2026-11-06 |
+| T758 | Write the v10.0.0 release document (the user: "release go") | release-manager | pending | P0 | T753, T757 | 2026-11-06 |
+| T759 | Rehearse the release job in the real CI image (the user: "release go") | devops-engineer | pending | P0 | T758 | 2026-11-06 |
+| T760 | QA release gate for v10.0.0 (the user: "release go") | qa-engineer | pending | P0 | T759 | 2026-11-06 |
+| T761 | Tech Lead release review for v10.0.0 (the user: "release go") | tech-lead | pending | P0 | T758 | 2026-11-06 |
+| T762 | Security re-check for v10.0.0 (the user: "release go") | security-engineer | pending | P0 | T758 | 2026-11-06 |
+| T763 | Release manager verdict for v10.0.0 (the user: "release go") | release-manager | pending | P0 | T760, T761, T762 | 2026-11-06 |
+| T764 | Publish v10.0.0 (the user: "release go") | orchestrator | pending | P0 | T763 | 2026-11-06 |
 
 > **Active rows (`plan-123`, post-release follow-ups after v8.0.0; approved by the user on 2026-10-16).** T662, T678 and T679 (Cursor removal in three steps under the accepted ADR-010), T663 (Opencode per-agent denies), T665 (GitLab token scope: implementation of the accepted design), T666 and T667 (named GitLab tool sets), T668 to T670 (golden realignment B under grant G-2, evaluator baseline v22, promote `orchestrator`; baseline v22 approved by the user on 2026-10-16), T672 to T677 (themed debt tasks from the tracked-debt register) (themed debt tasks). Baseline v21 until T669; root drift 0.
 
