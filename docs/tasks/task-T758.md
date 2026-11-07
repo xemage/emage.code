@@ -2,12 +2,13 @@
 
 **ID:** T758
 **Owner:** release-manager
-**Status:** in_progress
+**Status:** done
 **Priority:** P0
 **Tier:** standard
 **Depends on:** T753, T757
 **Affects:** —
 **Created:** 2026-11-06
+**Completed:** 2026-11-07
 **Based on:**
 - `docs/plans/plan-145-release-v10.md` (task T758)
 - The user's answers of 2026-11-06, verbatim: "release go"; "Approve (Recommended)"

@@ -2,9 +2,7 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T757 | Open release/v10.0.0 and bump the version markers (the user: "release go") | release-manager | in_progress | P0 | T753, T754, T756, T765 | 2026-11-06 |
-| T758 | Write the v10.0.0 release document (the user: "release go") | release-manager | in_progress | P0 | T753, T757 | 2026-11-06 |
-| T759 | Rehearse the release job in the real CI image (the user: "release go") | devops-engineer | pending | P0 | T758 | 2026-11-06 |
+| T759 | Rehearse the release job in the real CI image (the user: "release go") | devops-engineer | in_progress | P0 | T758 | 2026-11-06 |
 | T760 | QA release gate for v10.0.0 (the user: "release go") | qa-engineer | pending | P0 | T759 | 2026-11-06 |
 | T761 | Tech Lead release review for v10.0.0 (the user: "release go") | tech-lead | pending | P0 | T758 | 2026-11-06 |
 | T762 | Security re-check for v10.0.0 (the user: "release go") | security-engineer | pending | P0 | T758 | 2026-11-06 |
