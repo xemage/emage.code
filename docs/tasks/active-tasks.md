@@ -2,9 +2,6 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T766 | CA-chain control in CI for SEC-T756-02 (plan-146 A) | devops-engineer | in_progress | P0 | — | 2026-11-07 |
-| T767 | CA check open points for SEC-T756-02 (plan-146 A) | devops-engineer | in_progress | P0 | — | 2026-11-07 |
-| T768 | Security review of plan-146 Part A, re-grade SEC-T756-02 | security-engineer | pending | P0 | T766, T767 | 2026-11-07 |
 | T769 | Pi removal inventory (plan-146 B) | tech-lead | in_progress | P1 | — | 2026-11-07 |
 | T770 | ADR-013 drop Pi platform support (plan-146 B) | solution-architect | pending | P1 | T769 | 2026-11-07 |
 | T771 | Pi removal step S1, code (ADR-013) | devops-engineer | pending | P1 | T770, user acceptance of ADR-013 | 2026-11-07 |

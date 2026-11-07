@@ -2,7 +2,7 @@
 
 **ID:** T766
 **Owner:** devops-engineer
-**Status:** in_progress
+**Status:** done
 **Priority:** P0
 **Tier:** standard
 **Depends on:** —
