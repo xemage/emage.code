@@ -558,3 +558,10 @@ Append-only log. Entries move here after the orchestrator marks a task `done`.
 | T755 | Dependency audit of the pinned MCP set for v10.0.0: no new HIGH; CI image findings raised | devops-engineer | 2026-11-07 | `docs/artifacts/mcp-pin-audit-v10-v1.md` |
 | T756 | The state of the accepted MEDIUMs for v10.0.0, and the new findings graded: SEC-T756-01 HIGH, -02 MEDIUM, six LOW | security-engineer | 2026-11-07 | `docs/artifacts/security-review-t756-accepted-mediums-v1.md` |
 | T765 | Python image bump to 3.12.16 (SEC-T756-01), the CA check (0 of 16 chains validate) and the installer note (TL-T753-04) | devops-engineer | 2026-11-07 | `.gitlab-ci.yml`; `docs/artifacts/ca-check-t765-v1.md`; `scripts/install.sh` |
+| T757 | Open release/v10.0.0 and bump the version markers | release-manager | 2026-11-07 | `README.md`; `docs/wiki/README.md`; `docs/wiki/home.md`; `docs/wiki/implementation-guide.md`; `implementation/README.md` |
+| T758 | Write the v10.0.0 release document, verdicts left for T763 | release-manager | 2026-11-07 | `docs/releases/v10.0.0.md` |
+| T759 | Rehearse the release job in the real CI image: passes with the real HTTP path against a double, no defect; the block is compiled into `_ssl`; host state unchanged | devops-engineer | 2026-11-07 | `docs/artifacts/release-rehearsal-t759-v1.md` |
+| T760 | QA release gate for v10.0.0: CONDITIONAL_PASS; the suite and gates pass; three medium findings on M-2 | qa-engineer | 2026-11-07 | `docs/artifacts/qa-release-v10-v1.md` |
+| T761 | Tech Lead release review for v10.0.0: CONDITIONAL_PASS, no code change | tech-lead | 2026-11-07 | `docs/artifacts/tech-lead-release-v10-v1.md` |
+| T762 | Security re-check for v10.0.0: CONDITIONAL_PASS; SEC-T756-01 closed; five MEDIUMs accepted by the user | security-engineer | 2026-11-07 | `docs/artifacts/security-review-release-v10-v1.md` |
+| T763 | Release manager verdict for v10.0.0: CONDITIONAL_PASS, 0 open blockers; independent check PASS at `cd803b28` by tech-lead | release-manager | 2026-11-07 | `docs/releases/v10.0.0.md`; `docs/artifacts/independent-check-t763-v1.md` |

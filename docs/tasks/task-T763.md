@@ -2,12 +2,13 @@
 
 **ID:** T763
 **Owner:** release-manager
-**Status:** pending
+**Status:** done
 **Priority:** P0
 **Tier:** standard
 **Depends on:** T760, T761, T762
 **Affects:** —
 **Created:** 2026-11-06
+**Completed:** 2026-11-07
 **Based on:**
 - `docs/plans/plan-145-release-v10.md` (task T763)
 - The user's answers of 2026-11-06, verbatim: "release go"; "Approve (Recommended)"
