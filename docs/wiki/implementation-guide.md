@@ -2,7 +2,7 @@
 
 emage.code uses an `implementation/` tree at the repository root. It provides
 schema-first canonical knowledge, managed cookbooks, trigger workflows, packaging,
-and validation super-gates (current release: v9.0.0).
+and validation super-gates (current release: v10.0.0).
 
 ## What to use it for
 
@@ -38,7 +38,7 @@ scripts/install.sh --target <your-project> --platform claude-code --projections-
 
 The PoC security scan runs on the `poc-security-audit` MCP server, which needs `mcp` (Python), `git` 2.40 or newer and, on Claude Code, an allow rule you add to your own `.claude/settings.json`: see [MCP Servers](mcp-servers#poc-security-scan-server-poc-security-audit).
 
-Or see [Quick Start](quick-start) and [`docs/releases/v9.0.0.md`](https://gitlab.com/em-age/emage.code/-/blob/main/docs/releases/v9.0.0.md).
+Or see [Quick Start](quick-start) and [`docs/releases/v10.0.0.md`](https://gitlab.com/em-age/emage.code/-/blob/main/docs/releases/v10.0.0.md).
 
 Supported projections: GitHub Copilot, Gemini CLI, Opencode, Pi, Claude Code, Cline.
 
