@@ -2,7 +2,7 @@
 
 **ID:** T781
 **Owner:** orchestrator
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Tier:** standard
 **Depends on:** T780

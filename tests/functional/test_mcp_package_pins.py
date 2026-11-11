@@ -806,11 +806,6 @@ class GitLabGrantSetTests(unittest.TestCase):
             with self.subTest(agent=slug):
                 self.assertEqual(names - known, set())
 
-def _root_agents_md_is_declared_drift() -> bool:
-    baseline = REPO_ROOT / "tests" / "_baselines" / "root-install-drift.json"
-    return "AGENTS.md" in json.loads(baseline.read_text(encoding="utf-8"))["drift"]
-
-
 class GitLabGrantDocumentationTests(unittest.TestCase):
     """T667 (SEC-T667-02, SEC-T667-04a, SEC-T667-05): the three documents state the grants as the sources hold them."""
 
@@ -826,11 +821,6 @@ class GitLabGrantDocumentationTests(unittest.TestCase):
     USED_BY = ("Orchestrator", "PoC Orchestrator", "Scrum Master", "QA Engineer", "DevOps", "Release Manager", "PoC DevOps")
     RAW_JOB_OUTPUT = ("no agent of these seven holds a tool that reads raw job output (T688, SEC-T660-02): a shell can "
                       "still run `glab ci trace` (T660 for qa-engineer")
-    # T779 (ADR-014 D7): the root AGENTS.md keeps the Gemini clause until the S3 root refresh (T781); accepted only
-    # while AGENTS.md is declared drift in tests/_baselines/root-install-drift.json.
-    RAW_JOB_OUTPUT_PRE_T779 = ("no agent of these seven holds a tool that reads raw job output (T688, SEC-T660-02): a "
-                               "shell can still run `glab ci trace`, and on Gemini CLI the tool list does not restrict "
-                               "MCP tools (T660 for qa-engineer")
 
     def _paragraph(self, path: Path) -> str:
         lines = [l for l in path.read_text(encoding="utf-8").splitlines()
@@ -866,14 +856,12 @@ class GitLabGrantDocumentationTests(unittest.TestCase):
             text = self._paragraph(path)
             with self.subTest(doc=label):
                 # SEC-T688-01: the claim is about the tool lists of these seven roles, not about every route
-                forms = [self.RAW_JOB_OUTPUT]
-                if label == "agents-root" and _root_agents_md_is_declared_drift():
-                    forms.append(self.RAW_JOB_OUTPUT_PRE_T779)  # until the S3 root refresh (T781)
-                self.assertEqual(sum(text.count(f) for f in forms), 1)
-                if label != "agents-root":  # ADR-014: both Gemini clauses are gone (row f's history clause stays)
-                    self.assertNotIn("on Gemini CLI the tool list does not restrict MCP tools", text)
-                    self.assertNotIn("on Gemini CLI the agent tool list does not restrict MCP tools", text)
-                    self.assertIn("so its Pi and Gemini CLI rows are historical", text)
+                self.assertEqual(text.count(self.RAW_JOB_OUTPUT), 1)
+                # ADR-014: both Gemini clauses are gone from all three documents, the root AGENTS.md included since
+                # the S3 root refresh (T781; TL-T780-02, SEC-T780-02); row f's history clause stays
+                self.assertNotIn("on Gemini CLI the tool list does not restrict MCP tools", text)
+                self.assertNotIn("on Gemini CLI the agent tool list does not restrict MCP tools", text)
+                self.assertIn("so its Pi and Gemini CLI rows are historical", text)
                 self.assertNotIn("no agent reads raw job output", text)
                 self.assertNotIn("only qa-engineer reads raw job output", text)
                 self.assertIn("qa-engineer (19 tools: bug issues and notes, read-only merge request, pipeline, job and "

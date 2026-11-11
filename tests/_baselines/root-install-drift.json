@@ -76,29 +76,8 @@
     "Declared 2026-11-07 by T772 (ADR-013 step S2: Pi removed from the live docs and knowledge sources, per the user's request \"Remove PI support completely\"): 26 new paths = the consolidate-memory, discover-skills and skillify commands on 4 platforms (12; .cline maps no command), the memory-management and skillify skills on 5 platforms (10) and the context-retriever agent on 4 platforms (4; .cline maps no agent); AGENTS.md was already declared by T771 and stays declared (27 in total); root not refreshed (S3, T774, needs the user's approval).",
     "Emptied 2026-11-07 by T774 (ADR-013 step S3, the user's approval of 2026-11-07: \"Yes, refresh now (Recommended)\"): the root self-install was refreshed with `scripts/install.sh --target <worktree> --platform all --projections-only` from develop 22bb4c74; the 27 paths declared by T771 and T772 now match a fresh install. The four context-retriever agent projections were skipped by the first run because rsync's size-and-time check saw equal sizes and checkout times (the 5-to-4 edit kept the length); their sources were touched and the refresh re-run (tracked for register v12).",
     "Declared 2026-11-07 by T778 (ADR-014 step S1: Gemini CLI support removed; the tracked root `.gemini/` and `implementation/.gemini/` are deleted with `git rm -r` per the user's answer Q2 \"Delete both in T778 (Recommended)\", and the generator, installer, renderer, merge script and registry no longer name Gemini): 1 new path = the installed AGENTS.md (the `all` platform map of scripts/render_installed_agents.py no longer lists the `.gemini` paths); the root `.gemini/` is simply gone and adds no drift; root not refreshed (S3, T781, needs the user's approval).",
-    "Declared 2026-11-11 by T779 (ADR-014 step S2: Gemini CLI removed from the live docs and knowledge sources, per the user's decisions \"Drop Gemini support\" and \"Drop Gemini instead of fixing (Recommended)\"): 20 new paths = the consolidate-memory, discover-skills and skillify commands on 3 platforms (9; .cline maps no command), the memory-management and skillify skills on 4 platforms (8) and the context-retriever agent on 3 platforms (3; .cline maps no agent); AGENTS.md was already declared by T778 and stays declared (21 in total); root not refreshed (S3, T781, needs the user's approval)."
+    "Declared 2026-11-11 by T779 (ADR-014 step S2: Gemini CLI removed from the live docs and knowledge sources, per the user's decisions \"Drop Gemini support\" and \"Drop Gemini instead of fixing (Recommended)\"): 20 new paths = the consolidate-memory, discover-skills and skillify commands on 3 platforms (9; .cline maps no command), the memory-management and skillify skills on 4 platforms (8) and the context-retriever agent on 3 platforms (3; .cline maps no agent); AGENTS.md was already declared by T778 and stays declared (21 in total); root not refreshed (S3, T781, needs the user's approval).",
+    "Emptied 2026-11-11 by T781 (ADR-014 step S3, the user's approval of 2026-11-11: \"Yes, refresh now (Recommended)\"): the root self-install was refreshed with `scripts/install.sh --target <worktree> --platform all --projections-only` from develop 2592ee43; the 21 paths declared by T778 and T779 now match a fresh install. As in T774, rsync's size-and-time check skipped the three equal-length context-retriever agent projections on the first run; their sources were touched and the refresh re-run."
   ],
-  "drift": [
-    ".claude/agents/context-retriever.md",
-    ".claude/commands/consolidate-memory.md",
-    ".claude/commands/discover-skills.md",
-    ".claude/commands/skillify.md",
-    ".claude/skills/memory-management/SKILL.md",
-    ".claude/skills/skillify/SKILL.md",
-    ".cline/skills/memory-management/SKILL.md",
-    ".cline/skills/skillify/SKILL.md",
-    ".github/agents/context-retriever.agent.md",
-    ".github/prompts/consolidate-memory.prompt.md",
-    ".github/prompts/discover-skills.prompt.md",
-    ".github/prompts/skillify.prompt.md",
-    ".github/skills/memory-management/SKILL.md",
-    ".github/skills/skillify/SKILL.md",
-    ".opencode/agents/context-retriever.md",
-    ".opencode/commands/consolidate-memory.md",
-    ".opencode/commands/discover-skills.md",
-    ".opencode/commands/skillify.md",
-    ".opencode/skills/memory-management/SKILL.md",
-    ".opencode/skills/skillify/SKILL.md",
-    "AGENTS.md"
-  ]
+  "drift": []
 }
