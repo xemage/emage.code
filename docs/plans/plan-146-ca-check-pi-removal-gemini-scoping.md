@@ -182,3 +182,13 @@ Part C therefore removes Gemini support completely, in the steps of Part B (ADR-
 - **T782, checkpoint-042 and this plan's Outcome** (orchestrator).
 
 Budget for the re-scoped Part C: 300k.
+
+## Outcome (2026-11-11)
+
+All three parts are merged into `develop` (`d9b20951`, root drift 0, ledger 0 active):
+
+- **A (MR !658):** SEC-T756-02 is LOW. A CI control proves in each pinned image that no disclosed chain validates against that image's own CA store. The user chose "No pin (Recommended)".
+- **B (MRs !659, !660):** Pi is removed under ADR-013, including the root refresh, which the user approved.
+- **C (MRs !661 to !663):** Gemini CLI is removed under ADR-014 instead of being fixed, on the user's decision "Drop Gemini instead of fixing (Recommended)", including the root refresh, which the user approved. T780 closes SEC-T657-01/SEC-T658-01 by removal at v11.0.0.
+
+Four platforms remain. The carried items (register v12, the v11.0.0 release plan with both migration items, the v10.0.0-only acceptances, A-21, the user's own settings entries) are in `docs/checkpoints/checkpoint-042-plan-146-ca-pi-gemini.md`.
