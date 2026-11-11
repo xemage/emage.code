@@ -1,6 +1,6 @@
 """Cross-platform projection integrity checks.
 
-These tests ensure the generated outputs for GitHub Copilot, Gemini, Opencode,
+These tests ensure the generated outputs for GitHub Copilot, Opencode,
 Claude Code and Cline stay consistent with canonical knowledge and
 manifest contracts, including each platform's audited remote MCP transport
 encoding (see docs/tasks/task-T360.md § "Audit table").
@@ -24,7 +24,7 @@ from tests._helpers.repo import (
     list_skills,
 )
 
-_TARGET_PLATFORMS = ("github", "gemini", "opencode", "claude-code")
+_TARGET_PLATFORMS = ("github", "opencode", "claude-code")
 
 
 def _opencode_name(token: str) -> str:
@@ -98,7 +98,7 @@ def _remote_server_urls(template: str = "${env:VAR}") -> dict[str, str]:
     Since T491, `url` may be a literal string or a templated-value spec
     (`{fromEnv: VAR}`); `_render_templated_value()` renders either uniformly.
     The default template is the `${env:VAR}` placeholder family shared by
-    vscode/cline/gemini. Pass a different one for a platform with
+    vscode/cline. Pass a different one for a platform with
     its own syntax: '{env:VAR}' for opencode, or '${VAR}' for claude-code,
     which expands `${VAR}` / `${VAR:-default}` from the live process
     environment and does not recognise the `env:` form at all (T517).
@@ -206,13 +206,6 @@ class TestPlatformProjections(unittest.TestCase):
                                 continue
                             if key in source_fm:
                                 self.assertEqual(target_fm.get(key), source_fm[key])
-
-    def test_gemini_agents_drop_tools_field(self):
-        gemini_agents = _generated_root("gemini") / "agents"
-        for path in sorted(gemini_agents.glob("*.md")):
-            fm, _ = parse_file(path)
-            with self.subTest(agent=path.stem):
-                self.assertNotIn("tools", fm, f"{path.name}: Gemini should drop tools")
 
     def test_opencode_agents_use_tools_object(self):
         opencode_agents = _generated_root("opencode") / "agents"
@@ -352,22 +345,10 @@ class TestPlatformProjections(unittest.TestCase):
         """Per-platform remote MCP transport shape, per the T360 audit table.
 
         Presence checks alone previously let a stale/incorrect transport shape
-        (vscode missing "type", gemini using "url" instead of "httpUrl") ship
+        (vscode missing "type", for example) ship
         undetected — each remote server's full field shape is now asserted.
         """
         context7_url = _remote_server_urls()["context7"]
-
-        gemini_settings = json.loads(
-            (_generated_root("gemini") / "settings.json").read_text(encoding="utf-8")
-        )
-        self.assertIn("mcpServers", gemini_settings)
-        self.assertIn("gitlab", gemini_settings["mcpServers"])
-        self.assertEqual(
-            gemini_settings["mcpServers"].get("context7"),
-            {"httpUrl": context7_url},
-            "gemini remote MCP servers must use 'httpUrl' (T360: 'url' selects the "
-            "deprecated SSE transport instead of streamable HTTP)",
-        )
 
         opencode_config = json.loads(
             (_generated_root("opencode") / "opencode.json").read_text(encoding="utf-8")

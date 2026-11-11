@@ -55,21 +55,15 @@ Before the release merge request, in addition to the gates of the task brief:
 
 ## 6. One-time live checks of the denials (SEC-T658-02, K-20)
 
-The Gemini and Opencode denials of the six Playwright tools (`browser_run_code_unsafe`, `browser_evaluate`, `browser_file_upload`, `browser_drag`, `browser_drop`, `browser_network_request`) were written from vendor documentation and source. A name-format mismatch would deny nothing and fail silently (open). Do these once before the next release, again after any change of `denyTools` or of the client major version, and write the date, client version and result in the table.
+The Opencode denials of the six Playwright tools (`browser_run_code_unsafe`, `browser_evaluate`, `browser_file_upload`, `browser_drag`, `browser_drop`, `browser_network_request`) were written from vendor documentation and source. A name-format mismatch would deny nothing and fail silently (open). Do these once before the next release, again after any change of `denyTools` or of the client major version, and write the date, client version and result in the table.
 
 **Opencode** (partly observed on 2026-10-22, opencode 1.18.31):
 1. In a throwaway directory with an empty home: copy `.opencode/opencode.json` and `.opencode/agents/` from the generated tree, then run `t=$(mktemp -d); env -i PATH="$PATH" HOME="$t" XDG_CONFIG_HOME="$t/.config" XDG_DATA_HOME="$t/.local/share" XDG_CACHE_HOME="$t/.cache" XDG_STATE_HOME="$t/.local/state" opencode debug config > "$t/config.json"` and read only the denies, for example `grep -o '"playwright_[a-z_]*": "[a-z]*"' "$t/config.json"`: expect the six `playwright_<tool>: deny` keys. Set `t` in the calling shell BEFORE `env -i`, and quote it: a `$HOME` inside the `env -i` words expands in your own shell and points the tool at your real configuration. **Never run `opencode debug config` with your real home, and never print the file: it contains your global configuration, including any header or key in it.**
 2. `opencode agent list` (same `env -i ... HOME="$t" ...` words and the same `t`, output redirected to a file in `$t`) prints each agent's resolved rules. For the last matching rule of `playwright_browser_evaluate` expect `deny` in every agent, and for a generated agent that holds no GitLab merge tool `gitlab_merge_merge_request` expect `deny`. Observed 2026-10-22 on 35 agents (the built-in `build`, `plan`, `general` allow the GitLab and GitHub tools, which is the documented gap).
 3. Still to do **(unverified)**: in a real session, ask the model to call `playwright_browser_evaluate`; expect a refusal before the browser runs.
 
-**Gemini CLI** (not run **(unverified)**; the CLI is not installed on the T676 host):
-1. Put the generated `.gemini/settings.json` in a project, start `gemini`, run `/mcp`, and check that `playwright` lists tools but **none** of the six (the `mcp_playwright_<tool>` form).
-2. Ask the model to call `mcp_playwright_browser_evaluate`; expect "tool not found" or a refusal.
-3. If a tool of the six is listed, `excludeTools` did not match the reported name: stop the release and open a finding.
-
 **Other items of K-20, observation only** **(unverified)**: GitHub Copilot per-agent MCP grants (do the `qa-engineer` and `frontend-developer` agents get the Playwright tools, and the others not?), the `--sandbox` flag of the `playwright` entry on a host with unprivileged user namespaces disabled (expect a start failure; record the message).
 
 | Date | Client and version | Check | Result |
 |---|---|---|---|
 | 2026-10-22 | opencode 1.18.31 | steps 1 and 2 | Six deny keys present in the resolved `permission`; 35 agents resolve the six names to `deny` (own evaluation of the printed rules, last match wins). Step 3 not run. |
-| | Gemini CLI | steps 1 to 3 | not run |

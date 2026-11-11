@@ -55,7 +55,6 @@ Use [`implementation/`](implementation/README.md) for all development work.
 | Platform | Output folder | Format |
 |----------|---------------|--------|
 | GitHub Copilot (VS Code) | `.github/` + `.vscode/mcp.json` | `.agent.md`, `.prompt.md`, `.instructions.md` |
-| Gemini CLI | `.gemini/` | `.md` (no `tools` field), `settings.json` with hooks |
 | Opencode | `.opencode/` | `.md` (object `tools`), `opencode.json` |
 | Claude Code | `.claude/` + `.mcp.json` | `.md` (string `tools`), subagents + skills + rules |
 | Cline | `.clinerules/` (root) + `.cline/skills/` + `.cline/mcp.json` | `.md` rules (`paths` frontmatter) + skills; MCP config is a staging file, not auto-applied |
@@ -65,6 +64,16 @@ Cursor support was removed in v9.0.0 (see the release notes).
 Pi support was removed in v11.0.0 (see `docs/releases/v11.0.0.md`).
 `--platform pi` exits with an error before anything is written, and the
 installer never writes, updates or deletes an existing `.pi/` in your project.
+
+Gemini CLI support was removed in v11.0.0 (see `docs/releases/v11.0.0.md`).
+`--platform gemini` exits with an error before anything is written, and the
+installer never writes, updates or deletes an existing `.gemini/` in your
+project; the installer prints a note while it finds a harness-written
+`.gemini/`. That folder is also Gemini CLI's own, and
+`.gemini/settings.json` is also Gemini CLI's own settings file, so it may hold
+your own Gemini settings: cleanup means removing the harness's entries, not
+deleting the file or the folder. The harness entries left there are frozen at
+the version that wrote them and receive no updates.
 
 Adding a new platform = adding a `platforms/<name>.json` manifest under
 `implementation/`. Usually no script changes are required; add a new
@@ -86,7 +95,6 @@ scripts/install.sh --target /path/to/your-project --platform claude-code
 | Platform | `--platform` value |
 |----------|-------------------|
 | GitHub Copilot (VS Code) | `github` |
-| Gemini CLI | `gemini` |
 | Opencode | `opencode` |
 | Claude Code | `claude-code` |
 | Cline | `cline` |
@@ -102,8 +110,7 @@ scripts/install.sh --target /path/to/your-project --platform claude-code --updat
 
 An existing single-file MCP/settings config of a selected platform —
 `.vscode/mcp.json` (`github`), `.mcp.json` (`claude-code`),
-`.gemini/settings.json` (`gemini`), `.opencode/opencode.json`
-(`opencode`), or `.cline/mcp.json` (`cline`) — is
+`.opencode/opencode.json` (`opencode`), or `.cline/mcp.json` (`cline`) — is
 merged, not overwritten, in every mode: on `--update`, on `--projections-only`
 and on a plain install over an existing config. Any existing top-level key the generator doesn't
 know about (e.g. a hand-added MCP server entry, or a top-level `inputs`
@@ -114,8 +121,8 @@ fields inside a known server's config are preserved too). See
 JSON, or that cannot be replaced, is refused up front, naming the file, before
 anything is written; the installer prints a one-line note on stderr for each
 kind of user content the merge replaced or kept. The rest of each
-platform's directory tree (`.github/`, `.gemini/`, `.opencode/`,
-`.claude/`, `.cline/`, `.clinerules/`) is replaced on `--update`, with
+platform's directory tree (`.github/`, `.opencode/`, `.claude/`,
+`.cline/`, `.clinerules/`) is replaced on `--update`, with
 files that no longer exist upstream deleted: hand-written files inside those
 trees are lost, so keep project-specific content in `docs/`. Only each
 platform's one MCP/settings file gets the merge treatment above. The temporary
@@ -167,7 +174,7 @@ refused in every mode.
 The `poc-security-audit` MCP server backs the PoC security review. It exposes
 exactly two tools, `scan_secrets` and `ref_containment`; a clean result means
 "no match for the fixed rule set at the scanned refs", not "no secrets". Its
-config is generated for Claude Code, Gemini CLI, Opencode, Cline and
+config is generated for Claude Code, Opencode, Cline and
 GitHub Copilot (`.vscode/mcp.json`, with `"cwd": "${workspaceFolder}"`). The
 agent's rule is that a scan which did not complete is `FAIL`, never `PASS`.
 Setup, once per project, after a
@@ -366,7 +373,7 @@ BENCH_STRESS=1 python3 tests/run.py --suite performance -v
 
 ## Contributing
 
-1. Edit canonical knowledge under [`implementation/knowledge/`](implementation/knowledge/) — **never** the generated `.github/`, `.gemini/`, `.opencode/`, `.claude/`, `.cline/`, `.clinerules/` folders.
+1. Edit canonical knowledge under [`implementation/knowledge/`](implementation/knowledge/) — **never** the generated `.github/`, `.opencode/`, `.claude/`, `.cline/`, `.clinerules/` folders.
 2. Run the sync engine from the repo root:
    ```bash
    make sync

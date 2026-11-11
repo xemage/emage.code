@@ -1,12 +1,10 @@
-"""T658 (SEC-T657-01) -- server-level denial of the unsafe Playwright tools on Opencode and Gemini CLI.
+"""T658 (SEC-T657-01) -- server-level denial of the unsafe Playwright tools on Opencode.
 
-Opencode and Gemini CLI do not restrict MCP tools by an agent's tool list, so the narrowed
-Playwright grants (T657) are not enforced there. Both platforms document a server-level
-denial, and `sync.mjs` now emits it from ONE list (`denyTools` of the `playwright` entry in
-knowledge/mcp/servers.yaml):
-
-* Opencode: a top-level `permission` entry `playwright_<tool>: deny` in `.opencode/opencode.json`;
-* Gemini CLI: `mcpServers.playwright.excludeTools` in `.gemini/settings.json`.
+Opencode does not restrict MCP tools by an agent's tool list, so the narrowed Playwright
+grants (T657) are not enforced there by the tool list. Opencode documents a server-level
+denial, and `sync.mjs` emits it from ONE list (`denyTools` of the `playwright` entry in
+knowledge/mcp/servers.yaml): a top-level `permission` entry `playwright_<tool>: deny` in
+`.opencode/opencode.json` (ADR-014 removed the second consumer).
 
 Mechanism, sources and verified/unverified status: docs/artifacts/mcp-server-denials-v1.md.
 This file pins:
@@ -65,7 +63,6 @@ GENERATED_MCP = {
     "claude-code": (".mcp.json", "mcpServers"),
     "github": (".vscode/mcp.json", "servers"),
     "cline": (".cline/mcp.json", "mcpServers"),
-    "gemini": (".gemini/settings.json", "mcpServers"),
     "opencode": (".opencode/opencode.json", "mcp"),
 }
 
@@ -144,19 +141,6 @@ class ShippedProjectionTests(unittest.TestCase):
             self.assertNotIn("*", key)
             self.assertEqual(value, "deny")
 
-    def test_gemini_excludes_exactly_the_six_tools_on_the_playwright_entry(self):
-        servers = _json(IMPL / ".gemini" / "settings.json")["mcpServers"]
-        self.assertEqual(servers["playwright"]["excludeTools"], DENIED)
-        self.assertNotIn("includeTools", servers["playwright"])
-        for name, entry in servers.items():
-            if name != "playwright":
-                self.assertNotIn("excludeTools", entry, name)
-
-    def test_gemini_names_are_the_names_the_server_reports_not_fully_qualified_names(self):
-        for tool in _json(IMPL / ".gemini" / "settings.json")["mcpServers"]["playwright"]["excludeTools"]:
-            self.assertRegex(tool, r"^browser_[a-z_]+$")
-            self.assertFalse(tool.startswith("mcp_"), tool)
-
     def test_other_platforms_carry_no_denial_and_are_documented_as_open_or_enforced_elsewhere(self):
         for platform in ("claude-code", "github", "cline"):
             rel, wrapper = GENERATED_MCP[platform]
@@ -175,7 +159,7 @@ class ShippedProjectionTests(unittest.TestCase):
                 self.assertIn("--no-webmcp", argv)
 
     def test_the_provenance_sidecars_are_unchanged_in_shape(self):
-        for platform in ("opencode", "gemini"):
+        for platform in ("opencode",):
             rel, _ = GENERATED_MCP[platform]
             sidecar = _json(IMPL / (rel + ".provenance.json"))
             self.assertEqual(set(sidecar), {"schemaVersion", "generatorOwnedKeys"})
@@ -315,11 +299,6 @@ class GeneratorFixtureTests(unittest.TestCase):
     def test_vendor_example_names_render_per_platform(self):
         root, result = self.run_sync(self.SERVERS)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        gemini = _json(root / ".gemini" / "settings.json")["mcpServers"]
-        # docs/tools/mcp-server.md of gemini-cli: "excludeTools": ["dangerous_tool", "file_deleter"]
-        self.assertEqual(gemini["filteredServer"]["excludeTools"], ["dangerous_tool", "file_deleter"])
-        self.assertNotIn("excludeTools", gemini["plain"])
-        self.assertEqual(gemini["hosted"]["excludeTools"], ["remote_tool"])
         opencode = _json(root / ".opencode" / "opencode.json")
         # opencode.ai/docs/agents: permission keys are the registered tool names `<server>_<tool>`
         self.assertEqual(opencode["permission"], {
@@ -342,12 +321,11 @@ class GeneratorFixtureTests(unittest.TestCase):
             rel, _ = GENERATED_MCP[platform]
             self.assertNotIn("dangerous_tool", (root / rel).read_text(encoding="utf-8"), platform)
 
-    def test_without_any_deny_list_no_permission_key_and_no_excludeTools_are_emitted(self):
+    def test_without_any_deny_list_no_permission_key_is_emitted(self):
         text = "servers:\n  plain:\n    tags: [core]\n    transport: stdio\n    command: python\n    args: [\"-m\", \"x\"]\n"
         root, result = self.run_sync(text)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertNotIn("permission", _json(root / ".opencode" / "opencode.json"))
-        self.assertNotIn("excludeTools", (root / ".gemini" / "settings.json").read_text(encoding="utf-8"))
 
     def test_an_invalid_deny_list_stops_the_run_before_anything_is_written(self):
         bad_lists = {
@@ -376,7 +354,7 @@ class GeneratorFixtureTests(unittest.TestCase):
         second, r2 = self.run_sync(self.SERVERS)
         self.assertEqual(r1.returncode, 0)
         self.assertEqual(r2.returncode, 0)
-        for rel in (".opencode/opencode.json", ".gemini/settings.json"):
+        for rel in (".opencode/opencode.json", ".mcp.json"):
             self.assertEqual((first / rel).read_bytes(), (second / rel).read_bytes(), rel)
 
 
@@ -410,52 +388,6 @@ class MergeTests(unittest.TestCase):
         self.assertEqual(again.returncode, 0, again.stderr)
         self.assertEqual(dest.read_bytes(), first, "a second merge changed the file")
         return json.loads(first.decode("utf-8"))
-
-    # -- Gemini CLI: excludeTools --
-
-    def test_gemini_union_keeps_the_users_tools_and_adds_the_generated_ones(self):
-        for with_sidecar in (False, True):
-            with self.subTest(sidecar=with_sidecar):
-                user = {"mcpServers": {
-                    "playwright": {"command": "npx", "args": ["-y", "x"], "excludeTools": ["my_tool", "browser_evaluate"]},
-                    "mine": {"command": "x", "excludeTools": ["only_mine"], "includeTools": ["a"]},
-                }, "theme": "dark"}
-                merged = self.merge("gemini", user, with_sidecar)
-                self.assertEqual(merged["mcpServers"]["playwright"]["excludeTools"],
-                                 ["my_tool", "browser_evaluate"] + [t for t in DENIED if t != "browser_evaluate"])
-                self.assertEqual(merged["mcpServers"]["mine"], user["mcpServers"]["mine"])
-                self.assertEqual(merged["theme"], "dark")
-
-    def test_gemini_user_entry_without_a_list_receives_the_generated_list(self):
-        for with_sidecar in (False, True):
-            with self.subTest(sidecar=with_sidecar):
-                merged = self.merge("gemini", {"mcpServers": {"playwright": {"command": "npx", "args": []}}}, with_sidecar)
-                self.assertEqual(merged["mcpServers"]["playwright"]["excludeTools"], DENIED)
-
-    def test_gemini_a_fresh_file_gets_the_list(self):
-        for with_sidecar in (False, True):
-            with self.subTest(sidecar=with_sidecar):
-                merged = self.merge("gemini", {"unrelated": True}, with_sidecar)
-                self.assertEqual(merged["mcpServers"]["playwright"]["excludeTools"], DENIED)
-
-    def test_gemini_a_non_list_value_is_replaced_by_the_generated_list(self):
-        for bad in ("browser_evaluate", None, {"a": 1}, 3):
-            with self.subTest(value=bad):
-                merged = self.merge("gemini", {"mcpServers": {"playwright": {"excludeTools": bad}}}, False)
-                self.assertEqual(merged["mcpServers"]["playwright"]["excludeTools"], DENIED)
-
-    def test_gemini_an_element_the_generator_no_longer_ships_stays_fail_closed(self):
-        merged = self.merge("gemini", {"mcpServers": {"playwright": {"excludeTools": ["browser_retired_tool"]}}}, True)
-        self.assertEqual(merged["mcpServers"]["playwright"]["excludeTools"], ["browser_retired_tool"] + DENIED)
-
-    def test_gemini_the_playwright_local_entry_is_not_denied(self):
-        local = {"command": "npx", "args": ["-y", "@playwright/mcp@0.0.83", "--headless"]}
-        for with_sidecar in (False, True):
-            with self.subTest(sidecar=with_sidecar):
-                merged = self.merge("gemini", {"mcpServers": {"playwright-local": dict(local)}}, with_sidecar)
-                self.assertEqual(merged["mcpServers"]["playwright-local"], local)
-                self.assertNotIn("excludeTools", merged["mcpServers"]["playwright-local"])
-                self.assertEqual(merged["mcpServers"]["playwright"]["excludeTools"], DENIED)
 
     # -- Opencode: permission --
 
@@ -524,18 +456,17 @@ class MergeTests(unittest.TestCase):
                     self.assertNotIn(f"playwright-local_{tool}", merged["permission"])
 
     def test_the_shipped_files_are_a_fixed_point_of_the_merge(self):
-        for platform in ("opencode", "gemini"):
+        for platform in ("opencode",):
             rel, _ = GENERATED_MCP[platform]
             for with_sidecar in (False, True):
                 with self.subTest(platform=platform, sidecar=with_sidecar):
                     merged = self.merge(platform, _json(IMPL / rel), with_sidecar)
                     self.assertEqual(merged, _json(IMPL / rel))
 
-    def test_a_permission_or_excludeTools_key_elsewhere_is_not_special(self):
-        # Only the top-level `permission` and an `excludeTools` list are merged specially.
-        merged = self.merge("gemini", {"mcpServers": {"x": {"permission": "a"}}, "permission": "b"}, False)
-        self.assertEqual(merged["permission"], "b")
-        self.assertEqual(merged["mcpServers"]["x"], {"permission": "a"})
+    def test_a_permission_key_elsewhere_is_not_special(self):
+        # Only the top-level `permission` is merged specially; a nested one is a plain dest-only key.
+        merged = self.merge("opencode", {"mcp": {"x": {"permission": "a"}}}, False)
+        self.assertEqual(merged["mcp"]["x"], {"permission": "a"})
 
 
 @unittest.skipUnless(shutil.which("bash"), "bash is not installed")
@@ -572,27 +503,6 @@ class InstallUpdateTests(unittest.TestCase):
                 self.assertEqual(list(perm)[-len(DENIED):], [f"playwright_{t}" for t in DENIED])
                 for tool in DENIED:
                     self.assertEqual(opencode_effect(f"playwright_{tool}", OPENCODE_DEFAULTS, opencode_rules(perm)), "deny")
-
-    def test_gemini_fresh_install_then_update_keeps_denial_and_user_list(self):
-        for drop_sidecar in (False, True):
-            with self.subTest(sidecar_dropped=drop_sidecar), tempfile.TemporaryDirectory() as tmp:
-                target = Path(tmp) / "project"
-                target.mkdir()
-                first = self.install(target, "gemini")
-                self.assertEqual(first.returncode, 0, first.stdout + first.stderr)
-                cfg_path = target / ".gemini" / "settings.json"
-                self.assertEqual(_json(cfg_path)["mcpServers"]["playwright"]["excludeTools"], DENIED)
-                cfg = _json(cfg_path)
-                cfg["mcpServers"]["playwright"]["excludeTools"] = ["my_tool"]  # user dropped the generated six
-                cfg["mcpServers"]["playwright-local"] = {"command": "npx", "args": ["-y", "@playwright/mcp@0.0.83"]}
-                cfg_path.write_text(json.dumps(cfg, indent=2) + "\n", encoding="utf-8")
-                if drop_sidecar:
-                    (target / ".gemini" / "settings.json.provenance.json").unlink()
-                second = self.install(target, "gemini", update=True)
-                self.assertEqual(second.returncode, 0, second.stdout + second.stderr)
-                merged = _json(cfg_path)["mcpServers"]
-                self.assertEqual(merged["playwright"]["excludeTools"], ["my_tool"] + DENIED)
-                self.assertNotIn("excludeTools", merged["playwright-local"])
 
 
 # --- T673 (SEC-T658-06): documentation assertions anchored to the paragraph they protect ---------------------
@@ -666,8 +576,8 @@ def denial_findings(key: str, text: str) -> list[str]:
     if block is None:
         return ["the T658 block is missing"]
     found = [f"{tool} is not named in the T658 block" for tool in DENIED if tool not in block]
-    found += [f"{needle} is not named in the T658 block" for needle in ("`permission`", "`excludeTools`")
-              if needle not in block]
+    # ADR-014 (T779): the removed platform's `excludeTools` left the live docs; Opencode's `permission` stays
+    found += [f"{needle} is not named in the T658 block" for needle in ("`permission`",) if needle not in block]
     if not any(OBSERVED_SENTENCE.search(sentence) for sentence in sentences(block)):
         found.append("no sentence of the T658 block says the denial was documented and read, not observed live")
     if key != "prerequisites" and not any(GAP_SENTENCE.search(s) for s in sentences(block)):
@@ -688,28 +598,23 @@ def local_findings(key: str, text: str) -> list[str]:
 
 
 def unqualified_open_claims(text: str) -> list[str]:
-    """Sentences that put Opencode or Gemini CLI among the platforms where every agent can call every tool of
+    """Sentences that put Opencode among the platforms where every agent can call every tool of
     every configured server, without the qualifier that the six tools are denied server-wide (T658)."""
     return [s for s in clauses(text)
             if re.search(r"(?i)every tool of every configured (MCP )?server", s)
-            and re.search(r"Opencode|Gemini", s) and "not denied" not in s]
+            and "Opencode" in s and "not denied" not in s]
 
 
 def merge_rule_findings(script: str) -> list[str]:
-    """The documentation of the T658 merge rule in `merge-mcp-json.py`: the module docstring bullets and the two
-    function docstrings, not any occurrence of the words in the code (`union` is also a variable name)."""
+    """The documentation of the T658 merge rule in `merge-mcp-json.py`: the module docstring bullet and the
+    function docstring, not any occurrence of the words in the code."""
     tree = ast.parse(script)
     doc = ast.get_docstring(tree) or ""
-    exclude = re.search(r"- `excludeTools`.*?(?=\n- |\n\n)", doc, re.S)
     permission = re.search(r"- top-level `permission`.*?(?=\n- |\n\n)", doc, re.S)
     found = []
-    if not exclude or "union" not in exclude.group(0) or "never dropped" not in exclude.group(0):
-        found.append("the module docstring does not say that excludeTools is a union and a user entry is never dropped")
     if not permission or "LAST matching rule" not in permission.group(0) or "moved to the end" not in permission.group(0):
         found.append("the module docstring does not say that generated permission keys go last (LAST matching rule)")
     functions = {n.name: ast.get_docstring(n) or "" for n in tree.body if isinstance(n, ast.FunctionDef)}
-    if "Union" not in functions.get("merge_exclude_tools", ""):
-        found.append("merge_exclude_tools has no docstring that says Union")
     if "generated rules last" not in functions.get("merge_permission", ""):
         found.append("merge_permission has no docstring that says generated rules last")
     return found
@@ -720,7 +625,8 @@ def merge_rule_findings(script: str) -> list[str]:
 ARTIFACT_UNSAFE_CONTEXTS = (
     ("## 1. Result", r"holds exactly the six tools that no agent holds"),
     ("## 2. Per-platform result", r'^\| Opencode \(.*"playwright_browser_run_code_unsafe": "deny"'),
-    ("## 2. Per-platform result", r'^\| Gemini CLI \(.*"excludeTools": \["browser_run_code_unsafe"'),
+    # the immutable artifact keeps the row of a platform removed later (ADR-014); its line stays anchored
+    ("## 2. Per-platform result", r'^\| [^|(]+\(.*"excludeTools": \["browser_run_code_unsafe"'),
     ("## 3. What is emitted, and from where", r"`denyTools: \[browser_run_code_unsafe,"),
     ("## 4. The playwright-local exception", r"is \*\*not\*\* denied on either platform, and it still contains `browser_run_code_unsafe`"),
 )
@@ -766,9 +672,6 @@ def artifact_row_findings(text: str) -> list[str]:
         "Opencode": ("| Opencode (", ("**verified**", "not observed live", "`permission`",
                                         "anomalyco/opencode@81200db2a3a8", "https://opencode.ai/docs/permissions",
                                         "last matching rule")),
-        "Gemini CLI": ("| Gemini CLI (", ("**verified**", "not observed live", "`excludeTools`",
-                                           "google-gemini/gemini-cli@06d329873703",
-                                           "https://geminicli.com/docs/tools/mcp-server")),
         "Cursor": ("| Cursor (", ("**unverified, no mechanism found; nothing emitted**",)),
     }
     for name, (prefix, needles) in rows.items():
@@ -831,7 +734,7 @@ class DocumentationTests(unittest.TestCase):
             with self.subTest(doc=key):
                 self.assertEqual(local_findings(key, self.text(key)), [])
 
-    def test_no_doc_claims_the_denial_is_absent_on_opencode_and_gemini(self):
+    def test_no_doc_claims_the_denial_is_absent_on_opencode(self):
         # PREREQUISITES.md is left out: it never carried a sentence of this shape (the pre-T658 text passes), so
         # the check cannot fail there. The wiki and both AGENTS.md files did carry it.
         for key in CLAIM_DOCS:
@@ -867,7 +770,7 @@ class DocumentationAnchorTests(unittest.TestCase):
         for key in DocumentationTests.DOCS:
             text = self.text(key)
             block = t658_block(key, text)
-            for needle in ("browser_drag", "`excludeTools`", "`permission`"):
+            for needle in ("browser_drag", "`permission`"):
                 with self.subTest(doc=key, dropped=needle):
                     self.assertIn(needle, block)
                     mutated = text.replace(block, block.replace(needle, "REDACTED"), 1)
@@ -904,7 +807,7 @@ class DocumentationAnchorTests(unittest.TestCase):
         for key in CLAIM_DOCS:
             text = self.text(key)
             qualified = [s for s in clauses(text) if re.search(r"(?i)every tool of every configured (MCP )?server", s)
-                         and re.search(r"Opencode|Gemini", s)]
+                         and "Opencode" in s]
             with self.subTest(doc=key):
                 for sentence in qualified:  # the shipped sentences carry the qualifier
                     self.assertIn("not denied", sentence)
@@ -912,16 +815,16 @@ class DocumentationAnchorTests(unittest.TestCase):
                     self.assertEqual(len(unqualified_open_claims(mutated)), 1)
 
     def test_the_pre_t658_wording_is_found(self):
-        old = ("The narrowing is not in force on Opencode, Gemini CLI and Cursor, where an agent's tool list does "
+        old = ("The narrowing is not in force on Opencode and Cursor, where an agent's tool list does "
                "not restrict MCP tools and every agent can call every tool of every configured server (`docs/wiki`).")
         self.assertEqual(len(unqualified_open_claims(old)), 1)
         # SEC-T678-01: Cursor is gone from the docs; the check does not depend on the word (and none is asserted
         # absent: the historical artifacts keep it, ADR-010)
-        cursor_free = ("The narrowing is not in force on Opencode and Gemini CLI, where an agent's tool list does "
+        cursor_free = ("The narrowing is not in force on Opencode, where an agent's tool list does "
                        "not restrict MCP tools and every agent can call every tool of every configured server.")
         self.assertEqual(len(unqualified_open_claims(cursor_free)), 1)
         self.assertEqual(unqualified_open_claims(cursor_free.replace("server.", "server that is not denied server-wide.")), [])
-        wiki_old = ("On the platforms where it is not in force (Opencode, Gemini CLI, Cursor) an agent's tool list does "
+        wiki_old = ("On the platforms where it is not in force (Opencode, Cursor) an agent's tool list does "
                     "not restrict MCP tools: every agent can call every tool of every configured MCP server, including "
                     "the GitLab write tools elsewhere.")
         self.assertEqual(len(unqualified_open_claims(wiki_old)), 1)
@@ -945,16 +848,15 @@ class DocumentationAnchorTests(unittest.TestCase):
         text = ARTIFACT.read_text(encoding="utf-8")
         self.assertEqual(artifact_row_findings(text), [])
         for name, prefix, needle in (("Opencode", "| Opencode (", "https://opencode.ai/docs/permissions"),
-                                     ("Gemini", "| Gemini CLI (", "not observed live"),
                                      ("Cursor", "| Cursor (", "**unverified, no mechanism found; nothing emitted**")):
             row = line_starting(text, prefix)
             with self.subTest(row=name):
                 self.assertTrue(artifact_row_findings(text.replace(row, row.replace(needle, "x", 1), 1)))
         # a source URL that is only in another row no longer satisfies the Opencode row
         opencode = line_starting(text, "| Opencode (")
-        gemini = line_starting(text, "| Gemini CLI (")
+        cursor = line_starting(text, "| Cursor (")
         swapped = text.replace(opencode, opencode.replace("https://opencode.ai/docs/permissions", ""), 1)
-        swapped = swapped.replace(gemini, gemini + " https://opencode.ai/docs/permissions", 1)
+        swapped = swapped.replace(cursor, cursor + " https://opencode.ai/docs/permissions", 1)
         self.assertRegex(swapped, "https://opencode.ai/docs/permissions")
         self.assertTrue(artifact_row_findings(swapped))
 
@@ -968,11 +870,6 @@ class DocumentationAnchorTests(unittest.TestCase):
     def test_the_merge_script_documentation_is_noticed_when_only_the_code_keeps_the_words(self):
         script = MERGER.read_text(encoding="utf-8")
         self.assertEqual(merge_rule_findings(script), [])
-        # the earlier assertIn("union", script) is satisfied by the variable of merge_exclude_tools
-        no_docs = script.replace("the result is the union", "the result is the merge").replace("Union of two", "Merge of two")
-        self.assertIn("union", no_docs)
-        self.assertIn("excludeTools", no_docs)
-        self.assertTrue(merge_rule_findings(no_docs))
         self.assertTrue(merge_rule_findings(script.replace("LAST matching rule", "last matching rule")))
         self.assertTrue(merge_rule_findings(script.replace("moved to the end", "left in place")))
         self.assertTrue(merge_rule_findings(script.replace("put generated rules last", "put generated rules first")))

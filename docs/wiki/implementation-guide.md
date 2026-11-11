@@ -42,7 +42,7 @@ The PoC security scan runs on the `poc-security-audit` MCP server, which needs `
 
 Or see [Quick Start](quick-start) and [`docs/releases/v10.0.0.md`](https://gitlab.com/em-age/emage.code/-/blob/main/docs/releases/v10.0.0.md).
 
-Supported projections: GitHub Copilot, Gemini CLI, Opencode, Claude Code, Cline.
+Supported projections: GitHub Copilot, Opencode, Claude Code, Cline.
 
 ## Validate (maintainers)
 

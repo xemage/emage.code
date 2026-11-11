@@ -2,7 +2,7 @@
 
 * an unreadable or non-JSON destination, source or sidecar is one line naming the file, exit 1 and
   nothing written -- never a traceback (and `--validate-only` is what install.sh runs up front);
-* a user value the generator replaces (a `permission` rule, a `hooks` value) and a user key kept
+* a user value the generator replaces (a `permission` rule) and a user key kept
   inside a generator-owned server's `env`/`headers` are reported on stderr, by name only;
 * the destination and its sidecar are written through a temp file and `os.replace`.
 """
@@ -109,12 +109,15 @@ class TestMergeMcpJsonRobustness(unittest.TestCase):
         self.assertEqual((code, err), (0, ""))
         self.assertEqual(json.loads(dest.read_text())["permission"], {"*": "allow", "playwright_a": "deny"})
 
-    def test_replaced_hooks_value_is_noted(self) -> None:
+    def test_a_hooks_value_is_merged_like_any_other_key_without_a_note(self) -> None:
+        # ADR-014 D3: the `hooks` note went with the only generator that wrote `hooks`; the key is
+        # now merged by the generic rule (source wins on a leaf, a dest-only sibling is kept), silently.
         source = self.write("source.json", {"hooks": {"AfterTool": [{"id": "generated"}]}})
         dest = self.write("dest.json", {"hooks": {"AfterTool": [{"id": "mine"}], "BeforeTool": []}})
-        _code, _out, err = _run("--source", str(source), "--dest", str(dest))
-        self.assertIn("replaced your value for hooks.AfterTool", err)
-        self.assertNotIn("BeforeTool", err)
+        code, _out, err = _run("--source", str(source), "--dest", str(dest))
+        self.assertEqual((code, err), (0, ""))
+        self.assertEqual(json.loads(dest.read_text())["hooks"],
+                         {"AfterTool": [{"id": "generated"}], "BeforeTool": []})
 
     def test_kept_env_and_headers_keys_are_noted_by_name_never_by_value(self) -> None:
         source = self.write("source.json", {"mcpServers": {"gitlab": {"command": "npx", "env": {"A": "${A}"}}}})
@@ -296,10 +299,10 @@ class TestMergeMcpJsonRobustness(unittest.TestCase):
     def test_unprintable_names_are_ascii_escaped_in_every_note(self) -> None:
         evil, escaped = self.EVIL, ascii(self.EVIL)
         source = self.write("source.json", {
-            "permission": {evil: "deny"}, "hooks": {"AfterTool": "generated"},
+            "permission": {evil: "deny", "playwright_ok": "deny"},
             "mcpServers": {"gitlab": {"env": {"A": "${A}"}}}})
         dest = self.write("dest.json", {
-            "permission": {evil: "allow"}, "hooks": {"AfterTool": "mine"},
+            "permission": {evil: "allow", "playwright_ok": "allow"},
             "mcpServers": {"gitlab": {"env": {"A": "x", evil: "v"}}, evil: {}}})
         old = self.tmp / "dest.json.provenance.json"
         new = self.write("source.json.provenance.json", {"schemaVersion": 1, "generatorOwnedKeys": ["gitlab"]})
@@ -312,7 +315,7 @@ class TestMergeMcpJsonRobustness(unittest.TestCase):
         self._assert_terminal_safe(err, ascii(f"permission.{evil}"))
         self._assert_terminal_safe(err, ascii(f"mcpServers.gitlab.env.{evil}"))
         self._assert_terminal_safe(err, f"kept your server(s) {escaped},")
-        self.assertIn("hooks.AfterTool", err, "printable names are printed as they are")
+        self.assertIn("permission.playwright_ok", err, "printable names are printed as they are")
 
     def test_an_unprintable_force_prune_name_is_ascii_escaped(self) -> None:
         source = self.write("source.json", {"mcpServers": {"gitlab": {}}})

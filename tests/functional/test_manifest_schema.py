@@ -30,7 +30,7 @@ class TestManifestSchema(unittest.TestCase):
 
     def test_every_manifest_references_the_schema_and_validates(self) -> None:
         manifests = list_platform_manifests()
-        self.assertGreaterEqual(len(manifests), 5)
+        self.assertGreaterEqual(len(manifests), 4)
         for path in manifests:
             with self.subTest(platform=path.stem):
                 data = json.loads(path.read_text(encoding="utf-8"))
@@ -47,7 +47,7 @@ class TestManifestSchema(unittest.TestCase):
              "s.loader.exec_module(m);print(','.join(m._detect_platforms(__import__('pathlib').Path(sys.argv[2]))))",
              str(implementation_root() / "scripts" / "generate-registry.py"), str(implementation_root().parent)],
             capture_output=True, text=True, check=True).stdout.strip()
-        self.assertEqual(registry, "claude-code,cline,gemini,github,opencode")
+        self.assertEqual(registry, "claude-code,cline,github,opencode")
 
     def test_only_the_schema_may_start_with_an_underscore(self) -> None:
         """T672 (SEC-T672-10): the registry generator and the test helper stop on any other `_*.json`."""
@@ -139,6 +139,26 @@ class TestManifestSchema(unittest.TestCase):
         refused = copy.deepcopy(pack)
         refused["compatibility"]["supportedPlatforms"] = ["github", "pi"]
         self.assertTrue(list(pack_validator.iter_errors(refused)), "a pack that declares pi was accepted")
+
+    def test_the_removed_gemini_values_are_refused(self) -> None:
+        """ADR-014 D2/D6: `gemini` left the manifest's `mcp.format` enum and the pack schema's platform
+        list, and `drop` (whose only user was the gemini manifest) left the agents `tools` enum."""
+        base = json.loads((PLATFORMS / "claude-code.json").read_text(encoding="utf-8"))
+        mutations = {
+            "mcp.format gemini": lambda d: d["mcp"].update(format="gemini"),
+            "tools drop": lambda d: d["frontmatter"]["agents"].update(tools="drop"),
+        }
+        for label, mutate in mutations.items():
+            with self.subTest(label):
+                data = copy.deepcopy(base)
+                mutate(data)
+                self.assertTrue(list(self.validator.iter_errors(data)), f"{label} was accepted")
+        pack_schema = json.loads((implementation_root() / "registry" / "package.schema.json").read_text(encoding="utf-8"))
+        pack = json.loads((implementation_root().parent / "tests" / "fixtures" / "packs" / "sample-pack" / "pack.json")
+                          .read_text(encoding="utf-8"))
+        pack["compatibility"]["supportedPlatforms"] = ["github", "gemini"]
+        errors = list(jsonschema.Draft202012Validator(pack_schema).iter_errors(pack))
+        self.assertTrue(errors, "a pack that declares gemini was accepted")
 
 
 if __name__ == "__main__":

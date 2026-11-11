@@ -9,8 +9,7 @@ decision of 2026-10-16). This file pins:
 - `sync.mjs` (`mapTemplatedValue`, `validateTemplatedSpecs`): the `default` is rendered as `${VAR:-}` for
   the claude-code format ONLY; an unknown key in a templated value, a `default` on a secret that is not the
   empty string, and an unsafe default stop the run before anything is written;
-- the placeholder-form check (design finding F-3) as far as it changed a template: Gemini CLI renders
-  `${VAR}`; Cline, VS Code and Opencode are pinned as they were, with the verification status in the
+- the placeholder-form check (design finding F-3): Cline, VS Code and Opencode are pinned as they were, with the verification status in the
   generator comment and in docs/wiki/mcp-servers.md (the `optional` key: tests/functional/test_mcp_optional_env.py);
 - `scripts/merge-mcp-json.py` on the gitlab entry: the user's own env keys survive, a user's value for the
   file variable is replaced by the generated placeholder (generated values win), and the merge is a fixed
@@ -48,7 +47,6 @@ TOKEN_FILE = "GITLAB_PERSONAL_ACCESS_TOKEN_FILE"
 GITLAB_ENV_FILES = {
     "claude-code": (".mcp.json", ("mcpServers", "gitlab", "env"), "${VAR}"),
     "vscode": (".vscode/mcp.json", ("servers", "gitlab", "env"), "${env:VAR}"),
-    "gemini": (".gemini/settings.json", ("mcpServers", "gitlab", "env"), "${VAR}"),
     "cline": (".cline/mcp.json", ("mcpServers", "gitlab", "env"), "${env:VAR}"),
     "opencode": (".opencode/opencode.json", ("mcp", "gitlab", "environment"), "{env:VAR}"),
 }
@@ -127,18 +125,6 @@ class ShippedOutputTests(unittest.TestCase):
             with self.subTest(platform=platform):
                 self.assertIsNone(re.search(r"glpat-|glft-|gldt-|glrt-", text))
 
-    def test_gemini_renders_the_documented_form_everywhere_and_the_others_keep_theirs(self):
-        # Gemini CLI documents `$VAR` and `${VAR}`; its resolver treats `${env:VAR}` as a variable NAMED
-        # `env:VAR`, which exists nowhere (envVarResolver.ts, read 2026-10-16, not run).
-        gemini = (IMPL / ".gemini" / "settings.json").read_text(encoding="utf-8")
-        self.assertNotIn("${env:", gemini)
-        self.assertIn("${HINDSIGHT_MCP_URL}", gemini)
-        self.assertIn("Bearer ${CWSO_BEARER_TOKEN}", gemini)
-        # Cline and VS Code (documented / source-verified) are unchanged
-        for rel in (".cline/mcp.json", ".vscode/mcp.json"):
-            self.assertIn("${env:", (IMPL / rel).read_text(encoding="utf-8"), rel)
-
-
 def _scratch_root(servers_text: str) -> Path:
     tmp = Path(tempfile.mkdtemp(prefix="t665-sync-"))
     (tmp / "platforms").mkdir()
@@ -193,7 +179,7 @@ class GeneratorDefaultTests(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         self.assertEqual(self.probe_env(root, "claude-code"),
                          {"A": "${AAA:-}", "B": "${BBB:-}", "C": "${CCC:-fallback}", "D": "${DDD}", "E": "literal"})
-        for platform, template in (("vscode", "${env:VAR}"), ("gemini", "${VAR}"),
+        for platform, template in (("vscode", "${env:VAR}"),
                                    ("cline", "${env:VAR}"), ("opencode", "{env:VAR}")):
             with self.subTest(platform=platform):
                 self.assertEqual(self.probe_env(root, platform),
@@ -216,8 +202,10 @@ class GeneratorDefaultTests(unittest.TestCase):
         claude = json.loads((root / ".mcp.json").read_text(encoding="utf-8"))["mcpServers"]["probe"]
         self.assertEqual(claude, {"type": "http", "url": "${URLVAR:-}",
                                   "headers": {"Authorization": "Bearer ${TOK:-}"}})
-        gemini = json.loads((root / ".gemini" / "settings.json").read_text(encoding="utf-8"))["mcpServers"]["probe"]
-        self.assertEqual(gemini, {"httpUrl": "${URLVAR}", "headers": {"Authorization": "Bearer ${TOK}"}})
+        # the default is claude-code only: another platform renders the bare placeholder
+        opencode = json.loads((root / ".opencode" / "opencode.json").read_text(encoding="utf-8"))["mcp"]["probe"]
+        self.assertEqual(opencode["url"], "{env:URLVAR}")
+        self.assertEqual(opencode["headers"], {"Authorization": "Bearer {env:TOK}"})
 
     def test_unsafe_or_unknown_spec_content_stops_the_run_before_anything_is_written(self):
         bad_lines = {
@@ -241,7 +229,7 @@ class GeneratorDefaultTests(unittest.TestCase):
                 root, proc = self.run_sync(_entry(line))
                 self.assertNotEqual(proc.returncode, 0, "must stop: " + label)
                 self.assertIn("servers.yaml", proc.stderr)
-                for folder in (".mcp.json", ".vscode", ".gemini", ".opencode", ".cline"):
+                for folder in (".mcp.json", ".vscode", ".opencode", ".cline"):
                     self.assertFalse((root / folder).exists(), f"{label}: {folder} was written")
 
     def test_a_default_in_a_header_or_url_is_validated_too(self):
@@ -470,14 +458,15 @@ class DocumentationTests(unittest.TestCase):
 
     def test_the_posture_table_labels_every_row_and_only_claude_code_says_observed(self):
         posture = _section(self.prereq_token, "#### Per-client posture")
-        for client in ("Claude Code", "GitHub Copilot", "Opencode", "Gemini CLI", "Cline"):
+        for client in ("Claude Code", "GitHub Copilot", "Opencode", "Cline"):
             self.assertRegex(posture, rf"\|\s*{client}", client)
         self.assertNotRegex(posture, r"(?m)^\|\s*Pi\s*\|", "ADR-013: Pi support was removed")
+        self.assertNotRegex(posture, r"(?m)^\|\s*Gemini CLI\s*\|", "ADR-014: Gemini CLI support was removed")
         # the legend names the Claude Code row as the only live-check row
         self.assertIn("**observed** = run in a live check (the Claude Code row: the user's live checks 2 and 3)", posture)
         self.assertIn("unverified", posture)
         rows = [line for line in posture.splitlines() if line.startswith("| ") and "Client" not in line and "---" not in line]
-        self.assertEqual(len(rows), 5)
+        self.assertEqual(len(rows), 4)
         for row in rows:
             status = row.rstrip(" |").rsplit("|", 1)[1].strip().lower()
             self.assertRegex(status, r"documented|unverified", row[:30])
