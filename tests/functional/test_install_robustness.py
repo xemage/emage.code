@@ -5,7 +5,7 @@ T672 removes the guard and shows the named test fails):
 
 * SEC-T658-05  an existing MCP/settings config is merged in every mode (a plain install used to
                overwrite it), an invalid one is refused before anything is written, a replaced
-               value is reported, and --projections-only keeps the Opencode/Gemini denials;
+               value is reported, and --projections-only keeps the Opencode denials;
 * SEC-T662-03  one SUPPORTED_PLATFORMS array drives usage, validation, `all`, the dispatch;
 * TL-T649-06 / SEC-015  a missing or dash-leading --target/--platform value is a clear message;
 * SEC-008 b    --dry-run creates nothing, the target directory included;
@@ -41,12 +41,11 @@ INSTALLER = repo_root() / "scripts" / "install.sh"
 INSTALL_TEXT = INSTALLER.read_text(encoding="utf-8")
 MCP_CONFIG = {
     "github": ".vscode/mcp.json",
-    "gemini": ".gemini/settings.json",
     "opencode": ".opencode/opencode.json",
     "claude-code": ".mcp.json",
     "cline": ".cline/mcp.json",
 }
-TREE = {"github": ".github", "gemini": ".gemini", "opencode": ".opencode",
+TREE = {"github": ".github", "opencode": ".opencode",
         "claude-code": ".claude", "cline": ".cline"}
 DENIED = ("playwright_browser_run_code_unsafe", "playwright_browser_evaluate",
           "playwright_browser_file_upload", "playwright_browser_drag",
@@ -260,37 +259,16 @@ class TestExistingMcpConfigIsMerged(_Scratch):
                 self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
                 self.assertEqual(_load(path)[wrapper]["hand-added"], {"command": "local"})
 
-    def test_plain_install_unions_the_gemini_exclude_tools_and_reports_a_replaced_hook(self) -> None:
-        target = self.installed("gemini")
-        path = target / ".gemini/settings.json"
-        data = _load(path)
-        data["mcpServers"]["playwright"]["excludeTools"] = ["my_own_tool"]
-        data["hooks"]["AfterTool"] = [{"matcher": "mine", "hooks": []}]
-        _save(path, data)
-        proc = run_installer(INSTALLER, target, "--platform", "gemini")
-        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
-        excluded = _load(path)["mcpServers"]["playwright"]["excludeTools"]
-        self.assertEqual(excluded[0], "my_own_tool")
-        self.assertTrue({d.removeprefix("playwright_") for d in DENIED} <= set(excluded))
-        self.assertIn("settings.json: replaced your value for hooks.AfterTool", proc.stderr)
-
-    def test_projections_only_keeps_the_opencode_and_gemini_denials(self) -> None:
+    def test_projections_only_keeps_the_opencode_denials(self) -> None:
         """SEC-T658-05 (d): the end-to-end --projections-only test of the denial merge."""
         target = self.tmp / "both"
         proc = run_installer(INSTALLER, target, "--platform", "all")
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         self._opencode_with_user_rules(target)
-        gemini = target / ".gemini/settings.json"
-        data = _load(gemini)
-        data["mcpServers"]["playwright"]["excludeTools"] = ["my_own_tool"]
-        _save(gemini, data)
         ledger = (target / "docs/tasks/active-tasks.md").read_bytes()
         proc = run_installer(INSTALLER, target, "--platform", "all", "--projections-only")
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         self._check_opencode(target, proc.stderr)
-        excluded = _load(gemini)["mcpServers"]["playwright"]["excludeTools"]
-        self.assertEqual(excluded[0], "my_own_tool")
-        self.assertTrue({d.removeprefix("playwright_") for d in DENIED} <= set(excluded))
         self.assertEqual((target / "docs/tasks/active-tasks.md").read_bytes(), ledger)
 
     def test_help_documents_the_decision(self) -> None:
@@ -354,9 +332,9 @@ class TestInvalidConfigIsRefusedBeforeAnyWrite(_CopierMatrix):
     def test_under_both_copiers(self) -> None:
         for label, path in self.copiers():
             with self.subTest(copier=label):
-                target, _victim = self._corrupt("gemini", f"config-{label}")
+                target, _victim = self._corrupt("opencode", f"config-{label}")
                 before = _snapshot(target)
-                proc = run_installer(INSTALLER, target, "--platform", "gemini", "--update", path=path)
+                proc = run_installer(INSTALLER, target, "--platform", "opencode", "--update", path=path)
                 self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
                 self.assertEqual(_snapshot(target), before)
 
@@ -1204,10 +1182,10 @@ class TestStaleSwapSiblingsAreRefused(_Scratch):
 
     def test_a_sibling_of_a_platform_that_is_not_selected_is_left_alone(self) -> None:
         target = self.installed("claude-code")
-        (target / ".gemini.emage-old.4242").mkdir()
+        (target / ".opencode.emage-old.4242").mkdir()
         proc = run_installer(INSTALLER, target, "--platform", "claude-code", "--update")
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
-        self.assertTrue((target / ".gemini.emage-old.4242").is_dir())
+        self.assertTrue((target / ".opencode.emage-old.4242").is_dir())
 
     def test_a_clean_target_is_not_refused(self) -> None:
         target = self.installed("claude-code")

@@ -27,11 +27,10 @@ SYNC = IMPL / "scripts" / "sync.mjs"
 FILES = {
     "claude-code": ".mcp.json",
     "vscode": ".vscode/mcp.json",
-    "gemini": ".gemini/settings.json",
     "opencode": ".opencode/opencode.json",
     "cline": ".cline/mcp.json",
 }
-UNCHANGED = ("vscode", "gemini", "opencode", "cline")
+UNCHANGED = ("vscode", "opencode", "cline")
 
 
 def _scratch_root(servers_text: str) -> Path:
@@ -123,7 +122,7 @@ class OptionalValidationTests(_SyncCase):
                 root, proc = self.run_sync(text)
                 self.assertNotEqual(proc.returncode, 0, label)
                 self.assertIn("servers.yaml", proc.stderr)
-                for folder in (".mcp.json", ".vscode", ".gemini", ".opencode", ".cline"):
+                for folder in (".mcp.json", ".vscode", ".opencode", ".cline"):
                     self.assertFalse((root / folder).exists(), f"{label}: {folder} was written")
 
     def test_optional_false_is_accepted_and_changes_nothing(self):

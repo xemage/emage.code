@@ -15,13 +15,8 @@ Merge algorithm (recursive, JSON-key-preserving):
   - Keys present only in `dest`: preserved as-is.
   - Keys present only in `source`: added.
 
-Two server-level denial lists are merged, not replaced (T658, SEC-T657-01), with or
+One server-level denial list is merged, not replaced (T658, SEC-T657-01), with or
 without a provenance sidecar (the rule never reads one):
-  - `excludeTools` (Gemini CLI, `mcpServers.<name>.excludeTools`): when both
-    sides hold a list, the result is the union, the user's elements first in
-    their order, then the generated elements the user's list lacks. A user's own
-    entry is never dropped. An element the generator no longer ships stays until
-    the user removes it (fail closed). A non-list user value is replaced.
   - top-level `permission` (Opencode): a user string shorthand (`"allow"`) is
     kept as `{"*": "allow"}`; the user's other keys are kept in their order; each
     generated key is set to the generated value and moved to the end, because
@@ -33,7 +28,7 @@ Notes on stderr (T672, SEC-T658-05 c, SEC-007; one line each, key names only, ne
 Exactly these are noted; every other generator-owned value (`command`, `args`, `url`, `type` ...)
 is refreshed silently, because refreshing them is what an update is for:
   - a permission key of yours that the generator owns was replaced (the generated `deny`
-    entries win over a user `allow`), or a user `hooks` value was replaced by the generated one;
+    entries win over a user `allow`);
   - a key of yours inside a generator-owned server's `env`, `environment` or `headers` was kept;
   - the top level of your file is not a JSON object, so the whole file was replaced;
   - there is no provenance sidecar, so no retired generator entry could be pruned: your servers
@@ -100,7 +95,7 @@ def format_names(names: Any) -> str:
     return ", ".join(printable(name) for name in sorted(set(names)))
 
 
-# The reference forms the generator writes (sync.mjs): `${NAME}` (Claude Code, Gemini), `${env:NAME}`
+# The reference forms the generator writes (sync.mjs): `${NAME}` (Claude Code), `${env:NAME}`
 # (VS Code, Cline) and `{env:NAME}` without `$` (Opencode, QA-T707-01).
 GENERATED_REF = re.compile(r"(?:[A-Za-z]+ )?(?:\$\{(?:env:)?[A-Za-z_][A-Za-z0-9_]*\}|\{env:[A-Za-z_][A-Za-z0-9_]*\})")
 
@@ -120,15 +115,6 @@ def differs_from_generated(entry: Any) -> bool:
         elif parent in entry:
             return True
     return any(not isinstance(v, str) or GENERATED_REF.fullmatch(v) is None for v in values)
-
-
-def merge_exclude_tools(dest_value: Any, source_value: Any) -> Any:
-    """Union of two `excludeTools` lists, dest elements first; anything else: source wins."""
-    if not isinstance(dest_value, list) or not isinstance(source_value, list):
-        return source_value
-    union = list(dest_value)
-    union += [item for item in source_value if item not in union]
-    return union
 
 
 def merge_permission(dest_value: Any, source_value: Any, notes: list[tuple[str, str]] | None = None) -> Any:
@@ -177,16 +163,12 @@ def merge_json(dest: Any, source: Any, notes: list[tuple[str, str]] | None = Non
 
     merged: dict[str, Any] = dict(dest)
     for key, source_value in source.items():
-        if key == "excludeTools" and key in merged:
-            merged[key] = merge_exclude_tools(merged[key], source_value)
-        elif key == "permission" and not _path and key in merged:
+        if key == "permission" and not _path and key in merged:
             merged[key] = merge_permission(merged[key], source_value, notes)
         elif key in merged and isinstance(merged[key], dict) and isinstance(source_value, dict):
             _note_kept_keys(_path + (key,), merged[key], source_value, notes)
             merged[key] = merge_json(merged[key], source_value, notes=notes, _path=_path + (key,))
         else:
-            if notes is not None and _path[:1] == ("hooks",) and key in merged and merged[key] != source_value:
-                notes.append(("replaced", ".".join(_path + (key,))))
             merged[key] = source_value
     return merged
 

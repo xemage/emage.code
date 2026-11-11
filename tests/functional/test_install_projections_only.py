@@ -32,7 +32,7 @@ import tests.functional.test_root_install_parity as parity
 from tests._helpers.repo import repo_root
 
 INSTALLER = repo_root() / "scripts" / "install.sh"
-HARNESS_TREES = (".claude", ".gemini", ".github", ".opencode",
+HARNESS_TREES = (".claude", ".github", ".opencode",
                  ".cline", ".clinerules")
 HARNESS_FILES = ("AGENTS.md", "CLAUDE.md")
 # Harness-tree paths the installer declares project-local (parsed from
@@ -82,14 +82,14 @@ PROJECT_OWNED = {
 # Harness paths made stale in the synthetic root, and removed-upstream files.
 STALE_EDITS = (
     ".claude/agents/orchestrator.md",
-    ".gemini/commands/code-review.md",
+    ".opencode/commands/code-review.md",
     ".github/prompts/plan.prompt.md",
     ".cline/skills/skillify/SKILL.md",
     "AGENTS.md",
     "CLAUDE.md",
 )
 REMOVED_UPSTREAM = (".claude/commands/retired.md", ".clinerules/retired.md",
-                    ".gemini/commands/retired.md")
+                    ".opencode/commands/retired.md")
 DELETED_SHIPPED = ".opencode/agents/orchestrator.md"
 
 
@@ -288,14 +288,14 @@ class TestProjectionsOnlyRefresh(_FreshInstallFixture):
     def test_single_platform_refresh_touches_only_that_platform(self) -> None:
         root = self._root()
         before = _snapshot(root)
-        proc = run_installer(INSTALLER, root, "--platform", "gemini", "--projections-only")
+        proc = run_installer(INSTALLER, root, "--platform", "opencode", "--projections-only")
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         after = _snapshot(root)
         changed = {k for k in before.keys() | after.keys() if before.get(k) != after.get(k)}
         self.assertTrue(changed)
-        self.assertEqual({k for k in changed if not (k.startswith(".gemini/") or k == "AGENTS.md")},
-                         set(), "a gemini-only refresh wrote outside .gemini/ and AGENTS.md")
-        self.assertIn("`.gemini/skills/`", (root / "AGENTS.md").read_text(encoding="utf-8"))
+        self.assertEqual({k for k in changed if not (k.startswith(".opencode/") or k == "AGENTS.md")},
+                         set(), "an opencode-only refresh wrote outside .opencode/ and AGENTS.md")
+        self.assertIn("`.opencode/skills/`", (root / "AGENTS.md").read_text(encoding="utf-8"))
 
     def test_dry_run_writes_nothing(self) -> None:
         for label, path in (("rsync", None), ("cp", self.no_rsync)):
@@ -332,10 +332,10 @@ class TestProjectionsOnlyContract(_FreshInstallFixture):
         self.assertEqual([p for p in target.rglob("*")], [])
 
     def test_merge_owned_config_set_is_complete(self) -> None:
-        """Guard against a vacuous classifier: all five MCP configs are found."""
+        """Guard against a vacuous classifier: all four MCP configs are found."""
         self.assertEqual(
             {c for c in self.merge_owned if not c.endswith(parity.SIDECAR_SUFFIX)},
-            {".mcp.json", ".vscode/mcp.json", ".gemini/settings.json",
+            {".mcp.json", ".vscode/mcp.json",
              ".opencode/opencode.json", ".cline/mcp.json"},
         )
 

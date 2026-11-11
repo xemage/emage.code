@@ -30,14 +30,14 @@ from tests._helpers.repo import implementation_root, knowledge_root, repo_root
 PLATFORMS_DIR = implementation_root() / "platforms"
 ARTIFACT = repo_root() / "docs" / "artifacts" / "mcp-tool-name-mapping-v1.md"
 
-# platform -> mcpToolNames in the manifest. Gemini drops the tools line, Cline has no agent
-# files, so neither can carry the key; Claude Code renders verbatim.
+# platform -> mcpToolNames in the manifest. Cline has no agent files, so it cannot carry the
+# key; Claude Code renders verbatim.
 EXPECTED_STYLE = {
     "claude-code": "verbatim",
     "github": "slash",
     "opencode": "underscore",
 }
-NO_AGENT_TOOL_RENDERING = ("gemini", "cline")
+NO_AGENT_TOOL_RENDERING = ("cline",)
 
 
 def expected_name(style: str, token: str) -> str:
@@ -92,10 +92,7 @@ class ManifestOptInTests(unittest.TestCase):
                 manifest = _manifest(platform)
                 cfg = manifest["frontmatter"].get("agents", {})
                 self.assertNotIn("mcpToolNames", cfg)
-                if platform == "gemini":
-                    self.assertEqual(cfg.get("tools"), "drop")
-                else:
-                    self.assertNotIn("agents", manifest["fileMap"])
+                self.assertNotIn("agents", manifest["fileMap"])
 
     def test_every_manifest_is_accounted_for(self):
         found = {p.stem for p in PLATFORMS_DIR.glob("*.json") if not p.name.startswith("_")}
@@ -197,10 +194,6 @@ class GeneratorRunTests(unittest.TestCase):
         rendered = self._tools(".claude/agents/fx.md")
         self.assertEqual(rendered, ["Read"] + self.TOOLS[1:])
 
-    def test_gemini_still_drops_the_tools_line(self):
-        fm, _ = parse_file(self.root / ".gemini" / "agents" / "fx.md")
-        self.assertNotIn("tools", fm)
-
     def test_an_unknown_style_fails_the_run(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -238,12 +231,6 @@ class ManifestAndTokenValidationTests(unittest.TestCase):
             manifest.write_text(json.dumps(data), encoding="utf-8")
             return subprocess.run(["node", str(self.SYNC), "--root", str(root), f"--platform={platform}"],
                                   capture_output=True, text=True, check=False)
-
-    def test_unknown_style_fails_even_when_the_platform_drops_the_tools_line(self):
-        # Gemini drops `tools`; before T658 the style was never read there, so a typo passed silently.
-        result = self._run("gemini", lambda d: d["frontmatter"]["agents"].__setitem__("mcpToolNames", "colon"))
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIn("Unknown mcpToolNames style", result.stderr)
 
     def test_falsy_and_non_string_styles_fail(self):
         for bad in ("", None, 0, ["slash"], {"a": 1}):
@@ -348,10 +335,10 @@ class ProjectedAgentTests(unittest.TestCase):
 
     def test_no_projection_names_the_unsafe_tool(self):
         # T658 (SEC-T657-07): a file-count floor, so an empty glob (a renamed directory) cannot pass
-        # vacuously. Four platforms project agent files (Cline has none); every source agent is projected.
+        # vacuously. Three platforms project agent files (Cline has none); every source agent is projected.
         files = [p for p in implementation_root().glob(".*/agents/*") if p.is_file()]
         sources = len(list((knowledge_root() / "agents").glob("*.md")))
-        self.assertGreaterEqual(len(files), sources * 4)
+        self.assertGreaterEqual(len(files), sources * 3)
         for path in files:
             text = path.read_text(encoding="utf-8")
             if path.parent.parent.name == ".opencode":
@@ -373,7 +360,6 @@ PLATFORM_ROW_STATUS = {  # row prefix in section 2 -> what its Status cell must 
     "Claude Code (": "**verified**",
     "GitHub Copilot, VS Code (": "**verified**",
     "Opencode (": "**verified**",
-    "Gemini CLI (": "**verified**",
     "Cline (": "**verified",
 }
 UNSAFE_SENTENCE_PREFIX = "**Excluded from every set**: `browser_run_code_unsafe`"

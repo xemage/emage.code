@@ -17,7 +17,7 @@ IMPLEMENTATION="${REPO_ROOT}/implementation"
 # implementation/platforms/*.json. Adding a platform means adding it here, to
 # platform_managed_paths, platform_mcp_config and an install_<name> function (dashes as
 # underscores) -- a missing piece fails closed (exit 70), it is never skipped.
-SUPPORTED_PLATFORMS=(github gemini opencode claude-code cline)
+SUPPORTED_PLATFORMS=(github opencode claude-code cline)
 
 # Prints $@ joined with ", " (for messages).
 join_comma() {
@@ -68,11 +68,11 @@ EOF
   -n, --dry-run        Print actions without copying
   -h, --help           Show this help
 
-MCP/settings configs (.vscode/mcp.json, .gemini/settings.json, .opencode/opencode.json,
-.mcp.json, .cline/mcp.json): an existing one is MERGED in every mode, a plain
+MCP/settings configs (.vscode/mcp.json, .opencode/opencode.json, .mcp.json,
+.cline/mcp.json): an existing one is MERGED in every mode, a plain
 install included, never overwritten -- your own servers, keys and rules are kept, generator-owned
-keys are refreshed, and the generated Playwright permission/excludeTools denials are put back.
-A note on stderr names exactly: a permission rule or hooks value of yours that was replaced, a
+keys are refreshed, and the generated Playwright permission denials are put back.
+A note on stderr names exactly: a permission rule of yours that was replaced, a
 key of yours kept inside a generator-owned server's env/headers, a file whose top level was not a
 JSON object, and your servers kept when no provenance sidecar could prune a retired entry; other
 generator-owned values (command, args, url ...) are refreshed silently. A config that is not
@@ -190,6 +190,10 @@ if [[ "$PLATFORM" != "all" ]] && ! is_supported_platform "$PLATFORM"; then
       ;;
     [Pp][Ii])
       echo "error: platform 'pi' was removed in v11.0.0 (see docs/releases/v11.0.0.md). Existing .pi/ files in your project are not touched. Nothing was written." >&2
+      exit 1
+      ;;
+    [Gg][Ee][Mm][Ii][Nn][Ii])
+      echo "error: platform 'gemini' was removed in v11.0.0 (see docs/releases/v11.0.0.md). Existing .gemini/ files in your project are not touched. Nothing was written." >&2
       exit 1
       ;;
     *)
@@ -467,7 +471,6 @@ refuse_unsafe_paths() {
 platform_managed_paths() {
   case "$1" in
     github) printf '%s\n' .github .vscode .vscode/mcp.json .vscode/mcp.json.provenance.json ;;
-    gemini) printf '%s\n' .gemini .gemini/settings.json .gemini/settings.json.provenance.json ;;
     opencode) printf '%s\n' .opencode .opencode/opencode.json .opencode/opencode.json.provenance.json ;;
     claude-code) printf '%s\n' .claude .mcp.json .mcp.json.provenance.json CLAUDE.md ;;
     cline) printf '%s\n' .cline .clinerules .cline/mcp.json .cline/mcp.json.provenance.json ;;
@@ -481,7 +484,6 @@ platform_managed_paths() {
 platform_mcp_config() {
   case "$1" in
     github) printf '%s\n' .vscode/mcp.json ;;
-    gemini) printf '%s\n' .gemini/settings.json ;;
     opencode) printf '%s\n' .opencode/opencode.json ;;
     claude-code) printf '%s\n' .mcp.json ;;
     cline) printf '%s\n' .cline/mcp.json ;;
@@ -1325,16 +1327,40 @@ notice_previous_pi_install() {
   echo "  Clean it up by hand; see the Pi migration item in docs/releases/v11.0.0.md." >&2
 }
 
+# Read-only notice (ADR-014 D4): Gemini CLI support was removed in v11.0.0, so a
+# .gemini/ that an earlier release generated is no longer written, pruned or
+# checked here -- and is never deleted (it is also Gemini CLI's own project
+# folder). Detection greps the generated manifest and tests that the provenance
+# sidecar exists; it opens no other file there, and a symlinked .gemini or
+# marker is not read.
+notice_previous_gemini_install() {
+  local dir="$TARGET/.gemini"
+  local found=0
+  if [[ ! -d "$dir" || -L "$dir" ]]; then return 0; fi
+  if [[ -f "$dir/.generated-manifest.json" && ! -L "$dir/.generated-manifest.json" ]] \
+     && grep -Eq '"platform"[[:space:]]*:[[:space:]]*"gemini"' "$dir/.generated-manifest.json"; then
+    found=1
+  elif [[ -e "$dir/settings.json.provenance.json" && ! -L "$dir/settings.json.provenance.json" ]]; then
+    found=1
+  fi
+  if [[ "$found" -ne 1 ]]; then return 0; fi
+  echo "warning: $(printable "$dir") holds a Gemini CLI install written by an earlier emage.code release." >&2
+  echo "  Gemini CLI support was removed in v11.0.0: .gemini/ is no longer updated, pruned or checked, and this installer does not delete it." >&2
+  echo "  The MCP server pins, the Playwright hardening and the GitLab entry in .gemini/settings.json, and the harness's post-edit hook there, are frozen at the version that wrote them." >&2
+  echo "  .gemini/settings.json may also hold your own Gemini CLI settings: clean up by removing the harness's entries, not by deleting the file or the folder." >&2
+  echo "  See the Gemini CLI migration item in docs/releases/v11.0.0.md." >&2
+}
+
 validate_before_update() {
   # Pre-flight checks before --update to prevent propagating corrupted state.
   if [[ "$UPDATE" -eq 1 ]]; then
     notice_previous_cursor_install
     notice_previous_pi_install
-    for d in .github .gemini .opencode .claude .cline .clinerules; do
+    notice_previous_gemini_install
+    for d in .github .opencode .claude .cline .clinerules; do
       if [[ -d "$TARGET/$d" ]]; then
         local exception=""
         case "$d" in
-          .gemini) exception=" (except $d/settings.json, which is merged, not overwritten)" ;;
           .opencode) exception=" (except $d/opencode.json, which is merged, not overwritten)" ;;
           .cline) exception=" (except $d/mcp.json, which is merged, not overwritten)" ;;
           .claude) exception=" (except $d/settings.json and $d/settings.local.json, which are project-local and left untouched)" ;;
@@ -1414,7 +1440,7 @@ merge_or_copy_mcp_json() {
   refuse_unsafe_path "$dest"
   refuse_unsafe_path "$dest_sidecar"
   # Merge into an existing config in EVERY mode (SEC-T658-05 a): a plain install used to
-  # overwrite it wholesale, user permission/excludeTools rules and servers included. Merging is
+  # overwrite it wholesale, user permission rules and servers included. Merging is
   # what --update does, so a re-run of the same command line never loses the user's content.
   if [[ -f "$dest" ]]; then
     local args=("$REPO_ROOT/scripts/merge-mcp-json.py" --source "$src" --dest "$dest")
@@ -1607,12 +1633,6 @@ install_github() {
   refuse_unsafe_paths .vscode
   run mkdir -p "$TARGET/.vscode"
   merge_or_copy_mcp_json "$IMPLEMENTATION/.vscode/mcp.json" "$TARGET/.vscode/mcp.json"
-}
-
-install_gemini() {
-  install_tree_into "$IMPLEMENTATION/.gemini" "$TARGET/.gemini" "settings.json" "settings.json.provenance.json"
-  withhold_authoring_only .gemini
-  merge_or_copy_mcp_json "$IMPLEMENTATION/.gemini/settings.json" "$TARGET/.gemini/settings.json"
 }
 
 install_opencode() {

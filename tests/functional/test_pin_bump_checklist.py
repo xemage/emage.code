@@ -22,7 +22,7 @@ EXPIRY = "2027-01-30"
 ACCEPTANCE = ROOT / "docs" / "artifacts" / "brave-audit-acceptance-v3.md"
 WARNING = "Never run `opencode debug config` with your real home"
 REQUIRED_PHRASES = ("audit-mcp-pins.py audit", "audit-mcp-pins.py provenance", "--generate-hashes", "--require-hashes",
-                    "Browser security version", "Blocked-origins re-check", "One-time live checks", "excludeTools",
+                    "Browser security version", "Blocked-origins re-check", "One-time live checks",
                     "opencode agent list", "(unverified)", WARNING, "ci_images_reviewed_on", "--only-binary=:all:", "--exclude-newer",
                     "brave-audit-acceptance-v3.md", "SEC-T676-11", "SEC-T676-14", "seven days before")
 LINKS = {

@@ -244,7 +244,7 @@ class DefaultIndexDirTests(unittest.TestCase):
         args = servers["servers"]["context-retriever"]["args"]
         self.assertNotIn("--index-dir", args)
         self.assertNotIn("em-age", " ".join(args))
-        for rel in (".mcp.json", ".gemini/settings.json", ".cline/mcp.json"):
+        for rel in (".mcp.json", ".cline/mcp.json"):
             with self.subTest(file=rel):
                 self.assertNotIn("em-age-emage.code", (implementation_root() / rel).read_text(encoding="utf-8"))
 

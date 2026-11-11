@@ -185,11 +185,10 @@ async function readServersYaml() {
 
 // T658 (SEC-T657-01): a server may carry `denyTools: [<tool>, ...]`, the exact tool names, as the
 // server itself reports them, that the platform must refuse for this server. This is the one source
-// of truth for the server-level denial; emitMcp() renders it only for the two platforms whose
+// of truth for the server-level denial; emitMcp() renders it only for the platform whose
 // documentation and vendor source show an enforcing mechanism (see
-// docs/artifacts/mcp-server-denials-v1.md): Opencode (top-level `permission`) and Gemini CLI
-// (`mcpServers.<name>.excludeTools`). Names are exact on purpose: a wildcard could silently deny
-// (or, on Opencode, fail to deny) more than the list says.
+// docs/artifacts/mcp-server-denials-v1.md): Opencode (top-level `permission`). Names are exact on purpose: a wildcard could silently deny (or, on
+// Opencode, fail to deny) more than the list says.
 const DENY_TOOL_NAME = /^[A-Za-z0-9_]+$/;
 
 // T663 (SEC-T663-06): a server entry may carry only these keys. A misspelling of a security key
@@ -652,9 +651,7 @@ function applyAgentFrontmatter(data, name, cfg) {
       .map(([k]) => k);
   }
 
-  if (cfg.tools === 'drop') {
-    delete out.tools;
-  } else if (cfg.tools === 'object') {
+  if (cfg.tools === 'object') {
     if (Array.isArray(tools)) out.tools = tools;
   } else if (cfg.tools === 'string') {
     if (Array.isArray(tools)) {
@@ -716,45 +713,6 @@ function emitMcpVscode(filtered) {
   return JSON.stringify({ servers }, null, 2) + '\n';
 }
 
-// The Gemini CLI hook block written next to its MCP servers.
-const GEMINI_POST_EDIT_HOOKS = {
-  AfterTool: [
-    {
-      matcher: 'replace|write_file',
-      hooks: [
-        {
-          name: 'post-edit-reminder',
-          type: 'command',
-          command:
-            "echo '{\"systemMessage\": \"Reminder: Ensure code follows coding standards (naming, error handling, security). Run lint before committing.\"}'",
-        },
-      ],
-    },
-  ],
-};
-
-function emitMcpGemini(filtered) {
-  // T665 (SEC-T660-01, F-3): Gemini CLI documents `$VAR` and `${VAR}` (and `${VAR:-DEFAULT}`) and its
-  // resolver (packages/cli/src/utils/envVarResolver.ts, read at main on 2026-10-16) looks the text
-  // between the braces up as the variable NAME, so `${env:VAR}` is looked up as `env:VAR`, found
-  // nowhere, left as text by the settings loader and then expanded to an empty string by the MCP
-  // client (dotenv-expand). `${VAR}` is the documented form. Source read, not run.
-  const mcpServers = {};
-  for (const [name, s] of Object.entries(filtered)) {
-    if (s.transport === 'remote') {
-      mcpServers[name] = { httpUrl: mapTemplatedValue(s.url, '${VAR}') };
-      if (s.headers) mcpServers[name].headers = mapEnv(s.headers, '${VAR}');
-    } else {
-      mcpServers[name] = { command: s.command, args: s.args || [] };
-      if (s.env) mcpServers[name].env = mapEnv(s.env, '${VAR}');
-    }
-    // T658: documented per-server tool blocklist; applies to the main agent and to subagents
-    // (docs/artifacts/mcp-server-denials-v1.md). Gemini matches the name the server reports.
-    if (s.denyTools) mcpServers[name].excludeTools = [...s.denyTools];
-  }
-  return JSON.stringify({ hooks: GEMINI_POST_EDIT_HOOKS, mcpServers }, null, 2) + '\n';
-}
-
 function emitMcpOpencode(filtered) {
   const mcp = {};
   const permission = {};
@@ -811,7 +769,6 @@ function emitMcpCline(filtered) {
 
 const MCP_EMITTERS = new Map([
   ['vscode', emitMcpVscode],
-  ['gemini', emitMcpGemini],
   ['opencode', emitMcpOpencode],
   ['claude-code', emitMcpClaudeCode],
   ['cline', emitMcpCline],
@@ -835,7 +792,7 @@ function emitMcp(servers, manifest) {
 //         OR { fromEnv: VAR, default: "D" }      -> with `withDefault`: VAR becomes `VAR:-D`
 //         OR { fromEnv: VAR, optional: true }    -> with `withDefault`: VAR becomes `VAR:-` (T680)
 //   template: the platform's own placeholder pattern, e.g. '${env:VAR}' (vscode/cline),
-//             '{env:VAR}' (opencode) or '${VAR}' (claude-code, gemini)
+//             '{env:VAR}' (opencode) or '${VAR}' (claude-code)
 //   withDefault: true only for the claude-code format (T665, SEC-T660-01): Claude Code passes an
 //             unset `${VAR}` through as literal text and documents `${VAR:-default}`; no other
 //             format is documented to honour a default, so those render as before.

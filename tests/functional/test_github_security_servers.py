@@ -58,7 +58,7 @@ EXPECTED_HOLDERS = {
 }
 
 OTHER_PLATFORM_FILES = (
-    (".mcp.json", "mcpServers"), (".gemini/settings.json", "mcpServers"),
+    (".mcp.json", "mcpServers"),
     (".opencode/opencode.json", "mcp"), (".cline/mcp.json", "mcpServers"),
 )
 
@@ -243,7 +243,7 @@ class GeneratorPlatformListTests(_Scratch):
         listed = json.loads((root / ".vscode" / "mcp.json").read_text(encoding="utf-8"))["servers"]["listed"]
         self.assertEqual(listed["cwd"], "${workspaceFolder}")
         self.assertEqual(list(listed), ["command", "args", "cwd"])
-        for rel in (".mcp.json", ".gemini/settings.json", ".opencode/opencode.json", ".cline/mcp.json"):
+        for rel in (".mcp.json", ".opencode/opencode.json", ".cline/mcp.json"):
             with self.subTest(file=rel):
                 self.assertEqual(self.names(root, rel), {"coreprobe", "listed", "unlisted"})
                 self.assertNotIn("cwd", (root / rel).read_text(encoding="utf-8"))
@@ -347,7 +347,7 @@ class K3LimitationGoneTests(unittest.TestCase):
             "GitHub Copilot's `.vscode/mcp.json` does not carry it, so the scan has no server",
             "It is **not** in GitHub Copilot's `.vscode/mcp.json`",
             "Its config is generated for every platform except GitHub Copilot",
-            "platforms whose manifest opts in (all except `github`: `gemini`)",
+            "platforms whose manifest opts in (all except `github`: `opencode`)",
             "(Known issue K-3)",
         ):
             self.assertTrue(k3_findings("probe", old), old)

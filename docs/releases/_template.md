@@ -21,7 +21,6 @@ scripts/install.sh --target <your-project> --platform <name>
 | Platform | `--platform` value |
 |----------|-------------------|
 | GitHub Copilot (VS Code) | `github` |
-| Gemini CLI | `gemini` |
 | Opencode | `opencode` |
 | Claude Code | `claude-code` |
 | Cline | `cline` |

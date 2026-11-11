@@ -55,20 +55,18 @@ PLATFORMS = implementation_root() / "platforms"
 # `cline.json` maps neither, so no `.cline` projection exists. `ProjectionList` keeps this in step.
 RM_MIRRORS = (
     ".claude/agents/release-manager.md",
-    ".gemini/agents/release-manager.md",
     ".github/agents/release-manager.agent.md",
     ".opencode/agents/release-manager.md",
 )
 OR_MIRRORS = tuple(p.replace("release-manager", "orchestrator") for p in RM_MIRRORS)
 PR_MIRRORS = (
     ".claude/commands/prepare-release.md",
-    ".gemini/commands/prepare-release.md",
     ".github/prompts/prepare-release.prompt.md",
     ".opencode/commands/prepare-release.md",
 )
 VG_MIRRORS = tuple(
     f".{platform}/skills/validation-gates/SKILL.md"
-    for platform in ("claude", "cline", "gemini", "github", "opencode")
+    for platform in ("claude", "cline", "github", "opencode")
 )
 RW_MIRRORS = tuple(p.replace("validation-gates", "release-workflow") for p in VG_MIRRORS)
 

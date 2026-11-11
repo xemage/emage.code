@@ -15,7 +15,6 @@ scripts/install.sh --target /path/to/your-project --platform claude-code
 | Platform | `--platform` value |
 |----------|------------------|
 | GitHub Copilot (VS Code) | `github` |
-| Gemini CLI | `gemini` |
 | Opencode | `opencode` |
 | Claude Code | `claude-code` |
 | Cline | `cline` |
@@ -29,7 +28,7 @@ Makefile shortcut: `make install TARGET=/path/to/your-project PLATFORM=claude-co
 scripts/install.sh --target /path/to/your-project --platform claude-code --update
 ```
 
-`--update` replaces each platform tree (`.github/`, `.gemini/`, `.opencode/`, `.claude/`, `.cline/`, `.clinerules/`) and keeps the files the harness never ships: `.claude/settings.json`, `.claude/settings.local.json`, and under `.github/` the `workflows/`, `ISSUE_TEMPLATE/`, `PULL_REQUEST_TEMPLATE.md`, `PULL_REQUEST_TEMPLATE`, `CODEOWNERS`, `dependabot.yml`, `dependabot.yaml`, `FUNDING.yml` and `copilot-instructions.md`. Each platform's MCP/settings config is merged, and so is an existing one on a plain install (no `--update`): the installer never overwrites a config wholesale. In `docs/tasks/`, the two ledgers are rewritten: `T<NNN>` task rows and the prose around the table are kept, other table rows are dropped with a warning, and a copy of the ledger as it was is saved first (`<ledger>.bak`, see below).
+`--update` replaces each platform tree (`.github/`, `.opencode/`, `.claude/`, `.cline/`, `.clinerules/`) and keeps the files the harness never ships: `.claude/settings.json`, `.claude/settings.local.json`, and under `.github/` the `workflows/`, `ISSUE_TEMPLATE/`, `PULL_REQUEST_TEMPLATE.md`, `PULL_REQUEST_TEMPLATE`, `CODEOWNERS`, `dependabot.yml`, `dependabot.yaml`, `FUNDING.yml` and `copilot-instructions.md`. Each platform's MCP/settings config is merged, and so is an existing one on a plain install (no `--update`): the installer never overwrites a config wholesale. In `docs/tasks/`, the two ledgers are rewritten: `T<NNN>` task rows and the prose around the table are kept, other table rows are dropped with a warning, and a copy of the ledger as it was is saved first (`<ledger>.bak`, see below).
 
 To refresh only the harness projections (platform trees, MCP configs, `AGENTS.md`, and `CLAUDE.md` for Claude Code) and touch nothing under `docs/` or `implementation/`:
 
@@ -58,7 +57,7 @@ With `rsync` installed, trees are synchronised in place and the two `emage` sibl
 | When | What it says (quoted in part) |
 |------|-------------------------------|
 | An existing MCP/settings config is not valid JSON, or it (or its directory) cannot be replaced | `merge-mcp-json: <file> is not valid JSON (...); nothing was written. Fix or remove the file and re-run.` or `... or its directory is not writable; nothing was written. Fix the permissions and re-run.` The run stops before anything is written |
-| A rule or value of yours was replaced | `merge-mcp-json: note: <file>: replaced your value for permission.<key>, hooks...`: a Playwright `permission` rule of yours that the generated `deny` overrides, or a `hooks` value replaced by the generated one |
+| A rule of yours was replaced | `merge-mcp-json: note: <file>: replaced your value for permission.<key>...`: a Playwright `permission` rule of yours that the generated `deny` overrides |
 | A key of yours was kept inside a generator-owned server | `merge-mcp-json: note: <file>: kept your key mcpServers.<server>.env.<KEY>` (also `environment` and `headers`) |
 | The top level of your config was not a JSON object | `... the top level of your file is not a JSON object, so the whole file was replaced by the generated config` |
 | There is no provenance sidecar, so nothing could be pruned | `merge-mcp-json: note: <file>: there is no provenance sidecar at <path>, so no retired generator entry could be pruned; kept your server(s) <names>, which the generated config does not contain. If one is a retired generator entry, remove it by hand or run scripts/merge-mcp-json.py with --force-prune-keys <name>.` |
@@ -75,7 +74,6 @@ A full install or `--update` (not `--projections-only`) also prints the command 
 | Platform | What to copy from `implementation/` |
 |----------|-------------------------------------|
 | GitHub Copilot | `.github/` + `.vscode/mcp.json` |
-| Gemini CLI | `.gemini/` |
 | Opencode | `.opencode/` |
 | Claude Code | `.claude/` + `.mcp.json` + `CLAUDE.md` |
 | Cline | `.clinerules/` + `.cline/` (its MCP file is a staging file, not applied automatically: [Cline Setup](cline-setup)) |
@@ -125,6 +123,6 @@ See [Implementation Guide](implementation-guide) for cookbooks, triggers, packag
 
 ## Troubleshooting
 
-- **Agents not loading?** Confirm format: `.agent.md` (Copilot), `.md` (Gemini/Opencode/Claude Code).
+- **Agents not loading?** Confirm format: `.agent.md` (Copilot), `.md` (Opencode/Claude Code).
 - **MCP failing?** Check env vars and network access.
 - **Drift after editing knowledge?** Run `make sync` from repo root.

@@ -329,8 +329,7 @@ class EmittedPerAgentClassTests(unittest.TestCase):
                 self.assertEqual(body, source_body)
 
     def test_other_platforms_carry_no_false_tool_entry_and_no_gitlab_wildcard(self):
-        for platform, pattern in ((".github", "*.agent.md"), (".claude", "*.md"),
-                                  (".gemini", "*.md")):
+        for platform, pattern in ((".github", "*.agent.md"), (".claude", "*.md")):
             files = sorted((IMPL / platform / "agents").glob(pattern))
             self.assertGreaterEqual(len(files), 28, platform)
             for path in files:
@@ -783,7 +782,7 @@ class GeneratorFixtureTests(unittest.TestCase):
         root, result = self.run_sync(mutate_platform=lambda d: d["frontmatter"]["agents"].__setitem__("mcpAgentDenies", "yes"))
         self.assertNotEqual(result.returncode, 0)
         # claude-code sorts before opencode and used to be written before the bad manifest was read
-        for folder in (".claude", ".github", ".gemini", ".opencode"):
+        for folder in (".claude", ".github", ".opencode"):
             self.assertFalse((root / folder).exists(), folder)
 
     def test_the_shipped_servers_yaml_passes_the_key_check(self):

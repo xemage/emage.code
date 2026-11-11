@@ -1,6 +1,6 @@
 """Root self-install parity gate (T543).
 
-The repo-root harness -- the six platform trees, ``AGENTS.md``, ``CLAUDE.md``
+The repo-root harness -- the five platform trees, ``AGENTS.md``, ``CLAUDE.md``
 and the MCP configs -- is ``scripts/install.sh`` output, not ``sync.mjs``
 output (``AGENTS.md`` § Knowledge Base). ``sync.mjs --check`` and
 ``generate-registry.py --check`` inspect only ``implementation/``, so until this
@@ -170,7 +170,7 @@ class TestRootInstallParity(unittest.TestCase):
     def test_install_contract_is_parsed(self) -> None:
         """Guard against a vacuous gate: an unparsed installer yields no trees."""
         trees = parse_replaced_trees(INSTALLER.read_text(encoding="utf-8"))
-        for tree in (".claude", ".gemini", ".github", ".opencode",
+        for tree in (".claude", ".github", ".opencode",
                      ".cline", ".clinerules"):
             self.assertIn(tree, trees, f"install.sh no longer replaces {tree}")
         self.assertIn("settings.json", trees[".claude"])
@@ -229,10 +229,10 @@ class TestRootInstallParityDetector(unittest.TestCase):
                          {".claude/rules/git-workflow.md", "AGENTS.md"})
 
     def test_missing_and_root_only_files_are_drift(self) -> None:
-        (self.root / ".gemini/agents/orchestrator.md").unlink()
+        (self.root / ".opencode/agents/orchestrator.md").unlink()
         self._write(".clinerules/hand-written.md", "x\n")
         self.assertEqual(compute_drift(self.fresh, self.root),
-                         {".gemini/agents/orchestrator.md", ".clinerules/hand-written.md"})
+                         {".opencode/agents/orchestrator.md", ".clinerules/hand-written.md"})
 
     def test_project_local_paths_are_not_drift(self) -> None:
         self._write(".claude/settings.json", "{}\n")
@@ -249,11 +249,11 @@ class TestRootInstallParityDetector(unittest.TestCase):
         self.assertEqual(compute_drift(self.fresh, self.root), set())
 
         def stale_value(d):  # an existing leaf the source would overwrite
-            d["mcpServers"]["gitlab"]["command"] = "stale"
-        self._edit_json(".gemini/settings.json", stale_value)
+            d["mcp"]["gitlab"]["command"] = ["stale"]
+        self._edit_json(".opencode/opencode.json", stale_value)
         (self.root / ".cline/mcp.json.provenance.json").unlink()
         self.assertEqual(compute_drift(self.fresh, self.root),
-                         {".gemini/settings.json", ".cline/mcp.json",
+                         {".opencode/opencode.json", ".cline/mcp.json",
                           ".cline/mcp.json.provenance.json"})
 
 

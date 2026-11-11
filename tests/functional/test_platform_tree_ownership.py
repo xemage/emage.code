@@ -8,11 +8,12 @@ gate. This test closes that gap: a directory that carries a
 ``.generated-manifest.json`` must be the ``outputDir`` of a platform manifest
 whose ``platform`` equals the one the directory's own manifest declares.
 
-``.cursor`` (support removed in v9.0.0, ADR-010) and ``.pi`` (support removed in
-v11.0.0, ADR-013) are also asserted untracked by name, at the repository root and under
-``implementation/``, so that a revert is loud. The by-name check uses ``git ls-files``:
-a tracked ``.cursor`` fails, while a ``.cursor`` that only exists locally and untracked
-(a developer's own Cursor IDE folder) does not; the same holds for ``.pi``.
+``.cursor`` (support removed in v9.0.0, ADR-010), ``.pi`` (support removed in
+v11.0.0, ADR-013) and ``.gemini`` (support removed in v11.0.0, ADR-014) are also asserted
+untracked by name, at the repository root and under ``implementation/``, so that a revert
+is loud. The by-name check uses ``git ls-files``: a tracked ``.cursor`` fails, while a
+``.cursor`` that only exists locally and untracked (a developer's own Cursor IDE folder)
+does not; the same holds for ``.pi`` and ``.gemini`` (Gemini CLI's own project folder).
 """
 from __future__ import annotations
 
@@ -27,7 +28,7 @@ from pathlib import Path
 from tests._helpers.repo import implementation_root, repo_root
 
 MANIFEST_NAME = ".generated-manifest.json"
-REMOVED_PLATFORM_DIRS = (".cursor", ".pi")
+REMOVED_PLATFORM_DIRS = (".cursor", ".pi", ".gemini")
 
 
 def owned_output_dirs(platforms_dir: Path) -> dict[str, str]:
@@ -104,9 +105,13 @@ class TestPlatformTreeOwnership(unittest.TestCase):
     def test_pi_is_not_tracked_at_either_level(self) -> None:
         self._assert_removed_platform(".pi", "Pi", "ADR-013")
 
+    def test_gemini_is_not_tracked_at_either_level(self) -> None:
+        self._assert_removed_platform(".gemini", "Gemini", "ADR-014")
+
 
 class TestOrphanGuardIsLoadBearing(unittest.TestCase):
-    """The guard fails on a scratch copy that regains a Cursor or Pi tree (ADR-010 Validation 4, ADR-013 S1)."""
+    """The guard fails on a scratch copy that regains a Cursor, Pi or Gemini CLI tree (ADR-010 Validation 4,
+    ADR-013 S1, ADR-014 S1)."""
 
     def _scratch(self, tmp: Path) -> tuple[Path, Path]:
         platforms = tmp / "platforms"
@@ -138,6 +143,14 @@ class TestOrphanGuardIsLoadBearing(unittest.TestCase):
             (base / ".pi" / MANIFEST_NAME).write_text(
                 json.dumps({"platform": "pi", "files": []}), encoding="utf-8")
             self.assertEqual(find_orphan_trees(base, platforms), [".pi"])
+
+    def test_regrown_gemini_tree_is_reported(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base, platforms = self._scratch(Path(tmp))
+            (base / ".gemini").mkdir()
+            (base / ".gemini" / MANIFEST_NAME).write_text(
+                json.dumps({"platform": "gemini", "files": []}), encoding="utf-8")
+            self.assertEqual(find_orphan_trees(base, platforms), [".gemini"])
 
     def test_tree_claimed_by_the_wrong_platform_is_reported(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

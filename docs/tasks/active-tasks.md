@@ -2,11 +2,6 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T776 | Gemini removal inventory (plan-146 C) | tech-lead | in_progress | P1 | — | 2026-11-07 |
-| T777 | ADR-014 drop Gemini platform support (plan-146 C) | solution-architect | pending | P1 | T776 | 2026-11-07 |
-| T778 | Gemini removal step S1, code (ADR-014) | devops-engineer | pending | P1 | T777, user acceptance of ADR-014 | 2026-11-07 |
-| T779 | Gemini removal step S2, docs (ADR-014) | technical-writer | pending | P1 | T778 | 2026-11-07 |
-| T780 | Reviews of the Gemini removal S1 and S2 | security-engineer | pending | P1 | T779 | 2026-11-07 |
 | T781 | Gemini removal step S3, root refresh (user approval) | orchestrator | pending | P1 | T780 | 2026-11-07 |
 | T782 | plan-146 checkpoint-042 and Outcome | orchestrator | pending | P1 | T781 | 2026-11-07 |
 

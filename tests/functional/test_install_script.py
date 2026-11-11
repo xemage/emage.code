@@ -354,72 +354,8 @@ class TestInstallScript(unittest.TestCase):
                 "generator-known server key must be refreshed to match the generated source on --update",
             )
 
-    # -- .gemini/settings.json / .opencode/opencode.json /
+    # -- .opencode/opencode.json /
     #    .cline/mcp.json merge-on-update (T377) --
-
-    def test_gemini_settings_json_merge_on_update(self):
-        implementation_mcp = repo_root() / "implementation" / ".gemini" / "settings.json"
-        source_data = json.loads(implementation_mcp.read_text(encoding="utf-8"))
-        source_context7 = source_data["mcpServers"]["context7"]
-
-        with tempfile.TemporaryDirectory() as tmp:
-            target = Path(tmp) / "project"
-            target.mkdir()
-
-            # (a) fresh install: byte-identical plain copy
-            proc = self._run_install(target, platform="gemini")
-            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
-            mcp_path = target / ".gemini" / "settings.json"
-            self.assertEqual(
-                mcp_path.read_text(encoding="utf-8"),
-                implementation_mcp.read_text(encoding="utf-8"),
-                "fresh (non --update) install must plain-copy .gemini/settings.json byte-for-byte",
-            )
-
-            # inject an unknown server key + corrupt a generator-known key
-            # (gemini's context7 entry uses "httpUrl", not "url" — corrupt the
-            # actual key present in the generated shape so the merge's
-            # per-key "source wins on scalar leaves" rule fully overwrites it,
-            # rather than leaving a stray "url" key the recursive merge would
-            # otherwise correctly treat as unrelated dest-only content)
-            data = json.loads(mcp_path.read_text(encoding="utf-8"))
-            data["mcpServers"]["my-custom-server"] = {"url": "https://example.invalid/mcp"}
-            data["mcpServers"]["context7"] = {"httpUrl": "https://stale.example.invalid/mcp"}
-            mcp_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
-
-            # (d) a stale non-MCP file elsewhere in the same tree
-            stale = target / ".gemini" / "stale-agent-that-should-be-deleted.md"
-            stale.write_text("remove me", encoding="utf-8")
-
-            proc2 = self._run_install(target, platform="gemini", update=True)
-            self.assertEqual(proc2.returncode, 0, proc2.stdout + proc2.stderr)
-
-            updated = json.loads(mcp_path.read_text(encoding="utf-8"))
-            # (b) unknown key survives
-            self.assertEqual(
-                updated["mcpServers"].get("my-custom-server"),
-                {"url": "https://example.invalid/mcp"},
-                "unknown pre-existing server key must survive --update merge",
-            )
-            # (c) generator-known key refreshed
-            self.assertEqual(
-                updated["mcpServers"]["context7"],
-                source_context7,
-                "generator-known server key must be refreshed to match the generated source on --update",
-            )
-            # (d) stale non-MCP file in the same tree still correctly deleted —
-            # proves the exclude is scoped to exactly settings.json, not the whole tree
-            self.assertFalse(
-                stale.exists(),
-                "--update must still stale-clean the rest of .gemini/ via rsync --delete; "
-                "only settings.json is exempted",
-            )
-            # gemini-specific: sibling non-MCP 'hooks' key must survive untouched
-            self.assertEqual(
-                updated.get("hooks"),
-                source_data.get("hooks"),
-                "gemini's non-MCP 'hooks' key must be unaffected by the mcpServers merge",
-            )
 
     def test_opencode_opencode_json_merge_on_update(self):
         implementation_mcp = repo_root() / "implementation" / ".opencode" / "opencode.json"
@@ -444,6 +380,9 @@ class TestInstallScript(unittest.TestCase):
             data = json.loads(mcp_path.read_text(encoding="utf-8"))
             data["mcp"]["my-custom-server"] = {"url": "https://example.invalid/mcp"}
             data["mcp"]["context7"] = {"url": "https://stale.example.invalid/mcp"}
+            # a user-owned non-MCP top-level key (ADR-014 D3): the merge must
+            # leave it untouched
+            data["theme"] = "user-owned-theme"
             mcp_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
 
             # (d) a stale non-MCP file elsewhere in the same tree
@@ -476,6 +415,11 @@ class TestInstallScript(unittest.TestCase):
             # opencode-specific: sibling non-MCP keys must survive untouched
             self.assertEqual(updated.get("$schema"), source_data.get("$schema"))
             self.assertEqual(updated.get("instructions"), source_data.get("instructions"))
+            self.assertEqual(
+                updated.get("theme"),
+                "user-owned-theme",
+                "a non-MCP sibling key must be unaffected by the mcp merge",
+            )
 
     def test_cline_mcp_json_merge_on_update(self):
         implementation_mcp = repo_root() / "implementation" / ".cline" / "mcp.json"
@@ -687,10 +631,6 @@ class TestInstallScript(unittest.TestCase):
                 "with no prior sidecar at all (bootstrap default), every dest-only key must "
                 "survive --update exactly as it did before this mechanism existed",
             )
-
-    def test_update_prunes_retired_generator_owned_key_via_sidecar_history_gemini(self):
-        """Sidecar-survival assertion for platform gemini (ADR-002 "Risks introduced")."""
-        self._assert_retired_key_pruned_and_sidecar_survives("gemini", ".gemini/settings.json", "mcpServers")
 
     def test_update_prunes_retired_generator_owned_key_via_sidecar_history_opencode(self):
         """Sidecar-survival assertion for platform opencode (ADR-002 "Risks introduced")."""
@@ -1365,7 +1305,7 @@ class TestInstallRefusesSymlinkedManagedPaths(unittest.TestCase):
     # --- fix round (security review LOW findings) -----------------------------
 
     def _sentinel_target(self, name: str) -> tuple[Path, Path]:
-        """An installed target whose AGENTS.md and a .gemini file differ from what the
+        """An installed target whose AGENTS.md and a .opencode file differ from what the
         installer would write: a partial write before the refusal rewrites them."""
         target = self.tmp / name / "target"
         outside = self.tmp / name / "outside"
@@ -1373,7 +1313,7 @@ class TestInstallRefusesSymlinkedManagedPaths(unittest.TestCase):
         outside.mkdir(parents=True)
         (outside / "canary.txt").write_text(self.CANARY)
         (target / "AGENTS.md").write_text("# sentinel: not the rendered file\n")
-        (target / ".gemini" / "instructions" / "coding-standards.md").write_text("sentinel\n")
+        (target / ".opencode" / "instructions" / "coding-standards.md").write_text("sentinel\n")
         return target, outside
 
     def _assert_refusal(self, target: Path, outside: Path, rel: str, flags, path=None,
@@ -1396,7 +1336,7 @@ class TestInstallRefusesSymlinkedManagedPaths(unittest.TestCase):
         harness = set(managed_paths(projections_only=True))
         for rel in ("docs/plans", "docs/tasks/_template.md", "docs/tasks/validate-tasks.py",
                     "implementation/__init__.py", "implementation/runtime/handoff",
-                    ".github", ".gemini", ".opencode", ".cline", ".clinerules",
+                    ".github", ".opencode", ".cline", ".clinerules",
                     ".vscode/mcp.json.provenance.json"):
             self.assertIn(rel, every)
         self.assertNotIn("docs", harness)
@@ -1446,7 +1386,7 @@ class TestInstallRefusesSymlinkedManagedPaths(unittest.TestCase):
     def test_link_pointing_inside_the_target_is_refused(self):
         target, outside = self._sentinel_target("inside")
         shutil.rmtree(target / ".claude")
-        (target / ".claude").symlink_to(target / ".gemini")
+        (target / ".claude").symlink_to(target / ".opencode")
         self._assert_refusal(target, outside, ".claude", ("--update",))
         target, outside = self._sentinel_target("inside-relative")
         shutil.rmtree(target / ".cline")

@@ -43,11 +43,9 @@ class TestInstallAgentsMapping(unittest.TestCase):
             content = self._run_install(Path(tmp), "all")
 
         self.assertIn("`.github/skills/`", content)
-        self.assertIn("`.gemini/skills/`", content)
         self.assertIn("`.opencode/skills/`", content)
         self.assertIn("`.claude/skills/`", content)
         self.assertIn("`.vscode/mcp.json`", content)
-        self.assertIn("`.gemini/settings.json`", content)
         self.assertIn("`.opencode/opencode.json`", content)
         self.assertIn("`.cline/skills/`", content)
         self.assertIn("`.clinerules/coding-standards.md`", content)
