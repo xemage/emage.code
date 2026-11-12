@@ -2,12 +2,13 @@
 
 **ID:** T786
 **Owner:** security-engineer
-**Status:** pending
+**Status:** done
 **Priority:** P1
 **Tier:** standard
 **Depends on:** T785
 **Affects:** —
 **Created:** 2026-11-11
+**Completed:** 2026-11-12
 **Based on:**
 - `docs/plans/plan-148-node-image-bump.md` (task T786)
 - T784's review
