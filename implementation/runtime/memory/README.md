@@ -53,7 +53,15 @@ python3 -m implementation.runtime.memory.build \
 ```
 
 `--project-id` is always explicit — never inferred from vault content
-(memory-scope-model-v1.md §4.1). `--shared-source-root` may be repeated zero
+(memory-scope-model-v1.md §4.1). It must be the id the server derives from
+the workspace's git remote `origin`: lower case, `<org>/<repo>` (for a nested
+group, the last two path parts). The build refuses any other spelling with a
+non-zero exit and writes nothing (T790, QA-T760-02): the query-time filter
+compares exactly, so an index built under `Acme/Widget` answered nothing. The
+`project_id` in a project-scope entry's frontmatter must be that same string;
+an entry whose `project_id` differs only by letter case is still indexed under
+its own spelling and is never returned, and the build names its path in a
+warning on stderr. `--shared-source-root` may be repeated zero
 or more times, once per foreign repo this build should also scan for
 `shared`-scope candidates (only that repo's `shared/` subtree is ever read —
 see `scanner.py`'s module docstring for the structural guarantee this gives).

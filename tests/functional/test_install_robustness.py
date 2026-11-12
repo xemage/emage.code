@@ -494,6 +494,42 @@ class TestHintsAndShellHygiene(_Scratch):
         rel = "implementation/runtime/memory/requirements-mcp-server.txt"
         self.assertIn(f"pip install -r {rel}\n", proc.stdout)
 
+    def test_the_notes_in_order_install_what_the_index_build_needs(self) -> None:
+        """T790 (QA-T760-01): the printed lines named only requirements-mcp-server.txt, and the build
+        then stopped with `ModuleNotFoundError: No module named 'yaml'`."""
+        target = self.tmp / "my proj's $(dir)"
+        proc = run_installer(INSTALLER, target, "--platform", "cline")
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        server_line = "pip install -r implementation/runtime/memory/requirements-mcp-server.txt\n"
+        build_reqs_line = ("  python3 -m venv .venv-mcp && source .venv-mcp/bin/activate && "
+                           "pip install -r implementation/runtime/memory/requirements.txt\n")
+        build_line = "  python3 -m implementation.runtime.memory.build "
+        self.assertEqual(proc.stdout.count(build_reqs_line), 1)
+        self.assertLess(proc.stdout.index(server_line), proc.stdout.index(build_reqs_line))
+        self.assertLess(proc.stdout.index(build_reqs_line), proc.stdout.index(build_line))
+        self.assertTrue((target / "implementation/runtime/memory/requirements.txt").is_file())
+        self.assertFalse((target / ".venv-mcp").exists(), "the installer must install nothing itself")
+
+    def test_a_target_without_the_memory_runtime_gets_no_build_install_line(self) -> None:
+        build_reqs = "pip install -r implementation/runtime/memory/requirements.txt"
+        notice = _bash_functions("print_memory_index_notice") + "\nprint_memory_index_notice\n"
+
+        def printed(target: Path) -> str:
+            return _bash_output(f"set -eu\nTARGET={shlex.quote(str(target))}\n{notice}")
+
+        without_runtime = self.tmp / "no runtime"
+        (without_runtime / "implementation/runtime/security").mkdir(parents=True)
+        self.assertEqual(printed(without_runtime), "")
+
+        without_file = self.tmp / "no file"
+        (without_file / "implementation/runtime/memory").mkdir(parents=True)
+        self.assertIn("python3 -m implementation.runtime.memory.build", printed(without_file))
+        self.assertNotIn(build_reqs, printed(without_file))
+
+        (without_file / "implementation/runtime/memory/requirements.txt").write_text("", encoding="utf-8")
+        self.assertIn(f"  python3 -m venv .venv-mcp && source .venv-mcp/bin/activate && {build_reqs}\n",
+                      printed(without_file))
+
     def test_only_the_shipped_runtime_directories_are_searched(self) -> None:
         target = self.installed("cline")
         stray = target / "implementation/runtime/other/requirements-mcp-server.txt"

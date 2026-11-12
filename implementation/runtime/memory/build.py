@@ -12,8 +12,12 @@ CLI usage:
         --output-dir implementation/runtime/memory/_index/em-age-emage.code
 
 `--project-id` is always explicit (memory-scope-model-v1.md §4.1: "never
-inferred from the content being indexed"). `--shared-source-root` may be
-repeated zero or more times.
+inferred from the content being indexed"). It must already be the id the
+server derives from the workspace's git remote: lower case, `<org>/<repo>`
+(T790, QA-T760-02). Any other spelling is refused, not rewritten: the
+query-time filter compares exactly, so an index built under `Acme/Widget`
+would answer nothing. `--shared-source-root` may be repeated zero or more
+times.
 """
 from __future__ import annotations
 
@@ -24,6 +28,7 @@ from pathlib import Path
 
 from implementation.runtime.memory import scanner
 from implementation.runtime.memory.chunker import chunk_body
+from implementation.runtime.memory.context_retriever import is_derived_project_id
 from implementation.runtime.memory.embed import PRIMARY_MODEL, LocalEmbedder, embed_chunks
 from implementation.runtime.memory.enrich import build_chunk_records
 from implementation.runtime.memory.index_writer import write_index
@@ -36,6 +41,27 @@ from implementation.runtime.memory.validate import (
 )
 
 
+PROJECT_ID_FORM = (
+    "the lower-case <org>/<repo> id that the server derives from the git remote 'origin' "
+    "(for example em-age/emage.code)"
+)
+
+
+def project_id_problem(project_id: str) -> str | None:
+    """None when `project_id` is in the derived form, else the refusal message (T790, QA-T760-02).
+    The value is refused, never lower-cased or trimmed here (security-guidelines § Input Validation)."""
+    if isinstance(project_id, str) and is_derived_project_id(project_id):
+        return None
+    return f"project id must be {PROJECT_ID_FORM}; got {str(project_id)[:80]!r}"
+
+
+def _project_id_arg(value: str) -> str:
+    problem = project_id_problem(value)
+    if problem:
+        raise argparse.ArgumentTypeError(problem)
+    return value
+
+
 @dataclass(frozen=True)
 class BuildConfig:
     project_id: str
@@ -45,12 +71,23 @@ class BuildConfig:
     shared_source_roots: tuple[scanner.ScanRoot, ...] = field(default_factory=tuple)
     embedding_model: str = PRIMARY_MODEL
 
+    def __post_init__(self) -> None:
+        # The same refusal for a caller that does not come through the CLI: no index is built under
+        # a project id the server can never derive.
+        problem = project_id_problem(self.project_id)
+        if problem:
+            raise ValueError(problem)
+
 
 @dataclass
 class BuildResult:
     chunks: list[ChunkRecord]
     rejections: list[RejectionRecord]
     manifest: dict
+    # Repo-relative paths of project-scope entries whose `project_id` differs from the build's own
+    # only by letter case (T790). They are indexed under their own spelling, as before, and the
+    # query-time filter never returns them; `main` names them on stderr.
+    case_mismatched_paths: list[str] = field(default_factory=list)
 
 
 def build_index(config: BuildConfig) -> BuildResult:
@@ -66,7 +103,20 @@ def build_index(config: BuildConfig) -> BuildResult:
 
     counts = _BuildCounts(len(entries), len(embedded), len(rejections))
     manifest = _build_manifest(config, embedder, counts)
-    return BuildResult(chunks=embedded, rejections=rejections, manifest=manifest)
+    mismatched = case_mismatched_paths(entries, config.project_id)
+    return BuildResult(chunks=embedded, rejections=rejections, manifest=manifest, case_mismatched_paths=mismatched)
+
+
+def case_mismatched_paths(entries: list[ParsedEntry], project_id: str) -> list[str]:
+    """Paths of the project-scope entries whose `project_id` equals `project_id` when both are
+    case-folded but is not the same string. Paths only, never entry content."""
+    return [
+        entry.location.relative_path
+        for entry in entries
+        if entry.frontmatter.scope == "project"
+        and entry.frontmatter.project_id != project_id
+        and (entry.frontmatter.project_id or "").casefold() == project_id.casefold()
+    ]
 
 
 @dataclass(frozen=True)
@@ -170,7 +220,8 @@ def _build_manifest(config: BuildConfig, embedder: LocalEmbedder, counts: _Build
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--project-id", required=True)
+    p.add_argument("--project-id", required=True, type=_project_id_arg,
+                   help=f"{PROJECT_ID_FORM}; any other spelling is refused")
     p.add_argument("--own-repo-root", required=True, type=Path)
     p.add_argument("--general-repo-root", required=True, type=Path)
     p.add_argument("--shared-source-root", action="append", default=[], type=Path)
@@ -206,9 +257,19 @@ def main(argv: list[str] | None = None) -> int:
     if args.check_against:
         return _run_check(config, args.check_against)
     result = build_index(config)
+    _warn_case_mismatches(result, config.project_id)
     write_index(config.output_dir, result.chunks, result.rejections, result.manifest)
     print(f"wrote {len(result.chunks)} chunks, {len(result.rejections)} rejections to {config.output_dir}")
     return 0
+
+
+def _warn_case_mismatches(result: BuildResult, project_id: str) -> None:
+    for rel_path in result.case_mismatched_paths:
+        print(
+            f"warning: {rel_path!r}: its project_id differs from --project-id {project_id!r} only by "
+            "letter case; retrieve will not return this entry",
+            file=sys.stderr,
+        )
 
 
 def _run_check(config: BuildConfig, existing_dir: Path) -> int:
@@ -222,6 +283,7 @@ def _run_check(config: BuildConfig, existing_dir: Path) -> int:
     from implementation.runtime.memory.index_writer import diff_index_dirs
 
     result = build_index(config)
+    _warn_case_mismatches(result, config.project_id)
     with tempfile.TemporaryDirectory() as tmp:
         fresh_dir = Path(tmp) / "rebuild"
         write_index(fresh_dir, result.chunks, result.rejections, result.manifest)
