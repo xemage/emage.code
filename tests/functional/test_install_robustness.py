@@ -503,11 +503,53 @@ class TestHintsAndShellHygiene(_Scratch):
         server_line = "pip install -r implementation/runtime/memory/requirements-mcp-server.txt\n"
         build_reqs_line = ("  python3 -m venv .venv-mcp && source .venv-mcp/bin/activate && "
                            "pip install -r implementation/runtime/memory/requirements.txt\n")
-        build_line = "  python3 -m implementation.runtime.memory.build "
+        build_line = "  source .venv-mcp/bin/activate && python3 -m implementation.runtime.memory.build "
         self.assertEqual(proc.stdout.count(build_reqs_line), 1)
         self.assertLess(proc.stdout.index(server_line), proc.stdout.index(build_reqs_line))
         self.assertLess(proc.stdout.index(build_reqs_line), proc.stdout.index(build_line))
         self.assertTrue((target / "implementation/runtime/memory/requirements.txt").is_file())
+        self.assertFalse((target / ".venv-mcp").exists(), "the installer must install nothing itself")
+
+    def _printed_build_command(self, stdout: str) -> str:
+        lines = stdout.splitlines()
+        start = next(i for i, line in enumerate(lines) if "implementation.runtime.memory.build" in line)
+        end = next(i for i in range(start, len(lines)) if not lines[i].endswith("\\"))
+        command = "\n".join(lines[start:end + 1])
+        return command.replace("<org>/<repo>", "acme/widget").replace("<org>-<repo>", "acme-widget")
+
+    def test_the_printed_build_line_runs_in_the_printed_venv_on_its_own(self) -> None:
+        """T795 (QA-T792-1): each printed line is its own shell; the build line ran on the system python3."""
+        target = self.tmp / "my proj's $(dir)"
+        proc = run_installer(INSTALLER, target, "--platform", "cline")
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        command = self._printed_build_command(proc.stdout)
+        self.assertTrue(command.startswith("  source .venv-mcp/bin/activate && python3 -m "), command)
+        fake_bin = target / ".venv-mcp" / "bin"
+        fake_bin.mkdir(parents=True)
+        (fake_bin / "activate").write_text(f"PATH={shlex.quote(str(fake_bin))}:\"$PATH\"\n", encoding="utf-8")
+        fake_python = fake_bin / "python3"
+        fake_python.write_text("#!/bin/sh\necho \"venv-python3 $*\"\n", encoding="utf-8")
+        fake_python.chmod(0o755)
+        run = subprocess.run(["bash", "-c", command], cwd=target, capture_output=True, text=True)
+        self.assertEqual(run.returncode, 0, run.stderr)
+        self.assertTrue(run.stdout.startswith("venv-python3 -m implementation.runtime.memory.build "), run.stdout)
+        self.assertIn("--project-id acme/widget", run.stdout)
+
+    def test_without_the_venv_the_printed_build_line_stops_before_python(self) -> None:
+        """Negative case for T795: no .venv-mcp means the line fails; it never falls back to the system python3."""
+        target = self.tmp / "no venv"
+        proc = run_installer(INSTALLER, target, "--platform", "cline")
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        fake_bin = self.tmp / "system-bin"
+        fake_bin.mkdir()
+        fake_python = fake_bin / "python3"
+        fake_python.write_text("#!/bin/sh\necho system-python3\n", encoding="utf-8")
+        fake_python.chmod(0o755)
+        env = {**os.environ, "PATH": f"{fake_bin}:{os.environ.get('PATH', '')}"}
+        command = self._printed_build_command(proc.stdout)
+        run = subprocess.run(["bash", "-c", command], cwd=target, capture_output=True, text=True, env=env)
+        self.assertNotEqual(run.returncode, 0)
+        self.assertNotIn("system-python3", run.stdout)
         self.assertFalse((target / ".venv-mcp").exists(), "the installer must install nothing itself")
 
     def test_a_target_without_the_memory_runtime_gets_no_build_install_line(self) -> None:
