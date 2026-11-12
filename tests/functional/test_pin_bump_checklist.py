@@ -94,7 +94,7 @@ class TestChecklist(unittest.TestCase):
                        "Bearer ctx7", "authorization: x", "sk-" + "A" * 12, "0123456789abcdef" * 3):
             with self.subTest(sample=sample):
                 self.assertTrue(secret_findings("text " + sample + " more"), sample)
-        self.assertEqual(secret_findings("sha256:06d7adf3... GHSA-6qxp-vccf-f47h `Bearer`-less prose"), [])
+        self.assertEqual(secret_findings("sha256:0a1b2c3d... GHSA-6qxp-vccf-f47h `Bearer`-less prose"), [])
 
     def test_the_acceptance_artifact_matches_the_gate_command_and_the_decision(self):
         artifact = ACCEPTANCE.read_text(encoding="utf-8")

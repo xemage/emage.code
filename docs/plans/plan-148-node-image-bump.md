@@ -61,3 +61,20 @@ These were read on 2026-11-11 through public endpoints. Each was read once and i
 - **Proof obligation 7, "the old digest nowhere".** It applies to the live files: `.gitlab-ci.yml`, `docs/wiki/mcp-pin-bump-checklist.md` and the tests. Immutable records keep the digest as history: `docs/artifacts/ca-check-t765-v1.md`, `ca-check-t767-v1.md`, `mcp-pin-audit-v10-v1.md` and this plan. `tests/functional/test_pin_bump_checklist.py:97` uses the digest only as a sample string for a secret scanner. T785 decides whether to change that line, and says why.
 - **The upper bound on the wait.** If no official image carries 24.22.3 by **2026-12-11**, or by the start of v11.0.0 preparation if that comes first, the orchestrator asks the user. The hard limit is the image-review test: it fails from **2027-03-07**.
 - **T785 stays `blocked`** (external, minor) until an official image carries 24.22.3. The orchestrator watches `docker-library/official-images`.
+
+## Outcome (2026-11-12)
+
+**T785 and T786 are done.** The CI default image is `node:24-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5` (Node 24.22.3, Alpine 3.24.4). MR !667.
+- **The wait ended 2026-11-11T23:42Z.** The orchestrator's registry watch saw `24-alpine` = `24.22.3-alpine` = `24.22.3-alpine3.24` = `116b800c…`. The earlier `24.22.3-alpine3.24` index `eb37f586…` (19:27Z) was built before every architecture and is superseded; it was never pinned.
+- **T785 (devops-engineer):** digest, image record (`.gitlab-ci.yml:13-21`), `ci_images_reviewed_on: 2026-11-11`, a `node --version` line in `verify-knowledge-drift`, and the old digest out of `docs/wiki/mcp-pin-bump-checklist.md` and the sample string at `tests/functional/test_pin_bump_checklist.py:97` (now a neutral `sha256:0a1b2c3d...`). No `apk add` pin changed.
+- **The orchestrator's checks:**
+  - an independent registry and config read (index re-hash, amd64 manifest `d8d97e47…`, `NODE_VERSION=24.22.3`, minirootfs 3.24.4);
+  - a fix of the checklist's line range (13-20 to 13-21);
+  - MR pipeline 3056919066 green on `50520592`: both CA-chain jobs PASS (0 of 19, control 1 of 1, `--ca-release` before and after `apk add`), `node --version` printed `v24.22.3`, runner CPU x86-64;
+  - the full suite in a clean worktree at `50520592`: 2707 tests OK, 24 skipped;
+  - the old-digest sweep (only the immutable records and this plan keep `06d7adf3`);
+  - `python:3.12-alpine` re-read at 2026-11-12T00:15Z, still `e064671c…`, which backs the record at `.gitlab-ci.yml:19` (T786 Recommendation 3).
+- **T786 (security-engineer): CONDITIONAL_PASS** (`docs/artifacts/security-review-t786-node-bump-v1.md`).
+  - SEC-T756-05 and SEC-T756-06 are fixed.
+  - Tracked-LOW for register v13: SEC-T784-01 (open, unchanged), SEC-T768-03 (open; its trigger did not fire), and the new SEC-T786-01 (`unit-tests` runs Alpine `nodejs` 24.22.1-r1 until Alpine ships 24.22.3; check at v11.0.0 preparation) and SEC-T786-02 (the pin checklist tells the reader to run the image; docs fix).
+  - The condition is met when register v13 carries these four ids.

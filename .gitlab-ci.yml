@@ -14,10 +14,11 @@
 # by the digest of its multi-arch index (tag kept for readers; the digest is what is pulled).
 # Digests read from the Docker Hub registry API, each image on its own date; each was re-fetched and its body hashes to the digest.
 # python:3.12-alpine: read 2026-11-06 (T765, SEC-T756-01: CVE-2026-115557, bumped from the 2026-10-22 digest) = Alpine 3.24.4, Python 3.12.16.
-# node:24-alpine: read 2026-10-22 = Alpine 3.24.3, Node 24.22.1. Not bumped on 2026-11-06, though a newer digest exists: a Node security release is announced for
-# 2026-11-11, no tag job uses Node, so the tag need not wait for it, and this image is bumped at the next review (SEC-T756-05). That day the pinned digest was re-fetched and re-hashed unchanged (T765), and the tag's state read (T755).
-# The date below is one date for both images: the day each was last looked at, which for node:24-alpine does not mean a newer digest was taken.
-# ci_images_reviewed_on: 2026-11-06   (tests/functional/test_ci_hash_pins.py fails when this is older than 120 days)
+# node:24-alpine: read 2026-11-11 (T785, SEC-T756-05/-06: the Node security release of 2026-11-10, bumped from the 2026-10-22 digest) = Alpine 3.24.4,
+# Node 24.22.3 (config NODE_VERSION), apk-tools 3.0.9, ca-certificates-bundle 20261020. The tags 24-alpine, 24.22.3-alpine and 24.22.3-alpine3.24 all
+# resolved to this digest that day; amd64 is in the index. python:3.12-alpine was re-read the same day: the tag still resolves to the pinned digest.
+# The date below is one date for both images: the day each was last looked at, which for an image does not mean a newer digest was taken.
+# ci_images_reviewed_on: 2026-11-11   (tests/functional/test_ci_hash_pins.py fails when this is older than 120 days)
 # Both bases are supported (T676 replaced the end-of-life node:20-alpine and alpine:3.20: the jobs
 # that held WIKI_TOKEN or ran the repository's Python scripts now share the one python image, which
 # is also the interpreter the tests run on). Every `apk add` package carries a fuzzy `~=MAJOR.MINOR`
@@ -39,7 +40,7 @@ stages:
   - release
 
 default:
-  image: node:24-alpine@sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53
+  image: node:24-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5
   interruptible: true
   tags:
     - docker
@@ -130,6 +131,7 @@ unit-tests:
 verify-knowledge-drift:
   stage: verify
   script:
+    - node --version  # the Node that ran, beside the image config's NODE_VERSION (T784 obligation 2)
     - node implementation/scripts/verify.mjs --root implementation
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
@@ -186,7 +188,8 @@ ca-chain-check-node:
   script:
     - sh scripts/check-ca-chains.sh --ca-release
     - sha256sum /tmp/ca-shipped/cert.pem /etc/ssl/cert.pem
-    # This image ships the bundle file only (no hashed /etc/ssl/certs entries on 2026-11-07, read from its layers).
+    # This image ships the bundle file only (no hashed /etc/ssl/certs entries, read from its layers on 2026-11-07 and for the
+    # 2026-11-11 digest; `apk add` of openssl and git does not pull in the ca-certificates package that would write them).
     - sh scripts/check-ca-chains.sh --cafile /tmp/ca-shipped/cert.pem tests/fixtures/ca-chains
     - sh scripts/check-ca-chains.sh --cafile /etc/ssl/cert.pem tests/fixtures/ca-chains
   rules:
