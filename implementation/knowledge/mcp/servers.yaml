@@ -181,9 +181,11 @@ servers:
     # general-purpose server every platform profile needs unconditionally -- disclosed and
     # reasoned in the T495 MR description, mirroring how `hindsight`'s memory-layer access
     # is scoped similarly narrow in intent even though it happens to be tagged `core` today.
-    # `--platform-root .claude` is a disclosed, Claude-Code-specific default today (per
-    # scoped-execution-primitive-v1.md §4's own honest per-platform scoping) -- other
-    # platforms' `.generated-manifest.json` resolution is not solved by this entry.
+    # T790 (QA-T760-03): `--platform-root {{platformDir}}` is written per platform as that platform's own
+    # output folder (`.claude`, `.cline`, `.opencode`), whose `.generated-manifest.json` names the platform
+    # the server resolves. It was `.claude` for every platform, so `retrieve` failed on a Cline or Opencode
+    # install without `.claude/`. sync.mjs replaces only a whole `{{platformDir}}` argument and refuses any
+    # other `{{...}}`.
     # T722 (TD-T671-K5): no `--index-dir`: the server derives the index directory of the workspace's own
     # project from its git remote, `implementation/runtime/memory/_index/<org>-<repo>` (the build.py
     # `--output-dir` convention); it was hard-coded as `em-age-emage.code` for every project.
@@ -191,7 +193,7 @@ servers:
     denyUnlessGranted: true
     transport: stdio
     command: python3
-    args: ["-m", "implementation.runtime.memory.context_retriever_mcp_server", "--workspace-root", ".", "--platform-root", ".claude"]
+    args: ["-m", "implementation.runtime.memory.context_retriever_mcp_server", "--workspace-root", ".", "--platform-root", "{{platformDir}}"]
 
   security-audit:
     # T497 -- fixed-command audit-command server for @security-engineer, per

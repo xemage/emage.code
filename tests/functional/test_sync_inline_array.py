@@ -85,7 +85,10 @@ class SplitInlineArrayTests(unittest.TestCase):
         self.assertTrue(stdio)
         for name, entry in stdio.items():
             self.assertEqual(generated[name]["command"], entry["command"], name)
-            self.assertEqual(generated[name]["args"], [str(a) for a in entry["args"]], name)
+            # T790 (QA-T760-03): after reading, the generator replaces a whole `{{platformDir}}`
+            # argument with the platform's folder; this run generates Cline, so `.cline`.
+            expected = [".cline" if a == "{{platformDir}}" else str(a) for a in entry["args"]]
+            self.assertEqual(generated[name]["args"], expected, name)
 
     def test_quoted_item_keeps_commas_semicolons_braces_and_brackets(self):
         value = "a,b;c{1,2}.*;[x]"

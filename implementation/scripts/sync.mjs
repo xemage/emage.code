@@ -179,6 +179,7 @@ async function readServersYaml() {
   const raw = await fs.readFile(file, 'utf8');
   const servers = parseServersYaml(raw);
   validateDenyTools(servers);
+  validateArgPlaceholders(servers);
   validateTemplatedSpecs(servers);
   return servers;
 }
@@ -219,6 +220,35 @@ function selectedFor(server, manifest) {
 // directory is written out instead of left to the default. The only accepted value is `workspace`; the other
 // formats ignore the key.
 const SERVER_CWD_VALUES = ['workspace'];
+
+// T790 (QA-T760-03): an `args` entry that is exactly `{{platformDir}}` is written as the output folder of
+// the platform the config is generated for (`outputDir` of its manifest: `.claude`, `.cline`, `.opencode`).
+// That folder holds the platform's own `.generated-manifest.json`, which the `context-retriever` server
+// reads through `--platform-root`; `.claude` was written for every platform, so `retrieve` failed on an
+// install without `.claude/`. Only a whole argument is a placeholder, and any other argument that carries
+// `{{` or `}}` stops the run: a misspelled name would otherwise reach a client as literal text. The folder
+// must be one plain dot-folder name, so the value can never be a path that leaves the workspace.
+const ARG_PLACEHOLDERS = new Set(['{{platformDir}}']);
+const PLATFORM_DIR_NAME = /^\.[a-z][a-z0-9-]*$/;
+
+function validateArgPlaceholders(servers) {
+  for (const [name, server] of Object.entries(servers)) {
+    for (const arg of Array.isArray(server.args) ? server.args : []) {
+      if (typeof arg !== 'string' || ARG_PLACEHOLDERS.has(arg)) continue;
+      if (arg.includes('{{') || arg.includes('}}')) {
+        throw new Error(`servers.yaml: ${name}.args has an unknown placeholder (known: ${[...ARG_PLACEHOLDERS].join(', ')}): ${arg.slice(0, 60)}`);
+      }
+    }
+  }
+}
+
+function resolveArgPlaceholders(server, manifest) {
+  if (!Array.isArray(server.args) || !server.args.some((arg) => ARG_PLACEHOLDERS.has(arg))) return server;
+  if (typeof manifest.outputDir !== 'string' || !PLATFORM_DIR_NAME.test(manifest.outputDir)) {
+    throw new Error(`{{platformDir}}: outputDir of ${manifest.platform} is not one plain dot-folder name: ${String(manifest.outputDir).slice(0, 60)}`);
+  }
+  return { ...server, args: server.args.map((arg) => (arg === '{{platformDir}}' ? manifest.outputDir : arg)) };
+}
 
 function validateDenyTools(servers) {
   for (const [name, server] of Object.entries(servers)) {
@@ -777,7 +807,9 @@ const MCP_EMITTERS = new Map([
 function emitMcp(servers, manifest) {
   const { format } = manifest.mcp;
   const filtered = Object.fromEntries(
-    Object.entries(servers).filter(([, s]) => selectedFor(s, manifest))
+    Object.entries(servers)
+      .filter(([, s]) => selectedFor(s, manifest))
+      .map(([name, s]) => [name, resolveArgPlaceholders(s, manifest)])
   );
   const emitter = MCP_EMITTERS.get(format);
   if (!emitter) throw new Error(`Unknown MCP format: ${format}`);
@@ -1249,6 +1281,16 @@ function validateExtraPlatforms(servers, manifests) {
   }
 }
 
+// T790: run before the first write, like validateExtraPlatforms: a `{{platformDir}}` argument that a
+// platform's outputDir cannot fill stops the run before any platform is written.
+function validatePlatformDirs(servers, manifests) {
+  for (const manifest of manifests) {
+    for (const server of Object.values(servers)) {
+      if (selectedFor(server, manifest)) resolveArgPlaceholders(server, manifest);
+    }
+  }
+}
+
 function reportResult(total) {
   if (!CHECK_ONLY) {
     console.log(`\nDone - ${total} files written.`);
@@ -1272,6 +1314,7 @@ async function main() {
 
   const manifests = await loadManifests(platformFiles);
   validateExtraPlatforms(servers, manifests);
+  validatePlatformDirs(servers, manifests);
 
   for (const manifest of manifests) {
     if (ONLY_PLATFORM && manifest.platform !== ONLY_PLATFORM) continue;

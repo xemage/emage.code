@@ -255,5 +255,119 @@ class DefaultIndexDirTests(unittest.TestCase):
         self.assertIsNone(args.index_dir)
 
 
+# T790 (QA-T760-03): generated config -> (wrapper key, the platform folder the entry must pass, its platform).
+PLATFORM_ROOT_PER_CONFIG = {
+    ".mcp.json": ("mcpServers", ".claude", "claude-code"),
+    ".cline/mcp.json": ("mcpServers", ".cline", "cline"),
+    ".opencode/opencode.json": ("mcp", ".opencode", "opencode"),
+}
+
+
+def _generated_args(rel: str, wrapper: str) -> list[str]:
+    import json
+    entry = json.loads((implementation_root() / rel).read_text(encoding="utf-8"))[wrapper]["context-retriever"]
+    return entry["args"] if "args" in entry else entry["command"][1:]
+
+
+class PlatformRootPerPlatformTests(unittest.TestCase):
+    """T790 (QA-T760-03): every generated entry passed `--platform-root .claude`, so on an install without
+    `.claude/` the server started and `retrieve` failed at the first query."""
+
+    def test_each_generated_entry_passes_its_own_platform_folder(self):
+        from implementation.runtime.memory.context_retriever import resolve_platform
+        for rel, (wrapper, folder, platform) in PLATFORM_ROOT_PER_CONFIG.items():
+            with self.subTest(config=rel):
+                args = _generated_args(rel, wrapper)
+                self.assertEqual(args.count("--platform-root"), 1)
+                self.assertEqual(args[args.index("--platform-root") + 1], folder)
+                self.assertNotIn("{{", " ".join(args))
+                self.assertEqual(resolve_platform(implementation_root() / folder), platform)
+
+    def test_the_source_names_no_platform_folder(self):
+        import yaml
+        servers = yaml.safe_load((implementation_root() / "knowledge" / "mcp" / "servers.yaml").read_text(encoding="utf-8"))
+        args = servers["servers"]["context-retriever"]["args"]
+        self.assertEqual(args[args.index("--platform-root") + 1], "{{platformDir}}")
+
+    def test_a_platform_folder_without_a_manifest_still_fails_closed(self):
+        import implementation.runtime.memory.context_retriever as cr
+        with tempfile.TemporaryDirectory() as tmp:
+            workspace = Path(tmp)
+            _init_git_repo(workspace, "git@gitlab.com:fixture-org/repo.git")
+            _write_generated_manifest(workspace / ".claude", "claude-code")
+            (workspace / ".cline").mkdir()
+            with self.assertRaises(cr.PlatformResolutionError):
+                cr.resolve_platform(workspace / ".cline")
+            with self.assertRaises(cr.PlatformResolutionError):
+                cr.derive_requesting_context(workspace, workspace / ".cline")
+            with self.assertRaises(cr.PlatformResolutionError):
+                cr.derive_requesting_context(workspace, workspace / ".opencode")
+
+
+class PlatformDirPlaceholderGeneratorTests(unittest.TestCase):
+    """The generator mechanism behind it: a whole `{{platformDir}}` argument becomes the output folder of
+    the platform being generated; anything else that looks like a placeholder stops the run."""
+
+    SERVERS = "\n".join([
+        "servers:",
+        "  probe:", "    tags: [core]", "    transport: stdio", "    command: python3",
+        '    args: ["-m", "probe", "--platform-root", "ARG", "100.{64,65}.*"]', "",
+    ])
+    OUTPUTS = {".mcp.json": ("mcpServers", ".claude"), ".cline/mcp.json": ("mcpServers", ".cline"),
+               ".opencode/opencode.json": ("mcp", ".opencode"), ".vscode/mcp.json": ("servers", ".github")}
+
+    def _run_sync(self, arg: str, edit_manifest=None):
+        import json
+        import shutil
+        import subprocess
+        if shutil.which("node") is None:
+            self.skipTest("node is not installed")
+        impl = implementation_root()
+        root = Path(tempfile.mkdtemp(prefix="t790-sync-"))
+        self.addCleanup(shutil.rmtree, root, ignore_errors=True)
+        shutil.copytree(impl / "platforms", root / "platforms")
+        shutil.copytree(impl / "_extras", root / "_extras")
+        for kind in ("mcp", "agents", "commands", "instructions", "skills"):
+            (root / "knowledge" / kind).mkdir(parents=True)
+        (root / "knowledge" / "mcp" / "servers.yaml").write_text(self.SERVERS.replace("ARG", arg), encoding="utf-8")
+        if edit_manifest:
+            path = root / "platforms" / "cline.json"
+            manifest = json.loads(path.read_text(encoding="utf-8"))
+            edit_manifest(manifest)
+            path.write_text(json.dumps(manifest), encoding="utf-8")
+        proc = subprocess.run(["node", str(impl / "scripts" / "sync.mjs"), "--root", str(root)],
+                              capture_output=True, text=True, check=False)
+        return root, proc
+
+    def _assert_refused(self, root: Path, proc, needle: str) -> None:
+        self.assertNotEqual(proc.returncode, 0, proc.stdout)
+        self.assertIn(needle, proc.stderr)
+        written = [p.name for p in root.iterdir() if p.name not in {"platforms", "_extras", "knowledge"}]
+        self.assertEqual(written, [], "nothing may be written when the run is refused")
+
+    def test_the_placeholder_becomes_the_output_folder_of_each_platform(self):
+        import json
+        root, proc = self._run_sync("{{platformDir}}")
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        for rel, (wrapper, folder) in self.OUTPUTS.items():
+            with self.subTest(config=rel):
+                entry = json.loads((root / rel).read_text(encoding="utf-8"))[wrapper]["probe"]
+                args = entry["args"] if "args" in entry else entry["command"][1:]
+                self.assertEqual(args, ["-m", "probe", "--platform-root", folder, "100.{64,65}.*"])
+                self.assertTrue((root / folder / ".generated-manifest.json").is_file())
+
+    def test_an_unknown_or_embedded_placeholder_is_refused_before_any_write(self):
+        for arg in ("{{platformdir}}", "{{platformDir}}/x", "x{{platformDir}}", "{{outputDir}}", "{{platformDir}"):
+            with self.subTest(arg=arg):
+                root, proc = self._run_sync(arg)
+                self._assert_refused(root, proc, "probe.args has an unknown placeholder")
+
+    def test_an_output_folder_that_is_not_one_plain_dot_folder_is_refused(self):
+        for bad in ("cline", ".cline/sub", ".Cline"):
+            with self.subTest(output_dir=bad):
+                root, proc = self._run_sync("{{platformDir}}", lambda m, bad=bad: m.update(outputDir=bad))
+                self._assert_refused(root, proc, "is not one plain dot-folder name")
+
+
 if __name__ == "__main__":
     unittest.main()

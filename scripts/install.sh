@@ -1713,6 +1713,37 @@ print_playwright_notice() {
   done < <(selected_platforms)
 }
 
+# context-retriever additionally needs a per-project search index built once
+# (implementation/runtime/memory/build.py) before it can answer real queries
+# -- this cannot be shipped pre-built (it indexes the target project's own
+# content) or built automatically here (it needs implementation/runtime/
+# memory/requirements.txt installed first, and can take a while on a large
+# repo).
+# T790 (QA-T760-01): the dependency notice names only requirements-mcp-server.txt
+# (the `mcp` SDK). The build imports more (implementation/runtime/memory/
+# requirements.txt), and with the printed lines alone it stopped with
+# "ModuleNotFoundError: No module named 'yaml'". The install line for that
+# file is printed here, before the build command, into the same .venv-mcp.
+# Printed only when the target holds the file; nothing is installed here.
+print_memory_index_notice() {
+  local memory_runtime_rel="implementation/runtime/memory"
+  [[ -d "$TARGET/$memory_runtime_rel" ]] || return 0
+  echo ""
+  echo "Note: @context-retriever also needs its search index built once, after the"
+  printf 'dependency install above, before it can answer real queries. Run from %q:\n' "$TARGET"
+  if [[ -f "$TARGET/$memory_runtime_rel/requirements.txt" ]]; then
+    printf '  python3 -m venv .venv-mcp && source .venv-mcp/bin/activate && pip install -r %q\n' "$memory_runtime_rel/requirements.txt"
+  fi
+  echo "  python3 -m implementation.runtime.memory.build \\"
+  echo "      --project-id <org>/<repo> --own-repo-root . --general-repo-root . \\"
+  echo "      --output-dir implementation/runtime/memory/_index/<org>-<repo>"
+  echo "  (see implementation/runtime/memory/README.md for the full option reference,"
+  echo "  including --shared-source-root for cross-repo shared-scope indexing. The server"
+  echo "  reads the index from that directory, with <org>-<repo> in lower case and taken"
+  echo "  from this workspace's git remote 'origin'; without that remote it does not start."
+  echo "  --project-id must be that same lower-case <org>/<repo>; the build refuses any other)"
+}
+
 if [[ "$PROJECTIONS_ONLY" -eq 1 ]]; then
   # The MCP-dependency and search-index notices below describe the runtime
   # install, which this mode deliberately did not perform.
@@ -1766,21 +1797,4 @@ if [[ "${#mcp_server_reqs[@]}" -gt 0 ]]; then
   done
 fi
 
-# context-retriever additionally needs a per-project search index built once
-# (implementation/runtime/memory/build.py) before it can answer real queries
-# -- this cannot be shipped pre-built (it indexes the target project's own
-# content) or built automatically here (it needs implementation/runtime/
-# memory/requirements.txt installed first, per the notice above, and can take
-# a while on a large repo).
-if [[ -d "$TARGET/implementation/runtime/memory" ]]; then
-  echo ""
-  echo "Note: @context-retriever also needs its search index built once, after the"
-  printf 'dependency install above, before it can answer real queries. Run from %q:\n' "$TARGET"
-  echo "  python3 -m implementation.runtime.memory.build \\"
-  echo "      --project-id <org>/<repo> --own-repo-root . --general-repo-root . \\"
-  echo "      --output-dir implementation/runtime/memory/_index/<org>-<repo>"
-  echo "  (see implementation/runtime/memory/README.md for the full option reference,"
-  echo "  including --shared-source-root for cross-repo shared-scope indexing. The server"
-  echo "  reads the index from that directory, with <org>-<repo> in lower case and taken"
-  echo "  from this workspace's git remote 'origin'; without that remote it does not start)"
-fi
+print_memory_index_notice

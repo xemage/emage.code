@@ -83,7 +83,7 @@
         "--workspace-root",
         ".",
         "--platform-root",
-        ".claude"
+        ".cline"
       ]
     },
     "security-audit": {

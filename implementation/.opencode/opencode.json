@@ -96,7 +96,7 @@
         "--workspace-root",
         ".",
         "--platform-root",
-        ".claude"
+        ".opencode"
       ]
     },
     "security-audit": {

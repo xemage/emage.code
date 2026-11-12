@@ -131,6 +131,19 @@ INDEX_PARENT = Path("implementation", "runtime", "memory", "_index")
 _INDEX_SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,199}$")
 
 
+def is_derived_project_id(project_id: str) -> bool:
+    """True only when `project_id` is exactly the id this module derives from a git remote: lower case,
+    `<org>/<repo>`, and a plain index directory name once `/` becomes `-`. T790 (QA-T760-02): `build.py`
+    refuses any other `--project-id`, because `scope_filter.is_visible` compares exactly and a project-scope
+    chunk indexed under another spelling is never returned. Pure function, no I/O; it rewrites nothing."""
+    if not _INDEX_SLUG_RE.fullmatch(project_id.replace("/", "-")):
+        return False
+    try:
+        return normalize_remote_to_project_id(f"https://host.invalid/{project_id}") == project_id
+    except RemoteResolutionError:
+        return False
+
+
 def default_index_dir(workspace_root: Path) -> Path:
     """The index directory of the workspace's own project, derived from its git remote (the same trusted
     input as `derive_project_id`). Used when the MCP server is started without `--index-dir`. A slug that
