@@ -1,4 +1,5 @@
-"""T693/T721/T736/T801 -- text pins for the release self-review ruling, the batch D rulings, ADR-012 and ADR-015.
+"""T693/T721/T736/T801/T805 -- text pins for the release self-review ruling, the batch D rulings, ADR-012, ADR-015
+and ADR-016.
 
 T693 implemented `docs/artifacts/ruling-p112-p41-o1-release-self-review-v1.md` section 5.1, hunks E1 to E3.
 T720 rewrote those three lines under `docs/artifacts/rulings-batch-d-v1.md` (R1 to R3); T721 re-pins them and
@@ -22,7 +23,13 @@ adds the pins SEC-T693-08 asked for (`docs/artifacts/security-review-t693-releas
 - T801 (plan-156): ADR-015's C1 (two rules added to the B1 paragraph, after the owner-change sentence: a plan
   whose fix is "none possible in the harness", and a passed deadline) and C2 (one insertion in the `mitigation`
   slot and one in the `deadline` slot of the Conditions line), each clause by name. `PinsMatchRulings` shows
-  that C1 and C2 are ADR-015's text and that B3 is ADR-012's line once the two C2 insertions are taken out.
+  that C1 and C2 are ADR-015's text and that B3 is ADR-012's line once the two C2 insertions are taken out;
+- T805 (plan-157): ADR-016's D1 (the Security Engineer's confirming review as a fourth validity condition, "before
+  the user is asked", the citing duty after the semicolon, and the consequence sentence), D2 (an earlier review at
+  a later release), W1 (what the outcome record says), W2 ("An acceptance covers") and W3 (the plan's deadline in
+  the Release gate inputs), each clause by name, with the user-only sentence of ADR-011 (SEC-T802-02).
+  `PinsMatchRulings` compares D1, D2 and W1 to W3 with ADR-016, C1's second sentence (up to "tracked-debt
+  register") and third sentence with ADR-015, and keeps ADR-015's own C1 text pinned as `C1_TEXT_ADR_015`.
 
 Each pin is checked in the knowledge source and in every generated projection. The projection list is
 checked against the `fileMap` of the platform manifests that `sync.mjs` reads. `MutationProof` restores the
@@ -53,6 +60,8 @@ RW_PATH = knowledge_root() / "skills" / "release-workflow" / "SKILL.md"
 RULINGS_PATH = docs_root() / "artifacts" / "rulings-batch-d-v1.md"
 ADR_012_PATH = docs_root() / "decisions" / "ADR-012-medium-acceptance-record.md"
 ADR_015_PATH = docs_root() / "decisions" / "ADR-015-medium-plan-without-fix-and-passed-deadline.md"
+ADR_011_PATH = docs_root() / "decisions" / "ADR-011-user-accepted-medium-at-release.md"
+ADR_016_PATH = docs_root() / "decisions" / "ADR-016-security-engineer-confirmation-as-validity-condition.md"
 PLAN_133_PATH = docs_root() / "plans" / "plan-133-batch-h-release-gate-text.md"
 PLATFORMS = implementation_root() / "platforms"
 
@@ -197,8 +206,9 @@ C1_CLOSER = "names who could close the finding outside the harness"
 C1_CLOSER_USER = "(it may be the user)"  # O7
 C1_PLAIN = "states plainly that no harness fix exists"
 C1_REVIEW_DATE = "sets a review date"
-C1_CONFIRMED = "the Security Engineer's review of the finding confirms that no harness fix exists"  # O4
-C1_CITED = "the question to the user cites it"  # O4
+# ADR-015's wording of the confirmation (O4); ADR-016 row D1 replaced it in the live text.
+C1_CONFIRMED_ADR_015 = "the Security Engineer's review of the finding confirms that no harness fix exists"
+C1_CITED_ADR_015 = "the question to the user cites it"
 C1_IS_DEADLINE = "The review date is then the plan's deadline"  # O1
 C1_NO_LIMIT = "with no limit other than being still ahead when the release ships"  # O2
 C1_OUTCOME = "on it the plan's owner records the outcome in the tracked-debt register"  # O3
@@ -209,12 +219,63 @@ C1_STATEMENT = (  # O5
     "the verdict's Conditions line says that the old deadline passed and names its date and the release the old "
     "acceptance was given for"
 )
-C1_RULE_1 = (
-    C1_NO_FIX + " " + C1_CLOSER + " " + C1_CLOSER_USER + ", " + C1_PLAIN + ", and " + C1_REVIEW_DATE + "; "
-    + C1_CONFIRMED + ", and " + C1_CITED + ". " + C1_IS_DEADLINE + ", " + C1_NO_LIMIT + ", and " + C1_OUTCOME + "."
-)
+C1_PLAN_DOES = C1_NO_FIX + " " + C1_CLOSER + " " + C1_CLOSER_USER + ", " + C1_PLAIN + ", and " + C1_REVIEW_DATE
+C1_SENTENCE_1_ADR_015 = C1_PLAN_DOES + "; " + C1_CONFIRMED_ADR_015 + ", and " + C1_CITED_ADR_015 + "."
+C1_SENTENCE_2_ADR_015 = C1_IS_DEADLINE + ", " + C1_NO_LIMIT + ", and " + C1_OUTCOME + "."
 C1_RULE_2 = C1_PASSED + ", " + C1_WHEREVER + ", " + C1_CURE + ", and " + C1_STATEMENT + "."
+# ADR-015 row C1 as that record gives it. The live text differs in its first sentence (D1, D2) and by W1.
+C1_TEXT_ADR_015 = C1_SENTENCE_1_ADR_015 + " " + C1_SENTENCE_2_ADR_015 + " " + C1_RULE_2
+# --- ADR-016 D1, D2 and W1 to W3 (T805) ----------------------------------------------------------------------
+D1_ONLY_WHEN = "and only when the Security Engineer's review of the finding confirms"
+D1_BEFORE_ASKED = "before the user is asked"  # O-B
+C1_CONFIRMED = D1_ONLY_WHEN + ", " + D1_BEFORE_ASKED + ", that no harness fix exists"
+C1_CITED = "the question to the user cites that review"
+D1_CITING_DUTY = " that no harness fix exists; " + C1_CITED + ". "  # O-A: after the semicolon, outside "only when"
+D1_FOUR = "any one of these four"
+D1_NOT_VALID = "is not a valid plan"
+D1_VOID = "the acceptance does not hold"
+D1_CONSEQUENCE = "A plan that lacks " + D1_FOUR + " " + D1_NOT_VALID + ", and " + D1_VOID + "."
+D1_TEXT = C1_PLAN_DOES + ", " + C1_CONFIRMED + "; " + C1_CITED + ". " + D1_CONSEQUENCE
+D2_LATER = "At a later release that ships the finding"  # O-C
+D2_DATED = "the Security Engineer's dated statement"
+D2_FOR_RELEASE = ", for that release, that it still holds."
+D2_TEXT = D2_LATER + ", an earlier review confirms only with " + D2_DATED + D2_FOR_RELEASE
+W1_PAREN = (  # SEC-T802-01
+    "(whether a harness fix now exists and whether the outside closer is still right; a fix that now exists is a "
+    "changed fix)"
+)
+W1_TEXT = "and " + C1_OUTCOME + " " + W1_PAREN + "."
+C1_SENTENCE_2 = C1_SENTENCE_2_ADR_015[:-1] + " " + W1_PAREN + "."
+C1_RULE_1 = D1_TEXT + " " + D2_TEXT + " " + C1_SENTENCE_2
 C1_TEXT = C1_RULE_1 + " " + C1_RULE_2
+W2_TEXT = "An acceptance covers only the release it was given for:"  # SEC-T802-02
+W2_TEXT_ADR_011 = "It covers only the release it was given for:"
+W2_SENTENCE = (
+    W2_TEXT + " at the next release that ships the finding, the finding blocks again until it is fixed or the user "
+    "accepts it again for that release."
+)
+USER_ONLY = "Only the user can accept it; no agent grants, extends or infers an acceptance."  # ADR-011
+W3_DEADLINE = "and its plan's deadline"  # SEC-T802-04
+W3_TEXT = "with the release each acceptance was given for " + W3_DEADLINE + " (\u00a7 Verdict Rules:"
+W3_HEADING = "### Release Gate"
+W3_LINE = (
+    "- Every security finding graded medium that an earlier release shipped under the user's acceptance and that is "
+    "not yet fixed, " + W3_TEXT + " each blocks this release until it is fixed or the user accepts it for this "
+    "release)"
+)
+ADR_016_CLAUSES = {
+    "and only when": D1_ONLY_WHEN, "before the user is asked": D1_BEFORE_ASKED,
+    "citing duty after the semicolon": D1_CITING_DUTY, "consequence sentence": D1_CONSEQUENCE,
+    "any one of these four": D1_FOUR, "not a valid plan": D1_NOT_VALID, "the acceptance does not hold": D1_VOID,
+    "D1 whole text": D1_TEXT, "D2 whole text": D2_TEXT, "D2 later release": D2_LATER,
+    "D2 dated statement": D2_DATED, "D2 for that release": D2_FOR_RELEASE,
+    "D2 directly after D1": D1_TEXT + " " + D2_TEXT + " " + C1_IS_DEADLINE,
+    "W1 parenthesis": W1_PAREN, "W1 whole text": W1_TEXT, "W2 an acceptance covers": W2_TEXT,
+    "W2 sentence directly after C1": C1_TEXT + " " + W2_SENTENCE,
+    "user-only acceptance": USER_ONLY + " " + B1_RECORD,
+}
+# The wording ADR-016 replaced; it must not return to the paragraph.
+ADR_016_OLD = (C1_CONFIRMED_ADR_015, C1_CITED_ADR_015, W2_TEXT_ADR_011, C1_OUTCOME + ".")
 C1_CLAUSES = {
     "fix none possible, only when": C1_NO_FIX, "outside closer": C1_CLOSER, "closer may be the user": C1_CLOSER_USER,
     "plain statement": C1_PLAIN, "review date": C1_REVIEW_DATE, "security review confirms": C1_CONFIRMED,
@@ -414,14 +475,30 @@ def _r10_errors(lines: list[str]) -> list[str]:
 
 
 def _b1_errors(lines: list[str]) -> list[str]:
-    """ADR-012 B1 and ADR-015 C1, clause by clause, in the one paragraph of § Verdict Rules that opens with the rule."""
+    """ADR-012 B1, ADR-015 C1 and ADR-016 D1, D2, W1, W2, clause by clause, in the one paragraph of § Verdict Rules
+    that opens with the rule."""
     if VG_RULES_HEADING not in lines:
         return ["§ Verdict Rules is missing"]
     paragraphs = [ln for ln in _section(lines, VG_RULES_HEADING) if ln.startswith(B1_OPENING)]
     if len(paragraphs) != 1:
         return ["B1 paragraph must open with the rule, once, in § Verdict Rules"]
     errors = [f"B1 clause missing: {name}" for name, clause in B1_CLAUSES.items() if clause not in paragraphs[0]]
-    return errors + [f"C1 clause missing: {name}" for name, clause in C1_CLAUSES.items() if clause not in paragraphs[0]]
+    errors += [f"C1 clause missing: {name}" for name, clause in C1_CLAUSES.items() if clause not in paragraphs[0]]
+    errors += [f"ADR-016 clause missing: {name}" for name, clause in ADR_016_CLAUSES.items()
+               if clause not in paragraphs[0]]
+    return errors + _absent_errors(paragraphs, *ADR_016_OLD)
+
+
+def _w3_errors(lines: list[str]) -> list[str]:
+    """ADR-016 W3: the accepted-MEDIUM input line of the Release gate, verbatim, once, with the plan's deadline."""
+    if lines.count(W3_HEADING) != 1:
+        return ["the Release Gate input list is missing"]
+    inputs = _section(lines, W3_HEADING)
+    line = next((ln for ln in inputs if ln.startswith("- Every security finding graded medium")), "")
+    errors = [] if W3_DEADLINE in line else ["W3 clause missing: and its plan's deadline"]
+    if lines.count(W3_LINE) != 1 or W3_LINE not in inputs:
+        errors.append("W3 line must occur exactly once, verbatim, in the Release Gate inputs")
+    return errors
 
 
 def _b3_errors(lines: list[str]) -> list[str]:
@@ -562,6 +639,9 @@ class ValidationGatesPins(_PinMixin, unittest.TestCase):
     def test_adr_012_b1_acceptance_record(self):
         self.assert_pins(_files(VG_PATH, VG_MIRRORS), _b1_errors)
 
+    def test_adr_016_w3_release_gate_input(self):
+        self.assert_pins(_files(VG_PATH, VG_MIRRORS), _w3_errors)
+
 
 class ReleaseWorkflowPins(_PinMixin, unittest.TestCase):
     def test_sec_t735_04_hotfix_eligibility(self):
@@ -595,9 +675,34 @@ class PinsMatchRulings(unittest.TestCase):
     def test_c1_and_c2_are_the_text_of_adr_015(self):
         adr = ADR_015_PATH.read_text(encoding="utf-8")
         self.assertNotEqual(B3_LINE_ADR_012, B3_LINE, "B3_LINE must carry both C2 insertions")
-        for name, text in (("C1", C1_TEXT), ("C2 mitigation", C2_MITIGATION), ("C2 deadline", C2_DEADLINE)):
+        for name, text in (("C1", C1_TEXT_ADR_015), ("C2 mitigation", C2_MITIGATION), ("C2 deadline", C2_DEADLINE)):
             with self.subTest(row=name):
                 self.assertEqual(adr.count('"' + text + '"'), 1, f"{name}: pin differs from ADR-015 § Files and lines")
+
+    def test_live_c1_is_adr_015_but_for_the_rows_of_adr_016(self):
+        """C1's second sentence up to "tracked-debt register" and its third sentence are still ADR-015's."""
+        self.assertTrue(C1_TEXT_ADR_015.endswith(" " + C1_SENTENCE_2_ADR_015 + " " + C1_RULE_2))
+        self.assertTrue(C1_TEXT.endswith(" " + C1_SENTENCE_2 + " " + C1_RULE_2))
+        self.assertEqual(C1_SENTENCE_2.replace(" " + W1_PAREN, ""), C1_SENTENCE_2_ADR_015)
+        self.assertTrue(C1_SENTENCE_2.endswith(" " + W1_TEXT), "W1 replaces the end of C1's second sentence")
+        restored = C1_TEXT.replace(D1_TEXT + " " + D2_TEXT, C1_SENTENCE_1_ADR_015).replace(" " + W1_PAREN, "")
+        self.assertEqual(restored, C1_TEXT_ADR_015, "the live C1 differs from ADR-015 outside rows D1, D2 and W1")
+
+    def test_d1_d2_and_w1_to_w3_are_the_text_of_adr_016(self):
+        adr = ADR_016_PATH.read_text(encoding="utf-8")
+        for name, text in (("D1", D1_TEXT), ("D2", D2_TEXT), ("W1", W1_TEXT), ("W2", W2_TEXT), ("W3", W3_TEXT)):
+            with self.subTest(row=name):
+                self.assertEqual(adr.count('"' + text + '"'), 1, f"{name}: pin differs from ADR-016 § Files and lines")
+        for name, text in (("D1", C1_SENTENCE_1_ADR_015), ("W2", W2_TEXT_ADR_011)):
+            with self.subTest(replaced=name):
+                self.assertIn('"' + text + '"', adr, f"{name}: ADR-016 must quote the text it replaces")
+
+    def test_w2_and_the_user_only_sentence_are_the_text_of_adr_011(self):
+        adr = ADR_011_PATH.read_text(encoding="utf-8")
+        self.assertEqual(W2_TEXT.replace("An acceptance covers", "It covers"), W2_TEXT_ADR_011)
+        for name, text in (("W2 sentence", W2_SENTENCE.replace(W2_TEXT, W2_TEXT_ADR_011)), ("user only", USER_ONLY)):
+            with self.subTest(row=name):
+                self.assertIn(text, adr, f"{name}: pin differs from ADR-011")
 
 
 def _manifest_skill_paths(skill: str) -> set[str]:
@@ -698,10 +803,50 @@ MUTATIONS = {
                                   "C1 clause missing: closer may be the user"),
     "C1 plain statement dropped": (VG_PATH, ", " + C1_PLAIN, "", _b1_errors, "C1 clause missing: plain statement"),
     "C1 review date dropped": (VG_PATH, ", and " + C1_REVIEW_DATE, "", _b1_errors, "C1 clause missing: review date"),
-    "C1 confirmation dropped": (VG_PATH, "; " + C1_CONFIRMED + ", and " + C1_CITED, "", _b1_errors,
+    "C1 confirmation dropped": (VG_PATH, ", " + C1_CONFIRMED + "; " + C1_CITED, "", _b1_errors,
                                 "C1 clause missing: security review confirms"),
-    "C1 citation dropped": (VG_PATH, ", and " + C1_CITED, "", _b1_errors,
+    "C1 citation dropped": (VG_PATH, "; " + C1_CITED, "", _b1_errors,
                             "C1 clause missing: question cites the review"),
+    "D1 restored to ADR-015": (VG_PATH, D1_TEXT, C1_SENTENCE_1_ADR_015, _b1_errors, "old text came back"),
+    "D1 confirmation back outside 'only when'": (VG_PATH, ", and only when the Security Engineer's review",
+                                                 "; the Security Engineer's review", _b1_errors,
+                                                 "ADR-016 clause missing: and only when"),
+    "D1 'before the user is asked' dropped": (VG_PATH, ", " + D1_BEFORE_ASKED + ",", "", _b1_errors,
+                                              "ADR-016 clause missing: before the user is asked"),
+    "D1 citing made part of the condition": (VG_PATH, "; " + C1_CITED, ", and " + C1_CITED, _b1_errors,
+                                             "ADR-016 clause missing: citing duty after the semicolon"),
+    "D1 citation points nowhere": (VG_PATH, C1_CITED, C1_CITED_ADR_015, _b1_errors, "old text came back"),
+    "D1 consequence dropped": (VG_PATH, " " + D1_CONSEQUENCE, "", _b1_errors,
+                               "ADR-016 clause missing: consequence sentence"),
+    "D1 four to three": (VG_PATH, "these four", "these three", _b1_errors,
+                         "ADR-016 clause missing: any one of these four"),
+    "D1 invalid plan weakened": (VG_PATH, D1_NOT_VALID, "is an incomplete plan", _b1_errors,
+                                 "ADR-016 clause missing: not a valid plan"),
+    "D1 acceptance still holds": (VG_PATH, ", and " + D1_VOID, "", _b1_errors,
+                                  "ADR-016 clause missing: the acceptance does not hold"),
+    "D2 removed": (VG_PATH, " " + D2_TEXT, "", _b1_errors, "ADR-016 clause missing: D2 whole text"),
+    "D2 later release dropped": (VG_PATH, D2_LATER + ", an", "An", _b1_errors,
+                                 "ADR-016 clause missing: D2 later release"),
+    "D2 undated statement": (VG_PATH, D2_DATED, "the Security Engineer's statement", _b1_errors,
+                             "ADR-016 clause missing: D2 dated statement"),
+    "D2 'for that release' dropped": (VG_PATH, D2_FOR_RELEASE, " that it still holds.", _b1_errors,
+                                      "ADR-016 clause missing: D2 for that release"),
+    "D2 moved before the consequence": (VG_PATH, D1_CONSEQUENCE + " " + D2_TEXT, D2_TEXT + " " + D1_CONSEQUENCE,
+                                        _b1_errors, "ADR-016 clause missing: D2 directly after D1"),
+    "W1 parenthesis dropped": (VG_PATH, " " + W1_PAREN, "", _b1_errors, "ADR-016 clause missing: W1 parenthesis"),
+    "W1 changed fix dropped": (VG_PATH, "; a fix that now exists is a changed fix)", ")", _b1_errors,
+                               "ADR-016 clause missing: W1 parenthesis"),
+    "W2 back to 'It covers'": (VG_PATH, W2_TEXT, W2_TEXT_ADR_011, _b1_errors,
+                               "ADR-016 clause missing: W2 an acceptance covers"),
+    "W2 sentence cut short": (VG_PATH, ": at the next release that ships the finding, the finding blocks again until "
+                              "it is fixed or the user accepts it again for that release", "", _b1_errors,
+                              "ADR-016 clause missing: W2 sentence directly after C1"),
+    "user-only sentence dropped": (VG_PATH, " " + USER_ONLY, "", _b1_errors,
+                                   "ADR-016 clause missing: user-only acceptance"),
+    "user-only sentence widened": (VG_PATH, "no agent grants, extends or infers", "no agent extends or infers",
+                                   _b1_errors, "ADR-016 clause missing: user-only acceptance"),
+    "W3 deadline dropped": (VG_PATH, " " + W3_DEADLINE, "", _w3_errors, "W3 clause missing: and its plan's deadline"),
+    "W3 line reworded": (VG_PATH, W3_DEADLINE, "and the plan's deadline", _w3_errors, "exactly once, verbatim"),
     "C1 deadline identity dropped": (VG_PATH, C1_IS_DEADLINE, "The review date is separate from the plan's deadline",
                                      _b1_errors, "C1 clause missing: review date is the deadline"),
     "C1 limit added": (VG_PATH, C1_NO_LIMIT, "no later than the next planned release", _b1_errors,

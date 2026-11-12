@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-11-12T20:00:58+01:00",
+  "generatedAt": "2026-11-12T22:21:57+01:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -1708,7 +1708,7 @@
       "category": "skill",
       "name": "validation-gates",
       "path": "skills/validation-gates/SKILL.md",
-      "checksum": "484df0eb5776c4f4bebd2281dcca8200fd385203cc4090e064c60db0c96aecf3",
+      "checksum": "5befd49633e55317ab87d0a06299322ee3b00eb67e23b89e2873f91021e21d64",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
