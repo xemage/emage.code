@@ -79,7 +79,16 @@
     "Declared 2026-11-11 by T779 (ADR-014 step S2: Gemini CLI removed from the live docs and knowledge sources, per the user's decisions \"Drop Gemini support\" and \"Drop Gemini instead of fixing (Recommended)\"): 20 new paths = the consolidate-memory, discover-skills and skillify commands on 3 platforms (9; .cline maps no command), the memory-management and skillify skills on 4 platforms (8) and the context-retriever agent on 3 platforms (3; .cline maps no agent); AGENTS.md was already declared by T778 and stays declared (21 in total); root not refreshed (S3, T781, needs the user's approval).",
     "Emptied 2026-11-11 by T781 (ADR-014 step S3, the user's approval of 2026-11-11: \"Yes, refresh now (Recommended)\"): the root self-install was refreshed with `scripts/install.sh --target <worktree> --platform all --projections-only` from develop 2592ee43; the 21 paths declared by T778 and T779 now match a fresh install. As in T774, rsync's size-and-time check skipped the three equal-length context-retriever agent projections on the first run; their sources were touched and the refresh re-run.",
     "Declared 2026-11-12 by T790 (plan-151, QA-T760-03: each generated `context-retriever` entry passes its own platform folder as `--platform-root`, where every platform passed `.claude`): 2 new paths = the Cline and Opencode MCP configs, whose entry now passes `.cline` and `.opencode`; `.mcp.json` (Claude Code) is byte-identical and `.vscode/mcp.json` does not carry the server; root not refreshed (a separate step that needs the user's approval at that moment, plan-151 item 4).",
-    "Emptied 2026-11-12 by T793 (plan-151 item 4, the user's approval of 2026-11-12: \"refresh\"): the root self-install was refreshed with `scripts/install.sh --target <worktree> --platform all --projections-only` from develop 4aaf8d33; the 2 paths declared by T790 now match a fresh install, and no other root file changed."
+    "Emptied 2026-11-12 by T793 (plan-151 item 4, the user's approval of 2026-11-12: \"refresh\"): the root self-install was refreshed with `scripts/install.sh --target <worktree> --platform all --projections-only` from develop 4aaf8d33; the 2 paths declared by T790 now match a fresh install, and no other root file changed.",
+    "Declared 2026-11-12 by T801 (plan-156, ADR-015 rows C1 and C2: the two rules added to the accepted-MEDIUM paragraph of `validation-gates` § Verdict Rules and the two insertions in the Conditions line of the `release-manager` verdict block): 7 paths = the validation-gates skill on 4 platforms and the release-manager agent on 3 (.cline maps no agent); root not refreshed (a separate step that needs the user's approval at that moment, plan-156 § Goal)."
   ],
-  "drift": []
+  "drift": [
+    ".claude/agents/release-manager.md",
+    ".claude/skills/validation-gates/SKILL.md",
+    ".cline/skills/validation-gates/SKILL.md",
+    ".github/agents/release-manager.agent.md",
+    ".github/skills/validation-gates/SKILL.md",
+    ".opencode/agents/release-manager.md",
+    ".opencode/skills/validation-gates/SKILL.md"
+  ]
 }
