@@ -5,6 +5,7 @@
 - **Status**: Accepted. The user decided on 2026-11-04 (AskUserQuestion, option label verbatim): "Add it as ADR-012 (Recommended)". The question put this wording to the user: "The verdict also records the release version the user was asked about and the remediation plan as shown to the user. Moving the deadline later or changing the fix needs the user's new acceptance." It also said that the verdict's Conditions template gets slots for date, grade, release, plan owner and fix.
   - The first review found that the first draft stated two more rules as the user's without having asked (SEC-T735-01), and that a deadline which simply passes was not covered (SEC-T735-02). The user then decided, the same day and before this ADR merged (AskUserQuestion, option labels verbatim): on a change of the plan's owner, "Record it, no new question (Recommended)", whose description also said that moving a deadline earlier or finishing sooner needs no new acceptance; on the sentence "A deadline that passes before the release ships counts as moved later", "Add the sentence (Recommended)".
   - Accepted ADRs are immutable; a change needs a superseding ADR.
+  - **Superseded in part by `docs/decisions/ADR-015-medium-plan-without-fix-and-passed-deadline.md`** (rows B1 and B3, as far as ADR-015 says). The rest stands.
 - **Date**: 2026-11-04
 - **Decider(s)**: the user (2026-11-04). The orchestrator drafted it.
 - **Tasks**: T734 (this record); T735 (applies it); T736 (text pins).
