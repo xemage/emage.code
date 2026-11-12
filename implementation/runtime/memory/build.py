@@ -88,6 +88,7 @@ class BuildResult:
     # only by letter case (T790). They are indexed under their own spelling, as before, and the
     # query-time filter never returns them; `main` names them on stderr.
     case_mismatched_paths: list[str] = field(default_factory=list)
+    foreign_project_paths: list[str] = field(default_factory=list)
 
 
 def build_index(config: BuildConfig) -> BuildResult:
@@ -104,7 +105,9 @@ def build_index(config: BuildConfig) -> BuildResult:
     counts = _BuildCounts(len(entries), len(embedded), len(rejections))
     manifest = _build_manifest(config, embedder, counts)
     mismatched = case_mismatched_paths(entries, config.project_id)
-    return BuildResult(chunks=embedded, rejections=rejections, manifest=manifest, case_mismatched_paths=mismatched)
+    foreign = foreign_project_paths(entries, config.project_id)
+    return BuildResult(chunks=embedded, rejections=rejections, manifest=manifest,
+                       case_mismatched_paths=mismatched, foreign_project_paths=foreign)
 
 
 def case_mismatched_paths(entries: list[ParsedEntry], project_id: str) -> list[str]:
@@ -116,6 +119,19 @@ def case_mismatched_paths(entries: list[ParsedEntry], project_id: str) -> list[s
         if entry.frontmatter.scope == "project"
         and entry.frontmatter.project_id != project_id
         and (entry.frontmatter.project_id or "").casefold() == project_id.casefold()
+    ]
+
+
+def foreign_project_paths(entries: list[ParsedEntry], project_id: str) -> list[str]:
+    """T795 (SEC-T791-02): paths of the project-scope entries whose `project_id` is not `project_id` in any
+    way other than letter case (a typo, `org/repo.git`, the top group of a nested path). They stay indexed
+    and `scope_filter.is_visible` never returns them; this only lets the build name them. Project-scope
+    entries come only from the own repo (`collect_entries`). Paths only, never entry content."""
+    return [
+        entry.location.relative_path
+        for entry in entries
+        if entry.frontmatter.scope == "project"
+        and (entry.frontmatter.project_id or "").casefold() != project_id.casefold()
     ]
 
 
@@ -257,17 +273,23 @@ def main(argv: list[str] | None = None) -> int:
     if args.check_against:
         return _run_check(config, args.check_against)
     result = build_index(config)
-    _warn_case_mismatches(result, config.project_id)
+    _warn_project_id_mismatches(result, config.project_id)
     write_index(config.output_dir, result.chunks, result.rejections, result.manifest)
     print(f"wrote {len(result.chunks)} chunks, {len(result.rejections)} rejections to {config.output_dir}")
     return 0
 
 
-def _warn_case_mismatches(result: BuildResult, project_id: str) -> None:
+def _warn_project_id_mismatches(result: BuildResult, project_id: str) -> None:
     for rel_path in result.case_mismatched_paths:
         print(
             f"warning: {rel_path!r}: its project_id differs from --project-id {project_id!r} only by "
             "letter case; retrieve will not return this entry",
+            file=sys.stderr,
+        )
+    for rel_path in result.foreign_project_paths:
+        print(
+            f"warning: {rel_path!r}: its project_id is not --project-id {project_id!r}; "
+            "retrieve will not return this entry",
             file=sys.stderr,
         )
 
@@ -283,7 +305,7 @@ def _run_check(config: BuildConfig, existing_dir: Path) -> int:
     from implementation.runtime.memory.index_writer import diff_index_dirs
 
     result = build_index(config)
-    _warn_case_mismatches(result, config.project_id)
+    _warn_project_id_mismatches(result, config.project_id)
     with tempfile.TemporaryDirectory() as tmp:
         fresh_dir = Path(tmp) / "rebuild"
         write_index(fresh_dir, result.chunks, result.rejections, result.manifest)

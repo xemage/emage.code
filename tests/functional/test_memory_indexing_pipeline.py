@@ -371,10 +371,79 @@ class ProjectIdFormTests(unittest.TestCase):
         stderr = io.StringIO()
         result = build.BuildResult(chunks=[], rejections=[], manifest={}, case_mismatched_paths=[rel_path])
         with contextlib.redirect_stderr(stderr):
-            build._warn_case_mismatches(result, config.project_id)
+            build._warn_project_id_mismatches(result, config.project_id)
         self.assertIn(repr(rel_path), stderr.getvalue())
         self.assertIn("only by letter case", stderr.getvalue())
         self.assertNotIn("BODY-MARKER-T790", stderr.getvalue())
+        self.assertNotIn("is not --project-id", stderr.getvalue())
+
+    def _collect(self, root: Path, files: dict[str, str]):
+        from implementation.runtime.memory import build, scanner
+        for name, text in files.items():
+            path = root / scanner.VAULT_SUBDIR / "project" / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text, encoding="utf-8")
+        config = build.BuildConfig(project_id="fixture-org/repo-p2", own_repo_root=root, general_repo_root=root,
+                                   output_dir=root / "out")
+        own = scanner.ScanRoot(root, config.project_id)
+        entries, rejections = build.collect_entries(own, scanner.ScanRoot(root, "general-harness-source"), config)
+        self.assertEqual(rejections, [])
+        return config, entries
+
+    def _warnings(self, result, project_id: str) -> str:
+        import contextlib
+        import io
+        from implementation.runtime.memory import build
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            build._warn_project_id_mismatches(result, project_id)
+        return stderr.getvalue()
+
+    def test_an_entry_naming_another_project_is_named_by_path_and_stays_invisible(self):
+        """T795 (SEC-T791-02): any other difference than letter case was indexed, never returned, unnamed."""
+        from implementation.runtime.memory import build
+        from implementation.runtime.memory.enrich import build_chunk_records
+        from implementation.runtime.memory.scope_filter import RequestingContext, is_visible
+        foreign_ids = {"typo.md": "fixture-org/repo-p3", "suffix.md": "fixture-org/repo-p2.git",
+                       "nested.md": "fixture-org/sub/repo-p2", "mixed-typo.md": "Fixture-Org/Repo-P3"}
+        files = {name: _MIXED_CASE_ENTRY.replace("Fixture-Org/Repo-P2", pid) for name, pid in foreign_ids.items()}
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config, entries = self._collect(root, files)
+            expected = sorted(e.location.relative_path for e in entries)
+        self.assertEqual(len(entries), len(foreign_ids), "every entry stays indexed; nothing is dropped or rewritten")
+        self.assertEqual(sorted(build.foreign_project_paths(entries, config.project_id)), expected)
+        self.assertEqual(build.case_mismatched_paths(entries, config.project_id), [])
+        context = RequestingContext(project_id=config.project_id, platform="claude-code")
+        for entry in entries:
+            chunk = build_chunk_records(entry, build.chunk_body(entry.body))[0]
+            self.assertFalse(is_visible({"scope": chunk.scope, "project_id": chunk.project_id}, context))
+
+        result = build.BuildResult(chunks=[], rejections=[], manifest={}, foreign_project_paths=expected)
+        warnings = self._warnings(result, config.project_id)
+        for rel_path in expected:
+            self.assertIn(f"warning: {rel_path!r}: its project_id is not --project-id 'fixture-org/repo-p2'; "
+                          "retrieve will not return this entry\n", warnings)
+        self.assertNotIn("BODY-MARKER-T790", warnings)
+        for pid in foreign_ids.values():
+            self.assertNotIn(pid, warnings, "the warning names the path, never the entry's own fields")
+        self.assertNotIn("letter case", warnings)
+
+    def test_a_matching_entry_gets_no_warning_and_a_case_only_one_keeps_its_wording(self):
+        """Negative cases for T795: an exact match is silent; a case-only difference is not double-reported."""
+        from implementation.runtime.memory import build
+        matching = _MIXED_CASE_ENTRY.replace("Fixture-Org/Repo-P2", "fixture-org/repo-p2")
+        with tempfile.TemporaryDirectory() as tmp:
+            config, entries = self._collect(Path(tmp), {"match.md": matching, "mixed.md": _MIXED_CASE_ENTRY})
+        case_only = build.case_mismatched_paths(entries, config.project_id)
+        self.assertEqual([Path(p).name for p in case_only], ["mixed.md"])
+        self.assertEqual(build.foreign_project_paths(entries, config.project_id), [])
+        result = build.BuildResult(chunks=[], rejections=[], manifest={}, case_mismatched_paths=case_only,
+                                   foreign_project_paths=[])
+        warnings = self._warnings(result, config.project_id)
+        self.assertEqual(warnings.count("warning:"), 1)
+        self.assertIn("only by letter case; retrieve will not return this entry", warnings)
+        self.assertNotIn("match.md", warnings)
 
 
 def _model_cache_dir() -> Path:

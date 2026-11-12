@@ -1734,7 +1734,9 @@ print_memory_index_notice() {
   if [[ -f "$TARGET/$memory_runtime_rel/requirements.txt" ]]; then
     printf '  python3 -m venv .venv-mcp && source .venv-mcp/bin/activate && pip install -r %q\n' "$memory_runtime_rel/requirements.txt"
   fi
-  echo "  python3 -m implementation.runtime.memory.build \\"
+  # T795 (QA-T792-1): each printed line is its own shell, so the build line activates the same .venv-mcp
+  # the install lines above create; without it the build would run on the system python3.
+  echo "  source .venv-mcp/bin/activate && python3 -m implementation.runtime.memory.build \\"
   echo "      --project-id <org>/<repo> --own-repo-root . --general-repo-root . \\"
   echo "      --output-dir implementation/runtime/memory/_index/<org>-<repo>"
   echo "  (see implementation/runtime/memory/README.md for the full option reference,"
