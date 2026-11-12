@@ -11,6 +11,7 @@
     > O1: the review date is the plan's deadline. O2: no time limit beyond being still ahead at shipping. O3: on the review date the owner records the outcome in the register. O4: the Security Engineer's review confirms no harness fix exists. O5: the verdict's Conditions line names the old deadline and its release. O6: applies to any passed deadline. O7: the outside closer may be you.
   - The other options were "Accept the two rules only" and "I want to read it first".
   - Accepted ADRs are immutable; a change needs a superseding ADR.
+  - **Superseded in part by `docs/decisions/ADR-016-security-engineer-confirmation-as-validity-condition.md`** (Rule 1's opening sentence and its consequence sentence, O4 in § Decision and in § Points that were open, and the first sentence of row C1, as far as ADR-016 says). The rest stands.
   - Drafted as Proposed in T800. Until it was accepted, no ruling, verdict or knowledge edit could cite it as authority (ADR-008 P5). Only the user accepts it. The acceptance is recorded in this header through a normal merge request (`git-workflow.md`).
   - The user's words are the quoted questions, answers and option descriptions, here and in § The user's answers. All other wording of this record is the drafter's.
 - **Date**: 2026-11-12
