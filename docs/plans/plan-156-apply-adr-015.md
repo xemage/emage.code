@@ -2,7 +2,7 @@
 
 **Created:** 2026-11-12
 **Based on:** `docs/decisions/ADR-015-medium-plan-without-fix-and-passed-deadline.md` (Accepted; § Files and lines, rows C1 to C4, and the checks listed under them); `docs/plans/plan-155-v11-release-decisions.md` (§ Outcome, "Not done here"); `docs/decisions/ADR-012-medium-acceptance-record.md` (rows B1 and B3). The user's word of 2026-11-12, verbatim: "Continue", in answer to the orchestrator's "Say "continue" and I'll start with item 1", where item 1 read: "Apply ADR-015 to the two knowledge sources and their test pins, with a security review. This will declare root drift, and the root refresh needs your approval."
-**Scopes:** `T801`, `T802`.
+**Scopes:** `T801`, `T802`, `T803`.
 
 ## Goal
 
@@ -31,3 +31,9 @@ ADR-015 is accepted but not applied: the skill and the release-manager verdict b
   - SEC-T802-03 (the Security Engineer's confirmation stands outside "only when"; no text says an acceptance fails without it): LOW, tracked. Its proposed wording makes O4 a fourth validity condition, which changes the rule and needs the user's word.
 - **Root drift declared**, 7 paths in `tests/_baselines/root-install-drift.json`: the installed copies of the skill (`.claude`, `.cline`, `.github`, `.opencode`) and of the release-manager agent (`.claude`, `.github`, `.opencode`). The refresh needs the user's approval.
 - **Disclosures:** T801 used about 111k tokens against 120k. T802 used about 126k against 60k and was interrupted once by the usage limit; the user said "Resume" and the same agent continued. T802 did not open ADR-011, plan-155, plan-156 or the mirrors, and read only one wiki line; its artifact lists this.
+
+## Addendum (2026-11-12): root refresh, T803
+
+After the merge of T801 and T802 (MR !676, develop `babddbd0`) the orchestrator asked: "Do you approve refreshing the root install now for those 7 paths?" The user's answer, verbatim: "Root refresh approved". **T803** (orchestrator) refreshes the root self-install for the 7 declared paths and empties the drift baseline. Brief: `docs/tasks/task-T803.md`.
+
+- **T803** done: `scripts/install.sh --target <worktree> --platform all --projections-only` from develop `babddbd0` changed exactly the 7 declared files, one line each; `--print-drift` prints `[]`; the baseline is emptied with a note.
