@@ -624,3 +624,4 @@ Append-only log. Entries move here after the orchestrator marks a task `done`.
 | T818 | QA gate for v11.0.0 (plan-161): CONDITIONAL_PASS; suite 2744 OK; QA-T818-01 to -04 | qa-engineer | 2026-11-13 | `docs/artifacts/qa-gate-release-v11-v1.md` |
 | T819 | Tech Lead review of v11.0.0 by area (plan-161): CONDITIONAL_PASS; TL-T819-01 to -05 | tech-lead | 2026-11-13 | `docs/artifacts/tech-lead-release-v11-v1.md` |
 | T820 | Release-level security re-check for v11.0.0 (plan-161): CONDITIONAL_PASS; accepted-MEDIUM records complete; SEC-T820-01 LOW | security-engineer | 2026-11-13 | `docs/artifacts/security-review-t820-release-v11-v1.md` |
+| T826 | Release document fixes from the gates (plan-161): K-36, K-32, Highlights, M-1/M-2 cleanup order (QA-T818-02), M-5, M-6 lock check, K-39, K-16 O-1, file count; SEC-T820-01 fixed (T820 addendum) | release-manager | 2026-11-13 | commit `17158753` |

@@ -2,12 +2,13 @@
 
 **ID:** T826
 **Owner:** release-manager
-**Status:** in_progress
+**Status:** done
 **Priority:** P0
 **Tier:** standard
 **Depends on:** —
 **Affects:** —
 **Created:** 2026-11-13
+**Completed:** 2026-11-13
 **Based on:**
 - `docs/plans/plan-161-release-v11.md` (§ Addendum 4)
 - `docs/artifacts/qa-gate-release-v11-v1.md`; `docs/artifacts/tech-lead-release-v11-v1.md`; `docs/artifacts/security-review-t820-release-v11-v1.md`
