@@ -2,7 +2,7 @@
 
 **Created:** 2026-11-12
 **Based on:** `docs/decisions/ADR-015-medium-plan-without-fix-and-passed-deadline.md` (Accepted; § Decision Rule 1, O4; § Files and lines rows C1 and C2); `docs/artifacts/security-review-t802-adr-015-apply-v1.md` (findings SEC-T802-01 to SEC-T802-04); `docs/plans/plan-156-apply-adr-015.md` (§ Outcome).
-**Scopes:** `T804`, `T805`, `T806`.
+**Scopes:** `T804`, `T805`, `T806`, `T807`.
 
 ## User decision (2026-11-12, verbatim)
 
@@ -63,3 +63,9 @@ SEC-T802-01, -02 and -04 are LOW wording gaps in the same paragraph and the same
 - T806 did not open the mirrors, the registry, the drift baseline, ADR-011, ADR-012 or this plan; those points rest on the orchestrator's gate results and are listed in the review.
 - The pin for the superseded ADR-015 sentence in ADR-016 checks presence, not a count of one, because ADR-016 quotes it twice (T806: sound).
 - At `97e1c0b4` alone the pin test fails, because the mirrors are regenerated in the next commit; the merge is squashed.
+
+## Addendum (2026-11-13): root refresh, T807
+
+After the merge of T804 to T806 (MR !678, develop `b8dba5dc`) the orchestrator asked: "Do you approve the root refresh for those four files?" The user's answer, verbatim: "Approving root refresh". **T807** (orchestrator) refreshes the root self-install for the 4 declared paths and empties the drift baseline. Brief: `docs/tasks/task-T807.md`.
+
+- **T807** done: `scripts/install.sh --target <worktree> --platform all --projections-only` from develop `b8dba5dc` changed exactly the 4 declared files, two lines each (ADR-016 rows D1, D2, W1, W2 on one line; W3 on the other); `--print-drift` prints `[]`; the baseline is emptied with a note.

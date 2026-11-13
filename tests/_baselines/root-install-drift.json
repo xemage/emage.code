@@ -82,12 +82,8 @@
     "Emptied 2026-11-12 by T793 (plan-151 item 4, the user's approval of 2026-11-12: \"refresh\"): the root self-install was refreshed with `scripts/install.sh --target <worktree> --platform all --projections-only` from develop 4aaf8d33; the 2 paths declared by T790 now match a fresh install, and no other root file changed.",
     "Declared 2026-11-12 by T801 (plan-156, ADR-015 rows C1 and C2: the two rules added to the accepted-MEDIUM paragraph of `validation-gates` § Verdict Rules and the two insertions in the Conditions line of the `release-manager` verdict block): 7 paths = the validation-gates skill on 4 platforms and the release-manager agent on 3 (.cline maps no agent); root not refreshed (a separate step that needs the user's approval at that moment, plan-156 § Goal).",
     "Emptied 2026-11-12 by T803 (plan-156 addendum, the user's approval of 2026-11-12: \"Root refresh approved\"): the root self-install was refreshed with `scripts/install.sh --target <worktree> --platform all --projections-only` from develop babddbd0; the 7 paths declared by T801 now match a fresh install, and no other root file changed.",
-    "Declared 2026-11-12 by T805 (plan-157, ADR-016 rows D1 and D2 and the wording rows W1 to W3: the Security Engineer's confirming review as a fourth validity condition of a \"none possible in the harness\" plan, the outcome record, \"An acceptance covers\", and the plan's deadline in the Release gate inputs, all in the `validation-gates` skill): 4 paths = the validation-gates skill on 4 platforms; no release-manager projection changed (ADR-016 row D3); root not refreshed (a separate step that needs the user's approval at that moment)."
+    "Declared 2026-11-12 by T805 (plan-157, ADR-016 rows D1 and D2 and the wording rows W1 to W3: the Security Engineer's confirming review as a fourth validity condition of a \"none possible in the harness\" plan, the outcome record, \"An acceptance covers\", and the plan's deadline in the Release gate inputs, all in the `validation-gates` skill): 4 paths = the validation-gates skill on 4 platforms; no release-manager projection changed (ADR-016 row D3); root not refreshed (a separate step that needs the user's approval at that moment).",
+    "Emptied 2026-11-13 by T807 (plan-157 addendum, the user's approval of 2026-11-13: \"Approving root refresh\"): the root self-install was refreshed with `scripts/install.sh --target <worktree> --platform all --projections-only` from develop b8dba5dc; the 4 paths declared by T805 now match a fresh install, and no other root file changed."
   ],
-  "drift": [
-    ".claude/skills/validation-gates/SKILL.md",
-    ".cline/skills/validation-gates/SKILL.md",
-    ".github/skills/validation-gates/SKILL.md",
-    ".opencode/skills/validation-gates/SKILL.md"
-  ]
+  "drift": []
 }
