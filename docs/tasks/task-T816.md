@@ -2,10 +2,10 @@
 
 **ID:** T816
 **Owner:** release-manager
-**Status:** pending
+**Status:** in_progress
 **Priority:** P0
 **Tier:** standard
-**Depends on:** T815
+**Depends on:** —
 **Affects:** —
 **Created:** 2026-11-13
 **Based on:**

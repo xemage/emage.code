@@ -618,3 +618,4 @@ Append-only log. Entries move here after the orchestrator marks a task `done`.
 | T823 | SEC-T784-01: fixed Node versions in PREREQUISITES (plan-161); release-document part due in T816 | technical-writer | 2026-11-13 | `implementation/PREREQUISITES.md` (`ca1cdfa8`) |
 | T824 | SEC-T814-01: opentelemetry-api 1.45.2 in both runtime locks (plan-161); fixed | devops-engineer | 2026-11-13 | commit `6f45ef45` |
 | T825 | Security grade of SEC-T814-01 (LOW, fixed) and review of T823, T824 (plan-161): CONDITIONAL_PASS; SEC-T825-01 tracked LOW, SEC-T825-02 fixed by the orchestrator | security-engineer | 2026-11-13 | `docs/artifacts/security-review-t825-v11-prep-v1.md` |
+| T815 | Open release/v11.0.0 and bump the version markers (plan-161): 9 lines in 5 files, version-consistency PASS at v11.0.0 | release-manager | 2026-11-13 | commit `caa6cae0` on `release/v11.0.0` |
