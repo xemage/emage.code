@@ -2,12 +2,13 @@
 
 **ID:** T816
 **Owner:** release-manager
-**Status:** in_progress
+**Status:** done
 **Priority:** P0
 **Tier:** standard
 **Depends on:** —
 **Affects:** —
 **Created:** 2026-11-13
+**Completed:** 2026-11-13
 **Based on:**
 - `docs/plans/plan-161-release-v11.md` (plan-161 § Task Decomposition item 4 and § Addendum 2 (For T816))
 - `docs/artifacts/release-v11-audit-v1.md` (T813)
