@@ -14,10 +14,11 @@
 # by the digest of its multi-arch index (tag kept for readers; the digest is what is pulled).
 # Digests read from the Docker Hub registry API, each image on its own date; each was re-fetched and its body hashes to the digest.
 # python:3.12-alpine: read 2026-11-06 (T765, SEC-T756-01: CVE-2026-115557, bumped from the 2026-10-22 digest) = Alpine 3.24.4, Python 3.12.16.
-# node:24-alpine: read 2026-10-22 = Alpine 3.24.3, Node 24.22.1. Not bumped on 2026-11-06, though a newer digest exists: a Node security release is announced for
-# 2026-11-11, no tag job uses Node, so the tag need not wait for it, and this image is bumped at the next review (SEC-T756-05). That day the pinned digest was re-fetched and re-hashed unchanged (T765), and the tag's state read (T755).
-# The date below is one date for both images: the day each was last looked at, which for node:24-alpine does not mean a newer digest was taken.
-# ci_images_reviewed_on: 2026-11-06   (tests/functional/test_ci_hash_pins.py fails when this is older than 120 days)
+# node:24-alpine: read 2026-11-11 (T785, SEC-T756-05/-06: the Node security release of 2026-11-10, bumped from the 2026-10-22 digest) = Alpine 3.24.4,
+# Node 24.22.3 (config NODE_VERSION), apk-tools 3.0.9, ca-certificates-bundle 20261020. The tags 24-alpine, 24.22.3-alpine and 24.22.3-alpine3.24 all
+# resolved to this digest that day; amd64 is in the index. python:3.12-alpine was re-read the same day: the tag still resolves to the pinned digest.
+# The date below is one date for both images: the day each was last looked at, which for an image does not mean a newer digest was taken.
+# ci_images_reviewed_on: 2026-11-11   (tests/functional/test_ci_hash_pins.py fails when this is older than 120 days)
 # Both bases are supported (T676 replaced the end-of-life node:20-alpine and alpine:3.20: the jobs
 # that held WIKI_TOKEN or ran the repository's Python scripts now share the one python image, which
 # is also the interpreter the tests run on). Every `apk add` package carries a fuzzy `~=MAJOR.MINOR`
@@ -39,7 +40,7 @@ stages:
   - release
 
 default:
-  image: node:24-alpine@sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53
+  image: node:24-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5
   interruptible: true
   tags:
     - docker
@@ -99,6 +100,8 @@ unit-tests:
     DOCKER_HOST: unix:///var/run/docker.sock
   before_script:
     - apk add --no-cache 'git~=2.54' 'bash~=5.3' 'nodejs~=24' 'docker-cli~=29' 'ripgrep~=15.1'
+    # T766: the openssl CLI for tests/functional/test_ca_chain_check.py (with CI set it fails instead of skipping).
+    - apk add --no-cache 'openssl~=3.5'
     # T732 (SEC-T677-01): acorn for the JavaScript function-size guard, exact pin and sha512 integrity
     # from ci/js/package-lock.json; --ignore-scripts runs no lifecycle script (ci/js/README.md).
     # With CI set, test_function_size fails instead of skipping when the parser is missing.
@@ -106,9 +109,11 @@ unit-tests:
     - npm ci --ignore-scripts --prefix ci/js --no-audit --no-fund
     # ripgrep and mcp==2.2.0 (the version in implementation/runtime/security/requirements-mcp-server.txt)
     # let the grep_content and live audit-server tests run here; with CI set they fail instead of skipping.
-    # test_install_cursor_removal installs a real `git archive v8.0.0` tree; GIT_DEPTH is shallow and
-    # tags are not fetched by default (the test FAILS in CI when the tag is missing).
+    # test_install_cursor_removal installs a real `git archive v8.0.0` tree, test_install_removed_platform_v11 one of
+    # v10.0.0 (T771, ADR-013 D5); GIT_DEPTH is shallow and tags are not fetched by default (each test FAILS
+    # in CI when its tag is missing).
     - git fetch --depth=1 origin tag v8.0.0
+    - git fetch --depth=1 origin tag v10.0.0
     # Hash-locked (SEC-T675-09): the job binds the host Docker socket, so nothing floats. The lock holds
     # pyyaml, jsonschema, requests, pyarrow, cryptography and mcp==2.2.0 with every transitive dependency.
     - 'python3 -m pip install --no-cache-dir --disable-pip-version-check --require-hashes --only-binary=:all: -r ci/requirements-ci.txt'
@@ -126,6 +131,7 @@ unit-tests:
 verify-knowledge-drift:
   stage: verify
   script:
+    - node --version  # the Node that ran, beside the image config's NODE_VERSION (T784 obligation 2)
     - node implementation/scripts/verify.mjs --root implementation
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
@@ -138,6 +144,54 @@ validation-super-gate:
     - 'python3 -m pip install --no-cache-dir --disable-pip-version-check --quiet --require-hashes --only-binary=:all: -r ci/requirements-gate.txt'
   script:
     - python3 implementation/scripts/check.py --root implementation --required --schemas --cookbooks --handoff-security --hook-policy --telemetry --benchmarks --registry --maturity --packaging --triggers --adapters
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
+
+# T766 (SEC-T756-02, CVE-2026-115557): git and libcurl in these images trust only the image's CA store; OpenSSL has no
+# denylist of the compromised eMudhra/emSign chains. One job per pinned image, each with that image's digest, so a digest
+# bump (or an Alpine ca-certificates update that `apk add` pulls in) fails here if any of the 16 chains of the disclosure
+# validates, a store certificate carries one of the disclosure's 12 keys, ca-certificates is older than 20261020 (T767),
+# or the gitlab.com control stops validating (the python job names the python digest; the node job takes the
+# default image). scripts/check-ca-chains.sh documents the openssl options; the chains are vendored in
+# tests/fixtures/ca-chains (public certificates, nothing is fetched at job time). The store is copied before `apk add`,
+# so the check covers the store as the image ships it, and is run again on the live store after installing git as the
+# other jobs do. No rule matches a tag: the three tag jobs are unchanged.
+ca-chain-check-python:
+  stage: verify
+  image: python:3.12-alpine@sha256:e064671ca452259bab50e8e2c7bd896e39e9a343bb06ca25234adf6fe18d0fc7
+  needs: []
+  before_script:
+    - mkdir /tmp/ca-shipped && cp -L /etc/ssl/cert.pem /tmp/ca-shipped/cert.pem && cp -RL /etc/ssl/certs /tmp/ca-shipped/certs
+    # Before the package install: the image's own ca-certificates release must be 20261020 or later (awk only).
+    - sh scripts/check-ca-chains.sh --ca-release
+    - apk add --no-cache 'openssl~=3.5' 'git~=2.54'
+  script:
+    - sh scripts/check-ca-chains.sh --ca-release
+    - sha256sum /tmp/ca-shipped/cert.pem /etc/ssl/cert.pem
+    - sh scripts/check-ca-chains.sh --cafile /tmp/ca-shipped/cert.pem tests/fixtures/ca-chains
+    # This image also ships the hashed directory (/etc/ssl/certs/<hash>.0), OpenSSL's default CApath.
+    - sh scripts/check-ca-chains.sh --capath /tmp/ca-shipped/certs tests/fixtures/ca-chains
+    - sh scripts/check-ca-chains.sh --cafile /etc/ssl/cert.pem tests/fixtures/ca-chains
+    - sh scripts/check-ca-chains.sh --capath /etc/ssl/certs tests/fixtures/ca-chains
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
+
+ca-chain-check-node:
+  stage: verify  # no `image:`: runs in the default image, node:24-alpine, so it follows every bump of that digest
+  needs: []
+  before_script:
+    - mkdir /tmp/ca-shipped && cp -L /etc/ssl/cert.pem /tmp/ca-shipped/cert.pem
+    - sh scripts/check-ca-chains.sh --ca-release
+    - apk add --no-cache 'openssl~=3.5' 'git~=2.54'
+  script:
+    - sh scripts/check-ca-chains.sh --ca-release
+    - sha256sum /tmp/ca-shipped/cert.pem /etc/ssl/cert.pem
+    # This image ships the bundle file only (no hashed /etc/ssl/certs entries, read from its layers on 2026-11-07 and for the
+    # 2026-11-11 digest; `apk add` of openssl and git does not pull in the ca-certificates package that would write them).
+    - sh scripts/check-ca-chains.sh --cafile /tmp/ca-shipped/cert.pem tests/fixtures/ca-chains
+    - sh scripts/check-ca-chains.sh --cafile /etc/ssl/cert.pem tests/fixtures/ca-chains
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH
@@ -198,9 +252,12 @@ wiki-sync:
 release-docs-gate:
   stage: release
   image: python:3.12-alpine@sha256:e064671ca452259bab50e8e2c7bd896e39e9a343bb06ca25234adf6fe18d0fc7
+  tags: ["release-gate"]
   # T739 (plan-136): the gate reads release documents with markdown-it-py and exits 1 without it. This job runs only
   # in a tag pipeline, so no merge request pipeline runs this install: watch it in the next release or release candidate.
   # T744 (SEC-T741-17): a clean checkout, so a job on a shared runner leaves nothing in the build directory for this one.
+  # T810 (SEC-T741-17, plan-159): the tag routes the three tag jobs to the user's dedicated project runner; only they name
+  # it (test_ci_hash_pins). Its config.toml allows only this image digest, so a digest bump needs it changed too.
   # T750 (SEC-T745-01): a crafted document at the gate's size cap takes 48 s on the locked parser (T749, measured), and this
   # job took 6 s for v9.0.0. Ten minutes stops it well before the project's 3600 s; a job stopped here fails closed.
   timeout: 10 minutes
@@ -222,7 +279,8 @@ release-docs-gate:
 main-develop-drift-gate:
   stage: release
   image: python:3.12-alpine@sha256:e064671ca452259bab50e8e2c7bd896e39e9a343bb06ca25234adf6fe18d0fc7
-  # T744 (SEC-T741-17): a clean checkout, as on release-docs-gate. No dedicated runner tag: that needs a runner first.
+  tags: ["release-gate"]
+  # T744, T810 (SEC-T741-17): a clean checkout and the dedicated runner tag, as on release-docs-gate.
   variables:
     GIT_DEPTH: "1"
     GIT_STRATEGY: clone
@@ -245,7 +303,9 @@ release:
   stage: release
   needs: ["release-docs-gate", "main-develop-drift-gate"]
   image: python:3.12-alpine@sha256:e064671ca452259bab50e8e2c7bd896e39e9a343bb06ca25234adf6fe18d0fc7
-  # T750 (SEC-T745-07): a clean checkout for the job that publishes with the token, as on the two gates.
+  tags: ["release-gate"]
+  # T750 (SEC-T745-07), T810 (SEC-T741-17): a clean checkout and the dedicated runner tag for the job that publishes
+  # with the token, as on the two gates.
   variables:
     GIT_DEPTH: "0"
     GIT_STRATEGY: clone

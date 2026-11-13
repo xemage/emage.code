@@ -31,10 +31,8 @@ PROJECTIONS = [
     REPO_ROOT / "implementation" / rel
     for rel in (
         ".mcp.json",
-        ".gemini/settings.json",
         ".opencode/opencode.json",
         ".cline/mcp.json",
-        ".pi/mcp.json",
         ".vscode/mcp.json",
     )
 ]
@@ -76,9 +74,7 @@ PLAYWRIGHT_ARGS = [
 PLAYWRIGHT_ENTRY_PATHS = {
     ".mcp.json": ("mcpServers", "str"),
     ".vscode/mcp.json": ("servers", "str"),
-    ".gemini/settings.json": ("mcpServers", "str"),
     ".opencode/opencode.json": ("mcp", "list"),
-    ".pi/mcp.json": ("mcpServers", "str"),
     ".cline/mcp.json": ("mcpServers", "str"),
 }
 REMOVED_OR_NONEXISTENT = (
@@ -284,7 +280,7 @@ class McpPackagePinTests(unittest.TestCase):
             self.assertNotIn("env", entry, rel)  # no secret, no variable reference in this entry
 
     def test_blocked_origins_has_no_placeholder_syntax_a_client_would_expand(self):
-        # Claude Code and Gemini expand ${VAR}; VS Code expands ${env:VAR}; Opencode
+        # Claude Code expands ${VAR}; VS Code expands ${env:VAR}; Opencode
         # expands {env:VAR} and {file:path}. The value must contain none of these openers.
         for opener in ("${", "$(", "{env:", "{file:", "`", "~"):
             self.assertNotIn(opener, BLOCKED_ORIGINS)
@@ -461,11 +457,11 @@ class PlaywrightGrantSetTests(unittest.TestCase):
                     self.assertRegex(tool, r"^mcp__playwright__[a-z_]+$", path.stem)
 
     def test_projections_hold_no_whole_server_playwright_form_and_no_excluded_tool(self):
-        """Claude Code, Copilot, Opencode and Pi projections of every agent."""
+        """Claude Code, Copilot and Opencode projections of every agent."""
         root = REPO_ROOT / "implementation"
         files = (list((root / ".claude" / "agents").glob("*.md")) + list((root / ".github" / "agents").glob("*.agent.md"))
-                 + list((root / ".opencode" / "agents").glob("*.md")) + list((root / ".pi" / "agents").glob("*.md")))
-        self.assertGreaterEqual(len(files), 4 * 20)
+                 + list((root / ".opencode" / "agents").glob("*.md")))
+        self.assertGreaterEqual(len(files), 3 * 20)
         for path in files:
             front = path.read_text(encoding="utf-8").split("---", 2)[1]
             # T663: an Opencode `name: false` line is a generated per-agent deny, not a grant; its names
@@ -479,7 +475,7 @@ class PlaywrightGrantSetTests(unittest.TestCase):
                         self.assertFalse(token.endswith(excluded), token)
 
     def test_server_level_denial_list_equals_the_six_excluded_tools(self):
-        """T658 (SEC-T657-01): the denial emitted for Opencode and Gemini CLI is the excluded set, pinned."""
+        """T658 (SEC-T657-01): the denial emitted for Opencode is the excluded set, pinned."""
         servers = yaml.safe_load(SERVERS_YAML.read_text(encoding="utf-8"))["servers"]
         deny = servers["playwright"]["denyTools"]
         self.assertEqual(len(deny), 6)
@@ -493,14 +489,12 @@ class PlaywrightGrantSetTests(unittest.TestCase):
         self.assertNotIn("browser_network_requests", deny)
         self.assertTrue(any("browser_network_requests" in g for g in EXPECTED_PLAYWRIGHT_GRANTS.values()))
 
-    def test_generated_denial_equals_the_list_on_opencode_and_gemini_only(self):
+    def test_generated_denial_equals_the_list_on_opencode_only(self):
         root = REPO_ROOT / "implementation"
-        gemini = json.loads((root / ".gemini" / "settings.json").read_text(encoding="utf-8"))
-        self.assertEqual(set(gemini["mcpServers"]["playwright"]["excludeTools"]), PLAYWRIGHT_EXCLUDED)
         opencode = json.loads((root / ".opencode" / "opencode.json").read_text(encoding="utf-8"))
         self.assertEqual(set(opencode["permission"]), {f"playwright_{t}" for t in PLAYWRIGHT_EXCLUDED})
         self.assertEqual(set(opencode["permission"].values()), {"deny"})
-        for rel in (".mcp.json", ".vscode/mcp.json", ".pi/mcp.json", ".cline/mcp.json"):
+        for rel in (".mcp.json", ".vscode/mcp.json", ".cline/mcp.json"):
             text = (root / rel).read_text(encoding="utf-8")
             self.assertNotIn("excludeTools", text, rel)
             self.assertNotIn('"permission"', text, rel)
@@ -716,11 +710,11 @@ class GitLabGrantSetTests(unittest.TestCase):
         self.assertIn("get_pipeline_job_output", snap["tools"])
 
     def test_the_tool_is_absent_from_every_projection_of_every_agent(self):
-        """T688: source, Claude Code, Pi, Copilot, Opencode and Gemini projections (the name in each platform's
+        """T688: source, Claude Code, Copilot and Opencode projections (the name in each platform's
         form). The Opencode form `gitlab_get_pipeline_job_output` must not appear as an allow either."""
         root = REPO_ROOT / "implementation"
-        for platform, glob in ((".claude", "*.md"), (".pi", "*.md"), (".github", "*.agent.md"),
-                               (".opencode", "*.md"), (".gemini", "*.md")):
+        for platform, glob in ((".claude", "*.md"), (".github", "*.agent.md"),
+                               (".opencode", "*.md")):
             files = sorted((root / platform / "agents").glob(glob))
             self.assertGreaterEqual(len(files), 20, platform)
             for path in files:
@@ -736,8 +730,8 @@ class GitLabGrantSetTests(unittest.TestCase):
         root = REPO_ROOT / "implementation"
         paths = [AGENTS_DIR / "qa-engineer.md"] + [
             root / platform / "agents" / name for platform, name in (
-                (".claude", "qa-engineer.md"), (".pi", "qa-engineer.md"), (".github", "qa-engineer.agent.md"),
-                (".opencode", "qa-engineer.md"), (".gemini", "qa-engineer.md"))]
+                (".claude", "qa-engineer.md"), (".github", "qa-engineer.agent.md"),
+                (".opencode", "qa-engineer.md"))]
         for path in paths:
             with self.subTest(path=str(path.relative_to(root))):
                 body = path.read_text(encoding="utf-8").split("---", 2)[2]
@@ -774,13 +768,12 @@ class GitLabGrantSetTests(unittest.TestCase):
             self.assertIsNotNone(GITLAB_FORBIDDEN_NAME.search(name), name)
 
     def test_every_projection_renders_the_same_sets(self):
-        """Claude Code keeps the source form; Pi, Copilot and Opencode render it (T657 mapping)."""
+        """Claude Code keeps the source form; Copilot and Opencode render it (T657 mapping)."""
         root = REPO_ROOT / "implementation"
         seven = set(EXPECTED_GITLAB_GRANTS)
         # platform -> (agent file suffix, prefix of a named tool)
         platforms = {
             ".claude": (".md", "mcp__gitlab__"),
-            ".pi": (".md", "mcp__gitlab__"),
             ".github": (".agent.md", "gitlab/"),
             ".opencode": (".md", "gitlab_"),
         }
@@ -813,20 +806,6 @@ class GitLabGrantSetTests(unittest.TestCase):
             with self.subTest(agent=slug):
                 self.assertEqual(names - known, set())
 
-    def test_gemini_agents_carry_no_tools_line(self):
-        """SEC-T660-06: Gemini CLI does not restrict MCP tools per agent, so the generator drops the line."""
-        files = sorted((REPO_ROOT / "implementation" / ".gemini" / "agents").glob("*.md"))
-        self.assertGreaterEqual(len(files), 20)
-        for path in files:
-            front = path.read_text(encoding="utf-8").split("---", 2)[1]
-            with self.subTest(agent=path.stem):
-                self.assertFalse([l for l in front.splitlines() if l.startswith("tools:")])
-                # T673 (SEC-T660-06): by parsed key as well, so an indented or re-spelled `tools` cannot slip past
-                # the line test, and no MCP tool token survives anywhere in the front matter.
-                self.assertNotIn("tools", yaml.safe_load(front))
-                self.assertNotIn("mcp__", front)
-
-
 class GitLabGrantDocumentationTests(unittest.TestCase):
     """T667 (SEC-T667-02, SEC-T667-04a, SEC-T667-05): the three documents state the grants as the sources hold them."""
 
@@ -840,6 +819,8 @@ class GitLabGrantDocumentationTests(unittest.TestCase):
         "poc-orchestrator": "poc-orchestrator", "devops-engineer": "devops-engineer",
         "release-manager": "release-manager", "poc-devops-engineer": "poc-devops-engineer"}
     USED_BY = ("Orchestrator", "PoC Orchestrator", "Scrum Master", "QA Engineer", "DevOps", "Release Manager", "PoC DevOps")
+    RAW_JOB_OUTPUT = ("no agent of these seven holds a tool that reads raw job output (T688, SEC-T660-02): a shell can "
+                      "still run `glab ci trace` (T660 for qa-engineer")
 
     def _paragraph(self, path: Path) -> str:
         lines = [l for l in path.read_text(encoding="utf-8").splitlines()
@@ -875,10 +856,12 @@ class GitLabGrantDocumentationTests(unittest.TestCase):
             text = self._paragraph(path)
             with self.subTest(doc=label):
                 # SEC-T688-01: the claim is about the tool lists of these seven roles, not about every route
-                self.assertEqual(text.count(
-                    "no agent of these seven holds a tool that reads raw job output (T688, SEC-T660-02): a shell can "
-                    "still run `glab ci trace`, and on Gemini CLI the tool list does not restrict MCP tools "
-                    "(T660 for qa-engineer"), 1)
+                self.assertEqual(text.count(self.RAW_JOB_OUTPUT), 1)
+                # ADR-014: both Gemini clauses are gone from all three documents, the root AGENTS.md included since
+                # the S3 root refresh (T781; TL-T780-02, SEC-T780-02); row f's history clause stays
+                self.assertNotIn("on Gemini CLI the tool list does not restrict MCP tools", text)
+                self.assertNotIn("on Gemini CLI the agent tool list does not restrict MCP tools", text)
+                self.assertIn("so its Pi and Gemini CLI rows are historical", text)
                 self.assertNotIn("no agent reads raw job output", text)
                 self.assertNotIn("only qa-engineer reads raw job output", text)
                 self.assertIn("qa-engineer (19 tools: bug issues and notes, read-only merge request, pipeline, job and "

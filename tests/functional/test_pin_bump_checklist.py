@@ -15,16 +15,18 @@ ROOT = repo_root()
 DOC = ROOT / "docs" / "wiki" / "mcp-pin-bump-checklist.md"
 IDS = ("SEC-T646-03", "SEC-T646-04", "SEC-T646-05", "SEC-T646-06", "SEC-T655-06", "SEC-T655-07", "SEC-T658-02",
        "SEC-014", "T638-L-2", "T638-L-8", "K-17", "K-20", "SEC-T675-03", "SEC-T675-09")
-# docs/artifacts/brave-audit-acceptance-v3.md (T712, the user's renewal of 2026-11-01): seven advisories, one expiry.
+# docs/artifacts/brave-audit-acceptance-v4.md (T808, the user's acceptance of 2026-11-12 for v11.0.0 only) is the current
+# record; v3 (T712, the user's renewal of 2026-11-01) set the seven advisories and the one expiry, which v4 leaves unchanged.
 GHSA = ("GHSA-6qxp-vccf-f47h", "GHSA-22jm-h49p-29qw", "GHSA-6prh-2h8m-c8cw", "GHSA-46jr-4wx8-v453", "GHSA-rvq5-wwqv-78pq",
         "GHSA-f897-62hf-6gxq", "GHSA-mrhx-c7xc-m3w5")
 EXPIRY = "2027-01-30"
-ACCEPTANCE = ROOT / "docs" / "artifacts" / "brave-audit-acceptance-v3.md"
+ACCEPTANCE = ROOT / "docs" / "artifacts" / "brave-audit-acceptance-v4.md"
+PRIOR_ACCEPTANCE = ROOT / "docs" / "artifacts" / "brave-audit-acceptance-v3.md"  # immutable; still checked below
 WARNING = "Never run `opencode debug config` with your real home"
 REQUIRED_PHRASES = ("audit-mcp-pins.py audit", "audit-mcp-pins.py provenance", "--generate-hashes", "--require-hashes",
-                    "Browser security version", "Blocked-origins re-check", "One-time live checks", "excludeTools",
+                    "Browser security version", "Blocked-origins re-check", "One-time live checks",
                     "opencode agent list", "(unverified)", WARNING, "ci_images_reviewed_on", "--only-binary=:all:", "--exclude-newer",
-                    "brave-audit-acceptance-v3.md", "SEC-T676-11", "SEC-T676-14", "seven days before")
+                    "brave-audit-acceptance-v4.md", "SEC-T676-11", "SEC-T676-14", "seven days before")
 LINKS = {
     "implementation/PREREQUISITES.md": "docs/wiki/mcp-pin-bump-checklist.md",
     "docs/wiki/mcp-servers.md": "mcp-pin-bump-checklist",
@@ -86,7 +88,7 @@ class TestChecklist(unittest.TestCase):
 
     def test_it_has_no_secret_looking_value(self):
         self.assertEqual(secret_findings(self.text), [])
-        for artifact in (ROOT / "docs/artifacts/brave-audit-acceptance-v1.md", ROOT / "docs/artifacts/brave-audit-acceptance-v2.md", ACCEPTANCE):
+        for artifact in (ROOT / "docs/artifacts/brave-audit-acceptance-v1.md", ROOT / "docs/artifacts/brave-audit-acceptance-v2.md", PRIOR_ACCEPTANCE, ACCEPTANCE):
             self.assertEqual(secret_findings(artifact.read_text(encoding="utf-8")), [])
 
     def test_the_secret_check_catches_each_shape(self):
@@ -94,25 +96,55 @@ class TestChecklist(unittest.TestCase):
                        "Bearer ctx7", "authorization: x", "sk-" + "A" * 12, "0123456789abcdef" * 3):
             with self.subTest(sample=sample):
                 self.assertTrue(secret_findings("text " + sample + " more"), sample)
-        self.assertEqual(secret_findings("sha256:06d7adf3... GHSA-6qxp-vccf-f47h `Bearer`-less prose"), [])
+        self.assertEqual(secret_findings("sha256:0a1b2c3d... GHSA-6qxp-vccf-f47h `Bearer`-less prose"), [])
+
+    V3_NEEDLES = (EXPIRY, "Renew + force stdio (Recommended)", "BRAVE_MCP_TRANSPORT=http", "BRAVE_MCP_HOST",
+                  "--transport stdio", "brave-audit-acceptance-v2.md", "**Based on**", "devops-engineer")
+    # T808: the user's words for v11.0.0 as plan-155 and plan-158 record them, the plan as shown, and the scope.
+    V4_NEEDLES = (EXPIRY, "Keep the acceptance (Recommended)",
+                  "If there is an easy and good replacement for it, replace it, otherwise Accept for v11.0.0",
+                  "> 1. Keep the acceptance", "v11.0.0 only", "Remove Brave entirely", "Audit Tavily and Exa first",
+                  "owner devops-engineer; fix: bump to the first Brave release above 2.1.4; deadline 2027-01-30 or that release, whichever comes first",
+                  "BRAVE_MCP_TRANSPORT=http", "BRAVE_MCP_HOST", "--transport stdio", "brave-audit-acceptance-v3.md",
+                  "brave-replacement-scouting-v1.md", "plan-155-v11-release-decisions.md", "**Based on**", "devops-engineer")
+    ACCEPT_PATTERN = r"--accept (GHSA-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}:\d{4}-\d{2}-\d{2}:\S+?)(?=[\s`]|$)"
 
     def test_the_acceptance_artifact_matches_the_gate_command_and_the_decision(self):
-        artifact = ACCEPTANCE.read_text(encoding="utf-8")
-        self.assertEqual(gate_problems(artifact), [])
-        for needle in GHSA + (EXPIRY, "Renew + force stdio (Recommended)", "BRAVE_MCP_TRANSPORT=http", "BRAVE_MCP_HOST",
-                              "--transport stdio", "brave-audit-acceptance-v2.md", "**Based on**", "devops-engineer"):
-            self.assertIn(needle, artifact)
-        pattern = r"--accept (GHSA-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}:\d{4}-\d{2}-\d{2}:\S+?)(?=[\s`]|$)"
-        self.assertEqual(re.findall(pattern, artifact), re.findall(pattern, self.text))
+        """The current record (v4) and the immutable one before it (v3): the same seven, the same command as the checklist."""
+        for path, needles in ((ACCEPTANCE, self.V4_NEEDLES), (PRIOR_ACCEPTANCE, self.V3_NEEDLES)):
+            with self.subTest(artifact=path.name):
+                artifact = path.read_text(encoding="utf-8")
+                self.assertEqual(gate_problems(artifact), [])
+                for needle in GHSA + needles:
+                    self.assertIn(needle, artifact)
+                self.assertEqual(re.findall(self.ACCEPT_PATTERN, artifact), re.findall(self.ACCEPT_PATTERN, self.text))
 
     def test_the_acceptance_artifact_expiry_is_within_ninety_days_of_the_decision(self):
-        """SEC-T676-11: the script refuses a date more than 90 days out; the recorded decision must respect the same bound."""
+        """SEC-T676-11: the script refuses a date more than 90 days out; each recorded decision must respect the same bound."""
         import datetime as dt
+        for path in (ACCEPTANCE, PRIOR_ACCEPTANCE):
+            with self.subTest(artifact=path.name):
+                artifact = path.read_text(encoding="utf-8")
+                decision = dt.date.fromisoformat(re.search(r"\*\*Date\*\*: (\d{4}-\d{2}-\d{2})", artifact).group(1))
+                expiry = dt.date.fromisoformat(EXPIRY)
+                self.assertLessEqual((expiry - decision).days, 90)
+                self.assertGreater(expiry, decision)
+
+    def test_the_current_acceptance_is_the_newest_version_and_the_script_names_it(self):
+        """T808: a newer record must move ACCEPTANCE, the checklist and the script's usage text with it."""
+        versions = sorted(int(re.search(r"-v(\d+)\.md$", p.name).group(1)) for p in ACCEPTANCE.parent.glob("brave-audit-acceptance-v*.md"))
+        self.assertEqual(ACCEPTANCE.name, f"brave-audit-acceptance-v{versions[-1]}.md")
+        self.assertEqual(versions, list(range(1, versions[-1] + 1)))
+        script = (ROOT / "scripts" / "audit-mcp-pins.py").read_text(encoding="utf-8")
+        self.assertEqual(set(re.findall(r"brave-audit-acceptance-v\d+\.md", script)), {ACCEPTANCE.name})
+
+    def test_mutation_a_record_without_the_users_words_or_with_a_moved_expiry_is_detected(self):
         artifact = ACCEPTANCE.read_text(encoding="utf-8")
-        decision = dt.date.fromisoformat(re.search(r"\*\*Date\*\*: (\d{4}-\d{2}-\d{2})", artifact).group(1))
-        expiry = dt.date.fromisoformat(EXPIRY)
-        self.assertLessEqual((expiry - decision).days, 90)
-        self.assertGreater(expiry, decision)
+        self.assertTrue(all(n in artifact for n in self.V4_NEEDLES))
+        self.assertFalse(all(n in artifact.replace("Keep the acceptance (Recommended)", "Keep it") for n in self.V4_NEEDLES))
+        moved = artifact.replace("GHSA-mrhx-c7xc-m3w5:2027-01-30:", "GHSA-mrhx-c7xc-m3w5:2027-02-11:")
+        self.assertNotEqual(moved, artifact)
+        self.assertTrue(gate_problems(moved))
 
     def test_the_gate_command_names_the_current_brave_pin_and_the_script_accepts_it(self):
         """The documented command parses with the real parser and every package@version it names is a current pin."""

@@ -394,7 +394,6 @@ def _check_hook_policy_spec(root: Path, result: GateResult) -> None:
         "Policy Precedence": "hook-policy: missing policy precedence section",
         "Fail-Closed": "hook-policy: missing fail-closed semantics section",
         "Copilot": "hook-policy: missing Copilot compatibility note",
-        "Gemini": "hook-policy: missing Gemini compatibility note",
         "Opencode": "hook-policy: missing Opencode compatibility note",
     }
     for marker, error_message in required_markers.items():

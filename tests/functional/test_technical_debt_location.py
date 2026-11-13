@@ -33,18 +33,14 @@ GUIDE_PATHS = (
     "knowledge/instructions/poc-guidelines.md",
     ".claude/rules/poc-guidelines.md",
     ".clinerules/poc-guidelines.md",
-    ".gemini/instructions/poc-guidelines.md",
     ".github/instructions/poc-guidelines.instructions.md",
     ".opencode/instructions/poc-guidelines.md",
-    ".pi/instructions/poc-guidelines.md",
 )
 NARRATOR_PATHS = (
     "knowledge/agents/technical-debt-narrator.md",
     ".claude/agents/technical-debt-narrator.md",
-    ".gemini/agents/technical-debt-narrator.md",
     ".github/agents/technical-debt-narrator.agent.md",
     ".opencode/agents/technical-debt-narrator.md",
-    ".pi/agents/technical-debt-narrator.md",
 )
 
 

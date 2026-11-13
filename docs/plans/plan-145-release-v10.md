@@ -110,3 +110,7 @@ Batch V and the other tracked batches, unless a gate finds one blocks. SEC-T741-
 - Subagents never merge, push, tag or release. The top-level session merges after its own verification; the tag and the Release take the user's approval each.
 - `tests/golden/**` and `scripts/scorecard.py` stay protected. Never open `tests/golden/held-out/`. A root refresh needs the user's approval. No `docker` command outside T759.
 - Every mutation run: a full throwaway copy, a checked baseline, a timeout and a memory cap.
+
+## Outcome (2026-11-07)
+
+v10.0.0 is published. The user approved each publishing step at its moment: "develop go" (MR !654, `c8f538d6`), "main go" (MR !655, `623eea7c`, no squash, `verify-main-sync-merge.py` PASS, `main` pipeline 3039866416 green), "tag go" (annotated tag `v10.0.0` on the release tip `d593aeb3`). Tag pipeline 3039977704 passed all three jobs, and the `release` job created the GitLab Release with a description equal to `docs/releases/v10.0.0.md` at the tag. Afterwards: `main=v10.0.0 develop=v10.0.0 releases_behind=0`; `/validate-tasks` PASS. The release verdict stays CONDITIONAL_PASS (T763); five MEDIUMs ship accepted for this release only. The tag pipeline's observations (register v11 § 6.2 items 6, 8, 14, 28; D-T710-2 now observed) and the carried items are in `docs/checkpoints/checkpoint-041-release-v10.0.0.md`. The risks "the `release` job has never run this code" and "the clone setting is new" did not materialize; "the credential path is unproved" stands, because the project is public.

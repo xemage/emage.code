@@ -275,6 +275,76 @@ class RequestingContextDerivationTests(unittest.TestCase):
             "em-age/emage.code",
         )
 
+    def test_a_dot_segment_remote_is_refused(self):
+        """T795 (SEC-T791-03): `.` or `..` as <org> or <repo> is a path step, not a project."""
+        for remote in ("https://gitlab.com/acme/..", "https://gitlab.com/acme/.", "git@gitlab.com:../widget.git",
+                       "https://gitlab.com/./widget", "https://gitlab.com/acme/..git", "git@gitlab.com:acme/..git"):
+            with self.subTest(remote=remote):
+                with self.assertRaises(cr.RemoteResolutionError):
+                    cr.normalize_remote_to_project_id(remote)
+
+    def test_the_normal_remotes_of_the_scope_model_are_still_accepted(self):
+        """Negative case for T795: memory-scope-model-v1.md section 3 and names that only contain dots."""
+        cases = {
+            "git@gitlab.com:em-age/emage.code.git": "em-age/emage.code",
+            "https://gitlab.com/em-age/emage.code.git": "em-age/emage.code",
+            "https://gitlab.com/group/sub/repo.git": "sub/repo",
+            "https://gitlab.com/acme/...": "acme/...",
+            "https://gitlab.com/acme/.widget": "acme/.widget",
+        }
+        for remote, expected in cases.items():
+            with self.subTest(remote=remote):
+                self.assertEqual(cr.normalize_remote_to_project_id(remote), expected)
+
+    def test_no_refusal_message_repeats_the_remote_userinfo(self):
+        """T797 (SEC-T796-01): a remote's `user:token@` userinfo never reaches a RemoteResolutionError."""
+        for remote in ("https://oauth2:s3cret@gitlab.com/acme/..", "https://gitlab-ci-token:s3cret@gitlab.com/acme",
+                       "user:s3cret@hostonly", "https://u:s3cret@x@gitlab.com/acme/.",
+                       "ssh://git:s3cret@gitlab.com/acme/.."):
+            with self.subTest(remote=remote):
+                with self.assertRaises(cr.RemoteResolutionError) as caught:
+                    cr.normalize_remote_to_project_id(remote)
+                self.assertNotIn("s3cret", str(caught.exception))
+                self.assertIn("***@", str(caught.exception))
+
+    def test_an_scp_like_dot_remote_is_refused_with_a_useful_message(self):
+        with self.assertRaises(cr.RemoteResolutionError) as caught:
+            cr.normalize_remote_to_project_id("git@gitlab.com:acme/..")
+        self.assertIn("'.' or '..'", str(caught.exception))
+        self.assertIn("***@gitlab.com:acme/..", str(caught.exception))
+
+    def test_a_long_remote_is_truncated_in_the_message(self):
+        with self.assertRaises(cr.RemoteResolutionError) as caught:
+            cr.normalize_remote_to_project_id("https://gitlab.com/" + "a" * 500)
+        self.assertLess(len(str(caught.exception)), 300)
+
+    def test_remotes_with_userinfo_still_normalise_as_before(self):
+        """Negative case for T797: the redaction touches messages only, never the derived id."""
+        cases = {"https://oauth2:tok@gitlab.com/em-age/emage.code.git": "em-age/emage.code",
+                 "git@gitlab.com:em-age/emage.code.git": "em-age/emage.code",
+                 "https://gitlab.com/em-age/emage.code.git": "em-age/emage.code",
+                 "ssh://git@gitlab.com:22/Acme/Widget.git": "acme/widget"}
+        for remote, expected in cases.items():
+            with self.subTest(remote=remote):
+                self.assertEqual(cr.normalize_remote_to_project_id(remote), expected)
+
+    def test_the_server_does_not_resolve_an_index_for_a_dot_segment_remote(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            workspace = Path(tmp) / "workspace-dots"
+            _init_git_repo(workspace, "https://gitlab.com/acme/..")
+            with self.assertRaises(cr.RemoteResolutionError):
+                cr.default_index_dir(workspace)
+
+    def test_is_derived_project_id_is_total_and_refuses_dot_segments(self):
+        """T795 (SEC-T791-03): False, never an exception, for any input that is not a derived id."""
+        for refused in (None, 42, b"acme/widget", ["acme", "widget"], "a/..", "a/.", "../a", "./a", "a/b/..",
+                        "Acme/Widget", "acme/widget.git", "acme", ""):
+            with self.subTest(project_id=refused):
+                self.assertFalse(cr.is_derived_project_id(refused))
+        for accepted in ("acme/widget", "em-age/emage.code", "acme/...", "acme/.widget"):
+            with self.subTest(project_id=accepted):
+                self.assertTrue(cr.is_derived_project_id(accepted))
+
     def test_derive_project_id_reads_real_workspace_git_remote(self):
         """Concrete demonstration (acceptance criterion 4): project_id comes from the
         workspace's own real git remote, not any caller-supplied parameter --
@@ -316,11 +386,11 @@ class RequestingContextDerivationTests(unittest.TestCase):
     def test_resolve_platform_differs_per_platform_root(self):
         with tempfile.TemporaryDirectory() as tmp:
             claude_root = Path(tmp) / ".claude"
-            pi_root = Path(tmp) / ".pi"
+            cline_root = Path(tmp) / ".cline"
             _write_generated_manifest(claude_root, "claude-code")
-            _write_generated_manifest(pi_root, "pi")
+            _write_generated_manifest(cline_root, "cline")
             self.assertEqual(cr.resolve_platform(claude_root), "claude-code")
-            self.assertEqual(cr.resolve_platform(pi_root), "pi")
+            self.assertEqual(cr.resolve_platform(cline_root), "cline")
 
     def test_resolve_platform_raises_when_manifest_missing(self):
         with tempfile.TemporaryDirectory() as tmp:

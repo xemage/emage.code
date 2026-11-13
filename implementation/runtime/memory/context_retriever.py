@@ -74,6 +74,9 @@ class PlatformResolutionError(RuntimeError):
     manifest (`.generated-manifest.json`) — see module docstring."""
 
 
+# T795 (SEC-T791-03): path steps, never an <org> or <repo> name.
+_DOT_SEGMENTS = frozenset({".", ".."})
+
 _REMOTE_RE = re.compile(
     r"""^(?:[a-zA-Z][\w+.-]*://)?      # optional scheme (https://, ssh://, git://, ...)
         (?:[^@/]+@)?                    # optional user@ (git@)
@@ -86,6 +89,16 @@ _REMOTE_RE = re.compile(
 )
 
 
+# T797 (SEC-T796-01): a remote can carry `user:token@` userinfo; no message repeats it. Greedy up to the last `@`
+# before the first `/`, so a secret that itself holds an `@` is removed whole.
+_USERINFO_RE = re.compile(r"^((?:[a-zA-Z][\w+.-]*://)?)[^/]*@")
+
+
+def _redacted(remote_url: str) -> str:
+    """`remote_url` for an error message: userinfo replaced by `***@`, at most 200 characters."""
+    return _USERINFO_RE.sub(r"\1***@", remote_url, count=1)[:200]
+
+
 def normalize_remote_to_project_id(remote_url: str) -> str:
     """`git remote get-url origin` output -> lowercase `<org>/<repo>` slug.
 
@@ -96,12 +109,14 @@ def normalize_remote_to_project_id(remote_url: str) -> str:
     remote_url = remote_url.strip()
     match = _REMOTE_RE.match(remote_url)
     if not match:
-        raise RemoteResolutionError(f"unrecognized git remote URL shape: {remote_url!r}")
+        raise RemoteResolutionError(f"unrecognized git remote URL shape: {_redacted(remote_url)!r}")
     path = match.group("path").strip("/")
     parts = [p for p in path.split("/") if p]
     if len(parts) < 2:
-        raise RemoteResolutionError(f"git remote URL has no <org>/<repo> path: {remote_url!r}")
+        raise RemoteResolutionError(f"git remote URL has no <org>/<repo> path: {_redacted(remote_url)!r}")
     org, repo = parts[-2], parts[-1]
+    if org in _DOT_SEGMENTS or repo in _DOT_SEGMENTS:
+        raise RemoteResolutionError(f"git remote URL has a '.' or '..' <org>/<repo> segment: {_redacted(remote_url)!r}")
     return f"{org}/{repo}".lower()
 
 
@@ -129,6 +144,23 @@ def derive_project_id(workspace_root: Path) -> str:
 # (`em-age/emage.code` -> `em-age-emage.code`).
 INDEX_PARENT = Path("implementation", "runtime", "memory", "_index")
 _INDEX_SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,199}$")
+
+
+def is_derived_project_id(project_id: object) -> bool:
+    """True only when `project_id` is exactly the id this module derives from a git remote: lower case,
+    `<org>/<repo>`, and a plain index directory name once `/` becomes `-`. T790 (QA-T760-02): `build.py`
+    refuses any other `--project-id`, because `scope_filter.is_visible` compares exactly and a project-scope
+    chunk indexed under another spelling is never returned. Pure function, no I/O; it rewrites nothing."""
+    if not isinstance(project_id, str):
+        return False  # T795 (SEC-T791-03): total over its inputs; never raises
+    if any(segment in _DOT_SEGMENTS for segment in project_id.split("/")):
+        return False
+    if not _INDEX_SLUG_RE.fullmatch(project_id.replace("/", "-")):
+        return False
+    try:
+        return normalize_remote_to_project_id(f"https://host.invalid/{project_id}") == project_id
+    except RemoteResolutionError:
+        return False
 
 
 def default_index_dir(workspace_root: Path) -> Path:

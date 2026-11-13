@@ -5,7 +5,7 @@ T672 removes the guard and shows the named test fails):
 
 * SEC-T658-05  an existing MCP/settings config is merged in every mode (a plain install used to
                overwrite it), an invalid one is refused before anything is written, a replaced
-               value is reported, and --projections-only keeps the Opencode/Gemini denials;
+               value is reported, and --projections-only keeps the Opencode denials;
 * SEC-T662-03  one SUPPORTED_PLATFORMS array drives usage, validation, `all`, the dispatch;
 * TL-T649-06 / SEC-015  a missing or dash-leading --target/--platform value is a clear message;
 * SEC-008 b    --dry-run creates nothing, the target directory included;
@@ -41,13 +41,11 @@ INSTALLER = repo_root() / "scripts" / "install.sh"
 INSTALL_TEXT = INSTALLER.read_text(encoding="utf-8")
 MCP_CONFIG = {
     "github": ".vscode/mcp.json",
-    "gemini": ".gemini/settings.json",
     "opencode": ".opencode/opencode.json",
-    "pi": ".pi/mcp.json",
     "claude-code": ".mcp.json",
     "cline": ".cline/mcp.json",
 }
-TREE = {"github": ".github", "gemini": ".gemini", "opencode": ".opencode", "pi": ".pi",
+TREE = {"github": ".github", "opencode": ".opencode",
         "claude-code": ".claude", "cline": ".cline"}
 DENIED = ("playwright_browser_run_code_unsafe", "playwright_browser_evaluate",
           "playwright_browser_file_upload", "playwright_browser_drag",
@@ -155,7 +153,7 @@ class TestMissingOrDashOptionValues(_Scratch):
                               cwd=str(self.tmp))
 
     def test_missing_target_value(self) -> None:
-        for args in (("--target",), ("--platform", "pi", "--target"), ("--target", "--update")):
+        for args in (("--target",), ("--platform", "cline", "--target"), ("--target", "--update")):
             with self.subTest(args=args):
                 proc = self._run(*args)
                 self.assertEqual(proc.returncode, 1, proc.stderr)
@@ -180,7 +178,7 @@ class TestMissingOrDashOptionValues(_Scratch):
         self.assertEqual(os.listdir(self.tmp), [])
 
     def test_dot_slash_dash_target_is_accepted(self) -> None:
-        proc = self._run("--target", "./-ok", "--platform", "pi", "--dry-run")
+        proc = self._run("--target", "./-ok", "--platform", "cline", "--dry-run")
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertEqual(os.listdir(self.tmp), [], "--dry-run created something")
 
@@ -193,7 +191,7 @@ class TestDryRunCreatesNothing(_Scratch):
         for flags, code in (((), 0), (("--update",), 1), (("--projections-only",), 1)):
             with self.subTest(flags=flags):
                 target = self.tmp / "parent" / "sub"
-                proc = run_installer(INSTALLER, target, "--platform", "pi", "--dry-run", *flags)
+                proc = run_installer(INSTALLER, target, "--platform", "cline", "--dry-run", *flags)
                 self.assertEqual(proc.returncode, code, proc.stdout + proc.stderr)
                 if code:
                     self.assertIn("requires an existing emage.code install", proc.stderr)
@@ -249,7 +247,7 @@ class TestExistingMcpConfigIsMerged(_Scratch):
         self._check_opencode(target, proc.stderr)
 
     def test_plain_install_keeps_a_hand_added_server_in_every_json_config(self) -> None:
-        for platform in ("github", "claude-code", "pi", "cline"):
+        for platform in ("github", "claude-code", "cline"):
             with self.subTest(platform=platform):
                 target = self.installed(platform, f"p-{platform}")
                 path = target / MCP_CONFIG[platform]
@@ -261,37 +259,16 @@ class TestExistingMcpConfigIsMerged(_Scratch):
                 self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
                 self.assertEqual(_load(path)[wrapper]["hand-added"], {"command": "local"})
 
-    def test_plain_install_unions_the_gemini_exclude_tools_and_reports_a_replaced_hook(self) -> None:
-        target = self.installed("gemini")
-        path = target / ".gemini/settings.json"
-        data = _load(path)
-        data["mcpServers"]["playwright"]["excludeTools"] = ["my_own_tool"]
-        data["hooks"]["AfterTool"] = [{"matcher": "mine", "hooks": []}]
-        _save(path, data)
-        proc = run_installer(INSTALLER, target, "--platform", "gemini")
-        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
-        excluded = _load(path)["mcpServers"]["playwright"]["excludeTools"]
-        self.assertEqual(excluded[0], "my_own_tool")
-        self.assertTrue({d.removeprefix("playwright_") for d in DENIED} <= set(excluded))
-        self.assertIn("settings.json: replaced your value for hooks.AfterTool", proc.stderr)
-
-    def test_projections_only_keeps_the_opencode_and_gemini_denials(self) -> None:
+    def test_projections_only_keeps_the_opencode_denials(self) -> None:
         """SEC-T658-05 (d): the end-to-end --projections-only test of the denial merge."""
         target = self.tmp / "both"
         proc = run_installer(INSTALLER, target, "--platform", "all")
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         self._opencode_with_user_rules(target)
-        gemini = target / ".gemini/settings.json"
-        data = _load(gemini)
-        data["mcpServers"]["playwright"]["excludeTools"] = ["my_own_tool"]
-        _save(gemini, data)
         ledger = (target / "docs/tasks/active-tasks.md").read_bytes()
         proc = run_installer(INSTALLER, target, "--platform", "all", "--projections-only")
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         self._check_opencode(target, proc.stderr)
-        excluded = _load(gemini)["mcpServers"]["playwright"]["excludeTools"]
-        self.assertEqual(excluded[0], "my_own_tool")
-        self.assertTrue({d.removeprefix("playwright_") for d in DENIED} <= set(excluded))
         self.assertEqual((target / "docs/tasks/active-tasks.md").read_bytes(), ledger)
 
     def test_help_documents_the_decision(self) -> None:
@@ -355,9 +332,9 @@ class TestInvalidConfigIsRefusedBeforeAnyWrite(_CopierMatrix):
     def test_under_both_copiers(self) -> None:
         for label, path in self.copiers():
             with self.subTest(copier=label):
-                target, _victim = self._corrupt("gemini", f"config-{label}")
+                target, _victim = self._corrupt("opencode", f"config-{label}")
                 before = _snapshot(target)
-                proc = run_installer(INSTALLER, target, "--platform", "gemini", "--update", path=path)
+                proc = run_installer(INSTALLER, target, "--platform", "opencode", "--update", path=path)
                 self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
                 self.assertEqual(_snapshot(target), before)
 
@@ -509,7 +486,7 @@ class TestHintsAndShellHygiene(_Scratch):
 
     def test_hints_are_shell_quoted(self) -> None:
         target = self.tmp / "my proj's $(dir)"
-        proc = run_installer(INSTALLER, target, "--platform", "pi")
+        proc = run_installer(INSTALLER, target, "--platform", "cline")
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         quoted = _bash_output(f"printf '%q' {shlex.quote(str(target))}")
         self.assertIn(f"Run from {quoted}:", proc.stdout)
@@ -517,12 +494,90 @@ class TestHintsAndShellHygiene(_Scratch):
         rel = "implementation/runtime/memory/requirements-mcp-server.txt"
         self.assertIn(f"pip install -r {rel}\n", proc.stdout)
 
+    def test_the_notes_in_order_install_what_the_index_build_needs(self) -> None:
+        """T790 (QA-T760-01): the printed lines named only requirements-mcp-server.txt, and the build
+        then stopped with `ModuleNotFoundError: No module named 'yaml'`."""
+        target = self.tmp / "my proj's $(dir)"
+        proc = run_installer(INSTALLER, target, "--platform", "cline")
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        server_line = "pip install -r implementation/runtime/memory/requirements-mcp-server.txt\n"
+        build_reqs_line = ("  python3 -m venv .venv-mcp && source .venv-mcp/bin/activate && "
+                           "pip install -r implementation/runtime/memory/requirements.txt\n")
+        build_line = "  source .venv-mcp/bin/activate && python3 -m implementation.runtime.memory.build "
+        self.assertEqual(proc.stdout.count(build_reqs_line), 1)
+        self.assertLess(proc.stdout.index(server_line), proc.stdout.index(build_reqs_line))
+        self.assertLess(proc.stdout.index(build_reqs_line), proc.stdout.index(build_line))
+        self.assertTrue((target / "implementation/runtime/memory/requirements.txt").is_file())
+        self.assertFalse((target / ".venv-mcp").exists(), "the installer must install nothing itself")
+
+    def _printed_build_command(self, stdout: str) -> str:
+        lines = stdout.splitlines()
+        start = next(i for i, line in enumerate(lines) if "implementation.runtime.memory.build" in line)
+        end = next(i for i in range(start, len(lines)) if not lines[i].endswith("\\"))
+        command = "\n".join(lines[start:end + 1])
+        return command.replace("<org>/<repo>", "acme/widget").replace("<org>-<repo>", "acme-widget")
+
+    def test_the_printed_build_line_runs_in_the_printed_venv_on_its_own(self) -> None:
+        """T795 (QA-T792-1): each printed line is its own shell; the build line ran on the system python3."""
+        target = self.tmp / "my proj's $(dir)"
+        proc = run_installer(INSTALLER, target, "--platform", "cline")
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        command = self._printed_build_command(proc.stdout)
+        self.assertTrue(command.startswith("  source .venv-mcp/bin/activate && python3 -m "), command)
+        fake_bin = target / ".venv-mcp" / "bin"
+        fake_bin.mkdir(parents=True)
+        (fake_bin / "activate").write_text(f"PATH={shlex.quote(str(fake_bin))}:\"$PATH\"\n", encoding="utf-8")
+        fake_python = fake_bin / "python3"
+        fake_python.write_text("#!/bin/sh\necho \"venv-python3 $*\"\n", encoding="utf-8")
+        fake_python.chmod(0o755)
+        run = subprocess.run(["bash", "-c", command], cwd=target, capture_output=True, text=True)
+        self.assertEqual(run.returncode, 0, run.stderr)
+        self.assertTrue(run.stdout.startswith("venv-python3 -m implementation.runtime.memory.build "), run.stdout)
+        self.assertIn("--project-id acme/widget", run.stdout)
+
+    def test_without_the_venv_the_printed_build_line_stops_before_python(self) -> None:
+        """Negative case for T795: no .venv-mcp means the line fails; it never falls back to the system python3."""
+        target = self.tmp / "no venv"
+        proc = run_installer(INSTALLER, target, "--platform", "cline")
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        fake_bin = self.tmp / "system-bin"
+        fake_bin.mkdir()
+        fake_python = fake_bin / "python3"
+        fake_python.write_text("#!/bin/sh\necho system-python3\n", encoding="utf-8")
+        fake_python.chmod(0o755)
+        env = {**os.environ, "PATH": f"{fake_bin}:{os.environ.get('PATH', '')}"}
+        command = self._printed_build_command(proc.stdout)
+        run = subprocess.run(["bash", "-c", command], cwd=target, capture_output=True, text=True, env=env)
+        self.assertNotEqual(run.returncode, 0)
+        self.assertNotIn("system-python3", run.stdout)
+        self.assertFalse((target / ".venv-mcp").exists(), "the installer must install nothing itself")
+
+    def test_a_target_without_the_memory_runtime_gets_no_build_install_line(self) -> None:
+        build_reqs = "pip install -r implementation/runtime/memory/requirements.txt"
+        notice = _bash_functions("print_memory_index_notice") + "\nprint_memory_index_notice\n"
+
+        def printed(target: Path) -> str:
+            return _bash_output(f"set -eu\nTARGET={shlex.quote(str(target))}\n{notice}")
+
+        without_runtime = self.tmp / "no runtime"
+        (without_runtime / "implementation/runtime/security").mkdir(parents=True)
+        self.assertEqual(printed(without_runtime), "")
+
+        without_file = self.tmp / "no file"
+        (without_file / "implementation/runtime/memory").mkdir(parents=True)
+        self.assertIn("python3 -m implementation.runtime.memory.build", printed(without_file))
+        self.assertNotIn(build_reqs, printed(without_file))
+
+        (without_file / "implementation/runtime/memory/requirements.txt").write_text("", encoding="utf-8")
+        self.assertIn(f"  python3 -m venv .venv-mcp && source .venv-mcp/bin/activate && {build_reqs}\n",
+                      printed(without_file))
+
     def test_only_the_shipped_runtime_directories_are_searched(self) -> None:
-        target = self.installed("pi")
+        target = self.installed("cline")
         stray = target / "implementation/runtime/other/requirements-mcp-server.txt"
         stray.parent.mkdir(parents=True)
         stray.write_text("mcp==0\n", encoding="utf-8")
-        proc = run_installer(INSTALLER, target, "--platform", "pi", "--update")
+        proc = run_installer(INSTALLER, target, "--platform", "cline", "--update")
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         self.assertNotIn("runtime/other", proc.stdout)
         self.assertIn("runtime/security/requirements-mcp-server.txt", proc.stdout)
@@ -580,10 +635,10 @@ class TestPlaywrightNotice(_Scratch):
         shutil.copytree(repo_root() / "scripts", repo / "scripts", ignore=shutil.ignore_patterns("__pycache__"))
         shutil.copytree(implementation_root(), repo / "implementation",
                         ignore=shutil.ignore_patterns("__pycache__", "_index"))
-        cfg = repo / "implementation" / MCP_CONFIG["pi"]
+        cfg = repo / "implementation" / MCP_CONFIG["cline"]
         cfg.write_text(cfg.read_text(encoding="utf-8").replace('"playwright"', '"other-browser"'),
                        encoding="utf-8")
-        proc = run_installer(repo / "scripts/install.sh", self.tmp / "t", "--platform", "pi")
+        proc = run_installer(repo / "scripts/install.sh", self.tmp / "t", "--platform", "cline")
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         self.assertNotIn("Playwright", proc.stdout)
 
@@ -1205,10 +1260,10 @@ class TestStaleSwapSiblingsAreRefused(_Scratch):
 
     def test_a_sibling_of_a_platform_that_is_not_selected_is_left_alone(self) -> None:
         target = self.installed("claude-code")
-        (target / ".gemini.emage-old.4242").mkdir()
+        (target / ".opencode.emage-old.4242").mkdir()
         proc = run_installer(INSTALLER, target, "--platform", "claude-code", "--update")
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
-        self.assertTrue((target / ".gemini.emage-old.4242").is_dir())
+        self.assertTrue((target / ".opencode.emage-old.4242").is_dir())
 
     def test_a_clean_target_is_not_refused(self) -> None:
         target = self.installed("claude-code")
@@ -1257,9 +1312,9 @@ class TestPlatformMapsAreVerifiedBeforeAnyWrite(_Scratch):
     """SEC-T672-04: a platform missing from any one per-platform piece stops the run up front."""
 
     BREAKS = {
-        "install function": ("install_pi() {", "install_pix() {"),
-        "managed paths": ("    pi) printf '%s\\n' .pi .pi/mcp.json .pi/mcp.json.provenance.json ;;\n", ""),
-        "mcp config": ("    pi) printf '%s\\n' .pi/mcp.json ;;\n", ""),
+        "install function": ("install_cline() {", "install_clinex() {"),
+        "managed paths": ("    cline) printf '%s\\n' .cline .clinerules .cline/mcp.json .cline/mcp.json.provenance.json ;;\n", ""),
+        "mcp config": ("    cline) printf '%s\\n' .cline/mcp.json ;;\n", ""),
     }
 
     def _broken_installer(self, label: str) -> Path:
@@ -1273,15 +1328,15 @@ class TestPlatformMapsAreVerifiedBeforeAnyWrite(_Scratch):
         script.write_text(text.replace(old, new), encoding="utf-8")
         return script
 
-    def test_each_missing_piece_stops_all_and_pi_runs_before_the_target_exists(self) -> None:
+    def test_each_missing_piece_stops_all_and_cline_runs_before_the_target_exists(self) -> None:
         for label in self.BREAKS:
             script = self._broken_installer(label)
-            for platform in ("all", "pi"):
+            for platform in ("all", "cline"):
                 with self.subTest(missing=label, platform=platform):
                     target = self.tmp / f"t-{label.replace(' ', '-')}-{platform}"
                     proc = run_installer(script, target, "--platform", platform)
                     self.assertEqual(proc.returncode, 70, proc.stdout + proc.stderr)
-                    self.assertIn("internal: platform 'pi' is in SUPPORTED_PLATFORMS", proc.stderr)
+                    self.assertIn("internal: platform 'cline' is in SUPPORTED_PLATFORMS", proc.stderr)
                     self.assertFalse(target.exists(), "something was written before the check")
 
     def test_only_selected_platforms_are_verified(self) -> None:

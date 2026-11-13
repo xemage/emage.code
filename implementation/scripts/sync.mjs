@@ -179,45 +179,37 @@ async function readServersYaml() {
   const raw = await fs.readFile(file, 'utf8');
   const servers = parseServersYaml(raw);
   validateDenyTools(servers);
+  validateArgPlaceholders(servers);
   validateTemplatedSpecs(servers);
   return servers;
 }
 
 // T658 (SEC-T657-01): a server may carry `denyTools: [<tool>, ...]`, the exact tool names, as the
 // server itself reports them, that the platform must refuse for this server. This is the one source
-// of truth for the server-level denial; emitMcp() renders it only for the two platforms whose
+// of truth for the server-level denial; emitMcp() renders it only for the platform whose
 // documentation and vendor source show an enforcing mechanism (see
-// docs/artifacts/mcp-server-denials-v1.md): Opencode (top-level `permission`) and Gemini CLI
-// (`mcpServers.<name>.excludeTools`). Names are exact on purpose: a wildcard could silently deny
-// (or, on Opencode, fail to deny) more than the list says.
+// docs/artifacts/mcp-server-denials-v1.md): Opencode (top-level `permission`). Names are exact on purpose: a wildcard could silently deny (or, on
+// Opencode, fail to deny) more than the list says.
 const DENY_TOOL_NAME = /^[A-Za-z0-9_]+$/;
 
 // T663 (SEC-T663-06): a server entry may carry only these keys. A misspelling of a security key
 // (`denyUnlessGrant`, `denyTool`) used to be read as an unknown key and silently ignored, which
 // leaves the denial out; it now stops the run.
 const SERVER_KEYS = new Set([
-  'tags', 'transport', 'command', 'args', 'env', 'url', 'headers', 'denyTools', 'denyUnlessGranted', 'skipFormats',
+  'tags', 'transport', 'command', 'args', 'env', 'url', 'headers', 'denyTools', 'denyUnlessGranted',
   'extraPlatforms', 'cwd',
 ]);
-
-// T680 (SEC-T680-03): `skipFormats: [<format>, ...]` leaves a server out of the MCP config of the named
-// formats (the `mcp.format` of a platform manifest) because the client cannot use it, for example Pi 1.x
-// rejects a templated `url`. The provenance sidecar leaves it out too, so `--update` prunes an entry that an
-// older release generated. Only known format names are accepted: a misspelling would keep the entry.
-const MCP_FORMATS = ['vscode', 'gemini', 'opencode', 'pi', 'claude-code', 'cline'];
 
 // T690 (K-3, D-4 b): `extraPlatforms: [<platform>, ...]` adds a server to the MCP config of the named
 // platforms (the `platform` of a manifest in platforms/*.json) whose manifest `mcp.tags` do not select it. It
 // is how the `github` platform (tags: core) carries `security-audit` and `poc-security-audit` and no other
 // `extended` server. Only platform names that a manifest declares are accepted (validateExtraPlatforms, run
-// before the first write): a misspelling would leave the server out without a word. `skipFormats` still wins.
+// before the first write): a misspelling would leave the server out without a word.
+// ADR-013 (T771): the `skipFormats` key (T680) is removed, no format uses it any more; a leftover key is an
+// unknown key of SERVER_KEYS and stops the run (fail-closed).
 function selectedFor(server, manifest) {
   return (server.tags || []).some((t) => manifest.mcp.tags.includes(t))
     || (server.extraPlatforms || []).includes(manifest.platform);
-}
-
-function emittedFor(server, manifest) {
-  return selectedFor(server, manifest) && !(server.skipFormats || []).includes(manifest.mcp.format);
 }
 
 // T690: `cwd: workspace` makes the vscode projection write `"cwd": "${workspaceFolder}"` on a stdio
@@ -228,6 +220,35 @@ function emittedFor(server, manifest) {
 // directory is written out instead of left to the default. The only accepted value is `workspace`; the other
 // formats ignore the key.
 const SERVER_CWD_VALUES = ['workspace'];
+
+// T790 (QA-T760-03): an `args` entry that is exactly `{{platformDir}}` is written as the output folder of
+// the platform the config is generated for (`outputDir` of its manifest: `.claude`, `.cline`, `.opencode`).
+// That folder holds the platform's own `.generated-manifest.json`, which the `context-retriever` server
+// reads through `--platform-root`; `.claude` was written for every platform, so `retrieve` failed on an
+// install without `.claude/`. Only a whole argument is a placeholder, and any other argument that carries
+// `{{` or `}}` stops the run: a misspelled name would otherwise reach a client as literal text. The folder
+// must be one plain dot-folder name, so the value can never be a path that leaves the workspace.
+const ARG_PLACEHOLDERS = new Set(['{{platformDir}}']);
+const PLATFORM_DIR_NAME = /^\.[a-z][a-z0-9-]*$/;
+
+function validateArgPlaceholders(servers) {
+  for (const [name, server] of Object.entries(servers)) {
+    for (const arg of Array.isArray(server.args) ? server.args : []) {
+      if (typeof arg !== 'string' || ARG_PLACEHOLDERS.has(arg)) continue;
+      if (arg.includes('{{') || arg.includes('}}')) {
+        throw new Error(`servers.yaml: ${name}.args has an unknown placeholder (known: ${[...ARG_PLACEHOLDERS].join(', ')}): ${arg.slice(0, 60)}`);
+      }
+    }
+  }
+}
+
+function resolveArgPlaceholders(server, manifest) {
+  if (!Array.isArray(server.args) || !server.args.some((arg) => ARG_PLACEHOLDERS.has(arg))) return server;
+  if (typeof manifest.outputDir !== 'string' || !PLATFORM_DIR_NAME.test(manifest.outputDir)) {
+    throw new Error(`{{platformDir}}: outputDir of ${manifest.platform} is not one plain dot-folder name: ${String(manifest.outputDir).slice(0, 60)}`);
+  }
+  return { ...server, args: server.args.map((arg) => (arg === '{{platformDir}}' ? manifest.outputDir : arg)) };
+}
 
 function validateDenyTools(servers) {
   for (const [name, server] of Object.entries(servers)) {
@@ -247,13 +268,6 @@ function validateDenyTools(servers) {
     }
     if (server.cwd !== undefined && !SERVER_CWD_VALUES.includes(server.cwd)) {
       throw new Error(`servers.yaml: ${name}.cwd must be one of: ${SERVER_CWD_VALUES.join(', ')}`);
-    }
-    if (server.skipFormats !== undefined) {
-      const formats = server.skipFormats;
-      if (!Array.isArray(formats) || formats.length === 0 || formats.some((f) => !MCP_FORMATS.includes(f))
-          || new Set(formats).size !== formats.length) {
-        throw new Error(`servers.yaml: ${name}.skipFormats must be a non-empty array of distinct format names (${MCP_FORMATS.join(', ')})`);
-      }
     }
     if (server.denyTools === undefined) continue;
     const list = server.denyTools;
@@ -276,8 +290,7 @@ function validateDenyTools(servers) {
 // `secret` or `wrap`) stops the run instead of being ignored, because a dropped `secret` or `default`
 // changes what is rendered into a credential entry. `default` is deliberate and new: it is rendered
 // only for the claude-code format (see mapTemplatedValue). T680 adds `optional`: the `env` variable may be
-// unset. claude-code renders the empty default `${VAR:-}`; pi (which throws for an unset or empty
-// variable) leaves the entry out; the other formats render as before (see mapEnvOmitOptional).
+// unset. claude-code renders the empty default `${VAR:-}`; the other formats render as before.
 const SPEC_KEYS = new Set(['fromEnv', 'secret', 'wrap', 'default', 'optional']);
 const ENV_VAR_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
 // A default is literal text inside `${VAR:-<default>}`: no `$`, `{` or `}` that could end or nest the
@@ -329,8 +342,8 @@ function validateTemplatedSpecs(servers) {
     for (const key of BLOCK_KEYS) {
       for (const [k, spec] of Object.entries(server[key] || {})) {
         validateSpec(`${name}.${key}.${k}`, spec);
-        // SEC-T680-02: Pi does not pass a header through from its own environment (it does so for a stdio
-        // `env`), so an optional header would never be sent there.
+        // SEC-T680-02: only an `env` value may be left unset; a header is sent as written, so an optional
+        // header would be sent with an empty or literal placeholder value.
         if (key === 'headers' && spec && spec.optional === true) {
           throw new Error(`servers.yaml: ${name}.headers.${k} cannot be optional: only an env value can be left out`);
         }
@@ -525,7 +538,6 @@ function parseInlineObject(s) {
 //   slash       Copilot / VS Code: `<server>/<tool>` and `<server>/*`
 //               (server lower-cased, whitespace to `-`; `.` in the tool to `_`)
 //   underscore  Opencode: `<server>_<tool>` and `<server>_*` (anything outside [A-Za-z0-9_-] to `_`)
-//   pi          Pi: `mcp__<server>__<tool>` and `mcp__<server>__*` (anything outside [A-Za-z0-9_] to `_`)
 const MCP_TOOL_PREFIX = 'mcp__';
 
 // T658 (SEC-T657-09): `*` is accepted only as the whole tool part (`mcp__<server>__*`). A `*` anywhere
@@ -556,10 +568,6 @@ const MCP_TOOL_NAME_STYLES = {
   underscore: ({ server, tool }) => {
     const clean = (s) => s.replace(/[^a-zA-Z0-9_-]/g, '_');
     return tool === '*' ? `${clean(server)}_*` : `${clean(server)}_${clean(tool)}`;
-  },
-  pi: ({ server, tool }) => {
-    const clean = (s) => s.replace(/[^a-zA-Z0-9_]/g, '_');
-    return `mcp__${clean(server)}__${tool === '*' ? '*' : clean(tool)}`;
   },
 };
 
@@ -595,8 +603,7 @@ function validateMcpToolNamesStyle(manifest) {
 // A holder of the whole server gets neither. Throws when the agent would hold an allow and a deny of
 // the same name: the generator never writes both.
 // T722 (SEV-T690-01): a server counts when the manifest selects it by tag OR names it in `extraPlatforms`
-// (selectedFor, the predicate of emittedFor). `skipFormats` does not remove the denials: a server left out
-// of the generated config may still be defined by the user, so the deny stays (fail-closed).
+// (selectedFor).
 function agentMcpDenials(sourceTools, renderedTools, servers, manifest) {
   const whole = new Set();
   const named = new Set();
@@ -647,7 +654,7 @@ function sourceToolList(data) {
 }
 
 // T722 (SEV-T690-06): an `mcp__<server>__...` token whose server servers.yaml defines but this platform's
-// generated MCP config does not carry (emittedFor is false: no tag, no `extraPlatforms`, or `skipFormats`) is
+// generated MCP config does not carry (selectedFor is false: no tag and no `extraPlatforms`) is
 // left out of the agent file. The grant could only be met by a server of that name that the user defines
 // himself, so leaving it out is fail-closed. A token of a server that servers.yaml does not define is kept as
 // before. Applies to a source `tools` array (the form every shipped agent uses).
@@ -656,7 +663,7 @@ function withEmittedMcpTools(data, servers, manifest) {
   const kept = data.tools.filter((token) => {
     const parts = splitMcpToolName(token);
     if (!parts || !Object.prototype.hasOwnProperty.call(servers, parts.server)) return true;
-    return emittedFor(servers[parts.server], manifest);
+    return selectedFor(servers[parts.server], manifest);
   });
   return kept.length === data.tools.length ? data : { ...data, tools: kept };
 }
@@ -674,9 +681,7 @@ function applyAgentFrontmatter(data, name, cfg) {
       .map(([k]) => k);
   }
 
-  if (cfg.tools === 'drop') {
-    delete out.tools;
-  } else if (cfg.tools === 'object') {
+  if (cfg.tools === 'object') {
     if (Array.isArray(tools)) out.tools = tools;
   } else if (cfg.tools === 'string') {
     if (Array.isArray(tools)) {
@@ -721,74 +726,21 @@ function applyGenericFrontmatter(data, cfg) {
   // T665 placeholder-form check (the T664 token-handling design, finding F-3):
   //   vscode  `${env:VAR}` is documented through the MCP page's pointer to the variables reference
   //           and resolved by the shared configuration resolver; behaviour for an UNSET variable is unverified.
-  //   pi      `${VAR}` (T680). Run on @earendil-works/pi-coding-agent 0.99.0, 1.0.0, 1.3.0 and 1.4.0
-  //           (`pi mcp list --json`, a stdio server that recorded its environment): `${VAR}` and `$VAR` are
-  //           expanded in `env` and `headers` values, `${env:VAR}` and `${VAR:-}` stay literal text, an unset
-  //           or EMPTY variable fails the server (it is not started, a fail-closed error), a `url` is
-  //           never expanded (a templated one is rejected as "url must be an http or https URL"), and a
-  //           stdio server inherits Pi's own environment. So a variable marked `optional` is left out of
-  //           `env` (the server still receives it when it is set); an optional `headers` value is refused. Documented in
-  //           implementation/PREREQUISITES.md and docs/wiki/mcp-servers.md; the verified forms table is there.
   //   cline   `${env:VAR}` is expanded by the VS Code extension (McpHub.ts expandEnvironmentVariables);
   //           an unset variable stays literal; the CLI/SDK loader was not shown to expand it (unverified).
-function emitMcpVscodePi(filtered, format) {
-  // pi: `${VAR}` and optional variables are left out (see above); vscode: `${env:VAR}`, unchanged.
-  const template = format === 'pi' ? '${VAR}' : '${env:VAR}';
-  const mapEnvValues = (m) => (format === 'pi' ? mapEnvOmitOptional(m, template) : mapEnv(m, template));
-  const out = { servers: format === 'vscode' ? {} : undefined, mcpServers: format === 'pi' ? {} : undefined };
-  const target = format === 'vscode' ? out.servers : out.mcpServers;
+function emitMcpVscode(filtered) {
+  const servers = {};
   for (const [name, s] of Object.entries(filtered)) {
     if (s.transport === 'remote') {
-      const url = mapTemplatedValue(s.url, template);
-      target[name] = format === 'vscode' ? { type: 'http', url } : { url };
-      if (s.headers) target[name].headers = mapEnv(s.headers, template);
+      servers[name] = { type: 'http', url: mapTemplatedValue(s.url, '${env:VAR}') };
+      if (s.headers) servers[name].headers = mapEnv(s.headers, '${env:VAR}');
     } else {
-      target[name] = { command: s.command, args: s.args || [] };
-      if (format === 'vscode' && s.cwd === 'workspace') target[name].cwd = '${workspaceFolder}';
-      const env = s.env ? mapEnvValues(s.env) : undefined;
-      if (env && (format === 'vscode' || Object.keys(env).length > 0)) target[name].env = env;
+      servers[name] = { command: s.command, args: s.args || [] };
+      if (s.cwd === 'workspace') servers[name].cwd = '${workspaceFolder}';
+      if (s.env) servers[name].env = mapEnv(s.env, '${env:VAR}');
     }
   }
-  return JSON.stringify(format === 'vscode' ? { servers: target } : { mcpServers: target }, null, 2) + '\n';
-}
-
-// The Gemini CLI hook block written next to its MCP servers.
-const GEMINI_POST_EDIT_HOOKS = {
-  AfterTool: [
-    {
-      matcher: 'replace|write_file',
-      hooks: [
-        {
-          name: 'post-edit-reminder',
-          type: 'command',
-          command:
-            "echo '{\"systemMessage\": \"Reminder: Ensure code follows coding standards (naming, error handling, security). Run lint before committing.\"}'",
-        },
-      ],
-    },
-  ],
-};
-
-function emitMcpGemini(filtered) {
-  // T665 (SEC-T660-01, F-3): Gemini CLI documents `$VAR` and `${VAR}` (and `${VAR:-DEFAULT}`) and its
-  // resolver (packages/cli/src/utils/envVarResolver.ts, read at main on 2026-10-16) looks the text
-  // between the braces up as the variable NAME, so `${env:VAR}` is looked up as `env:VAR`, found
-  // nowhere, left as text by the settings loader and then expanded to an empty string by the MCP
-  // client (dotenv-expand). `${VAR}` is the documented form. Source read, not run.
-  const mcpServers = {};
-  for (const [name, s] of Object.entries(filtered)) {
-    if (s.transport === 'remote') {
-      mcpServers[name] = { httpUrl: mapTemplatedValue(s.url, '${VAR}') };
-      if (s.headers) mcpServers[name].headers = mapEnv(s.headers, '${VAR}');
-    } else {
-      mcpServers[name] = { command: s.command, args: s.args || [] };
-      if (s.env) mcpServers[name].env = mapEnv(s.env, '${VAR}');
-    }
-    // T658: documented per-server tool blocklist; applies to the main agent and to subagents
-    // (docs/artifacts/mcp-server-denials-v1.md). Gemini matches the name the server reports.
-    if (s.denyTools) mcpServers[name].excludeTools = [...s.denyTools];
-  }
-  return JSON.stringify({ hooks: GEMINI_POST_EDIT_HOOKS, mcpServers }, null, 2) + '\n';
+  return JSON.stringify({ servers }, null, 2) + '\n';
 }
 
 function emitMcpOpencode(filtered) {
@@ -846,9 +798,7 @@ function emitMcpCline(filtered) {
 }
 
 const MCP_EMITTERS = new Map([
-  ['vscode', emitMcpVscodePi],
-  ['pi', emitMcpVscodePi],
-  ['gemini', emitMcpGemini],
+  ['vscode', emitMcpVscode],
   ['opencode', emitMcpOpencode],
   ['claude-code', emitMcpClaudeCode],
   ['cline', emitMcpCline],
@@ -857,7 +807,9 @@ const MCP_EMITTERS = new Map([
 function emitMcp(servers, manifest) {
   const { format } = manifest.mcp;
   const filtered = Object.fromEntries(
-    Object.entries(servers).filter(([, s]) => emittedFor(s, manifest))
+    Object.entries(servers)
+      .filter(([, s]) => selectedFor(s, manifest))
+      .map(([name, s]) => [name, resolveArgPlaceholders(s, manifest)])
   );
   const emitter = MCP_EMITTERS.get(format);
   if (!emitter) throw new Error(`Unknown MCP format: ${format}`);
@@ -871,8 +823,8 @@ function emitMcp(servers, manifest) {
 //         OR { fromEnv: VAR, wrap: "X{VAR}Y" }   -> wrap.replace('{VAR}', <rendered above>)
 //         OR { fromEnv: VAR, default: "D" }      -> with `withDefault`: VAR becomes `VAR:-D`
 //         OR { fromEnv: VAR, optional: true }    -> with `withDefault`: VAR becomes `VAR:-` (T680)
-//   template: the platform's own placeholder pattern, e.g. '${env:VAR}' (vscode/pi/cline),
-//             '{env:VAR}' (opencode) or '${VAR}' (claude-code, gemini)
+//   template: the platform's own placeholder pattern, e.g. '${env:VAR}' (vscode/cline),
+//             '{env:VAR}' (opencode) or '${VAR}' (claude-code)
 //   withDefault: true only for the claude-code format (T665, SEC-T660-01): Claude Code passes an
 //             unset `${VAR}` through as literal text and documents `${VAR:-default}`; no other
 //             format is documented to honour a default, so those render as before.
@@ -889,18 +841,6 @@ function mapTemplatedValue(spec, template, withDefault = false) {
 function mapEnv(envSpec, template, withDefault = false) {
   const out = {};
   for (const [k, v] of Object.entries(envSpec)) out[k] = mapTemplatedValue(v, template, withDefault);
-  return out;
-}
-
-// T680: like mapEnv, but a value marked `optional: true` is left out (pi throws for an unset or empty
-// variable, and a stdio server inherits Pi's environment, so a variable that is set still reaches it).
-// Only `env` is rendered through this: an optional `headers` value is refused by validateTemplatedSpecs.
-function mapEnvOmitOptional(envSpec, template) {
-  const out = {};
-  for (const [k, v] of Object.entries(envSpec)) {
-    if (v && typeof v === 'object' && v.optional === true) continue;
-    out[k] = mapTemplatedValue(v, template);
-  }
   return out;
 }
 
@@ -1237,7 +1177,7 @@ async function syncMcp(manifest, outRoot, servers, filesWritten) {
   // emitMcp()'s return contract) to keep the 5 already-passing call sites'
   // return shape untouched.
   const filteredKeys = Object.entries(servers)
-    .filter(([, s]) => emittedFor(s, manifest))
+    .filter(([, s]) => selectedFor(s, manifest))
     .map(([name]) => name)
     .sort();
   const sidecarPath = outPath + '.provenance.json';
@@ -1341,6 +1281,16 @@ function validateExtraPlatforms(servers, manifests) {
   }
 }
 
+// T790: run before the first write, like validateExtraPlatforms: a `{{platformDir}}` argument that a
+// platform's outputDir cannot fill stops the run before any platform is written.
+function validatePlatformDirs(servers, manifests) {
+  for (const manifest of manifests) {
+    for (const server of Object.values(servers)) {
+      if (selectedFor(server, manifest)) resolveArgPlaceholders(server, manifest);
+    }
+  }
+}
+
 function reportResult(total) {
   if (!CHECK_ONLY) {
     console.log(`\nDone - ${total} files written.`);
@@ -1364,6 +1314,7 @@ async function main() {
 
   const manifests = await loadManifests(platformFiles);
   validateExtraPlatforms(servers, manifests);
+  validatePlatformDirs(servers, manifests);
 
   for (const manifest of manifests) {
     if (ONLY_PLATFORM && manifest.platform !== ONLY_PLATFORM) continue;

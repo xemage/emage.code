@@ -37,7 +37,7 @@ INSTALLER = repo_root() / "scripts" / "install.sh"
 PLATFORMS_DIR = implementation_root() / "platforms"
 MANIFEST_NAME = ".generated-manifest.json"
 AUTHORING_MARKER = Path("implementation") / "registry" / "index.json"
-SINGLE_PLATFORMS = ("github", "gemini", "opencode", "pi", "claude-code", "cline")
+SINGLE_PLATFORMS = ("github", "opencode", "claude-code", "cline")
 _AUDIENCE_RE = re.compile(r"^audience:\s*(\S+)\s*$", re.M)
 
 

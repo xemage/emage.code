@@ -34,9 +34,7 @@ implementation/knowledge/   (canonical)
    sync.mjs                    (manifest-driven generator)
         │
         ├──► .github/   (GitHub Copilot)
-        ├──► .gemini/   (Gemini CLI)
         ├──► .opencode/ (Opencode)
-        ├──► .pi/       (Pi)
         ├──► .claude/   (Claude Code)
         └──► .cline/ + .clinerules/ (Cline)
 ```
@@ -44,7 +42,7 @@ implementation/knowledge/   (canonical)
 Each platform has a manifest (`implementation/platforms/<name>.json`) describing:
 - File extensions and naming
 - Frontmatter shape (e.g. `applyTo` vs `paths`)
-- MCP output format (vscode / gemini / opencode / pi / claude-code / cline)
+- MCP output format (vscode / opencode / claude-code / cline)
 - Which `extended` MCP servers to include
 
 ## Lifecycle states

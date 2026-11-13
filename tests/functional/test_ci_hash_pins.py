@@ -39,6 +39,10 @@ then report an error):
      The limit: this guards a merge, because `unit-tests` runs on merge request and branch pipelines, not on a tag. A
      tag cut from a commit that never went through them is not guarded. The check reads the file with PyYAML, and
      GitLab's parser can differ on what PyYAML does not refuse.
+     T810 (SEC-T741-17, plan-159) adds `tags: ["release-gate"]` on the three tag jobs, exactly, and refuses the name
+     `release-gate` anywhere else in the file (`default`, the file-level variables, hidden jobs, a variable that a
+     `tags` entry could expand), a `$` in any other job's `tags`, and an `extends` of a tag job. The runner's own
+     settings (protected, run untagged jobs off, `allowed_images`) are the user's, and no test reads them.
 """
 from __future__ import annotations
 
@@ -92,26 +96,31 @@ RELEASE_ARTIFACTS = {"paths": ["CHANGELOG.md"], "expire_in": "never"}
 RELEASE_GATE_RULES = [{"if": r"$CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$/"}]
 PINNED_IMAGE = re.compile(r"python:3\.12-alpine@sha256:[0-9a-f]{64}")
 ANY_PINNED_IMAGE = re.compile(r"[a-z0-9./-]+:[A-Za-z0-9._-]+@sha256:[0-9a-f]{64}")
-GATE_KEYS = {"stage", "image", "before_script", "script", "rules"}
+GATE_KEYS = {"stage", "image", "tags", "before_script", "script", "rules"}
+RELEASE_GATE_TAG = "release-gate"  # T810 (SEC-T741-17): the user's dedicated project runner (plan-159)
+RELEASE_GATE_TAGS = [RELEASE_GATE_TAG]
 # "keys" is the whole allowlist of a job; each "exact" value is compared with the parsed value; `image` is PINNED_IMAGE.
 PINNED_JOBS = {
     RELEASE_GATE_JOB: {
         "keys": GATE_KEYS | {"variables", "timeout"},
-        "exact": {"stage": "release", "variables": {"GIT_STRATEGY": "clone"}, "timeout": RELEASE_GATE_TIMEOUT,
+        "exact": {"stage": "release", "tags": RELEASE_GATE_TAGS, "variables": {"GIT_STRATEGY": "clone"},
+                  "timeout": RELEASE_GATE_TIMEOUT,
                   "before_script": [RELEASE_GATE_REMOVE, RELEASE_GATE_INSTALL], "script": [RELEASE_GATE_COMMAND],
                   "rules": RELEASE_GATE_RULES},
     },
     DRIFT_GATE_JOB: {
         "keys": GATE_KEYS | {"variables"},
         "exact": {
-            "stage": "release", "variables": {"GIT_DEPTH": "1", "GIT_STRATEGY": "clone"}, "rules": RELEASE_GATE_RULES,
+            "stage": "release", "tags": RELEASE_GATE_TAGS, "variables": {"GIT_DEPTH": "1", "GIT_STRATEGY": "clone"},
+            "rules": RELEASE_GATE_RULES,
             "before_script": [DRIFT_GATE_APK],
             "script": [*DRIFT_GATE_FETCHES, DRIFT_GATE_DRIFT, DRIFT_GATE_TREE],
         },
     },
     RELEASE_JOB: {
         "keys": GATE_KEYS | {"variables", "needs", "artifacts"},
-        "exact": {"stage": "release", "needs": [RELEASE_GATE_JOB, DRIFT_GATE_JOB], "variables": {"GIT_DEPTH": "0", "GIT_STRATEGY": "clone"},
+        "exact": {"stage": "release", "tags": RELEASE_GATE_TAGS, "needs": [RELEASE_GATE_JOB, DRIFT_GATE_JOB],
+                  "variables": {"GIT_DEPTH": "0", "GIT_STRATEGY": "clone"},
                   "script": [RELEASE_COMMAND], "artifacts": RELEASE_ARTIFACTS, "rules": RELEASE_GATE_RULES},
     },
 }
@@ -120,7 +129,7 @@ REFUSED_TOP_LEVEL = ("include", "workflow", "spec", "image", "services", "cache"
 FILE_VARIABLES = {"GIT_DEPTH": "20", "GIT_SUBMODULE_STRATEGY": "none"}
 FILE_STAGES = ["lint", "test", "verify", "sync", "wiki-sync", "release"]
 DEFAULT_KEYS = {"image", "interruptible", "tags"}
-DEFAULT_TAGS = ["docker"]  # `tags` chooses the runner of the two gates, which set no tags of their own
+DEFAULT_TAGS = ["docker"]  # the runner of every job without its own `tags`; the three tag jobs set RELEASE_GATE_TAGS
 FILE_LEVEL_KEYS = {"default", "variables", "stages", *REFUSED_TOP_LEVEL}
 NOT_TAG_CONDITIONS = {  # none of these is true in a tag pipeline, where CI_COMMIT_BRANCH is not set
     '$CI_PIPELINE_SOURCE == "merge_request_event"',
@@ -399,6 +408,36 @@ def tag_runnable_job_problems(ci: dict) -> list[str]:
     return problems
 
 
+def strings_in(node: object) -> list[str]:
+    """Every string in a parsed value, mapping keys included."""
+    if isinstance(node, dict):
+        return [s for key, value in node.items() for s in strings_in(key) + strings_in(value)]
+    if isinstance(node, list):
+        return [s for item in node for s in strings_in(item)]
+    return [node] if isinstance(node, str) else []
+
+
+def runner_tag_problems(ci: dict) -> list[str]:
+    """T810 (SEC-T741-17): only the three tag jobs reach the dedicated runner. A job-level `tags` replaces
+    `default.tags`, and GitLab expands variables in `tags`, so outside the tag jobs the name may not occur at all, no
+    other job's `tags` may hold a `$`, and nothing may `extends` a tag job (it would inherit the tag). Hidden jobs, the
+    file-level keys and `default` are walked too. A comment counts for nothing: these are parsed values."""
+    problems = []
+    for name, node in ci.items():
+        if name in PINNED_JOBS:
+            continue
+        if any(RELEASE_GATE_TAG in s for s in strings_in(name) + strings_in(node)):
+            problems.append(f"{name} names {RELEASE_GATE_TAG}: only the three tag jobs may (SEC-T741-17)")
+        if not isinstance(node, dict) or name in FILE_LEVEL_KEYS:
+            continue
+        if any("$" in s for s in strings_in(node.get("tags"))):
+            problems.append(f"{name}: a variable in tags is refused, it could expand to {RELEASE_GATE_TAG} (SEC-T741-17)")
+        extends = node.get("extends")
+        if set(strings_in(extends)) & set(PINNED_JOBS):
+            problems.append(f"{name} extends a tag job and would inherit its runner tag (SEC-T741-17)")
+    return problems
+
+
 def ci_images(ci_text: str) -> list[tuple[str, object]]:
     """SEC-T741-04: (where, parsed value) of the `image` of `default`, of every job, and of the file level."""
     ci = yaml.safe_load(ci_text)
@@ -430,6 +469,7 @@ def ci_pin_problems(ci_text: str) -> list[str]:
     problems += predefined_variable_problems(ci)
     problems += file_level_problems(ci)
     problems += tag_runnable_job_problems(ci)
+    problems += runner_tag_problems(ci)
     problems += image_pin_problems(ci_text)
     for name in PINNED_JOBS:
         problems += pinned_job_problems(name, ci.get(name))
@@ -1166,6 +1206,67 @@ class TestCiReleaseJobAndDefaultValues(_CiMutations):
         for new in ("  interruptible: false\n", "  interruptible: 1\n", '  interruptible: "true"\n', "  interruptible:\n"):
             with self.subTest(new):
                 self._assert_ci_refused(self._in_file(self.INTERRUPTIBLE, new), "default.interruptible must be exactly true")
+
+
+class TestCiReleaseGateRunnerTag(_CiMutations):
+    """T810 (SEC-T741-17, plan-159): the three tag jobs run on the dedicated runner, and nothing else names its tag.
+    Only a tag pipeline proves the routing; these pin the file that GitLab reads."""
+
+    TAG_LINE = '  tags: ["release-gate"]\n'
+    TAG_JOBS = (RELEASE_GATE_JOB, DRIFT_GATE_JOB, RELEASE_JOB)
+    UNIT_TAGS = "  tags:\n    - dind"
+    DEFAULT_TAGS_TEXT = "  tags:\n    - docker\n"
+    BRANCH_RULES = "  script: [a]\n  rules:\n    - if: $CI_COMMIT_BRANCH\n"
+
+    def test_exactly_the_three_tag_jobs_carry_the_tag(self):
+        ci = yaml.safe_load(self.ci)
+        carriers = sorted(name for name, job in ci.items() if isinstance(job, dict) and RELEASE_GATE_TAG in strings_in(job.get("tags")))
+        self.assertEqual(carriers, sorted(self.TAG_JOBS))
+        self.assertEqual(ci["default"]["tags"], DEFAULT_TAGS)
+        self.assertEqual(runner_tag_problems(ci), [])
+
+    def test_mutation_a_tag_job_without_the_tag_is_refused(self):
+        for job in self.TAG_JOBS:
+            with self.subTest(job=job, form="dropped"):
+                bad = self._mutated_job(self.TAG_LINE, "", job)
+                self._assert_ci_refused(bad, "exactly the keys")
+                self._assert_ci_refused(bad, "exactly this tags")
+            for new in ('  tags: ["docker"]\n', "  tags: []\n", '  tags: ["release-gate-x"]\n'):
+                with self.subTest(job=job, new=new):
+                    self._assert_ci_refused(self._mutated_job(self.TAG_LINE, new, job), "exactly this tags")
+
+    def test_mutation_a_tag_job_with_an_extra_tag_is_refused(self):
+        for job in self.TAG_JOBS:
+            for new in ('  tags: ["release-gate", "docker"]\n', '  tags: ["dind", "release-gate"]\n',
+                        "  tags:\n    - release-gate\n    - release-gate\n", "  tags: release-gate\n"):
+                with self.subTest(job=job, new=new):
+                    self._assert_ci_refused(self._mutated_job(self.TAG_LINE, new, job), "exactly this tags")
+
+    def test_mutation_a_branch_job_with_the_tag_is_refused(self):
+        forms = {
+            "unit-tests, a second tag": self._mutated_job(self.UNIT_TAGS, "  tags:\n    - release-gate\n    - dind", "unit-tests"),
+            "unit-tests, only the tag": self._mutated_job(self.UNIT_TAGS, "  tags:\n    - release-gate", "unit-tests"),
+            "markdown-links, an added tags": self._mutated_job("  stage: lint\n", "  stage: lint\n" + self.TAG_LINE, "markdown-links"),
+            "a hidden job": self.ci + "\n.gate-runner:\n" + self.TAG_LINE,
+            "a branch job added": self.ci + "\nlater-job:\n" + self.TAG_LINE + self.BRANCH_RULES,
+            "default": self._in_file(self.DEFAULT_TAGS_TEXT, self.DEFAULT_TAGS_TEXT + "    - release-gate\n"),
+            "a variable holding it": self._mutated_job(self.UNIT_TAGS, "  tags:\n    - $GATE\n    - dind", "unit-tests")
+                                     .replace("    DOCKER_HOST:", "    GATE: release-gate\n    DOCKER_HOST:", 1),
+        }
+        for name, bad in forms.items():
+            with self.subTest(name):
+                self._assert_ci_refused(bad, "names release-gate: only the three tag jobs may")
+
+    def test_mutation_a_variable_in_another_jobs_tags_is_refused(self):
+        for new in ("  tags:\n    - $RUNNER_TAG", "  tags:\n    - ${RUNNER_TAG}", "  tags:\n    - dind-$X"):
+            with self.subTest(new):
+                self._assert_ci_refused(self._mutated_job(self.UNIT_TAGS, new, "unit-tests"), "a variable in tags is refused")
+
+    def test_mutation_extending_a_tag_job_is_refused(self):
+        for extends in ("release", '["release-docs-gate"]', '[".base", "main-develop-drift-gate"]'):
+            with self.subTest(extends):
+                bad = self.ci + f"\nlater-job:\n  extends: {extends}\n" + self.BRANCH_RULES
+                self._assert_ci_refused(bad, "extends a tag job and would inherit its runner tag")
 
 
 class TestCiFilePin(_CiMutations):
