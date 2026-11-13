@@ -22,7 +22,7 @@ builds a THROWAWAY ``package.json`` from them, so the usual tools work on the re
                                 vulnerable entry puts at risk is the named one: a second pin that pulls the
                                 same vulnerable library stays a finding. An expired acceptance fails the
                                 run. Acceptances are recorded in an artifact
-                                (docs/artifacts/brave-audit-acceptance-v3.md) and listed in the checklist.
+                                (docs/artifacts/brave-audit-acceptance-v4.md) and listed in the checklist.
   provenance                    ask the npm registry whether the pinned version, and the ``latest``
         [--require]             version, carry a provenance attestation (SEC-T646-03). --require: exit 1
                                 when a pinned version has none.
