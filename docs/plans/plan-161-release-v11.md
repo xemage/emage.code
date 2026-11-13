@@ -2,7 +2,7 @@
 
 **Created:** 2026-11-13
 **Based on:** `docs/artifacts/tracked-debt-register-v16.md` (§ 6.1, § 6.2 items 1 to 42 with v11 to v15 for the carried text, § 6.3, § 7); `docs/plans/plan-145-release-v10.md` (the v10.0.0 release, whose shape this follows); `docs/plans/plan-159-release-gate-runner-tag.md` (§ Outcome); `docs/plans/plan-160-v11-confirmation-sec-t660-t665.md` (§ Outcome); `docs/artifacts/brave-audit-acceptance-v4.md`; `CONTRIBUTING.md` § Cutting a release; skill `release-workflow`; ADR-011, ADR-012, ADR-013, ADR-014, ADR-015, ADR-016.
-**Scopes:** `T813` to `T825`.
+**Scopes:** `T813` to `T826`.
 
 ## User decision (2026-11-13, verbatim)
 
@@ -155,6 +155,47 @@ graph TD
   | T823 | 72k | 30k |
   | T824 | 68k | 50k |
   | T825 | 119k | 50k |
+
+## Addendum 3 (2026-11-13; the orchestrator's record): the probe tag (T817)
+
+- **The user's approval at the moment** (question dialog, verbatim): "Yes, push the probe tag". The orchestrator pushed `v11.0.0-gate.1` on `01fe29e4`; the push was accepted.
+- **Tag pipeline 3066689514:**
+  - `release-docs-gate` (job 18021931851) and `main-develop-drift-gate` (job 18021931852) both ran on runner #59129270 (`emage-release-gate`, short token `oC2uPzvuV`, system ID `s_7371c6d24bcc`, GitLab Runner 19.5.3), with the Docker executor.
+  - Each pulled and used `python:3.12-alpine@sha256:e064671c…` (allowed by `allowed_images`) and started from a fresh clone; `rm -rf .git` and the hash-locked `pip install` ran.
+  - Both failed as expected. The docs gate printed "missing required file: docs/releases/v11.0.0-gate.1.md". The drift gate printed "RELEASE TAG TREE: FAIL", because the tree differs from `origin/main`.
+  - `release` was skipped. Nothing was published.
+- **What this proves:** the two gates route to the dedicated runner and its image allowlist accepts the pinned digest.
+- **What it does not prove:**
+  - the `release` job on this runner, and the credential path of the drift gate's fetches (the project is public);
+  - that system ID `s_7371c6d24bcc` is `gitlab-runner-16028`. Only the user can tie the ID to the host **(unverified)**.
+- **User action:** delete `v11.0.0-gate.1` in the web UI (Repository → Tags).
+
+## Addendum 4 (2026-11-13; the orchestrator's record): the gates, and the document fixes before the verdict
+
+- **T818 QA** (`docs/artifacts/qa-gate-release-v11-v1.md`, `ee72f497`): **CONDITIONAL_PASS**.
+  - Full suite: 2744 OK (skipped=24). The 25th skip ran, because the active queue was not empty.
+  - Golden suite, scorecard and all gates are green. The release-docs gate fails only on the 16 pending values.
+  - Pi and Gemini are refused in every mode. `--update` from v10.0.0 keeps `.pi/` and `.gemini/` byte for byte.
+  - Findings:
+    - QA-T818-02 (Medium): the M-1/M-2 cleanup order fails.
+    - QA-T818-01 (Low): reproduces TD-T774-01. `rsync -a` can skip the same-size lock files, so a target keeps `opentelemetry-api` 1.45.1.
+    - QA-T818-03 (Low): the M-5 and installer wording on `--project-id`.
+    - QA-T818-04 (Low): while the probe tag exists, the CHANGELOG artifact and the drift script take it for the previous release.
+- **T819 Tech Lead** (`docs/artifacts/tech-lead-release-v11-v1.md`, `48c97514`): **CONDITIONAL_PASS**.
+  - TL-T819-01 (= SEC-T820-01): K-36 and K-32 are stale after the probe.
+  - TL-T819-02: the Highlights notice wording.
+  - TL-T819-03 to -05: LOW, tracked.
+  - The Tech Lead's `grep` also listed the user's root `.vscode/mcp.json` path, but printed no line of it (disclosed).
+- **T820 Security** (`docs/artifacts/security-review-t820-release-v11-v1.md`): **CONDITIONAL_PASS**.
+  - The three accepted-MEDIUM records are complete.
+  - Conditions:
+    - C-1: the Conditions block carries every slot, with SEC-T660-01's passed deadline in its own line.
+    - C-2: the dates and the Brave audit on the tag day.
+    - C-3: all three tag jobs on #59129270.
+  - SEC-T820-01 (LOW): the K-36 wording.
+- **T826** (release-manager): the document fixes before T821. Then the Security Engineer grades TD-T774-01 (now reproduced) and QA-T818-03, and checks the fixed lines.
+- **Code fixes** for QA-T818-01 and QA-T818-03 (`install.sh` rsync, `build.py` check and its printed note): tracked for register v17 under the LOW policy, unless the grade is MEDIUM or higher. In that case the user is asked.
+- **User action before the tag (C3 of T818):** delete `v11.0.0-gate.1`. It was still on the remote at writing, with 1 `gate` ref.
 
 ## Risk Assessment
 
