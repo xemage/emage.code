@@ -156,6 +156,20 @@ graph TD
   | T824 | 68k | 50k |
   | T825 | 119k | 50k |
 
+## Addendum 3 (2026-11-13; the orchestrator's record): the probe tag (T817)
+
+- **The user's approval at the moment** (question dialog, verbatim): "Yes, push the probe tag". The orchestrator pushed `v11.0.0-gate.1` on `01fe29e4`; the push was accepted.
+- **Tag pipeline 3066689514:**
+  - `release-docs-gate` (job 18021931851) and `main-develop-drift-gate` (job 18021931852) both ran on runner #59129270 (`emage-release-gate`, short token `oC2uPzvuV`, system ID `s_7371c6d24bcc`, GitLab Runner 19.5.3), with the Docker executor.
+  - Each pulled and used `python:3.12-alpine@sha256:e064671c…` (allowed by `allowed_images`) and started from a fresh clone; `rm -rf .git` and the hash-locked `pip install` ran.
+  - Both failed as expected. The docs gate printed "missing required file: docs/releases/v11.0.0-gate.1.md". The drift gate printed "RELEASE TAG TREE: FAIL", because the tree differs from `origin/main`.
+  - `release` was skipped. Nothing was published.
+- **What this proves:** the two gates route to the dedicated runner and its image allowlist accepts the pinned digest.
+- **What it does not prove:**
+  - the `release` job on this runner, and the credential path of the drift gate's fetches (the project is public);
+  - that system ID `s_7371c6d24bcc` is `gitlab-runner-16028`. Only the user can tie the ID to the host **(unverified)**.
+- **User action:** delete `v11.0.0-gate.1` in the web UI (Repository → Tags).
+
 ## Risk Assessment
 
 - **The release-gate runner has never run a job.** If routing or `allowed_images` fails, the tag jobs stay pending or fail closed, and nothing is published. T817 finds this before the real tag.

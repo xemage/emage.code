@@ -2,12 +2,13 @@
 
 **ID:** T817
 **Owner:** orchestrator
-**Status:** in_progress
+**Status:** done
 **Priority:** P0
 **Tier:** standard
 **Depends on:** —
 **Affects:** —
 **Created:** 2026-11-13
+**Completed:** 2026-11-13
 **Based on:**
 - `docs/plans/plan-161-release-v11.md` (§ Task Decomposition item 5)
 - The user's answer of 2026-11-13 (question dialog, option label verbatim): "Yes, probe first (Recommended)"
