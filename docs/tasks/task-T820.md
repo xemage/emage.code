@@ -2,12 +2,13 @@
 
 **ID:** T820
 **Owner:** security-engineer
-**Status:** in_progress
+**Status:** done
 **Priority:** P0
 **Tier:** standard
 **Depends on:** —
 **Affects:** —
 **Created:** 2026-11-13
+**Completed:** 2026-11-13
 **Based on:**
 - `docs/plans/plan-161-release-v11.md` (§ Task Decomposition item 8; § Addenda 1 to 3)
 - `docs/releases/v11.0.0.md` (T816); `docs/artifacts/release-v11-audit-v1.md` (T813)
