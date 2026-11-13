@@ -1,7 +1,7 @@
 # Prerequisites — emage.code implementation
 
 ## Required
-- **Node.js 18+** — for `scripts/sync.mjs` and for MCP servers launched via `npx`.
+- **Node.js 22 (22.23.5 or later), 24 (24.22.3 or later) or 26 (26.13.1 or later)**, the November 2026 Node security releases; odd-numbered and end-of-life lines (18, 20, 23, 25) are not supported — for `scripts/sync.mjs` and for MCP servers launched via `npx`.
 - **Python 3.10+** — for `check.py`, `package.py`, and registry generation.
 - **Git 2.30+** — for worktree isolation, branch policies, and pack install from git URLs. The optional `poc-security-audit` server needs **Git 2.40+** (see below).
 
@@ -224,7 +224,7 @@ Tracked but not part of this checklist: whether a Developer-level token can merg
 From the repository root:
 
 ```bash
-node --version           # ≥ 18
+node --version           # v22 ≥ 22.23.5, v24 ≥ 24.22.3, or v26 ≥ 26.13.1
 python3 --version        # ≥ 3.10
 git --version            # ≥ 2.30 (≥ 2.40 for the poc-security-audit server)
 make sync && make verify
