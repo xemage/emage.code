@@ -443,6 +443,14 @@ def _stub_git_dir(parent: Path, body: str) -> Path:
     return stub_dir
 
 
+# T835 (SEC-T835-01): an `@` inside the query string or fragment, after a secret-bearing `?` or `#`.
+_AT_IN_QUERY_OR_FRAGMENT_REMOTES = (
+    "https://host/r?email=a@b&private_token=QSECRET",
+    "https://host/o/r#x@y&FSECRET",
+    "git@host:o/r?a=b@c&t=QSECRET",
+)
+
+
 class RemoteResolutionHardeningTests(unittest.TestCase):
     """T831: SEC-T829-01 (a hanging `git` is a refusal, not a traceback) and SEC-T829-02 (userinfo with a raw
     `/` never reaches a message) on the server's own resolution path (`default_index_dir`)."""
@@ -491,6 +499,71 @@ class RemoteResolutionHardeningTests(unittest.TestCase):
 
     def test_the_default_git_timeout_is_still_ten_seconds(self):
         self.assertEqual(cr._GIT_TIMEOUT_S, 10)
+
+    def test_a_query_string_never_reaches_a_normalize_message(self):
+        """T834 (SEC-T832-01): the shape error drops everything from the first `?` or `#` on."""
+        for remote in ("https://host/r?private_token=QSECRET", "https://host/r#QSECRET",
+                       "https://bob:p?w@host/r?private_token=QSECRET"):
+            with self.subTest(remote=remote):
+                with self.assertRaises(cr.RemoteResolutionError) as caught:
+                    cr.normalize_remote_to_project_id(remote)
+                message = str(caught.exception).lower()
+                self.assertNotIn("qsecret", message)
+                self.assertNotIn("private_token", message)
+                self.assertNotIn("bob", message)  # T835 (SEC-T835-01): the userinfo holding a `?` goes whole
+                self.assertNotIn("p?w", message)
+                self.assertIn("no <org>/<repo> path", message)
+
+    def test_an_at_sign_in_a_query_or_fragment_never_reveals_it(self):
+        """T835 (SEC-T835-01): a `?` or `#` before the last `@` makes userinfo and query indistinguishable,
+        so only the scheme and `***` are shown."""
+        for remote in _AT_IN_QUERY_OR_FRAGMENT_REMOTES:
+            with self.subTest(remote=remote):
+                with self.assertRaises(cr.RemoteResolutionError) as caught:
+                    cr.normalize_remote_to_project_id(remote)
+                message = str(caught.exception).lower()
+                self.assertNotIn("qsecret", message)
+                self.assertNotIn("fsecret", message)
+                self.assertIn("***", message)
+
+    def test_an_at_sign_in_a_query_or_fragment_never_reaches_the_server_refusal(self):
+        """T835 (SEC-T835-01): the same remotes on the server's own path (`default_index_dir`)."""
+        for number, remote in enumerate(_AT_IN_QUERY_OR_FRAGMENT_REMOTES):
+            with self.subTest(remote=remote):
+                workspace = self.tmp / f"workspace-{number}"
+                _init_git_repo(workspace, remote)
+                with self.assertRaises(cr.RemoteResolutionError) as caught:
+                    cr.default_index_dir(workspace)
+                message = str(caught.exception).lower()
+                self.assertNotIn("qsecret", message)
+                self.assertNotIn("fsecret", message)
+
+    def test_a_query_string_or_fragment_never_reaches_the_server_refusal(self):
+        """T834 (SEC-T832-01): a remote whose slug carries `?token=` or `#` is refused without the slug."""
+        for number, remote in enumerate(("https://host/r?private_token=QSECRET", "https://host/o/r?token=QSECRET",
+                                         "https://host/o/r#FSECRET")):
+            with self.subTest(remote=remote):
+                workspace = self.tmp / f"workspace-{number}"
+                _init_git_repo(workspace, remote)
+                with self.assertRaises(cr.RemoteResolutionError) as caught:
+                    cr.default_index_dir(workspace)
+                message = str(caught.exception).lower()
+                self.assertNotIn("qsecret", message)
+                self.assertNotIn("fsecret", message)
+                self.assertNotIn("token=", message)
+
+    def test_a_remote_that_is_not_valid_text_is_a_refusal_not_a_traceback(self):
+        """T834 (SEC-T832-02): undecodable `git remote get-url` output fails closed as a resolution error."""
+        from unittest import mock
+        workspace = self.tmp / "workspace"
+        _init_git_repo(workspace, "https://gitlab.com/acme/widget.git")
+        stub_dir = _stub_git_dir(self.tmp, r"printf 'https://h/\377\376/r\n'")
+        path = f"{stub_dir}{os.pathsep}{os.environ.get('PATH', '')}"
+        with mock.patch.dict(os.environ, {"PATH": path}):
+            with self.assertRaises(cr.RemoteResolutionError) as caught:
+                cr.default_index_dir(workspace)
+        self.assertIsInstance(caught.exception.__cause__, UnicodeDecodeError)
+        self.assertIn("not valid UTF-8 text", str(caught.exception))
 
 
 class ScopeFilterReuseNotBypassTests(unittest.TestCase):

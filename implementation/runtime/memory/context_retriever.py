@@ -103,10 +103,21 @@ _USERINFO_LEFT_IN_PATH = "@"
 _GIT_TIMEOUT_S: float = 10
 
 
+# T834 (SEC-T832-01): a query string or fragment (`?private_token=...`, `#...`) can carry a secret too.
+_QUERY_OR_FRAGMENT_RE = re.compile(r"[?#]")
+
+
 def _redacted(remote_url: str) -> str:
     """`remote_url` for an error message: everything up to its last `@` after the scheme replaced by `***@`,
-    at most 200 characters."""
-    return _USERINFO_RE.sub(r"\1***@", remote_url, count=1)[:200]
+    then everything from the first `?` or `#` on dropped, at most 200 characters. The userinfo goes first,
+    so a `?` or `#` inside it cannot shield the rest of it from the substitution. T835 (SEC-T835-01): when a
+    `?` or `#` comes before the last `@`, userinfo and query or fragment cannot be told apart (an `@` in
+    `?email=a@b&token=...` would end the "userinfo"), so only the scheme and `***` are shown."""
+    head, at, _ = remote_url.rpartition("@")
+    if at and _QUERY_OR_FRAGMENT_RE.search(head):
+        return _USERINFO_RE.match(remote_url).group(1)[:200] + "***"
+    without_userinfo = _USERINFO_RE.sub(r"\1***@", remote_url, count=1)
+    return _QUERY_OR_FRAGMENT_RE.split(without_userinfo, maxsplit=1)[0][:200]
 
 
 def normalize_remote_to_project_id(remote_url: str) -> str:
@@ -141,13 +152,19 @@ def derive_project_id(workspace_root: Path) -> str:
     try:
         result = subprocess.run(
             ["git", "-C", str(workspace_root), "remote", "get-url", "origin"],
-            capture_output=True, text=True, timeout=_GIT_TIMEOUT_S, check=True,
+            # T835 (SEC-T835-02): strict UTF-8, whatever the locale; undecodable output is refused below.
+            capture_output=True, text=True, encoding="utf-8", timeout=_GIT_TIMEOUT_S, check=True,
         )
     except (subprocess.SubprocessError, OSError) as exc:  # T831 (SEC-T829-01): CalledProcessError, TimeoutExpired
         raise RemoteResolutionError(
             f"could not resolve a git remote for {workspace_root} — project_id must come "
             "from the workspace's own git remote (memory-scope-model-v1.md §3), not a "
             "caller-supplied value"
+        ) from exc
+    except UnicodeDecodeError as exc:  # T834 (SEC-T832-02): a `ValueError`, not a `SubprocessError`
+        raise RemoteResolutionError(
+            f"the git remote of {workspace_root} is not valid UTF-8 text — "
+            "no project_id is derived from it"
         ) from exc
     return normalize_remote_to_project_id(result.stdout)
 
@@ -182,7 +199,9 @@ def default_index_dir(workspace_root: Path) -> Path:
     is not one plain path component of `[a-z0-9._-]` is refused, never used as a path."""
     slug = derive_project_id(workspace_root).replace("/", "-")
     if not _INDEX_SLUG_RE.fullmatch(slug):
-        raise RemoteResolutionError(f"project_id does not give a plain index directory name: {slug[:80]!r}")
+        # T834 (SEC-T832-01): the slug is not repeated; it can hold a remote's query string (`?token=...`).
+        raise RemoteResolutionError("project_id derived from the git remote 'origin' does not give a plain index "
+                                    "directory name (one path component of [a-z0-9._-], at most 200 characters)")
     return workspace_root / INDEX_PARENT / slug
 
 
