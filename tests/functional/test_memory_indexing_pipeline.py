@@ -563,6 +563,47 @@ class RemoteProjectIdTests(unittest.TestCase):
         self.assertIn("gives no project id", stderr)
         self.assertNotIn("Traceback", stderr)
 
+    def test_a_query_string_or_fragment_never_reaches_the_refusal(self):
+        """T834 (SEC-T832-01): no secret from a remote's query string or fragment, in any letter case."""
+        for remote in ("https://host/r?private_token=QSECRET", "https://host/o/r?token=QSECRET",
+                       "https://host/o/r#FSECRET"):
+            with self.subTest(remote=remote):
+                if "origin" in self._remotes():
+                    self._git("remote", "remove", "origin")
+                self._git("remote", "add", "origin", remote)
+                code, stderr, built = self._main("acme/widget")
+                self.assertEqual((code, built), (2, []))
+                self.assertNotIn("qsecret", stderr.lower())
+                self.assertNotIn("fsecret", stderr.lower())
+
+    def test_an_at_sign_in_a_query_or_fragment_never_reaches_the_refusal(self):
+        """T835 (SEC-T835-01): an `@` after a `?` or `#` does not let the query or fragment through."""
+        for remote in ("https://host/r?email=a@b&private_token=QSECRET", "https://host/o/r#x@y&FSECRET",
+                       "git@host:o/r?a=b@c&t=QSECRET", "https://bob:p?w@host/r?private_token=QSECRET"):
+            with self.subTest(remote=remote):
+                if "origin" in self._remotes():
+                    self._git("remote", "remove", "origin")
+                self._git("remote", "add", "origin", remote)
+                code, stderr, built = self._main("acme/widget")
+                self.assertEqual((code, built), (2, []))
+                for secret in ("qsecret", "fsecret", "bob", "p?w"):
+                    self.assertNotIn(secret, stderr.lower())
+
+    def test_a_remote_that_is_not_valid_text_is_a_refusal_not_a_traceback(self):
+        """T834 (SEC-T832-02): undecodable `git remote get-url` output is refused with exit 2, not raised."""
+        from unittest import mock
+        self._git("remote", "add", "origin", "https://gitlab.com/acme/widget.git")
+        stub_dir = Path(self._tmp.name) / "stub-bin"
+        stub_dir.mkdir()
+        (stub_dir / "git").write_text("#!/bin/sh\nprintf 'https://h/\\377\\376/r\\n'\n")
+        (stub_dir / "git").chmod(0o755)
+        path = f"{stub_dir}{os.pathsep}{os.environ.get('PATH', '')}"
+        with mock.patch.dict(os.environ, {"PATH": path}):
+            code, stderr, built = self._main("acme/widget")
+        self.assertEqual((code, built), (2, []))
+        self.assertIn("gives no project id", stderr)
+        self.assertNotIn("Traceback", stderr)
+
     def _remotes(self) -> list[str]:
         import subprocess
         out = subprocess.run(["git", "-C", str(self.root), "remote"], check=True, capture_output=True, text=True)
