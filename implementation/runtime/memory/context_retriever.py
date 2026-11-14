@@ -89,13 +89,23 @@ _REMOTE_RE = re.compile(
 )
 
 
-# T797 (SEC-T796-01): a remote can carry `user:token@` userinfo; no message repeats it. Greedy up to the last `@`
-# before the first `/`, so a secret that itself holds an `@` is removed whole.
-_USERINFO_RE = re.compile(r"^((?:[a-zA-Z][\w+.-]*://)?)[^/]*@")
+# T797 (SEC-T796-01): a remote can carry `user:token@` userinfo; no message repeats it. T831 (SEC-T829-02):
+# userinfo may hold a raw `/` (`https://bob:/tok@host`), so where it ends cannot be told from the first `/`.
+# Everything between the scheme and the LAST `@` of the URL is removed: a secret holding `@` or `/` goes whole,
+# scp-like `user@host:path` too. It over-redacts a path that holds an `@`; a message loses detail, never a secret.
+_USERINFO_RE = re.compile(r"^((?:[a-zA-Z][\w+.-]*://)?).*@", re.DOTALL)
+
+# T831 (SEC-T829-02): an id with `@` is never a valid index slug (`_INDEX_SLUG_RE`); refusing it here keeps
+# userinfo the parser could not separate from the path (a raw `/` in it) out of the id and its messages.
+_USERINFO_LEFT_IN_PATH = "@"
+
+# T831 (SEC-T829-01): seconds `git remote get-url` may take; a module constant so tests can lower it.
+_GIT_TIMEOUT_S: float = 10
 
 
 def _redacted(remote_url: str) -> str:
-    """`remote_url` for an error message: userinfo replaced by `***@`, at most 200 characters."""
+    """`remote_url` for an error message: everything up to its last `@` after the scheme replaced by `***@`,
+    at most 200 characters."""
     return _USERINFO_RE.sub(r"\1***@", remote_url, count=1)[:200]
 
 
@@ -117,6 +127,9 @@ def normalize_remote_to_project_id(remote_url: str) -> str:
     org, repo = parts[-2], parts[-1]
     if org in _DOT_SEGMENTS or repo in _DOT_SEGMENTS:
         raise RemoteResolutionError(f"git remote URL has a '.' or '..' <org>/<repo> segment: {_redacted(remote_url)!r}")
+    if _USERINFO_LEFT_IN_PATH in org or _USERINFO_LEFT_IN_PATH in repo:
+        raise RemoteResolutionError("git remote URL has an '@' in its <org>/<repo> path (userinfo with an unencoded "
+                                    f"'/'?): {_redacted(remote_url)!r}")
     return f"{org}/{repo}".lower()
 
 
@@ -128,9 +141,9 @@ def derive_project_id(workspace_root: Path) -> str:
     try:
         result = subprocess.run(
             ["git", "-C", str(workspace_root), "remote", "get-url", "origin"],
-            capture_output=True, text=True, timeout=10, check=True,
+            capture_output=True, text=True, timeout=_GIT_TIMEOUT_S, check=True,
         )
-    except (subprocess.CalledProcessError, FileNotFoundError, OSError) as exc:
+    except (subprocess.SubprocessError, OSError) as exc:  # T831 (SEC-T829-01): CalledProcessError, TimeoutExpired
         raise RemoteResolutionError(
             f"could not resolve a git remote for {workspace_root} — project_id must come "
             "from the workspace's own git remote (memory-scope-model-v1.md §3), not a "

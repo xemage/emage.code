@@ -530,6 +530,39 @@ class RemoteProjectIdTests(unittest.TestCase):
                 self.assertNotIn("S3cr3t-T828", stderr)
                 self.assertNotIn("bob", stderr)
 
+    def test_userinfo_with_a_raw_slash_never_reaches_the_refusal(self):
+        """T831 (SEC-T829-02): userinfo the URL parser cannot separate from the path (a raw `/`, a secret
+        holding `@`) is not repeated in any letter case."""
+        for remote in ("https://usrt831:/sect831@host", "https://usrt831:/a/sect831@host/x",
+                       "ssh://usrt831:p/sect831@h:22/r", "usrt831/x:sect831@host:r",
+                       "https://usrt831:/sect831@x@host"):
+            with self.subTest(remote=remote):
+                if "origin" in self._remotes():
+                    self._git("remote", "remove", "origin")
+                self._git("remote", "add", "origin", remote)
+                code, stderr, built = self._main("acme/widget")
+                self.assertEqual((code, built), (2, []))
+                self.assertNotIn("usrt831", stderr.lower())
+                self.assertNotIn("sect831", stderr.lower())
+
+    def test_a_git_that_hangs_is_a_refusal_not_a_traceback(self):
+        """T831 (SEC-T829-01): `git remote get-url` past its timeout is refused with exit 2, not raised."""
+        from unittest import mock
+
+        from implementation.runtime.memory import context_retriever
+        self._git("remote", "add", "origin", "https://gitlab.com/acme/widget.git")
+        stub_dir = Path(self._tmp.name) / "stub-bin"
+        stub_dir.mkdir()
+        (stub_dir / "git").write_text("#!/bin/sh\nexec sleep 30\n")
+        (stub_dir / "git").chmod(0o755)
+        path = f"{stub_dir}{os.pathsep}{os.environ.get('PATH', '')}"
+        with mock.patch.dict(os.environ, {"PATH": path}), \
+                mock.patch.object(context_retriever, "_GIT_TIMEOUT_S", 0.5):
+            code, stderr, built = self._main("acme/widget")
+        self.assertEqual((code, built), (2, []))
+        self.assertIn("gives no project id", stderr)
+        self.assertNotIn("Traceback", stderr)
+
     def _remotes(self) -> list[str]:
         import subprocess
         out = subprocess.run(["git", "-C", str(self.root), "remote"], check=True, capture_output=True, text=True)

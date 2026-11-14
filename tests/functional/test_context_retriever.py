@@ -22,6 +22,7 @@ from __future__ import annotations
 import argparse
 import inspect
 import json
+import os
 import re
 import subprocess
 import sys
@@ -419,6 +420,77 @@ class RequestingContextDerivationTests(unittest.TestCase):
 
             self.assertEqual(context, RequestingContext(project_id="em-age/emage.code",
                                                           platform="claude-code"))
+
+
+# T831 (SEC-T829-02): userinfo the URL parser cannot separate from the path (a raw `/` in it, a secret holding
+# `@`). `usrt831` is the user and `sect831` the secret; neither may reach any message, in any letter case.
+_UNSEPARABLE_USERINFO_REMOTES = (
+    "https://usrt831:/sect831@host",
+    "https://usrt831:/a/sect831@host/x",
+    "ssh://usrt831:p/sect831@h:22/r",
+    "usrt831/x:sect831@host:r",
+    "https://usrt831:/sect831@x@host",
+)
+
+
+def _stub_git_dir(parent: Path, body: str) -> Path:
+    """A directory holding an executable `git` that runs `body` (POSIX sh), to put first on PATH."""
+    stub_dir = parent / "stub-bin"
+    stub_dir.mkdir()
+    stub = stub_dir / "git"
+    stub.write_text(f"#!/bin/sh\n{body}\n")
+    stub.chmod(0o755)
+    return stub_dir
+
+
+class RemoteResolutionHardeningTests(unittest.TestCase):
+    """T831: SEC-T829-01 (a hanging `git` is a refusal, not a traceback) and SEC-T829-02 (userinfo with a raw
+    `/` never reaches a message) on the server's own resolution path (`default_index_dir`)."""
+
+    def setUp(self):
+        from unittest import mock
+        patcher = mock.patch.dict(os.environ, {"GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"})
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.tmp = Path(self._tmp.name)
+
+    def test_unseparable_userinfo_never_reaches_a_normalize_message(self):
+        for remote in _UNSEPARABLE_USERINFO_REMOTES:
+            with self.subTest(remote=remote):
+                with self.assertRaises(cr.RemoteResolutionError) as caught:
+                    cr.normalize_remote_to_project_id(remote)
+                message = str(caught.exception).lower()
+                self.assertNotIn("usrt831", message)
+                self.assertNotIn("sect831", message)
+                self.assertIn("***@", message)
+
+    def test_unseparable_userinfo_never_reaches_the_server_refusal(self):
+        for number, remote in enumerate(_UNSEPARABLE_USERINFO_REMOTES):
+            with self.subTest(remote=remote):
+                workspace = self.tmp / f"workspace-{number}"
+                _init_git_repo(workspace, remote)
+                with self.assertRaises(cr.RemoteResolutionError) as caught:
+                    cr.default_index_dir(workspace)
+                message = str(caught.exception).lower()
+                self.assertNotIn("usrt831", message)
+                self.assertNotIn("sect831", message)
+
+    def test_a_git_that_hangs_is_a_refusal_not_a_traceback(self):
+        from unittest import mock
+        workspace = self.tmp / "workspace"
+        _init_git_repo(workspace, "https://gitlab.com/acme/widget.git")
+        stub_dir = _stub_git_dir(self.tmp, "exec sleep 30")
+        path = f"{stub_dir}{os.pathsep}{os.environ.get('PATH', '')}"
+        with mock.patch.dict(os.environ, {"PATH": path}), mock.patch.object(cr, "_GIT_TIMEOUT_S", 0.5):
+            with self.assertRaises(cr.RemoteResolutionError) as caught:
+                cr.default_index_dir(workspace)
+        self.assertIsInstance(caught.exception.__cause__, subprocess.TimeoutExpired)
+        self.assertIn("could not resolve a git remote", str(caught.exception))
+
+    def test_the_default_git_timeout_is_still_ten_seconds(self):
+        self.assertEqual(cr._GIT_TIMEOUT_S, 10)
 
 
 class ScopeFilterReuseNotBypassTests(unittest.TestCase):
