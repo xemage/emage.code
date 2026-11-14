@@ -16,8 +16,10 @@ inferred from the content being indexed"). It must already be the id the
 server derives from the workspace's git remote: lower case, `<org>/<repo>`
 (T790, QA-T760-02). Any other spelling is refused, not rewritten: the
 query-time filter compares exactly, so an index built under `Acme/Widget`
-would answer nothing. `--shared-source-root` may be repeated zero or more
-times.
+would answer nothing. The CLI also derives the id from the git remote `origin`
+of `--own-repo-root`, as the server does, and refuses a `--project-id` that is
+not that id, or any id when there is no such remote (T828, QA-T818-03).
+`--shared-source-root` may be repeated zero or more times.
 """
 from __future__ import annotations
 
@@ -28,7 +30,11 @@ from pathlib import Path
 
 from implementation.runtime.memory import scanner
 from implementation.runtime.memory.chunker import chunk_body
-from implementation.runtime.memory.context_retriever import is_derived_project_id
+from implementation.runtime.memory.context_retriever import (
+    RemoteResolutionError,
+    derive_project_id,
+    is_derived_project_id,
+)
 from implementation.runtime.memory.embed import PRIMARY_MODEL, LocalEmbedder, embed_chunks
 from implementation.runtime.memory.enrich import build_chunk_records
 from implementation.runtime.memory.index_writer import write_index
@@ -53,6 +59,30 @@ def project_id_problem(project_id: str) -> str | None:
     if isinstance(project_id, str) and is_derived_project_id(project_id):
         return None
     return f"project id must be {PROJECT_ID_FORM}; got {str(project_id)[:80]!r}"
+
+
+def remote_project_id_problem(project_id: str, own_repo_root: Path) -> str | None:
+    """None when `project_id` is exactly the id the server derives from the git remote `origin` of
+    `own_repo_root` (`context_retriever.derive_project_id`, the same normalisation), else the refusal
+    message (T828, QA-T818-03). A well-formed but other id (`acme/other` beside `acme/widget`) built an
+    index the server filtered to nothing. Without that remote the server does not start, so the id cannot
+    be checked and is refused too. The message never repeats a remote's userinfo: it names the derived id
+    only, and `RemoteResolutionError` messages are redacted at their source (T797, SEC-T796-01)."""
+    root = str(own_repo_root)[:200]
+    try:
+        derived = derive_project_id(own_repo_root)
+    except RemoteResolutionError as exc:
+        # A git failure (no repository, no `origin`) chains its cause and its text repeats the path; a remote
+        # of the wrong shape does not, and its (redacted) text says what is wrong with it.
+        detail = "" if exc.__cause__ is not None else f" ({str(exc)[:300]})"
+        return (f"--project-id cannot be checked: the git remote 'origin' of --own-repo-root {root!r} gives no "
+                f"project id{detail}; the server derives its id from that remote and does not start without a "
+                "usable one, so set it and re-run")
+    if derived == project_id:
+        return None
+    shown = repr(derived) if is_derived_project_id(derived) else "no valid id"
+    return (f"--project-id {project_id!r} is not the id the server derives from the git remote 'origin' of "
+            f"--own-repo-root {root!r}, which gives {shown}; retrieve would return nothing from this index")
 
 
 def _project_id_arg(value: str) -> str:
@@ -270,6 +300,10 @@ def _config_from_args(args: argparse.Namespace) -> BuildConfig:
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv if argv is not None else sys.argv[1:])
     config = _config_from_args(args)
+    problem = remote_project_id_problem(config.project_id, config.own_repo_root)
+    if problem:
+        print(f"error: {problem}", file=sys.stderr)
+        return 2
     if args.check_against:
         return _run_check(config, args.check_against)
     result = build_index(config)
