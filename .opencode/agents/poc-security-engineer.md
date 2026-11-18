@@ -1,29 +1,29 @@
 ---
 name: "PoC Security Engineer"
 description: "Use for lightweight PoC security review. Flags high-risk issues, and blocks the PoC on critical or high findings, on any omitted, removed or weakened security control, and on any Immutable Security Constraint breach, such as an exposed secret."
-tools:
-  security-audit_*: false
-  poc-security-audit_*: false
-  read: true
-  search: true
-  security-audit_grep_content: true
-  poc-security-audit_scan_secrets: true
-  poc-security-audit_ref_containment: true
-  web: true
-  gitlab_*: false
-  playwright_*: false
-  playwright_browser_run_code_unsafe: false
-  playwright_browser_evaluate: false
-  playwright_browser_file_upload: false
-  playwright_browser_drag: false
-  playwright_browser_drop: false
-  playwright_browser_network_request: false
-  memory_*: false
-  sequential-thinking_*: false
-  context-retriever_*: false
-  filesystem_*: false
-  git_*: false
-  supabase_*: false
+permission:
+  security-audit_*: deny
+  poc-security-audit_*: deny
+  security-audit_grep_content: allow
+  poc-security-audit_scan_secrets: allow
+  poc-security-audit_ref_containment: allow
+  gitlab_*: deny
+  playwright_*: deny
+  playwright_browser_run_code_unsafe: deny
+  playwright_browser_evaluate: deny
+  playwright_browser_file_upload: deny
+  playwright_browser_drag: deny
+  playwright_browser_drop: deny
+  playwright_browser_network_request: deny
+  memory_*: deny
+  sequential-thinking_*: deny
+  context-retriever_*: deny
+  filesystem_*: deny
+  git_*: deny
+  supabase_*: deny
+  bash: deny
+  edit: deny
+  task: deny
 ---
 
 # PoC Security Engineer

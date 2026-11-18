@@ -2,18 +2,22 @@
 
 T658 added a server-level denial (a top-level `permission` of `opencode.json`). Opencode applies the
 LAST matching rule and an agent's own rules come after the global ones, so a global deny does not
-survive an allow written later in an agent. A per-agent `false` entry (`tools: { x: false }` in the
-agent file) is the form that does. `sync.mjs` now writes, into EVERY Opencode agent file:
+survive an allow written later in an agent. A per-agent deny entry in the agent file is the form that
+does. T663 wrote it as `tools: { x: false }`; since T836 (SEC-T663-02) the generator writes the same
+entries, in the same order, as the documented agent `permission:` map (`allow` for a former `true`,
+`deny` for a former `false`); Opencode documents a legacy `tools` `false` as equivalent to a `deny`
+permission. The deprecated `tools:` map is no longer written. `sync.mjs` writes, into EVERY Opencode
+agent file:
 
-* `playwright_<tool>: false` for each `denyTools` entry of the `playwright` server (six names);
-* `<server>_*: false` for each agent that holds no token of a server, for EVERY server the manifest
+* `playwright_<tool>: deny` for each `denyTools` entry of the `playwright` server (six names);
+* `<server>_*: deny` for each agent that holds no token of a server, for EVERY server the manifest
   carries (`denyUnlessGranted: true` on every `servers.yaml` entry, SEC-T663-01);
-* `<server>_*: false` FIRST in the map for an agent that holds only NAMED tools of a server (for
+* `<server>_*: deny` FIRST in the map for an agent that holds only NAMED tools of a server (for
   example qa-engineer and scrum-master for `gitlab`), so that file order makes its named allows the
   only tools of that server it can call;
 * nothing new for an agent that holds the whole server.
 
-The other denies are written LAST in the `tools` map. Mechanism, sources and verified/unverified status:
+The other denies are written LAST in the `permission` map. Mechanism, sources and verified/unverified status:
 docs/artifacts/mcp-agent-denials-v1.md. This file pins:
 
 - the single source (servers.yaml flags) and the manifest opt-in;
@@ -107,6 +111,16 @@ def wildcard(server: str) -> str:
 
 
 SIX_FALSE = [f"playwright_{t}" for t in DENIED]
+# T841 (SEC-T840-01): generic source name -> Opencode permission keys denied for an agent that does not hold
+# the generic name (Opencode allows these tools by default). Pinned here independently of the manifest.
+# T843 (SEC-T842-01): no `agent` -> `task: deny` (1.x key for launching subagents; V2 calls it `subagent`).
+BUILTIN_DENY_UNLESS_GRANTED = {"execute": ["bash"], "edit": ["edit"], "web": ["webfetch", "websearch"],
+                              "agent": ["task"]}
+BUILTIN_KEYS = {k for keys in BUILTIN_DENY_UNLESS_GRANTED.values() for k in keys}
+
+
+def expected_builtin_denies(source: list[str]) -> list[tuple[str, str]]:
+    return [(k, "deny") for g, keys in BUILTIN_DENY_UNLESS_GRANTED.items() if g not in source for k in keys]
 
 # A sample of GitLab tools, write and read, by their registered Opencode names (`gitlab_<tool>`).
 # `execute_graphql` and `gitlab_api_request` are in the vendor's readOnlyTools set although they can
@@ -125,17 +139,22 @@ OPENCODE_DEFAULTS = DEFAULT_VARIANTS[0]
 
 
 def raw_tools_lines(path: Path) -> list[tuple[str, str]]:
-    """The `tools:` block of an agent file as ordered (key, value) text pairs, duplicates preserved."""
+    """The `permission:` block of an agent file as ordered (key, value) text pairs, duplicates preserved.
+
+    T836 (SEC-T663-02): the generator writes the agent's grants and denies as a `permission:` map
+    (`allow`/`deny`); the deprecated `tools:` map must not come back."""
     text = path.read_text(encoding="utf-8")
     block = re.match(r"^---\n(.*?)\n---\n", text, re.S).group(1).split("\n")
     pairs: list[tuple[str, str]] = []
     inside = False
     for line in block:
         if line == "tools:":
+            raise AssertionError(f"{path}: the deprecated Opencode `tools:` map is written again")
+        if line == "permission:":
             inside = True
             continue
         if inside:
-            m = re.fullmatch(r"  (\S+): (true|false)", line)
+            m = re.fullmatch(r"  (\S+): (allow|deny)", line)
             if not m:
                 break
             pairs.append((m.group(1), m.group(2)))
@@ -214,19 +233,20 @@ class SourceTests(unittest.TestCase):
 class EmittedPerAgentClassTests(unittest.TestCase):
     """Literal examples of what each class of agent receives."""
 
-    def tools(self, slug: str) -> dict[str, bool]:
+    def tools(self, slug: str) -> dict[str, str]:
         fm, _ = parse_file(OPENCODE_AGENTS / f"{slug}.md")
-        return fm["tools"]
+        self.assertNotIn("tools", fm, "T836: the deprecated `tools:` map is not written")
+        return fm["permission"]
 
     def falses(self, slug: str) -> list[str]:
-        return [k for k, v in self.tools(slug).items() if v is False]
+        return [k for k, v in self.tools(slug).items() if v == "deny"]
 
     def test_no_agent_holds_the_whole_gitlab_server_so_none_gets_the_allow_all_entry(self):
         """T667: `gitlab_*: true` appears in no generated agent file; every holder has the deny first."""
         self.assertEqual(source_holders("gitlab")[0], set())
         for path in sorted(OPENCODE_AGENTS.glob("*.md")):
             with self.subTest(agent=path.stem):
-                self.assertIsNot(self.tools(path.stem).get("gitlab_*"), True)
+                self.assertNotEqual(self.tools(path.stem).get("gitlab_*"), "allow")
         for slug in sorted(GITLAB_NAMED_SUBSET - PLAYWRIGHT_HOLDERS):
             with self.subTest(agent=slug):
                 self.assertEqual([k for k in self.falses(slug) if k.startswith("playwright_")],
@@ -236,7 +256,7 @@ class EmittedPerAgentClassTests(unittest.TestCase):
         """The whole-server class still exists for memory and sequential-thinking (orchestrators)."""
         for slug in ("orchestrator", "poc-orchestrator"):
             with self.subTest(agent=slug):
-                self.assertTrue(self.tools(slug)["memory_*"] is True)
+                self.assertEqual(self.tools(slug)["memory_*"], "allow")
                 self.assertNotIn("memory_*", self.falses(slug))
 
     def test_a_named_subset_gitlab_holder_gets_the_wildcard_first_then_its_named_allows(self):
@@ -245,10 +265,10 @@ class EmittedPerAgentClassTests(unittest.TestCase):
                 tools = self.tools(slug)
                 keys = list(tools)
                 self.assertIn("gitlab_*", keys[:3], "the wildcard deny is in the leading deny block")
-                self.assertFalse(tools["gitlab_*"])
+                self.assertEqual(tools["gitlab_*"], "deny")
                 named = [k for k in keys if k.startswith("gitlab_") and k != "gitlab_*"]
                 self.assertGreaterEqual(len(named), 6)
-                self.assertTrue(all(tools[k] is True for k in named))
+                self.assertTrue(all(tools[k] == "allow" for k in named))
                 self.assertLess(keys.index("gitlab_*"), min(keys.index(k) for k in named))
 
     def test_a_non_holder_of_everything_gets_every_server_wildcard_then_the_six(self):
@@ -263,8 +283,8 @@ class EmittedPerAgentClassTests(unittest.TestCase):
                 expected += SIX_FALSE
         for slug in slugs:
             with self.subTest(agent=slug):
-                self.assertEqual(self.falses(slug), expected)
-                self.assertEqual([k for k, v in self.tools(slug).items() if v is True and "_" in k], [])
+                self.assertEqual([k for k in self.falses(slug) if k not in BUILTIN_KEYS], expected)
+                self.assertEqual([k for k, v in self.tools(slug).items() if v == "allow" and "_" in k], [])
 
     def test_the_24_agents_without_a_playwright_tool_get_the_wildcard_and_the_six(self):
         slugs = sorted(p.stem for p in OPENCODE_AGENTS.glob("*.md") if p.stem not in PLAYWRIGHT_HOLDERS)
@@ -281,14 +301,14 @@ class EmittedPerAgentClassTests(unittest.TestCase):
             with self.subTest(agent=slug):
                 tools = self.tools(slug)
                 keys = list(tools)
-                allowed = [k for k, v in tools.items() if v is True and k.startswith("playwright_")]
+                allowed = [k for k, v in tools.items() if v == "allow" and k.startswith("playwright_")]
                 self.assertGreaterEqual(len(allowed), 12)
                 self.assertIn("playwright_browser_click", allowed)
-                self.assertFalse(tools["playwright_*"])
+                self.assertEqual(tools["playwright_*"], "deny")
                 self.assertLess(keys.index("playwright_*"), min(keys.index(k) for k in allowed))
-                self.assertEqual([k for k, v in tools.items() if v is False and k.startswith("playwright_")
+                self.assertEqual([k for k, v in tools.items() if v == "deny" and k.startswith("playwright_")
                                   and k != "playwright_*"], SIX_FALSE)
-                trues = [i for i, k in enumerate(keys) if tools[k] is True]
+                trues = [i for i, k in enumerate(keys) if tools[k] == "allow"]
                 self.assertEqual([k for k in keys if k in SIX_FALSE], SIX_FALSE)
                 self.assertGreater(min(keys.index(k) for k in SIX_FALSE), max(trues))
 
@@ -296,23 +316,25 @@ class EmittedPerAgentClassTests(unittest.TestCase):
         text = (OPENCODE_AGENTS / "tech-lead.md").read_text(encoding="utf-8")
         head = text.split("\n---\n", 1)[0]
         self.assertTrue(head.endswith(
-            "  web: true\n"
-            "  gitlab_*: false\n"
-            "  playwright_*: false\n"
-            "  playwright_browser_run_code_unsafe: false\n"
-            "  playwright_browser_evaluate: false\n"
-            "  playwright_browser_file_upload: false\n"
-            "  playwright_browser_drag: false\n"
-            "  playwright_browser_drop: false\n"
-            "  playwright_browser_network_request: false\n"
-            "  memory_*: false\n"
-            "  sequential-thinking_*: false\n"
-            "  context-retriever_*: false\n"
-            "  security-audit_*: false\n"
-            "  poc-security-audit_*: false\n"
-            "  filesystem_*: false\n"
-            "  git_*: false\n"
-            "  supabase_*: false"), head)
+            "permission:\n"
+            "  edit: allow\n"
+            "  gitlab_*: deny\n"
+            "  playwright_*: deny\n"
+            "  playwright_browser_run_code_unsafe: deny\n"
+            "  playwright_browser_evaluate: deny\n"
+            "  playwright_browser_file_upload: deny\n"
+            "  playwright_browser_drag: deny\n"
+            "  playwright_browser_drop: deny\n"
+            "  playwright_browser_network_request: deny\n"
+            "  memory_*: deny\n"
+            "  sequential-thinking_*: deny\n"
+            "  context-retriever_*: deny\n"
+            "  security-audit_*: deny\n"
+            "  poc-security-audit_*: deny\n"
+            "  filesystem_*: deny\n"
+            "  git_*: deny\n"
+            "  supabase_*: deny\n"
+            "  task: deny"), head)
 
     def test_the_exempt_servers_get_no_entry_of_any_kind_in_any_agent_file(self):
         for path in sorted(OPENCODE_AGENTS.glob("*.md")):
@@ -335,7 +357,8 @@ class EmittedPerAgentClassTests(unittest.TestCase):
             for path in files:
                 text = path.read_text(encoding="utf-8")
                 with self.subTest(platform=platform, agent=path.name):
-                    self.assertNotRegex(text.split("\n---\n", 1)[0], r"(?m)^\s+\S+: false$")
+                    self.assertNotRegex(text.split("\n---\n", 1)[0], r"(?m)^\s+\S+: (false|deny)$")
+                    self.assertNotRegex(text.split("\n---\n", 1)[0], r"(?m)^permission:")
                     self.assertNotIn("gitlab_*", text.split("\n---\n", 1)[0])
 
 
@@ -356,8 +379,8 @@ class ShippedInvariantTests(unittest.TestCase):
             names = [n for n, _ in pairs]
             with self.subTest(agent=path.stem):
                 self.assertEqual(len(names), len(set(names)), "a duplicate key: YAML would keep only the last")
-                allowed = {n for n, v in pairs if v == "true"}
-                denied = {n for n, v in pairs if v == "false"}
+                allowed = {n for n, v in pairs if v == "allow"}
+                denied = {n for n, v in pairs if v == "deny"}
                 self.assertFalse(allowed & denied, allowed & denied)
 
     def test_the_rule_for_every_server_and_every_agent_follows_the_holder_class(self):
@@ -371,24 +394,25 @@ class ShippedInvariantTests(unittest.TestCase):
                 pairs = raw_tools_lines(path)
                 names = [n for n, _ in pairs]
                 values = dict(pairs)
-                first_allow = min(i for i, (_, v) in enumerate(pairs) if v == "true")
-                last_allow = max(i for i, (_, v) in enumerate(pairs) if v == "true")
+                # T839: an agent without `edit` and without MCP grants has no allow at all
+                first_allow = min((i for i, (_, v) in enumerate(pairs) if v == "allow"), default=len(pairs))
+                last_allow = max((i for i, (_, v) in enumerate(pairs) if v == "allow"), default=-1)
                 with self.subTest(server=server, agent=slug):
                     if slug in whole:
-                        self.assertNotIn(wildcard(server), [n for n, v in pairs if v == "false"])
-                        self.assertEqual(values.get(wildcard(server)), "true")
+                        self.assertNotIn(wildcard(server), [n for n, v in pairs if v == "deny"])
+                        self.assertEqual(values.get(wildcard(server)), "allow")
                     elif slug in named:
-                        self.assertEqual(values[wildcard(server)], "false")
+                        self.assertEqual(values[wildcard(server)], "deny")
                         w = names.index(wildcard(server))
                         self.assertLess(w, first_allow, "the wildcard deny precedes every allow")
-                        own = [i for i, (n, v) in enumerate(pairs) if n.startswith(prefix) and v == "true"]
+                        own = [i for i, (n, v) in enumerate(pairs) if n.startswith(prefix) and v == "allow"]
                         self.assertTrue(own)
                         self.assertTrue(all(i > w for i in own))
                     else:
-                        self.assertEqual(values[wildcard(server)], "false")
+                        self.assertEqual(values[wildcard(server)], "deny")
                         self.assertGreater(names.index(wildcard(server)), last_allow)
                         self.assertFalse([n for n in names if n.startswith(prefix) and n != wildcard(server)
-                                          and values[n] == "true"])
+                                          and values[n] == "allow"])
 
     def test_denies_come_after_every_allow_except_the_leading_block_of_named_holders(self):
         # Last match wins: a deny written after every allow survives any broader allow of the same agent.
@@ -397,14 +421,85 @@ class ShippedInvariantTests(unittest.TestCase):
         for path in sorted(OPENCODE_AGENTS.glob("*.md")):
             pairs = raw_tools_lines(path)
             lead = 0
-            while lead < len(pairs) and pairs[lead][1] == "false":
+            while lead < len(pairs) and pairs[lead][1] == "deny":
                 lead += 1
+            if lead == len(pairs):
+                lead = 0  # T839: no allow at all, so there is no leading block; every deny is "last"
             leading = [n for n, _ in pairs[:lead]]
             expected = [wildcard(s) for s in DENIED_SERVERS if path.stem in source_holders(s)[1]]
             with self.subTest(agent=path.stem):
                 self.assertEqual(leading, expected)
                 rest = [v for _, v in pairs[lead:]]
-                self.assertNotIn("true", rest[rest.index("false"):])
+                self.assertNotIn("allow", rest[rest.index("deny"):])
+
+    def test_sec_t837_03_no_agent_writes_read_or_an_inert_generic_name(self):
+        """T839 (SEC-T837-03): `read: allow` after Opencode's default read rules for `*.env` and `*.env.*`
+        would re-allow reading them; `search`, `execute`, `web`, `agent` and `todo` are not Opencode keys.
+        The only non-MCP key written is `edit` (a real key, held before). Every other key is an MCP name."""
+        manifest = json.loads((IMPL / "platforms" / "opencode.json").read_text(encoding="utf-8"))
+        self.assertEqual(manifest["frontmatter"]["agents"]["permissionKeys"], ["edit"])
+        mcp_prefixes = tuple(cleaned(s) + "_" for s in OPENCODE_SERVERS)
+        for path in sorted(OPENCODE_AGENTS.glob("*.md")):
+            pairs = raw_tools_lines(path)
+            with self.subTest(agent=path.stem):
+                self.assertTrue(pairs)
+                names = [n for n, _ in pairs]
+                for inert in ("read", "search", "execute", "web", "agent", "todo"):
+                    self.assertNotIn(inert, names)
+                for deny_only in ("bash", "webfetch", "websearch", "task"):  # T841/T843: written only as a deny
+                    self.assertNotIn((deny_only, "allow"), pairs)
+                generic = [(n, v) for n, v in pairs if not n.startswith(mcp_prefixes)]
+                # T841: `edit` may be an allow (holder) or a deny (non-holder); bash/webfetch/websearch only deny
+                self.assertLessEqual(set(generic), {("edit", "allow")} | {(k, "deny") for k in BUILTIN_KEYS})
+                fm, _ = parse_file(path)
+                self.assertNotIn("read", fm["permission"])
+
+    def test_sec_t840_01_builtin_tools_are_denied_unless_the_source_grants_them(self):
+        """T841 (SEC-T840-01): no `execute` -> `bash: deny`; no `edit` -> `edit: deny`; no `web` ->
+        `webfetch: deny` and `websearch: deny`; a holder gets no entry for that tool except `edit: allow`.
+        The denies are the very last entries (nothing later in the agent can re-allow them) and none of
+        bash/webfetch/websearch is ever an allow."""
+        manifest = json.loads((IMPL / "platforms" / "opencode.json").read_text(encoding="utf-8"))
+        self.assertEqual(manifest["frontmatter"]["agents"]["permissionDenyUnlessGranted"], BUILTIN_DENY_UNLESS_GRANTED)
+        counts = {k: 0 for k in BUILTIN_KEYS}
+        for path in sorted(OPENCODE_AGENTS.glob("*.md")):
+            source = source_tokens(path.stem)
+            pairs = raw_tools_lines(path)
+            want = expected_builtin_denies(source)
+            with self.subTest(agent=path.stem):
+                tail = pairs[len(pairs) - len(want):] if want else []
+                self.assertEqual(tail, want)
+                rest = pairs[: len(pairs) - len(want)]
+                self.assertEqual([p for p in rest if p[0] in BUILTIN_KEYS], [("edit", "allow")] if "edit" in source else [])
+                for name, _ in want:
+                    counts[name] += 1
+        self.assertEqual(counts, {"bash": 13, "edit": 8, "webfetch": 6, "websearch": 6, "task": 26})
+
+    def test_sec_t842_01_only_the_two_orchestrators_can_launch_a_subagent(self):
+        """T843: a subagent runs with its own permissions, so `task` would bypass `bash: deny`."""
+        delegators = {p.stem for p in SOURCE_AGENTS.glob("*.md") if "agent" in source_tokens(p.stem)}
+        self.assertEqual(delegators, {"orchestrator", "poc-orchestrator"})
+        for path in sorted(OPENCODE_AGENTS.glob("*.md")):
+            pairs = raw_tools_lines(path)
+            with self.subTest(agent=path.stem):
+                self.assertNotIn(("task", "allow"), pairs)
+                if path.stem in delegators:
+                    self.assertNotIn("task", [n for n, _ in pairs])
+                else:
+                    self.assertEqual(pairs[-1], ("task", "deny"))
+                    rules = opencode_rules(parse_file(path)[0]["permission"])
+                    for hostile in ([("task", "allow")], [("task", "*"), ("*", "allow")], [("*", "allow")]):
+                        for defaults in DEFAULT_VARIANTS:
+                            self.assertEqual(opencode_effect("task", defaults, hostile, rules), "deny")
+
+    def test_sec_t840_01_the_builtin_denies_hold_under_the_rule_model(self):
+        for path in sorted(OPENCODE_AGENTS.glob("*.md")):
+            rules = opencode_rules(parse_file(path)[0]["permission"])
+            for name, _ in expected_builtin_denies(source_tokens(path.stem)):
+                for hostile in ([(name, "allow")], [("*", "allow")]):
+                    for defaults in DEFAULT_VARIANTS:
+                        with self.subTest(agent=path.stem, tool=name, hostile=hostile):
+                            self.assertEqual(opencode_effect(name, defaults, hostile, rules), "deny")
 
     def test_every_named_allow_comes_after_the_wildcard_deny_of_its_server(self):
         """Ordering, not distinct names, is what makes `<server>_*: false` plus named allows safe
@@ -423,7 +518,7 @@ class ShippedInvariantTests(unittest.TestCase):
         # It cannot show that Opencode behaves this way (that is the artifact's source reading and the
         # resolver evidence); it catches a later edit that reorders or drops the entries.
         for path in sorted(OPENCODE_AGENTS.glob("*.md")):
-            rules = opencode_rules(parse_file(path)[0]["tools"])
+            rules = opencode_rules(parse_file(path)[0]["permission"])
             for name in SIX_FALSE:
                 for defaults in DEFAULT_VARIANTS:
                     with self.subTest(agent=path.stem, tool=name, defaults=bool(defaults)):
@@ -434,13 +529,13 @@ class ShippedInvariantTests(unittest.TestCase):
             for name, value in raw_tools_lines(path):
                 if name in SIX_FALSE:
                     with self.subTest(agent=path.stem, tool=name):
-                        self.assertEqual(value, "false")
+                        self.assertEqual(value, "deny")
 
     def test_every_false_entry_is_a_server_wildcard_or_one_of_the_six(self):
-        allowed_false = set(SIX_FALSE) | {wildcard(s) for s in DENIED_SERVERS}
+        allowed_false = set(SIX_FALSE) | {wildcard(s) for s in DENIED_SERVERS} | BUILTIN_KEYS
         for path in sorted(OPENCODE_AGENTS.glob("*.md")):
             with self.subTest(agent=path.stem):
-                self.assertLessEqual({n for n, v in raw_tools_lines(path) if v == "false"}, allowed_false)
+                self.assertLessEqual({n for n, v in raw_tools_lines(path) if v == "deny"}, allowed_false)
 
 
 class OpencodeEvaluationTests(unittest.TestCase):
@@ -453,7 +548,7 @@ class OpencodeEvaluationTests(unittest.TestCase):
     def setUpClass(cls):
         cfg = json.loads((IMPL / ".opencode" / "opencode.json").read_text(encoding="utf-8"))
         cls.global_rules = opencode_rules(cfg["permission"])
-        cls.agents = {p.stem: opencode_rules(parse_file(p)[0]["tools"]) for p in sorted(OPENCODE_AGENTS.glob("*.md"))}
+        cls.agents = {p.stem: opencode_rules(parse_file(p)[0]["permission"]) for p in sorted(OPENCODE_AGENTS.glob("*.md"))}
 
     def effects(self, slug, name, global_extra=None, agent_extra=None):
         g = opencode_rules(global_extra or {})
@@ -511,8 +606,8 @@ class OpencodeEvaluationTests(unittest.TestCase):
         for server in OPENCODE_SERVERS:
             for slug in sorted(source_holders(server)[1]):
                 prefix = cleaned(server) + "_"
-                tools = parse_file(OPENCODE_AGENTS / f"{slug}.md")[0]["tools"]
-                held = [k[len(prefix):] for k, v in tools.items() if v is True and k.startswith(prefix)]
+                tools = parse_file(OPENCODE_AGENTS / f"{slug}.md")[0]["permission"]
+                held = [k[len(prefix):] for k, v in tools.items() if v == "allow" and k.startswith(prefix)]
                 self.assertTrue(held)
                 for tool in held:
                     for hostile in (None, {wildcard(server): "allow"}, {"*": "allow"}):
@@ -537,15 +632,15 @@ class OpencodeEvaluationTests(unittest.TestCase):
     def test_a_later_allow_in_the_same_agent_beats_the_per_agent_false_when_it_is_written_after_it(self):
         """The ordering rule the generator relies on: this is why the denies go last."""
         for defaults in DEFAULT_VARIANTS:
-            rules = opencode_rules({"playwright_browser_evaluate": False, "playwright_*": True})
+            rules = opencode_rules({"playwright_browser_evaluate": "deny", "playwright_*": "allow"})
             self.assertEqual(opencode_effect("playwright_browser_evaluate", defaults, rules), "allow")
-            rules = opencode_rules({"playwright_*": True, "playwright_browser_evaluate": False})
+            rules = opencode_rules({"playwright_*": "allow", "playwright_browser_evaluate": "deny"})
             self.assertEqual(opencode_effect("playwright_browser_evaluate", defaults, rules), "deny")
 
     def test_the_granted_playwright_tools_stay_allowed_and_the_lookalike_is_not_caught(self):
         for slug in sorted(PLAYWRIGHT_HOLDERS):
-            granted = [k for k, v in parse_file(OPENCODE_AGENTS / f"{slug}.md")[0]["tools"].items()
-                       if v is True and k.startswith("playwright_")]
+            granted = [k for k, v in parse_file(OPENCODE_AGENTS / f"{slug}.md")[0]["permission"].items()
+                       if v == "allow" and k.startswith("playwright_")]
             for name in granted:
                 with self.subTest(agent=slug, tool=name):
                     self.assertEqual(self.effect(slug, name), "allow")
@@ -658,31 +753,71 @@ class GeneratorFixtureTests(unittest.TestCase):
         return root, result
 
     def tools(self, root: Path, slug: str) -> list[tuple[str, str]]:
-        return raw_tools_lines(root / ".opencode" / "agents" / f"{slug}.md")
+        """The MCP part of the map. The T841 built-in denies are checked to be a deny-only trailing block
+        and are then removed; test_t841_* pins their exact content."""
+        pairs = raw_tools_lines(root / ".opencode" / "agents" / f"{slug}.md")
+        end = len(pairs)
+        while end and pairs[end - 1][0] in BUILTIN_KEYS:
+            end -= 1
+        self.assertTrue(all(v == "deny" for _, v in pairs[end:]), pairs[end:])
+        self.assertFalse([p for p in pairs[:end] if p[0] in BUILTIN_KEYS and p != ("edit", "allow")])
+        return pairs[:end]
+
+    def test_t841_builtin_denies_per_class_on_a_fixture(self):
+        agents = {"none": "[read]", "all": "[read, execute, edit, web, agent]", "exec": "[execute]", "webonly": "[web]",
+                  "noline": None, "deleg": "[agent]"}
+        root, result = self.run_sync(agents=agents)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        tail = lambda slug: raw_tools_lines(root / ".opencode" / "agents" / f"{slug}.md")[-5:]
+        bash, edit, wf, ws = ("bash", "deny"), ("edit", "deny"), ("webfetch", "deny"), ("websearch", "deny")
+        task = ("task", "deny")
+        self.assertEqual(tail("none"), [bash, edit, wf, ws, task])
+        self.assertEqual(tail("noline"), [bash, edit, wf, ws, task])
+        all_names = [n for n, _ in raw_tools_lines(root / ".opencode" / "agents" / "all.md")]
+        self.assertFalse({"bash", "task", "webfetch", "websearch"} & set(all_names))
+        self.assertEqual(raw_tools_lines(root / ".opencode" / "agents" / "all.md")[0], ("edit", "allow"))
+        self.assertEqual(tail("exec")[-4:], [edit, wf, ws, task])
+        self.assertEqual(tail("webonly")[-3:], [bash, edit, task])
+        self.assertEqual(tail("deleg")[-4:], [bash, edit, wf, ws])
+
+    def test_t841_the_deny_only_keys_cannot_become_an_allow(self):
+        mutations = {
+            "bash allow": lambda d: d["frontmatter"]["agents"].__setitem__("permissionKeys", ["edit", "bash"]),
+            "webfetch allow": lambda d: d["frontmatter"]["agents"].__setitem__("permissionKeys", ["edit", "webfetch"]),
+            "websearch allow": lambda d: d["frontmatter"]["agents"].__setitem__("permissionKeys", ["edit", "websearch"]),
+            "task allow": lambda d: d["frontmatter"]["agents"].__setitem__("permissionKeys", ["edit", "task"]),
+            "map not an object": lambda d: d["frontmatter"]["agents"].__setitem__("permissionDenyUnlessGranted", ["bash"]),
+            "empty key list": lambda d: d["frontmatter"]["agents"]["permissionDenyUnlessGranted"].__setitem__("web", []),
+        }
+        for label, mutate in mutations.items():
+            with self.subTest(case=label):
+                root, result = self.run_sync(mutate_platform=mutate)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("permission", result.stderr)
 
     def test_output_per_agent_class(self):
         root, result = self.run_sync()
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        six = [("pw_bad_one", "false"), ("pw_bad_two", "false")]
+        six = [("pw_bad_one", "deny"), ("pw_bad_two", "deny")]
         # servers are visited in servers.yaml order (gl, pw); `skip` has a tag Opencode does not carry
-        self.assertEqual(self.tools(root, "holder"), [("read", "true"), ("gl_*", "true")] + six)
-        self.assertEqual(self.tools(root, "named"), [("gl_*", "false"), ("read", "true"), ("gl_list_x", "true")] + six)
+        self.assertEqual(self.tools(root, "holder"), [("gl_*", "allow")] + six)
+        self.assertEqual(self.tools(root, "named"), [("gl_*", "deny"), ("gl_list_x", "allow")] + six)
         # a bare `mcp__gl` token makes the agent a whole-server holder even if named tokens are present
-        self.assertEqual(self.tools(root, "both"), [("read", "true"), ("gl_*", "true"), ("gl_list_x", "true")] + six)
-        self.assertEqual(self.tools(root, "plain"), [("read", "true"), ("gl_*", "false")] + six)
-        self.assertEqual(self.tools(root, "pwhole"), [("read", "true"), ("pw_*", "true"), ("gl_*", "false")] + six)
+        self.assertEqual(self.tools(root, "both"), [("gl_*", "allow"), ("gl_list_x", "allow")] + six)
+        self.assertEqual(self.tools(root, "plain"), [("gl_*", "deny")] + six)
+        self.assertEqual(self.tools(root, "pwhole"), [("pw_*", "allow"), ("gl_*", "deny")] + six)
 
     def test_a_server_named_in_extra_platforms_is_denied_like_a_tag_selected_one(self):
         """T722 (SEV-T690-01): `skip` (tags [other]) reaches Opencode through `extraPlatforms: [opencode]` and is
         denied per agent exactly as if its tag were selected. (The `skipFormats` case was removed with the key,
         ADR-013 D3.)"""
         base = self.SERVERS + "    extraPlatforms: [opencode]\n"
-        tail = [("pw_bad_one", "false"), ("pw_bad_two", "false"), ("skip_*", "false"), ("skip_skip_bad", "false")]
+        tail = [("pw_bad_one", "deny"), ("pw_bad_two", "deny"), ("skip_*", "deny"), ("skip_skip_bad", "deny")]
         root, result = self.run_sync(servers=base, agents={"plain": "[read]", "skipnamed": "[read, mcp__skip__one]"})
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertEqual(self.tools(root, "plain"), [("read", "true"), ("gl_*", "false")] + tail)
+        self.assertEqual(self.tools(root, "plain"), [("gl_*", "deny")] + tail)
         self.assertEqual(self.tools(root, "skipnamed"),
-                         [("skip_*", "false"), ("read", "true"), ("skip_one", "true"), ("gl_*", "false")]
+                         [("skip_*", "deny"), ("skip_one", "allow"), ("gl_*", "deny")]
                          + tail[:2] + tail[3:])
         config = json.loads((root / ".opencode" / "opencode.json").read_text(encoding="utf-8"))
         self.assertIn("skip", config["mcp"])
@@ -691,7 +826,7 @@ class GeneratorFixtureTests(unittest.TestCase):
         root, result = self.run_sync(agents={"bare": None})
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual(self.tools(root, "bare"),
-                         [("gl_*", "false"), ("pw_bad_one", "false"), ("pw_bad_two", "false")])
+                         [("gl_*", "deny"), ("pw_bad_one", "deny"), ("pw_bad_two", "deny")])
 
     def test_other_platforms_are_unchanged_by_the_flags(self):
         root, result = self.run_sync()
@@ -700,6 +835,7 @@ class GeneratorFixtureTests(unittest.TestCase):
             text = (root / rel).read_text(encoding="utf-8")
             with self.subTest(file=rel):
                 self.assertNotIn("false", text)
+                self.assertNotIn("deny", text)
                 self.assertNotIn("gl_*", text)
 
     def test_the_global_denial_is_still_emitted(self):
@@ -725,8 +861,8 @@ class GeneratorFixtureTests(unittest.TestCase):
         servers = self.SERVERS.replace("  gl:", "  my.git:").replace("\n  pw:", "\n  pw:")
         root, result = self.run_sync(servers=servers, agents={"plain": "[read]", "hold": "[read, mcp__my.git]"})
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn(("my_git_*", "false"), self.tools(root, "plain"))
-        self.assertNotIn(("my_git_*", "false"), self.tools(root, "hold"))
+        self.assertIn(("my_git_*", "deny"), self.tools(root, "plain"))
+        self.assertNotIn(("my_git_*", "deny"), self.tools(root, "hold"))
 
     def test_an_invalid_flag_stops_the_run_before_anything_is_written(self):
         for label, value in {"yes": "yes", "number": "1", "text": "gitlab"}.items():
@@ -754,21 +890,21 @@ class GeneratorFixtureTests(unittest.TestCase):
         root, result = self.run_sync(servers=servers, agents={
             "plain": "[read]", "named": "[read, mcp__pw__list_x]", "whole": "[read, mcp__pw]"})
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        exact = [("pw_bad_one", "false"), ("pw_bad_two", "false")]
-        self.assertEqual(self.tools(root, "plain"), [("read", "true"), ("gl_*", "false"), ("pw_*", "false")] + exact)
+        exact = [("pw_bad_one", "deny"), ("pw_bad_two", "deny")]
+        self.assertEqual(self.tools(root, "plain"), [("gl_*", "deny"), ("pw_*", "deny")] + exact)
         self.assertEqual(self.tools(root, "named"),
-                         [("pw_*", "false"), ("read", "true"), ("pw_list_x", "true"), ("gl_*", "false")] + exact)
-        self.assertEqual(self.tools(root, "whole"), [("read", "true"), ("pw_*", "true"), ("gl_*", "false")] + exact)
+                         [("pw_*", "deny"), ("pw_list_x", "allow"), ("gl_*", "deny")] + exact)
+        self.assertEqual(self.tools(root, "whole"), [("pw_*", "allow"), ("gl_*", "deny")] + exact)
 
     def test_the_flag_false_is_an_explicit_exemption_and_emits_nothing_for_that_server(self):
         servers = self.SERVERS.replace("    denyUnlessGranted: true\n  pw:", "    denyUnlessGranted: false\n  pw:", 1)
         root, result = self.run_sync(servers=servers, agents={
             "plain": "[read]", "named": "[read, mcp__gl__list_x]", "whole": "[read, mcp__gl]"})
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        six = [("pw_bad_one", "false"), ("pw_bad_two", "false")]
-        self.assertEqual(self.tools(root, "plain"), [("read", "true")] + six)
-        self.assertEqual(self.tools(root, "named"), [("read", "true"), ("gl_list_x", "true")] + six)
-        self.assertEqual(self.tools(root, "whole"), [("read", "true"), ("gl_*", "true")] + six)
+        six = [("pw_bad_one", "deny"), ("pw_bad_two", "deny")]
+        self.assertEqual(self.tools(root, "plain"), six)
+        self.assertEqual(self.tools(root, "named"), [("gl_list_x", "allow")] + six)
+        self.assertEqual(self.tools(root, "whole"), [("gl_*", "allow")] + six)
 
     def test_a_misspelled_server_key_stops_the_run_before_anything_is_written(self):
         for bad in ("denyUnlessGrant: true", "denyTool: [x]", "denyunlessgranted: true", "description: x"):
@@ -789,11 +925,30 @@ class GeneratorFixtureTests(unittest.TestCase):
         result = subprocess.run(["node", str(SYNC), "--root", str(IMPL), "--check"], capture_output=True, text=True, check=False)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
+    def test_t839_only_edit_of_the_generic_names_is_written(self):
+        root, result = self.run_sync(agents={"gen": "[read, search, edit, execute, web, agent, todo, mcp__gl__list_x]"})
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(self.tools(root, "gen"),
+                         [("gl_*", "deny"), ("edit", "allow"), ("gl_list_x", "allow"), ("pw_bad_one", "deny"),
+                          ("pw_bad_two", "deny")])
+
+    def test_t839_permission_keys_refuses_read_and_a_non_permission_platform(self):
+        mutations = {
+            "read": lambda d: d["frontmatter"]["agents"].__setitem__("permissionKeys", ["edit", "read"]),
+            "not a list": lambda d: d["frontmatter"]["agents"].__setitem__("permissionKeys", "edit"),
+            "odd name": lambda d: d["frontmatter"]["agents"].__setitem__("permissionKeys", ["edit*"]),
+        }
+        for label, mutate in mutations.items():
+            with self.subTest(case=label):
+                root, result = self.run_sync(mutate_platform=mutate)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("permissionKeys", result.stderr)
+
     def test_no_flags_means_no_false_entries(self):
         servers = "servers:\n  plain:\n    tags: [core]\n    transport: stdio\n    command: python\n    args: [\"-m\", \"x\"]\n"
         root, result = self.run_sync(servers=servers)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertEqual(self.tools(root, "plain"), [("read", "true")])
+        self.assertEqual(self.tools(root, "plain"), [])
 
     def test_regeneration_is_deterministic(self):
         first, r1 = self.run_sync()
@@ -825,8 +980,9 @@ class InstallReplacesAgentFilesWholesaleTests(unittest.TestCase):
             shipped = (OPENCODE_AGENTS / "tech-lead.md").read_bytes()
             self.assertEqual(agent.read_bytes(), shipped)
             # the user removes the denies and adds an allow of a denied tool, then updates
-            edited = agent.read_text(encoding="utf-8").replace("  gitlab_*: false\n", "").replace(
-                "  playwright_browser_evaluate: false\n", "  playwright_browser_evaluate: true\n")
+            edited = agent.read_text(encoding="utf-8").replace("  gitlab_*: deny\n", "").replace(
+                "  playwright_browser_evaluate: deny\n", "  playwright_browser_evaluate: allow\n")
+            self.assertNotEqual(edited, agent.read_text(encoding="utf-8"), "the user edit must change the file")
             agent.write_text(edited, encoding="utf-8")
             extra = target / ".opencode" / "agents" / "my-own-agent.md"
             extra.write_text("---\nname: \"mine\"\ndescription: \"x\"\ntools:\n  read: true\n---\nbody\n", encoding="utf-8")

@@ -136,23 +136,34 @@ function parseScalar(v) {
   return v;
 }
 
+// T836 (SEC-T663-02): Opencode marks the agent `tools` map deprecated ("`true` is equivalent to
+// {"*": "allow"} permission and `false` is equivalent to {"*": "deny"}") and documents the agent
+// `permission` map, whose keys match tool names as wildcard patterns with the LAST matching rule winning
+// (opencode v1.18.35 docs, agents.mdx and permissions.mdx). The same entries in the same order are
+// written there, `allow` for a former `true` and `deny` for a former `false`.
+function permissionLines(allows, opts) {
+  const lines = ['permission:'];
+  // T663: a server wildcard deny for an agent that holds only NAMED tools of that server goes
+  // FIRST; the named allows after it are then the only tools of the server it can call.
+  for (const t of opts.denyFirst || []) lines.push(`  ${t}: deny`);
+  for (const t of allows) lines.push(`  ${t}: allow`);
+  // T663: per-agent denies come LAST. Opencode applies the last matching rule, so a deny written
+  // after every allow survives any broader allow of the same agent (docs/artifacts/mcp-agent-denials-v1.md).
+  for (const t of opts.denyTools || []) lines.push(`  ${t}: deny`);
+  return lines;
+}
+
 function emitFrontmatter(obj, opts = { toolsFormat: 'array' }) {
   const lines = ['---'];
   const anyDeny = (opts.denyTools || []).length + (opts.denyFirst || []).length > 0;
-  if (opts.toolsFormat === 'object' && anyDeny && !Array.isArray(obj.tools)) {
+  if (opts.toolsFormat === 'permission' && anyDeny && !Array.isArray(obj.tools)) {
     obj = { ...obj, tools: [] };
   }
   for (const [key, val] of Object.entries(obj)) {
     if (val === undefined || val === null) continue;
-    if (key === 'tools' && opts.toolsFormat === 'object' && Array.isArray(val)) {
-      lines.push('tools:');
-      // T663: a server wildcard deny for an agent that holds only NAMED tools of that server goes
-      // FIRST; the named allows after it are then the only tools of the server it can call.
-      for (const t of opts.denyFirst || []) lines.push(`  ${t}: false`);
-      for (const t of val) lines.push(`  ${t}: true`);
-      // T663: per-agent denies come LAST. Opencode applies the last matching rule, so a deny written
-      // after every allow survives any broader allow of the same agent (docs/artifacts/mcp-agent-denials-v1.md).
-      for (const t of opts.denyTools || []) lines.push(`  ${t}: false`);
+    if (key === 'tools' && opts.toolsFormat === 'permission' && Array.isArray(val)) {
+      const block = permissionLines(val, opts);
+      if (block.length > 1) lines.push(...block);
       continue;
     }
     if (key === 'tools' && opts.toolsFormat === 'string' && Array.isArray(val)) {
@@ -573,6 +584,50 @@ const MCP_TOOL_NAME_STYLES = {
 
 // T658 (SEC-T657-09): the style is validated once, at manifest load, whether or not the platform
 // has a tools line to render. An unknown or non-string value stops the run before any file is written.
+// T839 (SEC-T837-03): `permissionKeys` is a list of plain names, only with tools "permission", and never
+// `read` (Opencode's default read rules ask for or deny `*.env` and `*.env.*`; an agent `read: allow` would undo them).
+function validatePermissionKeys(manifest) {
+  const agents = manifest.frontmatter && manifest.frontmatter.agents;
+  if (!agents) return;
+  const denyOnly = validateDenyUnlessGranted(agents, manifest.platform);
+  const keys = agents.permissionKeys;
+  if (keys === undefined) return;
+  const ok = agents.tools === 'permission' && Array.isArray(keys)
+    && keys.every((k) => typeof k === 'string' && /^[a-z_]+$/.test(k) && k !== 'read' && !denyOnly.has(k));
+  if (!ok) throw new Error(`permissionKeys needs tools "permission" and plain names other than read and the deny-only keys (platform ${manifest.platform})`);
+}
+
+// T841 (SEC-T840-01): Opencode allows every built-in tool by default, so an agent whose source tool line
+// lacks a generic name (`execute`, `edit`, `web`) still holds the Opencode tools behind it. The manifest map
+// `permissionDenyUnlessGranted` (generic name -> Opencode permission keys) yields a `deny` for each key of
+// every generic name the agent does not hold; a holder gets nothing for it (Opencode's default applies).
+// Deny-only: these keys are never written as an allow (validatePermissionKeys refuses that). They are
+// appended to the trailing deny block, after every allow, so no later entry of the agent re-allows them.
+function builtinDenials(sourceTools, renderedTools, cfg) {
+  const map = cfg.permissionDenyUnlessGranted || {};
+  const held = new Set(Array.isArray(sourceTools) ? sourceTools : []);
+  const out = [];
+  for (const [generic, keys] of Object.entries(map)) {
+    if (!held.has(generic)) out.push(...keys);
+  }
+  const allowed = new Set(Array.isArray(renderedTools) ? renderedTools : []);
+  const clash = out.find((k) => allowed.has(k));
+  if (clash) throw new Error(`An agent tool list both grants and denies ${clash}`);
+  return [...new Set(out)];
+}
+
+// T841: the deny map is plain names, only with tools "permission"; a key may be written as an allow only
+// when it is the generic name itself (`edit`), never `read`, `bash`, `webfetch` or `websearch`.
+function validateDenyUnlessGranted(agents, platform) {
+  const map = agents.permissionDenyUnlessGranted;
+  if (map === undefined) return new Set();
+  const plain = (k) => typeof k === 'string' && /^[a-z_]+$/.test(k);
+  const ok = agents.tools === 'permission' && map !== null && typeof map === 'object' && !Array.isArray(map)
+    && Object.entries(map).every(([g, keys]) => plain(g) && Array.isArray(keys) && keys.length > 0 && keys.every(plain));
+  if (!ok) throw new Error(`permissionDenyUnlessGranted needs tools "permission" and plain names (platform ${platform})`);
+  return new Set(Object.entries(map).flatMap(([g, keys]) => keys.filter((k) => k !== g)));
+}
+
 function validateMcpToolNamesStyle(manifest) {
   const style = manifest.frontmatter && manifest.frontmatter.agents
     ? manifest.frontmatter.agents.mcpToolNames
@@ -580,19 +635,20 @@ function validateMcpToolNamesStyle(manifest) {
   const denies = manifest.frontmatter && manifest.frontmatter.agents
     ? manifest.frontmatter.agents.mcpAgentDenies
     : undefined;
-  // T663: per-agent denies are written in the `underscore` form and only where the tools are an object
-  if (denies !== undefined && (denies !== true || style !== 'underscore' || manifest.frontmatter.agents.tools !== 'object')) {
-    throw new Error(`mcpAgentDenies needs true, mcpToolNames "underscore" and tools "object" (platform ${manifest.platform})`);
+  // T663: per-agent denies are written in the `underscore` form and only where the tools are a `permission` map (T836)
+  if (denies !== undefined && (denies !== true || style !== 'underscore' || manifest.frontmatter.agents.tools !== 'permission')) {
+    throw new Error(`mcpAgentDenies needs true, mcpToolNames "underscore" and tools "permission" (platform ${manifest.platform})`);
   }
+  validatePermissionKeys(manifest);
   if (style === undefined) return;
   if (typeof style !== 'string' || !Object.prototype.hasOwnProperty.call(MCP_TOOL_NAME_STYLES, style)) {
     throw new Error(`Unknown mcpToolNames style: ${String(style)} (platform ${manifest.platform})`);
   }
 }
 
-// T663: names of the per-agent `false` entries for one agent, in the Opencode `underscore` form.
+// T663: names of the per-agent `deny` entries for one agent, in the Opencode `underscore` form.
 // `sourceTools` is the agent's tool list in the source form (`mcp__<server>[__<tool>]`);
-// `renderedTools` is the list that will be written as `true`. Returns `{ first, last }`:
+// `renderedTools` is the list that will be written as `allow` (T836: `permission:` map). Returns `{ first, last }`:
 //   last   the exact denied names (`denyTools` of every server, for every agent), followed by the
 //          server wildcard of every `denyUnlessGranted` server this agent holds no token for;
 //          written AFTER every allow, so a deny survives any broader allow of the agent.
@@ -668,6 +724,17 @@ function withEmittedMcpTools(data, servers, manifest) {
   return kept.length === data.tools.length ? data : { ...data, tools: kept };
 }
 
+// T839 (SEC-T837-03): only names that are real Opencode permission keys may reach the agent
+// `permission` map. A generic name such as `read` is a real key, and `read: allow` written after
+// Opencode's default read rules for `*.env` and `*.env.*` would re-allow reading them; `search`,
+// `execute`, `web`, `agent` and `todo` are not Opencode keys and had no effect. So a non-MCP name is
+// kept only when the manifest lists it in `permissionKeys` (fail-closed: an unlisted name is left
+// out and Opencode's default applies). MCP tokens are kept unchanged.
+function permissionTools(tools, cfg) {
+  const keys = new Set(cfg.permissionKeys || []);
+  return tools.filter((t) => splitMcpToolName(t) !== null || keys.has(t));
+}
+
 function applyAgentFrontmatter(data, name, cfg) {
   const out = {};
   for (const k of cfg.keepKeys || Object.keys(data)) {
@@ -681,8 +748,8 @@ function applyAgentFrontmatter(data, name, cfg) {
       .map(([k]) => k);
   }
 
-  if (cfg.tools === 'object') {
-    if (Array.isArray(tools)) out.tools = tools;
+  if (cfg.tools === 'permission') {
+    if (Array.isArray(tools)) out.tools = permissionTools(tools, cfg);
   } else if (cfg.tools === 'string') {
     if (Array.isArray(tools)) {
       const toolMap = cfg.toolMap || {};
@@ -1077,8 +1144,9 @@ async function syncAgents(manifest, outRoot, servers, filesWritten) {
     const denies = agentCfg.mcpAgentDenies === true && manifest.mcp
       ? agentMcpDenials(sourceToolList(data), newData.tools, servers, manifest)
       : { first: [], last: [] };
+    denies.last = denies.last.concat(builtinDenials(sourceToolList(data), newData.tools, agentCfg));
     const fm = emitFrontmatter(newData, {
-      toolsFormat: agentCfg.tools === 'object' ? 'object' : agentCfg.tools === 'string' ? 'string' : 'array',
+      toolsFormat: agentCfg.tools === 'permission' ? 'permission' : agentCfg.tools === 'string' ? 'string' : 'array',
       denyFirst: denies.first,
       denyTools: denies.last,
     });

@@ -394,8 +394,8 @@ PLAYWRIGHT_EXCLUDED = {
 
 
 def _is_deny_line(line: str) -> bool:
-    """An indented `<name>: false` entry of an Opencode `tools:` map (T663 per-agent deny)."""
-    return re.fullmatch(r"\s+\S+: false", line) is not None
+    """An indented `<name>: deny` entry of an Opencode `permission:` map (T663 per-agent deny; T836 form)."""
+    return re.fullmatch(r"\s+\S+: deny", line) is not None
 
 
 def _playwright_grants(slug: str) -> set[str]:
@@ -464,7 +464,7 @@ class PlaywrightGrantSetTests(unittest.TestCase):
         self.assertGreaterEqual(len(files), 3 * 20)
         for path in files:
             front = path.read_text(encoding="utf-8").split("---", 2)[1]
-            # T663: an Opencode `name: false` line is a generated per-agent deny, not a grant; its names
+            # T663: an Opencode `name: deny` line is a generated per-agent deny, not a grant; its names
             # are pinned in test_mcp_agent_denials.py
             tokens = re.findall(r"[A-Za-z0-9_./*-]+", "\n".join(
                 l for l in front.splitlines() if not l.startswith(("name:", "description:")) and not _is_deny_line(l)))
@@ -783,7 +783,7 @@ class GitLabGrantSetTests(unittest.TestCase):
             for path in files:
                 slug = path.name[: -len(suffix)]
                 front = path.read_text(encoding="utf-8").split("---", 2)[1]
-                # T663: a generated `gitlab_*: false` (Opencode, agents without a GitLab tool) is a deny, not a grant
+                # T663: a generated `gitlab_*: deny` (Opencode, agents without a GitLab tool) is a deny, not a grant
                 tokens = set(re.findall(r"[A-Za-z0-9_./*-]+", "\n".join(
                     l for l in front.splitlines()
                     if not l.startswith(("name:", "description:")) and not _is_deny_line(l))))

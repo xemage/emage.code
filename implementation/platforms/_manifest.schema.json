@@ -48,9 +48,11 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "tools": { "enum": ["array", "object", "string"] },
+            "tools": { "enum": ["array", "permission", "string"] },
             "mcpToolNames": { "enum": ["verbatim", "slash", "underscore"] },
-            "mcpAgentDenies": { "const": true, "description": "Opencode only; needs mcpToolNames underscore and tools object (sync.mjs refuses anything else)." },
+            "mcpAgentDenies": { "const": true, "description": "Opencode only; needs mcpToolNames underscore and tools permission (sync.mjs refuses anything else)." },
+            "permissionKeys": { "$ref": "#/$defs/stringList", "description": "Opencode only (T839, SEC-T837-03): the non-MCP tool names written to the agent permission map; every other non-MCP name is left out. Never read." },
+            "permissionDenyUnlessGranted": { "type": "object", "additionalProperties": { "$ref": "#/$defs/stringList" }, "description": "Opencode only (T841, SEC-T840-01): generic tool name -> Opencode permission keys written as deny for every agent that does not hold the generic name. Deny-only." },
             "keepKeys": { "$ref": "#/$defs/stringList" },
             "toolMap": { "type": "object", "additionalProperties": { "type": "string" } },
             "addToOrchestrators": { "type": "object" },
