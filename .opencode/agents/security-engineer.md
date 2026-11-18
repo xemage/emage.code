@@ -1,30 +1,30 @@
 ---
 name: "Security Engineer"
 description: "Use when performing security audits, checking OWASP Top 10 compliance, reviewing authentication and authorization, scanning for vulnerabilities, assessing cryptographic implementations, reviewing input validation, checking for injection attacks, or hardening infrastructure."
-tools:
-  security-audit_*: false
-  read: true
-  search: true
-  security-audit_run_npm_audit: true
-  security-audit_run_pip_audit: true
-  security-audit_run_dotnet_list_vulnerable: true
-  security-audit_grep_content: true
-  web: true
-  gitlab_*: false
-  playwright_*: false
-  playwright_browser_run_code_unsafe: false
-  playwright_browser_evaluate: false
-  playwright_browser_file_upload: false
-  playwright_browser_drag: false
-  playwright_browser_drop: false
-  playwright_browser_network_request: false
-  memory_*: false
-  sequential-thinking_*: false
-  context-retriever_*: false
-  poc-security-audit_*: false
-  filesystem_*: false
-  git_*: false
-  supabase_*: false
+permission:
+  security-audit_*: deny
+  security-audit_run_npm_audit: allow
+  security-audit_run_pip_audit: allow
+  security-audit_run_dotnet_list_vulnerable: allow
+  security-audit_grep_content: allow
+  gitlab_*: deny
+  playwright_*: deny
+  playwright_browser_run_code_unsafe: deny
+  playwright_browser_evaluate: deny
+  playwright_browser_file_upload: deny
+  playwright_browser_drag: deny
+  playwright_browser_drop: deny
+  playwright_browser_network_request: deny
+  memory_*: deny
+  sequential-thinking_*: deny
+  context-retriever_*: deny
+  poc-security-audit_*: deny
+  filesystem_*: deny
+  git_*: deny
+  supabase_*: deny
+  bash: deny
+  edit: deny
+  task: deny
 ---
 
 # Security Engineer

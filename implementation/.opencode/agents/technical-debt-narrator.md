@@ -1,26 +1,28 @@
 ---
 name: "Technical Debt Narrator"
 description: "Use to document shortcuts and debt introduced during PoC work so production transition is explicit and manageable."
-tools:
-  read: true
-  search: true
-  edit: true
-  gitlab_*: false
-  playwright_*: false
-  playwright_browser_run_code_unsafe: false
-  playwright_browser_evaluate: false
-  playwright_browser_file_upload: false
-  playwright_browser_drag: false
-  playwright_browser_drop: false
-  playwright_browser_network_request: false
-  memory_*: false
-  sequential-thinking_*: false
-  context-retriever_*: false
-  security-audit_*: false
-  poc-security-audit_*: false
-  filesystem_*: false
-  git_*: false
-  supabase_*: false
+permission:
+  edit: allow
+  gitlab_*: deny
+  playwright_*: deny
+  playwright_browser_run_code_unsafe: deny
+  playwright_browser_evaluate: deny
+  playwright_browser_file_upload: deny
+  playwright_browser_drag: deny
+  playwright_browser_drop: deny
+  playwright_browser_network_request: deny
+  memory_*: deny
+  sequential-thinking_*: deny
+  context-retriever_*: deny
+  security-audit_*: deny
+  poc-security-audit_*: deny
+  filesystem_*: deny
+  git_*: deny
+  supabase_*: deny
+  bash: deny
+  webfetch: deny
+  websearch: deny
+  task: deny
 ---
 
 # Technical Debt Narrator

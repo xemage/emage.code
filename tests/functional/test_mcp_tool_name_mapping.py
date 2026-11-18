@@ -66,6 +66,14 @@ def _source_tools(slug: str) -> list[str]:
     return list(fm.get("tools") or [])
 
 
+def _opencode_keeps(platform: str, token: str) -> bool:
+    """T839 (SEC-T837-03): Opencode keeps MCP tokens and only the generic names its manifest lists in
+    `permissionKeys` (`edit`); `read`, `search`, `execute`, `web`, `agent` and `todo` are left out."""
+    if platform != "opencode" or token.startswith("mcp__"):
+        return True
+    return token in _manifest("opencode")["frontmatter"]["agents"]["permissionKeys"]
+
+
 def _projected_tools(platform: str, slug: str) -> list[str]:
     root = implementation_root()
     if platform == "github":
@@ -73,9 +81,11 @@ def _projected_tools(platform: str, slug: str) -> list[str]:
         return list(fm["tools"])
     if platform == "opencode":
         fm, _ = parse_file(root / ".opencode" / "agents" / f"{slug}.md")
-        # T663: the map also carries generated `false` entries (per-agent denials); the grant list is
-        # the `true` entries, in order.
-        return [name for name, value in fm["tools"].items() if value is True]
+        # T663: the map also carries generated `deny` entries (per-agent denials); the grant list is
+        # the `allow` entries, in order. T836 (SEC-T663-02): the map is `permission:`, the deprecated
+        # `tools:` map is no longer written.
+        assert "tools" not in fm, f"{slug}: deprecated Opencode `tools:` map is back"
+        return [name for name, value in fm["permission"].items() if value == "allow"]
     raise AssertionError(platform)
 
 
@@ -170,12 +180,13 @@ class GeneratorRunTests(unittest.TestCase):
 
     def _tools(self, rel: str) -> list[str]:
         fm, _ = parse_file(self.root / rel)
-        tools = fm["tools"]
+        # T836 (SEC-T663-02): Opencode carries the grants in a `permission:` map, never in `tools:`
+        tools = fm["permission"] if rel.startswith(".opencode/") else fm["tools"]
         if isinstance(tools, str):
             return [t.strip() for t in tools.split(",")]
         if isinstance(tools, dict):
-            # T663: Opencode's map also carries generated `false` entries (the per-agent denials)
-            return [name for name, value in tools.items() if value is True]
+            # T663: Opencode's map also carries generated `deny` entries (the per-agent denials)
+            return [name for name, value in tools.items() if value == "allow"]
         return list(tools)
 
     def test_generator_succeeded(self):
@@ -188,7 +199,8 @@ class GeneratorRunTests(unittest.TestCase):
         }
         for platform, (rel, style) in cases.items():
             with self.subTest(platform=platform):
-                self.assertEqual(self._tools(rel), [expected_name(style, t) for t in self.TOOLS])
+                self.assertEqual(self._tools(rel), [expected_name(style, t) for t in self.TOOLS
+                                                    if _opencode_keeps(platform, t)])
 
     def test_claude_code_keeps_the_source_form(self):
         rendered = self._tools(".claude/agents/fx.md")
@@ -283,7 +295,8 @@ class ProjectedAgentTests(unittest.TestCase):
                 slug = source.stem
                 with self.subTest(platform=platform, agent=slug):
                     want = [expected_name(style, t) for t in _source_tools(slug)
-                            if not t.startswith(left_out) and t not in {p[:-2] for p in left_out}]
+                            if not t.startswith(left_out) and t not in {p[:-2] for p in left_out}
+                            and _opencode_keeps(platform, t)]
                     got = _projected_tools(platform, slug)
                     self.assertEqual(got, list(dict.fromkeys(want)))
 
@@ -330,8 +343,8 @@ class ProjectedAgentTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             github = parse_file(root / ".github" / "agents" / "fx.agent.md")[0]["tools"]
             self.assertEqual(list(github), ["read", "nodef/two"])
-            opencode = parse_file(root / ".opencode" / "agents" / "fx.md")[0]["tools"]
-            self.assertIs(opencode.get("ext_one"), True)
+            opencode = parse_file(root / ".opencode" / "agents" / "fx.md")[0]["permission"]
+            self.assertEqual(opencode.get("ext_one"), "allow")
 
     def test_no_projection_names_the_unsafe_tool(self):
         # T658 (SEC-T657-07): a file-count floor, so an empty glob (a renamed directory) cannot pass
@@ -345,7 +358,7 @@ class ProjectedAgentTests(unittest.TestCase):
                 # T663: an Opencode agent file names it only as the generated per-agent deny
                 for line in text.splitlines():
                     if "browser_run_code_unsafe" in line:
-                        self.assertEqual(line, "  playwright_browser_run_code_unsafe: false", str(path))
+                        self.assertEqual(line, "  playwright_browser_run_code_unsafe: deny", str(path))
             else:
                 self.assertNotIn("browser_run_code_unsafe", text, str(path))
 
