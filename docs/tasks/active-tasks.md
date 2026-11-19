@@ -2,10 +2,7 @@
 
 | ID | Title | Owner | Status | Priority | Depends on | Last update |
 |----|-------|-------|--------|----------|-----------|-------------|
-| T874 | Probe tag v12.0.0-gate.1 (plan-182; the user: "Yes, push the probe tag (Recommended)") | orchestrator | in_progress | P0 | T873 | 2026-11-19 |
-| T875 | QA gate for v12.0.0 (plan-182) | qa-engineer | in_progress | P0 | T873 | 2026-11-19 |
-| T876 | Tech-lead review of the v12.0.0 release by area (plan-182) | tech-lead | in_progress | P0 | T873 | 2026-11-19 |
-| T877 | Release-level security re-check for v12.0.0 (plan-182) | security-engineer | in_progress | P0 | T873 | 2026-11-19 |
+| T878 | Release-document corrections and the v12.0.0 release verdict (plan-182) | release-manager | in_progress | P0 | T875, T876, T877 | 2026-11-19 |
 
 > **Active rows (`plan-123`, post-release follow-ups after v8.0.0; approved by the user on 2026-10-16).** T662, T678 and T679 (Cursor removal in three steps under the accepted ADR-010), T663 (Opencode per-agent denies), T665 (GitLab token scope: implementation of the accepted design), T666 and T667 (named GitLab tool sets), T668 to T670 (golden realignment B under grant G-2, evaluator baseline v22, promote `orchestrator`; baseline v22 approved by the user on 2026-10-16), T672 to T677 (themed debt tasks from the tracked-debt register) (themed debt tasks). Baseline v21 until T669; root drift 0.
 

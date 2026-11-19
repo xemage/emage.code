@@ -2,12 +2,13 @@
 
 **ID:** T877
 **Owner:** security-engineer
-**Status:** in_progress
+**Status:** done
 **Priority:** P0
 **Tier:** judgment
 **Depends on:** T873
 **Affects:** —
 **Created:** 2026-11-19
+**Completed:** 2026-11-19
 **Based on:**
 - `docs/plans/plan-182-next-release.md` (§ Task Decomposition item 10; Addenda 1 to 3)
 - The user's answers of 2026-11-19, verbatim: "release plan go"; "Approve (Recommended)"; "v12.0.0, MAJOR (Recommended)"; "Yes, probe first (Recommended)"; "Accept for v12.0.0 (Recommended)"; "Yes, push the probe tag (Recommended)"
