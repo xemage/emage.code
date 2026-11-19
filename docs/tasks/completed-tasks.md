@@ -654,3 +654,4 @@ Append-only log. Entries move here after the orchestrator marks a task `done`.
 | T851 | Brave pin bump to 2.1.5 (plan-173; the user: "Brave 2.1.5 go"): provenance present, npm diff read, release audit exit 0 without --accept, checklist and tests re-aimed | devops-engineer | 2026-11-19 | commit `bb9ccb37` |
 | T852 | Security review of the Brave 2.1.5 bump (plan-173): PASS; SEC-T702-09 fixed, its v11.0.0 acceptance ended | security-engineer | 2026-11-19 | `docs/artifacts/security-review-t852-brave-2-1-5-v1.md` |
 | T853 | Root refresh after the Brave 2.1.5 bump (plan-173; the user: "Refresh now (Recommended)"): 4 MCP configs, drift [] | orchestrator | 2026-11-19 | plan-173 § Outcome |
+| T854 | Tracked-debt register v22 (plan-174; the user: "v22 go"): 729 ids (551 fixed, 46 accepted, 10 obsolete, 1 open K-20, 121 tracked-LOW); SEC-T702-09 fixed, TD-T849-01 in I | tech-lead | 2026-11-19 | `docs/artifacts/tracked-debt-register-v22.md` (commit `baa7785e`) |
