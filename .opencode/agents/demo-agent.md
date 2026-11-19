@@ -38,6 +38,8 @@ permission:
     "gitlab-mcp/*": deny
     "*/gitlab-mcp": deny
     "*/gitlab-mcp/*": deny
+  external_directory:
+    "*/gitlab-mcp/*": deny
 ---
 
 # Demo Agent

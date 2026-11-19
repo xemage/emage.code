@@ -29,6 +29,8 @@ permission:
     "gitlab-mcp/*": deny
     "*/gitlab-mcp": deny
     "*/gitlab-mcp/*": deny
+  external_directory:
+    "*/gitlab-mcp/*": deny
 ---
 
 # PoC Security Engineer

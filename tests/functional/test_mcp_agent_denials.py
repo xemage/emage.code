@@ -123,6 +123,8 @@ BUILTIN_KEYS = {k for keys in BUILTIN_DENY_UNLESS_GRANTED.values() for k in keys
 # Opencode 1.19.2 asks `read` with the path relative to the worktree, 1.0.224 with the absolute path, and its
 # `*` matches `/` (util/wildcard.ts), so these four cover both directories in both forms. Pinned by hand.
 READ_DENY_PATTERNS = ["gitlab-mcp", "gitlab-mcp/*", "*/gitlab-mcp", "*/gitlab-mcp/*"]
+# T861 (SEC-T856-02): Opencode 1.19.2 asks `external_directory` with the absolute `<dir>/*` of the target.
+EXTDIR_DENY_PATTERNS = ["*/gitlab-mcp/*"]
 # T855 (SEC-T844-01): Opencode 1.19.2's own agents (agent/agent.ts), never to be allowed as a task target.
 OPENCODE_BUILTIN_AGENTS = ["build", "plan", "general", "explore", "compaction", "title", "summary"]
 
@@ -1260,7 +1262,8 @@ class T855TaskAndReadMapTests(unittest.TestCase):
                     self.assertNotIn("read", perm)
                 else:
                     self.assertEqual(list(perm["read"].items()), [(p, "deny") for p in READ_DENY_PATTERNS])
-                    self.assertEqual(list(perm)[-1], "read", "the read map is the last entry")
+                    self.assertEqual(list(perm)[-2:], ["read", "external_directory"],
+                                     "the read map, then the T861 external_directory map, are the last entries")
         self.assertEqual(sum("read" in p for p in self.perm.values()), 13)
 
     def test_a_token_path_is_denied_for_every_agent_without_execute(self):
@@ -1342,8 +1345,10 @@ class T855GeneratorFixtureTests(unittest.TestCase):
         self.assertEqual(list(self.perm(root, "lone")["task"].items()), [("*", "deny")], "no list: launches nothing")
         self.assertEqual(self.perm(root, "worker")["task"], "deny")
         self.assertEqual(list(self.perm(root, "reader")["read"].items()), [(p, "deny") for p in READ_DENY_PATTERNS])
+        self.assertEqual(list(self.perm(root, "reader")["external_directory"].items()), [(p, "deny") for p in EXTDIR_DENY_PATTERNS])
         for slug in ("boss", "worker", "lone"):
             self.assertNotIn("read", self.perm(root, slug))
+            self.assertNotIn("external_directory", self.perm(root, slug))
         for other in ("claude-code", "cline", "github"):
             for path in root.rglob("*.md"):
                 if f"/.{other}" in str(path) or "/.clinerules" in str(path):
@@ -1374,6 +1379,13 @@ class T855GeneratorFixtureTests(unittest.TestCase):
             "read pattern duplicate": lambda d: a(d).__setitem__("permissionReadDenyUnlessGranted", {"execute": ["x/*", "x/*"]}),
             "read pattern home": lambda d: a(d).__setitem__("permissionReadDenyUnlessGranted", {"execute": ["~/x/*"]}),
             "read via permissionKeys": lambda d: a(d).__setitem__("permissionKeys", ["edit", "read"]),
+            "extdir map not an object": lambda d: a(d).__setitem__("permissionExternalDirectoryDenyUnlessGranted", ["x"]),
+            "extdir pattern star": lambda d: a(d).__setitem__("permissionExternalDirectoryDenyUnlessGranted", {"execute": ["*"]}),
+            "extdir pattern empty list": lambda d: a(d).__setitem__("permissionExternalDirectoryDenyUnlessGranted", {"execute": []}),
+            "extdir pattern duplicate": lambda d: a(d).__setitem__("permissionExternalDirectoryDenyUnlessGranted", {"execute": ["x/*", "x/*"]}),
+            "extdir pattern home": lambda d: a(d).__setitem__("permissionExternalDirectoryDenyUnlessGranted", {"execute": ["~/x/*"]}),
+            "extdir pattern env": lambda d: a(d).__setitem__("permissionExternalDirectoryDenyUnlessGranted", {"execute": ["$HOME/x/*"]}),
+            "extdir via permissionKeys": lambda d: a(d).__setitem__("permissionKeys", ["edit", "external_directory"]),
             "task via permissionKeys": lambda d: a(d).__setitem__("permissionKeys", ["edit", "task"]),
         }
         for label, mutate in mutations.items():
@@ -1381,6 +1393,118 @@ class T855GeneratorFixtureTests(unittest.TestCase):
                 _, result = self.run_sync(self.AGENTS, mutate_platform=mutate)
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn("permission", result.stderr)
+
+
+class T861ExternalDirectoryMapTests(unittest.TestCase):
+    """T861 (SEC-T856-02): the deny-only `external_directory` map of the 13 agents without `execute`.
+
+    Opencode 1.19.2 `tool/external-directory.ts` asks `external_directory` with `path.join(dir, "*")`, `dir` the
+    absolute parent of a file or the directory itself; `agent/agent.ts` appends `external_directory: {<tool-output
+    glob>: allow}` after the agent's rules unless the agent holds a DENY with exactly that pattern."""
+
+    TOOL_OUTPUT = "/x/data/opencode/tool-output/*"
+    DEFAULTS = [("*", "allow", "*"), ("external_directory", "ask", "*"), ("external_directory", "allow", TOOL_OUTPUT),
+                ("external_directory", "allow", "/x/tmp/opencode/*")]
+    TOKEN_ASKS = ["/dev/shm/gitlab-mcp/*", "/run/user/1000/gitlab-mcp/*", "/run/user/1000/gitlab-mcp/sub/*"]
+    OTHER_ASKS = [TOOL_OUTPUT, "/x/tmp/opencode/*", "/dev/shm/*", "/run/user/1000/*", "/home/u/other/*", "/etc/*",
+                  "/home/u/gitlab-mcp-notes/*"]
+    HOSTILE = [{}, {"*": "allow"}, {"external_directory": "allow"},
+               {"external_directory": {"*": "allow", "*/gitlab-mcp/*": "allow"}}]
+
+    @classmethod
+    def setUpClass(cls):
+        cfg = json.loads((IMPL / ".opencode" / "opencode.json").read_text(encoding="utf-8"))
+        cls.global_rules = pattern_rules(cfg["permission"])
+        cls.perm = {p.stem: parse_file(p)[0]["permission"] for p in sorted(OPENCODE_AGENTS.glob("*.md"))}
+
+    def resolved(self, slug, hostile):
+        agent = pattern_rules(self.perm[slug])
+        explicit = any(r == ("external_directory", "deny", self.TOOL_OUTPUT) for r in agent)
+        tail = [] if explicit else [("external_directory", "allow", self.TOOL_OUTPUT)]
+        return self.DEFAULTS + self.global_rules + pattern_rules(hostile) + agent + tail
+
+    def effect(self, slug, ask, hostile):
+        return pattern_effect("external_directory", ask, self.resolved(slug, hostile))
+
+    def test_the_manifest_pins_the_map(self):
+        cfg = json.loads((IMPL / "platforms" / "opencode.json").read_text(encoding="utf-8"))["frontmatter"]["agents"]
+        self.assertEqual(cfg["permissionExternalDirectoryDenyUnlessGranted"], {"execute": EXTDIR_DENY_PATTERNS})
+
+    def test_every_value_is_absent_or_the_deny_only_map_last(self):
+        for slug, perm in self.perm.items():
+            with self.subTest(agent=slug):
+                if "execute" in source_tokens(slug):
+                    self.assertNotIn("external_directory", perm)
+                    continue
+                self.assertEqual(list(perm["external_directory"].items()), [(p, "deny") for p in EXTDIR_DENY_PATTERNS])
+                self.assertEqual(list(perm)[-1], "external_directory")
+        self.assertEqual(sum("external_directory" in p for p in self.perm.values()), 13)
+
+    def test_a_token_directory_ask_is_denied_without_execute(self):
+        for slug in self.perm:
+            for hostile in self.HOSTILE:
+                for ask in self.TOKEN_ASKS:
+                    with self.subTest(agent=slug, ask=ask, hostile=hostile):
+                        if "execute" in source_tokens(slug):
+                            without = pattern_effect("external_directory", ask, self.DEFAULTS, self.global_rules, pattern_rules(hostile))
+                            self.assertEqual(self.effect(slug, ask, hostile), without)
+                        else:
+                            self.assertEqual(self.effect(slug, ask, hostile), "deny")
+
+    def test_the_tool_output_allow_and_every_other_ask_are_unchanged(self):
+        for slug in self.perm:
+            self.assertEqual(self.effect(slug, self.TOOL_OUTPUT, {}), "allow", slug)
+            for hostile in self.HOSTILE:
+                for ask in self.OTHER_ASKS:
+                    with self.subTest(agent=slug, ask=ask, hostile=hostile):
+                        rules = self.DEFAULTS + self.global_rules + pattern_rules(hostile)
+                        without = pattern_effect("external_directory", ask, rules + [("external_directory", "allow", self.TOOL_OUTPUT)])
+                        self.assertEqual(self.effect(slug, ask, hostile), without)
+
+    def test_no_agent_suppresses_the_built_in_tool_output_allow(self):
+        """agent.ts skips its allow only for an `external_directory` deny whose pattern IS the tool-output glob;
+        every generated pattern must stay a `*/<dir>/*` form that cannot be that glob."""
+        for pats in json.loads((IMPL / "platforms" / "opencode.json").read_text(encoding="utf-8"))["frontmatter"]["agents"][
+                "permissionExternalDirectoryDenyUnlessGranted"].values():
+            for pat in pats:
+                self.assertRegex(pat, r"^\*/[a-z0-9-]+/\*$")
+                self.assertNotIn("tool-output", pat)
+
+
+EVIDENCE_PATH_LEAKS = [r"/tmp/claude-", r"/home/", r"/Users/", r"/root/", r"/tmp/tmp\."]
+
+
+class T861EvidenceRedactionTests(unittest.TestCase):
+    """SEC-T856-01: every evidence directory newer than v3 stores no scratch path that names the machine or user.
+    v2 and v3 are immutable (their hashes are pinned) and exempt."""
+
+    def evidence_dirs(self):
+        out = []
+        for path in sorted((REPO / "docs" / "artifacts").glob("mcp-agent-denials-evidence-v*")):
+            m = re.fullmatch(r"mcp-agent-denials-evidence-v(\d+)", path.name)
+            if path.is_dir() and m and int(m.group(1)) > 3:
+                out.append(path)
+        return out
+
+    def test_no_scratch_path_in_raw_files_newer_than_v3(self):
+        import getpass
+        user = getpass.getuser()
+        leaks = list(EVIDENCE_PATH_LEAKS) + ([re.escape(f"/{user}/")] if len(user) > 2 else [])
+        dirs = self.evidence_dirs()
+        self.assertTrue(dirs, "evidence v4 exists (T861)")
+        for d in dirs:
+            for raw in sorted(p for p in d.rglob("*") if p.is_file()):
+                text = raw.read_text(encoding="utf-8", errors="replace")
+                for leak in leaks:
+                    with self.subTest(file=str(raw.relative_to(REPO)), leak=leak):
+                        self.assertIsNone(re.search(leak, text))
+
+    def test_the_metadata_records_the_redaction(self):
+        for d in self.evidence_dirs():
+            text = (d.parent / f"{d.name}.md").read_text(encoding="utf-8")
+            meta = text.split("## Metadata", 1)[1].split("\n## ", 1)[0]
+            with self.subTest(artifact=d.name):
+                self.assertIn("**Redaction**", meta)
 
 
 class T855EvidenceV3Tests(unittest.TestCase):
@@ -1402,9 +1526,44 @@ class T855EvidenceV3Tests(unittest.TestCase):
             slug = raw.stem[len("raw-"):]
             rules = [(r["permission"], r["action"], r["pattern"]) for r in json.loads(raw.read_text(encoding="utf-8"))["permission"]]
             with self.subTest(agent=slug):
-                self.assertEqual(rules[23:-1], pattern_rules(parse_file(OPENCODE_AGENTS / f"{slug}.md")[0]["permission"]))
+                generated = pattern_rules(parse_file(OPENCODE_AGENTS / f"{slug}.md")[0]["permission"])
+                # v3 records the T855 state; the T861 external_directory map came later (evidence v4).
+                generated = [r for r in generated if r[0] != "external_directory"]
+                self.assertEqual(rules[23:-1], generated)
                 self.assertEqual(rules[-1][:2], ("external_directory", "allow"))
 
+
+
+class T861EvidenceV4Tests(unittest.TestCase):
+    """evidence v4: the stored 1.19.2 lists carry the external_directory deny last and keep the tool-output allow."""
+
+    ART = REPO / "docs" / "artifacts" / "mcp-agent-denials-evidence-v4.md"
+    DIR = REPO / "docs" / "artifacts" / "mcp-agent-denials-evidence-v4"
+
+    def rules(self, raw):
+        return [(r["permission"], r["action"], r["pattern"]) for r in json.loads(raw.read_text(encoding="utf-8"))["permission"]]
+
+    def test_hashes_listed_in_the_artifact(self):
+        import hashlib
+        text = self.ART.read_text(encoding="utf-8")
+        files = sorted(p for p in self.DIR.iterdir() if p.is_file())
+        self.assertEqual(len(files), 6)
+        for path in files:
+            self.assertIn(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}", text)
+
+    def test_the_agent_segment_equals_the_generated_map(self):
+        for raw in sorted(self.DIR.glob("*raw-*.json")):
+            plain = raw.name.startswith("plain-")
+            slug = raw.stem.split("raw-", 1)[1]
+            rules = self.rules(raw)
+            with self.subTest(file=raw.name):
+                generated = pattern_rules(parse_file(OPENCODE_AGENTS / f"{slug}.md")[0]["permission"])
+                self.assertEqual(rules[18 if plain else 23:-1], generated)
+                self.assertEqual(rules[-1], ("external_directory", "allow", "/tmp/evidence-run/xdg/data/opencode/tool-output/*"))
+                if "execute" not in source_tokens(slug):
+                    self.assertEqual(rules[-2], ("external_directory", "deny", "*/gitlab-mcp/*"))
+                    self.assertEqual(pattern_effect("external_directory", "/dev/shm/gitlab-mcp/*", rules), "deny")
+                self.assertEqual(pattern_effect("external_directory", rules[-1][2], rules), "allow")
 
 if __name__ == "__main__":
     unittest.main()

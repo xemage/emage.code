@@ -28,6 +28,8 @@ permission:
     "gitlab-mcp/*": deny
     "*/gitlab-mcp": deny
     "*/gitlab-mcp/*": deny
+  external_directory:
+    "*/gitlab-mcp/*": deny
 ---
 
 # Technical Debt Narrator
