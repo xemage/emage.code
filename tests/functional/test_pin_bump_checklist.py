@@ -106,6 +106,25 @@ def young_problems(text: str) -> list[str]:
     return out
 
 
+AUDITED_LOCKS = ("implementation/runtime/security/requirements-mcp-server.lock.txt",
+                 "implementation/runtime/memory/requirements-mcp-server.lock.txt",
+                 "ci/requirements-ci.txt", "ci/requirements-gate.txt", "ci/requirements-release.txt")
+
+
+def audit_scope_problems(text: str) -> list[str]:
+    """T880: section 2's audit-scope item runs pip-audit on every runtime and every CI lock (ci/requirements-*.txt)."""
+    section = text.split("## 2. ", 1)[-1].split("\n## 3. ", 1)[0]
+    item = re.search(r"^- \*\*Audit scope[^\n]*", section, re.M)
+    if not item:
+        return ["section 2 has no audit-scope item naming the locks pip-audit covers"]
+    out = [] if "pip-audit" in item.group(0) else ["the audit-scope item does not run pip-audit"]
+    on_disk = sorted(p.relative_to(ROOT).as_posix() for p in (ROOT / "ci").glob("requirements-*.txt"))
+    for lock in sorted(set(AUDITED_LOCKS) | set(on_disk)):
+        if f"`{lock}`" not in item.group(0):
+            out.append(f"the audit-scope item does not name {lock}")
+    return out
+
+
 def problems(text: str) -> list[str]:
     out = [f"missing id {i}" for i in IDS if i not in text]
     out += [f"missing phrase {p!r}" for p in REQUIRED_PHRASES if p not in text]
@@ -113,6 +132,7 @@ def problems(text: str) -> list[str]:
         out.append("the isolated opencode command expands $HOME in the calling shell (SEC-T676-01): use t=$(mktemp -d) first")
     out += gate_problems(text)
     out += young_problems(text)
+    out += audit_scope_problems(text)
     for path in set(re.findall(r"`((?:scripts|ci|tests|implementation|docs)/[A-Za-z0-9_./*<>-]+)`", text)):
         if "*" in path or "<" in path or path.endswith("/"):
             continue
@@ -298,6 +318,15 @@ class TestChecklist(unittest.TestCase):
         bad = self.text.replace("`ci/requirements-ci.in`", "`ci/requirements-cx.in`")
         self.assertNotEqual(bad, self.text)
         self.assertTrue(any("does not exist" in p for p in problems(bad)))
+
+    def test_mutation_a_ci_lock_dropped_from_the_audit_scope_is_detected(self):
+        for lock in ("ci/requirements-ci.txt", "ci/requirements-gate.txt", "ci/requirements-release.txt"):
+            with self.subTest(lock=lock):
+                head, _, tail = self.text.partition("- **Audit scope")
+                line, nl, rest = tail.partition("\n")
+                bad = head + "- **Audit scope" + line.replace(f"`{lock}`", "x") + nl + rest
+                self.assertNotEqual(bad, self.text)
+                self.assertIn(f"the audit-scope item does not name {lock}", problems(bad))
 
     def test_mutation_a_dropped_section_is_detected(self):
         self.assertTrue(problems(self.text.replace("One-time live checks", "Checks")))
