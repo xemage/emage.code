@@ -21,6 +21,11 @@ permission:
   supabase_*: deny
   bash: deny
   task: deny
+  read:
+    "gitlab-mcp": deny
+    "gitlab-mcp/*": deny
+    "*/gitlab-mcp": deny
+    "*/gitlab-mcp/*": deny
 ---
 
 # UX Designer

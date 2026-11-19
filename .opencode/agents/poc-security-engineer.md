@@ -24,6 +24,11 @@ permission:
   bash: deny
   edit: deny
   task: deny
+  read:
+    "gitlab-mcp": deny
+    "gitlab-mcp/*": deny
+    "*/gitlab-mcp": deny
+    "*/gitlab-mcp/*": deny
 ---
 
 # PoC Security Engineer

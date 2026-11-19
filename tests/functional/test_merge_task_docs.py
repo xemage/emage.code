@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import importlib.util
 import io
+import re
 import tempfile
 import unittest
 from unittest import mock
@@ -451,7 +452,9 @@ class TestLedgerBackupAndAtomicWrite(unittest.TestCase):
         self.assertEqual(seen["mode_before"], 0o600, "mkstemp's mode, no wider than the ledger's")
         self.assertEqual(seen["mode_set"], 0o640, "the ledger's mode is set before any content")
         self.assertEqual(seen["mode"], 0o640)
-        self.assertNotIn(str(os.getpid()), seen["name"])
+        # A whole field, not a substring: mkstemp's random part may hold the process id by chance (TD-T849-01,
+        # as TD-T746-01 in test_merge_mcp_json_robustness). Not split on "_", which is in mkstemp's alphabet.
+        self.assertNotIn(str(os.getpid()), re.split(r"[.-]", seen["name"]), "a predictable temp name")
         self.assertTrue(seen["name"].startswith(".active-tasks.md.") and seen["name"].endswith(".tmp"))
 
     def test_ledger_keeps_its_mode(self):

@@ -119,6 +119,57 @@ BUILTIN_DENY_UNLESS_GRANTED = {"execute": ["bash"], "edit": ["edit"], "web": ["w
 BUILTIN_KEYS = {k for keys in BUILTIN_DENY_UNLESS_GRANTED.values() for k in keys}
 
 
+# T855 (SEC-T842-02): the default token directory is ${XDG_RUNTIME_DIR:-/dev/shm}/gitlab-mcp/ (PREREQUISITES).
+# Opencode 1.19.2 asks `read` with the path relative to the worktree, 1.0.224 with the absolute path, and its
+# `*` matches `/` (util/wildcard.ts), so these four cover both directories in both forms. Pinned by hand.
+READ_DENY_PATTERNS = ["gitlab-mcp", "gitlab-mcp/*", "*/gitlab-mcp", "*/gitlab-mcp/*"]
+# T855 (SEC-T844-01): Opencode 1.19.2's own agents (agent/agent.ts), never to be allowed as a task target.
+OPENCODE_BUILTIN_AGENTS = ["build", "plan", "general", "explore", "compaction", "title", "summary"]
+
+
+def expected_task_map(slug: str) -> list[tuple[str, str]]:
+    """`"*": deny`, then one allow per entry of the source `agents:` list, by that agent's source `name`
+    (1.19.2 keys a file agent by its frontmatter name; `debug agent tech-lead` reports "not found")."""
+    fm, _ = parse_file(SOURCE_AGENTS / f"{slug}.md")
+    names = [parse_file(SOURCE_AGENTS / f"{a}.md")[0]["name"] for a in fm.get("agents", [])]
+    return [("*", "deny")] + [(n, "allow") for n in names]
+
+
+def pmatch(text: str, pattern: str) -> bool:
+    """util/wildcard.ts `match` (Linux): escape, `*` -> `.*`, `?` -> `.`, trailing " *" optional, anchored, dotall."""
+    esc = re.sub(r"[.+^${}()|\[\]\\]", lambda m: "\\" + m.group(0), pattern).replace("*", ".*").replace("?", ".")
+    if esc.endswith(" .*"):
+        esc = esc[:-3] + "( .*)?"
+    return re.fullmatch(esc, text, re.S) is not None
+
+
+def pattern_rules(permission) -> list[tuple[str, str, str]]:
+    """permission/index.ts `fromConfig`: a string value is one rule with pattern `*`, a map one rule per entry."""
+    if isinstance(permission, str):
+        return [("*", permission, "*")]
+    out = []
+    for key, value in (permission or {}).items():
+        if isinstance(value, str):
+            out.append((key, value, "*"))
+        else:
+            out.extend((key, action, pat) for pat, action in value.items())
+    return out
+
+
+def pattern_effect(permission: str, pattern: str, *rulesets) -> str:
+    """permission/index.ts `evaluate`: the last rule matching both permission and pattern; none -> ask."""
+    rules = [r for rs in rulesets for r in rs]
+    for perm, action, pat in reversed(rules):
+        if pmatch(permission, perm) and pmatch(pattern, pat):
+            return action
+    return "ask"
+
+
+# The 1.19.2 built-in `*` and `read` defaults (evidence v2/v3 raw files, rules 0 and 8-11).
+OPENCODE_READ_DEFAULTS = [("*", "allow", "*"), ("read", "allow", "*"), ("read", "ask", "*.env"),
+                          ("read", "ask", "*.env.*"), ("read", "allow", "*.env.example")]
+
+
 def expected_builtin_denies(source: list[str]) -> list[tuple[str, str]]:
     return [(k, "deny") for g, keys in BUILTIN_DENY_UNLESS_GRANTED.items() if g not in source for k in keys]
 
@@ -452,7 +503,12 @@ class ShippedInvariantTests(unittest.TestCase):
                 # T841: `edit` may be an allow (holder) or a deny (non-holder); bash/webfetch/websearch only deny
                 self.assertLessEqual(set(generic), {("edit", "allow")} | {(k, "deny") for k in BUILTIN_KEYS})
                 fm, _ = parse_file(path)
-                self.assertNotIn("read", fm["permission"])
+                # T855 (SEC-T842-02): `read` only as the deny-only token-directory map of an agent without `execute`
+                read = fm["permission"].get("read")
+                if "execute" in source_tokens(path.stem):
+                    self.assertIsNone(read)
+                else:
+                    self.assertEqual(list(read.items()), [(p, "deny") for p in READ_DENY_PATTERNS])
 
     def test_sec_t840_01_builtin_tools_are_denied_unless_the_source_grants_them(self):
         """T841 (SEC-T840-01): no `execute` -> `bash: deny`; no `edit` -> `edit: deny`; no `web` ->
@@ -484,7 +540,8 @@ class ShippedInvariantTests(unittest.TestCase):
             with self.subTest(agent=path.stem):
                 self.assertNotIn(("task", "allow"), pairs)
                 if path.stem in delegators:
-                    self.assertNotIn("task", [n for n, _ in pairs])
+                    self.assertNotIn("task", [n for n, _ in pairs])  # T855: only as the map, never a flat value
+                    self.assertEqual(list(parse_file(path)[0]["permission"]["task"].items()), expected_task_map(path.stem))
                 else:
                     self.assertEqual(pairs[-1], ("task", "deny"))
                     rules = opencode_rules(parse_file(path)[0]["permission"])
@@ -1153,6 +1210,200 @@ class DocumentationTests(unittest.TestCase):
         self.assertIn(("gitlab_*", "deny"), own("tech-lead"))
         self.assertEqual(own("tech-lead")[0], ("read", "allow"))
         self.assertLess(own("qa-engineer").index(("gitlab_get_issue", "allow")), own("qa-engineer").index(("playwright_browser_evaluate", "deny")))
+
+
+class T855TaskAndReadMapTests(unittest.TestCase):
+    """T855: SEC-T844-01 (a delegating agent's `task` map) and SEC-T842-02 (deny-only `read` map)."""
+
+    TOKEN_PATHS = ["../../../../dev/shm/gitlab-mcp/token", "../../../../../run/user/1000/gitlab-mcp/token",
+                   "/dev/shm/gitlab-mcp/token", "/run/user/1000/gitlab-mcp/token", "../../dev/shm/gitlab-mcp",
+                   "gitlab-mcp/token"]
+    ENV_PATHS = [".env", "config/.env", "../../home/u/.env", ".env.local", ".env.example", "src/main.py"]
+    HOSTILE = [{}, {"*": "allow"}, {"read": "allow"}, {"read": {"*": "allow", "*/gitlab-mcp/*": "allow"}},
+               {"task": "allow"}, {"task": {"*": "allow", "general": "allow"}}]
+
+    @classmethod
+    def setUpClass(cls):
+        cfg = json.loads((IMPL / ".opencode" / "opencode.json").read_text(encoding="utf-8"))
+        cls.global_rules = pattern_rules(cfg["permission"])
+        cls.perm = {p.stem: parse_file(p)[0]["permission"] for p in sorted(OPENCODE_AGENTS.glob("*.md"))}
+
+    def effect(self, slug, permission, pattern, hostile):
+        return pattern_effect(permission, pattern, OPENCODE_READ_DEFAULTS, self.global_rules,
+                              pattern_rules(hostile), pattern_rules(self.perm[slug]))
+
+    def test_the_manifest_pins_both_maps(self):
+        cfg = json.loads((IMPL / "platforms" / "opencode.json").read_text(encoding="utf-8"))["frontmatter"]["agents"]
+        self.assertEqual(cfg["permissionTaskAllowFromAgents"], "agent")
+        self.assertEqual(cfg["permissionReadDenyUnlessGranted"], {"execute": READ_DENY_PATTERNS})
+
+    def test_every_task_value_is_a_deny_or_the_derived_map(self):
+        delegators = {"orchestrator", "poc-orchestrator"}
+        self.assertEqual({s for s in self.perm if "agent" in source_tokens(s)}, delegators)
+        for slug, perm in self.perm.items():
+            with self.subTest(agent=slug):
+                if slug not in delegators:
+                    self.assertEqual(perm["task"], "deny")
+                    continue
+                items = list(perm["task"].items())
+                self.assertEqual(items, expected_task_map(slug))
+                self.assertGreater(len(items), 1)
+                self.assertEqual(list(perm)[-1], "task", "the task map is the last entry")
+                allowed = [p for p, a in items[1:]]
+                self.assertFalse(set(allowed) & set(OPENCODE_BUILTIN_AGENTS))
+                self.assertFalse([p for p in allowed if "*" in p or "?" in p])
+
+    def test_every_read_value_is_absent_or_the_deny_only_map_last(self):
+        for slug, perm in self.perm.items():
+            with self.subTest(agent=slug):
+                if "execute" in source_tokens(slug):
+                    self.assertNotIn("read", perm)
+                else:
+                    self.assertEqual(list(perm["read"].items()), [(p, "deny") for p in READ_DENY_PATTERNS])
+                    self.assertEqual(list(perm)[-1], "read", "the read map is the last entry")
+        self.assertEqual(sum("read" in p for p in self.perm.values()), 13)
+
+    def test_a_token_path_is_denied_for_every_agent_without_execute(self):
+        for slug in self.perm:
+            if "execute" in source_tokens(slug):
+                continue
+            for hostile in self.HOSTILE:
+                for path in self.TOKEN_PATHS:
+                    with self.subTest(agent=slug, path=path, hostile=hostile):
+                        self.assertEqual(self.effect(slug, "read", path, hostile), "deny")
+
+    def test_the_read_map_changes_no_env_or_project_path(self):
+        """No agent rule is the last match for a `.env` path: the default `*.env` ask rules (or the user's own
+        later rule) still decide; without a hostile rule `.env` is `ask`."""
+        for slug in self.perm:
+            for hostile in self.HOSTILE:
+                for path in self.ENV_PATHS:
+                    with self.subTest(agent=slug, path=path, hostile=hostile):
+                        without = pattern_effect("read", path, OPENCODE_READ_DEFAULTS, self.global_rules, pattern_rules(hostile))
+                        self.assertEqual(self.effect(slug, "read", path, hostile), without)
+            self.assertEqual(self.effect(slug, "read", ".env", {}), "ask")
+            self.assertEqual(self.effect(slug, "read", "config/.env.local", {}), "ask")
+
+    def test_a_delegator_launches_only_its_listed_agents(self):
+        names = {s: parse_file(SOURCE_AGENTS / f"{s}.md")[0]["name"] for s in self.perm}
+        for slug in ("orchestrator", "poc-orchestrator"):
+            listed = {n for n, a in expected_task_map(slug) if a == "allow"}
+            for hostile in self.HOSTILE:
+                with self.subTest(agent=slug, hostile=hostile):
+                    for target in OPENCODE_BUILTIN_AGENTS + sorted(set(names.values()) - listed) + list(self.perm):
+                        self.assertEqual(self.effect(slug, "task", target, hostile), "deny", target)
+                    for target in listed:
+                        self.assertEqual(self.effect(slug, "task", target, hostile), "allow", target)
+
+    def test_the_tools_stay_visible(self):
+        """permission/index.ts `disabled`: a tool is hidden when the last rule for its key has pattern `*` and
+        is a deny. The task map ends with a named allow and the read map with a path deny."""
+        for slug, perm in self.perm.items():
+            rules = pattern_rules(perm)
+            last = {}
+            for perm_key, action, pat in rules:
+                last[perm_key] = (action, pat)
+            with self.subTest(agent=slug):
+                if "read" in last:
+                    self.assertNotEqual(last["read"][1], "*")
+                if "agent" in source_tokens(slug):
+                    self.assertEqual(last["task"][0], "allow")
+
+
+class T855GeneratorFixtureTests(unittest.TestCase):
+    """The real generator on a fixture root: the task map, the read map and the refused manifests."""
+
+    def run_sync(self, agents, mutate_platform=None):
+        if shutil.which("node") is None:
+            self.skipTest("node is not installed")
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        root = Path(tmp.name)
+        GeneratorFixtureTests.build(root, GeneratorFixtureTests.SERVERS, {}, mutate_platform)
+        for slug, (name, tools, sub) in agents.items():
+            line = "" if sub is None else f"agents: {sub}\n"
+            (root / "knowledge" / "agents" / f"{slug}.md").write_text(
+                f"---\nname: \"{name}\"\ndescription: \"fixture\"\ntools: {tools}\n{line}---\n\nbody\n", encoding="utf-8")
+        result = subprocess.run(["node", str(SYNC), "--root", str(root)], capture_output=True, text=True, check=False)
+        return root, result
+
+    AGENTS = {"boss": ("The Boss", "[read, execute, agent]", "[worker, reader]"),
+              "worker": ("Worker One", "[read, execute]", None),
+              "reader": ("Reader", "[read]", None),
+              "lone": ("Lone", "[read, execute, agent]", None)}
+
+    def perm(self, root, slug):
+        return parse_file(root / ".opencode" / "agents" / f"{slug}.md")[0]["permission"]
+
+    def test_the_maps_on_a_fixture(self):
+        root, result = self.run_sync(self.AGENTS)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(list(self.perm(root, "boss")["task"].items()), [("*", "deny"), ("Worker One", "allow"), ("Reader", "allow")])
+        self.assertEqual(list(self.perm(root, "lone")["task"].items()), [("*", "deny")], "no list: launches nothing")
+        self.assertEqual(self.perm(root, "worker")["task"], "deny")
+        self.assertEqual(list(self.perm(root, "reader")["read"].items()), [(p, "deny") for p in READ_DENY_PATTERNS])
+        for slug in ("boss", "worker", "lone"):
+            self.assertNotIn("read", self.perm(root, slug))
+        for other in ("claude-code", "cline", "github"):
+            for path in root.rglob("*.md"):
+                if f"/.{other}" in str(path) or "/.clinerules" in str(path):
+                    self.assertNotRegex(path.read_text(encoding="utf-8"), r"gitlab-mcp|\"\*\": deny")
+
+    def test_refused_agent_lists(self):
+        cases = {
+            "a built-in agent": {"boss": ("The Boss", "[read, execute, agent]", "[general]"),
+                                 "general": ("general", "[read]", None)},
+            "itself": {"boss": ("The Boss", "[read, execute, agent]", "[boss]")},
+            "an unknown slug": {"boss": ("The Boss", "[read, execute, agent]", "[nobody]")},
+            "a wildcard name": {"boss": ("The Boss", "[read, execute, agent]", "[w]"), "w": ("W*", "[read]", None)},
+            "a duplicate": {"boss": ("The Boss", "[read, execute, agent]", "[w, w]"), "w": ("W", "[read]", None)},
+        }
+        for label, agents in cases.items():
+            with self.subTest(case=label):
+                _, result = self.run_sync(agents)
+                self.assertNotEqual(result.returncode, 0)
+
+    def test_refused_manifests(self):
+        a = lambda d: d["frontmatter"]["agents"]
+        mutations = {
+            "task generic not mapped to task": lambda d: a(d).__setitem__("permissionTaskAllowFromAgents", "execute"),
+            "task generic not a string": lambda d: a(d).__setitem__("permissionTaskAllowFromAgents", ["agent"]),
+            "read map not an object": lambda d: a(d).__setitem__("permissionReadDenyUnlessGranted", ["x"]),
+            "read pattern star": lambda d: a(d).__setitem__("permissionReadDenyUnlessGranted", {"execute": ["*"]}),
+            "read pattern empty list": lambda d: a(d).__setitem__("permissionReadDenyUnlessGranted", {"execute": []}),
+            "read pattern duplicate": lambda d: a(d).__setitem__("permissionReadDenyUnlessGranted", {"execute": ["x/*", "x/*"]}),
+            "read pattern home": lambda d: a(d).__setitem__("permissionReadDenyUnlessGranted", {"execute": ["~/x/*"]}),
+            "read via permissionKeys": lambda d: a(d).__setitem__("permissionKeys", ["edit", "read"]),
+            "task via permissionKeys": lambda d: a(d).__setitem__("permissionKeys", ["edit", "task"]),
+        }
+        for label, mutate in mutations.items():
+            with self.subTest(case=label):
+                _, result = self.run_sync(self.AGENTS, mutate_platform=mutate)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("permission", result.stderr)
+
+
+class T855EvidenceV3Tests(unittest.TestCase):
+    """evidence v3: the stored 1.19.2 resolved lists carry each generated map in order, and their hashes hold."""
+
+    ART = REPO / "docs" / "artifacts" / "mcp-agent-denials-evidence-v3.md"
+    DIR = REPO / "docs" / "artifacts" / "mcp-agent-denials-evidence-v3"
+
+    def test_hashes_listed_in_the_artifact(self):
+        import hashlib
+        text = self.ART.read_text(encoding="utf-8")
+        files = sorted(p for p in self.DIR.iterdir() if p.is_file())
+        self.assertEqual(len(files), 8)
+        for path in files:
+            self.assertIn(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}", text)
+
+    def test_the_agent_segment_equals_the_generated_map(self):
+        for raw in sorted(self.DIR.glob("raw-*.json")):
+            slug = raw.stem[len("raw-"):]
+            rules = [(r["permission"], r["action"], r["pattern"]) for r in json.loads(raw.read_text(encoding="utf-8"))["permission"]]
+            with self.subTest(agent=slug):
+                self.assertEqual(rules[23:-1], pattern_rules(parse_file(OPENCODE_AGENTS / f"{slug}.md")[0]["permission"]))
+                self.assertEqual(rules[-1][:2], ("external_directory", "allow"))
 
 
 if __name__ == "__main__":
