@@ -18,6 +18,7 @@
       "permissionDenyUnlessGranted": { "execute": ["bash"], "edit": ["edit"], "web": ["webfetch", "websearch"], "agent": ["task"] },
       "permissionTaskAllowFromAgents": "agent",
       "permissionReadDenyUnlessGranted": { "execute": ["gitlab-mcp", "gitlab-mcp/*", "*/gitlab-mcp", "*/gitlab-mcp/*"] },
+      "permissionExternalDirectoryDenyUnlessGranted": { "execute": ["*/gitlab-mcp/*"] },
       "keepKeys": ["name", "description", "tools", "agents"],
       "addToOrchestrators": { "user-invocable": true },
       "orchestratorNames": ["orchestrator", "poc-orchestrator"]

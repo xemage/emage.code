@@ -255,11 +255,13 @@ class TestPlatformProjections(unittest.TestCase):
                 # T855: the pattern maps (`task` of a delegator, deny-only `read` without `execute`) are
                 # checked here and then left out of the flat allow/deny comparison below.
                 nested = {k: v for k, v in projected.items() if isinstance(v, dict)}
-                self.assertLessEqual(set(nested), {"task", "read"}, f"{path.name}: unexpected pattern map")
-                if "read" in nested:
-                    self.assertNotIn("execute", source_tools)
-                    self.assertEqual(set(nested["read"].values()), {"deny"}, f"{path.name}: a read allow")
-                self.assertEqual("read" in nested, "execute" not in source_tools)
+                # T861: plus the deny-only `external_directory` map without `execute`.
+                self.assertLessEqual(set(nested), {"task", "read", "external_directory"}, f"{path.name}: unexpected pattern map")
+                for key in ("read", "external_directory"):
+                    if key in nested:
+                        self.assertNotIn("execute", source_tools)
+                        self.assertEqual(set(nested[key].values()), {"deny"}, f"{path.name}: a {key} allow")
+                    self.assertEqual(key in nested, "execute" not in source_tools)
                 if "task" in nested:
                     self.assertIn(agents_cfg["permissionTaskAllowFromAgents"], source_tools)
                     first, *rest = nested["task"].items()

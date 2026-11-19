@@ -592,17 +592,19 @@ const MCP_TOOL_NAME_STYLES = {
 // has a tools line to render. An unknown or non-string value stops the run before any file is written.
 // T839 (SEC-T837-03): `permissionKeys` is a list of plain names, only with tools "permission", and never
 // `read` (Opencode's default read rules ask for or deny `*.env` and `*.env.*`; an agent `read: allow` would undo them).
+// T861: never `external_directory` either (an agent `external_directory: allow` would undo the default ask outside the worktree).
 function validatePermissionKeys(manifest) {
   const agents = manifest.frontmatter && manifest.frontmatter.agents;
   if (!agents) return;
   const denyOnly = validateDenyUnlessGranted(agents, manifest.platform);
-  validateReadDenyUnlessGranted(agents, manifest.platform);
+  validatePathDenyUnlessGranted(agents, manifest.platform, 'permissionReadDenyUnlessGranted');
+  validatePathDenyUnlessGranted(agents, manifest.platform, 'permissionExternalDirectoryDenyUnlessGranted');
   validateTaskAllowFromAgents(agents, manifest.platform);
   const keys = agents.permissionKeys;
   if (keys === undefined) return;
   const ok = agents.tools === 'permission' && Array.isArray(keys)
-    && keys.every((k) => typeof k === 'string' && /^[a-z_]+$/.test(k) && k !== 'read' && !denyOnly.has(k));
-  if (!ok) throw new Error(`permissionKeys needs tools "permission" and plain names other than read and the deny-only keys (platform ${manifest.platform})`);
+    && keys.every((k) => typeof k === 'string' && /^[a-z_]+$/.test(k) && k !== 'read' && k !== 'external_directory' && !denyOnly.has(k));
+  if (!ok) throw new Error(`permissionKeys needs tools "permission" and plain names other than read, external_directory and the deny-only keys (platform ${manifest.platform})`);
 }
 
 // T841 (SEC-T840-01): Opencode allows every built-in tool by default, so an agent whose source tool line
@@ -643,8 +645,15 @@ function validateDenyUnlessGranted(agents, platform) {
 // and its wildcard `*` also matches `/`, so `*/<dir>/*` covers `/run/user/<uid>/<dir>/*` and
 // `/dev/shm/<dir>/*` in both forms. Deny-only by construction:
 // there is no way to write a `read` allow, which after the default `*.env` ask rules would re-allow them.
-function validateReadDenyUnlessGranted(agents, platform) {
-  const map = agents.permissionReadDenyUnlessGranted;
+// T861 (SEC-T856-02): `permissionExternalDirectoryDenyUnlessGranted` is the same shape for Opencode's
+// `external_directory` key, which guards `grep`, `glob` and `read` outside the worktree. Opencode 1.19.2
+// (tool/external-directory.ts) asks it with the ABSOLUTE `<dir>/*` of the target (the parent directory of a
+// file, the directory itself for a directory), so `*/<dir>/*` matches every ask inside the token directory.
+// agent/agent.ts appends the built-in tool-output allow (`<data>/tool-output/*`) after the agent's rules
+// unless the agent holds an `external_directory` DENY with exactly that pattern; a deny-only map of other
+// patterns therefore keeps it.
+function validatePathDenyUnlessGranted(agents, platform, key) {
+  const map = agents[key];
   if (map === undefined) return;
   const plain = (k) => typeof k === 'string' && /^[a-z_]+$/.test(k);
   const pattern = (p) => typeof p === 'string' && p.length > 0 && p.trim() === p && p !== '*'
@@ -652,13 +661,13 @@ function validateReadDenyUnlessGranted(agents, platform) {
   const ok = agents.tools === 'permission' && map !== null && typeof map === 'object' && !Array.isArray(map)
     && Object.entries(map).every(([g, pats]) => plain(g) && Array.isArray(pats) && pats.length > 0
       && pats.every(pattern) && new Set(pats).size === pats.length);
-  if (!ok) throw new Error(`permissionReadDenyUnlessGranted needs tools "permission", plain generic names and non-empty, distinct path patterns other than "*" (platform ${platform})`);
+  if (!ok) throw new Error(`${key} needs tools "permission", plain generic names and non-empty, distinct path patterns other than "*" (platform ${platform})`);
 }
 
-function readDenials(sourceTools, cfg) {
+function pathDenials(sourceTools, cfg, key) {
   const held = new Set(Array.isArray(sourceTools) ? sourceTools : []);
   const out = [];
-  for (const [generic, patterns] of Object.entries(cfg.permissionReadDenyUnlessGranted || {})) {
+  for (const [generic, patterns] of Object.entries(cfg[key] || {})) {
     if (!held.has(generic)) out.push(...patterns);
   }
   return [...new Set(out)].map((p) => [p, 'deny']);
@@ -1247,15 +1256,19 @@ async function syncAgents(manifest, outRoot, servers, filesWritten) {
   }
 }
 
-// T855: the `task` map of a delegating agent, then the deny-only `read` map of an agent without the generic name.
+// T855: the `task` map of a delegating agent, then the deny-only `read` map of an agent without the generic name;
+// T861: then its deny-only `external_directory` map.
 function patternMaps(slug, data, cfg, agentNames) {
   const source = sourceToolList(data);
   const maps = [];
   const task = taskMap(slug, data, source, cfg, agentNames);
   if (task) maps.push(['task', task]);
-  const read = readDenials(source, cfg);
-  if (read.some(([, a]) => a !== 'deny')) throw new Error(`${slug}: a read rule other than deny`);
-  if (read.length) maps.push(['read', read]);
+  const keys = [['read', 'permissionReadDenyUnlessGranted'], ['external_directory', 'permissionExternalDirectoryDenyUnlessGranted']];
+  for (const [key, manifestKey] of keys) {
+    const rules = pathDenials(source, cfg, manifestKey);
+    if (rules.some(([, a]) => a !== 'deny')) throw new Error(`${slug}: a ${key} rule other than deny`);
+    if (rules.length) maps.push([key, rules]);
+  }
   return maps;
 }
 
