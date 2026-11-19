@@ -53,6 +53,8 @@
             "mcpAgentDenies": { "const": true, "description": "Opencode only; needs mcpToolNames underscore and tools permission (sync.mjs refuses anything else)." },
             "permissionKeys": { "$ref": "#/$defs/stringList", "description": "Opencode only (T839, SEC-T837-03): the non-MCP tool names written to the agent permission map; every other non-MCP name is left out. Never read." },
             "permissionDenyUnlessGranted": { "type": "object", "additionalProperties": { "$ref": "#/$defs/stringList" }, "description": "Opencode only (T841, SEC-T840-01): generic tool name -> Opencode permission keys written as deny for every agent that does not hold the generic name. Deny-only." },
+            "permissionTaskAllowFromAgents": { "type": "string", "description": "Opencode only (T855, SEC-T844-01): the generic tool name whose holders get a map-valued task rule, \"*\": deny then one allow per agent of the source agents list, by source name. Never a whole-value allow." },
+            "permissionReadDenyUnlessGranted": { "type": "object", "additionalProperties": { "$ref": "#/$defs/stringList" }, "description": "Opencode only (T855, SEC-T842-02): generic tool name -> read path patterns written as deny for every agent that does not hold the generic name. Deny-only." },
             "keepKeys": { "$ref": "#/$defs/stringList" },
             "toolMap": { "type": "object", "additionalProperties": { "type": "string" } },
             "addToOrchestrators": { "type": "object" },

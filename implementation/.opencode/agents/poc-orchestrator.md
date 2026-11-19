@@ -27,6 +27,22 @@ permission:
   filesystem_*: deny
   git_*: deny
   supabase_*: deny
+  task:
+    "*": deny
+    "Technology Scout": allow
+    "Feasibility Agent": allow
+    "Scaffolding Agent": allow
+    "Integration Agent": allow
+    "Data Mockup Agent": allow
+    "Demo Agent": allow
+    "Evaluation Agent": allow
+    "Technical Debt Narrator": allow
+    "PoC QA Engineer": allow
+    "PoC Security Engineer": allow
+    "PoC Technical Writer": allow
+    "PoC DevOps Engineer": allow
+    "Backend Developer": allow
+    "Frontend Developer": allow
 agents: [technology-scout, feasibility-agent, scaffolding-agent, integration-agent, data-mockup-agent, demo-agent, evaluation-agent, technical-debt-narrator, poc-qa-engineer, poc-security-engineer, poc-technical-writer, poc-devops-engineer, backend-developer, frontend-developer]
 user-invocable: true
 ---

@@ -24,6 +24,11 @@ permission:
   webfetch: deny
   websearch: deny
   task: deny
+  read:
+    "gitlab-mcp": deny
+    "gitlab-mcp/*": deny
+    "*/gitlab-mcp": deny
+    "*/gitlab-mcp/*": deny
 ---
 
 # Context Retriever

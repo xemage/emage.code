@@ -35,6 +35,22 @@ permission:
   filesystem_*: deny
   git_*: deny
   supabase_*: deny
+  task:
+    "*": deny
+    "Product Owner": allow
+    "Solution Architect": allow
+    "Scrum Master": allow
+    "Tech Lead": allow
+    "Backend Developer": allow
+    "Frontend Developer": allow
+    "Database Engineer": allow
+    "QA Engineer": allow
+    "Security Engineer": allow
+    "DevOps Engineer": allow
+    "Release Manager": allow
+    "Technical Writer": allow
+    "UX Designer": allow
+    "Context Retriever": allow
 agents: [product-owner, solution-architect, scrum-master, tech-lead, backend-developer, frontend-developer, database-engineer, qa-engineer, security-engineer, devops-engineer, release-manager, technical-writer, ux-designer, context-retriever]
 user-invocable: true
 ---

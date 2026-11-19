@@ -52,6 +52,11 @@ def _expected_opencode_denials(source_tools: list[str], servers: dict, agents_cf
     return out
 
 
+def _parse_source_name(agents_dir: Path, slug: str) -> str:
+    fm, _ = parse_file(agents_dir / f"{slug}.md")
+    return fm["name"]
+
+
 def _load_manifest(platform: str) -> dict:
     path = implementation_root() / "platforms" / f"{platform}.json"
     return json.loads(path.read_text(encoding="utf-8"))
@@ -247,13 +252,29 @@ class TestPlatformProjections(unittest.TestCase):
                 self.assertNotIn("tools", projected_fm, f"{path.name}: the deprecated `tools:` map is written")
                 self.assertIsInstance(projected, dict, f"{path.name}: permission should be a map")
                 self.assertTrue(projected, f"{path.name}: permission map should not be empty")
+                # T855: the pattern maps (`task` of a delegator, deny-only `read` without `execute`) are
+                # checked here and then left out of the flat allow/deny comparison below.
+                nested = {k: v for k, v in projected.items() if isinstance(v, dict)}
+                self.assertLessEqual(set(nested), {"task", "read"}, f"{path.name}: unexpected pattern map")
+                if "read" in nested:
+                    self.assertNotIn("execute", source_tools)
+                    self.assertEqual(set(nested["read"].values()), {"deny"}, f"{path.name}: a read allow")
+                self.assertEqual("read" in nested, "execute" not in source_tools)
+                if "task" in nested:
+                    self.assertIn(agents_cfg["permissionTaskAllowFromAgents"], source_tools)
+                    first, *rest = nested["task"].items()
+                    self.assertEqual(first, ("*", "deny"), f"{path.name}: the task map must start with a whole deny")
+                    want = [_parse_source_name(source_agents_dir, a) for a in source_fm.get("agents", [])]
+                    self.assertEqual(rest, [(n, "allow") for n in want])
+                    self.assertFalse({n for n, _ in rest} & {"build", "plan", "general", "explore"})
+                projected = {k: v for k, v in projected.items() if k not in nested}
                 allowed = {k for k, v in projected.items() if v == "allow"}
                 denied = {k for k, v in projected.items() if v == "deny"}
                 self.assertEqual(allowed | denied, set(projected), f"{path.name}: every value must be allow or deny")
                 self.assertFalse(allowed & denied, f"{path.name}: a name is both allowed and denied")
                 want_allowed = {_opencode_name(t) for t in source_tools if t.startswith("mcp__") or t in keys}
                 self.assertEqual(allowed, want_allowed, f"{path.name}: allows must be the mapped source tools")
-                self.assertEqual(denied, _expected_opencode_denials(source_tools, servers, agents_cfg),
+                self.assertEqual(denied, _expected_opencode_denials(source_tools, servers, agents_cfg) - set(nested),
                                  f"{path.name}: denies must be exactly the generated ones")
 
         for orchestrator in ("orchestrator", "poc-orchestrator"):
