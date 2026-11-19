@@ -230,6 +230,52 @@ The plan shown:
 
 **Wave 1 is closed:** T869 to T871, T880 and T881. Next: merge wave 1 to `develop`, then open `release/v12.0.0` (T872).
 
+## Addendum 4 (2026-11-19; the orchestrator's record): the probe tag (T874) and the gates (T875 to T877)
+
+**T874, the probe tag.** The user's approval at that moment, through a question dialog, verbatim: "Yes, push the probe tag (Recommended)".
+- The orchestrator pushed the annotated tag `v12.0.0-gate.1` (tag object `801c82e7`) on `51f03d38`.
+- **Tag pipeline 3090926673:**
+  - `release-docs-gate` (job 18196553194) and `main-develop-drift-gate` (job 18196553195) both ran on runner #59129270. The log line reads "Running on runner-oc2upzvuv-… via gitlab-runner-16028", so the job log itself ties the runner to the user's host, which v11.0.0's probe left unverified.
+  - Both pulled `python:3.12-alpine@sha256:e064671c…` under the hardened `config.toml` (`services_limit = 0`).
+  - **Both failed, as expected:**
+    - The docs gate printed "missing required file: docs/releases/v12.0.0-gate.1.md".
+    - The drift gate printed "MAIN-DEVELOP DRIFT: PASS", then "RELEASE TAG TREE: FAIL". The tree differs from `origin/main` before the release merge.
+  - `release` was skipped. No Release was created: the newest is still v11.0.0.
+- **The orchestrator read only the failure lines of the two job logs, as at v11.0.0.**
+- **User action:** delete `v12.0.0-gate.1` in the web UI (Repository → Tags) before `v12.0.0` is pushed. While the probe tag exists it would be the previous tag of `v12.0.0` (QA-T875 C3), so it must be gone.
+
+**T875** (qa-engineer): `docs/artifacts/qa-gate-release-v12-v1.md`, **CONDITIONAL_PASS**.
+- **Every executable gate is green:**
+  - the suite: 2820 OK, skipped=13. The 16 CWSO live tests are left out without the CWSO variables, which explains the difference from 2833/25;
+  - golden 173 OK, and the scorecard;
+  - the release checks: only the 16 pending verdict lines remain;
+  - a fresh install, `--update` from v11.0.0, and rollback;
+  - the Pi and Gemini refusals.
+- **Conditions:**
+  - QA-T875-01: the `edit: allow` wording;
+  - QA-T875-02: the "What a target does not receive" paragraph;
+  - C3: the probe tag deleted before the real tag.
+
+**T876** (tech-lead): `docs/artifacts/tech-lead-release-v12-v1.md`, **CONDITIONAL_PASS**.
+- **The condition, TL-T876-01:** K-36 and K-32 must report the probe's result.
+- **TL-T876-02** (5 parameters in `taskMap`) and **TL-T876-04** (`--min-age-days 0`; the same as SEC-T867-01) are LOW and tracked.
+- **TL-T876-05** (optional): the agent counts, re-counted by the Tech Lead.
+- **TL-T876-03 is dismissed by the orchestrator.** `.gitlab-ci.yml` lines 180 and 182 already run `--capath` unconditionally in the python CA job, on both stores, as T860 recorded. Only the node job needed the guarded step.
+
+**T877** (security-engineer): `docs/artifacts/security-review-t877-release-v12-v1.md`, **CONDITIONAL_PASS**.
+- No HIGH or CRITICAL finding. The two accepted MEDIUMs have complete Conditions lines.
+- **New, LOW:** SEC-T877-01 (`edit: allow`; the same as QA-T875-01).
+- **Conditions C-1 to C-5.**
+- **The orchestrator's secret check.** The scan tool could not finish on these ranges (truncated at 500 hits, all from the repository's deliberate secret-guard fixtures). So the orchestrator scanned the 20,100 lines added in `v11.0.0..90124fb6` for token, key, JWT and credential-URL shapes. The only matches were 7 credential URLs, all deliberate redaction fixtures (`p?w`, `S3c…`, `QSECRET`) in context-retriever tests and in reviews. No secret was added.
+
+**Next:** T878 (release-manager). First correct the document:
+- TL-T876-01;
+- SEC-T877-01 and QA-T875-01, in M-1 and in `docs/wiki/mcp-servers.md:121`;
+- QA-T875-02;
+- optionally TL-T876-05.
+
+Then write the verdict, with the independent check by `@tech-lead`.
+
 ## Outcome
 
 _To be written by the orchestrator after the release._

@@ -11,7 +11,7 @@
 emage.code brings a **structured multi-agent development team** to your
 favourite AI assistant. Every project follows the same protocol:
 
-Latest release: v11.0.0
+Latest release: v12.0.0
 
 - **Plan → Approve → Execute** lifecycle, never silent execution
 - **DAG-based task management** with explicit dependencies
@@ -61,11 +61,11 @@ Use [`implementation/`](implementation/README.md) for all development work.
 
 Cursor support was removed in v9.0.0 (see the release notes).
 
-Pi support was removed in v11.0.0 (see `docs/releases/v11.0.0.md`).
+Pi support was removed in v11.0.0 (see Migration Guide item M-1 of the v11.0.0 release notes).
 `--platform pi` exits with an error before anything is written, and the
 installer never writes, updates or deletes an existing `.pi/` in your project.
 
-Gemini CLI support was removed in v11.0.0 (see `docs/releases/v11.0.0.md`).
+Gemini CLI support was removed in v11.0.0 (see Migration Guide item M-2 of the v11.0.0 release notes).
 `--platform gemini` exits with an error before anything is written, and the
 installer never writes, updates or deletes an existing `.gemini/` in your
 project; the installer prints a note while it finds a harness-written
@@ -230,7 +230,7 @@ already-reviewed retirement gap on an already-installed project with no prior
 history — it is opt-in only, never invoked automatically by `--update`, and
 prunes exactly the named keys and nothing else.
 
-Per-release install steps live in [`docs/releases/v11.0.0.md`](docs/releases/v11.0.0.md)
+Per-release install steps live in [`docs/releases/v12.0.0.md`](docs/releases/v12.0.0.md)
 and are embedded in [GitLab Releases](https://gitlab.com/em-age/emage.code/-/releases).
 
 ## Quick start
