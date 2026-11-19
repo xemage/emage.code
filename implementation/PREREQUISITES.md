@@ -1,7 +1,7 @@
 # Prerequisites — emage.code implementation
 
 ## Required
-- **Node.js 22 (22.23.5 or later), 24 (24.22.3 or later) or 26 (26.13.1 or later)**, the November 2026 Node security releases; odd-numbered and end-of-life lines (18, 20, 23, 25) are not supported — for `scripts/sync.mjs` and for MCP servers launched via `npx`.
+- **Node.js 22 (22.23.5 or later), 24 (24.22.3 or later) or 26 (26.13.1 or later)**, the November 2026 Node security releases; odd-numbered and end-of-life lines (18, 20, 23, 25) are not supported — for `scripts/sync.mjs` and for MCP servers launched via `npx`. **Exception (TL-T869-01):** the opt-in `filesystem` server's pin, `@modelcontextprotocol/server-filesystem@2.4.0`, declares `engines.node` `>=24` in its npm metadata, so use Node 24 or 26 if you enable it. Whether `npx` refuses to run it on Node 22 (npm only warns about `engines` unless `engine-strict` is set) or whether it fails at run time is **unverified**. The other `npx` pins declare Node 18 or older as their floor, or no `engines` field (`npm view <package>@<version> engines --json`, 2026-11-19): `@playwright/mcp@0.0.83` `>=18`, `@zereight/mcp-gitlab@2.2.5` `>=18.17.0`, `toolradar-mcp@2.1.0` `>=18.14.1`; none for `@brave/brave-search-mcp-server@2.1.5`, `@modelcontextprotocol/server-memory@1.0.0`, `@modelcontextprotocol/server-sequential-thinking@1.0.0` and `@supabase/mcp-server-supabase@0.13.0`.
 - **Python 3.10+** — for `check.py`, `package.py`, and registry generation.
 - **Git 2.30+** — for worktree isolation, branch policies, and pack install from git URLs. The optional `poc-security-audit` server needs **Git 2.40+** (see below).
 
@@ -224,7 +224,7 @@ Tracked but not part of this checklist: whether a Developer-level token can merg
 From the repository root:
 
 ```bash
-node --version           # v22 ≥ 22.23.5, v24 ≥ 24.22.3, or v26 ≥ 26.13.1
+node --version           # v22 ≥ 22.23.5, v24 ≥ 24.22.3, or v26 ≥ 26.13.1 (v24 or v26 for the filesystem server)
 python3 --version        # ≥ 3.10
 git --version            # ≥ 2.30 (≥ 2.40 for the poc-security-audit server)
 make sync && make verify
