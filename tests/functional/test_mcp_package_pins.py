@@ -44,7 +44,7 @@ APPROVED_NPX_PINS = {
     "memory": "@modelcontextprotocol/server-memory@1.0.0",
     "sequential-thinking": "@modelcontextprotocol/server-sequential-thinking@1.0.0",
     "brave": "@brave/brave-search-mcp-server@2.1.5",
-    "filesystem": "@modelcontextprotocol/server-filesystem@1.0.0",
+    "filesystem": "@modelcontextprotocol/server-filesystem@2.4.0",
     "supabase": "@supabase/mcp-server-supabase@0.13.0",
     "toolradar": "toolradar-mcp@2.1.0",
 }
@@ -217,7 +217,7 @@ class McpPackagePinTests(unittest.TestCase):
             self.assertIn("@playwright/mcp@0.0.83", text, rel)
             if path.parts[-2:] == (".vscode", "mcp.json"):
                 continue  # core servers (+ the two Python security servers, T690) only on the github platform
-            self.assertIn("@modelcontextprotocol/server-filesystem@1.0.0", text, rel)
+            self.assertIn("@modelcontextprotocol/server-filesystem@2.4.0", text, rel)
             self.assertIn("mcp-server-git@2026.10.10", text, rel)
             self.assertIn("--repository", text, rel)
             self.assertIn("--read-only", text, rel)

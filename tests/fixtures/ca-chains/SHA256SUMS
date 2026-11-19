@@ -16,7 +16,7 @@ cd2ebacf9344134bf594c0070bf1c796b17aa595b5ec4af02f7c65e72a4b08b2  ./compromised/
 f99e2264b22c979670d0a11eb528d3fbe2e2a76318ad3643ba63a62a9d6bcc6e  ./compromised/rollover--dv-g3b-noct-rollover.chain
 a5f614f844790038a9d1467f8f530f69c8f77d51989bc321c6f2d7f1efbbdead  ./control/gitlab.com.chain
 4c4636738b19d1d46e7cb42ba259989d93f6e4908e5de4b5b8a31f34c710f231  ./disclosure-roots.certs
-362ea274d1dfd5ea3389205c925f5b372bc92bd4835cda04cb288bbd53b08888  ./disclosure-spki.txt
+5685ab0beba25f3c2cd82b31741cac47a1b3f6afe78da3ea255c7a63d2a92da6  ./disclosure-spki.txt
 7bbbab96d983cf14a5af1f9443d00a9fc02ac36ad8d53098b191b1caf00ed16e  ./extra/crtsh-14658191774--emsign-root-cs-ca-g3-cross-signed-by-ecc-g3.cert
 413eae86ab8efa7fef7b45eaa0c8bf4ef278f4fb3e85a16ba8d24c397a848d29  ./extra/crtsh-14658191778--emsign-root-tls-ca-g3-cross-signed-by-ecc-g3.cert
 fbd5be6c5c0b54d157b0ee1ac3fd16a6bfc22379204696abf86c1771d81cf6cc  ./extra/crtsh-30002976010--em-dv-tls-ca-g3b-second-signature.cert

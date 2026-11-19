@@ -236,7 +236,9 @@ servers:
     denyUnlessGranted: true
     transport: stdio
     command: npx
-    args: ["-y", "@modelcontextprotocol/server-filesystem@1.0.0", "."]
+    # T859 (SEC-T756-07): 2.4.0, the first line without glob and with minimatch 11.0.9 (from 2.2.0). The server
+    # speaks stdio unless an argument says `--transport streamable-http`; it reads no environment variable for that.
+    args: ["-y", "@modelcontextprotocol/server-filesystem@2.4.0", "."]
 
   git:
     # PyPI package, not npm. Requires uv on PATH.

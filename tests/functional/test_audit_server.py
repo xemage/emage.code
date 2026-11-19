@@ -338,7 +338,7 @@ class ServersYamlEntryTests(unittest.TestCase):
         # (docs/artifacts/mcp-server-packages-v1.md, audit SEC-002).
         fs = self.data["servers"]["filesystem"]
         self.assertEqual(fs["command"], "npx")
-        self.assertEqual(fs["args"], ["-y", "@modelcontextprotocol/server-filesystem@1.0.0", "."])
+        self.assertEqual(fs["args"], ["-y", "@modelcontextprotocol/server-filesystem@2.4.0", "."])
         git = self.data["servers"]["git"]
         self.assertEqual(git["command"], "uvx")
         self.assertEqual(git["args"], ["mcp-server-git@2026.10.10", "--repository", "."])

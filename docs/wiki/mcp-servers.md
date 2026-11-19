@@ -161,7 +161,7 @@ Every `npx` and `uvx` entry in `servers.yaml` is pinned to an exact version (aud
 
 | Server | Launcher | Needs |
 |--------|----------|-------|
-| `filesystem` | `npx -y @modelcontextprotocol/server-filesystem@1.0.0 .` | Node.js |
+| `filesystem` | `npx -y @modelcontextprotocol/server-filesystem@2.4.0 .` | Node.js |
 | `git` | `uvx mcp-server-git@2026.10.10 --repository .` | `uv` on `PATH` |
 | `supabase` | `npx -y @supabase/mcp-server-supabase@0.13.0 --read-only` | Node.js |
 
