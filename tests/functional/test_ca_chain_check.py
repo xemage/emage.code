@@ -129,7 +129,7 @@ class TestTheCheckRefusesWeakInputs(CaChainCheckBase):
     def test_a_missing_compromised_chain_fails(self):
         fixtures = self.copy_fixtures()
         (fixtures / "compromised" / "regular--ov-g3c.chain").unlink()
-        self.assertCheck(run("--cafile", self.store(self.anchor), fixtures), 1, "expected 16 compromised chains and 3 extra certificates, found 18")
+        self.assertCheck(run("--cafile", self.store(self.anchor), fixtures), 1, "expected 16 compromised chains, found 15")
 
     def test_a_chain_that_no_longer_reaches_its_root_is_not_counted_as_refused(self):
         """Without its intermediates the chain cannot validate anywhere: a refusal would prove nothing."""
@@ -151,6 +151,124 @@ class TestTheCheckRefusesWeakInputs(CaChainCheckBase):
         for mode, store in cases:
             with self.subTest(mode=mode, store=store.name):
                 self.assertCheck(run(mode, store), 2, "usage:")
+
+
+def reform(pem: str, label: str) -> str:
+    """The same certificate under another PEM label OpenSSL's CA loaders accept (`TRUSTED` or `X509`)."""
+    return pem.replace("-----BEGIN CERTIFICATE-----", f"-----BEGIN {label} CERTIFICATE-----").replace(
+        "-----END CERTIFICATE-----", f"-----END {label} CERTIFICATE-----")
+
+
+class TestTheStoreScanReadsEveryCertificateForm(CaChainCheckBase):
+    """SEC-T768-01: a compromised root in another PEM form must not slip past the key scan."""
+
+    def ecc_root(self) -> str:
+        return next(c for c in self.roots if "emSign ECC Root CA - G3" in TestTheCheckOnGoodAndBadStores.subject(c))
+
+    def test_a_hidden_trusted_certificate_root_is_caught_by_its_key(self):
+        trusted = subprocess.run(["openssl", "x509", "-trustout", "-addtrust", "serverAuth"], input=self.ecc_root(),
+                                 env=ENV, capture_output=True, text=True, check=True, timeout=60).stdout
+        self.assertIn("-----BEGIN TRUSTED CERTIFICATE-----", trusted)
+        self.assertCheck(run("--cafile", self.store(self.anchor, trusted)), 1,
+                         "holds a certificate on a compromised key", "CN=emSign ECC Root CA - G3,O=eMudhra",
+                         "on a compromised key: 1 of 2", "validating: 8 of 19", "RESULT: FAIL")
+
+    def test_an_old_style_x509_certificate_root_is_caught_by_its_key(self):
+        self.assertCheck(run("--cafile", self.store(self.anchor, reform(self.ecc_root(), "X509"))), 1,
+                         "on a compromised key: 1 of 2", "RESULT: FAIL")
+
+    def test_a_store_holding_only_another_form_is_still_a_store(self):
+        self.assertCheck(run("--cafile", self.store(reform(self.anchor, "X509"))), 0, "on a compromised key: 0 of 1",
+                         "RESULT: PASS")
+
+    def test_any_other_begin_type_fails(self):
+        pubkey = subprocess.run(["openssl", "x509", "-pubkey", "-noout"], input=self.ecc_root(), env=ENV,
+                                capture_output=True, text=True, check=True, timeout=60).stdout
+        self.assertCheck(run("--cafile", self.store(self.anchor, pubkey)), 1,
+                         "holds 1 PEM block(s) of a type other than a certificate", "RESULT: FAIL")
+
+    def test_an_unreadable_certificate_block_breaks_the_count(self):
+        broken = "-----BEGIN CERTIFICATE-----\nTm90IGEgY2VydGlmaWNhdGU=\n-----END CERTIFICATE-----\n"
+        self.assertCheck(run("--cafile", self.store(self.anchor, broken)), 1,
+                         "could not read the key of a store certificate",
+                         "certificates read (1) differ from certificate PEM blocks (2)", "RESULT: FAIL")
+
+
+class TestTheFixturesAreCrossChecked(CaChainCheckBase):
+    """SEC-T768-02: a coordinated edit of the fixtures must not hollow the check out."""
+
+    def copy_fixtures(self) -> Path:
+        target = self.tmp / "fixtures"
+        shutil.copytree(FIXTURES, target)
+        return target
+
+    def test_the_real_fixtures_pass_the_cross_check(self):
+        self.assertCheck(run("--cafile", self.store(self.anchor)), 0,
+                         "fixtures: 16 chains, 3 extra certificates, 4 roots, 14 keys")
+
+    def test_a_removed_key_line_fails(self):
+        for victim in ("emSign ECC Root CA - G3", "EM DV TLS CA - G3B rollover key (self-issued, rollover--dv-g3b-noct"):
+            with self.subTest(victim=victim):
+                fixtures = self.copy_fixtures()
+                spki = fixtures / "disclosure-spki.txt"
+                lines = spki.read_text(encoding="ascii").splitlines(keepends=True)
+                spki.write_text("".join(l for l in lines if victim not in l), encoding="ascii")
+                self.assertCheck(run("--cafile", self.store(self.anchor), fixtures), 1,
+                                 "expected 14 keys in disclosure-spki.txt, found 13",
+                                 "carries a key that disclosure-spki.txt does not list", "RESULT: FAIL")
+                shutil.rmtree(fixtures)
+
+    def test_a_key_line_replaced_by_a_duplicate_fails(self):
+        fixtures = self.copy_fixtures()
+        spki = fixtures / "disclosure-spki.txt"
+        lines = spki.read_text(encoding="ascii").splitlines(keepends=True)
+        spki.write_text("".join(lines[:-1] + [lines[0]]), encoding="ascii")
+        self.assertCheck(run("--cafile", self.store(self.anchor), fixtures), 1,
+                         "expected 14 distinct keys in disclosure-spki.txt, found 13", "RESULT: FAIL")
+
+    def test_each_directory_is_counted_on_its_own(self):
+        """A missing extra certificate must not be made up for by an added chain (the old check summed 16 + 3)."""
+        fixtures = self.copy_fixtures()
+        (fixtures / "extra" / "crtsh-14658191774--emsign-root-cs-ca-g3-cross-signed-by-ecc-g3.cert").unlink()
+        shutil.copy(fixtures / "compromised" / "regular--ov-g3c.chain", fixtures / "compromised" / "copy.chain")
+        self.assertCheck(run("--cafile", self.store(self.anchor), fixtures), 1,
+                         "expected 16 compromised chains, found 17", "expected 3 extra certificates, found 2",
+                         "RESULT: FAIL")
+
+    def test_a_swapped_root_fails(self):
+        fixtures = self.copy_fixtures()
+        (fixtures / "disclosure-roots.certs").write_text("".join(self.roots[:3]) + self.anchor, encoding="ascii")
+        self.assertCheck(run("--cafile", self.store(self.anchor), fixtures), 1,
+                         "fixture root 00004 carries a key that disclosure-spki.txt does not list", "RESULT: FAIL")
+
+    def test_a_swapped_intermediate_fails(self):
+        fixtures = self.copy_fixtures()
+        chain = fixtures / "compromised" / "regular--dv-g3b.chain"
+        parts = certs(chain)
+        chain.write_text(parts[0] + self.anchor + "".join(parts[2:]), encoding="ascii")
+        self.assertCheck(run("--cafile", self.store(self.anchor), fixtures), 1,
+                         "fixture regular--dv-g3b.chain certificate 00002 carries a key", "RESULT: FAIL")
+
+    def test_a_swapped_extra_certificate_fails(self):
+        """An extra certificate has no leaf: its first certificate is a CA certificate and must carry a listed key."""
+        fixtures = self.copy_fixtures()
+        (fixtures / "extra" / "crtsh-14658191774--emsign-root-cs-ca-g3-cross-signed-by-ecc-g3.cert").write_text(
+            self.anchor, encoding="ascii")
+        self.assertCheck(run("--cafile", self.store(self.anchor), fixtures), 1,
+                         "fixture crtsh-14658191774--emsign-root-cs-ca-g3-cross-signed-by-ecc-g3.cert certificate "
+                         "00001 carries a key", "RESULT: FAIL")
+
+    def test_a_tampered_fixture_fails_its_checksum(self):
+        """Both CI jobs run `sha256sum -c SHA256SUMS` first; a tampered copy must fail it."""
+        if shutil.which("sha256sum") is None:
+            self.skipTest("sha256sum not installed")
+        fixtures = self.copy_fixtures()
+        ok = subprocess.run(["sha256sum", "-c", "SHA256SUMS"], cwd=fixtures, env=ENV, capture_output=True, timeout=60)
+        self.assertEqual(ok.returncode, 0, ok.stdout)
+        with (fixtures / "disclosure-spki.txt").open("a", encoding="ascii") as handle:
+            handle.write("0" * 64 + " planted\n")
+        bad = subprocess.run(["sha256sum", "-c", "SHA256SUMS"], cwd=fixtures, env=ENV, capture_output=True, timeout=60)
+        self.assertNotEqual(bad.returncode, 0)
 
 
 class TestTheCaReleaseCheck(unittest.TestCase):
@@ -195,6 +313,9 @@ class TestFixturesAndPipeline(unittest.TestCase):
         self.assertEqual(present - {"SHA256SUMS", "README.md"}, set(listed))
         self.assertEqual(len([n for n in listed if n.startswith("compromised/")]), 16)
         self.assertEqual(len([n for n in listed if n.startswith("extra/")]), 3)
+        keys = (FIXTURES / "disclosure-spki.txt").read_text(encoding="ascii").splitlines()
+        self.assertEqual(len(keys), 14)  # 12 of the disclosure's JSON, 2 rollover keys of its chains (T859)
+        self.assertEqual(len({k.split(" ", 1)[0] for k in keys}), 14)
         for name, digest in listed.items():
             data = (FIXTURES / name).read_bytes()
             self.assertEqual(hashlib.sha256(data).hexdigest(), digest, name)
@@ -216,6 +337,13 @@ class TestFixturesAndPipeline(unittest.TestCase):
                 self.assertEqual(job["before_script"][1], "sh scripts/check-ca-chains.sh --ca-release")
                 self.assertIn("apk add", job["before_script"][2])  # the store is copied and checked before apk runs
                 self.assertIn("sh scripts/check-ca-chains.sh --ca-release", job["script"])
+                # SEC-T768-02: the fixtures are checked against SHA256SUMS before the check reads them.
+                self.assertEqual(job["script"][0], "(cd tests/fixtures/ca-chains && sha256sum -c SHA256SUMS)")
+        # SEC-T768-03: the node job also checks a hashed directory if a later install writes one.
+        guarded = [s for s in ci["ca-chain-check-node"]["script"] if "--capath /etc/ssl/certs" in s]
+        self.assertEqual(len(guarded), 1)
+        self.assertIn("if ls /etc/ssl/certs 2>/dev/null | grep -q '^[0-9a-f]\\{8\\}\\.[0-9]*$'; then", guarded[0])
+        self.assertIn("sh scripts/check-ca-chains.sh --capath /etc/ssl/certs tests/fixtures/ca-chains", guarded[0])
 
 
 if __name__ == "__main__":
