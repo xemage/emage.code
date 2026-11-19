@@ -59,7 +59,7 @@
       "command": [
         "npx",
         "-y",
-        "@brave/brave-search-mcp-server@2.1.4",
+        "@brave/brave-search-mcp-server@2.1.5",
         "--transport",
         "stdio"
       ],

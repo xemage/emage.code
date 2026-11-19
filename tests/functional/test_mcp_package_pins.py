@@ -43,7 +43,7 @@ APPROVED_NPX_PINS = {
     "playwright": "@playwright/mcp@0.0.83",
     "memory": "@modelcontextprotocol/server-memory@1.0.0",
     "sequential-thinking": "@modelcontextprotocol/server-sequential-thinking@1.0.0",
-    "brave": "@brave/brave-search-mcp-server@2.1.4",
+    "brave": "@brave/brave-search-mcp-server@2.1.5",
     "filesystem": "@modelcontextprotocol/server-filesystem@1.0.0",
     "supabase": "@supabase/mcp-server-supabase@0.13.0",
     "toolradar": "toolradar-mcp@2.1.0",
@@ -129,8 +129,10 @@ class McpPackagePinTests(unittest.TestCase):
     # `npx -y <pin> --transport stdio`. In 2.1.4 BRAVE_MCP_TRANSPORT (environment or a `.env` of the launch
     # directory, loaded by dotenv) is only the default of `--transport <stdio|http>` (dist/config.js), so the
     # explicit flag keeps the HTTP transport off; GHSA-46jr-4wx8-v453, GHSA-f897-62hf-6gxq and the HTTP path of
-    # GHSA-mrhx-c7xc-m3w5 apply as soon as it runs. No other flag and no BRAVE_MCP_* variable may be shipped.
-    BRAVE_ARGS = ["-y", "@brave/brave-search-mcp-server@2.1.4", "--transport", "stdio"]
+    # GHSA-mrhx-c7xc-m3w5 apply to 2.1.4 as soon as it runs. T851: dist/config.js of the pinned 2.1.5 is unchanged
+    # apart from the version, and the HTTP transport still has no authentication on /mcp, so the flag stays.
+    # No other flag and no BRAVE_MCP_* variable may be shipped.
+    BRAVE_ARGS = ["-y", "@brave/brave-search-mcp-server@2.1.5", "--transport", "stdio"]
 
     @staticmethod
     def _brave_launch_ok(entry):
