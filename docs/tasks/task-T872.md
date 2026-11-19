@@ -2,12 +2,13 @@
 
 **ID:** T872
 **Owner:** release-manager
-**Status:** in_progress
+**Status:** done
 **Priority:** P0
 **Tier:** standard
 **Depends on:** T869, T870, T871
 **Affects:** —
 **Created:** 2026-11-19
+**Completed:** 2026-11-19
 **Based on:**
 - `docs/plans/plan-182-next-release.md` (§ Task Decomposition item 5; Addenda 1 to 3)
 - The user's answers of 2026-11-19, verbatim: "release plan go"; "Approve (Recommended)"; "v12.0.0, MAJOR (Recommended)"; "Yes, probe first (Recommended)"; "Accept for v12.0.0 (Recommended)"
