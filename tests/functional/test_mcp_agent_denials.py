@@ -1471,12 +1471,36 @@ class T861ExternalDirectoryMapTests(unittest.TestCase):
                 self.assertNotIn("tool-output", pat)
 
 
-EVIDENCE_PATH_LEAKS = [r"/tmp/claude-", r"/home/", r"/Users/", r"/root/", r"/tmp/tmp\."]
+EVIDENCE_PATH_LEAKS = [r"/tmp/claude-", r"/home/", r"/Users/", r"/root/", r"/tmp/tmp\.",
+                       # SEC-T862-02: macOS temporary and private paths, and the Windows profile path in its backslash
+                       # form (one backslash, or two as in JSON), any drive letter in either case
+                       r"/var/folders/", r"/private/var/", r"(?i:[a-z]:\\{1,2}users\\{1,2})"]
+# The artifact .md names the forbidden prefixes in its own Redaction line (for example "no `/home/`"), so there a leak is
+# a prefix followed by a path-segment character; the raw files get the strict form.
+PATH_SEGMENT_FOLLOWS = r"(?=[A-Za-z0-9_])"
+
+
+def evidence_leak_patterns(user: str, artifact: bool) -> list[str]:
+    """The leak patterns for one evidence file: the fixed prefixes and the local user name as a path segment.
+    CI runs as another user, so the local clean-suite run is the user-name check of record (SEC-T862-02)."""
+    leaks = list(EVIDENCE_PATH_LEAKS) + ([re.escape(f"/{user}/")] if len(user) > 2 else [])
+    return [leak + PATH_SEGMENT_FOLLOWS for leak in leaks] if artifact else leaks
+
+
+def evidence_files(directory: Path) -> list[tuple[Path, bool]]:
+    """Every file to scan for one evidence directory: its raw files, and its artifact .md (SEC-T862-02)."""
+    raw = [(p, False) for p in sorted(directory.rglob("*")) if p.is_file()]
+    md = directory.parent / f"{directory.name}.md"
+    return raw + ([(md, True)] if md.is_file() else [])
+
+
+def evidence_leaks(text: str, patterns: list[str]) -> list[str]:
+    return [leak for leak in patterns if re.search(leak, text)]
 
 
 class T861EvidenceRedactionTests(unittest.TestCase):
-    """SEC-T856-01: every evidence directory newer than v3 stores no scratch path that names the machine or user.
-    v2 and v3 are immutable (their hashes are pinned) and exempt."""
+    """SEC-T856-01, SEC-T862-02: no evidence directory newer than v3 stores, in a raw file or in its artifact .md, a
+    scratch path that names the machine or user. v2 and v3 are immutable (their hashes are pinned) and exempt."""
 
     def evidence_dirs(self):
         out = []
@@ -1486,18 +1510,51 @@ class T861EvidenceRedactionTests(unittest.TestCase):
                 out.append(path)
         return out
 
-    def test_no_scratch_path_in_raw_files_newer_than_v3(self):
+    def test_no_scratch_path_in_raw_files_or_artifact_newer_than_v3(self):
         import getpass
         user = getpass.getuser()
-        leaks = list(EVIDENCE_PATH_LEAKS) + ([re.escape(f"/{user}/")] if len(user) > 2 else [])
         dirs = self.evidence_dirs()
         self.assertTrue(dirs, "evidence v4 exists (T861)")
         for d in dirs:
-            for raw in sorted(p for p in d.rglob("*") if p.is_file()):
-                text = raw.read_text(encoding="utf-8", errors="replace")
-                for leak in leaks:
-                    with self.subTest(file=str(raw.relative_to(REPO)), leak=leak):
-                        self.assertIsNone(re.search(leak, text))
+            files = evidence_files(d)
+            self.assertIn((d.parent / f"{d.name}.md", True), files)
+            for path, artifact in files:
+                text = path.read_text(encoding="utf-8", errors="replace")
+                with self.subTest(file=str(path.relative_to(REPO))):
+                    self.assertEqual(evidence_leaks(text, evidence_leak_patterns(user, artifact)), [])
+
+    def test_each_prefix_catches_its_path_and_the_artifact_prose_is_not_a_leak(self):
+        samples = {r"/var/folders/": "/var/folders/xy/T/tmp1/out", r"/private/var/": "/private/var/folders/xy/T/run",
+                   EVIDENCE_PATH_LEAKS[-1]: "C:\\Users\\someone\\AppData", "json": '"c:\\\\USERS\\\\someone\\\\x"'}
+        for key, sample in samples.items():
+            for artifact in (False, True):
+                with self.subTest(sample=sample, artifact=artifact):
+                    self.assertTrue(evidence_leaks(sample, evidence_leak_patterns("someone", artifact)))
+        prose = "Checked before hashing: no `/tmp/claude-`, `/home/`, `/var/folders/`, `C:\\Users\\` or `/<username>/`."
+        self.assertEqual(evidence_leaks(prose, evidence_leak_patterns("someone", True)), [])
+        self.assertTrue(evidence_leaks(prose, evidence_leak_patterns("someone", False)))
+
+    def test_mutation_each_dropped_prefix_is_detected(self):
+        samples = {r"/var/folders/": "/var/folders/xy/T/a", r"/private/var/": "/private/var/tmp/a",
+                   EVIDENCE_PATH_LEAKS[-1]: "D:\\Users\\a\\b", r"/home/": "/home/a/b"}
+        for prefix, sample in samples.items():
+            with self.subTest(prefix=prefix):
+                kept = [p for p in evidence_leak_patterns("zzz", False) if p != prefix]
+                self.assertEqual(evidence_leaks(sample, kept), [])
+                self.assertTrue(evidence_leaks(sample, evidence_leak_patterns("zzz", False)))
+
+    def test_mutation_a_raw_only_scan_misses_the_artifact(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp) / "mcp-agent-denials-evidence-v9"
+            d.mkdir()
+            (d / "raw.json").write_text("{}", encoding="utf-8")
+            (Path(tmp) / f"{d.name}.md").write_text("ran in /var/folders/ab/T/x\n", encoding="utf-8")
+
+            def found(files):
+                return [p.name for p, art in files if evidence_leaks(p.read_text(encoding="utf-8"), evidence_leak_patterns("zzz", art))]
+
+            self.assertEqual(found(evidence_files(d)), [f"{d.name}.md"])
+            self.assertEqual(found([f for f in evidence_files(d) if not f[1]]), [])  # the pre-SEC-T862-02 scan
 
     def test_the_metadata_records_the_redaction(self):
         for d in self.evidence_dirs():
