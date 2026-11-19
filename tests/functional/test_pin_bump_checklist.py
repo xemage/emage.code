@@ -14,7 +14,7 @@ from tests._helpers.repo import repo_root
 ROOT = repo_root()
 DOC = ROOT / "docs" / "wiki" / "mcp-pin-bump-checklist.md"
 IDS = ("SEC-T646-03", "SEC-T646-04", "SEC-T646-05", "SEC-T646-06", "SEC-T655-06", "SEC-T655-07", "SEC-T658-02",
-       "SEC-014", "T638-L-2", "T638-L-8", "K-17", "K-20", "SEC-T675-03", "SEC-T675-09")
+       "SEC-014", "T638-L-2", "T638-L-8", "K-17", "K-20", "SEC-T675-03", "SEC-T675-09", "SEC-T860-01", "SEC-T860-02")
 # docs/artifacts/brave-audit-acceptance-v4.md (T808, the user's acceptance of 2026-11-12 for v11.0.0 only) is the newest
 # record; v3 (T712, the user's renewal of 2026-11-01) set the seven advisories and the one expiry, which v4 leaves unchanged.
 # Both are historical since T851 (plan-173, 2026-11-19): the seven were scoped to HISTORICAL_PIN, the bump to 2.1.5 voided
@@ -32,7 +32,10 @@ WARNING = "Never run `opencode debug config` with your real home"
 REQUIRED_PHRASES = ("audit-mcp-pins.py audit", "audit-mcp-pins.py provenance", "--generate-hashes", "--require-hashes",
                     "Browser security version", "Blocked-origins re-check", "One-time live checks",
                     "opencode agent list", "(unverified)", WARNING, "ci_images_reviewed_on", "--only-binary=:all:", "--exclude-newer",
-                    "brave-audit-acceptance-v4.md", "SEC-T676-11", "SEC-T676-14", "seven days before")
+                    "brave-audit-acceptance-v4.md", "SEC-T676-11", "SEC-T676-14", "seven days before",
+                    "audit-mcp-pins.py age", "**7 days**", "services_limit = 0", "gitlab-runner --version",
+                    "gitlab-runner lint --config /etc/gitlab-runner/config.toml", "journalctl -u gitlab-runner",
+                    "Out-of-cycle trigger", "the ceiling, not the cadence")
 LINKS = {
     "implementation/PREREQUISITES.md": "docs/wiki/mcp-pin-bump-checklist.md",
     "docs/wiki/mcp-servers.md": "mcp-pin-bump-checklist",
@@ -90,12 +93,26 @@ def historical_problems(text: str) -> list[str]:
     return accept_problems(text, {g: (EXPIRY, HISTORICAL_PIN) for g in GHSA}, {HISTORICAL_PIN})
 
 
+def young_problems(text: str) -> list[str]:
+    """SEC-T860-01: every `--allow-young` of the checklist names a current npm pin and a reason, and the filesystem pin
+    of T859 is recorded as the first exception while it is pinned."""
+    found = re.findall(r"--allow-young (?!<)(\S+?@\d+\.\d+\.\d+[^:\s`]*):([^`\n]*)", text)
+    pins = current_npm_pins()
+    out = [f"--allow-young names {spec}, which is not a current npm pin" for spec, _ in found if spec not in pins]
+    out += [f"--allow-young {spec} has no reason" for spec, reason in found if not reason.strip()]
+    first = "@modelcontextprotocol/server-filesystem@2.4.0"
+    if first in pins and (first not in {spec for spec, _ in found} or "the first exception" not in text):
+        out.append(f"{first} is not recorded as the first minimum-age exception")
+    return out
+
+
 def problems(text: str) -> list[str]:
     out = [f"missing id {i}" for i in IDS if i not in text]
     out += [f"missing phrase {p!r}" for p in REQUIRED_PHRASES if p not in text]
     if re.search(r"HOME=\$\(mktemp[^\n]*\$HOME/", text) or re.search(r"HOME=\$\(mktemp", text):
         out.append("the isolated opencode command expands $HOME in the calling shell (SEC-T676-01): use t=$(mktemp -d) first")
     out += gate_problems(text)
+    out += young_problems(text)
     for path in set(re.findall(r"`((?:scripts|ci|tests|implementation|docs)/[A-Za-z0-9_./*<>-]+)`", text)):
         if "*" in path or "<" in path or path.endswith("/"):
             continue
@@ -255,6 +272,27 @@ class TestChecklist(unittest.TestCase):
 
     def test_mutation_a_dropped_id_is_detected(self):
         self.assertIn("missing id SEC-T655-07", problems(self.text.replace("SEC-T655-07", "SEC-T655-0x")))
+
+    def test_the_minimum_age_exceptions_name_current_pins(self):
+        self.assertEqual(young_problems(self.text), [])
+        self.assertEqual(len(re.findall(r"--allow-young (?!<)", self.text)), 2)
+
+    def test_mutation_a_stale_or_dropped_young_exception_is_detected(self):
+        stale = self.text.replace("--allow-young @brave/brave-search-mcp-server@2.1.5:", "--allow-young @brave/brave-search-mcp-server@2.1.4:")
+        self.assertNotEqual(stale, self.text)
+        self.assertTrue(any("not a current npm pin" in p for p in problems(stale)))
+        dropped = self.text.replace("--allow-young @modelcontextprotocol/server-filesystem@2.4.0:", "--allow-young-x ")
+        self.assertTrue(any("first minimum-age exception" in p for p in problems(dropped)))
+
+    def test_mutation_dropping_the_age_rule_is_detected(self):
+        for phrase in ("**7 days**", "audit-mcp-pins.py age"):
+            with self.subTest(phrase=phrase):
+                self.assertIn(f"missing phrase {phrase!r}", problems(self.text.replace(phrase, "x")))
+
+    def test_mutation_dropping_the_runner_checks_is_detected(self):
+        for phrase in ("gitlab-runner --version", "Out-of-cycle trigger", "journalctl -u gitlab-runner"):
+            with self.subTest(phrase=phrase):
+                self.assertIn(f"missing phrase {phrase!r}", problems(self.text.replace(phrase, "x")))
 
     def test_mutation_a_dead_path_is_detected(self):
         bad = self.text.replace("`ci/requirements-ci.in`", "`ci/requirements-cx.in`")

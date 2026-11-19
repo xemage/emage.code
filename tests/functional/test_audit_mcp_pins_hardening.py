@@ -446,3 +446,113 @@ class TestHardenedNpmAndOutput(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FakeView:
+    """SEC-T860-01: replays ``npm view PKG@VER time --json`` with a fixed publication time per package name."""
+
+    def __init__(self, times: dict[str, object], rc: int = 0, stdout: str | None = None):
+        self.times, self.rc, self.stdout, self.calls = times, rc, stdout, []
+
+    def __call__(self, argv, cwd):
+        self.calls.append(list(argv))
+        name, _, version = argv[1].rpartition("@")
+        reply = self.stdout if self.stdout is not None else json.dumps(
+            {"created": "2020-01-01T00:00:00.000Z", **({version: self.times[name]} if name in self.times else {})})
+        return subprocess.CompletedProcess(argv, self.rc, reply, "")
+
+
+AGE_TODAY = dt.date(2026, 11, 19)
+OLD = "2026-10-01T00:00:00.000Z"
+
+
+def run_age(runner, module=M, extra: tuple = (), servers: Path = SERVERS, today: dt.date = AGE_TODAY) -> tuple[int, str]:
+    args = module.build_parser().parse_args(["--servers", str(servers), "age", *extra])
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+        rc = module.command_age(args, runner=runner, today=today)
+    return rc, out.getvalue()
+
+
+def all_old(**young: str) -> dict:
+    return {p.name: young.get(p.name, OLD) for p in M.load_pins(SERVERS) if p.kind == "npm"}
+
+
+FS = "@modelcontextprotocol/server-filesystem"
+FS_PIN = next(f"{p.name}@{p.version}" for p in M.load_pins(SERVERS) if p.name == FS)
+
+
+class TestMinimumReleaseAge(unittest.TestCase):
+    """SEC-T860-01: `age` reports npm pins younger than the minimum release age; offline, fixed day, stubbed npm."""
+
+    def test_old_pins_pass_and_npm_view_is_asked_per_pin(self):
+        fake = FakeView(all_old())
+        rc, out = run_age(fake)
+        self.assertEqual(rc, 0, out)
+        self.assertTrue(all(c[0] == "view" and c[2:] == ["time", "--json"] for c in fake.calls))
+        self.assertEqual(len(fake.calls), len([p for p in M.load_pins(SERVERS) if p.kind == "npm"]))
+
+    def test_a_young_pin_fails_and_an_exception_allows_it(self):
+        fake = FakeView(all_old(**{FS: "2026-11-18T09:19:39.880Z"}))
+        rc, out = run_age(fake)
+        self.assertEqual(rc, 1)
+        self.assertIn(f"{FS_PIN}: published 2026-11-18, 1 day(s) old  YOUNG", out)
+        rc, out = run_age(fake, extra=("--allow-young", f"{FS_PIN}:provenance, clean audit, diff read (T860)"))
+        self.assertEqual(rc, 0, out)
+        self.assertIn("YOUNG, ALLOWED: provenance, clean audit, diff read (T860)", out)
+
+    def test_the_boundary_is_the_minimum_age(self):
+        fake = FakeView(all_old(**{FS: "2026-11-12T23:59:59.000Z"}))
+        self.assertEqual(run_age(fake)[0], 0)  # exactly 7 days
+        fake = FakeView(all_old(**{FS: "2026-11-13T00:00:00.000Z"}))
+        self.assertEqual(run_age(fake)[0], 1)  # 6 days
+        self.assertEqual(run_age(fake, extra=("--min-age-days", "6"))[0], 0)
+
+    def test_missing_unparseable_or_failed_time_is_an_error_not_old_enough(self):
+        for fake in (FakeView(all_old(**{FS: None})), FakeView({}), FakeView(all_old(**{FS: "yesterday"})),
+                     FakeView(all_old(**{FS: "2026-13-45T00:00:00Z"})), FakeView(all_old(), rc=1),
+                     FakeView(all_old(), stdout="not json"), FakeView(all_old(), stdout="[]")):
+            with self.subTest(times=fake.times, rc=fake.rc, stdout=fake.stdout):
+                with self.assertRaises(M.AuditError):
+                    run_age(fake)
+
+    def test_bad_allowances_and_bad_day_counts_are_refused(self):
+        for bad in (FS_PIN, f"{FS_PIN}:", f"{FS_PIN}:  ", f"{FS}@latest:why", f"{FS_PIN}:a‮b"):
+            with self.subTest(value=bad), self.assertRaises(argparse.ArgumentTypeError):
+                M.parse_allow_young(bad)
+        for bad in ("-1", "x", "1.5", ""):
+            with self.subTest(days=bad), self.assertRaises(argparse.ArgumentTypeError):
+                M.non_negative_int(bad)
+        with self.assertRaises(M.AuditError):  # an exception for a version that is not pinned is stale
+            run_age(FakeView(all_old()), extra=("--allow-young", f"{FS}@0.0.1:old reason"))
+
+    def test_the_live_pins_at_the_recorded_day_need_exactly_the_recorded_exceptions(self):
+        fake = FakeView(all_old(**{FS: "2026-11-18T09:19:39.880Z", "@brave/brave-search-mcp-server": "2026-11-17T10:00:00.000Z"}))
+        self.assertEqual(run_age(fake)[0], 1)
+        rc, _ = run_age(fake, extra=("--allow-young", f"{FS_PIN}:T860", "--allow-young", f"{BRAVE_PIN}:T851"))
+        self.assertEqual(rc, 0)
+
+    def test_mutation_ignoring_the_minimum_age_is_detected(self):
+        mutant = mutated("            if age >= args.min_age_days:\n", "            if True:\n")
+        fake = FakeView(all_old(**{FS: "2026-11-18T09:19:39.880Z"}))
+        self.assertEqual(run_age(fake, module=mutant)[0], 0)
+        self.assertEqual(run_age(fake)[0], 1)
+
+    def test_mutation_treating_a_missing_time_as_old_is_detected(self):
+        mutant = mutated("    stamp = parse_json(done.stdout, what).get(pin.version)\n",
+                         "    stamp = parse_json(done.stdout, what).get(pin.version, \"2000-01-01T00:00:00Z\")\n")
+        fake = FakeView({})
+        self.assertEqual(run_age(fake, module=mutant)[0], 0)
+        with self.assertRaises(M.AuditError):
+            run_age(fake)
+
+    def test_mutation_ignoring_a_failed_npm_view_is_detected(self):
+        mutant = mutated("    if done.returncode != 0:\n        raise AuditError(f\"{what} failed (exit {done.returncode})\")\n", "")
+        fake = FakeView(all_old(), rc=1)
+        self.assertEqual(run_age(fake, module=mutant)[0], 0)
+        with self.assertRaises(M.AuditError):
+            run_age(fake)
+
+    def test_mutation_accepting_a_stale_allowance_is_detected(self):
+        mutant = mutated("        if (item.package, item.version) not in current:\n", "        if False:\n")
+        self.assertEqual(run_age(FakeView(all_old()), module=mutant, extra=("--allow-young", f"{FS}@0.0.1:x"))[0], 0)
