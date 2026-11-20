@@ -694,9 +694,14 @@ class VerdictSectionTokenTests(unittest.TestCase):
                        "a '## Gate Verdicts' line at column 0 with no real heading is an error",
                        "which fails closed for RELEASE VERDICT only; an absent Gate Verdicts is not checked",
                        "Plain text, headings and table rows are not fields", "(SEC-T748-03)", "(SEC-T748-04)",
-                       "(SEC-T748-05)", "(SEC-T748-06)", "(SEC-T748-12)", "(SEC-T751-08)", "(SEC-T751-06)"):
+                       "(SEC-T748-05)", "(SEC-T748-06)", "(SEC-T748-12)", "(SEC-T751-08)", "(SEC-T751-06)",
+                       "holds a code span with '|' and a code span with '<', the same span or two",
+                       "the same text is parsed a second time with the GFM table rule",
+                       "adds a second parse, about the same cost as the first if the table rule costs no more (not measured)"):
             with self.subTest(phrase):
                 self.assertIn(phrase, collapsed)
+        self.assertNotIn("holds a code span with both '|' and '<'", collapsed)  # SEC-T888-04: the old one-span wording
+        self.assertNotIn("one span holding both", collapsed)
         docstring = " ".join(self.mod.__doc__.split())
         self.assertIn("``markdown_tokens`` calls it", docstring)
         self.assertIn("the verdict sections", docstring)
@@ -704,6 +709,7 @@ class VerdictSectionTokenTests(unittest.TestCase):
         self.assertNotIn("both fail closed", collapsed)  # SEC-T748-08: true for the required section only
         self.assertNotIn("a row or field that is still", docstring)  # a table row is no field
         self.assertIn("table rows included, that carries a template placeholder", docstring)
+        self.assertNotIn("one span holding both", docstring)
         self.assertNotIn("Pinned on markdown-it-py 3.0.0 and 4.2.0", self.mod.is_closed_backtick_fence.__doc__)  # -07
         self.assertIn("Tested on the locked version", " ".join(self.mod.is_closed_backtick_fence.__doc__.split()))
 
@@ -2502,6 +2508,56 @@ class BatchVThirdRoundTests(unittest.TestCase):
         self.assertEqual(self.problems("## Gate Verdict\n\n- x: y"), [], "another name stays allowed")
         self.assertFalse(self.mod.reads_as("RELEASE VERD1CT", "RELEASE VERDICT"), "an ASCII digit is no wildcard")
         self.assertFalse("\u2164".isalpha(), "a Roman numeral is no letter: only NFKC makes it a 'V'")
+
+    # SEC-T888-02(a)
+    def test_sec_t888_02a_case_and_compatibility_expansions_read_as_the_name(self):
+        for heading in ("## RELEASE VERD\u0130CT", "## RELEASE VERDI\u0307CT", "## RELEASE VERD\u0131CT"):
+            with self.subTest(heading):
+                self.assertIn(self.look_alike(7), self.in_section(f"{heading}\n\n{self.PENDING}"))
+        for heading in ("## Gate Verd\u0130cts", "## Gate Verdict\u0455"):
+            with self.subTest(heading):
+                self.assertIn(self.look_alike(3, "Gate Verdicts"), self.problems(f"{heading}\n\n- x: pending"))
+        folded = self.mod.folded
+        self.assertEqual(folded("RELEASE VERD\u0130CT"), "release verdict")
+        self.assertEqual(folded("Gate Verd\u0130cts"), "gate verdicts")
+        for text, expected in (("\u00df", "ss"), ("\ufb01", "fi"), ("\u01c6", "dz"), ("\u01c4", "dz")):
+            with self.subTest(text):
+                self.assertEqual(folded(text), expected)
+        for name, shown in (("RELEASE VERDICT", "RELEASE VERD\u0130\u0421T"), ("Gate Verdicts", "Gate Verd\u0130ct\u0455")):
+            # an expanding character plus a look-alike: still the length of the name, so still caught (SEC-T894-03)
+            with self.subTest(name):
+                self.assertNotEqual(shown, name)
+                self.assertTrue(self.mod.reads_as(shown, name))
+                self.assertEqual(len(folded(shown)), len(name))
+        self.assertTrue(self.mod.reads_as("\u0420ELEASE VERDICT", "RELEASE VERDICT"))
+        for shown, name in (("RELEASE VERDICTS", "RELEASE VERDICT"), ("RELEASE VERDICT notes", "RELEASE VERDICT"),
+                            ("Gate Verdict", "Gate Verdicts"), ("RELEASE VERDICT\u00df", "RELEASE VERDICT")):
+            with self.subTest(shown):
+                self.assertFalse(self.mod.reads_as(shown, name))
+        for filler in ("\u3164", "\u115f", "\uffa0", "\u2800", "\u034f"):
+            with self.subTest(filler):
+                self.assertEqual(folded(f"A{filler}B"), "a b")
+        self.assertEqual(folded("Release Verdict\u0301"), "release verdict")
+        self.assertEqual(folded("\uff32\uff25\u2164"), "rev")
+
+    # SEC-T894-01
+    def test_sec_t894_01_a_capital_made_by_decomposition_is_folded_to_lower_case(self):
+        folded = self.mod.folded
+        self.assertEqual(folded("\U0001D415ERDICT"), "verdict")
+        self.assertEqual(folded("\u211bELEASE"), "release")
+        self.assertEqual(folded("\u1d3fELEASE"), "release")
+        for shown, name in (("RELEASE \U0001D415ERDICT", "RELEASE VERDICT"), ("\u211bELEASE VERDICT", "RELEASE VERDICT"),
+                            ("\u1d3fELEASE VERDICT", "RELEASE VERDICT"), ("\U0001D406ate Verdicts", "Gate Verdicts"),
+                            ("Gate \U0001D415erdicts", "Gate Verdicts"), ("\u1d33ate Verdicts", "Gate Verdicts"),
+                            ("Gate Verdict\U0001D412", "Gate Verdicts")):
+            with self.subTest(shown):
+                self.assertTrue(self.mod.reads_as(shown, name))
+        for heading in ("## RELEASE \U0001D415ERDICT", "## \u211bELEASE VERDICT", "## \u1d3fELEASE VERDICT"):
+            with self.subTest(heading):
+                self.assertIn(self.look_alike(7), self.in_section(f"{heading}\n\n{self.PENDING}"))
+        for heading in ("## \U0001D406ate Verdicts", "## Gate \U0001D415erdicts"):
+            with self.subTest(heading):
+                self.assertIn(self.look_alike(3, "Gate Verdicts"), self.problems(f"{heading}\n\n- x: pending"))
 
 
 class AnchorWordingTests(unittest.TestCase):
