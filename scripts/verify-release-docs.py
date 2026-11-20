@@ -276,8 +276,10 @@ Release description too (unverified) (SEC-T739-04). If it reaches the nesting li
 with the line of the block that does and no content (SEC-T739-09). If the parser finds HTML other than
 comments, named with the line its block starts on and no content (SEC-T745-03). If a paragraph
 that may be a GFM table (a line starts with '|' or is a delimiter row) holds a code span with
-both '|' and '<', named with its first line: the commonmark preset has no tables, and GitLab
-may split the span at the '|' (unverified), so this fails closed (SEC-T751-08). A refused
+'|' and a code span with '<', the same span or two, named with its first line: the commonmark preset has no tables, and GitLab
+may split the span at the '|' (unverified), so this fails closed (SEC-T751-08). Then, for a text holding
+a '|', the same text is parsed a second time with the GFM table rule, and the nesting and HTML rules apply to
+that parse too (SEC-T751-08, T887); it adds a second parse, about the same cost as the first if the table rule costs no more (not measured). A refused
 document is not checked for links (SEC-T751-06).
 Time (SEC-T745-01): the cap limits the parser's time and does not make it small; the job's
 timeout is what stops a run. Measured on 2026-11-06 on one machine, with markdown-it-py 4.2.0
@@ -443,12 +445,18 @@ def heading_has_text(tokens: list, index: int) -> bool:
 
 
 def folded(text: str) -> str:
-    """``text`` as a reader may take it (SEC-T748-05): compatibility forms such as full-width letters normalised (NFKC,
-    T887), format characters and combining marks dropped, invisible letters read as a blank, white space (``&nbsp;``
-    included) collapsed, case folded."""
-    kept = "".join(" " if c in INVISIBLE_LETTERS else c for c in unicodedata.normalize("NFKC", text)
+    """``text`` as a reader may take it (SEC-T748-05): case folded first, then compatibility forms such as full-width
+    letters decomposed (NFKD), format characters and combining marks dropped, invisible letters read as a blank, the rest
+    recomposed (NFKC), case folded again (SEC-T894-01: a mathematical or letterlike capital only becomes a capital 'V' at
+    the NFKD step, after the first fold) and white space (``&nbsp;``) collapsed.
+
+    The order matters (SEC-T888-02(a)): case folding first makes 'İ' an 'i' and a U+0307, which the drop then removes,
+    so it reads as 'I' and the folded text keeps the length of the name; ligatures such as U+FB01 and 'ǆ' expand the
+    same way. Folding last left that U+0307 in the text."""
+    decomposed = unicodedata.normalize("NFKD", text.casefold())
+    kept = "".join(" " if c in INVISIBLE_LETTERS else c for c in decomposed
                    if unicodedata.category(c) not in ("Cf", "Mn", "Me") or c in INVISIBLE_LETTERS)
-    return " ".join(kept.split()).casefold()
+    return " ".join(unicodedata.normalize("NFKC", kept).casefold().split())
 
 
 def reads_as(text: str, title: str) -> bool:
@@ -884,8 +892,8 @@ def document_refusal(relative: Path, text: str) -> str | None:
 def parsed_refusal(relative: Path, text: str) -> str | None:
     """The refusals that read tokens, for ``document_refusal``, in order: nesting, HTML, HTML in a table (SEC-T751-08).
 
-    The table-rule parse is a second parse of the same text under the same limits, only of a text holding a '|', so it at
-    most doubles the parse time that SEC-T745-01 bounds. Its nesting is checked too, since a table adds levels and its tokens stop at the limit.
+    The table-rule parse is a second parse of the same text under the same limits, only of a text holding a '|'; it adds a
+    second parse, about the same cost as the first if the table rule costs no more (not measured). Its nesting is checked too, since a table adds levels and its tokens stop at the limit.
     """
     tokens = markdown_tokens(text)
     number = nesting_limit_line(tokens)
