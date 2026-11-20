@@ -276,6 +276,25 @@ The plan shown:
 
 Then write the verdict, with the independent check by `@tech-lead`.
 
-## Outcome
+## Outcome (2026-11-20)
 
-_To be written by the orchestrator after the release._
+**v12.0.0 is published.** The Release (2026-11-20T05:22:16Z) is on `514503b0`.
+
+| Step | Record | The user's approval, verbatim |
+|---|---|---|
+| 1. Merge to `develop` | MR !708, merge commit `fb116f1f` | "Yes, merge to develop (Recommended)" |
+| 2. Merge to `main` | MR !709, merge commit `ba17bda6` | "Yes, merge to main (Recommended)" |
+| 3. The tag | annotated `v12.0.0` (`e11e9a9f`) on `514503b0` | "Yes, push the tag (Recommended)". Before it, the user deleted the probe tag: "v12.0.0-gate.1 deleted" |
+| 4. The tag pipeline | 3092574856 | — |
+
+- **The tag pipeline:** all three jobs ran on runner #59129270 and succeeded, `release` included.
+- **The Release body** equals `docs/releases/v12.0.0.md` at the tag (byte comparison).
+- **The drift check:** `releases_behind=0`, PASS.
+- **The verdict:** CONDITIONAL_PASS, issued at `e0e3b355`. The independent check by tech-lead was PASS.
+- **The conditions:**
+  - C-1: carried.
+  - C-2: met. The tag came on 2026-11-20, before 2027-01-28.
+  - C-3: met. No `gate` ref was left; all three jobs ran on runner #59129270.
+  - C-5: met. The tag came before the exceptions lapse.
+- **The full suite at the release tip:** 2833 OK (skipped=25).
+- **The checkpoint:** `docs/checkpoints/checkpoint-044-release-v12.0.0.md`. T879 is closed by this closeout.
