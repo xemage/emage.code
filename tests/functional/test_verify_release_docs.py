@@ -86,6 +86,19 @@ def _run_past_release_without_markers(test: unittest.TestCase, tag: str) -> tupl
         return test._run_main(tag, "--allow-newer-pointers")
 
 
+def _unskippable_pointers(mod, missing: list[str], newest: str) -> list[str]:
+    """Of the missing release documents ``missing`` (stems) that install.sh names, those the UTF-8 test may not skip.
+
+    SEC-T773-01: at most one may be skipped, and only the next major, minor or patch release after ``newest`` (any
+    pre-release suffix ignored). Two or more are all refused.
+    """
+    major, minor, patch = mod.tag_core(newest)
+    following = {(major + 1, 0, 0), (major, minor + 1, 0), (major, minor, patch + 1)}
+    if len(missing) > 1:
+        return sorted(missing)
+    return [stem for stem in missing if mod.tag_core(stem) not in following]
+
+
 def _error_lines(output: str) -> list[str]:
     """The error lines of a gate run (notes and the success lines excluded)."""
     return [
@@ -372,6 +385,21 @@ class VerdictSectionTokenTests(unittest.TestCase):
     def unfilled(self, problem: str) -> str:
         return f"unfilled verdict in doc.md: {problem}"
 
+    @staticmethod
+    def look_alike(line: int, title: str = "RELEASE VERDICT") -> str:
+        return (f"{title}: the heading on line {line} reads as this section's name but is not a top-level '## {title}' "
+                "heading; rename it or make it the real one (SEC-T748-05)")
+
+    @staticmethod
+    def weak_end(line: int, title: str = "RELEASE VERDICT") -> str:
+        return (f"{title}: the section ends at a setext or '# ' heading on line {line}, which may be a paragraph above a "
+                "'---' line; end it with a '## ' heading (SEC-T748-03)")
+
+    @staticmethod
+    def stray(line: int, title: str = "RELEASE VERDICT") -> str:
+        return (f"{title}: line {line} repeats the heading line in a block that is no heading, such as a ~~~ fence, "
+                "which a reader may see; remove it (SEC-T748-04)")
+
     def test_control_a_heading_and_a_pending_field(self):
         self.assertEqual(self.gate_errors(f"## RELEASE VERDICT\n\n{self.PENDING}"), [self.unfilled(self.STILL_PENDING)])
 
@@ -398,9 +426,12 @@ class VerdictSectionTokenTests(unittest.TestCase):
         self.assertEqual(self.gate_errors(body), [self.unfilled(self.SECOND_HEADING), self.unfilled(self.STILL_PENDING)])
 
     def test_a_repeat_of_the_heading_in_code_or_a_comment_is_no_second_heading(self):
-        for repeat in ("```\n## RELEASE VERDICT\n```", "<!--\n## RELEASE VERDICT\n-->", "> ## RELEASE VERDICT"):
+        for repeat in ("```\n## RELEASE VERDICT\n```", "<!--\n## RELEASE VERDICT\n-->"):
             with self.subTest(repeat):
                 self.assertEqual(self.gate_errors(f"## RELEASE VERDICT\n\n- Status: PASS\n\n{repeat}"), [])
+        # SEC-T748-05: a quoted heading is displayed as a heading, so it is a look-alike now.
+        self.assertEqual(self.gate_errors("## RELEASE VERDICT\n\n- Status: PASS\n\n> ## RELEASE VERDICT"),
+                         [self.unfilled(self.look_alike(17))])
 
     def test_shape_f_the_heading_and_a_filled_field_only_in_a_comment(self):
         body = "<!--\n## RELEASE VERDICT\n\n- Status: PASS\n-->"
@@ -410,7 +441,8 @@ class VerdictSectionTokenTests(unittest.TestCase):
         self.assertEqual(self.gate_errors(f"RELEASE VERDICT\n---\n\n{self.PENDING}"), [self.unfilled(self.STILL_PENDING)])
 
     def test_shape_i_the_heading_only_in_a_blockquote(self):
-        self.assertEqual(self.gate_errors("> ## RELEASE VERDICT\n>\n> - Status: PASS"), [self.ABSENT])
+        self.assertEqual(self.gate_errors("> ## RELEASE VERDICT\n>\n> - Status: PASS"),
+                         [self.ABSENT, self.unfilled(self.look_alike(13))])
 
     def test_every_form_of_a_real_heading_is_read(self):
         for heading in (" ## RELEASE VERDICT", "## RELEASE VERDICT ##", "##\tRELEASE VERDICT", "## RELEASE&#32;VERDICT",
@@ -461,9 +493,12 @@ class VerdictSectionTokenTests(unittest.TestCase):
                 self.assertIn("holds HTML other than comments", self.gate_errors(f"## RELEASE VERDICT\n\n{heading}")[0])
 
     def test_a_heading_a_reader_can_see_still_ends_a_section(self):
-        for heading in ("## Next", "## Next <!-- x -->", "# Next", "Next\n---", "## `Next`"):
+        for heading in ("## Next", "## Next <!-- x -->", "## `Next`"):
             with self.subTest(heading):
                 self.assertEqual(self.in_section(f"{heading}\n\n{self.PENDING}"), [])
+        for heading in ("# Next", "Next\n---"):  # SEC-T748-03: it ends the section, and that is a problem itself
+            with self.subTest(heading):
+                self.assertEqual(self.in_section(f"{heading}\n\n{self.PENDING}"), [self.weak_end(7)])
 
     def test_the_heading_line_in_a_displayed_html_block_is_refused(self):
         """SEC-T748-04: the block's text is shown, and the old check read the section from that line."""
@@ -491,9 +526,12 @@ class VerdictSectionTokenTests(unittest.TestCase):
                 self.assertEqual(self.in_section(f"{empty}\n\n{self.PENDING}"), [self.STILL_PENDING])
 
     def test_a_heading_with_text_ends_a_section_in_either_form_and_at_either_level(self):
-        for heading in ("## Next", "# Next", "Next\n---", "Next\n===", "## `code`"):
+        for heading in ("## Next", "## `code`"):
             with self.subTest(heading):
                 self.assertEqual(self.in_section(f"{heading}\n\n{self.PENDING}"), [])
+        for heading in ("# Next", "Next\n---", "Next\n==="):  # SEC-T748-03: still the end, now reported
+            with self.subTest(heading):
+                self.assertEqual(self.in_section(f"{heading}\n\n{self.PENDING}"), [self.weak_end(7)])
 
     def test_what_is_not_a_top_level_level_one_or_two_heading_does_not_end_a_section(self):
         for line in ("### Next", "###### Next", "> ## Next", "- ## Next", "<!--\n## Next\n-->", "```\n## Next\n```",
@@ -566,9 +604,12 @@ class VerdictSectionTokenTests(unittest.TestCase):
             with self.subTest(swallowed):
                 self.assertEqual(self.problems(swallowed), [empty])
 
-    def test_a_misspelt_optional_heading_still_passes(self):
-        """plan-142 § Not changed: visible to a reader, and the name is exact."""
-        self.assertEqual(self.problems("## Gate verdicts\n\n- x: pending"), [])
+    def test_a_misspelt_optional_heading_is_a_look_alike(self):
+        """SEC-T748-05 replaces plan-142's ruling 5: a heading a reader takes for the section is a problem."""
+        self.assertEqual(self.problems("## Gate verdicts\n\n- x: pending"), [
+            "Gate Verdicts: the heading on line 3 reads as this section's name but is not a top-level '## Gate Verdicts' "
+            "heading; rename it or make it the real one (SEC-T748-05)"])
+        self.assertEqual(self.problems("## Gate verdict summary\n\n- x: pending"), [], "another name stays allowed")
 
     def test_a_heading_past_the_nesting_limit_is_absent(self):
         self.assertEqual(self.gate_errors("- " * 9 + "x\n\n## RELEASE VERDICT\n\n- Status: PASS"), [])
@@ -648,14 +689,23 @@ class VerdictSectionTokenTests(unittest.TestCase):
                        "A second top-level heading with the same name is an error",
                        "Only the lines of a closed ``` fence, at any depth, do not count", "An indented code block",
                        "a ~~~ fence", "an unclosed fence", "trailing text or too few backticks",
-                       "a hidden 'pending' still fails", "RELEASE VERDICT must be a real top-level heading",
-                       "Gate Verdicts is optional", "both fail closed"):
+                       "inside a section a hidden 'pending' still fails; above a section it does not",
+                       "RELEASE VERDICT must be a real top-level heading", "Gate Verdicts is optional",
+                       "a '## Gate Verdicts' line at column 0 with no real heading is an error",
+                       "which fails closed for RELEASE VERDICT only; an absent Gate Verdicts is not checked",
+                       "Plain text, headings and table rows are not fields", "(SEC-T748-03)", "(SEC-T748-04)",
+                       "(SEC-T748-05)", "(SEC-T748-06)", "(SEC-T748-12)", "(SEC-T751-08)", "(SEC-T751-06)"):
             with self.subTest(phrase):
                 self.assertIn(phrase, collapsed)
         docstring = " ".join(self.mod.__doc__.split())
         self.assertIn("``markdown_tokens`` calls it", docstring)
         self.assertIn("the verdict sections", docstring)
         self.assertNotIn("``has_cursor_migration_item`` uses it", docstring)
+        self.assertNotIn("both fail closed", collapsed)  # SEC-T748-08: true for the required section only
+        self.assertNotIn("a row or field that is still", docstring)  # a table row is no field
+        self.assertIn("table rows included, that carries a template placeholder", docstring)
+        self.assertNotIn("Pinned on markdown-it-py 3.0.0 and 4.2.0", self.mod.is_closed_backtick_fence.__doc__)  # -07
+        self.assertIn("Tested on the locked version", " ".join(self.mod.is_closed_backtick_fence.__doc__.split()))
 
 
 class GateWiringTests(_MainRunner):
@@ -1538,7 +1588,7 @@ class HelpTextTests(unittest.TestCase):
             "(SEC-T745-03, SEC-T739-02, SEC-T739-03)", "the gate does not balance tags, so it refuses rather than models",
             "may hold no HTML other than comments, anywhere", "before or after an anchor", "'<details>'",
             "'text <div hidden>'", "'<style>'", "at any depth", "even if the tag closes itself",
-            "<your-project> outside code counts too: put it in a code span", "in five cases, in this order",
+            "<your-project> outside code counts too: put it in a code span", "in six cases, in this order",
             "If it reaches the nesting limit", "so no HTML, anchor or verdict there has tokens",
             "(SEC-T745-01)", "longer than 131072 characters", "the line its block starts on",
             "markdown-it-py 4.2.0", "unclosed '<?' repeated in one paragraph", "took 48 s", "a measurement, not a bound",
@@ -1926,20 +1976,31 @@ class StrictReadTests(_MainRunner):
         reads = {*self.mod.REQUIRED_FILES, *map(Path, self.mod.install_sh_pointers(self.mod.read_strict(
             repo_root() / self.mod.INSTALL_SH)))}
         # T771 (ADR-013 D5.1): install.sh may point at the release document of the release that will ship the
-        # change (the Pi removal message names docs/releases/v11.0.0.md before that document exists). The gate
-        # skips such a pointer for every older tag (pointer_applies), so the tree skips it only while it is
-        # missing AND newer than the newest release document present; at its own tag the gate reads it.
+        # change (the Pi removal message named docs/releases/v11.0.0.md before that document existed). The gate
+        # skips such a pointer for every older tag (pointer_applies); at its own tag the gate reads it. SEC-T773-01:
+        # the tree skips at most one such pointer, and only the next release after the newest document present.
         present = [f.stem for f in (repo_root() / "docs" / "releases").glob("v*.md")
                    if self.mod.tag_core(f.stem) is not None]
         newest = max(present, key=self.mod.tag_core)
+        missing = [relative for relative in reads if not (repo_root() / relative).exists()
+                   and relative.parent == Path("docs/releases") and self.mod.tag_core(relative.stem) is not None]
+        self.assertEqual(_unskippable_pointers(self.mod, [r.stem for r in missing], newest), [])
         for relative in sorted(reads):
-            if not (repo_root() / relative).exists() and relative.parent == Path("docs/releases") \
-                    and self.mod.tag_core(relative.stem) is not None \
-                    and not self.mod.pointer_applies(relative.stem, newest):
+            if relative in missing:
                 continue
             with self.subTest(str(relative)):
                 self.assertEqual(self.mod.read_strict(repo_root() / relative),
                                  (repo_root() / relative).read_text(encoding="utf-8"))
+
+    def test_only_the_single_next_release_pointer_may_be_skipped(self):
+        """SEC-T773-01: the negative cases of the skip above."""
+        for missing, expected in ((["v12.0.1"], []), (["v12.1.0"], []), (["v13.0.0"], []), ([], []),
+                                  (["v13.0.0-rc.1"], []),
+                                  (["v99.0.0"], ["v99.0.0"]), (["v12.2.0"], ["v12.2.0"]), (["v14.0.0"], ["v14.0.0"]),
+                                  (["v12.0.0"], ["v12.0.0"]), (["v11.0.0"], ["v11.0.0"]),
+                                  (["v12.0.1", "v13.0.0"], ["v12.0.1", "v13.0.0"])):
+            with self.subTest(missing):
+                self.assertEqual(_unskippable_pointers(self.mod, missing, "v12.0.0"), expected)
 
     def test_the_script_has_one_way_to_read_a_file(self):
         """SEC-T741-08: an AST walk, so a comment or a docstring cannot trip it and quote style cannot hide a call."""
@@ -2441,3 +2502,142 @@ class PrintableOutputTests(_MainRunner):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class BatchVGateTests(unittest.TestCase):
+    """T883 (plan-184, batch V): one test per finding; each has a mutation recorded in the task report."""
+
+    PENDING, STILL_PENDING, OPENING = (VerdictSectionTokenTests.PENDING, VerdictSectionTokenTests.STILL_PENDING,
+                                       VerdictSectionTokenTests.OPENING)
+    setUp = VerdictSectionTokenTests.setUp
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load()
+
+    problems, in_section = VerdictSectionTokenTests.problems, VerdictSectionTokenTests.in_section
+    gate_errors, unfilled = VerdictSectionTokenTests.gate_errors, VerdictSectionTokenTests.unfilled
+    look_alike = staticmethod(VerdictSectionTokenTests.look_alike)
+    weak_end = staticmethod(VerdictSectionTokenTests.weak_end)
+    stray = staticmethod(VerdictSectionTokenTests.stray)
+
+    FILLED = "## RELEASE VERDICT\n\n- Status: PASS"
+
+    def test_sec_t748_03_a_section_ending_at_a_setext_or_h1_heading_is_a_problem(self):
+        for heading in ("Text\n---", "Text\n===", "# Next"):
+            with self.subTest(heading):
+                self.assertEqual(self.in_section(f"{heading}\n\n{self.PENDING}"), [self.weak_end(7)])
+        self.assertEqual(self.in_section(f"## Next\n\n{self.PENDING}"), [], "a '## ' end stays allowed")
+        self.assertEqual(self.in_section(f"### Next\n\n{self.PENDING}"), [self.STILL_PENDING], "h3 does not end it")
+
+    def test_sec_t748_04_the_heading_line_in_a_tilde_fence_or_unclosed_fence_is_refused(self):
+        for block, line in (("~~~\n## RELEASE VERDICT\n- Status: pending\n~~~", 4),
+                            ("~~~~\n## RELEASE VERDICT\n~~~~", 4)):
+            with self.subTest(block):
+                self.assertEqual(self.problems(f"{block}\n\n{self.FILLED}"), [self.stray(line)])
+        self.assertEqual(self.problems(f"{self.FILLED}\n\n```\n## RELEASE VERDICT\n```"), [], "closed ``` stays code")
+        self.assertEqual(self.problems(f"{self.FILLED}\n\n<!--\n## RELEASE VERDICT\n-->"), [], "a comment is hidden")
+
+    def test_sec_t748_04_a_reference_title_cannot_hide_the_heading_line(self):
+        """On the locked parser the heading ends the reference definition, so the line is a real second heading."""
+        found = self.problems(f'[x]: /u "\n## RELEASE VERDICT\n- Status: pending\n"\n\n{self.FILLED}')
+        self.assertIn("RELEASE VERDICT: 2 top-level headings have this name; the gate reads the first, so keep one", found)
+
+    def test_sec_t748_05_a_look_alike_heading_at_any_level_or_depth_is_a_problem(self):
+        for heading, line in (("## Release Verdict", 7), ("## RELEASE&nbsp;VERDICT", 7), ("## RELEASE VERDICT&#8203;", 7),
+                              ("### RELEASE VERDICT", 7), ("> ## RELEASE VERDICT", 7), ("- ## RELEASE VERDICT", 7),
+                              ("# RELEASE  verdict", 7), ("## RELEASE&#x3164;VERDICT", 7)):
+            with self.subTest(heading):
+                self.assertIn(self.look_alike(line), self.in_section(f"{heading}\n\n{self.PENDING}"))
+        self.assertEqual(self.in_section("## RELEASE VERDICT notes\n\n- x: y"), [], "another name stays allowed")
+
+    def test_sec_t748_06_more_list_markers_are_fields(self):
+        for line in ("> - Status: pending", "1. Status: pending", "+ Status: pending", "2) Status: pending",
+                     "> > * Status: pending"):
+            with self.subTest(line):
+                self.assertEqual(self.in_section(line), [f"RELEASE VERDICT: value is still pending: {line}"])
+
+    def test_sec_t748_06_the_value_is_normalised(self):
+        for value in ("_pending_", "__pending__", "(pending)", "&#112;ending", "&#32;pending", "~~pending~~",
+                      "[pending]", "'pending'", '"pending"'):
+            with self.subTest(value):
+                self.assertEqual(self.in_section(f"- Status: {value}"),
+                                 [f"RELEASE VERDICT: value is still pending: - Status: {value}"])
+        self.assertEqual(self.in_section("- Status: PASS (no item pending)"), [])
+
+    def test_sec_t748_06_an_empty_field_takes_its_sub_items_as_value(self):
+        pending = "RELEASE VERDICT: value is still pending in a sub-item: - Status:"
+        self.assertEqual(self.in_section("- Status:\n  - pending"), [pending])
+        self.assertEqual(self.in_section("- Status:\n  1. _pending_"), [pending])
+        self.assertEqual(self.in_section("- Status:\n  -"), ["RELEASE VERDICT: field has no value: - Status:"])
+        self.assertEqual(self.in_section("- Status:\n- Other: PASS"), ["RELEASE VERDICT: field has no value: - Status:"],
+                         "a sibling is no sub-item")
+        self.assertEqual(self.in_section("- Status:\n  - PASS"), [])
+
+    def test_sec_t748_06_the_field_pattern_stays_linear(self):
+        for line in ("> " * 30000 + "x", "- " + "a" + " " * 60000 + "x", "1" * 60000 + ". x"):
+            start = time.monotonic()
+            self.mod.verdict_placeholder_problems("## RELEASE VERDICT\n\n" + line + "\n")
+            self.assertLess(time.monotonic() - start, 1.0)
+
+    def test_sec_t748_07_a_fence_is_closed_only_if_its_last_line_ends_with_the_markup(self):
+        tokens = self.mod.markdown_tokens("```\nx\n```\n")
+        fence = next(token for token in tokens if token.type == "fence")
+        self.assertTrue(self.mod.is_closed_backtick_fence(fence, ["```", "x", "```", ""]))
+        self.assertFalse(self.mod.is_closed_backtick_fence(fence, ["```", "x", "- Status: pending", ""]),
+                         "numbers that disagree with the source read the fence")
+
+    def test_sec_t748_09_install_and_highlights_must_be_real_headings(self):
+        ok = self.gate_errors(self.FILLED)
+        self.assertEqual(ok, [])
+        for old, new in (("## Install\n", "<!-- ## Install -->\n"), ("## Highlights\n", "`## Highlights`\n"),
+                         ("## Install\n", "### Install\n"), ("## Highlights\n", "> ## Highlights\n")):
+            with self.subTest(new):
+                with mock.patch.object(self, "OPENING", self.OPENING.replace(old, new)):
+                    self.assertIn(f"missing required content in doc.md: {old.strip()}", self.gate_errors(self.FILLED))
+
+    def test_sec_t748_12_a_heading_of_invisible_letters_or_punctuation_does_not_end_a_section(self):
+        for heading in ("&#x2800;\n---", "## &#x3164;", "## &#xFFA0;", "## &#x115F;&#x1160;", "## &#x34F;",
+                        "## &#xFE0F;", "## ---", "## ***"):
+            with self.subTest(heading):
+                self.assertEqual(self.in_section(f"{heading}\n\n{self.PENDING}"), [self.STILL_PENDING])
+        self.assertEqual(self.in_section(f"## Ä1\n\n{self.PENDING}"), [], "a letter or digit is text")
+
+    def test_sec_t751_06_link_pattern_is_linear_and_a_refused_document_is_not_link_checked(self):
+        start = time.monotonic()
+        self.assertEqual(list(self.mod.LINK_RE.finditer("[" * 200000)), [])
+        self.assertLess(time.monotonic() - start, 1.0)
+        for text in ("[a](b)", "[![i](x)](y)", "[a [b] c](d)", "[a\nb](c)"):
+            with self.subTest(text):
+                old = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
+                self.assertEqual([m.group(1) for m in self.mod.LINK_RE.finditer(text)],
+                                 [m.group(1) for m in old.finditer(text)])
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(self.mod, "ROOT", Path(tmp)):
+            (Path(tmp) / "doc.md").write_text("---\n" + self.OPENING, encoding="utf-8")
+            with mock.patch.object(self.mod, "release_brief_path", return_value=Path("doc.md")), \
+                    mock.patch.object(self.mod, "REQUIRED_FILES", []), \
+                    mock.patch.object(self.mod, "check_migration_pointers"), \
+                    mock.patch.object(self.mod, "check_markers"), mock.patch.object(self.mod, "check_line_breaks"), \
+                    mock.patch.object(self.mod, "check_section_requirements"), \
+                    mock.patch.object(self.mod, "check_version_consistency"), \
+                    mock.patch.object(self.mod, "check_links") as links:
+                errors: list[str] = []
+                self.mod.run_checks("v9.0.0", False, errors)
+            links.assert_not_called()
+            self.assertIn("opens with a front matter delimiter", errors[0])
+
+    def test_sec_t751_08_a_code_span_with_a_pipe_and_a_tag_in_a_table_is_refused(self):
+        for table, line in (("| a | `x|<b>` |\n|---|---|", 13), ("a | b\n--- | ---\n`x|<b>` | c", 13),
+                            ("> | `<s|x>` |", 13)):
+            with self.subTest(table):
+                found = self.gate_errors(f"{table}\n\n{self.FILLED}")
+                self.assertEqual(len(found), 1, found)
+                self.assertIn(f"doc.md:{line} the paragraph that starts on this line may be a table", found[0])
+        for allowed in ("| a | `<dir>` |\n|---|---|", "text `x|<b>` text", "| a | `x|y` |"):
+            with self.subTest(allowed):
+                self.assertEqual(self.gate_errors(f"{allowed}\n\n{self.FILLED}"), [])
+
+    def test_sec_t751_09_the_tech_lead_placeholder_fails(self):
+        line = "- **Independent check**: PASS at abc, by <tech-lead | orchestrator | top-level session>"
+        found = self.in_section(line)
+        self.assertTrue(any(p.startswith("RELEASE VERDICT: unfilled placeholder '<tech-lead': ") for p in found), found)

@@ -279,15 +279,24 @@ release-docs-gate:
   variables:
     GIT_STRATEGY: clone
   before_script:
-    # T750 (SEC-T745-05): nothing in this job uses git, so the clone credential goes. On GitLab Runner 19.5.2 it is not in
-    # .git/config: that file includes $CI_PROJECT_DIR.tmp/.gitlab-runner.ext.conf, and the token sits there until the
-    # runner's cleanup stage (shells/abstract.go). The later stages need nothing in that directory: cleanup uses rm -f, and
-    # a cleanup failure only warns (source reading).
+    # T750 (SEC-T745-05): nothing in this job uses git, so the clone credential goes. T884 (TL-T819-05) re-read the source
+    # of GitLab Runner 19.5.3, the dedicated runner's version (shells/abstract.go, shells/bash.go, common/build.go at tag
+    # v19.5.3): the credential is not in .git/config. That file includes .gitlab-runner.ext.conf in the job's temporary
+    # directory, the build directory plus ".tmp" ($CI_PROJECT_DIR.tmp), and that file holds the URL with the job token as
+    # an insteadOf (with FF_GIT_URLS_WITHOUT_TOKENS on: a credential helper that reads CI_JOB_TOKEN) until the cleanup
+    # stage. The cleanup removes it with rm -f, and its `git credential reject` is best-effort, so the removal here
+    # fails neither (source reading; on 19.5.3 only the probe tag of T819 ran it).
+    # SEC-T751-05: the removal and the clone rest on CI_PROJECT_DIR and GIT_STRATEGY as GitLab sets them. A CI/CD
+    # variable of either name at project, group or instance level outranks the job's `variables` (and a predefined
+    # variable ranks lowest), so it would point this at another path, or skip the clone, with the job green. No test
+    # reads those settings: the project, its group and the instance must hold no variable of either name.
     - rm -rf .git "${CI_PROJECT_DIR}.tmp"
+    # T884 (SEC-T768-04): the image's ca-certificates release, before pip reaches PyPI (awk only, no network).
+    - python3 -I scripts/run-allowlisted.py -- sh scripts/check-ca-chains.sh --ca-release
     # An allowlist, so a project variable added later stays out too. The shell that runs these lines keeps its variables.
-    - 'python3 -I scripts/run-allowlisted.py -- python3 -m pip install --no-cache-dir --disable-pip-version-check --quiet --require-hashes --only-binary=:all: -r ci/requirements-release.txt'
+    - 'python3 -I scripts/run-allowlisted.py -- python3 -I -m pip install --no-cache-dir --disable-pip-version-check --quiet --require-hashes --only-binary=:all: -r ci/requirements-release.txt'
   script:
-    - python3 -I scripts/run-allowlisted.py -- python3 scripts/verify-release-docs.py --tag "${CI_COMMIT_TAG}"
+    - python3 -I scripts/run-allowlisted.py -- python3 -I scripts/verify-release-docs.py --tag "${CI_COMMIT_TAG}"
   rules:
     - if: '$CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$/'
 
@@ -304,13 +313,27 @@ main-develop-drift-gate:
     # environment only: the clone credential stays readable in its file, because the fetches need it. --keep CI_JOB_TOKEN
     # is for a runner with FF_GIT_URLS_WITHOUT_TOKENS on, whose credential helper reads that variable; with the flag off,
     # git takes the token from the runner's external config file. Only a tag pipeline proves the fetches.
-    - python3 -I scripts/run-allowlisted.py -- apk add --no-cache 'git~=2.54'
+    # T884 (SEC-T768-04): the CA-chain check of ca-chain-check-python, before the fetches send the token over TLS: the store
+    # as the image ships it (copied before apk add), the release floor, and after apk add the live store, each by chain
+    # and by key (SPKI). Every line is allowlisted, and the check runs openssl under env -i; nothing prints a variable.
+    - python3 -I scripts/run-allowlisted.py -- sh -c 'mkdir /tmp/ca-shipped && cp -L /etc/ssl/cert.pem /tmp/ca-shipped/cert.pem && cp -RL /etc/ssl/certs /tmp/ca-shipped/certs'
+    - python3 -I scripts/run-allowlisted.py -- sh scripts/check-ca-chains.sh --ca-release
+    - python3 -I scripts/run-allowlisted.py -- apk add --no-cache 'openssl~=3.5' 'git~=2.54'
+    - python3 -I scripts/run-allowlisted.py -- sh -c 'cd tests/fixtures/ca-chains && sha256sum -c SHA256SUMS'
+    - python3 -I scripts/run-allowlisted.py -- sh scripts/check-ca-chains.sh --ca-release
+    - python3 -I scripts/run-allowlisted.py -- sh scripts/check-ca-chains.sh --cafile /tmp/ca-shipped/cert.pem tests/fixtures/ca-chains
+    - python3 -I scripts/run-allowlisted.py -- sh scripts/check-ca-chains.sh --capath /tmp/ca-shipped/certs tests/fixtures/ca-chains
+    - python3 -I scripts/run-allowlisted.py -- sh scripts/check-ca-chains.sh --cafile /etc/ssl/cert.pem tests/fixtures/ca-chains
+    - python3 -I scripts/run-allowlisted.py -- sh scripts/check-ca-chains.sh --capath /etc/ssl/certs tests/fixtures/ca-chains
   script:
     - python3 -I scripts/run-allowlisted.py --keep CI_JOB_TOKEN -- git fetch origin main develop --depth=1
     - python3 -I scripts/run-allowlisted.py --keep CI_JOB_TOKEN -- git fetch --force origin 'refs/tags/*:refs/tags/*'
-    - python3 -I scripts/run-allowlisted.py -- python3 scripts/check-main-develop-drift.py --main-ref origin/main --develop-ref origin/develop
+    # T884 (SEC-T751-01): the last line that needs the clone credential is done, so its file goes (see release-docs-gate);
+    # the scripts below read only the local repository, and git ignores an include whose file is missing.
+    - rm -rf "${CI_PROJECT_DIR}.tmp"
+    - python3 -I scripts/run-allowlisted.py -- python3 -I scripts/check-main-develop-drift.py --main-ref origin/main --develop-ref origin/develop
     # T685 (TL-T649-13): the tag must carry the content of main (tree comparison, not SHA ancestry; depth 1 is enough).
-    - python3 -I scripts/run-allowlisted.py -- python3 scripts/check-release-tag-tree.py --tag "${CI_COMMIT_TAG}" --main-ref origin/main
+    - python3 -I scripts/run-allowlisted.py -- python3 -I scripts/check-release-tag-tree.py --tag "${CI_COMMIT_TAG}" --main-ref origin/main
   rules:
     - if: '$CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$/'
 
@@ -330,6 +353,9 @@ release:
     # T686: the release job authenticates with the GitLab job token (CI_JOB_TOKEN, sent only in the JOB-TOKEN header),
     # not with WIKI_TOKEN, which only the wiki-sync job reads. The value is read by name (--token-env); it is never in argv.
     # git and apk get an allowlisted environment without any variable whose value contains the job token (before_script).
+    # T884 (SEC-T768-04): the release floor of the store as this job installed it, before it sends the token. The check by
+    # chain and by key ran in main-develop-drift-gate, same image, same apk add of git; this job needs that gate.
+    - python3 -I scripts/run-allowlisted.py -- sh scripts/check-ca-chains.sh --ca-release
     - python3 scripts/publish-release.py --tag "${CI_COMMIT_TAG}" --api-v4-url "${CI_API_V4_URL}" --expected-host "${CI_SERVER_HOST}" --project-id "${CI_PROJECT_ID}" --token-env CI_JOB_TOKEN --token-header JOB-TOKEN
   artifacts:
     paths:

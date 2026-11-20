@@ -29,10 +29,13 @@ then report an error):
      drift gate the clone credential stays readable in its file. scripts/run-allowlisted.py itself is code that every
      gate command passes through, and no pin reads it: a change to it is for code review, and test_run_allowlisted only
      catches a careless one, such as an exit under CI's variables (SEC-T751-02).
-     SEC-T745-06: none of this binds a project-level `GIT_STRATEGY`. GitLab's order of precedence puts a project variable
-     above `variables` in the job (docs.gitlab.com/ci/variables/, read 2026-11-06; for this name not run), so one would
-     beat the pin with every test green. The project must hold no variable of that name. It holds none today (its only
-     CI/CD variable is WIKI_TOKEN, per the orchestrator, 2026-11-06), and no test reads the project's variables.
+     SEC-T745-06, SEC-T751-05: none of this binds a `GIT_STRATEGY` or a `CI_PROJECT_DIR` set as a CI/CD variable at
+     project, group or instance level. GitLab's order of precedence puts each of those above `variables` in the job, and
+     a predefined variable such as `CI_PROJECT_DIR` lowest of all (docs.gitlab.com/ci/variables/, read 2026-11-06; for
+     these names not run), so one would skip the clone, or point the removal of the clone credential at another path,
+     with every test green. The project, its group and the instance must hold no variable of either name. The project
+     held none on 2026-11-06 (its only CI/CD variable was WIKI_TOKEN, per the orchestrator); the group and the instance
+     are unread, and no test reads any of them: the first-tag rehearsal in CONTRIBUTING.md checks the result in the log.
      The rule on tag jobs (SEC-T741-16) assumes nobody can set a pipeline variable: a person running a pipeline on a tag
      with `CI_COMMIT_BRANCH=x` would make a branch condition true with no file edit. That is this project's setting
      (`ci_pipeline_variables_minimum_override_role` is `no_one_allowed`, read 2026-11-06), and no test reads it.
@@ -43,6 +46,12 @@ then report an error):
      `release-gate` anywhere else in the file (`default`, the file-level variables, hidden jobs, a variable that a
      `tags` entry could expand), a `$` in any other job's `tags`, and an `extends` of a tag job. The runner's own
      settings (protected, run untagged jobs off, `allowed_images`) are the user's, and no test reads them.
+     T884 (SEC-T811-03) refuses the keys `trigger` and `inherit` on every job, hidden ones included, and outside the tag
+     jobs a `tags` that is not a non-empty list of literal strings: a child pipeline, a job that drops `default.tags`, and
+     `tags: []` would each bypass the runner pin. T884 (SEC-T751-01, -07, SEC-T768-04) also pins the removal of the clone
+     credential after the drift gate's last fetch, `python3 -I` on every Python child of the two gates (and
+     `[sys.executable, "-I", ...]` for the gate's version check), and the CA-chain check of ca-chain-check-python in the
+     drift gate, with the release floor (`--ca-release`) in the other two tag jobs.
 """
 from __future__ import annotations
 
@@ -78,16 +87,32 @@ RUN_ALLOWLISTED = "python3 -I scripts/run-allowlisted.py"
 KEEP_JOB_TOKEN = f"{RUN_ALLOWLISTED} --keep CI_JOB_TOKEN --"
 RELEASE_GATE_JOB = "release-docs-gate"
 RELEASE_GATE_REMOVE = 'rm -rf .git "${CI_PROJECT_DIR}.tmp"'
-RELEASE_GATE_INSTALL = (f"{RUN_ALLOWLISTED} -- python3 -m pip install --no-cache-dir --disable-pip-version-check --quiet "
+CA_RELEASE_CHECK = f"{RUN_ALLOWLISTED} -- sh scripts/check-ca-chains.sh --ca-release"  # T884 (SEC-T768-04)
+RELEASE_GATE_INSTALL = (f"{RUN_ALLOWLISTED} -- python3 -I -m pip install --no-cache-dir --disable-pip-version-check --quiet "
                         "--require-hashes --only-binary=:all: -r ci/requirements-release.txt")
-RELEASE_GATE_COMMAND = f'{RUN_ALLOWLISTED} -- python3 scripts/verify-release-docs.py --tag "${{CI_COMMIT_TAG}}"'
+RELEASE_GATE_COMMAND = f'{RUN_ALLOWLISTED} -- python3 -I scripts/verify-release-docs.py --tag "${{CI_COMMIT_TAG}}"'
 RELEASE_GATE_TIMEOUT = "10 minutes"
 DRIFT_GATE_JOB = "main-develop-drift-gate"
-DRIFT_GATE_APK = f"{RUN_ALLOWLISTED} -- apk add --no-cache 'git~=2.54'"
+DRIFT_GATE_APK = f"{RUN_ALLOWLISTED} -- apk add --no-cache 'openssl~=3.5' 'git~=2.54'"
+CA_FIXTURES = "tests/fixtures/ca-chains"
+# T884 (SEC-T768-04): the CA-chain check of ca-chain-check-python, each line allowlisted, before the fetches.
+DRIFT_GATE_CA_BEFORE_APK = [
+    f"{RUN_ALLOWLISTED} -- sh -c 'mkdir /tmp/ca-shipped && cp -L /etc/ssl/cert.pem /tmp/ca-shipped/cert.pem "
+    "&& cp -RL /etc/ssl/certs /tmp/ca-shipped/certs'",
+    CA_RELEASE_CHECK,
+]
+DRIFT_GATE_CA_AFTER_APK = [
+    f"{RUN_ALLOWLISTED} -- sh -c 'cd {CA_FIXTURES} && sha256sum -c SHA256SUMS'",
+    CA_RELEASE_CHECK,
+    *(f"{RUN_ALLOWLISTED} -- sh scripts/check-ca-chains.sh {store} {CA_FIXTURES}"
+      for store in ("--cafile /tmp/ca-shipped/cert.pem", "--capath /tmp/ca-shipped/certs",
+                    "--cafile /etc/ssl/cert.pem", "--capath /etc/ssl/certs")),
+]
+DRIFT_GATE_REMOVE = 'rm -rf "${CI_PROJECT_DIR}.tmp"'  # T884 (SEC-T751-01): right after the last fetch
 DRIFT_GATE_FETCHES = [f"{KEEP_JOB_TOKEN} git fetch origin main develop --depth=1",
                       f"{KEEP_JOB_TOKEN} git fetch --force origin 'refs/tags/*:refs/tags/*'"]
-DRIFT_GATE_DRIFT = f"{RUN_ALLOWLISTED} -- python3 scripts/check-main-develop-drift.py --main-ref origin/main --develop-ref origin/develop"
-DRIFT_GATE_TREE = f'{RUN_ALLOWLISTED} -- python3 scripts/check-release-tag-tree.py --tag "${{CI_COMMIT_TAG}}" --main-ref origin/main'
+DRIFT_GATE_DRIFT = f"{RUN_ALLOWLISTED} -- python3 -I scripts/check-main-develop-drift.py --main-ref origin/main --develop-ref origin/develop"
+DRIFT_GATE_TREE = f'{RUN_ALLOWLISTED} -- python3 -I scripts/check-release-tag-tree.py --tag "${{CI_COMMIT_TAG}}" --main-ref origin/main'
 RELEASE_JOB = "release"
 RELEASE_COMMAND = ('python3 scripts/publish-release.py --tag "${CI_COMMIT_TAG}" --api-v4-url "${CI_API_V4_URL}" '
                    '--expected-host "${CI_SERVER_HOST}" --project-id "${CI_PROJECT_ID}" '
@@ -105,7 +130,8 @@ PINNED_JOBS = {
         "keys": GATE_KEYS | {"variables", "timeout"},
         "exact": {"stage": "release", "tags": RELEASE_GATE_TAGS, "variables": {"GIT_STRATEGY": "clone"},
                   "timeout": RELEASE_GATE_TIMEOUT,
-                  "before_script": [RELEASE_GATE_REMOVE, RELEASE_GATE_INSTALL], "script": [RELEASE_GATE_COMMAND],
+                  "before_script": [RELEASE_GATE_REMOVE, CA_RELEASE_CHECK, RELEASE_GATE_INSTALL],
+                  "script": [RELEASE_GATE_COMMAND],
                   "rules": RELEASE_GATE_RULES},
     },
     DRIFT_GATE_JOB: {
@@ -113,15 +139,15 @@ PINNED_JOBS = {
         "exact": {
             "stage": "release", "tags": RELEASE_GATE_TAGS, "variables": {"GIT_DEPTH": "1", "GIT_STRATEGY": "clone"},
             "rules": RELEASE_GATE_RULES,
-            "before_script": [DRIFT_GATE_APK],
-            "script": [*DRIFT_GATE_FETCHES, DRIFT_GATE_DRIFT, DRIFT_GATE_TREE],
+            "before_script": [*DRIFT_GATE_CA_BEFORE_APK, DRIFT_GATE_APK, *DRIFT_GATE_CA_AFTER_APK],
+            "script": [*DRIFT_GATE_FETCHES, DRIFT_GATE_REMOVE, DRIFT_GATE_DRIFT, DRIFT_GATE_TREE],
         },
     },
     RELEASE_JOB: {
         "keys": GATE_KEYS | {"variables", "needs", "artifacts"},
         "exact": {"stage": "release", "tags": RELEASE_GATE_TAGS, "needs": [RELEASE_GATE_JOB, DRIFT_GATE_JOB],
                   "variables": {"GIT_DEPTH": "0", "GIT_STRATEGY": "clone"},
-                  "script": [RELEASE_COMMAND], "artifacts": RELEASE_ARTIFACTS, "rules": RELEASE_GATE_RULES},
+                  "script": [CA_RELEASE_CHECK, RELEASE_COMMAND], "artifacts": RELEASE_ARTIFACTS, "rules": RELEASE_GATE_RULES},
     },
 }
 # GitLab still honours the global image, services, cache, before_script and after_script (docs: deprecated keywords).
@@ -438,6 +464,24 @@ def runner_tag_problems(ci: dict) -> list[str]:
     return problems
 
 
+def untagged_route_problems(ci: dict) -> list[str]:
+    """T884 (SEC-T811-03): routes around the runner pin that runner_tag_problems does not see. `trigger` starts a child
+    pipeline from a file no pin reads; `inherit` can drop `default.tags`; an empty or non-literal `tags` makes an untagged
+    job. Every job is walked, hidden ones and the tag jobs included; the tag jobs' own `tags` is pinned exactly."""
+    problems = []
+    for name, node in ci.items():
+        if name in FILE_LEVEL_KEYS or not isinstance(node, dict):
+            continue
+        problems += [f"{name}: the key {key} is refused, it routes around the runner pin (SEC-T811-03)"
+                     for key in ("trigger", "inherit") if key in node]
+        if name in PINNED_JOBS or "tags" not in node:
+            continue
+        tags = node["tags"]
+        if not (isinstance(tags, list) and tags and all(isinstance(tag, str) and tag and "$" not in tag for tag in tags)):
+            problems.append(f"{name}: tags must be a non-empty list of literal strings, not {tags!r} (SEC-T811-03)")
+    return problems
+
+
 def ci_images(ci_text: str) -> list[tuple[str, object]]:
     """SEC-T741-04: (where, parsed value) of the `image` of `default`, of every job, and of the file level."""
     ci = yaml.safe_load(ci_text)
@@ -470,6 +514,7 @@ def ci_pin_problems(ci_text: str) -> list[str]:
     problems += file_level_problems(ci)
     problems += tag_runnable_job_problems(ci)
     problems += runner_tag_problems(ci)
+    problems += untagged_route_problems(ci)
     problems += image_pin_problems(ci_text)
     for name in PINNED_JOBS:
         problems += pinned_job_problems(name, ci.get(name))
@@ -1051,7 +1096,7 @@ class TestCiGateCredentialsAndCheckout(_CiMutations):
 
     def test_the_removal_opens_the_before_script(self):
         job = yaml.safe_load(self.ci)[RELEASE_GATE_JOB]
-        self.assertEqual(job["before_script"], [RELEASE_GATE_REMOVE, RELEASE_GATE_INSTALL])
+        self.assertEqual(job["before_script"], [RELEASE_GATE_REMOVE, CA_RELEASE_CHECK, RELEASE_GATE_INSTALL])
 
     def test_mutation_another_form_of_the_removal_is_refused(self):
         for name, old, new in (("dropped", self.REMOVE, ""),
@@ -1085,7 +1130,7 @@ class TestCiGateCredentialsAndCheckout(_CiMutations):
 
     def test_every_line_of_the_docs_gate_runs_without_a_kept_variable(self):
         job = yaml.safe_load(self.ci)[RELEASE_GATE_JOB]
-        for line in (job["before_script"][1], *job["script"]):
+        for line in (*job["before_script"][1:], *job["script"]):
             self.assertTrue(line.startswith(f"{RUN_ALLOWLISTED} -- "), line)
         scripts = "\n".join((ROOT / path).read_text(encoding="utf-8") for path in
                             ("scripts/verify-release-docs.py", "scripts/check-version-consistency.py"))
@@ -1412,3 +1457,168 @@ class TestCiImages(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def gate_lines(ci: dict) -> list[tuple[str, str]]:
+    """(job, line) for every before_script and script line of the two gates."""
+    return [(name, line) for name in (RELEASE_GATE_JOB, DRIFT_GATE_JOB)
+            for field in ("before_script", "script") for line in ci[name][field]]
+
+
+def unwrapped(line: str) -> list[str]:
+    """The command a gate line runs, without the allowlist wrapper and its --keep options."""
+    words = shlex.split(line)
+    if words[:3] == ["python3", "-I", "scripts/run-allowlisted.py"]:
+        words = words[words.index("--") + 1:]
+    return words
+
+
+def python_child_problems(ci: dict) -> list[str]:
+    """SEC-T751-07: every Python child of the two gates runs with -I, so a committed scripts/markdown_it/ or a root pip/
+    cannot shadow the real module. The wrapper itself already runs with -I."""
+    return [f"{job}: a Python child without -I: {line} (SEC-T751-07)" for job, line in gate_lines(ci)
+            if (words := unwrapped(line)) and words[0].startswith("python") and words[1:2] != ["-I"]]
+
+
+VERSION_CHECK_CALL = re.compile(r"subprocess\.run\(\s*\[sys\.executable, \"-I\", str\(script\)\]")
+
+
+class TestCiT884GateHardening(_CiMutations):
+    """T884 (plan-184, batch V): SEC-T751-01, SEC-T751-07, SEC-T811-03 and SEC-T768-04. No merge request pipeline runs
+    the tag jobs, so these pin the file; the first tag pipeline after this change is the runtime proof."""
+
+    REMOVE = f"    - {DRIFT_GATE_REMOVE}\n"
+    CA_RELEASE = f"    - {CA_RELEASE_CHECK}\n"
+    BRANCH_RULES = "  script: [a]\n  rules:\n    - if: $CI_COMMIT_BRANCH\n"
+
+    def test_the_pipeline_as_it_is_passes(self):
+        self.assertEqual(ci_pin_problems(self.ci), [])
+        self.assertEqual(python_child_problems(yaml.safe_load(self.ci)), [])
+
+    # SEC-T751-01
+    def test_the_drift_gate_removes_the_credential_right_after_the_last_fetch(self):
+        script = yaml.safe_load(self.ci)[DRIFT_GATE_JOB]["script"]
+        self.assertEqual(script.index(DRIFT_GATE_REMOVE), script.index(DRIFT_GATE_FETCHES[-1]) + 1)
+        self.assertNotIn("--keep", " ".join(script[script.index(DRIFT_GATE_REMOVE):]))
+
+    def test_mutation_another_form_or_place_of_the_drift_gate_removal_is_refused(self):
+        last_fetch = f"    - {DRIFT_GATE_FETCHES[-1]}\n"
+        for name, old, new in (("dropped", self.REMOVE, ""),
+                               ("only a comment", self.REMOVE, f"    # {DRIFT_GATE_REMOVE}\n"),
+                               ("softened", self.REMOVE, self.REMOVE.replace("\n", " || true\n")),
+                               ("another path", self.REMOVE, '    - rm -rf "${CI_PROJECT_DIR}.tmp/x"\n')):
+            with self.subTest(name):
+                self._assert_ci_refused(self._mutated_job(old, new, DRIFT_GATE_JOB), "does not run the gate")
+        moved = self._in_job(self.REMOVE, "", DRIFT_GATE_JOB)
+        self.assertEqual(moved.count(last_fetch), 1)
+        self._assert_ci_refused(moved.replace(last_fetch, self.REMOVE + last_fetch), "does not run the gate")
+
+    def test_the_drift_gate_removal_leaves_local_git_working_in_a_shell(self):
+        """Synthetic layout of GitLab Runner 19.5.3 (shells/abstract.go): .git/config includes the external config in
+        $CI_PROJECT_DIR.tmp. After the removal the file is gone and local git still runs (git skips a missing include)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp) / "project"
+            subprocess.run(["git", "init", "-q", str(project)], check=True, timeout=60)
+            ext = Path(f"{project}.tmp") / ".gitlab-runner.ext.conf"
+            ext.parent.mkdir()
+            ext.write_text('[url "https://gitlab-ci-token:synthetic@example.invalid/"]\n'
+                           '\tinsteadOf = https://example.invalid/\n', encoding="utf-8")
+            subprocess.run(["git", "config", "--file", ".git/config", "include.path", str(ext)], cwd=project, check=True, timeout=60)
+            env = {"PATH": "/usr/bin:/bin", "CI_PROJECT_DIR": str(project), "HOME": tmp, "GIT_CONFIG_NOSYSTEM": "1"}
+            for _ in range(2):
+                run = subprocess.run(["sh", "-ec", f"{DRIFT_GATE_REMOVE}; git rev-parse --git-dir"], cwd=project, env=env,
+                                     capture_output=True, text=True, timeout=60, check=False)
+                self.assertEqual(run.returncode, 0, run.stderr)
+                self.assertFalse(ext.parent.exists())
+
+    # SEC-T751-07
+    def test_mutation_a_python_child_without_isolation_is_refused(self):
+        ci = yaml.safe_load(self.ci)
+        children = [(job, line) for job, line in gate_lines(ci) if unwrapped(line)[0] == "python3"]
+        self.assertEqual(len(children), 4)  # pip, the docs gate, the drift script, the tree script
+        for job, line in children:
+            with self.subTest(line=line):
+                bad = yaml.safe_load(self.ci)
+                field = "before_script" if line in bad[job]["before_script"] else "script"
+                bad[job][field] = [x.replace("-- python3 -I ", "-- python3 ") if x == line else x for x in bad[job][field]]
+                self.assertNotEqual(bad, ci)
+                self.assertTrue(python_child_problems(bad))
+                self.assertTrue(pinned_job_problems(job, bad[job]))
+
+    def test_the_version_check_runs_isolated_and_no_child_imports_a_sibling(self):
+        import ast
+        gate = (ROOT / "scripts/verify-release-docs.py").read_text(encoding="utf-8")
+        self.assertRegex(gate, VERSION_CHECK_CALL)
+        self.assertNotRegex(gate.replace('sys.executable, "-I", str(script)', "sys.executable, str(script)"),
+                            VERSION_CHECK_CALL)  # mutation: the old call is refused
+        siblings = {p.stem.replace("-", "_") for p in (ROOT / "scripts").glob("*.py")} | {
+            p.name for p in (ROOT / "scripts").iterdir() if p.is_dir()}
+        for script in ("verify-release-docs.py", "check-version-consistency.py", "check-main-develop-drift.py",
+                       "check-release-tag-tree.py", "run-allowlisted.py"):
+            tree = ast.parse((ROOT / "scripts" / script).read_text(encoding="utf-8"))
+            imported = {alias.name.split(".")[0] for node in ast.walk(tree) if isinstance(node, ast.Import) for alias in node.names}
+            imported |= {node.module.split(".")[0] for node in ast.walk(tree)
+                         if isinstance(node, ast.ImportFrom) and node.module and not node.level}
+            self.assertFalse(any(isinstance(n, ast.ImportFrom) and n.level for n in ast.walk(tree)), script)
+            self.assertEqual(imported & siblings, set(), script)  # -I drops scripts/ from sys.path
+
+    # SEC-T811-03
+    def test_mutation_a_route_around_the_runner_pin_is_refused(self):
+        for name, job in (("trigger", "  trigger:\n    include: child.yml\n" + self.BRANCH_RULES),
+                          ("hidden trigger", None),
+                          ("inherit default false", "  inherit:\n    default: false\n" + self.BRANCH_RULES),
+                          ("inherit list without tags", "  inherit:\n    default: [image]\n" + self.BRANCH_RULES),
+                          ("empty tags", "  tags: []\n" + self.BRANCH_RULES),
+                          ("empty tag", '  tags: [""]\n' + self.BRANCH_RULES),
+                          ("tags as a string", "  tags: docker\n" + self.BRANCH_RULES),
+                          ("tags as a mapping", "  tags: {a: b}\n" + self.BRANCH_RULES)):
+            with self.subTest(name):
+                bad = (self.ci + "\n.hidden:\n  trigger:\n    include: child.yml\n" if job is None
+                       else self.ci + f"\nlater-job:\n{job}")
+                self._assert_ci_refused(bad, "SEC-T811-03")
+
+    def test_mutation_inherit_or_trigger_on_a_tag_job_is_refused(self):
+        for key in ("  inherit:\n    default: false\n", "  trigger:\n    include: child.yml\n"):
+            with self.subTest(key):
+                self._assert_ci_refused(self._in_job("  stage: release\n", "  stage: release\n" + key, RELEASE_JOB),
+                                        "SEC-T811-03")
+
+    def test_a_job_with_literal_tags_is_left_alone(self):
+        bad = self.ci + "\nlater-job:\n  tags: [dind]\n" + self.BRANCH_RULES
+        self.assertEqual(ci_pin_problems(bad), [])
+
+    # SEC-T768-04
+    def test_the_drift_gate_runs_the_ca_checks_of_the_python_mr_job_before_the_fetches(self):
+        ci = yaml.safe_load(self.ci)
+        mr = [line for line in ci["ca-chain-check-python"]["before_script"] + ci["ca-chain-check-python"]["script"]
+              if line.startswith("sh scripts/check-ca-chains.sh")]
+        gate = ci[DRIFT_GATE_JOB]["before_script"]
+        self.assertEqual(sorted(" ".join(unwrapped(line)) for line in gate if "check-ca-chains.sh" in line), sorted(mr))
+        self.assertLess(gate.index(DRIFT_GATE_CA_BEFORE_APK[-1]), gate.index(DRIFT_GATE_APK))
+        self.assertIn(CA_RELEASE_CHECK, ci[RELEASE_GATE_JOB]["before_script"][:2])
+        self.assertEqual(ci[RELEASE_JOB]["script"][0], CA_RELEASE_CHECK)
+        for job in PINNED_JOBS:
+            text = re.search(rf"(?ms)^{re.escape(job)}:\n.*?(?=^\S|\Z)", self.ci)[0]
+            self.assertNotRegex(text, r"set -x|set -o xtrace", job)
+        for line in [*DRIFT_GATE_CA_BEFORE_APK, *DRIFT_GATE_CA_AFTER_APK]:
+            self.assertNotIn("$", line)  # no variable is expanded, let alone printed
+
+    def test_mutation_a_ca_check_dropped_or_moved_is_refused(self):
+        spki_live = f"    - {DRIFT_GATE_CA_AFTER_APK[-2]}\n"
+        first_fetch = f"    - {DRIFT_GATE_FETCHES[0]}\n"
+        for name, job, old, new in (
+                ("no release floor in the docs gate", RELEASE_GATE_JOB, self.CA_RELEASE, ""),
+                ("no release floor in release", RELEASE_JOB, self.CA_RELEASE, ""),
+                ("no SPKI check of the live store", DRIFT_GATE_JOB, spki_live, ""),
+                ("the floor without the allowlist", DRIFT_GATE_JOB, f"    - {DRIFT_GATE_CA_BEFORE_APK[0]}\n{self.CA_RELEASE}",
+                 f"    - {DRIFT_GATE_CA_BEFORE_APK[0]}\n    - sh scripts/check-ca-chains.sh --ca-release\n"),
+                ("the live check after the fetches", DRIFT_GATE_JOB, None, None)):
+            with self.subTest(name):
+                if old is None:
+                    bad = self._in_job(spki_live, "", job)
+                    bad_lines = bad.split("\n")
+                    index = bad_lines.index(first_fetch.rstrip("\n"))
+                    bad = "\n".join(bad_lines[:index + 1] + [spki_live.rstrip("\n")] + bad_lines[index + 1:])
+                    self._assert_ci_refused(bad, "exactly this before_script")
+                else:
+                    self._assert_ci_refused(self._mutated_job(old, new, job), job)

@@ -291,6 +291,18 @@ First-tag rehearsal checklist (the user runs it on the first real tag pipeline):
 - [ ] `main-develop-drift-gate` ran `apk`, both fetches and both scripts through
       `scripts/run-allowlisted.py`, and the fetches worked with `--keep CI_JOB_TOKEN`. If a fetch failed,
       report the log line.
+- [ ] T884 (SEC-T768-04): `main-develop-drift-gate` ran the CA-chain check before its fetches, and each
+      store run ended in `RESULT: PASS` (four runs, as in `ca-chain-check-python`); `--ca-release` passed in all
+      three tag jobs.
+- [ ] T884 (SEC-T751-01): `main-develop-drift-gate` ran `rm -rf "${CI_PROJECT_DIR}.tmp"` after the second
+      fetch, and both scripts after it passed (local git needs nothing in that directory).
+- [ ] T884 (SEC-T751-07): pip and the three gate scripts ran as `python3 -I`, and the version check
+      inside `scripts/verify-release-docs.py` reported no import error.
+- [ ] SEC-T751-05: the job log of `release-docs-gate` shows the clone in `CI_PROJECT_DIR` as GitLab sets
+      it (the checkout lines of the log name that path, and `GIT_STRATEGY` is
+      `clone`). No CI/CD variable named `GIT_STRATEGY` or `CI_PROJECT_DIR` may exist at project, group or
+      instance level: such a variable outranks the job's own `variables`, and no test reads those settings.
+      Check the three settings pages and write down that none holds either name.
 
 ### Drift detection
 
