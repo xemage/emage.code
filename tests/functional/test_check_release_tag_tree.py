@@ -423,7 +423,7 @@ class TestCiWiring(unittest.TestCase):
         fetch_main = body.index("git fetch origin main develop --depth=1")
         fetch_tags = body.index("git fetch --force origin 'refs/tags/*:refs/tags/*'")
         drift = body.index("scripts/check-main-develop-drift.py")
-        tree = body.index('python3 scripts/check-release-tag-tree.py --tag "${CI_COMMIT_TAG}" --main-ref origin/main')
+        tree = body.index('python3 -I scripts/check-release-tag-tree.py --tag "${CI_COMMIT_TAG}" --main-ref origin/main')
         self.assertLess(fetch_main, tree)
         self.assertLess(fetch_tags, tree)
         self.assertLess(drift, tree)
