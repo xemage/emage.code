@@ -1,26 +1,36 @@
 ---
 name: "Context Retriever"
 description: "Use when an agent session needs to recall prior knowledge, decisions, or code context from the persistent memory vault (general/project/shared scopes) before or during a task — read-only hybrid semantic+lexical+structural retrieval over T452's derived index, scoped to the calling session's own project and platform."
-tools:
-  context-retriever_*: false
-  read: true
-  search: true
-  context-retriever_retrieve: true
-  gitlab_*: false
-  playwright_*: false
-  playwright_browser_run_code_unsafe: false
-  playwright_browser_evaluate: false
-  playwright_browser_file_upload: false
-  playwright_browser_drag: false
-  playwright_browser_drop: false
-  playwright_browser_network_request: false
-  memory_*: false
-  sequential-thinking_*: false
-  security-audit_*: false
-  poc-security-audit_*: false
-  filesystem_*: false
-  git_*: false
-  supabase_*: false
+permission:
+  context-retriever_*: deny
+  context-retriever_retrieve: allow
+  gitlab_*: deny
+  playwright_*: deny
+  playwright_browser_run_code_unsafe: deny
+  playwright_browser_evaluate: deny
+  playwright_browser_file_upload: deny
+  playwright_browser_drag: deny
+  playwright_browser_drop: deny
+  playwright_browser_network_request: deny
+  memory_*: deny
+  sequential-thinking_*: deny
+  security-audit_*: deny
+  poc-security-audit_*: deny
+  filesystem_*: deny
+  git_*: deny
+  supabase_*: deny
+  bash: deny
+  edit: deny
+  webfetch: deny
+  websearch: deny
+  task: deny
+  read:
+    "gitlab-mcp": deny
+    "gitlab-mcp/*": deny
+    "*/gitlab-mcp": deny
+    "*/gitlab-mcp/*": deny
+  external_directory:
+    "*/gitlab-mcp/*": deny
 ---
 
 # Context Retriever

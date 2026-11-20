@@ -10,3 +10,5 @@ ec4ffa1ad0ac88081314b7aaffef6a91f97cd57291bb5ba686c5415f5eb4f6b6 EM OV CS CA - G
 8d417db2dd8bf5e3084d1e3f196d583849d81bdd4c00c70b9d39369e96b8c782 emSign ECC Root CA - G3
 0a6c2b2ca5b364207954171987ac9d2178561569d8205457e77ca90c32ede282 emSign Root CS CA - G3
 c619e4780ed8e0abeda24ad732567de4383a7ea941338f6d1a7d1b49ac792fe9 emSign Root TLS CA - G3
+413d8778e0d9f585310779e0bbdaae2b4265a17758b972cc48dcc344e20ccd74 EM DV TLS CA - G3B rollover key (self-issued, rollover--dv-g3b-aaa-noct-rollover.chain; not in the JSON)
+e13e260f4ee5fcb7858ee8af20c9a85797f936a48b4aa70eb9661a9bc63fdadb EM DV TLS CA - G3B rollover key (self-issued, rollover--dv-g3b-noct-rollover.chain; not in the JSON)

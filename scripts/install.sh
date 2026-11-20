@@ -904,6 +904,18 @@ make_way_for_source() {
 
 # Merge source tree into dest without nesting when dest already exists.
 # `cp -r src dest` creates dest/srcname when dest is present; this copies contents.
+# rsync runs with --checksum here and in sync_tree_into (T828, TD-T774-01 / QA-T818-01):
+# without it rsync's quick check skips a source file whose size and mtime equal dest's,
+# so a changed file of the same size (a one-digit version-pin bump in a lock file) stayed
+# stale when the target's copy carried an mtime in the same second. With --checksum a
+# file of equal size is compared by content and copied when it differs; a file of
+# another size is copied as before, and an identical one is not rewritten (rsync -a only
+# sets its mtime). The cost: rsync's sender checksums every regular source file and
+# the receiver its equal-size copies, a few hundred small files per tree. (The
+# installer's --dry-run prints the rsync command only; rsync does not run.)
+# --ignore-times was the alternative: it rewrites every file on every run.
+# The cp fallbacks have no such skip: `cp -r` always writes.
+# merge_tree_preserve_existing (--ignore-existing) never overwrites, so it needs neither.
 # $3.. (optional, variadic): excluded names -- see "Excluded paths" above for
 # their exact meaning, which is rsync's. The installer neither writes nor
 # deletes a path so named, at any depth, for two distinct reasons that share one
@@ -923,7 +935,7 @@ copy_tree_into() {
   if same_tree "$src" "$dest"; then return 0; fi
   run mkdir -p "$dest"
   if command -v rsync >/dev/null 2>&1; then
-    local rsync_args=(-a --chmod=go-w)
+    local rsync_args=(-a --checksum --chmod=go-w)
     local e
     for e in ${excludes[@]+"${excludes[@]}"}; do
       if [[ -n "$e" ]]; then rsync_args+=(--exclude="$e"); fi
@@ -973,7 +985,7 @@ sync_tree_into() {
   if same_tree "$src" "$dest"; then return 0; fi
   if command -v rsync >/dev/null 2>&1; then
     run mkdir -p "$dest"
-    local rsync_args=(-a --chmod=go-w --delete)
+    local rsync_args=(-a --checksum --chmod=go-w --delete)
     for e in ${excludes[@]+"${excludes[@]}"}; do
       if [[ -n "$e" ]]; then
         rsync_args+=(--exclude="$e")
@@ -1743,7 +1755,9 @@ print_memory_index_notice() {
   echo "  including --shared-source-root for cross-repo shared-scope indexing. The server"
   echo "  reads the index from that directory, with <org>-<repo> in lower case and taken"
   echo "  from this workspace's git remote 'origin'; without that remote it does not start."
-  echo "  --project-id must be that same lower-case <org>/<repo>; the build refuses any other)"
+  # T828 (QA-T818-03): true since the build derives the id from the 'origin' of --own-repo-root and compares.
+  echo "  --project-id must be that same lower-case <org>/<repo>; the build derives it from"
+  echo "  the 'origin' of --own-repo-root and refuses any other, or any id without that remote)"
 }
 
 if [[ "$PROJECTIONS_ONLY" -eq 1 ]]; then

@@ -2,12 +2,13 @@
 
 **ID:** T822
 **Owner:** orchestrator
-**Status:** in_progress
+**Status:** done
 **Priority:** P0
 **Tier:** standard
 **Depends on:** —
 **Affects:** —
 **Created:** 2026-11-13
+**Completed:** 2026-11-14
 **Based on:**
 - `docs/plans/plan-161-release-v11.md` (§ Task Decomposition item 10)
 - `docs/releases/v11.0.0.md` (§ RELEASE VERDICT, Conditions: T820 C-2, C-3, C-4; T818 C3)

@@ -2,18 +2,22 @@
 
 T658 added a server-level denial (a top-level `permission` of `opencode.json`). Opencode applies the
 LAST matching rule and an agent's own rules come after the global ones, so a global deny does not
-survive an allow written later in an agent. A per-agent `false` entry (`tools: { x: false }` in the
-agent file) is the form that does. `sync.mjs` now writes, into EVERY Opencode agent file:
+survive an allow written later in an agent. A per-agent deny entry in the agent file is the form that
+does. T663 wrote it as `tools: { x: false }`; since T836 (SEC-T663-02) the generator writes the same
+entries, in the same order, as the documented agent `permission:` map (`allow` for a former `true`,
+`deny` for a former `false`); Opencode documents a legacy `tools` `false` as equivalent to a `deny`
+permission. The deprecated `tools:` map is no longer written. `sync.mjs` writes, into EVERY Opencode
+agent file:
 
-* `playwright_<tool>: false` for each `denyTools` entry of the `playwright` server (six names);
-* `<server>_*: false` for each agent that holds no token of a server, for EVERY server the manifest
+* `playwright_<tool>: deny` for each `denyTools` entry of the `playwright` server (six names);
+* `<server>_*: deny` for each agent that holds no token of a server, for EVERY server the manifest
   carries (`denyUnlessGranted: true` on every `servers.yaml` entry, SEC-T663-01);
-* `<server>_*: false` FIRST in the map for an agent that holds only NAMED tools of a server (for
+* `<server>_*: deny` FIRST in the map for an agent that holds only NAMED tools of a server (for
   example qa-engineer and scrum-master for `gitlab`), so that file order makes its named allows the
   only tools of that server it can call;
 * nothing new for an agent that holds the whole server.
 
-The other denies are written LAST in the `tools` map. Mechanism, sources and verified/unverified status:
+The other denies are written LAST in the `permission` map. Mechanism, sources and verified/unverified status:
 docs/artifacts/mcp-agent-denials-v1.md. This file pins:
 
 - the single source (servers.yaml flags) and the manifest opt-in;
@@ -107,6 +111,69 @@ def wildcard(server: str) -> str:
 
 
 SIX_FALSE = [f"playwright_{t}" for t in DENIED]
+# T841 (SEC-T840-01): generic source name -> Opencode permission keys denied for an agent that does not hold
+# the generic name (Opencode allows these tools by default). Pinned here independently of the manifest.
+# T843 (SEC-T842-01): no `agent` -> `task: deny` (1.x key for launching subagents; V2 calls it `subagent`).
+BUILTIN_DENY_UNLESS_GRANTED = {"execute": ["bash"], "edit": ["edit"], "web": ["webfetch", "websearch"],
+                              "agent": ["task"]}
+BUILTIN_KEYS = {k for keys in BUILTIN_DENY_UNLESS_GRANTED.values() for k in keys}
+
+
+# T855 (SEC-T842-02): the default token directory is ${XDG_RUNTIME_DIR:-/dev/shm}/gitlab-mcp/ (PREREQUISITES).
+# Opencode 1.19.2 asks `read` with the path relative to the worktree, 1.0.224 with the absolute path, and its
+# `*` matches `/` (util/wildcard.ts), so these four cover both directories in both forms. Pinned by hand.
+READ_DENY_PATTERNS = ["gitlab-mcp", "gitlab-mcp/*", "*/gitlab-mcp", "*/gitlab-mcp/*"]
+# T861 (SEC-T856-02): Opencode 1.19.2 asks `external_directory` with the absolute `<dir>/*` of the target.
+EXTDIR_DENY_PATTERNS = ["*/gitlab-mcp/*"]
+# T855 (SEC-T844-01): Opencode 1.19.2's own agents (agent/agent.ts), never to be allowed as a task target.
+OPENCODE_BUILTIN_AGENTS = ["build", "plan", "general", "explore", "compaction", "title", "summary"]
+
+
+def expected_task_map(slug: str) -> list[tuple[str, str]]:
+    """`"*": deny`, then one allow per entry of the source `agents:` list, by that agent's source `name`
+    (1.19.2 keys a file agent by its frontmatter name; `debug agent tech-lead` reports "not found")."""
+    fm, _ = parse_file(SOURCE_AGENTS / f"{slug}.md")
+    names = [parse_file(SOURCE_AGENTS / f"{a}.md")[0]["name"] for a in fm.get("agents", [])]
+    return [("*", "deny")] + [(n, "allow") for n in names]
+
+
+def pmatch(text: str, pattern: str) -> bool:
+    """util/wildcard.ts `match` (Linux): escape, `*` -> `.*`, `?` -> `.`, trailing " *" optional, anchored, dotall."""
+    esc = re.sub(r"[.+^${}()|\[\]\\]", lambda m: "\\" + m.group(0), pattern).replace("*", ".*").replace("?", ".")
+    if esc.endswith(" .*"):
+        esc = esc[:-3] + "( .*)?"
+    return re.fullmatch(esc, text, re.S) is not None
+
+
+def pattern_rules(permission) -> list[tuple[str, str, str]]:
+    """permission/index.ts `fromConfig`: a string value is one rule with pattern `*`, a map one rule per entry."""
+    if isinstance(permission, str):
+        return [("*", permission, "*")]
+    out = []
+    for key, value in (permission or {}).items():
+        if isinstance(value, str):
+            out.append((key, value, "*"))
+        else:
+            out.extend((key, action, pat) for pat, action in value.items())
+    return out
+
+
+def pattern_effect(permission: str, pattern: str, *rulesets) -> str:
+    """permission/index.ts `evaluate`: the last rule matching both permission and pattern; none -> ask."""
+    rules = [r for rs in rulesets for r in rs]
+    for perm, action, pat in reversed(rules):
+        if pmatch(permission, perm) and pmatch(pattern, pat):
+            return action
+    return "ask"
+
+
+# The 1.19.2 built-in `*` and `read` defaults (evidence v2/v3 raw files, rules 0 and 8-11).
+OPENCODE_READ_DEFAULTS = [("*", "allow", "*"), ("read", "allow", "*"), ("read", "ask", "*.env"),
+                          ("read", "ask", "*.env.*"), ("read", "allow", "*.env.example")]
+
+
+def expected_builtin_denies(source: list[str]) -> list[tuple[str, str]]:
+    return [(k, "deny") for g, keys in BUILTIN_DENY_UNLESS_GRANTED.items() if g not in source for k in keys]
 
 # A sample of GitLab tools, write and read, by their registered Opencode names (`gitlab_<tool>`).
 # `execute_graphql` and `gitlab_api_request` are in the vendor's readOnlyTools set although they can
@@ -125,17 +192,22 @@ OPENCODE_DEFAULTS = DEFAULT_VARIANTS[0]
 
 
 def raw_tools_lines(path: Path) -> list[tuple[str, str]]:
-    """The `tools:` block of an agent file as ordered (key, value) text pairs, duplicates preserved."""
+    """The `permission:` block of an agent file as ordered (key, value) text pairs, duplicates preserved.
+
+    T836 (SEC-T663-02): the generator writes the agent's grants and denies as a `permission:` map
+    (`allow`/`deny`); the deprecated `tools:` map must not come back."""
     text = path.read_text(encoding="utf-8")
     block = re.match(r"^---\n(.*?)\n---\n", text, re.S).group(1).split("\n")
     pairs: list[tuple[str, str]] = []
     inside = False
     for line in block:
         if line == "tools:":
+            raise AssertionError(f"{path}: the deprecated Opencode `tools:` map is written again")
+        if line == "permission:":
             inside = True
             continue
         if inside:
-            m = re.fullmatch(r"  (\S+): (true|false)", line)
+            m = re.fullmatch(r"  (\S+): (allow|deny)", line)
             if not m:
                 break
             pairs.append((m.group(1), m.group(2)))
@@ -214,19 +286,20 @@ class SourceTests(unittest.TestCase):
 class EmittedPerAgentClassTests(unittest.TestCase):
     """Literal examples of what each class of agent receives."""
 
-    def tools(self, slug: str) -> dict[str, bool]:
+    def tools(self, slug: str) -> dict[str, str]:
         fm, _ = parse_file(OPENCODE_AGENTS / f"{slug}.md")
-        return fm["tools"]
+        self.assertNotIn("tools", fm, "T836: the deprecated `tools:` map is not written")
+        return fm["permission"]
 
     def falses(self, slug: str) -> list[str]:
-        return [k for k, v in self.tools(slug).items() if v is False]
+        return [k for k, v in self.tools(slug).items() if v == "deny"]
 
     def test_no_agent_holds_the_whole_gitlab_server_so_none_gets_the_allow_all_entry(self):
         """T667: `gitlab_*: true` appears in no generated agent file; every holder has the deny first."""
         self.assertEqual(source_holders("gitlab")[0], set())
         for path in sorted(OPENCODE_AGENTS.glob("*.md")):
             with self.subTest(agent=path.stem):
-                self.assertIsNot(self.tools(path.stem).get("gitlab_*"), True)
+                self.assertNotEqual(self.tools(path.stem).get("gitlab_*"), "allow")
         for slug in sorted(GITLAB_NAMED_SUBSET - PLAYWRIGHT_HOLDERS):
             with self.subTest(agent=slug):
                 self.assertEqual([k for k in self.falses(slug) if k.startswith("playwright_")],
@@ -236,7 +309,7 @@ class EmittedPerAgentClassTests(unittest.TestCase):
         """The whole-server class still exists for memory and sequential-thinking (orchestrators)."""
         for slug in ("orchestrator", "poc-orchestrator"):
             with self.subTest(agent=slug):
-                self.assertTrue(self.tools(slug)["memory_*"] is True)
+                self.assertEqual(self.tools(slug)["memory_*"], "allow")
                 self.assertNotIn("memory_*", self.falses(slug))
 
     def test_a_named_subset_gitlab_holder_gets_the_wildcard_first_then_its_named_allows(self):
@@ -245,10 +318,10 @@ class EmittedPerAgentClassTests(unittest.TestCase):
                 tools = self.tools(slug)
                 keys = list(tools)
                 self.assertIn("gitlab_*", keys[:3], "the wildcard deny is in the leading deny block")
-                self.assertFalse(tools["gitlab_*"])
+                self.assertEqual(tools["gitlab_*"], "deny")
                 named = [k for k in keys if k.startswith("gitlab_") and k != "gitlab_*"]
                 self.assertGreaterEqual(len(named), 6)
-                self.assertTrue(all(tools[k] is True for k in named))
+                self.assertTrue(all(tools[k] == "allow" for k in named))
                 self.assertLess(keys.index("gitlab_*"), min(keys.index(k) for k in named))
 
     def test_a_non_holder_of_everything_gets_every_server_wildcard_then_the_six(self):
@@ -263,8 +336,8 @@ class EmittedPerAgentClassTests(unittest.TestCase):
                 expected += SIX_FALSE
         for slug in slugs:
             with self.subTest(agent=slug):
-                self.assertEqual(self.falses(slug), expected)
-                self.assertEqual([k for k, v in self.tools(slug).items() if v is True and "_" in k], [])
+                self.assertEqual([k for k in self.falses(slug) if k not in BUILTIN_KEYS], expected)
+                self.assertEqual([k for k, v in self.tools(slug).items() if v == "allow" and "_" in k], [])
 
     def test_the_24_agents_without_a_playwright_tool_get_the_wildcard_and_the_six(self):
         slugs = sorted(p.stem for p in OPENCODE_AGENTS.glob("*.md") if p.stem not in PLAYWRIGHT_HOLDERS)
@@ -281,14 +354,14 @@ class EmittedPerAgentClassTests(unittest.TestCase):
             with self.subTest(agent=slug):
                 tools = self.tools(slug)
                 keys = list(tools)
-                allowed = [k for k, v in tools.items() if v is True and k.startswith("playwright_")]
+                allowed = [k for k, v in tools.items() if v == "allow" and k.startswith("playwright_")]
                 self.assertGreaterEqual(len(allowed), 12)
                 self.assertIn("playwright_browser_click", allowed)
-                self.assertFalse(tools["playwright_*"])
+                self.assertEqual(tools["playwright_*"], "deny")
                 self.assertLess(keys.index("playwright_*"), min(keys.index(k) for k in allowed))
-                self.assertEqual([k for k, v in tools.items() if v is False and k.startswith("playwright_")
+                self.assertEqual([k for k, v in tools.items() if v == "deny" and k.startswith("playwright_")
                                   and k != "playwright_*"], SIX_FALSE)
-                trues = [i for i, k in enumerate(keys) if tools[k] is True]
+                trues = [i for i, k in enumerate(keys) if tools[k] == "allow"]
                 self.assertEqual([k for k in keys if k in SIX_FALSE], SIX_FALSE)
                 self.assertGreater(min(keys.index(k) for k in SIX_FALSE), max(trues))
 
@@ -296,23 +369,25 @@ class EmittedPerAgentClassTests(unittest.TestCase):
         text = (OPENCODE_AGENTS / "tech-lead.md").read_text(encoding="utf-8")
         head = text.split("\n---\n", 1)[0]
         self.assertTrue(head.endswith(
-            "  web: true\n"
-            "  gitlab_*: false\n"
-            "  playwright_*: false\n"
-            "  playwright_browser_run_code_unsafe: false\n"
-            "  playwright_browser_evaluate: false\n"
-            "  playwright_browser_file_upload: false\n"
-            "  playwright_browser_drag: false\n"
-            "  playwright_browser_drop: false\n"
-            "  playwright_browser_network_request: false\n"
-            "  memory_*: false\n"
-            "  sequential-thinking_*: false\n"
-            "  context-retriever_*: false\n"
-            "  security-audit_*: false\n"
-            "  poc-security-audit_*: false\n"
-            "  filesystem_*: false\n"
-            "  git_*: false\n"
-            "  supabase_*: false"), head)
+            "permission:\n"
+            "  edit: allow\n"
+            "  gitlab_*: deny\n"
+            "  playwright_*: deny\n"
+            "  playwright_browser_run_code_unsafe: deny\n"
+            "  playwright_browser_evaluate: deny\n"
+            "  playwright_browser_file_upload: deny\n"
+            "  playwright_browser_drag: deny\n"
+            "  playwright_browser_drop: deny\n"
+            "  playwright_browser_network_request: deny\n"
+            "  memory_*: deny\n"
+            "  sequential-thinking_*: deny\n"
+            "  context-retriever_*: deny\n"
+            "  security-audit_*: deny\n"
+            "  poc-security-audit_*: deny\n"
+            "  filesystem_*: deny\n"
+            "  git_*: deny\n"
+            "  supabase_*: deny\n"
+            "  task: deny"), head)
 
     def test_the_exempt_servers_get_no_entry_of_any_kind_in_any_agent_file(self):
         for path in sorted(OPENCODE_AGENTS.glob("*.md")):
@@ -335,7 +410,8 @@ class EmittedPerAgentClassTests(unittest.TestCase):
             for path in files:
                 text = path.read_text(encoding="utf-8")
                 with self.subTest(platform=platform, agent=path.name):
-                    self.assertNotRegex(text.split("\n---\n", 1)[0], r"(?m)^\s+\S+: false$")
+                    self.assertNotRegex(text.split("\n---\n", 1)[0], r"(?m)^\s+\S+: (false|deny)$")
+                    self.assertNotRegex(text.split("\n---\n", 1)[0], r"(?m)^permission:")
                     self.assertNotIn("gitlab_*", text.split("\n---\n", 1)[0])
 
 
@@ -356,8 +432,8 @@ class ShippedInvariantTests(unittest.TestCase):
             names = [n for n, _ in pairs]
             with self.subTest(agent=path.stem):
                 self.assertEqual(len(names), len(set(names)), "a duplicate key: YAML would keep only the last")
-                allowed = {n for n, v in pairs if v == "true"}
-                denied = {n for n, v in pairs if v == "false"}
+                allowed = {n for n, v in pairs if v == "allow"}
+                denied = {n for n, v in pairs if v == "deny"}
                 self.assertFalse(allowed & denied, allowed & denied)
 
     def test_the_rule_for_every_server_and_every_agent_follows_the_holder_class(self):
@@ -371,24 +447,25 @@ class ShippedInvariantTests(unittest.TestCase):
                 pairs = raw_tools_lines(path)
                 names = [n for n, _ in pairs]
                 values = dict(pairs)
-                first_allow = min(i for i, (_, v) in enumerate(pairs) if v == "true")
-                last_allow = max(i for i, (_, v) in enumerate(pairs) if v == "true")
+                # T839: an agent without `edit` and without MCP grants has no allow at all
+                first_allow = min((i for i, (_, v) in enumerate(pairs) if v == "allow"), default=len(pairs))
+                last_allow = max((i for i, (_, v) in enumerate(pairs) if v == "allow"), default=-1)
                 with self.subTest(server=server, agent=slug):
                     if slug in whole:
-                        self.assertNotIn(wildcard(server), [n for n, v in pairs if v == "false"])
-                        self.assertEqual(values.get(wildcard(server)), "true")
+                        self.assertNotIn(wildcard(server), [n for n, v in pairs if v == "deny"])
+                        self.assertEqual(values.get(wildcard(server)), "allow")
                     elif slug in named:
-                        self.assertEqual(values[wildcard(server)], "false")
+                        self.assertEqual(values[wildcard(server)], "deny")
                         w = names.index(wildcard(server))
                         self.assertLess(w, first_allow, "the wildcard deny precedes every allow")
-                        own = [i for i, (n, v) in enumerate(pairs) if n.startswith(prefix) and v == "true"]
+                        own = [i for i, (n, v) in enumerate(pairs) if n.startswith(prefix) and v == "allow"]
                         self.assertTrue(own)
                         self.assertTrue(all(i > w for i in own))
                     else:
-                        self.assertEqual(values[wildcard(server)], "false")
+                        self.assertEqual(values[wildcard(server)], "deny")
                         self.assertGreater(names.index(wildcard(server)), last_allow)
                         self.assertFalse([n for n in names if n.startswith(prefix) and n != wildcard(server)
-                                          and values[n] == "true"])
+                                          and values[n] == "allow"])
 
     def test_denies_come_after_every_allow_except_the_leading_block_of_named_holders(self):
         # Last match wins: a deny written after every allow survives any broader allow of the same agent.
@@ -397,14 +474,91 @@ class ShippedInvariantTests(unittest.TestCase):
         for path in sorted(OPENCODE_AGENTS.glob("*.md")):
             pairs = raw_tools_lines(path)
             lead = 0
-            while lead < len(pairs) and pairs[lead][1] == "false":
+            while lead < len(pairs) and pairs[lead][1] == "deny":
                 lead += 1
+            if lead == len(pairs):
+                lead = 0  # T839: no allow at all, so there is no leading block; every deny is "last"
             leading = [n for n, _ in pairs[:lead]]
             expected = [wildcard(s) for s in DENIED_SERVERS if path.stem in source_holders(s)[1]]
             with self.subTest(agent=path.stem):
                 self.assertEqual(leading, expected)
                 rest = [v for _, v in pairs[lead:]]
-                self.assertNotIn("true", rest[rest.index("false"):])
+                self.assertNotIn("allow", rest[rest.index("deny"):])
+
+    def test_sec_t837_03_no_agent_writes_read_or_an_inert_generic_name(self):
+        """T839 (SEC-T837-03): `read: allow` after Opencode's default read rules for `*.env` and `*.env.*`
+        would re-allow reading them; `search`, `execute`, `web`, `agent` and `todo` are not Opencode keys.
+        The only non-MCP key written is `edit` (a real key, held before). Every other key is an MCP name."""
+        manifest = json.loads((IMPL / "platforms" / "opencode.json").read_text(encoding="utf-8"))
+        self.assertEqual(manifest["frontmatter"]["agents"]["permissionKeys"], ["edit"])
+        mcp_prefixes = tuple(cleaned(s) + "_" for s in OPENCODE_SERVERS)
+        for path in sorted(OPENCODE_AGENTS.glob("*.md")):
+            pairs = raw_tools_lines(path)
+            with self.subTest(agent=path.stem):
+                self.assertTrue(pairs)
+                names = [n for n, _ in pairs]
+                for inert in ("read", "search", "execute", "web", "agent", "todo"):
+                    self.assertNotIn(inert, names)
+                for deny_only in ("bash", "webfetch", "websearch", "task"):  # T841/T843: written only as a deny
+                    self.assertNotIn((deny_only, "allow"), pairs)
+                generic = [(n, v) for n, v in pairs if not n.startswith(mcp_prefixes)]
+                # T841: `edit` may be an allow (holder) or a deny (non-holder); bash/webfetch/websearch only deny
+                self.assertLessEqual(set(generic), {("edit", "allow")} | {(k, "deny") for k in BUILTIN_KEYS})
+                fm, _ = parse_file(path)
+                # T855 (SEC-T842-02): `read` only as the deny-only token-directory map of an agent without `execute`
+                read = fm["permission"].get("read")
+                if "execute" in source_tokens(path.stem):
+                    self.assertIsNone(read)
+                else:
+                    self.assertEqual(list(read.items()), [(p, "deny") for p in READ_DENY_PATTERNS])
+
+    def test_sec_t840_01_builtin_tools_are_denied_unless_the_source_grants_them(self):
+        """T841 (SEC-T840-01): no `execute` -> `bash: deny`; no `edit` -> `edit: deny`; no `web` ->
+        `webfetch: deny` and `websearch: deny`; a holder gets no entry for that tool except `edit: allow`.
+        The denies are the very last entries (nothing later in the agent can re-allow them) and none of
+        bash/webfetch/websearch is ever an allow."""
+        manifest = json.loads((IMPL / "platforms" / "opencode.json").read_text(encoding="utf-8"))
+        self.assertEqual(manifest["frontmatter"]["agents"]["permissionDenyUnlessGranted"], BUILTIN_DENY_UNLESS_GRANTED)
+        counts = {k: 0 for k in BUILTIN_KEYS}
+        for path in sorted(OPENCODE_AGENTS.glob("*.md")):
+            source = source_tokens(path.stem)
+            pairs = raw_tools_lines(path)
+            want = expected_builtin_denies(source)
+            with self.subTest(agent=path.stem):
+                tail = pairs[len(pairs) - len(want):] if want else []
+                self.assertEqual(tail, want)
+                rest = pairs[: len(pairs) - len(want)]
+                self.assertEqual([p for p in rest if p[0] in BUILTIN_KEYS], [("edit", "allow")] if "edit" in source else [])
+                for name, _ in want:
+                    counts[name] += 1
+        self.assertEqual(counts, {"bash": 13, "edit": 8, "webfetch": 6, "websearch": 6, "task": 26})
+
+    def test_sec_t842_01_only_the_two_orchestrators_can_launch_a_subagent(self):
+        """T843: a subagent runs with its own permissions, so `task` would bypass `bash: deny`."""
+        delegators = {p.stem for p in SOURCE_AGENTS.glob("*.md") if "agent" in source_tokens(p.stem)}
+        self.assertEqual(delegators, {"orchestrator", "poc-orchestrator"})
+        for path in sorted(OPENCODE_AGENTS.glob("*.md")):
+            pairs = raw_tools_lines(path)
+            with self.subTest(agent=path.stem):
+                self.assertNotIn(("task", "allow"), pairs)
+                if path.stem in delegators:
+                    self.assertNotIn("task", [n for n, _ in pairs])  # T855: only as the map, never a flat value
+                    self.assertEqual(list(parse_file(path)[0]["permission"]["task"].items()), expected_task_map(path.stem))
+                else:
+                    self.assertEqual(pairs[-1], ("task", "deny"))
+                    rules = opencode_rules(parse_file(path)[0]["permission"])
+                    for hostile in ([("task", "allow")], [("task", "*"), ("*", "allow")], [("*", "allow")]):
+                        for defaults in DEFAULT_VARIANTS:
+                            self.assertEqual(opencode_effect("task", defaults, hostile, rules), "deny")
+
+    def test_sec_t840_01_the_builtin_denies_hold_under_the_rule_model(self):
+        for path in sorted(OPENCODE_AGENTS.glob("*.md")):
+            rules = opencode_rules(parse_file(path)[0]["permission"])
+            for name, _ in expected_builtin_denies(source_tokens(path.stem)):
+                for hostile in ([(name, "allow")], [("*", "allow")]):
+                    for defaults in DEFAULT_VARIANTS:
+                        with self.subTest(agent=path.stem, tool=name, hostile=hostile):
+                            self.assertEqual(opencode_effect(name, defaults, hostile, rules), "deny")
 
     def test_every_named_allow_comes_after_the_wildcard_deny_of_its_server(self):
         """Ordering, not distinct names, is what makes `<server>_*: false` plus named allows safe
@@ -423,7 +577,7 @@ class ShippedInvariantTests(unittest.TestCase):
         # It cannot show that Opencode behaves this way (that is the artifact's source reading and the
         # resolver evidence); it catches a later edit that reorders or drops the entries.
         for path in sorted(OPENCODE_AGENTS.glob("*.md")):
-            rules = opencode_rules(parse_file(path)[0]["tools"])
+            rules = opencode_rules(parse_file(path)[0]["permission"])
             for name in SIX_FALSE:
                 for defaults in DEFAULT_VARIANTS:
                     with self.subTest(agent=path.stem, tool=name, defaults=bool(defaults)):
@@ -434,13 +588,13 @@ class ShippedInvariantTests(unittest.TestCase):
             for name, value in raw_tools_lines(path):
                 if name in SIX_FALSE:
                     with self.subTest(agent=path.stem, tool=name):
-                        self.assertEqual(value, "false")
+                        self.assertEqual(value, "deny")
 
     def test_every_false_entry_is_a_server_wildcard_or_one_of_the_six(self):
-        allowed_false = set(SIX_FALSE) | {wildcard(s) for s in DENIED_SERVERS}
+        allowed_false = set(SIX_FALSE) | {wildcard(s) for s in DENIED_SERVERS} | BUILTIN_KEYS
         for path in sorted(OPENCODE_AGENTS.glob("*.md")):
             with self.subTest(agent=path.stem):
-                self.assertLessEqual({n for n, v in raw_tools_lines(path) if v == "false"}, allowed_false)
+                self.assertLessEqual({n for n, v in raw_tools_lines(path) if v == "deny"}, allowed_false)
 
 
 class OpencodeEvaluationTests(unittest.TestCase):
@@ -453,7 +607,7 @@ class OpencodeEvaluationTests(unittest.TestCase):
     def setUpClass(cls):
         cfg = json.loads((IMPL / ".opencode" / "opencode.json").read_text(encoding="utf-8"))
         cls.global_rules = opencode_rules(cfg["permission"])
-        cls.agents = {p.stem: opencode_rules(parse_file(p)[0]["tools"]) for p in sorted(OPENCODE_AGENTS.glob("*.md"))}
+        cls.agents = {p.stem: opencode_rules(parse_file(p)[0]["permission"]) for p in sorted(OPENCODE_AGENTS.glob("*.md"))}
 
     def effects(self, slug, name, global_extra=None, agent_extra=None):
         g = opencode_rules(global_extra or {})
@@ -511,8 +665,8 @@ class OpencodeEvaluationTests(unittest.TestCase):
         for server in OPENCODE_SERVERS:
             for slug in sorted(source_holders(server)[1]):
                 prefix = cleaned(server) + "_"
-                tools = parse_file(OPENCODE_AGENTS / f"{slug}.md")[0]["tools"]
-                held = [k[len(prefix):] for k, v in tools.items() if v is True and k.startswith(prefix)]
+                tools = parse_file(OPENCODE_AGENTS / f"{slug}.md")[0]["permission"]
+                held = [k[len(prefix):] for k, v in tools.items() if v == "allow" and k.startswith(prefix)]
                 self.assertTrue(held)
                 for tool in held:
                     for hostile in (None, {wildcard(server): "allow"}, {"*": "allow"}):
@@ -537,15 +691,15 @@ class OpencodeEvaluationTests(unittest.TestCase):
     def test_a_later_allow_in_the_same_agent_beats_the_per_agent_false_when_it_is_written_after_it(self):
         """The ordering rule the generator relies on: this is why the denies go last."""
         for defaults in DEFAULT_VARIANTS:
-            rules = opencode_rules({"playwright_browser_evaluate": False, "playwright_*": True})
+            rules = opencode_rules({"playwright_browser_evaluate": "deny", "playwright_*": "allow"})
             self.assertEqual(opencode_effect("playwright_browser_evaluate", defaults, rules), "allow")
-            rules = opencode_rules({"playwright_*": True, "playwright_browser_evaluate": False})
+            rules = opencode_rules({"playwright_*": "allow", "playwright_browser_evaluate": "deny"})
             self.assertEqual(opencode_effect("playwright_browser_evaluate", defaults, rules), "deny")
 
     def test_the_granted_playwright_tools_stay_allowed_and_the_lookalike_is_not_caught(self):
         for slug in sorted(PLAYWRIGHT_HOLDERS):
-            granted = [k for k, v in parse_file(OPENCODE_AGENTS / f"{slug}.md")[0]["tools"].items()
-                       if v is True and k.startswith("playwright_")]
+            granted = [k for k, v in parse_file(OPENCODE_AGENTS / f"{slug}.md")[0]["permission"].items()
+                       if v == "allow" and k.startswith("playwright_")]
             for name in granted:
                 with self.subTest(agent=slug, tool=name):
                     self.assertEqual(self.effect(slug, name), "allow")
@@ -658,31 +812,71 @@ class GeneratorFixtureTests(unittest.TestCase):
         return root, result
 
     def tools(self, root: Path, slug: str) -> list[tuple[str, str]]:
-        return raw_tools_lines(root / ".opencode" / "agents" / f"{slug}.md")
+        """The MCP part of the map. The T841 built-in denies are checked to be a deny-only trailing block
+        and are then removed; test_t841_* pins their exact content."""
+        pairs = raw_tools_lines(root / ".opencode" / "agents" / f"{slug}.md")
+        end = len(pairs)
+        while end and pairs[end - 1][0] in BUILTIN_KEYS:
+            end -= 1
+        self.assertTrue(all(v == "deny" for _, v in pairs[end:]), pairs[end:])
+        self.assertFalse([p for p in pairs[:end] if p[0] in BUILTIN_KEYS and p != ("edit", "allow")])
+        return pairs[:end]
+
+    def test_t841_builtin_denies_per_class_on_a_fixture(self):
+        agents = {"none": "[read]", "all": "[read, execute, edit, web, agent]", "exec": "[execute]", "webonly": "[web]",
+                  "noline": None, "deleg": "[agent]"}
+        root, result = self.run_sync(agents=agents)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        tail = lambda slug: raw_tools_lines(root / ".opencode" / "agents" / f"{slug}.md")[-5:]
+        bash, edit, wf, ws = ("bash", "deny"), ("edit", "deny"), ("webfetch", "deny"), ("websearch", "deny")
+        task = ("task", "deny")
+        self.assertEqual(tail("none"), [bash, edit, wf, ws, task])
+        self.assertEqual(tail("noline"), [bash, edit, wf, ws, task])
+        all_names = [n for n, _ in raw_tools_lines(root / ".opencode" / "agents" / "all.md")]
+        self.assertFalse({"bash", "task", "webfetch", "websearch"} & set(all_names))
+        self.assertEqual(raw_tools_lines(root / ".opencode" / "agents" / "all.md")[0], ("edit", "allow"))
+        self.assertEqual(tail("exec")[-4:], [edit, wf, ws, task])
+        self.assertEqual(tail("webonly")[-3:], [bash, edit, task])
+        self.assertEqual(tail("deleg")[-4:], [bash, edit, wf, ws])
+
+    def test_t841_the_deny_only_keys_cannot_become_an_allow(self):
+        mutations = {
+            "bash allow": lambda d: d["frontmatter"]["agents"].__setitem__("permissionKeys", ["edit", "bash"]),
+            "webfetch allow": lambda d: d["frontmatter"]["agents"].__setitem__("permissionKeys", ["edit", "webfetch"]),
+            "websearch allow": lambda d: d["frontmatter"]["agents"].__setitem__("permissionKeys", ["edit", "websearch"]),
+            "task allow": lambda d: d["frontmatter"]["agents"].__setitem__("permissionKeys", ["edit", "task"]),
+            "map not an object": lambda d: d["frontmatter"]["agents"].__setitem__("permissionDenyUnlessGranted", ["bash"]),
+            "empty key list": lambda d: d["frontmatter"]["agents"]["permissionDenyUnlessGranted"].__setitem__("web", []),
+        }
+        for label, mutate in mutations.items():
+            with self.subTest(case=label):
+                root, result = self.run_sync(mutate_platform=mutate)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("permission", result.stderr)
 
     def test_output_per_agent_class(self):
         root, result = self.run_sync()
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        six = [("pw_bad_one", "false"), ("pw_bad_two", "false")]
+        six = [("pw_bad_one", "deny"), ("pw_bad_two", "deny")]
         # servers are visited in servers.yaml order (gl, pw); `skip` has a tag Opencode does not carry
-        self.assertEqual(self.tools(root, "holder"), [("read", "true"), ("gl_*", "true")] + six)
-        self.assertEqual(self.tools(root, "named"), [("gl_*", "false"), ("read", "true"), ("gl_list_x", "true")] + six)
+        self.assertEqual(self.tools(root, "holder"), [("gl_*", "allow")] + six)
+        self.assertEqual(self.tools(root, "named"), [("gl_*", "deny"), ("gl_list_x", "allow")] + six)
         # a bare `mcp__gl` token makes the agent a whole-server holder even if named tokens are present
-        self.assertEqual(self.tools(root, "both"), [("read", "true"), ("gl_*", "true"), ("gl_list_x", "true")] + six)
-        self.assertEqual(self.tools(root, "plain"), [("read", "true"), ("gl_*", "false")] + six)
-        self.assertEqual(self.tools(root, "pwhole"), [("read", "true"), ("pw_*", "true"), ("gl_*", "false")] + six)
+        self.assertEqual(self.tools(root, "both"), [("gl_*", "allow"), ("gl_list_x", "allow")] + six)
+        self.assertEqual(self.tools(root, "plain"), [("gl_*", "deny")] + six)
+        self.assertEqual(self.tools(root, "pwhole"), [("pw_*", "allow"), ("gl_*", "deny")] + six)
 
     def test_a_server_named_in_extra_platforms_is_denied_like_a_tag_selected_one(self):
         """T722 (SEV-T690-01): `skip` (tags [other]) reaches Opencode through `extraPlatforms: [opencode]` and is
         denied per agent exactly as if its tag were selected. (The `skipFormats` case was removed with the key,
         ADR-013 D3.)"""
         base = self.SERVERS + "    extraPlatforms: [opencode]\n"
-        tail = [("pw_bad_one", "false"), ("pw_bad_two", "false"), ("skip_*", "false"), ("skip_skip_bad", "false")]
+        tail = [("pw_bad_one", "deny"), ("pw_bad_two", "deny"), ("skip_*", "deny"), ("skip_skip_bad", "deny")]
         root, result = self.run_sync(servers=base, agents={"plain": "[read]", "skipnamed": "[read, mcp__skip__one]"})
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertEqual(self.tools(root, "plain"), [("read", "true"), ("gl_*", "false")] + tail)
+        self.assertEqual(self.tools(root, "plain"), [("gl_*", "deny")] + tail)
         self.assertEqual(self.tools(root, "skipnamed"),
-                         [("skip_*", "false"), ("read", "true"), ("skip_one", "true"), ("gl_*", "false")]
+                         [("skip_*", "deny"), ("skip_one", "allow"), ("gl_*", "deny")]
                          + tail[:2] + tail[3:])
         config = json.loads((root / ".opencode" / "opencode.json").read_text(encoding="utf-8"))
         self.assertIn("skip", config["mcp"])
@@ -691,7 +885,7 @@ class GeneratorFixtureTests(unittest.TestCase):
         root, result = self.run_sync(agents={"bare": None})
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual(self.tools(root, "bare"),
-                         [("gl_*", "false"), ("pw_bad_one", "false"), ("pw_bad_two", "false")])
+                         [("gl_*", "deny"), ("pw_bad_one", "deny"), ("pw_bad_two", "deny")])
 
     def test_other_platforms_are_unchanged_by_the_flags(self):
         root, result = self.run_sync()
@@ -700,6 +894,7 @@ class GeneratorFixtureTests(unittest.TestCase):
             text = (root / rel).read_text(encoding="utf-8")
             with self.subTest(file=rel):
                 self.assertNotIn("false", text)
+                self.assertNotIn("deny", text)
                 self.assertNotIn("gl_*", text)
 
     def test_the_global_denial_is_still_emitted(self):
@@ -725,8 +920,8 @@ class GeneratorFixtureTests(unittest.TestCase):
         servers = self.SERVERS.replace("  gl:", "  my.git:").replace("\n  pw:", "\n  pw:")
         root, result = self.run_sync(servers=servers, agents={"plain": "[read]", "hold": "[read, mcp__my.git]"})
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn(("my_git_*", "false"), self.tools(root, "plain"))
-        self.assertNotIn(("my_git_*", "false"), self.tools(root, "hold"))
+        self.assertIn(("my_git_*", "deny"), self.tools(root, "plain"))
+        self.assertNotIn(("my_git_*", "deny"), self.tools(root, "hold"))
 
     def test_an_invalid_flag_stops_the_run_before_anything_is_written(self):
         for label, value in {"yes": "yes", "number": "1", "text": "gitlab"}.items():
@@ -754,21 +949,21 @@ class GeneratorFixtureTests(unittest.TestCase):
         root, result = self.run_sync(servers=servers, agents={
             "plain": "[read]", "named": "[read, mcp__pw__list_x]", "whole": "[read, mcp__pw]"})
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        exact = [("pw_bad_one", "false"), ("pw_bad_two", "false")]
-        self.assertEqual(self.tools(root, "plain"), [("read", "true"), ("gl_*", "false"), ("pw_*", "false")] + exact)
+        exact = [("pw_bad_one", "deny"), ("pw_bad_two", "deny")]
+        self.assertEqual(self.tools(root, "plain"), [("gl_*", "deny"), ("pw_*", "deny")] + exact)
         self.assertEqual(self.tools(root, "named"),
-                         [("pw_*", "false"), ("read", "true"), ("pw_list_x", "true"), ("gl_*", "false")] + exact)
-        self.assertEqual(self.tools(root, "whole"), [("read", "true"), ("pw_*", "true"), ("gl_*", "false")] + exact)
+                         [("pw_*", "deny"), ("pw_list_x", "allow"), ("gl_*", "deny")] + exact)
+        self.assertEqual(self.tools(root, "whole"), [("pw_*", "allow"), ("gl_*", "deny")] + exact)
 
     def test_the_flag_false_is_an_explicit_exemption_and_emits_nothing_for_that_server(self):
         servers = self.SERVERS.replace("    denyUnlessGranted: true\n  pw:", "    denyUnlessGranted: false\n  pw:", 1)
         root, result = self.run_sync(servers=servers, agents={
             "plain": "[read]", "named": "[read, mcp__gl__list_x]", "whole": "[read, mcp__gl]"})
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        six = [("pw_bad_one", "false"), ("pw_bad_two", "false")]
-        self.assertEqual(self.tools(root, "plain"), [("read", "true")] + six)
-        self.assertEqual(self.tools(root, "named"), [("read", "true"), ("gl_list_x", "true")] + six)
-        self.assertEqual(self.tools(root, "whole"), [("read", "true"), ("gl_*", "true")] + six)
+        six = [("pw_bad_one", "deny"), ("pw_bad_two", "deny")]
+        self.assertEqual(self.tools(root, "plain"), six)
+        self.assertEqual(self.tools(root, "named"), [("gl_list_x", "allow")] + six)
+        self.assertEqual(self.tools(root, "whole"), [("gl_*", "allow")] + six)
 
     def test_a_misspelled_server_key_stops_the_run_before_anything_is_written(self):
         for bad in ("denyUnlessGrant: true", "denyTool: [x]", "denyunlessgranted: true", "description: x"):
@@ -789,11 +984,30 @@ class GeneratorFixtureTests(unittest.TestCase):
         result = subprocess.run(["node", str(SYNC), "--root", str(IMPL), "--check"], capture_output=True, text=True, check=False)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
+    def test_t839_only_edit_of_the_generic_names_is_written(self):
+        root, result = self.run_sync(agents={"gen": "[read, search, edit, execute, web, agent, todo, mcp__gl__list_x]"})
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(self.tools(root, "gen"),
+                         [("gl_*", "deny"), ("edit", "allow"), ("gl_list_x", "allow"), ("pw_bad_one", "deny"),
+                          ("pw_bad_two", "deny")])
+
+    def test_t839_permission_keys_refuses_read_and_a_non_permission_platform(self):
+        mutations = {
+            "read": lambda d: d["frontmatter"]["agents"].__setitem__("permissionKeys", ["edit", "read"]),
+            "not a list": lambda d: d["frontmatter"]["agents"].__setitem__("permissionKeys", "edit"),
+            "odd name": lambda d: d["frontmatter"]["agents"].__setitem__("permissionKeys", ["edit*"]),
+        }
+        for label, mutate in mutations.items():
+            with self.subTest(case=label):
+                root, result = self.run_sync(mutate_platform=mutate)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("permissionKeys", result.stderr)
+
     def test_no_flags_means_no_false_entries(self):
         servers = "servers:\n  plain:\n    tags: [core]\n    transport: stdio\n    command: python\n    args: [\"-m\", \"x\"]\n"
         root, result = self.run_sync(servers=servers)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertEqual(self.tools(root, "plain"), [("read", "true")])
+        self.assertEqual(self.tools(root, "plain"), [])
 
     def test_regeneration_is_deterministic(self):
         first, r1 = self.run_sync()
@@ -825,8 +1039,9 @@ class InstallReplacesAgentFilesWholesaleTests(unittest.TestCase):
             shipped = (OPENCODE_AGENTS / "tech-lead.md").read_bytes()
             self.assertEqual(agent.read_bytes(), shipped)
             # the user removes the denies and adds an allow of a denied tool, then updates
-            edited = agent.read_text(encoding="utf-8").replace("  gitlab_*: false\n", "").replace(
-                "  playwright_browser_evaluate: false\n", "  playwright_browser_evaluate: true\n")
+            edited = agent.read_text(encoding="utf-8").replace("  gitlab_*: deny\n", "").replace(
+                "  playwright_browser_evaluate: deny\n", "  playwright_browser_evaluate: allow\n")
+            self.assertNotEqual(edited, agent.read_text(encoding="utf-8"), "the user edit must change the file")
             agent.write_text(edited, encoding="utf-8")
             extra = target / ".opencode" / "agents" / "my-own-agent.md"
             extra.write_text("---\nname: \"mine\"\ndescription: \"x\"\ntools:\n  read: true\n---\nbody\n", encoding="utf-8")
@@ -998,6 +1213,414 @@ class DocumentationTests(unittest.TestCase):
         self.assertEqual(own("tech-lead")[0], ("read", "allow"))
         self.assertLess(own("qa-engineer").index(("gitlab_get_issue", "allow")), own("qa-engineer").index(("playwright_browser_evaluate", "deny")))
 
+
+class T855TaskAndReadMapTests(unittest.TestCase):
+    """T855: SEC-T844-01 (a delegating agent's `task` map) and SEC-T842-02 (deny-only `read` map)."""
+
+    TOKEN_PATHS = ["../../../../dev/shm/gitlab-mcp/token", "../../../../../run/user/1000/gitlab-mcp/token",
+                   "/dev/shm/gitlab-mcp/token", "/run/user/1000/gitlab-mcp/token", "../../dev/shm/gitlab-mcp",
+                   "gitlab-mcp/token"]
+    ENV_PATHS = [".env", "config/.env", "../../home/u/.env", ".env.local", ".env.example", "src/main.py"]
+    HOSTILE = [{}, {"*": "allow"}, {"read": "allow"}, {"read": {"*": "allow", "*/gitlab-mcp/*": "allow"}},
+               {"task": "allow"}, {"task": {"*": "allow", "general": "allow"}}]
+
+    @classmethod
+    def setUpClass(cls):
+        cfg = json.loads((IMPL / ".opencode" / "opencode.json").read_text(encoding="utf-8"))
+        cls.global_rules = pattern_rules(cfg["permission"])
+        cls.perm = {p.stem: parse_file(p)[0]["permission"] for p in sorted(OPENCODE_AGENTS.glob("*.md"))}
+
+    def effect(self, slug, permission, pattern, hostile):
+        return pattern_effect(permission, pattern, OPENCODE_READ_DEFAULTS, self.global_rules,
+                              pattern_rules(hostile), pattern_rules(self.perm[slug]))
+
+    def test_the_manifest_pins_both_maps(self):
+        cfg = json.loads((IMPL / "platforms" / "opencode.json").read_text(encoding="utf-8"))["frontmatter"]["agents"]
+        self.assertEqual(cfg["permissionTaskAllowFromAgents"], "agent")
+        self.assertEqual(cfg["permissionReadDenyUnlessGranted"], {"execute": READ_DENY_PATTERNS})
+
+    def test_every_task_value_is_a_deny_or_the_derived_map(self):
+        delegators = {"orchestrator", "poc-orchestrator"}
+        self.assertEqual({s for s in self.perm if "agent" in source_tokens(s)}, delegators)
+        for slug, perm in self.perm.items():
+            with self.subTest(agent=slug):
+                if slug not in delegators:
+                    self.assertEqual(perm["task"], "deny")
+                    continue
+                items = list(perm["task"].items())
+                self.assertEqual(items, expected_task_map(slug))
+                self.assertGreater(len(items), 1)
+                self.assertEqual(list(perm)[-1], "task", "the task map is the last entry")
+                allowed = [p for p, a in items[1:]]
+                self.assertFalse(set(allowed) & set(OPENCODE_BUILTIN_AGENTS))
+                self.assertFalse([p for p in allowed if "*" in p or "?" in p])
+
+    def test_every_read_value_is_absent_or_the_deny_only_map_last(self):
+        for slug, perm in self.perm.items():
+            with self.subTest(agent=slug):
+                if "execute" in source_tokens(slug):
+                    self.assertNotIn("read", perm)
+                else:
+                    self.assertEqual(list(perm["read"].items()), [(p, "deny") for p in READ_DENY_PATTERNS])
+                    self.assertEqual(list(perm)[-2:], ["read", "external_directory"],
+                                     "the read map, then the T861 external_directory map, are the last entries")
+        self.assertEqual(sum("read" in p for p in self.perm.values()), 13)
+
+    def test_a_token_path_is_denied_for_every_agent_without_execute(self):
+        for slug in self.perm:
+            if "execute" in source_tokens(slug):
+                continue
+            for hostile in self.HOSTILE:
+                for path in self.TOKEN_PATHS:
+                    with self.subTest(agent=slug, path=path, hostile=hostile):
+                        self.assertEqual(self.effect(slug, "read", path, hostile), "deny")
+
+    def test_the_read_map_changes_no_env_or_project_path(self):
+        """No agent rule is the last match for a `.env` path: the default `*.env` ask rules (or the user's own
+        later rule) still decide; without a hostile rule `.env` is `ask`."""
+        for slug in self.perm:
+            for hostile in self.HOSTILE:
+                for path in self.ENV_PATHS:
+                    with self.subTest(agent=slug, path=path, hostile=hostile):
+                        without = pattern_effect("read", path, OPENCODE_READ_DEFAULTS, self.global_rules, pattern_rules(hostile))
+                        self.assertEqual(self.effect(slug, "read", path, hostile), without)
+            self.assertEqual(self.effect(slug, "read", ".env", {}), "ask")
+            self.assertEqual(self.effect(slug, "read", "config/.env.local", {}), "ask")
+
+    def test_a_delegator_launches_only_its_listed_agents(self):
+        names = {s: parse_file(SOURCE_AGENTS / f"{s}.md")[0]["name"] for s in self.perm}
+        for slug in ("orchestrator", "poc-orchestrator"):
+            listed = {n for n, a in expected_task_map(slug) if a == "allow"}
+            for hostile in self.HOSTILE:
+                with self.subTest(agent=slug, hostile=hostile):
+                    for target in OPENCODE_BUILTIN_AGENTS + sorted(set(names.values()) - listed) + list(self.perm):
+                        self.assertEqual(self.effect(slug, "task", target, hostile), "deny", target)
+                    for target in listed:
+                        self.assertEqual(self.effect(slug, "task", target, hostile), "allow", target)
+
+    def test_the_tools_stay_visible(self):
+        """permission/index.ts `disabled`: a tool is hidden when the last rule for its key has pattern `*` and
+        is a deny. The task map ends with a named allow and the read map with a path deny."""
+        for slug, perm in self.perm.items():
+            rules = pattern_rules(perm)
+            last = {}
+            for perm_key, action, pat in rules:
+                last[perm_key] = (action, pat)
+            with self.subTest(agent=slug):
+                if "read" in last:
+                    self.assertNotEqual(last["read"][1], "*")
+                if "agent" in source_tokens(slug):
+                    self.assertEqual(last["task"][0], "allow")
+
+
+class T855GeneratorFixtureTests(unittest.TestCase):
+    """The real generator on a fixture root: the task map, the read map and the refused manifests."""
+
+    def run_sync(self, agents, mutate_platform=None):
+        if shutil.which("node") is None:
+            self.skipTest("node is not installed")
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        root = Path(tmp.name)
+        GeneratorFixtureTests.build(root, GeneratorFixtureTests.SERVERS, {}, mutate_platform)
+        for slug, (name, tools, sub) in agents.items():
+            line = "" if sub is None else f"agents: {sub}\n"
+            (root / "knowledge" / "agents" / f"{slug}.md").write_text(
+                f"---\nname: \"{name}\"\ndescription: \"fixture\"\ntools: {tools}\n{line}---\n\nbody\n", encoding="utf-8")
+        result = subprocess.run(["node", str(SYNC), "--root", str(root)], capture_output=True, text=True, check=False)
+        return root, result
+
+    AGENTS = {"boss": ("The Boss", "[read, execute, agent]", "[worker, reader]"),
+              "worker": ("Worker One", "[read, execute]", None),
+              "reader": ("Reader", "[read]", None),
+              "lone": ("Lone", "[read, execute, agent]", None)}
+
+    def perm(self, root, slug):
+        return parse_file(root / ".opencode" / "agents" / f"{slug}.md")[0]["permission"]
+
+    def test_the_maps_on_a_fixture(self):
+        root, result = self.run_sync(self.AGENTS)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(list(self.perm(root, "boss")["task"].items()), [("*", "deny"), ("Worker One", "allow"), ("Reader", "allow")])
+        self.assertEqual(list(self.perm(root, "lone")["task"].items()), [("*", "deny")], "no list: launches nothing")
+        self.assertEqual(self.perm(root, "worker")["task"], "deny")
+        self.assertEqual(list(self.perm(root, "reader")["read"].items()), [(p, "deny") for p in READ_DENY_PATTERNS])
+        self.assertEqual(list(self.perm(root, "reader")["external_directory"].items()), [(p, "deny") for p in EXTDIR_DENY_PATTERNS])
+        for slug in ("boss", "worker", "lone"):
+            self.assertNotIn("read", self.perm(root, slug))
+            self.assertNotIn("external_directory", self.perm(root, slug))
+        for other in ("claude-code", "cline", "github"):
+            for path in root.rglob("*.md"):
+                if f"/.{other}" in str(path) or "/.clinerules" in str(path):
+                    self.assertNotRegex(path.read_text(encoding="utf-8"), r"gitlab-mcp|\"\*\": deny")
+
+    def test_refused_agent_lists(self):
+        cases = {
+            "a built-in agent": {"boss": ("The Boss", "[read, execute, agent]", "[general]"),
+                                 "general": ("general", "[read]", None)},
+            "itself": {"boss": ("The Boss", "[read, execute, agent]", "[boss]")},
+            "an unknown slug": {"boss": ("The Boss", "[read, execute, agent]", "[nobody]")},
+            "a wildcard name": {"boss": ("The Boss", "[read, execute, agent]", "[w]"), "w": ("W*", "[read]", None)},
+            "a duplicate": {"boss": ("The Boss", "[read, execute, agent]", "[w, w]"), "w": ("W", "[read]", None)},
+        }
+        for label, agents in cases.items():
+            with self.subTest(case=label):
+                _, result = self.run_sync(agents)
+                self.assertNotEqual(result.returncode, 0)
+
+    def test_refused_manifests(self):
+        a = lambda d: d["frontmatter"]["agents"]
+        mutations = {
+            "task generic not mapped to task": lambda d: a(d).__setitem__("permissionTaskAllowFromAgents", "execute"),
+            "task generic not a string": lambda d: a(d).__setitem__("permissionTaskAllowFromAgents", ["agent"]),
+            "read map not an object": lambda d: a(d).__setitem__("permissionReadDenyUnlessGranted", ["x"]),
+            "read pattern star": lambda d: a(d).__setitem__("permissionReadDenyUnlessGranted", {"execute": ["*"]}),
+            "read pattern empty list": lambda d: a(d).__setitem__("permissionReadDenyUnlessGranted", {"execute": []}),
+            "read pattern duplicate": lambda d: a(d).__setitem__("permissionReadDenyUnlessGranted", {"execute": ["x/*", "x/*"]}),
+            "read pattern home": lambda d: a(d).__setitem__("permissionReadDenyUnlessGranted", {"execute": ["~/x/*"]}),
+            "read via permissionKeys": lambda d: a(d).__setitem__("permissionKeys", ["edit", "read"]),
+            "extdir map not an object": lambda d: a(d).__setitem__("permissionExternalDirectoryDenyUnlessGranted", ["x"]),
+            "extdir pattern star": lambda d: a(d).__setitem__("permissionExternalDirectoryDenyUnlessGranted", {"execute": ["*"]}),
+            "extdir pattern empty list": lambda d: a(d).__setitem__("permissionExternalDirectoryDenyUnlessGranted", {"execute": []}),
+            "extdir pattern duplicate": lambda d: a(d).__setitem__("permissionExternalDirectoryDenyUnlessGranted", {"execute": ["x/*", "x/*"]}),
+            "extdir pattern home": lambda d: a(d).__setitem__("permissionExternalDirectoryDenyUnlessGranted", {"execute": ["~/x/*"]}),
+            "extdir pattern env": lambda d: a(d).__setitem__("permissionExternalDirectoryDenyUnlessGranted", {"execute": ["$HOME/x/*"]}),
+            "extdir via permissionKeys": lambda d: a(d).__setitem__("permissionKeys", ["edit", "external_directory"]),
+            "task via permissionKeys": lambda d: a(d).__setitem__("permissionKeys", ["edit", "task"]),
+        }
+        for label, mutate in mutations.items():
+            with self.subTest(case=label):
+                _, result = self.run_sync(self.AGENTS, mutate_platform=mutate)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("permission", result.stderr)
+
+
+class T861ExternalDirectoryMapTests(unittest.TestCase):
+    """T861 (SEC-T856-02): the deny-only `external_directory` map of the 13 agents without `execute`.
+
+    Opencode 1.19.2 `tool/external-directory.ts` asks `external_directory` with `path.join(dir, "*")`, `dir` the
+    absolute parent of a file or the directory itself; `agent/agent.ts` appends `external_directory: {<tool-output
+    glob>: allow}` after the agent's rules unless the agent holds a DENY with exactly that pattern."""
+
+    TOOL_OUTPUT = "/x/data/opencode/tool-output/*"
+    DEFAULTS = [("*", "allow", "*"), ("external_directory", "ask", "*"), ("external_directory", "allow", TOOL_OUTPUT),
+                ("external_directory", "allow", "/x/tmp/opencode/*")]
+    TOKEN_ASKS = ["/dev/shm/gitlab-mcp/*", "/run/user/1000/gitlab-mcp/*", "/run/user/1000/gitlab-mcp/sub/*"]
+    OTHER_ASKS = [TOOL_OUTPUT, "/x/tmp/opencode/*", "/dev/shm/*", "/run/user/1000/*", "/home/u/other/*", "/etc/*",
+                  "/home/u/gitlab-mcp-notes/*"]
+    HOSTILE = [{}, {"*": "allow"}, {"external_directory": "allow"},
+               {"external_directory": {"*": "allow", "*/gitlab-mcp/*": "allow"}}]
+
+    @classmethod
+    def setUpClass(cls):
+        cfg = json.loads((IMPL / ".opencode" / "opencode.json").read_text(encoding="utf-8"))
+        cls.global_rules = pattern_rules(cfg["permission"])
+        cls.perm = {p.stem: parse_file(p)[0]["permission"] for p in sorted(OPENCODE_AGENTS.glob("*.md"))}
+
+    def resolved(self, slug, hostile):
+        agent = pattern_rules(self.perm[slug])
+        explicit = any(r == ("external_directory", "deny", self.TOOL_OUTPUT) for r in agent)
+        tail = [] if explicit else [("external_directory", "allow", self.TOOL_OUTPUT)]
+        return self.DEFAULTS + self.global_rules + pattern_rules(hostile) + agent + tail
+
+    def effect(self, slug, ask, hostile):
+        return pattern_effect("external_directory", ask, self.resolved(slug, hostile))
+
+    def test_the_manifest_pins_the_map(self):
+        cfg = json.loads((IMPL / "platforms" / "opencode.json").read_text(encoding="utf-8"))["frontmatter"]["agents"]
+        self.assertEqual(cfg["permissionExternalDirectoryDenyUnlessGranted"], {"execute": EXTDIR_DENY_PATTERNS})
+
+    def test_every_value_is_absent_or_the_deny_only_map_last(self):
+        for slug, perm in self.perm.items():
+            with self.subTest(agent=slug):
+                if "execute" in source_tokens(slug):
+                    self.assertNotIn("external_directory", perm)
+                    continue
+                self.assertEqual(list(perm["external_directory"].items()), [(p, "deny") for p in EXTDIR_DENY_PATTERNS])
+                self.assertEqual(list(perm)[-1], "external_directory")
+        self.assertEqual(sum("external_directory" in p for p in self.perm.values()), 13)
+
+    def test_a_token_directory_ask_is_denied_without_execute(self):
+        for slug in self.perm:
+            for hostile in self.HOSTILE:
+                for ask in self.TOKEN_ASKS:
+                    with self.subTest(agent=slug, ask=ask, hostile=hostile):
+                        if "execute" in source_tokens(slug):
+                            without = pattern_effect("external_directory", ask, self.DEFAULTS, self.global_rules, pattern_rules(hostile))
+                            self.assertEqual(self.effect(slug, ask, hostile), without)
+                        else:
+                            self.assertEqual(self.effect(slug, ask, hostile), "deny")
+
+    def test_the_tool_output_allow_and_every_other_ask_are_unchanged(self):
+        for slug in self.perm:
+            self.assertEqual(self.effect(slug, self.TOOL_OUTPUT, {}), "allow", slug)
+            for hostile in self.HOSTILE:
+                for ask in self.OTHER_ASKS:
+                    with self.subTest(agent=slug, ask=ask, hostile=hostile):
+                        rules = self.DEFAULTS + self.global_rules + pattern_rules(hostile)
+                        without = pattern_effect("external_directory", ask, rules + [("external_directory", "allow", self.TOOL_OUTPUT)])
+                        self.assertEqual(self.effect(slug, ask, hostile), without)
+
+    def test_no_agent_suppresses_the_built_in_tool_output_allow(self):
+        """agent.ts skips its allow only for an `external_directory` deny whose pattern IS the tool-output glob;
+        every generated pattern must stay a `*/<dir>/*` form that cannot be that glob."""
+        for pats in json.loads((IMPL / "platforms" / "opencode.json").read_text(encoding="utf-8"))["frontmatter"]["agents"][
+                "permissionExternalDirectoryDenyUnlessGranted"].values():
+            for pat in pats:
+                self.assertRegex(pat, r"^\*/[a-z0-9-]+/\*$")
+                self.assertNotIn("tool-output", pat)
+
+
+EVIDENCE_PATH_LEAKS = [r"/tmp/claude-", r"/home/", r"/Users/", r"/root/", r"/tmp/tmp\.",
+                       # SEC-T862-02: macOS temporary and private paths, and the Windows profile path in its backslash
+                       # form (one backslash, or two as in JSON), any drive letter in either case
+                       r"/var/folders/", r"/private/var/", r"(?i:[a-z]:\\{1,2}users\\{1,2})"]
+# The artifact .md names the forbidden prefixes in its own Redaction line (for example "no `/home/`"), so there a leak is
+# a prefix followed by a path-segment character; the raw files get the strict form.
+PATH_SEGMENT_FOLLOWS = r"(?=[A-Za-z0-9_])"
+
+
+def evidence_leak_patterns(user: str, artifact: bool) -> list[str]:
+    """The leak patterns for one evidence file: the fixed prefixes and the local user name as a path segment.
+    CI runs as another user, so the local clean-suite run is the user-name check of record (SEC-T862-02)."""
+    leaks = list(EVIDENCE_PATH_LEAKS) + ([re.escape(f"/{user}/")] if len(user) > 2 else [])
+    return [leak + PATH_SEGMENT_FOLLOWS for leak in leaks] if artifact else leaks
+
+
+def evidence_files(directory: Path) -> list[tuple[Path, bool]]:
+    """Every file to scan for one evidence directory: its raw files, and its artifact .md (SEC-T862-02)."""
+    raw = [(p, False) for p in sorted(directory.rglob("*")) if p.is_file()]
+    md = directory.parent / f"{directory.name}.md"
+    return raw + ([(md, True)] if md.is_file() else [])
+
+
+def evidence_leaks(text: str, patterns: list[str]) -> list[str]:
+    return [leak for leak in patterns if re.search(leak, text)]
+
+
+class T861EvidenceRedactionTests(unittest.TestCase):
+    """SEC-T856-01, SEC-T862-02: no evidence directory newer than v3 stores, in a raw file or in its artifact .md, a
+    scratch path that names the machine or user. v2 and v3 are immutable (their hashes are pinned) and exempt."""
+
+    def evidence_dirs(self):
+        out = []
+        for path in sorted((REPO / "docs" / "artifacts").glob("mcp-agent-denials-evidence-v*")):
+            m = re.fullmatch(r"mcp-agent-denials-evidence-v(\d+)", path.name)
+            if path.is_dir() and m and int(m.group(1)) > 3:
+                out.append(path)
+        return out
+
+    def test_no_scratch_path_in_raw_files_or_artifact_newer_than_v3(self):
+        import getpass
+        user = getpass.getuser()
+        dirs = self.evidence_dirs()
+        self.assertTrue(dirs, "evidence v4 exists (T861)")
+        for d in dirs:
+            files = evidence_files(d)
+            self.assertIn((d.parent / f"{d.name}.md", True), files)
+            for path, artifact in files:
+                text = path.read_text(encoding="utf-8", errors="replace")
+                with self.subTest(file=str(path.relative_to(REPO))):
+                    self.assertEqual(evidence_leaks(text, evidence_leak_patterns(user, artifact)), [])
+
+    def test_each_prefix_catches_its_path_and_the_artifact_prose_is_not_a_leak(self):
+        samples = {r"/var/folders/": "/var/folders/xy/T/tmp1/out", r"/private/var/": "/private/var/folders/xy/T/run",
+                   EVIDENCE_PATH_LEAKS[-1]: "C:\\Users\\someone\\AppData", "json": '"c:\\\\USERS\\\\someone\\\\x"'}
+        for key, sample in samples.items():
+            for artifact in (False, True):
+                with self.subTest(sample=sample, artifact=artifact):
+                    self.assertTrue(evidence_leaks(sample, evidence_leak_patterns("someone", artifact)))
+        prose = "Checked before hashing: no `/tmp/claude-`, `/home/`, `/var/folders/`, `C:\\Users\\` or `/<username>/`."
+        self.assertEqual(evidence_leaks(prose, evidence_leak_patterns("someone", True)), [])
+        self.assertTrue(evidence_leaks(prose, evidence_leak_patterns("someone", False)))
+
+    def test_mutation_each_dropped_prefix_is_detected(self):
+        samples = {r"/var/folders/": "/var/folders/xy/T/a", r"/private/var/": "/private/var/tmp/a",
+                   EVIDENCE_PATH_LEAKS[-1]: "D:\\Users\\a\\b", r"/home/": "/home/a/b"}
+        for prefix, sample in samples.items():
+            with self.subTest(prefix=prefix):
+                kept = [p for p in evidence_leak_patterns("zzz", False) if p != prefix]
+                self.assertEqual(evidence_leaks(sample, kept), [])
+                self.assertTrue(evidence_leaks(sample, evidence_leak_patterns("zzz", False)))
+
+    def test_mutation_a_raw_only_scan_misses_the_artifact(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp) / "mcp-agent-denials-evidence-v9"
+            d.mkdir()
+            (d / "raw.json").write_text("{}", encoding="utf-8")
+            (Path(tmp) / f"{d.name}.md").write_text("ran in /var/folders/ab/T/x\n", encoding="utf-8")
+
+            def found(files):
+                return [p.name for p, art in files if evidence_leaks(p.read_text(encoding="utf-8"), evidence_leak_patterns("zzz", art))]
+
+            self.assertEqual(found(evidence_files(d)), [f"{d.name}.md"])
+            self.assertEqual(found([f for f in evidence_files(d) if not f[1]]), [])  # the pre-SEC-T862-02 scan
+
+    def test_the_metadata_records_the_redaction(self):
+        for d in self.evidence_dirs():
+            text = (d.parent / f"{d.name}.md").read_text(encoding="utf-8")
+            meta = text.split("## Metadata", 1)[1].split("\n## ", 1)[0]
+            with self.subTest(artifact=d.name):
+                self.assertIn("**Redaction**", meta)
+
+
+class T855EvidenceV3Tests(unittest.TestCase):
+    """evidence v3: the stored 1.19.2 resolved lists carry each generated map in order, and their hashes hold."""
+
+    ART = REPO / "docs" / "artifacts" / "mcp-agent-denials-evidence-v3.md"
+    DIR = REPO / "docs" / "artifacts" / "mcp-agent-denials-evidence-v3"
+
+    def test_hashes_listed_in_the_artifact(self):
+        import hashlib
+        text = self.ART.read_text(encoding="utf-8")
+        files = sorted(p for p in self.DIR.iterdir() if p.is_file())
+        self.assertEqual(len(files), 8)
+        for path in files:
+            self.assertIn(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}", text)
+
+    def test_the_agent_segment_equals_the_generated_map(self):
+        for raw in sorted(self.DIR.glob("raw-*.json")):
+            slug = raw.stem[len("raw-"):]
+            rules = [(r["permission"], r["action"], r["pattern"]) for r in json.loads(raw.read_text(encoding="utf-8"))["permission"]]
+            with self.subTest(agent=slug):
+                generated = pattern_rules(parse_file(OPENCODE_AGENTS / f"{slug}.md")[0]["permission"])
+                # v3 records the T855 state; the T861 external_directory map came later (evidence v4).
+                generated = [r for r in generated if r[0] != "external_directory"]
+                self.assertEqual(rules[23:-1], generated)
+                self.assertEqual(rules[-1][:2], ("external_directory", "allow"))
+
+
+
+class T861EvidenceV4Tests(unittest.TestCase):
+    """evidence v4: the stored 1.19.2 lists carry the external_directory deny last and keep the tool-output allow."""
+
+    ART = REPO / "docs" / "artifacts" / "mcp-agent-denials-evidence-v4.md"
+    DIR = REPO / "docs" / "artifacts" / "mcp-agent-denials-evidence-v4"
+
+    def rules(self, raw):
+        return [(r["permission"], r["action"], r["pattern"]) for r in json.loads(raw.read_text(encoding="utf-8"))["permission"]]
+
+    def test_hashes_listed_in_the_artifact(self):
+        import hashlib
+        text = self.ART.read_text(encoding="utf-8")
+        files = sorted(p for p in self.DIR.iterdir() if p.is_file())
+        self.assertEqual(len(files), 6)
+        for path in files:
+            self.assertIn(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}", text)
+
+    def test_the_agent_segment_equals_the_generated_map(self):
+        for raw in sorted(self.DIR.glob("*raw-*.json")):
+            plain = raw.name.startswith("plain-")
+            slug = raw.stem.split("raw-", 1)[1]
+            rules = self.rules(raw)
+            with self.subTest(file=raw.name):
+                generated = pattern_rules(parse_file(OPENCODE_AGENTS / f"{slug}.md")[0]["permission"])
+                self.assertEqual(rules[18 if plain else 23:-1], generated)
+                self.assertEqual(rules[-1], ("external_directory", "allow", "/tmp/evidence-run/xdg/data/opencode/tool-output/*"))
+                if "execute" not in source_tokens(slug):
+                    self.assertEqual(rules[-2], ("external_directory", "deny", "*/gitlab-mcp/*"))
+                    self.assertEqual(pattern_effect("external_directory", "/dev/shm/gitlab-mcp/*", rules), "deny")
+                self.assertEqual(pattern_effect("external_directory", rules[-1][2], rules), "allow")
 
 if __name__ == "__main__":
     unittest.main()

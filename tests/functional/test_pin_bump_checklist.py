@@ -14,19 +14,28 @@ from tests._helpers.repo import repo_root
 ROOT = repo_root()
 DOC = ROOT / "docs" / "wiki" / "mcp-pin-bump-checklist.md"
 IDS = ("SEC-T646-03", "SEC-T646-04", "SEC-T646-05", "SEC-T646-06", "SEC-T655-06", "SEC-T655-07", "SEC-T658-02",
-       "SEC-014", "T638-L-2", "T638-L-8", "K-17", "K-20", "SEC-T675-03", "SEC-T675-09")
-# docs/artifacts/brave-audit-acceptance-v4.md (T808, the user's acceptance of 2026-11-12 for v11.0.0 only) is the current
+       "SEC-014", "T638-L-2", "T638-L-8", "K-17", "K-20", "SEC-T675-03", "SEC-T675-09", "SEC-T860-01", "SEC-T860-02")
+# docs/artifacts/brave-audit-acceptance-v4.md (T808, the user's acceptance of 2026-11-12 for v11.0.0 only) is the newest
 # record; v3 (T712, the user's renewal of 2026-11-01) set the seven advisories and the one expiry, which v4 leaves unchanged.
+# Both are historical since T851 (plan-173, 2026-11-19): the seven were scoped to HISTORICAL_PIN, the bump to 2.1.5 voided
+# them, and 2.1.5 audits clean. The release gate now accepts exactly CURRENT_ACCEPTS (none); a new acceptance needs the
+# user's decision and a new artifact, and is added both here and to the checklist.
 GHSA = ("GHSA-6qxp-vccf-f47h", "GHSA-22jm-h49p-29qw", "GHSA-6prh-2h8m-c8cw", "GHSA-46jr-4wx8-v453", "GHSA-rvq5-wwqv-78pq",
         "GHSA-f897-62hf-6gxq", "GHSA-mrhx-c7xc-m3w5")
 EXPIRY = "2027-01-30"
+HISTORICAL_PIN = "@brave/brave-search-mcp-server@2.1.4"
+CURRENT_ACCEPTS: dict[str, tuple[str, str]] = {}  # advisory -> (expiry, package@version) the release gate must accept
+GATE = "`python3 scripts/audit-mcp-pins.py audit --audit-level high --signatures`"
 ACCEPTANCE = ROOT / "docs" / "artifacts" / "brave-audit-acceptance-v4.md"
 PRIOR_ACCEPTANCE = ROOT / "docs" / "artifacts" / "brave-audit-acceptance-v3.md"  # immutable; still checked below
 WARNING = "Never run `opencode debug config` with your real home"
 REQUIRED_PHRASES = ("audit-mcp-pins.py audit", "audit-mcp-pins.py provenance", "--generate-hashes", "--require-hashes",
                     "Browser security version", "Blocked-origins re-check", "One-time live checks",
                     "opencode agent list", "(unverified)", WARNING, "ci_images_reviewed_on", "--only-binary=:all:", "--exclude-newer",
-                    "brave-audit-acceptance-v4.md", "SEC-T676-11", "SEC-T676-14", "seven days before")
+                    "brave-audit-acceptance-v4.md", "SEC-T676-11", "SEC-T676-14", "seven days before",
+                    "audit-mcp-pins.py age", "**7 days**", "services_limit = 0", "gitlab-runner --version",
+                    "gitlab-runner lint --config /etc/gitlab-runner/config.toml", "journalctl -u gitlab-runner",
+                    "Out-of-cycle trigger", "the ceiling, not the cadence")
 LINKS = {
     "implementation/PREREQUISITES.md": "docs/wiki/mcp-pin-bump-checklist.md",
     "docs/wiki/mcp-servers.md": "mcp-pin-bump-checklist",
@@ -35,23 +44,84 @@ LINKS = {
 
 
 def brave_pin() -> str:
-    """The pinned brave package@version of servers.yaml: the gate command must name exactly this one (SEC-T676-11)."""
+    """The pinned brave package@version of servers.yaml (SEC-T676-11)."""
     spec = re.search(r"@brave/brave-search-mcp-server@\d+\.\d+\.\d+", (ROOT / "implementation/knowledge/mcp/servers.yaml").read_text(encoding="utf-8"))
     assert spec, "brave pin not found in servers.yaml"
     return spec.group(0)
 
 
-def gate_problems(text: str) -> list[str]:
-    """The release gate command accepts exactly the seven brave advisories, each with the artifact's expiry date and
-    scoped to the pinned brave package (an unscoped `GHSA:DATE` is the old, global form and is refused)."""
-    found = re.findall(r"--accept (GHSA-[a-z0-9-]+):(\d{4}-\d{2}-\d{2}):(\S+?)(?=[\s`]|$)", text)
+def audit_script():
+    """The real scripts/audit-mcp-pins.py, loaded as a module (its parser and its acceptance check)."""
+    import importlib.util
+    import sys
+    spec = importlib.util.spec_from_file_location("audit_mcp_pins_chk", ROOT / "scripts" / "audit-mcp-pins.py")
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["audit_mcp_pins_chk"] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def current_npm_pins() -> set[str]:
+    mod = audit_script()
+    return {f"{p.name}@{p.version}" for p in mod.load_pins(mod.SERVERS_YAML) if p.kind == "npm"}
+
+
+def accept_problems(text: str, expected: dict[str, tuple[str, str]], pins: set[str]) -> list[str]:
+    """Every `--accept` of the text: exactly the expected advisories, each with its expiry, scoped to its package@version,
+    and that package@version a pin of `pins` (SEC-T676-11: a bumped pin voids an acceptance; an unscoped `GHSA:DATE` is
+    the old, global form and is refused). `GHSA-xxxx-...` is the syntax placeholder."""
+    found = re.findall(r"--accept (GHSA-(?!xxxx)[a-z0-9-]+):(\d{4}-\d{2}-\d{2}):(\S+?)(?=[\s`]|$)", text)
     out = []
-    if sorted(i for i, _, _ in found) != sorted(GHSA):
-        out.append(f"the release gate accepts {sorted(i for i, _, _ in found)}, expected exactly {sorted(GHSA)}")
-    if len(re.findall(r"--accept GHSA-(?!xxxx)", text)) != len(found):  # GHSA-xxxx-... is the syntax placeholder
+    if sorted(i for i, _, _ in found) != sorted(expected):
+        out.append(f"the release gate accepts {sorted(i for i, _, _ in found)}, expected exactly {sorted(expected)}")
+    if len(re.findall(r"--accept GHSA-(?!xxxx)", text)) != len(found):
         out.append("an --accept in the text lacks the :<package>@<version> scope")
-    out += [f"{i} expires {d}, expected {EXPIRY}" for i, d, _ in found if d != EXPIRY]
-    out += [f"{i} is scoped to {pkg}, expected {brave_pin()}" for i, _, pkg in found if pkg != brave_pin()]
+    out += [f"{i} expires {d}, expected {expected[i][0]}" for i, d, _ in found if i in expected and d != expected[i][0]]
+    out += [f"{i} is scoped to {pkg}, expected {expected[i][1]}" for i, _, pkg in found if i in expected and pkg != expected[i][1]]
+    out += [f"{i} names {pkg}, which is not a current npm pin" for i, _, pkg in found if pkg not in pins]
+    return out
+
+
+def gate_problems(text: str) -> list[str]:
+    """The checklist's release gate: the high audit with signatures, accepting exactly CURRENT_ACCEPTS (T851: none)."""
+    out = [] if GATE in text else [f"the release gate command {GATE} is missing"]
+    return out + accept_problems(text, CURRENT_ACCEPTS, current_npm_pins())
+
+
+def historical_problems(text: str) -> list[str]:
+    """An acceptance artifact of the 2.1.4 pin: exactly the seven advisories, the one expiry, scoped to HISTORICAL_PIN."""
+    return accept_problems(text, {g: (EXPIRY, HISTORICAL_PIN) for g in GHSA}, {HISTORICAL_PIN})
+
+
+def young_problems(text: str) -> list[str]:
+    """SEC-T860-01: every `--allow-young` of the checklist names a current npm pin and a reason, and the filesystem pin
+    of T859 is recorded as the first exception while it is pinned."""
+    found = re.findall(r"--allow-young (?!<)(\S+?@\d+\.\d+\.\d+[^:\s`]*):([^`\n]*)", text)
+    pins = current_npm_pins()
+    out = [f"--allow-young names {spec}, which is not a current npm pin" for spec, _ in found if spec not in pins]
+    out += [f"--allow-young {spec} has no reason" for spec, reason in found if not reason.strip()]
+    first = "@modelcontextprotocol/server-filesystem@2.4.0"
+    if first in pins and (first not in {spec for spec, _ in found} or "the first exception" not in text):
+        out.append(f"{first} is not recorded as the first minimum-age exception")
+    return out
+
+
+AUDITED_LOCKS = ("implementation/runtime/security/requirements-mcp-server.lock.txt",
+                 "implementation/runtime/memory/requirements-mcp-server.lock.txt",
+                 "ci/requirements-ci.txt", "ci/requirements-gate.txt", "ci/requirements-release.txt")
+
+
+def audit_scope_problems(text: str) -> list[str]:
+    """T880: section 2's audit-scope item runs pip-audit on every runtime and every CI lock (ci/requirements-*.txt)."""
+    section = text.split("## 2. ", 1)[-1].split("\n## 3. ", 1)[0]
+    item = re.search(r"^- \*\*Audit scope[^\n]*", section, re.M)
+    if not item:
+        return ["section 2 has no audit-scope item naming the locks pip-audit covers"]
+    out = [] if "pip-audit" in item.group(0) else ["the audit-scope item does not run pip-audit"]
+    on_disk = sorted(p.relative_to(ROOT).as_posix() for p in (ROOT / "ci").glob("requirements-*.txt"))
+    for lock in sorted(set(AUDITED_LOCKS) | set(on_disk)):
+        if f"`{lock}`" not in item.group(0):
+            out.append(f"the audit-scope item does not name {lock}")
     return out
 
 
@@ -61,6 +131,8 @@ def problems(text: str) -> list[str]:
     if re.search(r"HOME=\$\(mktemp[^\n]*\$HOME/", text) or re.search(r"HOME=\$\(mktemp", text):
         out.append("the isolated opencode command expands $HOME in the calling shell (SEC-T676-01): use t=$(mktemp -d) first")
     out += gate_problems(text)
+    out += young_problems(text)
+    out += audit_scope_problems(text)
     for path in set(re.findall(r"`((?:scripts|ci|tests|implementation|docs)/[A-Za-z0-9_./*<>-]+)`", text)):
         if "*" in path or "<" in path or path.endswith("/"):
             continue
@@ -109,15 +181,25 @@ class TestChecklist(unittest.TestCase):
                   "brave-replacement-scouting-v1.md", "plan-155-v11-release-decisions.md", "**Based on**", "devops-engineer")
     ACCEPT_PATTERN = r"--accept (GHSA-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}:\d{4}-\d{2}-\d{2}:\S+?)(?=[\s`]|$)"
 
-    def test_the_acceptance_artifact_matches_the_gate_command_and_the_decision(self):
-        """The current record (v4) and the immutable one before it (v3): the same seven, the same command as the checklist."""
+    def test_the_acceptance_artifacts_keep_the_historical_record_and_the_decision(self):
+        """The newest record (v4) and the immutable one before it (v3): the same seven, scoped to the 2.1.4 pin."""
         for path, needles in ((ACCEPTANCE, self.V4_NEEDLES), (PRIOR_ACCEPTANCE, self.V3_NEEDLES)):
             with self.subTest(artifact=path.name):
                 artifact = path.read_text(encoding="utf-8")
-                self.assertEqual(gate_problems(artifact), [])
+                self.assertEqual(historical_problems(artifact), [])
                 for needle in GHSA + needles:
                     self.assertIn(needle, artifact)
-                self.assertEqual(re.findall(self.ACCEPT_PATTERN, artifact), re.findall(self.ACCEPT_PATTERN, self.text))
+        self.assertEqual(re.findall(self.ACCEPT_PATTERN, ACCEPTANCE.read_text(encoding="utf-8")),
+                         re.findall(self.ACCEPT_PATTERN, PRIOR_ACCEPTANCE.read_text(encoding="utf-8")))
+
+    def test_the_checklist_accepts_only_current_pins_and_no_void_acceptance(self):
+        """T851: the bump voided the seven; the checklist names no --accept for any brave version other than the pin."""
+        self.assertNotEqual(brave_pin(), HISTORICAL_PIN)
+        self.assertNotIn(HISTORICAL_PIN, current_npm_pins())
+        self.assertEqual(re.findall(self.ACCEPT_PATTERN, self.text), [f"{g}:{d}:{p}" for g, (d, p) in CURRENT_ACCEPTS.items()])
+        for spec in re.findall(self.ACCEPT_PATTERN, self.text):
+            if "@brave/" in spec:
+                self.assertTrue(spec.endswith(":" + brave_pin()), spec)
 
     def test_the_acceptance_artifact_expiry_is_within_ninety_days_of_the_decision(self):
         """SEC-T676-11: the script refuses a date more than 90 days out; each recorded decision must respect the same bound."""
@@ -144,32 +226,55 @@ class TestChecklist(unittest.TestCase):
         self.assertFalse(all(n in artifact.replace("Keep the acceptance (Recommended)", "Keep it") for n in self.V4_NEEDLES))
         moved = artifact.replace("GHSA-mrhx-c7xc-m3w5:2027-01-30:", "GHSA-mrhx-c7xc-m3w5:2027-02-11:")
         self.assertNotEqual(moved, artifact)
-        self.assertTrue(gate_problems(moved))
+        self.assertTrue(any("expires" in p for p in historical_problems(moved)))
+        rescoped = artifact.replace(f"GHSA-mrhx-c7xc-m3w5:2027-01-30:{HISTORICAL_PIN}", f"GHSA-mrhx-c7xc-m3w5:2027-01-30:{brave_pin()}")
+        self.assertNotEqual(rescoped, artifact)
+        self.assertTrue(any("is scoped to" in p for p in historical_problems(rescoped)))
 
-    def test_the_gate_command_names_the_current_brave_pin_and_the_script_accepts_it(self):
-        """The documented command parses with the real parser and every package@version it names is a current pin."""
+    def test_the_gate_command_parses_and_the_script_refuses_the_void_acceptances(self):
+        """The documented acceptances (T851: none) pass the real parser and check; the seven of the 2.1.4 pin, from the
+        newest artifact, are refused by the real script now that the pin is 2.1.5 (a bumped pin voids its acceptance)."""
         import datetime as dt
-        import importlib.util
-        import sys
-        spec = importlib.util.spec_from_file_location("audit_mcp_pins_chk", ROOT / "scripts" / "audit-mcp-pins.py")
-        mod = importlib.util.module_from_spec(spec)
-        sys.modules["audit_mcp_pins_chk"] = mod
-        spec.loader.exec_module(mod)
-        specs = [m for m in re.findall(r"--accept (GHSA-(?!xxxx)\S+?(?=[\s`]|$))", self.text)]
-        self.assertEqual(len(specs), len(GHSA))
-        parsed = [mod.parse_accept(s) for s in specs]
+        mod = audit_script()
         pins = mod.load_pins(mod.SERVERS_YAML)
-        keyed = mod.check_acceptances(parsed, pins, parsed[0].until - dt.timedelta(days=30))
-        self.assertEqual({k[0] for k in keyed}, set(GHSA))
+        today = dt.date(2026, 11, 19)
+        specs = re.findall(r"--accept (GHSA-(?!xxxx)\S+?(?=[\s`]|$))", self.text)
+        self.assertEqual(len(specs), len(CURRENT_ACCEPTS))
+        keyed = mod.check_acceptances([mod.parse_accept(s) for s in specs], pins, today)
+        self.assertEqual({k[0] for k in keyed}, set(CURRENT_ACCEPTS))
+        void = re.findall(self.ACCEPT_PATTERN, ACCEPTANCE.read_text(encoding="utf-8"))
+        self.assertEqual(len(void), len(GHSA))
+        for spec in void:
+            with self.subTest(spec=spec):
+                with self.assertRaisesRegex(mod.AuditError, "is not a current npm pin"):
+                    mod.check_acceptances([mod.parse_accept(spec)], pins, today)
 
-    def test_mutation_an_unscoped_or_wrongly_scoped_gate_is_detected(self):
-        unscoped = self.text.replace("--accept GHSA-rvq5-wwqv-78pq:2027-01-30:@brave/brave-search-mcp-server@2.1.4", "--accept GHSA-rvq5-wwqv-78pq:2027-01-30")
-        self.assertNotEqual(unscoped, self.text)
+    def _with_accept(self, spec: str) -> str:
+        self.assertEqual(self.text.count(GATE), 1)
+        return self.text.replace(GATE, GATE[:-1] + f" --accept {spec}`")
+
+    def test_mutation_an_unscoped_void_or_foreign_acceptance_is_detected(self):
+        unscoped = self._with_accept("GHSA-rvq5-wwqv-78pq:2027-01-30")
         self.assertTrue(any("lacks the" in p for p in problems(unscoped)))
-        stale = self.text.replace("GHSA-46jr-4wx8-v453:2027-01-30:@brave/brave-search-mcp-server@2.1.4", "GHSA-46jr-4wx8-v453:2027-01-30:@brave/brave-search-mcp-server@2.1.3")
-        self.assertTrue(any("is scoped to" in p for p in problems(stale)))
-        other = self.text.replace("GHSA-46jr-4wx8-v453:2027-01-30:@brave/brave-search-mcp-server@2.1.4", "GHSA-46jr-4wx8-v453:2027-01-30:left-pad@1.3.0")
-        self.assertTrue(any("is scoped to" in p for p in problems(other)))
+        for spec in (f"GHSA-46jr-4wx8-v453:2027-01-30:{HISTORICAL_PIN}", "GHSA-46jr-4wx8-v453:2027-01-30:@brave/brave-search-mcp-server@2.1.3",
+                     "GHSA-46jr-4wx8-v453:2027-01-30:left-pad@1.3.0"):
+            with self.subTest(spec=spec):
+                self.assertTrue(any("not a current npm pin" in p for p in problems(self._with_accept(spec))))
+
+    def test_mutation_an_acceptance_not_in_the_list_or_with_a_wrong_expiry_or_scope_is_detected(self):
+        current = self._with_accept(f"GHSA-46jr-4wx8-v453:2027-01-30:{brave_pin()}")
+        self.assertTrue(any("accepts" in p for p in problems(current)))
+        self.assertFalse(any("not a current npm pin" in p for p in problems(current)))
+        listed = {"GHSA-46jr-4wx8-v453": (EXPIRY, brave_pin())}
+        self.assertEqual(accept_problems(current, listed, current_npm_pins()), [])
+        self.assertTrue(any("expires" in p for p in accept_problems(current, {"GHSA-46jr-4wx8-v453": ("2027-01-01", brave_pin())}, current_npm_pins())))
+        other_pin = sorted(current_npm_pins() - {brave_pin()})[0]
+        self.assertTrue(any("is scoped to" in p for p in accept_problems(current, {"GHSA-46jr-4wx8-v453": (EXPIRY, other_pin)}, current_npm_pins())))
+
+    def test_mutation_a_weakened_gate_command_is_detected(self):
+        weak = self.text.replace(GATE, "`python3 scripts/audit-mcp-pins.py audit --audit-level high`")
+        self.assertNotEqual(weak, self.text)
+        self.assertTrue(any("release gate command" in p for p in problems(weak)))
 
     def test_the_opencode_warning_and_the_safe_command_are_present(self):
         self.assertIn(WARNING, self.text)
@@ -182,19 +287,46 @@ class TestChecklist(unittest.TestCase):
         self.assertNotEqual(bad, self.text)
         self.assertTrue(any("SEC-T676-01" in p for p in problems(bad)))
 
-    def test_mutation_a_missing_warning_or_a_wider_gate_is_detected(self):
+    def test_mutation_a_missing_warning_is_detected(self):
         self.assertTrue(any("missing phrase" in p for p in problems(self.text.replace(WARNING, "Be careful"))))
-        wider = self.text.replace("--accept GHSA-rvq5-wwqv-78pq:2027-01-30", "--accept GHSA-rvq5-wwqv-78pq:2027-01-30 --accept GHSA-xxxx-yyyy-zzzz:2027-01-30")
-        self.assertTrue(any("accepts" in p for p in problems(wider)))
-        self.assertTrue(any("expires" in p for p in problems(self.text.replace("GHSA-46jr-4wx8-v453:2027-01-30", "GHSA-46jr-4wx8-v453:2027-01-01"))))
 
     def test_mutation_a_dropped_id_is_detected(self):
         self.assertIn("missing id SEC-T655-07", problems(self.text.replace("SEC-T655-07", "SEC-T655-0x")))
+
+    def test_the_minimum_age_exceptions_name_current_pins(self):
+        self.assertEqual(young_problems(self.text), [])
+        self.assertEqual(len(re.findall(r"--allow-young (?!<)", self.text)), 2)
+
+    def test_mutation_a_stale_or_dropped_young_exception_is_detected(self):
+        stale = self.text.replace("--allow-young @brave/brave-search-mcp-server@2.1.5:", "--allow-young @brave/brave-search-mcp-server@2.1.4:")
+        self.assertNotEqual(stale, self.text)
+        self.assertTrue(any("not a current npm pin" in p for p in problems(stale)))
+        dropped = self.text.replace("--allow-young @modelcontextprotocol/server-filesystem@2.4.0:", "--allow-young-x ")
+        self.assertTrue(any("first minimum-age exception" in p for p in problems(dropped)))
+
+    def test_mutation_dropping_the_age_rule_is_detected(self):
+        for phrase in ("**7 days**", "audit-mcp-pins.py age"):
+            with self.subTest(phrase=phrase):
+                self.assertIn(f"missing phrase {phrase!r}", problems(self.text.replace(phrase, "x")))
+
+    def test_mutation_dropping_the_runner_checks_is_detected(self):
+        for phrase in ("gitlab-runner --version", "Out-of-cycle trigger", "journalctl -u gitlab-runner"):
+            with self.subTest(phrase=phrase):
+                self.assertIn(f"missing phrase {phrase!r}", problems(self.text.replace(phrase, "x")))
 
     def test_mutation_a_dead_path_is_detected(self):
         bad = self.text.replace("`ci/requirements-ci.in`", "`ci/requirements-cx.in`")
         self.assertNotEqual(bad, self.text)
         self.assertTrue(any("does not exist" in p for p in problems(bad)))
+
+    def test_mutation_a_ci_lock_dropped_from_the_audit_scope_is_detected(self):
+        for lock in ("ci/requirements-ci.txt", "ci/requirements-gate.txt", "ci/requirements-release.txt"):
+            with self.subTest(lock=lock):
+                head, _, tail = self.text.partition("- **Audit scope")
+                line, nl, rest = tail.partition("\n")
+                bad = head + "- **Audit scope" + line.replace(f"`{lock}`", "x") + nl + rest
+                self.assertNotEqual(bad, self.text)
+                self.assertIn(f"the audit-scope item does not name {lock}", problems(bad))
 
     def test_mutation_a_dropped_section_is_detected(self):
         self.assertTrue(problems(self.text.replace("One-time live checks", "Checks")))

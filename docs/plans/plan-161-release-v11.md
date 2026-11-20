@@ -213,3 +213,16 @@ The other tracked LOW batches, unless a gate finds that one blocks. The route of
 - Subagents never merge, push, tag or release. The top-level session merges after its own verification. The tag and the Release each take the user's approval.
 - `tests/golden/**` and `scripts/scorecard.py` stay protected. Never open `tests/golden/held-out/`. A root refresh needs the user's approval. No `docker` command in any brief.
 - Every mutation run uses a full throwaway copy, a checked baseline, a timeout and a memory cap.
+
+## Outcome (2026-11-14)
+
+**v11.0.0 is published.**
+- Merged into `develop` by MR !684 (`6c52ae12`) and into `main` by MR !685 (`2bb487ef`).
+- Annotated tag `v11.0.0` (`e5645616`) on `3118924a`.
+- Tag pipeline 3067005699: all three jobs passed on runner #59129270.
+- The GitLab Release body equals `docs/releases/v11.0.0.md`.
+- Drift: `releases_behind=0`.
+- Verdict CONDITIONAL_PASS at `4ca11fa3`; independent check PASS.
+- Each publishing step had the user's approval at that moment.
+
+Details, decisions and the carried-over items are in `docs/checkpoints/checkpoint-043-release-v11.0.0.md`. The plan's approval line above was left as written (the orchestrator does not edit its own approval record); the user's approval is quoted in every brief and in the checkpoint.

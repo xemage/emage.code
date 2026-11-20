@@ -57,7 +57,13 @@ python3 -m implementation.runtime.memory.build \
 the workspace's git remote `origin`: lower case, `<org>/<repo>` (for a nested
 group, the last two path parts). The build refuses any other spelling with a
 non-zero exit and writes nothing (T790, QA-T760-02): the query-time filter
-compares exactly, so an index built under `Acme/Widget` answered nothing. The
+compares exactly, so an index built under `Acme/Widget` answered nothing. It
+also derives that id from the `origin` remote of `--own-repo-root`, with the
+server's own normalisation, and refuses a `--project-id` that is not exactly
+that id (a well-formed `acme/other` beside a remote `Acme/Widget`), or any
+`--project-id` when `--own-repo-root` has no usable `origin`: the server does
+not start without one (T828, QA-T818-03). The refusal names the derived id,
+never the remote's credentials. The
 `project_id` in a project-scope entry's frontmatter must be that same string.
 An entry whose `project_id` is any other string is still indexed under its own
 spelling and is never returned, and the build names its path (never its

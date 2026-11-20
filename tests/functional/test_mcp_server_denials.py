@@ -175,7 +175,11 @@ class OpencodeEvaluationTests(unittest.TestCase):
         cls.agents = {}
         for path in sorted((IMPL / ".opencode" / "agents").glob("*.md")):
             fm, _ = parse_file(path)
-            cls.agents[path.stem] = opencode_rules(fm.get("tools"))
+            # T836 (SEC-T663-02): the agent rules are the `permission:` map; the deprecated `tools:` map
+            # is not written any more. Fail loudly instead of evaluating an agent with no rules.
+            assert "tools" not in fm, f"{path.name}: the deprecated `tools:` map is written again"
+            assert isinstance(fm.get("permission"), dict) and fm["permission"], f"{path.name}: no `permission:` map"
+            cls.agents[path.stem] = opencode_rules(fm["permission"])
 
     def effect(self, agent_rules, tool: str, server: str = "playwright") -> str:
         """The effect under both default behaviours; a single word when they agree, else `a/b`."""
@@ -204,7 +208,7 @@ class OpencodeEvaluationTests(unittest.TestCase):
 
     def test_no_shipped_agent_rule_can_override_the_denial(self):
         # An agent rule that matches a denied name would come later than the global deny and win,
-        # unless it is itself a deny (T663: the generated per-agent `false` entries are).
+        # unless it is itself a deny (T663: the generated per-agent `deny` entries are).
         for agent, rules in self.agents.items():
             for pattern, effect in rules:
                 for tool in DENIED:

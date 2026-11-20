@@ -60,6 +60,20 @@ def parse_frontmatter(text: str) -> tuple[str | None, str]:
     return title, body
 
 
+class _RefuseRedirects(urllib.request.HTTPRedirectHandler):
+    """Never follow a redirect: urllib would re-send the PRIVATE-TOKEN header to the new location (SEC-T756-08).
+
+    The same handler as ``scripts/publish-release.py``; the 3xx reaches the caller as an HTTPError and the
+    page counts as failed.
+    """
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: D401
+        return None
+
+
+OPENER = urllib.request.build_opener(_RefuseRedirects)
+
+
 def request(method: str, url: str, token: str, body: dict | None = None) -> tuple[int, dict | None]:
     data = None
     headers = {"PRIVATE-TOKEN": token}
@@ -68,7 +82,7 @@ def request(method: str, url: str, token: str, body: dict | None = None) -> tupl
         headers["Content-Type"] = "application/json"
     req = urllib.request.Request(url, data=data, method=method, headers=headers)
     try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        with OPENER.open(req, timeout=30) as resp:
             return resp.status, json.loads(resp.read().decode("utf-8") or "null")
     except urllib.error.HTTPError as e:
         try:

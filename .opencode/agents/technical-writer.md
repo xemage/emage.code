@@ -1,27 +1,33 @@
 ---
 name: "Technical Writer"
 description: "Use when writing API documentation, creating user guides, generating README files, writing architecture decision records (ADRs), creating CONTRIBUTING guides, documenting deployment procedures, writing inline code documentation, or maintaining project wikis."
-tools:
-  read: true
-  search: true
-  edit: true
-  web: true
-  gitlab_*: false
-  playwright_*: false
-  playwright_browser_run_code_unsafe: false
-  playwright_browser_evaluate: false
-  playwright_browser_file_upload: false
-  playwright_browser_drag: false
-  playwright_browser_drop: false
-  playwright_browser_network_request: false
-  memory_*: false
-  sequential-thinking_*: false
-  context-retriever_*: false
-  security-audit_*: false
-  poc-security-audit_*: false
-  filesystem_*: false
-  git_*: false
-  supabase_*: false
+permission:
+  edit: allow
+  gitlab_*: deny
+  playwright_*: deny
+  playwright_browser_run_code_unsafe: deny
+  playwright_browser_evaluate: deny
+  playwright_browser_file_upload: deny
+  playwright_browser_drag: deny
+  playwright_browser_drop: deny
+  playwright_browser_network_request: deny
+  memory_*: deny
+  sequential-thinking_*: deny
+  context-retriever_*: deny
+  security-audit_*: deny
+  poc-security-audit_*: deny
+  filesystem_*: deny
+  git_*: deny
+  supabase_*: deny
+  bash: deny
+  task: deny
+  read:
+    "gitlab-mcp": deny
+    "gitlab-mcp/*": deny
+    "*/gitlab-mcp": deny
+    "*/gitlab-mcp/*": deny
+  external_directory:
+    "*/gitlab-mcp/*": deny
 ---
 
 # Technical Writer

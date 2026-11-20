@@ -59,7 +59,7 @@
       "command": [
         "npx",
         "-y",
-        "@brave/brave-search-mcp-server@2.1.4",
+        "@brave/brave-search-mcp-server@2.1.5",
         "--transport",
         "stdio"
       ],
@@ -122,7 +122,7 @@
       "command": [
         "npx",
         "-y",
-        "@modelcontextprotocol/server-filesystem@1.0.0",
+        "@modelcontextprotocol/server-filesystem@2.4.0",
         "."
       ]
     },

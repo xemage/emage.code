@@ -26,6 +26,13 @@ builds a THROWAWAY ``package.json`` from them, so the usual tools work on the re
   provenance                    ask the npm registry whether the pinned version, and the ``latest``
         [--require]             version, carry a provenance attestation (SEC-T646-03). --require: exit 1
                                 when a pinned version has none.
+  age [--min-age-days N]        ask npm (``npm view PACKAGE@VERSION time --json``) when each pinned npm
+        [--allow-young PACKAGE@VERSION:REASON]
+                                version was published and report every pin younger than N days (default
+                                7, SEC-T860-01). Exit 1 when a young pin has no --allow-young exception;
+                                an exception must name a current pin and a reason (the merge request
+                                records its provenance, audit and diff review). A missing, non-string or
+                                unparseable publication time is an error (exit 2), never "old enough".
 
 Always printed by ``audit``: a MANUAL ADVISORY READ notice for the three reference servers whose version
 scheme moved from calendar versions (2025.x, 2026.x) to ``1.0.0`` (SEC-T646-06). Advisory ranges written
@@ -88,6 +95,7 @@ NPM_PIN = re.compile(r"^(?P<name>(?:@[a-z0-9][a-z0-9._~-]*/)?[a-z0-9][a-z0-9._~-
                      r"@(?P<version>\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$")
 PYPI_PIN = re.compile(r"^(?P<name>[A-Za-z0-9][A-Za-z0-9._-]*)@(?P<version>[0-9][0-9A-Za-z.!+_-]*)$")
 GHSA_RE = re.compile(r"GHSA-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}")
+MIN_AGE_DAYS = 7  # SEC-T860-01: an npx pin is at least this many days past its npm publication
 MAX_ACCEPT_DAYS = 90  # SEC-T676-11: an acceptance may not run more than 90 days from the day of the run
 UNSAFE_TEXT_RE = re.compile("[\x00-\x1f\x7f-\x9f\u061c\u200b-\u200f\u2028\u2029\u202a-\u202e\u2060-\u2069\ufeff]")
 SECRET_NAME = re.compile(r"(TOKEN|KEY|SECRET|PASSWORD|PASSWD|CREDENTIAL|AUTH|COOKIE)", re.I)
@@ -474,6 +482,76 @@ def command_provenance(args: argparse.Namespace, fetch: Callable[[str], dict] = 
     return 1 if (args.require and missing) else 0
 
 
+@dataclass(frozen=True)
+class YoungAllowance:
+    """One recorded exception to the minimum release age: this pinned package at this version, for this reason."""
+
+    package: str
+    version: str
+    reason: str
+
+
+def parse_allow_young(value: str) -> YoungAllowance:
+    """``PACKAGE@VERSION:REASON``; the reason is mandatory, printable and on one line."""
+    spec, sep, reason = value.partition(":")
+    match = NPM_PIN.match(spec)
+    if not sep or not match or not reason.strip() or UNSAFE_TEXT_RE.search(reason):
+        raise argparse.ArgumentTypeError(f"{safe_text(value)!r}: expected PACKAGE@VERSION:REASON (reason mandatory)")
+    return YoungAllowance(match["name"], match["version"], reason.strip())
+
+
+def non_negative_int(value: str) -> int:
+    if not re.fullmatch(r"\d{1,4}", value):
+        raise argparse.ArgumentTypeError(f"{safe_text(value)!r}: expected a whole number of days (0-9999)")
+    return int(value)
+
+
+def published_on(pin: Pin, runner: Runner, cwd: Path) -> dt.datetime:
+    """The npm publication time of the pinned version; every doubt is an error (fail closed)."""
+    done = runner(["view", f"{pin.name}@{pin.version}", "time", "--json"], cwd)
+    what = f"npm view {pin.name}@{pin.version} time"
+    if done.returncode != 0:
+        raise AuditError(f"{what} failed (exit {done.returncode})")
+    stamp = parse_json(done.stdout, what).get(pin.version)
+    if not isinstance(stamp, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}T[0-9:.]+(Z|[+-]\d{2}:\d{2})", stamp):
+        raise AuditError(f"{what}: no parseable publication time for the pinned version")
+    try:
+        return dt.datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise AuditError(f"{what}: no parseable publication time for the pinned version") from exc
+
+
+def check_allowances(allowed: list[YoungAllowance], pins: list[Pin]) -> dict[tuple[str, str], YoungAllowance]:
+    current = {(p.name, p.version) for p in pins if p.kind == "npm"}
+    by_pin = {}
+    for item in allowed:
+        if (item.package, item.version) not in current:
+            raise AuditError(f"--allow-young names {item.package}@{item.version}, which is not a current npm pin")
+        by_pin[(item.package, item.version)] = item
+    return by_pin
+
+
+def command_age(args: argparse.Namespace, runner: Runner = run_npm, today: dt.date | None = None) -> int:
+    today = today or dt.datetime.now(dt.timezone.utc).date()
+    pins = load_pins(Path(args.servers))
+    allowed = check_allowances(args.allow_young, pins)
+    young = 0
+    with tempfile.TemporaryDirectory(prefix="emage-mcp-age-") as tmp:
+        for pin in (p for p in pins if p.kind == "npm"):
+            published = published_on(pin, runner, Path(tmp))
+            age = (today - published.astimezone(dt.timezone.utc).date()).days
+            line = f"{pin.name}@{pin.version}: published {published.date().isoformat()}, {age} day(s) old"
+            if age >= args.min_age_days:
+                print(line + (" (ok; --allow-young not needed)" if (pin.name, pin.version) in allowed else " (ok)"))
+            elif (pin.name, pin.version) in allowed:
+                print(line + f"  YOUNG, ALLOWED: {safe_text(allowed[(pin.name, pin.version)].reason)}")
+            else:
+                young += 1
+                print(line + f"  YOUNG (under {args.min_age_days} days, no recorded exception)")
+    print(f"pins younger than {args.min_age_days} days without an exception: {young}")
+    return 1 if young else 0
+
+
 def command_list(args: argparse.Namespace) -> int:
     for pin in load_pins(Path(args.servers)):
         print(f"{pin.kind}\t{pin.server}\t{pin.name}\t{pin.version}")
@@ -504,6 +582,11 @@ def build_parser() -> argparse.ArgumentParser:
     prov = sub.add_parser("provenance")
     prov.add_argument("--require", action="store_true")
     prov.set_defaults(func=command_provenance)
+    age = sub.add_parser("age")
+    age.add_argument("--min-age-days", type=non_negative_int, default=MIN_AGE_DAYS)
+    age.add_argument("--allow-young", action="append", default=[], type=parse_allow_young, metavar="PACKAGE@VERSION:REASON",
+                     help="a recorded exception for one pinned version younger than the minimum age (repeatable)")
+    age.set_defaults(func=command_age)
     return parser
 
 

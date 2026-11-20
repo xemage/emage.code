@@ -36,6 +36,27 @@ def _opencode_name(token: str) -> str:
     return f"{clean(server)}_{clean(tool) if sep else '*'}"
 
 
+def _expected_opencode_denials(source_tools: list[str], servers: dict, agents_cfg: dict) -> set[str]:
+    """The deny names sync.mjs must write for one Opencode agent, derived independently of it."""
+    whole = {t[len("mcp__"):].partition("__")[0] for t in source_tools
+             if t.startswith("mcp__") and (t.count("__") == 1 or t.endswith("__*"))}
+    clean = lambda s: re.sub(r"[^a-zA-Z0-9_-]", "_", s)  # noqa: E731
+    out = set()
+    for name, server in servers.items():
+        if server.get("denyUnlessGranted") is True and name not in whole:
+            out.add(f"{clean(name)}_*")
+        out.update(f"{clean(name)}_{clean(t)}" for t in server.get("denyTools", []))
+    for generic, names in agents_cfg.get("permissionDenyUnlessGranted", {}).items():
+        if generic not in source_tools:
+            out.update(names)
+    return out
+
+
+def _parse_source_name(agents_dir: Path, slug: str) -> str:
+    fm, _ = parse_file(agents_dir / f"{slug}.md")
+    return fm["name"]
+
+
 def _load_manifest(platform: str) -> dict:
     path = implementation_root() / "platforms" / f"{platform}.json"
     return json.loads(path.read_text(encoding="utf-8"))
@@ -136,6 +157,10 @@ def _expected_frontmatter_keys(platform: str, kind: str, slug: str) -> set[str]:
     manifest = _load_manifest(platform)
     frontmatter = manifest["frontmatter"][kind]
     keys = set(frontmatter.get("keepKeys", []))
+    if kind == "agents" and frontmatter.get("tools") == "permission":
+        # T836: Opencode writes the source `tools` list as a `permission:` map, never as `tools:`
+        keys.discard("tools")
+        keys.add("permission")
     if kind == "agents":
         additions = frontmatter.get("addToOrchestrators")
         orchestrators = set(frontmatter.get("orchestratorNames", []))
@@ -207,35 +232,52 @@ class TestPlatformProjections(unittest.TestCase):
                             if key in source_fm:
                                 self.assertEqual(target_fm.get(key), source_fm[key])
 
-    def test_opencode_agents_use_tools_object(self):
+    def test_opencode_agents_use_a_permission_map(self):
+        """T836/T839/T841/T843: the Opencode agent carries a `permission:` map and no `tools:` map. The
+        allows are exactly the mapped source tools that remain (MCP names plus the manifest's
+        `permissionKeys`); the denies are exactly the generated ones, derived here from servers.yaml and
+        the manifest (per-agent MCP wildcards, the exact `denyTools`, the trailing built-in denies)."""
         opencode_agents = _generated_root("opencode") / "agents"
         source_agents_dir = knowledge_root() / "agents"
+        agents_cfg = _load_manifest("opencode")["frontmatter"]["agents"]
+        keys = set(agents_cfg["permissionKeys"])
+        servers = yaml.safe_load((knowledge_root() / "mcp" / "servers.yaml").read_text(encoding="utf-8"))["servers"]
 
         for path in sorted(opencode_agents.glob("*.md")):
             source_fm, _ = parse_file(source_agents_dir / f"{path.stem}.md")
             projected_fm, _ = parse_file(path)
             source_tools = source_fm.get("tools", [])
-            projected_tools = projected_fm.get("tools")
+            projected = projected_fm.get("permission")
             with self.subTest(agent=path.stem):
-                self.assertIsInstance(projected_tools, dict, f"{path.name}: tools should be object")
-                self.assertTrue(projected_tools, f"{path.name}: tools object should not be empty")
-                # T657: MCP names are rendered `<server>_<tool>` / `<server>_*` (Opencode naming);
-                # the other tokens pass through unchanged.
-                # T663: the `true` entries are the mapped source list; the `false` entries are the
-                # generated per-agent denials (test_mcp_agent_denials.py pins which ones).
-                allowed = {k for k, v in projected_tools.items() if v is True}
-                denied = {k for k, v in projected_tools.items() if v is False}
-                self.assertEqual(
-                    allowed,
-                    {_opencode_name(t) for t in source_tools},
-                    f"{path.name}: tools keys set to true must match the mapped source tools list",
-                )
-                self.assertEqual(
-                    allowed | denied,
-                    set(projected_tools),
-                    f"{path.name}: every tool value must be true or false",
-                )
+                self.assertNotIn("tools", projected_fm, f"{path.name}: the deprecated `tools:` map is written")
+                self.assertIsInstance(projected, dict, f"{path.name}: permission should be a map")
+                self.assertTrue(projected, f"{path.name}: permission map should not be empty")
+                # T855: the pattern maps (`task` of a delegator, deny-only `read` without `execute`) are
+                # checked here and then left out of the flat allow/deny comparison below.
+                nested = {k: v for k, v in projected.items() if isinstance(v, dict)}
+                # T861: plus the deny-only `external_directory` map without `execute`.
+                self.assertLessEqual(set(nested), {"task", "read", "external_directory"}, f"{path.name}: unexpected pattern map")
+                for key in ("read", "external_directory"):
+                    if key in nested:
+                        self.assertNotIn("execute", source_tools)
+                        self.assertEqual(set(nested[key].values()), {"deny"}, f"{path.name}: a {key} allow")
+                    self.assertEqual(key in nested, "execute" not in source_tools)
+                if "task" in nested:
+                    self.assertIn(agents_cfg["permissionTaskAllowFromAgents"], source_tools)
+                    first, *rest = nested["task"].items()
+                    self.assertEqual(first, ("*", "deny"), f"{path.name}: the task map must start with a whole deny")
+                    want = [_parse_source_name(source_agents_dir, a) for a in source_fm.get("agents", [])]
+                    self.assertEqual(rest, [(n, "allow") for n in want])
+                    self.assertFalse({n for n, _ in rest} & {"build", "plan", "general", "explore"})
+                projected = {k: v for k, v in projected.items() if k not in nested}
+                allowed = {k for k, v in projected.items() if v == "allow"}
+                denied = {k for k, v in projected.items() if v == "deny"}
+                self.assertEqual(allowed | denied, set(projected), f"{path.name}: every value must be allow or deny")
                 self.assertFalse(allowed & denied, f"{path.name}: a name is both allowed and denied")
+                want_allowed = {_opencode_name(t) for t in source_tools if t.startswith("mcp__") or t in keys}
+                self.assertEqual(allowed, want_allowed, f"{path.name}: allows must be the mapped source tools")
+                self.assertEqual(denied, _expected_opencode_denials(source_tools, servers, agents_cfg) - set(nested),
+                                 f"{path.name}: denies must be exactly the generated ones")
 
         for orchestrator in ("orchestrator", "poc-orchestrator"):
             fm, _ = parse_file(opencode_agents / f"{orchestrator}.md")

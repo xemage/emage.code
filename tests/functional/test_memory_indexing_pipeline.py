@@ -446,6 +446,179 @@ class ProjectIdFormTests(unittest.TestCase):
         self.assertNotIn("match.md", warnings)
 
 
+class RemoteProjectIdTests(unittest.TestCase):
+    """T828 (QA-T818-03): the CLI refuses a well-formed `--project-id` that is not the id the server
+    derives from the git remote `origin` of `--own-repo-root`. Before T828 `acme/other` beside a remote
+    `Acme/Widget` built an index (exit 0) that the server filtered to nothing."""
+
+    def setUp(self):
+        from unittest import mock
+        # The user's own git config (an `insteadOf` rewrite, say) must not change what these tests see.
+        patcher = mock.patch.dict(os.environ, {"GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"})
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.root = Path(self._tmp.name) / "repo"
+        self.root.mkdir()
+        self._git("init", "-q")
+
+    def _git(self, *args: str) -> None:
+        import subprocess
+        subprocess.run(["git", "-C", str(self.root), *args], check=True, capture_output=True, text=True)
+
+    def _main(self, project_id: str) -> tuple[int, str, list]:
+        """`build.main` with the build and the write replaced, so no embedding model is needed; returns the
+        exit code, stderr and the configs `build_index` was called with."""
+        import contextlib
+        import io
+        from unittest import mock
+
+        from implementation.runtime.memory import build
+        argv = ["--project-id", project_id, "--own-repo-root", str(self.root), "--general-repo-root",
+                str(self.root), "--output-dir", str(self.root / "out")]
+        empty = build.BuildResult(chunks=[], rejections=[], manifest={})
+        stderr = io.StringIO()
+        with mock.patch.object(build, "build_index", return_value=empty) as built, \
+                mock.patch.object(build, "write_index") as written, contextlib.redirect_stderr(stderr), \
+                contextlib.redirect_stdout(io.StringIO()):
+            code = build.main(argv)
+        if code != 0:
+            written.assert_not_called()
+        return code, stderr.getvalue(), [c.args[0] for c in built.call_args_list]
+
+    def test_a_well_formed_id_that_is_not_the_remotes_is_refused(self):
+        self._git("remote", "add", "origin", "https://gitlab.com/Acme/Widget.git")
+        code, stderr, built = self._main("acme/other")
+        self.assertEqual(code, 2)
+        self.assertEqual(built, [], "a refused build ran")
+        self.assertIn("'acme/other'", stderr)
+        self.assertIn("'acme/widget'", stderr)
+        self.assertFalse((self.root / "out").exists())
+
+    def test_the_id_derived_from_the_remote_is_accepted(self):
+        self._git("remote", "add", "origin", "git@gitlab.com:Acme/Widget.git")
+        code, stderr, built = self._main("acme/widget")
+        self.assertEqual((code, stderr), (0, ""))
+        self.assertEqual([c.project_id for c in built], ["acme/widget"])
+
+    def test_without_an_origin_remote_every_id_is_refused(self):
+        self._git("remote", "add", "upstream", "https://gitlab.com/acme/widget.git")  # not 'origin'
+        code, stderr, built = self._main("acme/widget")
+        self.assertEqual(code, 2)
+        self.assertEqual(built, [])
+        self.assertIn("gives no project id", stderr)
+        self.assertIn("set it and re-run", stderr)
+        self.assertEqual(stderr.count(str(self.root)), 1, "the path is named once")
+
+    def test_a_remote_without_an_org_repo_path_is_refused(self):
+        self._git("remote", "add", "origin", "https://gitlab.com/widget.git")
+        code, stderr, _ = self._main("acme/widget")
+        self.assertEqual(code, 2)
+        self.assertIn("no <org>/<repo> path", stderr)
+
+    def test_the_refusal_never_repeats_remote_userinfo(self):
+        """SEC-T796-01: neither the mismatch message nor a resolution error shows `user:token@`."""
+        for remote, project_id in (("https://bob:S3cr3t-T828@gitlab.com/Acme/Widget.git", "acme/other"),
+                                   ("https://bob:S3cr3t-T828@gitlab.com/widget", "acme/widget")):
+            with self.subTest(remote=remote):
+                if "origin" in self._remotes():
+                    self._git("remote", "remove", "origin")
+                self._git("remote", "add", "origin", remote)
+                code, stderr, _ = self._main(project_id)
+                self.assertEqual(code, 2)
+                self.assertNotIn("S3cr3t-T828", stderr)
+                self.assertNotIn("bob", stderr)
+
+    def test_userinfo_with_a_raw_slash_never_reaches_the_refusal(self):
+        """T831 (SEC-T829-02): userinfo the URL parser cannot separate from the path (a raw `/`, a secret
+        holding `@`) is not repeated in any letter case."""
+        for remote in ("https://usrt831:/sect831@host", "https://usrt831:/a/sect831@host/x",
+                       "ssh://usrt831:p/sect831@h:22/r", "usrt831/x:sect831@host:r",
+                       "https://usrt831:/sect831@x@host"):
+            with self.subTest(remote=remote):
+                if "origin" in self._remotes():
+                    self._git("remote", "remove", "origin")
+                self._git("remote", "add", "origin", remote)
+                code, stderr, built = self._main("acme/widget")
+                self.assertEqual((code, built), (2, []))
+                self.assertNotIn("usrt831", stderr.lower())
+                self.assertNotIn("sect831", stderr.lower())
+
+    def test_a_git_that_hangs_is_a_refusal_not_a_traceback(self):
+        """T831 (SEC-T829-01): `git remote get-url` past its timeout is refused with exit 2, not raised."""
+        from unittest import mock
+
+        from implementation.runtime.memory import context_retriever
+        self._git("remote", "add", "origin", "https://gitlab.com/acme/widget.git")
+        stub_dir = Path(self._tmp.name) / "stub-bin"
+        stub_dir.mkdir()
+        (stub_dir / "git").write_text("#!/bin/sh\nexec sleep 30\n")
+        (stub_dir / "git").chmod(0o755)
+        path = f"{stub_dir}{os.pathsep}{os.environ.get('PATH', '')}"
+        with mock.patch.dict(os.environ, {"PATH": path}), \
+                mock.patch.object(context_retriever, "_GIT_TIMEOUT_S", 0.5):
+            code, stderr, built = self._main("acme/widget")
+        self.assertEqual((code, built), (2, []))
+        self.assertIn("gives no project id", stderr)
+        self.assertNotIn("Traceback", stderr)
+
+    def test_a_query_string_or_fragment_never_reaches_the_refusal(self):
+        """T834 (SEC-T832-01): no secret from a remote's query string or fragment, in any letter case."""
+        for remote in ("https://host/r?private_token=QSECRET", "https://host/o/r?token=QSECRET",
+                       "https://host/o/r#FSECRET"):
+            with self.subTest(remote=remote):
+                if "origin" in self._remotes():
+                    self._git("remote", "remove", "origin")
+                self._git("remote", "add", "origin", remote)
+                code, stderr, built = self._main("acme/widget")
+                self.assertEqual((code, built), (2, []))
+                self.assertNotIn("qsecret", stderr.lower())
+                self.assertNotIn("fsecret", stderr.lower())
+
+    def test_an_at_sign_in_a_query_or_fragment_never_reaches_the_refusal(self):
+        """T835 (SEC-T835-01): an `@` after a `?` or `#` does not let the query or fragment through."""
+        for remote in ("https://host/r?email=a@b&private_token=QSECRET", "https://host/o/r#x@y&FSECRET",
+                       "git@host:o/r?a=b@c&t=QSECRET", "https://bob:p?w@host/r?private_token=QSECRET"):
+            with self.subTest(remote=remote):
+                if "origin" in self._remotes():
+                    self._git("remote", "remove", "origin")
+                self._git("remote", "add", "origin", remote)
+                code, stderr, built = self._main("acme/widget")
+                self.assertEqual((code, built), (2, []))
+                for secret in ("qsecret", "fsecret", "bob", "p?w"):
+                    self.assertNotIn(secret, stderr.lower())
+
+    def test_a_remote_that_is_not_valid_text_is_a_refusal_not_a_traceback(self):
+        """T834 (SEC-T832-02): undecodable `git remote get-url` output is refused with exit 2, not raised."""
+        from unittest import mock
+        self._git("remote", "add", "origin", "https://gitlab.com/acme/widget.git")
+        stub_dir = Path(self._tmp.name) / "stub-bin"
+        stub_dir.mkdir()
+        (stub_dir / "git").write_text("#!/bin/sh\nprintf 'https://h/\\377\\376/r\\n'\n")
+        (stub_dir / "git").chmod(0o755)
+        path = f"{stub_dir}{os.pathsep}{os.environ.get('PATH', '')}"
+        with mock.patch.dict(os.environ, {"PATH": path}):
+            code, stderr, built = self._main("acme/widget")
+        self.assertEqual((code, built), (2, []))
+        self.assertIn("gives no project id", stderr)
+        self.assertNotIn("Traceback", stderr)
+
+    def _remotes(self) -> list[str]:
+        import subprocess
+        out = subprocess.run(["git", "-C", str(self.root), "remote"], check=True, capture_output=True, text=True)
+        return out.stdout.split()
+
+    def test_the_given_value_is_compared_as_given(self):
+        """Compared exactly, never rewritten: `Acme/Widget` and `acme/widget ` are refused where the
+        remote gives `acme/widget`."""
+        self._git("remote", "add", "origin", "https://gitlab.com/Acme/Widget.git")
+        from implementation.runtime.memory import build
+        self.assertIsNone(build.remote_project_id_problem("acme/widget", self.root))
+        self.assertIsNotNone(build.remote_project_id_problem("Acme/Widget", self.root))
+        self.assertIsNotNone(build.remote_project_id_problem("acme/widget ", self.root))
+
+
 def _model_cache_dir() -> Path:
     default = Path.home() / ".cache" / "emage-memory-embeddings"
     return Path(os.environ.get("EMAGE_MEMORY_MODEL_CACHE", str(default)))

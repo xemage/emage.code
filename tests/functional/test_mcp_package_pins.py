@@ -43,8 +43,8 @@ APPROVED_NPX_PINS = {
     "playwright": "@playwright/mcp@0.0.83",
     "memory": "@modelcontextprotocol/server-memory@1.0.0",
     "sequential-thinking": "@modelcontextprotocol/server-sequential-thinking@1.0.0",
-    "brave": "@brave/brave-search-mcp-server@2.1.4",
-    "filesystem": "@modelcontextprotocol/server-filesystem@1.0.0",
+    "brave": "@brave/brave-search-mcp-server@2.1.5",
+    "filesystem": "@modelcontextprotocol/server-filesystem@2.4.0",
     "supabase": "@supabase/mcp-server-supabase@0.13.0",
     "toolradar": "toolradar-mcp@2.1.0",
 }
@@ -129,8 +129,10 @@ class McpPackagePinTests(unittest.TestCase):
     # `npx -y <pin> --transport stdio`. In 2.1.4 BRAVE_MCP_TRANSPORT (environment or a `.env` of the launch
     # directory, loaded by dotenv) is only the default of `--transport <stdio|http>` (dist/config.js), so the
     # explicit flag keeps the HTTP transport off; GHSA-46jr-4wx8-v453, GHSA-f897-62hf-6gxq and the HTTP path of
-    # GHSA-mrhx-c7xc-m3w5 apply as soon as it runs. No other flag and no BRAVE_MCP_* variable may be shipped.
-    BRAVE_ARGS = ["-y", "@brave/brave-search-mcp-server@2.1.4", "--transport", "stdio"]
+    # GHSA-mrhx-c7xc-m3w5 apply to 2.1.4 as soon as it runs. T851: dist/config.js of the pinned 2.1.5 is unchanged
+    # apart from the version, and the HTTP transport still has no authentication on /mcp, so the flag stays.
+    # No other flag and no BRAVE_MCP_* variable may be shipped.
+    BRAVE_ARGS = ["-y", "@brave/brave-search-mcp-server@2.1.5", "--transport", "stdio"]
 
     @staticmethod
     def _brave_launch_ok(entry):
@@ -215,7 +217,7 @@ class McpPackagePinTests(unittest.TestCase):
             self.assertIn("@playwright/mcp@0.0.83", text, rel)
             if path.parts[-2:] == (".vscode", "mcp.json"):
                 continue  # core servers (+ the two Python security servers, T690) only on the github platform
-            self.assertIn("@modelcontextprotocol/server-filesystem@1.0.0", text, rel)
+            self.assertIn("@modelcontextprotocol/server-filesystem@2.4.0", text, rel)
             self.assertIn("mcp-server-git@2026.10.10", text, rel)
             self.assertIn("--repository", text, rel)
             self.assertIn("--read-only", text, rel)
@@ -394,8 +396,8 @@ PLAYWRIGHT_EXCLUDED = {
 
 
 def _is_deny_line(line: str) -> bool:
-    """An indented `<name>: false` entry of an Opencode `tools:` map (T663 per-agent deny)."""
-    return re.fullmatch(r"\s+\S+: false", line) is not None
+    """An indented `<name>: deny` entry of an Opencode `permission:` map (T663 per-agent deny; T836 form)."""
+    return re.fullmatch(r"\s+\S+: deny", line) is not None
 
 
 def _playwright_grants(slug: str) -> set[str]:
@@ -464,7 +466,7 @@ class PlaywrightGrantSetTests(unittest.TestCase):
         self.assertGreaterEqual(len(files), 3 * 20)
         for path in files:
             front = path.read_text(encoding="utf-8").split("---", 2)[1]
-            # T663: an Opencode `name: false` line is a generated per-agent deny, not a grant; its names
+            # T663: an Opencode `name: deny` line is a generated per-agent deny, not a grant; its names
             # are pinned in test_mcp_agent_denials.py
             tokens = re.findall(r"[A-Za-z0-9_./*-]+", "\n".join(
                 l for l in front.splitlines() if not l.startswith(("name:", "description:")) and not _is_deny_line(l)))
@@ -783,7 +785,7 @@ class GitLabGrantSetTests(unittest.TestCase):
             for path in files:
                 slug = path.name[: -len(suffix)]
                 front = path.read_text(encoding="utf-8").split("---", 2)[1]
-                # T663: a generated `gitlab_*: false` (Opencode, agents without a GitLab tool) is a deny, not a grant
+                # T663: a generated `gitlab_*: deny` (Opencode, agents without a GitLab tool) is a deny, not a grant
                 tokens = set(re.findall(r"[A-Za-z0-9_./*-]+", "\n".join(
                     l for l in front.splitlines()
                     if not l.startswith(("name:", "description:")) and not _is_deny_line(l))))

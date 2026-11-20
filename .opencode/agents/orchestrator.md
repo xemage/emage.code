@@ -1,46 +1,56 @@
 ---
 name: "Orchestrator"
 description: "Central project coordinator. Receives user requests, decomposes them into task graphs, delegates to specialist agents, tracks progress via checkpoints, and ensures quality through validation gates. Implements Plan-Approve-Execute workflow. Use when starting a new project, planning features, or coordinating development work."
-tools:
-  gitlab_*: false
-  read: true
-  search: true
-  edit: true
-  execute: true
-  agent: true
-  web: true
-  todo: true
-  gitlab_get_issue: true
-  gitlab_list_issues: true
-  gitlab_list_issue_discussions: true
-  gitlab_create_merge_request: true
-  gitlab_get_merge_request: true
-  gitlab_list_merge_requests: true
-  gitlab_get_merge_request_approval_state: true
-  gitlab_list_merge_request_changed_files: true
-  gitlab_mr_discussions: true
-  gitlab_list_merge_request_pipelines: true
-  gitlab_list_pipelines: true
-  gitlab_get_pipeline: true
-  gitlab_list_pipeline_jobs: true
-  gitlab_get_branch: true
-  gitlab_list_branches: true
-  gitlab_discover_tools: true
-  memory_*: true
-  sequential-thinking_*: true
-  playwright_*: false
-  playwright_browser_run_code_unsafe: false
-  playwright_browser_evaluate: false
-  playwright_browser_file_upload: false
-  playwright_browser_drag: false
-  playwright_browser_drop: false
-  playwright_browser_network_request: false
-  context-retriever_*: false
-  security-audit_*: false
-  poc-security-audit_*: false
-  filesystem_*: false
-  git_*: false
-  supabase_*: false
+permission:
+  gitlab_*: deny
+  edit: allow
+  gitlab_get_issue: allow
+  gitlab_list_issues: allow
+  gitlab_list_issue_discussions: allow
+  gitlab_create_merge_request: allow
+  gitlab_get_merge_request: allow
+  gitlab_list_merge_requests: allow
+  gitlab_get_merge_request_approval_state: allow
+  gitlab_list_merge_request_changed_files: allow
+  gitlab_mr_discussions: allow
+  gitlab_list_merge_request_pipelines: allow
+  gitlab_list_pipelines: allow
+  gitlab_get_pipeline: allow
+  gitlab_list_pipeline_jobs: allow
+  gitlab_get_branch: allow
+  gitlab_list_branches: allow
+  gitlab_discover_tools: allow
+  memory_*: allow
+  sequential-thinking_*: allow
+  playwright_*: deny
+  playwright_browser_run_code_unsafe: deny
+  playwright_browser_evaluate: deny
+  playwright_browser_file_upload: deny
+  playwright_browser_drag: deny
+  playwright_browser_drop: deny
+  playwright_browser_network_request: deny
+  context-retriever_*: deny
+  security-audit_*: deny
+  poc-security-audit_*: deny
+  filesystem_*: deny
+  git_*: deny
+  supabase_*: deny
+  task:
+    "*": deny
+    "Product Owner": allow
+    "Solution Architect": allow
+    "Scrum Master": allow
+    "Tech Lead": allow
+    "Backend Developer": allow
+    "Frontend Developer": allow
+    "Database Engineer": allow
+    "QA Engineer": allow
+    "Security Engineer": allow
+    "DevOps Engineer": allow
+    "Release Manager": allow
+    "Technical Writer": allow
+    "UX Designer": allow
+    "Context Retriever": allow
 agents: [product-owner, solution-architect, scrum-master, tech-lead, backend-developer, frontend-developer, database-engineer, qa-engineer, security-engineer, devops-engineer, release-manager, technical-writer, ux-designer, context-retriever]
 user-invocable: true
 ---
