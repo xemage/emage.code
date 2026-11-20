@@ -29,7 +29,8 @@ builds a THROWAWAY ``package.json`` from them, so the usual tools work on the re
   age [--min-age-days N]        ask npm (``npm view PACKAGE@VERSION time --json``) when each pinned npm
         [--allow-young PACKAGE@VERSION:REASON]
                                 version was published and report every pin younger than N days (default
-                                7, SEC-T860-01). Exit 1 when a young pin has no --allow-young exception;
+                                7, SEC-T860-01; a smaller N is refused, exit 2,
+                                SEC-T867-01: a single exception is --allow-young). Exit 1 when a young pin has no --allow-young exception;
                                 an exception must name a current pin and a reason (the merge request
                                 records its provenance, audit and diff review). A missing, non-string or
                                 unparseable publication time is an error (exit 2), never "old enough".
@@ -506,6 +507,15 @@ def non_negative_int(value: str) -> int:
     return int(value)
 
 
+def min_age_days(value: str) -> int:
+    """SEC-T867-01: ``--min-age-days`` may raise the rule, never lower it. A single young pin has its recorded
+    ``--allow-young`` exception; a lowered floor would have no reason on record."""
+    days = non_negative_int(value)
+    if days < MIN_AGE_DAYS:
+        raise argparse.ArgumentTypeError(f"{days}: below the {MIN_AGE_DAYS}-day rule; use --allow-young for a recorded exception")
+    return days
+
+
 def published_on(pin: Pin, runner: Runner, cwd: Path) -> dt.datetime:
     """The npm publication time of the pinned version; every doubt is an error (fail closed)."""
     done = runner(["view", f"{pin.name}@{pin.version}", "time", "--json"], cwd)
@@ -527,21 +537,24 @@ def check_allowances(allowed: list[YoungAllowance], pins: list[Pin]) -> dict[tup
     for item in allowed:
         if (item.package, item.version) not in current:
             raise AuditError(f"--allow-young names {item.package}@{item.version}, which is not a current npm pin")
+        if (item.package, item.version) in by_pin:
+            raise AuditError(f"--allow-young names {item.package}@{item.version} twice (SEC-T867-02)")
         by_pin[(item.package, item.version)] = item
     return by_pin
 
 
-def command_age(args: argparse.Namespace, runner: Runner = run_npm, today: dt.date | None = None) -> int:
-    today = today or dt.datetime.now(dt.timezone.utc).date()
+def command_age(args: argparse.Namespace, runner: Runner = run_npm, now: dt.datetime | None = None) -> int:
+    now = now or dt.datetime.now(dt.timezone.utc)  # SEC-T867-02: an exact UTC instant, not a calendar-day difference
     pins = load_pins(Path(args.servers))
     allowed = check_allowances(args.allow_young, pins)
     young = 0
     with tempfile.TemporaryDirectory(prefix="emage-mcp-age-") as tmp:
         for pin in (p for p in pins if p.kind == "npm"):
             published = published_on(pin, runner, Path(tmp))
-            age = (today - published.astimezone(dt.timezone.utc).date()).days
-            line = f"{pin.name}@{pin.version}: published {published.date().isoformat()}, {age} day(s) old"
-            if age >= args.min_age_days:
+            published_utc = published.astimezone(dt.timezone.utc)
+            line = (f"{pin.name}@{pin.version}: published {published_utc.strftime('%Y-%m-%dT%H:%M:%SZ')}, "
+                    f"{(now - published_utc).days} day(s) old")
+            if now - published_utc >= dt.timedelta(days=args.min_age_days):
                 print(line + (" (ok; --allow-young not needed)" if (pin.name, pin.version) in allowed else " (ok)"))
             elif (pin.name, pin.version) in allowed:
                 print(line + f"  YOUNG, ALLOWED: {safe_text(allowed[(pin.name, pin.version)].reason)}")
@@ -583,7 +596,7 @@ def build_parser() -> argparse.ArgumentParser:
     prov.add_argument("--require", action="store_true")
     prov.set_defaults(func=command_provenance)
     age = sub.add_parser("age")
-    age.add_argument("--min-age-days", type=non_negative_int, default=MIN_AGE_DAYS)
+    age.add_argument("--min-age-days", type=min_age_days, default=MIN_AGE_DAYS)
     age.add_argument("--allow-young", action="append", default=[], type=parse_allow_young, metavar="PACKAGE@VERSION:REASON",
                      help="a recorded exception for one pinned version younger than the minimum age (repeatable)")
     age.set_defaults(func=command_age)

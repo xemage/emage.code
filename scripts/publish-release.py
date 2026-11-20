@@ -752,6 +752,8 @@ def main() -> int:
         WITHHELD_ENV_NAMES.add(args.token_env)
     if token and not args.token_env:
         WITHHELD_ENV_VALUES.add(token)  # the deprecated --token: no variable name to withhold, so withhold the value
+    # TL-T761-11: with FF_GIT_URLS_WITHOUT_TOKENS on, this fetch carries no credential (CI_JOB_TOKEN is withheld from git):
+    # fine while the project is public, a closed failure if not. Do not widen the allowlist; see CONTRIBUTING.md.
     run_git(["fetch", "--tags", "--force"])
     ensure_full_history()
 

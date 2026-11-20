@@ -286,6 +286,10 @@ First-tag rehearsal checklist (the user runs it on the first real tag pipeline):
 - [ ] `git fetch` in the `release` job worked with the allowlisted environment (the runner's clone
       credential is reached through `.git/config`); if it did not, report the log line, do not widen the
       allowlist to the job token.
+      Note (TL-T761-11): on a runner with `FF_GIT_URLS_WITHOUT_TOKENS` on, this fetch has no credential,
+      because the runner's helper reads `CI_JOB_TOKEN` and `release` withholds it. It works while the project
+      is public and fails closed if it is not. The rule above is right: do not widen the allowlist; report
+      the flag and re-open A-21 (`docs/wiki/mcp-pin-bump-checklist.md` § 3).
 - [ ] `release-docs-gate` ran `rm -rf .git "${CI_PROJECT_DIR}.tmp"`, pip and the gate through
       `scripts/run-allowlisted.py`, and the runner's later stages survived the removal.
 - [ ] `main-develop-drift-gate` ran `apk`, both fetches and both scripts through

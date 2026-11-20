@@ -33,7 +33,7 @@ REQUIRED_PHRASES = ("audit-mcp-pins.py audit", "audit-mcp-pins.py provenance", "
                     "Browser security version", "Blocked-origins re-check", "One-time live checks",
                     "opencode agent list", "(unverified)", WARNING, "ci_images_reviewed_on", "--only-binary=:all:", "--exclude-newer",
                     "brave-audit-acceptance-v4.md", "SEC-T676-11", "SEC-T676-14", "seven days before",
-                    "audit-mcp-pins.py age", "**7 days**", "services_limit = 0", "gitlab-runner --version",
+                    "audit-mcp-pins.py age", "**7 days**", "the option may only raise it", "services_limit = 0", "gitlab-runner --version",
                     "gitlab-runner lint --config /etc/gitlab-runner/config.toml", "journalctl -u gitlab-runner",
                     "Out-of-cycle trigger", "the ceiling, not the cadence")
 LINKS = {
@@ -305,7 +305,7 @@ class TestChecklist(unittest.TestCase):
         self.assertTrue(any("first minimum-age exception" in p for p in problems(dropped)))
 
     def test_mutation_dropping_the_age_rule_is_detected(self):
-        for phrase in ("**7 days**", "audit-mcp-pins.py age"):
+        for phrase in ("**7 days**", "audit-mcp-pins.py age", "the option may only raise it"):
             with self.subTest(phrase=phrase):
                 self.assertIn(f"missing phrase {phrase!r}", problems(self.text.replace(phrase, "x")))
 
