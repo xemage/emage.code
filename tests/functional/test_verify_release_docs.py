@@ -2411,6 +2411,99 @@ class DocumentRefusalTests(_MainRunner):
         self.assertLess(time.monotonic() - started, 1.0)
 
 
+class BatchVThirdRoundTests(unittest.TestCase):
+    """T887 (plan-186, batch V third round): SEC-T751-08 (residual), SEC-T885-01 and SEC-T885-02; each has a mutation
+    recorded in the task report."""
+
+    setUp = VerdictSectionTokenTests.setUp
+    OPENING = VerdictSectionTokenTests.OPENING
+    PENDING = VerdictSectionTokenTests.PENDING
+    FILLED = "## RELEASE VERDICT\n\n- Status: PASS"
+    BYPASS = "| `a|` `<b>` |"
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load()
+
+    problems, in_section = VerdictSectionTokenTests.problems, VerdictSectionTokenTests.in_section
+    gate_errors = VerdictSectionTokenTests.gate_errors
+    look_alike = staticmethod(VerdictSectionTokenTests.look_alike)
+
+    # SEC-T751-08
+    def test_sec_t751_08_a_pipe_span_and_a_tag_span_in_one_table_paragraph_are_refused(self):
+        for table in (f"{self.BYPASS}\n|---|", f"{self.BYPASS}\n|---|---|", f"| h | h2 |\n|---|---|\n{self.BYPASS}",
+                      f"> {self.BYPASS}\n> |---|---|", "| `a\\|` `<b>` |\n|---|"):
+            with self.subTest(table):
+                found = self.gate_errors(f"{table}\n\n{self.FILLED}")
+                self.assertEqual(len(found), 1, found)
+                self.assertIn("doc.md:13 the paragraph that starts on this line may be a table and holds a code span with "
+                              "'|' and a code span with '<'", found[0])
+        for allowed in ("| a | `<dir>` |\n|---|---|", "text `a|` `<b>` text", "| `a|b` | c |\n|---|---|"):
+            with self.subTest(allowed):
+                self.assertEqual(self.gate_errors(f"{allowed}\n\n{self.FILLED}"), [])
+
+    def test_sec_t751_08_the_table_rule_parse_shows_the_tag_a_split_cell_leaves(self):
+        text = f"x\n\n| h | h2 |\n|---|---|\n{self.BYPASS}\n"
+        self.assertIsNone(self.mod.live_html_line(self.mod.markdown_tokens(text)), "commonmark sees two code spans")
+        self.assertEqual(self.mod.live_html_line(self.mod.markdown_tokens(text, True)), 5)
+        refusal = self.mod.table_html_refusal(Path("doc.md"), self.mod.markdown_tokens(text, True))
+        self.assertTrue(refusal.startswith("doc.md:5 read as a GFM table, the block that starts on this line holds HTML"))
+        for allowed in ("| a | `<dir>` |\n|---|---|\n", "| `a\\|` `<b>` |\n|---|\n", "| h |\n|---|\n<!-- c -->\n"):
+            with self.subTest(allowed):
+                self.assertIsNone(self.mod.table_html_refusal(Path("doc.md"), self.mod.markdown_tokens(allowed, True)))
+
+    def test_sec_t751_08_the_table_rule_parse_is_on_the_gate_route_and_checks_its_nesting(self):
+        text = f"x\n\n| h | h2 |\n|---|---|\n{self.BYPASS}\n"
+        with mock.patch.object(self.mod, "table_code_html_line", return_value=None):
+            self.assertIn("doc.md:5 read as a GFM table", self.mod.document_refusal(Path("doc.md"), text))
+        deep = "x\n\n" + "> " * 16 + "| a |\n" + "> " * 16 + "|---|\n"
+        self.assertIsNone(self.mod.nesting_limit_line(self.mod.markdown_tokens(deep)))
+        self.assertIn("doc.md:3 read as GFM tables, the document reaches the parser's limit",
+                      self.mod.document_refusal(Path("doc.md"), deep))
+        self.assertIsNone(self.mod.markdown_tokens("x" * (self.mod.MAX_DOCUMENT_CHARS + 1), True))
+
+    def test_sec_t751_08_the_second_parse_runs_once_and_only_for_a_text_with_a_pipe(self):
+        real = self.mod.MarkdownIt
+        for text, parses in (("# R\n\nno table here\n", 1), ("| a |\n|---|\n", 2)):
+            with self.subTest(text), mock.patch.object(self.mod, "MarkdownIt", side_effect=real) as parser:
+                self.mod.markdown_tokens.cache_clear()
+                for _ in range(2):
+                    self.assertIsNone(self.mod.document_refusal(Path("doc.md"), text))
+                self.assertEqual(parser.call_count, parses)
+
+    # SEC-T885-01
+    def test_sec_t885_01_a_run_of_open_links_costs_linear_time(self):
+        cap = self.mod.MAX_DOCUMENT_CHARS
+        for shape in ("[a](", "[a](\n", "[a](" + "x" * 60):
+            text = (shape * (cap // len(shape) + 1))[:cap]
+            with self.subTest(shape):
+                start = time.monotonic()
+                self.assertEqual(list(self.mod.LINK_RE.finditer(text)), [])
+                self.assertLess(time.monotonic() - start, 1.0)
+        old = re.compile(r"\[[^\[\]]+\]\(([^)]+)\)")
+        for text in ("[a](b)", "[![i](x)](y)", "[a [b] c](d)", "[a\nb](c)", "[a](b.md#c) and [d](../e.md)", "[a]( b )"):
+            with self.subTest(text):
+                self.assertEqual([m.group(1) for m in self.mod.LINK_RE.finditer(text)],
+                                 [m.group(1) for m in old.finditer(text)])
+
+    # SEC-T885-02
+    def test_sec_t885_02_a_cyrillic_or_greek_look_alike_heading_is_a_problem(self):
+        for heading in ("## RELEASE V\u0415RDICT", "## \u0420ELEASE VERDICT", "## RELEASE VERDI\u0421T",
+                        "## R\u0395L\u0395\u0391S\u0395 V\u0395RDICT", "### Release Verdict\u0301",
+                        "## \uff32\uff25\uff2c\uff25\uff21\uff33\uff25 VERDICT", "## RELEASE \u2164ERD\u2160CT"):
+            with self.subTest(heading):
+                self.assertIn(self.look_alike(7), self.in_section(f"{heading}\n\n{self.PENDING}"))
+        for heading in ("## Gate V\u0435rdicts", "## Gate Verdict\u0455", "## \u0393ate Verdicts", "## Gate V\u03b5rdicts"):
+            with self.subTest(heading):
+                self.assertIn(self.look_alike(3, "Gate Verdicts"), self.problems(f"{heading}\n\n- x: pending"))
+        for allowed in ("## RELEASE VERDICTS\n\n- x: y", "## RELEASE VERDICT notes\n\n- x: y"):
+            with self.subTest(allowed):
+                self.assertEqual(self.in_section(allowed), [], "another name stays allowed")
+        self.assertEqual(self.problems("## Gate Verdict\n\n- x: y"), [], "another name stays allowed")
+        self.assertFalse(self.mod.reads_as("RELEASE VERD1CT", "RELEASE VERDICT"), "an ASCII digit is no wildcard")
+        self.assertFalse("\u2164".isalpha(), "a Roman numeral is no letter: only NFKC makes it a 'V'")
+
+
 class AnchorWordingTests(unittest.TestCase):
     """SEC-T739-08: the words a release author reads match the parser, and the gate's commands name the install."""
 

@@ -356,7 +356,8 @@ release:
     # T884 (SEC-T768-04): the release floor of the store as this job installed it, before it sends the token. The check by
     # chain and by key ran in main-develop-drift-gate, same image, same apk add of git; this job needs that gate.
     - python3 -I scripts/run-allowlisted.py -- sh scripts/check-ca-chains.sh --ca-release
-    - python3 scripts/publish-release.py --tag "${CI_COMMIT_TAG}" --api-v4-url "${CI_API_V4_URL}" --expected-host "${CI_SERVER_HOST}" --project-id "${CI_PROJECT_ID}" --token-env CI_JOB_TOKEN --token-header JOB-TOKEN
+    # T887 (SEC-T885-03): -I, so a committed scripts/json.py or similar cannot shadow a module in the job holding the token.
+    - python3 -I scripts/publish-release.py --tag "${CI_COMMIT_TAG}" --api-v4-url "${CI_API_V4_URL}" --expected-host "${CI_SERVER_HOST}" --project-id "${CI_PROJECT_ID}" --token-env CI_JOB_TOKEN --token-header JOB-TOKEN
   artifacts:
     paths:
       - CHANGELOG.md

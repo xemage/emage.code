@@ -114,7 +114,7 @@ DRIFT_GATE_FETCHES = [f"{KEEP_JOB_TOKEN} git fetch origin main develop --depth=1
 DRIFT_GATE_DRIFT = f"{RUN_ALLOWLISTED} -- python3 -I scripts/check-main-develop-drift.py --main-ref origin/main --develop-ref origin/develop"
 DRIFT_GATE_TREE = f'{RUN_ALLOWLISTED} -- python3 -I scripts/check-release-tag-tree.py --tag "${{CI_COMMIT_TAG}}" --main-ref origin/main'
 RELEASE_JOB = "release"
-RELEASE_COMMAND = ('python3 scripts/publish-release.py --tag "${CI_COMMIT_TAG}" --api-v4-url "${CI_API_V4_URL}" '
+RELEASE_COMMAND = ('python3 -I scripts/publish-release.py --tag "${CI_COMMIT_TAG}" --api-v4-url "${CI_API_V4_URL}" '
                    '--expected-host "${CI_SERVER_HOST}" --project-id "${CI_PROJECT_ID}" '
                    "--token-env CI_JOB_TOKEN --token-header JOB-TOKEN")
 RELEASE_ARTIFACTS = {"paths": ["CHANGELOG.md"], "expire_in": "never"}
@@ -1473,10 +1473,16 @@ def unwrapped(line: str) -> list[str]:
     return words
 
 
+def isolated_job_lines(ci: dict) -> list[tuple[str, str]]:
+    """(job, line) for every before_script and script line of the two gates and of the token-holding release job."""
+    return gate_lines(ci) + [(RELEASE_JOB, line) for field in ("before_script", "script")
+                             for line in ci[RELEASE_JOB][field]]
+
+
 def python_child_problems(ci: dict) -> list[str]:
     """SEC-T751-07: every Python child of the two gates runs with -I, so a committed scripts/markdown_it/ or a root pip/
-    cannot shadow the real module. The wrapper itself already runs with -I."""
-    return [f"{job}: a Python child without -I: {line} (SEC-T751-07)" for job, line in gate_lines(ci)
+    cannot shadow the real module. The wrapper itself already runs with -I. T887 (SEC-T885-03): the release job too."""
+    return [f"{job}: a Python child without -I: {line} (SEC-T751-07, SEC-T885-03)" for job, line in isolated_job_lines(ci)
             if (words := unwrapped(line)) and words[0].startswith("python") and words[1:2] != ["-I"]]
 
 
@@ -1545,6 +1551,22 @@ class TestCiT884GateHardening(_CiMutations):
                 self.assertTrue(python_child_problems(bad))
                 self.assertTrue(pinned_job_problems(job, bad[job]))
 
+    # SEC-T885-03
+    def test_mutation_the_release_command_without_isolation_is_refused(self):
+        ci = yaml.safe_load(self.ci)
+        self.assertIn(RELEASE_COMMAND, ci[RELEASE_JOB]["script"])
+        self.assertEqual(unwrapped(RELEASE_COMMAND)[:3], ["python3", "-I", "scripts/publish-release.py"])
+        for name, new in (("no -I", RELEASE_COMMAND.replace("python3 -I ", "python3 ")),
+                          ("-I after the script", RELEASE_COMMAND.replace("python3 -I scripts/publish-release.py",
+                                                                          "python3 scripts/publish-release.py -I")),
+                          ("python3.12 without -I", RELEASE_COMMAND.replace("python3 -I ", "python3.12 "))):
+            with self.subTest(name):
+                bad = yaml.safe_load(self.ci)
+                bad[RELEASE_JOB]["script"] = [new if x == RELEASE_COMMAND else x for x in bad[RELEASE_JOB]["script"]]
+                self.assertNotEqual(bad, ci)
+                self.assertTrue(python_child_problems(bad))
+                self.assertTrue(pinned_job_problems(RELEASE_JOB, bad[RELEASE_JOB]))
+
     def test_the_version_check_runs_isolated_and_no_child_imports_a_sibling(self):
         import ast
         gate = (ROOT / "scripts/verify-release-docs.py").read_text(encoding="utf-8")
@@ -1554,7 +1576,7 @@ class TestCiT884GateHardening(_CiMutations):
         siblings = {p.stem.replace("-", "_") for p in (ROOT / "scripts").glob("*.py")} | {
             p.name for p in (ROOT / "scripts").iterdir() if p.is_dir()}
         for script in ("verify-release-docs.py", "check-version-consistency.py", "check-main-develop-drift.py",
-                       "check-release-tag-tree.py", "run-allowlisted.py"):
+                       "check-release-tag-tree.py", "run-allowlisted.py", "publish-release.py"):
             tree = ast.parse((ROOT / "scripts" / script).read_text(encoding="utf-8"))
             imported = {alias.name.split(".")[0] for node in ast.walk(tree) if isinstance(node, ast.Import) for alias in node.names}
             imported |= {node.module.split(".")[0] for node in ast.walk(tree)
