@@ -334,8 +334,9 @@ VERDICT only; an absent Gate Verdicts is not checked."""
 
 FENCED_CODE_RE = re.compile(r"```.*?```", re.DOTALL)
 INLINE_CODE_RE = re.compile(r"`[^`\n]*`")
-# SEC-T751-06: no "[" in the text, so a run of "[" costs linear time, not quadratic.
-LINK_RE = re.compile(r"\[[^\[\]]+\]\(([^)]+)\)")
+# SEC-T751-06: no "[" in the text, so a run of "[" costs linear time, not quadratic. T887 (SEC-T885-01): no "(" or
+# line break in the target, so each attempt stops at the next "(" and a run of "[a](" costs linear time too.
+LINK_RE = re.compile(r"\[[^\[\]]+\]\(([^()\n]+)\)")
 
 
 class NotUtf8Error(Exception):
@@ -386,7 +387,7 @@ def strip_code(text: str) -> str:
 
 
 @functools.lru_cache(maxsize=None)
-def markdown_tokens(text: str) -> list | None:
+def markdown_tokens(text: str, tables: bool = False) -> list | None:
     """The tokens of ``text``, or None over MAX_DOCUMENT_CHARS or for a line over MAX_LINE_CHARS: never parsed.
 
     SEC-T745-01, TD-T739-01: the limits are checked here, so no route reaches the parser without them.
@@ -394,11 +395,18 @@ def markdown_tokens(text: str) -> list | None:
     The only call of the parser. Every text is remembered, not only the last: check_migration_pointers reads the
     pointed documents in sorted order and check_release_brief reads the tag's own after them, so with v9.0.0 and
     v10.0.0 both pointed to, a cache of one would parse v10.0.0 twice and double SEC-T745-01's worst case. A run holds
-    few documents and ends. The list is shared, so a caller must not change it.
+    few documents and ends. The list is shared, so a caller must not change it. Pass ``tables`` by position, so the
+    cache holds one entry per text and kind.
+
+    ``tables`` (T887, SEC-T751-08) enables the GFM ``table`` rule; only ``table_html_refusal`` reads those tokens. GFM
+    splits a table cell at every unescaped '|', inside a code span too, and parses each cell on its own, so a '|' in one
+    span can leave a later span's '<b>' as a live tag; markdown-it-py's table rule splits cells the same way. Not
+    confirmed against GitLab (no GitLab call).
     """
     if len(text) > MAX_DOCUMENT_CHARS or long_line_number(text) is not None:
         return None
-    return MarkdownIt("commonmark", {"maxNesting": MAX_NESTING}).parse(text)
+    parser = MarkdownIt("commonmark", {"maxNesting": MAX_NESTING})
+    return (parser.enable("table") if tables else parser).parse(text)
 
 
 def heading_text(tokens: list, index: int) -> str:
@@ -435,18 +443,31 @@ def heading_has_text(tokens: list, index: int) -> bool:
 
 
 def folded(text: str) -> str:
-    """``text`` as a reader may take it (SEC-T748-05): format characters dropped, invisible letters read as a blank,
-    white space (``&nbsp;`` included) collapsed, case folded."""
-    kept = "".join(" " if c in INVISIBLE_LETTERS else c for c in text if unicodedata.category(c) != "Cf")
+    """``text`` as a reader may take it (SEC-T748-05): compatibility forms such as full-width letters normalised (NFKC,
+    T887), format characters and combining marks dropped, invisible letters read as a blank, white space (``&nbsp;``
+    included) collapsed, case folded."""
+    kept = "".join(" " if c in INVISIBLE_LETTERS else c for c in unicodedata.normalize("NFKC", text)
+                   if unicodedata.category(c) not in ("Cf", "Mn", "Me") or c in INVISIBLE_LETTERS)
     return " ".join(kept.split()).casefold()
 
 
+def reads_as(text: str, title: str) -> bool:
+    """``text`` folded reads as ``title`` folded, where a non-ASCII letter may stand for any letter (SEC-T885-02, T887).
+
+    A wildcard, not a confusables table: a Cyrillic 'Е' or a Greek 'Ε' passes for 'E', and so does any other letter
+    from outside ASCII, which fails closed. The names this is called with are ASCII."""
+    shown, name = folded(text), folded(title)
+    return len(shown) == len(name) and all(
+        a == b or (not a.isascii() and a.isalpha() and b.isalpha()) for a, b in zip(shown, name))
+
+
 def look_alike_heading_lines(tokens: list, title: str) -> list[int]:
-    """The line of each heading, at any level or depth, that reads as ``title`` but is not its real form (SEC-T748-05)."""
+    """The line of each heading, at any level or depth, that reads as ``title`` but is not its real form (SEC-T748-05,
+    SEC-T885-02)."""
     real = set(section_heading_indexes(tokens, title))
     return [
         token.map[0] + 1 for index, token in enumerate(tokens)
-        if token.type == "heading_open" and index not in real and folded(heading_text(tokens, index)) == folded(title)
+        if token.type == "heading_open" and index not in real and reads_as(heading_text(tokens, index), title)
     ]
 
 
@@ -793,17 +814,22 @@ def may_be_table_line(line: str) -> bool:
 
 
 def table_code_html_line(tokens: list, lines: list[str]) -> int | None:
-    """The first line of a paragraph that may be a GFM table and holds a code span with both '|' and '<' (SEC-T751-08).
+    """The first line of a paragraph that may be a GFM table and holds a code span with '|' and a code span with '<',
+    the same span or two (SEC-T751-08; T887 widened it from one span to the paragraph).
 
-    The commonmark preset has no tables. In a GFM table a '|' inside a code span may end the cell, so the rest of the
-    span could be read as a live tag; GitLab's rendering is not confirmed (no GitLab call), so this fails closed. A
-    span without a '|' cannot be split, so '<dir>' in a table cell's code span stays allowed (v8.0.0.md has such cells).
-    A paragraph may be a table if one of its lines starts with '|' (after blockquote markers) or is a delimiter row.
+    The commonmark preset has no tables. In a GFM table a '|' inside a code span may end the cell, and the backticks
+    after it pair anew, so a later span's '<' could be read as a live tag (`` | `a|` `<b>` | ``). The table-rule parse
+    (``markdown_tokens(text, True)``) catches a real table; this rule also fails closed where the cell counts or another
+    detail decide whether a renderer sees a table (GitLab's rendering is not confirmed, no GitLab call). A paragraph
+    with no code span holding '|' cannot be split inside a span, so '<dir>' in a table cell's code span stays allowed
+    (v8.0.0.md has such cells). A paragraph may be a table if one of its lines starts with '|' (after blockquote
+    markers) or is a delimiter row.
     """
     for index, token in enumerate(tokens):
         if token.type != "inline" or not token.map or tokens[index - 1].type != "paragraph_open":
             continue
-        if not any(child.type == "code_inline" and "<" in child.content and "|" in child.content for child in token.children or []):
+        spans = [child.content for child in token.children or [] if child.type == "code_inline"]
+        if not (any("|" in span for span in spans) and any("<" in span for span in spans)):
             continue
         if any(may_be_table_line(line) for line in lines[token.map[0]:token.map[1]]):
             return token.map[0] + 1
@@ -816,10 +842,14 @@ def nesting_limit_line(tokens: list) -> int | None:
     At the limit the block parser reads no further in that container, and a list takes the rest of what holds it along,
     so nothing there has tokens. Only a pushed token with ``nesting`` 1 raises the level, so the opener that reaches the
     limit is always in the list. A paragraph or heading one level short counts too, though nothing is skipped: fail closed.
+    A table cell opener has no line map (T887), so it takes the line of the last token that has one, its row.
     """
+    line = 1
     for token in tokens:
+        if token.map:
+            line = token.map[0] + 1
         if token.level + token.nesting >= MAX_NESTING:
-            return token.map[0] + 1
+            return line
     return None
 
 
@@ -848,6 +878,15 @@ def document_refusal(relative: Path, text: str) -> str | None:
             f"{relative} opens with a front matter delimiter ('---', '+++' or ';;;'); GitLab may read what follows as "
             "front matter and hide it, so start the document with '# Release' (SEC-T739-04)"
         )
+    return parsed_refusal(relative, text)
+
+
+def parsed_refusal(relative: Path, text: str) -> str | None:
+    """The refusals that read tokens, for ``document_refusal``, in order: nesting, HTML, HTML in a table (SEC-T751-08).
+
+    The table-rule parse is a second parse of the same text under the same limits, only of a text holding a '|', so it at
+    most doubles the parse time that SEC-T745-01 bounds. Its nesting is checked too, since a table adds levels and its tokens stop at the limit.
+    """
     tokens = markdown_tokens(text)
     number = nesting_limit_line(tokens)
     if number is not None:
@@ -866,8 +905,27 @@ def document_refusal(relative: Path, text: str) -> str | None:
     if number is not None:
         return (
             f"{relative}:{number} the paragraph that starts on this line may be a table and holds a code span with '|' and "
-            "'<'; the '|' may end the cell and leave a live tag, so take one of them out of the span or the line out of "
-            "the table (SEC-T751-08)"
+            "a code span with '<'; the '|' may end the cell and leave a live tag, so take the '|' or the '<' out of the code "
+            "spans, or take the line out of the table (SEC-T751-08)"
+        )
+    # A GFM table needs a '|' on its header line, so a text without one has no table and is not parsed again.
+    return table_html_refusal(relative, markdown_tokens(text, True)) if "|" in text else None
+
+
+def table_html_refusal(relative: Path, tokens: list) -> str | None:
+    """SEC-T751-08 (T887): the nesting and HTML rules once more, on the parse with the GFM table rule enabled."""
+    number = nesting_limit_line(tokens)
+    if number is not None:
+        return (
+            f"{relative}:{number} read as GFM tables, the document reaches the parser's limit of {MAX_NESTING} nested "
+            "levels, since a table adds levels; the gate cannot read what lies past it, so nest less (SEC-T751-08)"
+        )
+    number = live_html_line(tokens)
+    if number is not None:
+        return (
+            f"{relative}:{number} read as a GFM table, the block that starts on this line holds HTML other than comments: "
+            "a '|' inside a code span ends the cell, so a later span's '<' becomes a live tag; take the '|' out of the code "
+            "span (SEC-T751-08)"
         )
     return None
 
