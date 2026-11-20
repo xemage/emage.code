@@ -55,6 +55,7 @@ then report an error):
 """
 from __future__ import annotations
 
+import copy
 import datetime as dt
 import re
 import shlex
@@ -1465,6 +1466,23 @@ def gate_lines(ci: dict) -> list[tuple[str, str]]:
             for field in ("before_script", "script") for line in ci[name][field]]
 
 
+def ca_job_pairing_problems(ci: dict) -> list[str]:
+    """SEC-T885-04: the drift gate runs the CA lines of ca-chain-check-python, so both jobs need the same image and the
+    same `openssl` constraint in their `apk add` lines; otherwise the check would prove a different store or tool."""
+    mr, gate = ci.get("ca-chain-check-python", {}), ci.get(DRIFT_GATE_JOB, {})
+    problems = []
+    if not mr.get("image") or mr.get("image") != gate.get("image"):
+        problems.append(f"{DRIFT_GATE_JOB} image {gate.get('image')!r} != ca-chain-check-python image {mr.get('image')!r}")
+
+    def openssl_constraints(job: dict) -> list[str]:
+        return [m for line in job.get("before_script", []) if isinstance(line, str) and "apk add" in line
+                for m in re.findall(r"openssl[^\s'\"]*", line)]
+    a, b = openssl_constraints(mr), openssl_constraints(gate)
+    if not a or a != b:
+        problems.append(f"openssl constraints differ or are missing: ca-chain-check-python {a}, {DRIFT_GATE_JOB} {b}")
+    return problems
+
+
 def unwrapped(line: str) -> list[str]:
     """The command a gate line runs, without the allowlist wrapper and its --keep options."""
     words = shlex.split(line)
@@ -1624,6 +1642,31 @@ class TestCiT884GateHardening(_CiMutations):
             self.assertNotRegex(text, r"set -x|set -o xtrace", job)
         for line in [*DRIFT_GATE_CA_BEFORE_APK, *DRIFT_GATE_CA_AFTER_APK]:
             self.assertNotIn("$", line)  # no variable is expanded, let alone printed
+
+    # SEC-T885-04
+    def test_the_drift_gate_and_the_python_ca_job_share_the_image_and_the_openssl_constraint(self):
+        ci = yaml.safe_load(self.ci)
+        self.assertEqual(ca_job_pairing_problems(ci), [])
+        self.assertEqual(ci[DRIFT_GATE_JOB]["image"], ci["ca-chain-check-python"]["image"])
+
+    def test_mutation_a_different_image_or_openssl_constraint_is_refused(self):
+        def mutated(job, edit):
+            ci = copy.deepcopy(yaml.safe_load(self.ci))
+            edit(ci[job])
+            return ci
+        def set_image(job):
+            job["image"] = job["image"].replace("3.12-alpine", "3.13-alpine")
+        def set_openssl(job):
+            job["before_script"] = [line.replace("openssl~=3.5", "openssl~=3.4") for line in job["before_script"]]
+        def drop_openssl(job):
+            job["before_script"] = [line.replace("'openssl~=3.5' ", "") for line in job["before_script"]]
+        for name, job, edit in (("drift gate image", DRIFT_GATE_JOB, set_image),
+                                ("python job image", "ca-chain-check-python", set_image),
+                                ("drift gate openssl", DRIFT_GATE_JOB, set_openssl),
+                                ("python job openssl", "ca-chain-check-python", set_openssl),
+                                ("drift gate without openssl", DRIFT_GATE_JOB, drop_openssl)):
+            with self.subTest(name):
+                self.assertNotEqual(ca_job_pairing_problems(mutated(job, edit)), [])
 
     def test_mutation_a_ca_check_dropped_or_moved_is_refused(self):
         spki_live = f"    - {DRIFT_GATE_CA_AFTER_APK[-2]}\n"

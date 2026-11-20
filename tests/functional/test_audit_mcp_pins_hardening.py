@@ -462,15 +462,15 @@ class FakeView:
         return subprocess.CompletedProcess(argv, self.rc, reply, "")
 
 
-AGE_TODAY = dt.date(2026, 11, 19)
+AGE_NOW = dt.datetime(2026, 11, 19, 12, 0, 0, tzinfo=dt.timezone.utc)  # SEC-T867-02: a fixed instant
 OLD = "2026-10-01T00:00:00.000Z"
 
 
-def run_age(runner, module=M, extra: tuple = (), servers: Path = SERVERS, today: dt.date = AGE_TODAY) -> tuple[int, str]:
+def run_age(runner, module=M, extra: tuple = (), servers: Path = SERVERS, now: dt.datetime = AGE_NOW) -> tuple[int, str]:
     args = module.build_parser().parse_args(["--servers", str(servers), "age", *extra])
     out = io.StringIO()
     with contextlib.redirect_stdout(out):
-        rc = module.command_age(args, runner=runner, today=today)
+        rc = module.command_age(args, runner=runner, now=now)
     return rc, out.getvalue()
 
 
@@ -496,17 +496,50 @@ class TestMinimumReleaseAge(unittest.TestCase):
         fake = FakeView(all_old(**{FS: "2026-11-18T09:19:39.880Z"}))
         rc, out = run_age(fake)
         self.assertEqual(rc, 1)
-        self.assertIn(f"{FS_PIN}: published 2026-11-18, 1 day(s) old  YOUNG", out)
+        self.assertIn(f"{FS_PIN}: published 2026-11-18T09:19:39Z, 1 day(s) old  YOUNG", out)
         rc, out = run_age(fake, extra=("--allow-young", f"{FS_PIN}:provenance, clean audit, diff read (T860)"))
         self.assertEqual(rc, 0, out)
         self.assertIn("YOUNG, ALLOWED: provenance, clean audit, diff read (T860)", out)
 
     def test_the_boundary_is_the_minimum_age(self):
-        fake = FakeView(all_old(**{FS: "2026-11-12T23:59:59.000Z"}))
+        fake = FakeView(all_old(**{FS: "2026-11-12T12:00:00.000Z"}))
         self.assertEqual(run_age(fake)[0], 0)  # exactly 7 days
-        fake = FakeView(all_old(**{FS: "2026-11-13T00:00:00.000Z"}))
-        self.assertEqual(run_age(fake)[0], 1)  # 6 days
-        self.assertEqual(run_age(fake, extra=("--min-age-days", "6"))[0], 0)
+        fake = FakeView(all_old(**{FS: "2026-11-12T12:00:01.000Z"}))
+        self.assertEqual(run_age(fake)[0], 1)  # 6 days 23:59:59: young, though the calendar-day difference is 7
+        self.assertEqual(run_age(fake, extra=("--min-age-days", "8"))[0], 1)
+
+    def test_the_age_is_an_exact_utc_instant_and_the_print_is_utc(self):
+        # SEC-T867-02 / TL-T876-04: 23:59Z on day 12 is not yet 7 days old at 00:00Z on day 19
+        late = dt.datetime(2026, 11, 19, 0, 0, tzinfo=dt.timezone.utc)
+        fake = FakeView(all_old(**{FS: "2026-11-12T23:59:00.000Z"}))
+        self.assertEqual(run_age(fake, now=late)[0], 1)
+        # an offset stamp is printed in UTC (2026-11-12T01:30+05:00 = 2026-11-11T20:30Z)
+        fake = FakeView(all_old(**{FS: "2026-11-12T01:30:00+05:00"}))
+        rc, out = run_age(fake)
+        self.assertEqual(rc, 0, out)
+        self.assertIn(f"{FS_PIN}: published 2026-11-11T20:30:00Z, 7 day(s) old (ok)", out)
+
+    def test_a_floor_below_the_rule_is_refused_with_exit_2(self):
+        # SEC-T867-01: --min-age-days may raise the rule, not lower it
+        for days in ("0", "1", "6"):
+            with self.subTest(days=days):
+                with self.assertRaises(argparse.ArgumentTypeError):
+                    M.min_age_days(days)
+                err = io.StringIO()
+                with contextlib.redirect_stderr(err), self.assertRaises(SystemExit) as ctx:
+                    M.build_parser().parse_args(["--servers", str(SERVERS), "age", "--min-age-days", days])
+                self.assertEqual(ctx.exception.code, 2)
+                self.assertIn("below the 7-day rule", err.getvalue())
+        self.assertEqual(M.min_age_days("7"), 7)
+        self.assertEqual(M.min_age_days("30"), 30)
+        self.assertEqual(M.build_parser().parse_args(["age"]).min_age_days, 7)
+
+    def test_a_duplicate_allow_young_is_refused(self):
+        # SEC-T867-02: a second exception for the same PACKAGE@VERSION must not silently replace the first
+        fake = FakeView(all_old(**{FS: "2026-11-18T09:19:39.880Z"}))
+        with self.assertRaises(M.AuditError) as ctx:
+            run_age(fake, extra=("--allow-young", f"{FS_PIN}:first", "--allow-young", f"{FS_PIN}:second"))
+        self.assertIn("twice", str(ctx.exception))
 
     def test_missing_unparseable_or_failed_time_is_an_error_not_old_enough(self):
         for fake in (FakeView(all_old(**{FS: None})), FakeView({}), FakeView(all_old(**{FS: "yesterday"})),
@@ -533,7 +566,7 @@ class TestMinimumReleaseAge(unittest.TestCase):
         self.assertEqual(rc, 0)
 
     def test_mutation_ignoring_the_minimum_age_is_detected(self):
-        mutant = mutated("            if age >= args.min_age_days:\n", "            if True:\n")
+        mutant = mutated("            if now - published_utc >= dt.timedelta(days=args.min_age_days):\n", "            if True:\n")
         fake = FakeView(all_old(**{FS: "2026-11-18T09:19:39.880Z"}))
         self.assertEqual(run_age(fake, module=mutant)[0], 0)
         self.assertEqual(run_age(fake)[0], 1)
@@ -556,3 +589,17 @@ class TestMinimumReleaseAge(unittest.TestCase):
     def test_mutation_accepting_a_stale_allowance_is_detected(self):
         mutant = mutated("        if (item.package, item.version) not in current:\n", "        if False:\n")
         self.assertEqual(run_age(FakeView(all_old()), module=mutant, extra=("--allow-young", f"{FS}@0.0.1:x"))[0], 0)
+
+    def test_mutation_a_lowered_floor_a_duplicate_or_a_day_difference_is_detected(self):
+        low = mutated("    if days < MIN_AGE_DAYS:\n", "    if False:\n")
+        self.assertEqual(low.min_age_days("0"), 0)
+        with self.assertRaises(argparse.ArgumentTypeError):
+            M.min_age_days("0")
+        dup = mutated("        if (item.package, item.version) in by_pin:\n", "        if False:\n")
+        fake = FakeView(all_old(**{FS: "2026-11-18T09:19:39.880Z"}))
+        self.assertEqual(run_age(fake, module=dup, extra=("--allow-young", f"{FS_PIN}:a", "--allow-young", f"{FS_PIN}:b"))[0], 0)
+        days = mutated("            if now - published_utc >= dt.timedelta(days=args.min_age_days):\n",
+                       "            if (now.date() - published_utc.date()).days >= args.min_age_days:\n")
+        fake = FakeView(all_old(**{FS: "2026-11-12T12:00:01.000Z"}))
+        self.assertEqual(run_age(fake, module=days)[0], 0)
+        self.assertEqual(run_age(fake)[0], 1)
