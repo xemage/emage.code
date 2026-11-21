@@ -552,6 +552,9 @@ def command_age(args: argparse.Namespace, runner: Runner = run_npm, now: dt.date
         for pin in (p for p in pins if p.kind == "npm"):
             published = published_on(pin, runner, Path(tmp))
             published_utc = published.astimezone(dt.timezone.utc)
+            if published_utc > now:  # SEC-T891-02: a time in the future is an anomaly, never "young" (an exception could hide it)
+                raise AuditError(f"{pin.name}@{pin.version}: publication time {published_utc.strftime('%Y-%m-%dT%H:%M:%SZ')} "
+                                 "is in the future")
             line = (f"{pin.name}@{pin.version}: published {published_utc.strftime('%Y-%m-%dT%H:%M:%SZ')}, "
                     f"{(now - published_utc).days} day(s) old")
             if now - published_utc >= dt.timedelta(days=args.min_age_days):

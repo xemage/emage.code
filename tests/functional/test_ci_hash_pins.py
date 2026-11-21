@@ -1468,18 +1468,19 @@ def gate_lines(ci: dict) -> list[tuple[str, str]]:
 
 def ca_job_pairing_problems(ci: dict) -> list[str]:
     """SEC-T885-04: the drift gate runs the CA lines of ca-chain-check-python, so both jobs need the same image and the
-    same `openssl` constraint in their `apk add` lines; otherwise the check would prove a different store or tool."""
+    same ordered `apk add` argument list (SEC-T891-01: every package and option, not only openssl); otherwise the check would prove a different store or tool."""
     mr, gate = ci.get("ca-chain-check-python", {}), ci.get(DRIFT_GATE_JOB, {})
     problems = []
     if not mr.get("image") or mr.get("image") != gate.get("image"):
         problems.append(f"{DRIFT_GATE_JOB} image {gate.get('image')!r} != ca-chain-check-python image {mr.get('image')!r}")
 
-    def openssl_constraints(job: dict) -> list[str]:
-        return [m for line in job.get("before_script", []) if isinstance(line, str) and "apk add" in line
-                for m in re.findall(r"openssl[^\s'\"]*", line)]
-    a, b = openssl_constraints(mr), openssl_constraints(gate)
+    def apk_adds(job: dict) -> list[list[str]]:
+        """SEC-T891-01: the whole ordered argument list of every `apk add` line, wrapper dropped."""
+        return [words for field in ("before_script", "script") for line in job.get(field, [])
+                if isinstance(line, str) and "apk add" in line and (words := unwrapped(line))[:2] == ["apk", "add"]]
+    a, b = apk_adds(mr), apk_adds(gate)
     if not a or a != b:
-        problems.append(f"openssl constraints differ or are missing: ca-chain-check-python {a}, {DRIFT_GATE_JOB} {b}")
+        problems.append(f"apk add argument lists differ or are missing: ca-chain-check-python {a}, {DRIFT_GATE_JOB} {b}")
     return problems
 
 
@@ -1660,11 +1661,27 @@ class TestCiT884GateHardening(_CiMutations):
             job["before_script"] = [line.replace("openssl~=3.5", "openssl~=3.4") for line in job["before_script"]]
         def drop_openssl(job):
             job["before_script"] = [line.replace("'openssl~=3.5' ", "") for line in job["before_script"]]
+        def set_git(job):
+            job["before_script"] = [line.replace("git~=2.54", "git~=2.53") for line in job["before_script"]]
+        def add_pkg(job):
+            job["before_script"] = [line.replace("'git~=2.54'", "'git~=2.54' 'curl~=8'") for line in job["before_script"]]
+        def drop_git(job):
+            job["before_script"] = [line.replace(" 'git~=2.54'", "") for line in job["before_script"]]
+        def reorder(job):
+            job["before_script"] = [line.replace("'openssl~=3.5' 'git~=2.54'", "'git~=2.54' 'openssl~=3.5'") for line in job["before_script"]]
         for name, job, edit in (("drift gate image", DRIFT_GATE_JOB, set_image),
                                 ("python job image", "ca-chain-check-python", set_image),
                                 ("drift gate openssl", DRIFT_GATE_JOB, set_openssl),
                                 ("python job openssl", "ca-chain-check-python", set_openssl),
-                                ("drift gate without openssl", DRIFT_GATE_JOB, drop_openssl)):
+                                ("drift gate without openssl", DRIFT_GATE_JOB, drop_openssl),
+                                ("drift gate git constraint", DRIFT_GATE_JOB, set_git),
+                                ("drift gate extra package", DRIFT_GATE_JOB, add_pkg),
+                                ("drift gate dropped package", DRIFT_GATE_JOB, drop_git),
+                                ("drift gate reordered", DRIFT_GATE_JOB, reorder),
+                                ("python job git constraint", "ca-chain-check-python", set_git),
+                                ("python job extra package", "ca-chain-check-python", add_pkg),
+                                ("python job dropped package", "ca-chain-check-python", drop_git),
+                                ("python job reordered", "ca-chain-check-python", reorder)):
             with self.subTest(name):
                 self.assertNotEqual(ca_job_pairing_problems(mutated(job, edit)), [])
 
