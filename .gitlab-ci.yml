@@ -31,6 +31,11 @@
 # re-read the digest, read the Alpine version of its base layer, re-read the package versions
 # in that branch's APKINDEX, and change digest and pins together. Do not add an unpinned
 # image or `apk add` (tests/functional/test_publish_release.py fails on it).
+# Test constants that change with a bump (TL-T761-08): tests/functional/test_ci_hash_pins.py holds EOL_TABLE_DATE (the day the end-of-life
+# table in eol_problems_of was written; update it, and the table, whenever a line goes end of life or at every review), PINNED_IMAGE (the
+# `python:3.12-alpine` pattern: edit it when the Python minor changes) and DRIFT_GATE_APK (the exact `apk add` argument list,
+# `openssl~=3.5` and `git~=2.54`: edit it when those pins move; the ca-chain-check-python job must carry the same list). Then set
+# ci_images_reviewed_on below. Full steps: docs/wiki/mcp-pin-bump-checklist.md section 3.
 # Python packages: every `pip install` goes through `--require-hashes -r ci/requirements-*.txt`,
 # the hash-locked output of ci/requirements-*.in (tests/functional/test_ci_hash_pins.py fails on a
 # floating install). To change a package, regenerate the lock (docs/wiki/mcp-pin-bump-checklist.md).
