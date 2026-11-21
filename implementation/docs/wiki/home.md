@@ -21,4 +21,4 @@ Add your project documentation here. Key pages to consider:
 - CI/CD Pipeline: [Link to pipeline]
 
 Release note: documentation updates are a required release gate. Before tagging,
-update release markers in README files and run `python3 scripts/verify-release-docs.py --tag vX.Y.Z`.
+update release markers in README files and, in the emage.code authoring repository, run `python3 scripts/verify-release-docs.py --tag vX.Y.Z` (a maintainer script that a target project does not have; a target skips it or uses its own release check).

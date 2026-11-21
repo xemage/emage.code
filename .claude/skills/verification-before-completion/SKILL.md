@@ -59,7 +59,7 @@ NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE
 | Build succeeds | Build command: exit 0 |
 | Bug fixed | Original reproduction now passes |
 | No drift | `verify.mjs`: OK |
-| Release ready | `verify-release-docs.py --tag X`: passed |
+| Release ready | Authoring repository: `verify-release-docs.py --tag X` passed; a target has no such script and uses its own release check |
 | Gate PASS | Checklist filled with command output |
 
 ## Red Flags — Stop
@@ -81,7 +81,7 @@ node implementation/scripts/verify.mjs --root implementation
 # Repository test suite
 python3 tests/run.py
 
-# Release docs (maintainers)
+# Release docs (maintainers; authoring repository only, a target does not have this script)
 python3 scripts/verify-release-docs.py --tag vX.Y.Z
 ```
 

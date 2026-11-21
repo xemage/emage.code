@@ -178,11 +178,11 @@ When delegating to a specialist agent, always provide:
 **MANDATORY** before a release tag is cut (the top-level session cuts it, with the user's approval):
 
 1. **Release Documentation Gate:**
-   - The top-level session (or the user) runs `glab release create vX.Y.Z --ref vX.Y.Z --name vX.Y.Z -F docs/releases/vX.Y.Z.md` after you have verified: `docs/releases/vX.Y.Z.md` exists and is committed; `scripts/verify-release-docs.py --tag vX.Y.Z` passes
+   - The top-level session (or the user) runs `glab release create vX.Y.Z --ref vX.Y.Z --name vX.Y.Z -F docs/releases/vX.Y.Z.md` after you have verified: `docs/releases/vX.Y.Z.md` exists and is committed; `scripts/verify-release-docs.py --tag vX.Y.Z` passes (that script is the maintainer tool of the emage.code authoring repository; a target project does not have it, so it skips this check or uses its own release check)
    - Release notes are published from that file only; you do not run `glab release create` yourself
    - Do not pass ad-hoc inline `--notes`; it can drift from `docs/releases/vX.Y.Z.md`
-   - File must carry what `scripts/verify-release-docs.py` requires (`Latest release: vX.Y.Z`, `## Install`, `## Highlights`, `## RELEASE VERDICT`) and the sections skill `release-workflow` § 4 prescribes, with valid install instructions (`scripts/install.sh --help` lists the `--platform` values)
-   - Run `scripts/verify-release-docs.py --tag vX.Y.Z` locally before the tag is cut
+   - File must carry what the authoring repository's `scripts/verify-release-docs.py` requires (`Latest release: vX.Y.Z`, `## Install`, `## Highlights`, `## RELEASE VERDICT`) and the sections skill `release-workflow` § 4 prescribes, with valid install instructions (`scripts/install.sh --help` lists the `--platform` values)
+   - In the authoring repository, run `scripts/verify-release-docs.py --tag vX.Y.Z` locally before the tag is cut (a target lacks the script)
 
 2. **Release Task Sequencing:**
    - Release work (version bump, changelog, release notes) must be part of a release MR

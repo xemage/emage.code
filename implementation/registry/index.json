@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-11-19T13:56:24+01:00",
+  "generatedAt": "2026-11-21T19:41:25+01:00",
   "sourceRoot": "implementation/knowledge",
   "platforms": [
     "claude-code",
@@ -234,7 +234,7 @@
       "category": "agent",
       "name": "Orchestrator",
       "path": "agents/orchestrator.md",
-      "checksum": "2e8b44aa8ae3b3a1c0615517d65326b65564787d25a1d53f663d2ba63442804c",
+      "checksum": "9b1a71b9639faa1008c013877b51c1dd8e843760a915c108c37b1c9c0e29f5ba",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
@@ -894,7 +894,7 @@
       "category": "command",
       "name": "prepare-release",
       "path": "commands/prepare-release.md",
-      "checksum": "c1bb3b74b1057f3e8f5d51c30b62efa7c897ad3ec25a0b3335738051fd94a351",
+      "checksum": "553a958b142bcc6829fb8ef5366b4749de56ef37b6e2ff9bc4eb7eb49104cbf2",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1554,7 +1554,7 @@
       "category": "skill",
       "name": "release-workflow",
       "path": "skills/release-workflow/SKILL.md",
-      "checksum": "540a81dc28afe299004f57e421314a79daf956fd264c197435bf32009bcb98ce",
+      "checksum": "64ef75a5e3a1f5586d33bc73f5ba194d73257d10a26165dad84c4b677d7bf753",
       "maturity": "experimental",
       "compatibility": {
         "supportedPlatforms": [
@@ -1730,7 +1730,7 @@
       "category": "skill",
       "name": "verification-before-completion",
       "path": "skills/verification-before-completion/SKILL.md",
-      "checksum": "f26b591b43f7a453b7b1b6f39048ba2e50de69d02010f8229fa077787ed2c02c",
+      "checksum": "282c4c12b82d50a86a107b07d927bae2bcc21e2ea322893916361806246d8271",
       "maturity": "stable",
       "compatibility": {
         "supportedPlatforms": [
