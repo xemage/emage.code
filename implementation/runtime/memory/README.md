@@ -45,12 +45,15 @@ installed.
 
 ```bash
 python3 -m implementation.runtime.memory.build \
-    --project-id em-age/emage.code \
+    --project-id <org>/<repo> \
     --own-repo-root . \
     --general-repo-root . \
     --shared-source-root ../sia \
-    --output-dir implementation/runtime/memory/_index/em-age-emage.code
+    --output-dir implementation/runtime/memory/_index/<org>-<repo>
 ```
+
+Replace `<org>/<repo>` with your own project id (lower case, as described
+below) and `<org>-<repo>` with the same id with `/` replaced by `-`.
 
 `--project-id` is always explicit — never inferred from vault content
 (memory-scope-model-v1.md §4.1). It must be the id the server derives from

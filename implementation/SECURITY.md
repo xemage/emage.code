@@ -6,11 +6,11 @@ This file documents security trade-offs you must review **before** copying emage
 
 ## 1. Auto-approved terminal commands (`.vscode/settings.json`)
 
-`chat.tools.terminal.autoApprove` lets the AI execute the listed commands **without prompting the user**. emage.code v1 shipped with a broad list (git, dotnet, go, node, gemini, opencode, …) for productivity. v2 keeps the same defaults to preserve workflow parity.
+`chat.tools.terminal.autoApprove` lets the AI execute the listed commands **without prompting the user**. emage.code v1 shipped with a broad list (git, dotnet, go, node, gemini, opencode, …) for productivity. That statement is dated: the current harness ships no `.vscode/settings.json` (it generates only `.vscode/mcp.json`), so it sets no auto-approval list. The list is whatever you or your team keep in your own `.vscode/settings.json`, and the points below apply to such a file, for example one carried over from v1.
 
-**Implications:**
+**Implications (for an auto-approve list like v1's):**
 - Any prompt-injected agent could run, for example, `git push --force` or `dotnet build` against a malicious payload without your confirmation.
-- The list does **not** include destructive commands like `rm -rf` or `git reset --hard`, but `git push`, `git commit`, and `git tag` are pre-approved — meaning published commits/tags can be created silently.
+- v1's list did **not** include destructive commands like `rm -rf` or `git reset --hard`, but `git push`, `git commit`, and `git tag` were pre-approved, meaning published commits/tags could be created silently. If your list still has those entries, the same applies.
 
 **Recommended hardening:**
 1. Review `.vscode/settings.json` and remove anything you don't need.

@@ -277,6 +277,21 @@ A job token acts with the permissions of that user, so:
   does, read 2026-10-22), whether protected tags also restrict release create, update and delete,
   and whether `CI_JOB_TOKEN` is masked in job logs.
 
+Two rules for the tag itself (TL-T761-12, TL-T819-03):
+
+- **Do not move `main` between the tag and the end of `main-develop-drift-gate`.** That job's last
+  line (`scripts/check-release-tag-tree.py`) compares the tag's tree with `origin/main`, so a merge
+  into `main` in that window fails it. `develop` may move: the drift check beside it compares only
+  the `README.md` markers.
+- **The three tag jobs (`release-docs-gate`, `main-develop-drift-gate`, `release`) run only on the
+  runner that carries the tag `release-gate`**, the dedicated project runner. That runner's
+  `config.toml` lists the one image it allows (`allowed_images`), and the digest of
+  `python:3.12-alpine` in `.gitlab-ci.yml` must equal that entry. If a release changes the digest,
+  the user changes `allowed_images` to the new digest first; otherwise the three jobs fail closed
+  and nothing is published. The step, and when a new digest needs it, are in
+  `docs/wiki/mcp-pin-bump-checklist.md` § 3 ("Release-gate runner at every bump of the tag jobs'
+  image"); do not repeat it here, and an agent does not change the runner.
+
 First-tag rehearsal checklist (the user runs it on the first real tag pipeline):
 
 - [ ] The `release` job succeeded, or failed with a status code you wrote down (then use the fallback).
