@@ -1474,13 +1474,32 @@ def ca_job_pairing_problems(ci: dict) -> list[str]:
     if not mr.get("image") or mr.get("image") != gate.get("image"):
         problems.append(f"{DRIFT_GATE_JOB} image {gate.get('image')!r} != ca-chain-check-python image {mr.get('image')!r}")
 
-    def apk_adds(job: dict) -> list[list[str]]:
-        """SEC-T891-01: the whole ordered argument list of every `apk add` line, wrapper dropped."""
-        return [words for field in ("before_script", "script") for line in job.get(field, [])
-                if isinstance(line, str) and "apk add" in line and (words := unwrapped(line))[:2] == ["apk", "add"]]
-    a, b = apk_adds(mr), apk_adds(gate)
+    def apk_adds(job: dict) -> tuple[list[list[str]], list[str]]:
+        """SEC-T891-01: the whole ordered argument list of every `apk add` line, wrapper dropped. SEC-T897-01 (fail
+        closed): any other line that names the token `apk` (in its words, in a re-split `sh -c` payload or anywhere in
+        the raw text) is returned as a stray, for example `apk --no-cache add x`,
+        `env X=1 apk add x`, `sh -c 'apk add x'`, `command apk add x` or a `;` or `&&` chain."""
+        adds, strays = [], []
+        for field in ("before_script", "script"):
+            for line in job.get(field, []):
+                if not isinstance(line, str) or not re.search(r"\bapk\b", line):
+                    continue
+                try:
+                    words = unwrapped(line)
+                except ValueError:
+                    strays.append(line)
+                    continue
+                single = (words[:2] == ["apk", "add"] and "apk" not in words[1:]
+                          and not any(re.search(r"[;&|`$()<>\n]", w) for w in words)
+                          and not any("apk" in shlex.split(w) for w in words[2:] if " " in w))
+                (adds if single else strays).append(words if single else line)
+        return adds, strays
+    (a, stray_a), (b, stray_b) = apk_adds(mr), apk_adds(gate)
     if not a or a != b:
         problems.append(f"apk add argument lists differ or are missing: ca-chain-check-python {a}, {DRIFT_GATE_JOB} {b}")
+    if stray_a or stray_b:
+        problems.append(f"a line names apk but is not exactly an `apk add` line (SEC-T897-01): "
+                        f"ca-chain-check-python {stray_a}, {DRIFT_GATE_JOB} {stray_b}")
     return problems
 
 
@@ -1669,6 +1688,10 @@ class TestCiT884GateHardening(_CiMutations):
             job["before_script"] = [line.replace(" 'git~=2.54'", "") for line in job["before_script"]]
         def reorder(job):
             job["before_script"] = [line.replace("'openssl~=3.5' 'git~=2.54'", "'git~=2.54' 'openssl~=3.5'") for line in job["before_script"]]
+        def extra_line(text):
+            def edit(job):
+                job["before_script"] = [*job["before_script"], text]
+            return edit
         for name, job, edit in (("drift gate image", DRIFT_GATE_JOB, set_image),
                                 ("python job image", "ca-chain-check-python", set_image),
                                 ("drift gate openssl", DRIFT_GATE_JOB, set_openssl),
@@ -1681,7 +1704,15 @@ class TestCiT884GateHardening(_CiMutations):
                                 ("python job git constraint", "ca-chain-check-python", set_git),
                                 ("python job extra package", "ca-chain-check-python", add_pkg),
                                 ("python job dropped package", "ca-chain-check-python", drop_git),
-                                ("python job reordered", "ca-chain-check-python", reorder)):
+                                ("python job reordered", "ca-chain-check-python", reorder),
+                                ("drift gate apk with option before add", DRIFT_GATE_JOB, extra_line("apk --no-cache add x")),
+                                ("python job apk with option before add", "ca-chain-check-python", extra_line("apk --no-cache add x")),
+                                ("drift gate apk in sh -c", DRIFT_GATE_JOB, extra_line("sh -c 'apk add x'")),
+                                ("python job apk in sh -c", "ca-chain-check-python", extra_line("sh -c 'apk add x'")),
+                                ("drift gate apk after env", DRIFT_GATE_JOB, extra_line("env X=1 apk add x")),
+                                ("drift gate apk after command", DRIFT_GATE_JOB, extra_line("command apk add x")),
+                                ("python job apk chained", "ca-chain-check-python", extra_line("true && apk add x")),
+                                ("drift gate apk chained with semicolon", DRIFT_GATE_JOB, extra_line("apk add y; apk add x"))):
             with self.subTest(name):
                 self.assertNotEqual(ca_job_pairing_problems(mutated(job, edit)), [])
 
