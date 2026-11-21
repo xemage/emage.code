@@ -2790,3 +2790,104 @@ class BatchVGateTests(unittest.TestCase):
         line = "- **Independent check**: PASS at abc, by <tech-lead | orchestrator | top-level session>"
         found = self.in_section(line)
         self.assertTrue(any(p.startswith("RELEASE VERDICT: unfilled placeholder '<tech-lead': ") for p in found), found)
+
+
+class BatchVFourthRoundTests(unittest.TestCase):
+    """T899: SEC-T888-03, SEC-T888-02(b), SEC-T888-01."""
+
+    PENDING = VerdictSectionTokenTests.PENDING
+    FILLED = "## RELEASE VERDICT\n\n- Status: PASS"
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load()
+
+    def setUp(self):
+        require_parser(self)
+
+    problems, in_section = VerdictSectionTokenTests.problems, VerdictSectionTokenTests.in_section
+    gate_errors = VerdictSectionTokenTests.gate_errors
+    look_alike = staticmethod(VerdictSectionTokenTests.look_alike)
+    OPENING = VerdictSectionTokenTests.OPENING
+
+    def link_errors(self, text: str) -> list[str]:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "a.md").write_text("# a\n", encoding="utf-8")
+            (root / "doc.md").write_text(text, encoding="utf-8")
+            errors: list[str] = []
+            with mock.patch.object(self.mod, "ROOT", root):
+                self.mod.check_links(root / "doc.md", errors)
+            return errors
+
+    # SEC-T888-03
+    def test_sec_t888_03_a_link_the_pattern_cannot_read_is_refused(self):
+        for text in ("[a](b_(c).md)", "[a](\nb.md)", '[a](a.md "t (x)")', "[a](<b (c).md>)", "x](y"):
+            with self.subTest(text):
+                errors = self.link_errors(f"# d\n\n{text}\n")
+                self.assertEqual(len(errors), 1, errors)
+                self.assertTrue(errors[0].startswith("cannot check a link in doc.md: "), errors)
+                self.assertIn("SEC-T888-03", errors[0])
+
+    def test_sec_t888_03_a_link_the_pattern_reads_is_not_refused(self):
+        for text in ("[a](a.md)", "[![i](https://x.test/i.svg)](https://x.test/)", "[`a.md`](a.md)", "[a](a.md#s) [b](a.md)",
+                     "```\n[a](b_(c).md)\n```", "`[a](b_(c).md)`", "[![i](a.md)](a.md)"):
+            with self.subTest(text):
+                self.assertEqual(self.link_errors(f"# d\n\n{text}\n"), [])
+        self.assertEqual(self.link_errors("[a](missing.md)"), ["broken link in doc.md: missing.md"])
+        self.assertEqual(self.link_errors("[`a`](missing.md)"), [], "the target of a link with code text is not looked up")
+
+    def test_sec_t888_03_the_link_check_stays_linear_on_the_worst_shapes(self):
+        cap = self.mod.MAX_DOCUMENT_CHARS
+        for shape in ("[a](", "[a](\n", "[a](" + "x" * 60, "](", "![a](b)](", "[![a](b)](", "[" * 50 + "](", "[a]( (" ):
+            text = (shape * (cap // len(shape) + 1))[:cap]
+            with self.subTest(shape):
+                start = time.monotonic()
+                errors = self.link_errors(text)
+                self.assertLess(time.monotonic() - start, 2.0)
+                self.assertTrue(all(error.startswith(("cannot check a link in doc.md: ", "broken link in doc.md: "))
+                                    for error in errors), errors[:3])
+
+    # SEC-T888-02(b)
+    def test_sec_t888_02_b_a_symbol_look_alike_in_a_heading_is_a_problem(self):
+        for heading in ("## RELEASE \u2228ERDICT", "## RELEASE VERD\u2223CT", "## RELEASE \u2228ERD\u2223CT"):
+            with self.subTest(heading):
+                self.assertTrue(self.mod.reads_as(heading[3:], "RELEASE VERDICT"))
+                self.assertIn(self.look_alike(7), self.in_section(f"{heading}\n\n{self.PENDING}"))
+        self.assertIn(self.look_alike(3, "Gate Verdicts"), self.problems("## Gate Verd\u2223cts\n\n- x: pending"))
+        for heading in ("RELEASE VERDICT notes", "RELEASE VERDICTS", "RELEASE VERD1CT", "RELEASE VERDIC"):
+            with self.subTest(heading):
+                self.assertFalse(self.mod.reads_as(heading, "RELEASE VERDICT"))
+
+    # SEC-T888-01
+    def test_sec_t888_01_a_pipe_and_a_tag_outside_code_in_a_table_paragraph_are_refused(self):
+        for table in ('| h | h2 |\n|---|---|\n| [x](y "|<b>") | c |', '| [x](y "|<b>") |\n|---|', '> | [x](y "|<b>") |\n> |---|',
+                      "| a | b <i |\n|---|---|", "a | b\n--- | ---\nc | d<e"):
+            with self.subTest(table):
+                found = self.gate_errors(f"{table}\n\n{self.FILLED}")
+                self.assertEqual(len(found), 1, found)
+                self.assertIn("the paragraph that starts on this line may be a table and holds a '|' and a '<' outside any "
+                              "code span or comment", found[0])
+        for allowed in ("| a | `<dir>` |\n|---|---|", "| a | `x|y` |\n|---|---|", "text | with <!-- c --> pipe",
+                        "| a |\n|---|\n<!-- x|<y -->", "x < y and a | b", "| a | b |\n|---|---|\n| &lt;b&gt; | c |"):
+            with self.subTest(allowed):
+                self.assertEqual(self.gate_errors(f"{allowed}\n\n{self.FILLED}"), [])
+
+    # SEC-T900-01
+    def test_sec_t900_01_the_pipe_and_tag_rule_stays_linear_on_backticks_and_comments(self):
+        cap = self.mod.MAX_DOCUMENT_CHARS
+        for shape in ("`" + "\n" * 60, "`\n", "``" + "a\n", "<!--", "<!-- ", "<!--|<", "`a|<` ``", "`" * 7 + "\n"):
+            text = (shape * (cap // len(shape) + 1))[:cap]
+            with self.subTest(shape[:12]):
+                start = time.monotonic()
+                self.mod.pipe_and_tag_outside_code(text)
+                self.assertLess(time.monotonic() - start, 2.0)
+
+    def test_sec_t900_01_code_spans_and_comments_are_cut_as_before(self):
+        cut = self.mod.pipe_and_tag_outside_code
+        for text in ("`a|<b`", "``a|`<b``", "<!-- a|<b -->", "`a|`\n`<b>`", "a|b <!-- x --> `<`"):
+            with self.subTest(text):
+                self.assertFalse(cut(text))
+        for text in ("`a|<b", "a|<!-- b", "| `<b>", "``a` |<", "a | <b>"):
+            with self.subTest(text):
+                self.assertTrue(cut(text))
