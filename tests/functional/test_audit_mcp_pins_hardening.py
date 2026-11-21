@@ -519,6 +519,19 @@ class TestMinimumReleaseAge(unittest.TestCase):
         self.assertEqual(rc, 0, out)
         self.assertIn(f"{FS_PIN}: published 2026-11-11T20:30:00Z, 7 day(s) old (ok)", out)
 
+    def test_a_publication_time_in_the_future_is_an_error_and_exactly_now_is_age_zero(self):
+        # SEC-T891-02: later than `now` -> AuditError (exit 2), even with an exception; exactly `now` is age 0, young
+        for stamp in ("2026-11-19T12:00:01.000Z", "2027-01-01T00:00:00.000Z"):
+            with self.subTest(stamp=stamp):
+                fake = FakeView(all_old(**{FS: stamp}))
+                with self.assertRaises(M.AuditError):
+                    run_age(fake)
+                with self.assertRaises(M.AuditError):
+                    run_age(fake, extra=("--allow-young", f"{FS_PIN}:T896 reason"))
+        rc, out = run_age(FakeView(all_old(**{FS: "2026-11-19T12:00:00.000Z"})))
+        self.assertEqual(rc, 1)
+        self.assertIn(f"{FS_PIN}: published 2026-11-19T12:00:00Z, 0 day(s) old  YOUNG", out)
+
     def test_a_floor_below_the_rule_is_refused_with_exit_2(self):
         # SEC-T867-01: --min-age-days may raise the rule, not lower it
         for days in ("0", "1", "6"):
@@ -589,6 +602,20 @@ class TestMinimumReleaseAge(unittest.TestCase):
     def test_mutation_accepting_a_stale_allowance_is_detected(self):
         mutant = mutated("        if (item.package, item.version) not in current:\n", "        if False:\n")
         self.assertEqual(run_age(FakeView(all_old()), module=mutant, extra=("--allow-young", f"{FS}@0.0.1:x"))[0], 0)
+
+    def test_mutation_a_future_publication_time_treated_as_young_or_now_as_future_is_detected(self):
+        # SEC-T891-02
+        check = "            if published_utc > now:"
+        future = mutated(check, "            if False:")
+        fake = FakeView(all_old(**{FS: "2027-01-01T00:00:00.000Z"}))
+        self.assertEqual(run_age(fake, module=future)[0], 1)  # the old behaviour: young, not an error
+        with self.assertRaises(M.AuditError):
+            run_age(fake)
+        at_now = mutated(check, "            if published_utc >= now:")
+        fake = FakeView(all_old(**{FS: "2026-11-19T12:00:00.000Z"}))
+        with self.assertRaises(at_now.AuditError):
+            run_age(fake, module=at_now)
+        self.assertEqual(run_age(fake)[0], 1)
 
     def test_mutation_a_lowered_floor_a_duplicate_or_a_day_difference_is_detected(self):
         low = mutated("    if days < MIN_AGE_DAYS:\n", "    if False:\n")
