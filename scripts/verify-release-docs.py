@@ -277,10 +277,12 @@ with the line of the block that does and no content (SEC-T739-09). If the parser
 comments, named with the line its block starts on and no content (SEC-T745-03). If a paragraph
 that may be a GFM table (a line starts with '|' or is a delimiter row) holds a code span with
 '|' and a code span with '<', the same span or two, named with its first line: the commonmark preset has no tables, and GitLab
-may split the span at the '|' (unverified), so this fails closed (SEC-T751-08). Then, for a text holding
+may split the span at the '|' (unverified), so this fails closed (SEC-T751-08). The same paragraph is refused if it holds a '|' and a '<'
+anywhere outside a code span or comment, such as a link title '"|<b>"' (SEC-T888-01). Then, for a text holding
 a '|', the same text is parsed a second time with the GFM table rule, and the nesting and HTML rules apply to
 that parse too (SEC-T751-08, T887); it adds a second parse, about the same cost as the first if the table rule costs no more (not measured). A refused
-document is not checked for links (SEC-T751-06).
+document is not checked for links (SEC-T751-06). Link check: a '](' whose link the patterns cannot read, such as a
+target holding a parenthesis or starting on the next line, is reported as "cannot check", not skipped (SEC-T888-03).
 Time (SEC-T745-01): the cap limits the parser's time and does not make it small; the job's
 timeout is what stops a run. Measured on 2026-11-06 on one machine, with markdown-it-py 4.2.0
 and the whole gate on one crafted document at the cap: the worst of 41 shapes tried, unclosed
@@ -334,11 +336,15 @@ limit the parser gives no tokens: a section with no later heading runs to the en
 document, which fails closed, and a heading there is absent, which fails closed for RELEASE
 VERDICT only; an absent Gate Verdicts is not checked."""
 
+BACKTICK_RUN_RE = re.compile(r"`+")  # SEC-T900-01: code spans and comments are cut by linear scans, not backtracking patterns
 FENCED_CODE_RE = re.compile(r"```.*?```", re.DOTALL)
 INLINE_CODE_RE = re.compile(r"`[^`\n]*`")
 # SEC-T751-06: no "[" in the text, so a run of "[" costs linear time, not quadratic. T887 (SEC-T885-01): no "(" or
 # line break in the target, so each attempt stops at the next "(" and a run of "[a](" costs linear time too.
 LINK_RE = re.compile(r"\[[^\[\]]+\]\(([^()\n]+)\)")
+# T899 (SEC-T888-03): the outer link of a linked image, '[![alt](src)](target)', which LINK_RE cannot match (its text holds
+# '['). Same linear shape: every part stops at the next bracket, parenthesis or line break.
+IMAGE_LINK_RE = re.compile(r"!\[[^\[\]]*\]\([^()\n]*\)\]\(([^()\n]+)\)")
 
 
 class NotUtf8Error(Exception):
@@ -383,9 +389,11 @@ def normalize_target(current_file: Path, raw_target: str) -> Path | None:
     return (ROOT / current_file.parent / target).resolve()
 
 
-def strip_code(text: str) -> str:
+def strip_code(text: str, inline: str = "") -> str:
+    """``text`` without fenced code; an inline code span becomes ``inline`` (T899: 'x' in ``check_links``, so the text of
+    a link such as ``[`a.md`](a.md)`` is not empty and the link is read)."""
     text = FENCED_CODE_RE.sub("", text)
-    return INLINE_CODE_RE.sub("", text)
+    return INLINE_CODE_RE.sub(inline, text)
 
 
 @functools.lru_cache(maxsize=None)
@@ -459,14 +467,21 @@ def folded(text: str) -> str:
     return " ".join(unicodedata.normalize("NFKC", kept).casefold().split())
 
 
+def is_wildcard_char(char: str) -> bool:
+    """``char`` is outside ASCII and is no white space and no mark, so it may stand for any character (SEC-T888-02(b)).
+
+    Letters and also look-alike symbols such as U+2228 (for V) and U+2223 (for I). Marks are dropped by ``folded``."""
+    return not char.isascii() and not char.isspace() and not unicodedata.category(char).startswith("M")
+
+
 def reads_as(text: str, title: str) -> bool:
-    """``text`` folded reads as ``title`` folded, where a non-ASCII letter may stand for any letter (SEC-T885-02, T887).
+    """``text`` folded reads as ``title`` folded, where a non-ASCII character that is no white space and no mark may stand
+    for any character (SEC-T885-02, T887, SEC-T888-02(b)).
 
     A wildcard, not a confusables table: a Cyrillic 'Е' or a Greek 'Ε' passes for 'E', and so does any other letter
-    from outside ASCII, which fails closed. The names this is called with are ASCII."""
+    or symbol from outside ASCII ('∨' for 'V', '∣' for 'I'), which fails closed. The names this is called with are ASCII."""
     shown, name = folded(text), folded(title)
-    return len(shown) == len(name) and all(
-        a == b or (not a.isascii() and a.isalpha() and b.isalpha()) for a, b in zip(shown, name))
+    return len(shown) == len(name) and all(a == b or is_wildcard_char(a) for a, b in zip(shown, name))
 
 
 def look_alike_heading_lines(tokens: list, title: str) -> list[int]:
@@ -690,13 +705,41 @@ def check_links(file_path: Path, errors: list[str]) -> None:
     visible_text = strip_code(text)
 
     rel = file_path.relative_to(ROOT)
-    for match in LINK_RE.finditer(visible_text):
+    for match in link_matches(visible_text):
         raw_target = match.group(1)
         normalized = normalize_target(rel, raw_target)
         if normalized is None:
             continue
         if not normalized.exists():
             errors.append(f"broken link in {rel}: {raw_target}")
+    # SEC-T888-03: a link the patterns cannot read is refused, not skipped. Code spans read as 'x' here, so the text of
+    # '[`a.md`](a.md)' is not empty; the targets of those links are still not looked up, as before.
+    readable = strip_code(text, "x")
+    matched = {match.start(1) - 2 for match in link_matches(readable)}  # the position of each match's "]("
+    for excerpt in unchecked_link_excerpts(readable, matched):
+        errors.append(f"cannot check a link in {rel}: {excerpt!r}: the link has brackets in its text, no text, a "
+                      "parenthesis in its target, or its target on the next line; write it as a plain [text](target) (SEC-T888-03)")
+
+
+def link_matches(visible_text: str) -> list:
+    """The matches of ``LINK_RE`` and ``IMAGE_LINK_RE`` in ``visible_text``, in order of position."""
+    return sorted((*LINK_RE.finditer(visible_text), *IMAGE_LINK_RE.finditer(visible_text)),
+                  key=lambda found: found.start(1))
+
+
+def unchecked_link_excerpts(visible_text: str, checked: set[int]) -> list[str]:
+    """The text around each "](" that the link patterns did not match, so a link they cannot read fails closed
+    (SEC-T888-03). (Named for lines, it returns a short one-line excerpt: the text has no code, so a line number
+    would point at the wrong line.)
+
+    ``checked`` holds the position of the "](" of each match. One linear scan for "](", no backtracking."""
+    found = []
+    position = visible_text.find("](")
+    while position != -1:
+        if position not in checked:
+            found.append(" ".join(visible_text[max(0, position - 20):position + 40].split()))
+        position = visible_text.find("](", position + 2)
+    return found
 
 
 def check_version_consistency(errors: list[str]) -> None:
@@ -844,6 +887,68 @@ def table_code_html_line(tokens: list, lines: list[str]) -> int | None:
     return None
 
 
+def without_code_spans(content: str) -> str:
+    """``content`` without its code spans: a backtick run up to the next run of the same length, as in CommonMark.
+
+    Linear (SEC-T900-01): the runs are found once, and each run looks up the next run of its length from a table filled
+    from the end. A run with no match stays in the text, which fails closed."""
+    runs = [(found.start(), found.end()) for found in BACKTICK_RUN_RE.finditer(content)]
+    following: list[int | None] = [None] * len(runs)
+    latest: dict[int, int] = {}
+    for index in range(len(runs) - 1, -1, -1):
+        length = runs[index][1] - runs[index][0]
+        following[index] = latest.get(length)
+        latest[length] = index
+    kept, position, index = [], 0, 0
+    while index < len(runs):
+        close = following[index]
+        if close is None:
+            index += 1
+            continue
+        kept.append(content[position:runs[index][0]])
+        position = runs[close][1]
+        index = close + 1
+    kept.append(content[position:])
+    return "".join(kept)
+
+
+def without_comments(content: str) -> str:
+    """``content`` without its ``<!-- ... -->`` comments, by ``find``, so linear (SEC-T900-01). An unclosed '<!--' stays."""
+    kept, position = [], 0
+    while True:
+        start = content.find("<!--", position)
+        end = content.find("-->", start + 4) if start != -1 else -1
+        if end == -1:
+            kept.append(content[position:])
+            return "".join(kept)
+        kept.append(content[position:start])
+        position = end + 3
+
+
+def pipe_and_tag_outside_code(content: str) -> bool:
+    """``content`` holds a '|' and a '<' outside a code span and outside a comment (SEC-T888-01)."""
+    rest = without_comments(without_code_spans(content))
+    return "|" in rest and "<" in rest
+
+
+def table_pipe_tag_line(tokens: list, lines: list[str]) -> int | None:
+    """The first line of a paragraph that may be a GFM table and holds a '|' and a '<' outside a code span or comment,
+    beyond what the table-rule parse shows (SEC-T888-01).
+
+    A '|' in a link title or destination, ``| [x](y "|<b>") |``, is no cell break to CommonMark, but a GFM cell split
+    can end the cell there and leave '<b>' live. The table-rule parse shows it only while this parser and GitLab agree
+    on table recognition and cell splits (not confirmed, no GitLab call), so the paragraph is refused anyway. A paragraph
+    with no '<' outside code, or no '|', stays allowed.
+    """
+    for index, token in enumerate(tokens):
+        if token.type != "inline" or not token.map or tokens[index - 1].type != "paragraph_open":
+            continue
+        if pipe_and_tag_outside_code(token.content) and any(
+                may_be_table_line(line) for line in lines[token.map[0]:token.map[1]]):
+            return token.map[0] + 1
+    return None
+
+
 def nesting_limit_line(tokens: list) -> int | None:
     """The line of the first block that reaches the parser's nesting limit; None when none does (SEC-T739-09).
 
@@ -915,6 +1020,13 @@ def parsed_refusal(relative: Path, text: str) -> str | None:
             f"{relative}:{number} the paragraph that starts on this line may be a table and holds a code span with '|' and "
             "a code span with '<'; the '|' may end the cell and leave a live tag, so take the '|' or the '<' out of the code "
             "spans, or take the line out of the table (SEC-T751-08)"
+        )
+    number = table_pipe_tag_line(tokens, markdown_lines(text))
+    if number is not None:
+        return (
+            f"{relative}:{number} the paragraph that starts on this line may be a table and holds a '|' and a '<' outside "
+            "any code span or comment; a '|' in a link title or destination may end the cell and leave a live tag, so take "
+            "the '|' or the '<' out, or put it in a code span (SEC-T888-01)"
         )
     # A GFM table needs a '|' on its header line, so a text without one has no table and is not parsed again.
     return table_html_refusal(relative, markdown_tokens(text, True)) if "|" in text else None
