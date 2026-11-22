@@ -1478,19 +1478,33 @@ def ca_job_pairing_problems(ci: dict) -> list[str]:
         """SEC-T891-01: the whole ordered argument list of every `apk add` line, wrapper dropped. SEC-T897-01 (fail
         closed): any other line that names the token `apk` (in its words, in a re-split `sh -c` payload or anywhere in
         the raw text) is returned as a stray, for example `apk --no-cache add x`,
-        `env X=1 apk add x`, `sh -c 'apk add x'`, `command apk add x` or a `;` or `&&` chain."""
+        `env X=1 apk add x`, `sh -c 'apk add x'`, `command apk add x` or a `;` or `&&` chain.
+        SEC-T909-01: before_script, script and after_script are all scanned; a line is also a stray when `apk` appears
+        once its quotes and backslashes are removed (`ap""k add x`, `a\\pk add x`), when a word contains `apk`, or when
+        a command position is a variable or a command substitution (`$PM add x`); the program must be written literally
+        as `apk add`. SEC-T909-02: refused characters are `; & | ` $ ( )` and a newline anywhere in a word (each starts
+        or chains a command or expands a value) and `<`, `>` and a backslash only when unquoted (a redirect or an
+        escape); inside a quoted word `<` and `>` are inert, so `'git>=2.54'` is a plain package constraint."""
         adds, strays = [], []
-        for field in ("before_script", "script"):
+        for field in ("before_script", "script", "after_script"):
             for line in job.get(field, []):
-                if not isinstance(line, str) or not re.search(r"\bapk\b", line):
+                if not isinstance(line, str):
+                    continue
+                bare = re.sub(r"['\"\\]", "", line)
+                var_cmd = re.search(r"(^|[;&|(]|&&|\|\|)\s*[\"']*[$`]", line)
+                if not (re.search(r"\bapk\b", line) or "apk" in bare or var_cmd):
                     continue
                 try:
                     words = unwrapped(line)
                 except ValueError:
                     strays.append(line)
                     continue
-                single = (words[:2] == ["apk", "add"] and "apk" not in words[1:]
-                          and not any(re.search(r"[;&|`$()<>\n]", w) for w in words)
+                unquoted = re.sub(r'"[^"]*"', '""', re.sub(r"'[^']*'", "''", line))
+                literal = re.match(r"(?:python3 -I scripts/run-allowlisted\.py [^'\"\\$;&|`<>]*?-- )?apk\s+add(\s|$)", line)
+                single = (bool(literal) and not var_cmd and words[:2] == ["apk", "add"] and "apk" not in words[1:]
+                          and not any("apk" in w for w in words[2:])
+                          and not any(re.search(r"[;&|`$()\n]", w) for w in words)
+                          and not re.search(r"[<>\\\n]", unquoted)
                           and not any("apk" in shlex.split(w) for w in words[2:] if " " in w))
                 (adds if single else strays).append(words if single else line)
         return adds, strays
@@ -1498,7 +1512,8 @@ def ca_job_pairing_problems(ci: dict) -> list[str]:
     if not a or a != b:
         problems.append(f"apk add argument lists differ or are missing: ca-chain-check-python {a}, {DRIFT_GATE_JOB} {b}")
     if stray_a or stray_b:
-        problems.append(f"a line names apk but is not exactly an `apk add` line (SEC-T897-01): "
+        problems.append(f"a line names apk, runs a command through a variable or is not exactly a literal `apk add` line; "
+                        f"refused: `; & | ` $ ( )` and a newline in any word, unquoted `<` `>` and backslash (SEC-T897-01, SEC-T909-01/-02): "
                         f"ca-chain-check-python {stray_a}, {DRIFT_GATE_JOB} {stray_b}")
     return problems
 
@@ -1692,6 +1707,10 @@ class TestCiT884GateHardening(_CiMutations):
             def edit(job):
                 job["before_script"] = [*job["before_script"], text]
             return edit
+        def in_after_script(text):
+            def edit(job):
+                job["after_script"] = [*job.get("after_script", []), text]
+            return edit
         for name, job, edit in (("drift gate image", DRIFT_GATE_JOB, set_image),
                                 ("python job image", "ca-chain-check-python", set_image),
                                 ("drift gate openssl", DRIFT_GATE_JOB, set_openssl),
@@ -1712,9 +1731,33 @@ class TestCiT884GateHardening(_CiMutations):
                                 ("drift gate apk after env", DRIFT_GATE_JOB, extra_line("env X=1 apk add x")),
                                 ("drift gate apk after command", DRIFT_GATE_JOB, extra_line("command apk add x")),
                                 ("python job apk chained", "ca-chain-check-python", extra_line("true && apk add x")),
-                                ("drift gate apk chained with semicolon", DRIFT_GATE_JOB, extra_line("apk add y; apk add x"))):
+                                ("drift gate apk chained with semicolon", DRIFT_GATE_JOB, extra_line("apk add y; apk add x")),
+                                ("drift gate empty-quote split apk", DRIFT_GATE_JOB, extra_line('ap""k add x')),
+                                ("python job empty-quote split apk", "ca-chain-check-python", extra_line('ap""k add x')),
+                                ("drift gate escape split apk", DRIFT_GATE_JOB, extra_line("a\\pk add x")),
+                                ("python job escape split apk", "ca-chain-check-python", extra_line("a\\pk add x")),
+                                ("drift gate variable program", DRIFT_GATE_JOB, extra_line("$PM add x")),
+                                ("python job variable program", "ca-chain-check-python", extra_line("$PM add x")),
+                                ("drift gate variable assigned then used", DRIFT_GATE_JOB, extra_line("PM=apk; $PM add x")),
+                                ("drift gate braced variable program", DRIFT_GATE_JOB, extra_line("true && ${PM} add x")),
+                                ("drift gate after_script install", DRIFT_GATE_JOB, in_after_script("apk add x")),
+                                ("python job after_script install", "ca-chain-check-python", in_after_script("apk add x")),
+                                ("drift gate after_script split install", DRIFT_GATE_JOB, in_after_script('ap""k add x')),
+                                ("drift gate unquoted redirect", DRIFT_GATE_JOB, extra_line("apk add x > /tmp/y")),
+                                ("python job unquoted redirect", "ca-chain-check-python", extra_line("apk add x > /tmp/y")),
+                                ("drift gate unquoted input redirect", DRIFT_GATE_JOB, extra_line("apk add x < /tmp/y"))):
             with self.subTest(name):
                 self.assertNotEqual(ca_job_pairing_problems(mutated(job, edit)), [])
+
+    def test_a_quoted_comparison_operator_is_a_plain_constraint(self):
+        """SEC-T909-02: `<` and `>` are inert inside a quoted word, so the same edit in both jobs is accepted."""
+        ci = copy.deepcopy(yaml.safe_load(self.ci))
+        for name in (DRIFT_GATE_JOB, "ca-chain-check-python"):
+            ci[name]["before_script"] = [line.replace("'git~=2.54'", "'git>=2.54'") for line in ci[name]["before_script"]]
+        self.assertEqual(ca_job_pairing_problems(ci), [])
+        ci["ca-chain-check-python"]["before_script"] = [line.replace("'git>=2.54'", "'git<=2.54'")
+                                                        for line in ci["ca-chain-check-python"]["before_script"]]
+        self.assertNotEqual(ca_job_pairing_problems(ci), [])  # a different constraint in the two jobs is still refused
 
     def test_mutation_a_ca_check_dropped_or_moved_is_refused(self):
         spki_live = f"    - {DRIFT_GATE_CA_AFTER_APK[-2]}\n"
