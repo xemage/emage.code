@@ -1466,55 +1466,61 @@ def gate_lines(ci: dict) -> list[tuple[str, str]]:
             for field in ("before_script", "script") for line in ci[name][field]]
 
 
+CA_PYTHON_JOB = "ca-chain-check-python"
+CA_PYTHON_APK = "apk add --no-cache 'openssl~=3.5' 'git~=2.54'"
+# T914 (SEC-T912-01..04, plan-203): exact-line allowlist. Every line of before_script, script and after_script of the two
+# CA jobs that holds `apk`, `$`, a backtick or `eval` must equal one of these lines, character for character. The
+# drift gate's two `$` lines are legitimate (the removal of the temp dir and the tag name) and are pinned like its apk line.
+APK_REQUIRED = {CA_PYTHON_JOB: CA_PYTHON_APK, DRIFT_GATE_JOB: DRIFT_GATE_APK}
+APK_PERMITTED = {CA_PYTHON_JOB: (CA_PYTHON_APK,), DRIFT_GATE_JOB: (DRIFT_GATE_APK, DRIFT_GATE_REMOVE, DRIFT_GATE_TREE)}
+APK_FIELDS = ("before_script", "script", "after_script")
+APK_TRIGGERS = ("apk", "$", "`", "eval")
+
+
+def apk_trigger(line: str) -> bool:
+    """True when the raw line, or the line with quotes, backslashes and line breaks removed, holds a trigger token."""
+    bare = re.sub(r"['\"\\\r\n]", "", line)
+    return any(token in text for text in (line, bare) for token in APK_TRIGGERS)
+
+
+def apk_allowlist_problems(name: str, job: object) -> list[str]:
+    """T914: the problems of one job under the exact-line allowlist (no scan of the line, so no quoting form can hide)."""
+    if not isinstance(job, dict):
+        return [f"{name}: not a mapping"]
+    problems = []
+    if "extends" in job:  # SEC-T912-03: lines of another job cannot be judged here, so the key is refused
+        problems.append(f"{name}: `extends:` is refused, it can add lines this check does not see (SEC-T912-03)")
+    for field in APK_FIELDS:
+        if field not in job:
+            continue
+        lines = job[field]
+        if not isinstance(lines, list) or not all(isinstance(line, str) for line in lines):
+            problems.append(f"{name}: {field} is not a list of strings (SEC-T912-01)")
+            continue
+        problems += [f"{name}: {field} line not on the allowlist: {line!r} (SEC-T912-02/-03)" for line in lines
+                     if apk_trigger(line) and line not in APK_PERMITTED[name]]
+    flat = [line for field in APK_FIELDS if isinstance(job.get(field), list) for line in job[field]]
+    if flat.count(APK_REQUIRED[name]) != 1 and not any("is not a list" in p for p in problems):
+        problems.append(f"{name}: the apk line {APK_REQUIRED[name]!r} must appear exactly once")
+    return problems
+
+
 def ca_job_pairing_problems(ci: dict) -> list[str]:
     """SEC-T885-04: the drift gate runs the CA lines of ca-chain-check-python, so both jobs need the same image and the
-    same ordered `apk add` argument list (SEC-T891-01: every package and option, not only openssl); otherwise the check would prove a different store or tool."""
-    mr, gate = ci.get("ca-chain-check-python", {}), ci.get(DRIFT_GATE_JOB, {})
+    same ordered `apk add` argument list (SEC-T891-01); otherwise the check would prove a different store or tool.
+    T914 (plan-203): the apk lines are an exact-line allowlist (see APK_PERMITTED), not a denylist; SEC-T912-03: the
+    top-level `default:` may not carry before_script, script or after_script (an after_script there would be injected)."""
+    mr, gate = ci.get(CA_PYTHON_JOB, {}), ci.get(DRIFT_GATE_JOB, {})
     problems = []
     if not mr.get("image") or mr.get("image") != gate.get("image"):
-        problems.append(f"{DRIFT_GATE_JOB} image {gate.get('image')!r} != ca-chain-check-python image {mr.get('image')!r}")
-
-    def apk_adds(job: dict) -> tuple[list[list[str]], list[str]]:
-        """SEC-T891-01: the whole ordered argument list of every `apk add` line, wrapper dropped. SEC-T897-01 (fail
-        closed): any other line that names the token `apk` (in its words, in a re-split `sh -c` payload or anywhere in
-        the raw text) is returned as a stray, for example `apk --no-cache add x`,
-        `env X=1 apk add x`, `sh -c 'apk add x'`, `command apk add x` or a `;` or `&&` chain.
-        SEC-T909-01: before_script, script and after_script are all scanned; a line is also a stray when `apk` appears
-        once its quotes and backslashes are removed (`ap""k add x`, `a\\pk add x`), when a word contains `apk`, or when
-        a command position is a variable or a command substitution (`$PM add x`); the program must be written literally
-        as `apk add`. SEC-T909-02: refused characters are `; & | ` $ ( )` and a newline anywhere in a word (each starts
-        or chains a command or expands a value) and `<`, `>` and a backslash only when unquoted (a redirect or an
-        escape); inside a quoted word `<` and `>` are inert, so `'git>=2.54'` is a plain package constraint."""
-        adds, strays = [], []
-        for field in ("before_script", "script", "after_script"):
-            for line in job.get(field, []):
-                if not isinstance(line, str):
-                    continue
-                bare = re.sub(r"['\"\\]", "", line)
-                var_cmd = re.search(r"(^|[;&|(]|&&|\|\|)\s*[\"']*[$`]", line)
-                if not (re.search(r"\bapk\b", line) or "apk" in bare or var_cmd):
-                    continue
-                try:
-                    words = unwrapped(line)
-                except ValueError:
-                    strays.append(line)
-                    continue
-                unquoted = re.sub(r'"[^"]*"', '""', re.sub(r"'[^']*'", "''", line))
-                literal = re.match(r"(?:python3 -I scripts/run-allowlisted\.py [^'\"\\$;&|`<>]*?-- )?apk\s+add(\s|$)", line)
-                single = (bool(literal) and not var_cmd and words[:2] == ["apk", "add"] and "apk" not in words[1:]
-                          and not any("apk" in w for w in words[2:])
-                          and not any(re.search(r"[;&|`$()\n]", w) for w in words)
-                          and not re.search(r"[<>\\\n]", unquoted)
-                          and not any("apk" in shlex.split(w) for w in words[2:] if " " in w))
-                (adds if single else strays).append(words if single else line)
-        return adds, strays
-    (a, stray_a), (b, stray_b) = apk_adds(mr), apk_adds(gate)
-    if not a or a != b:
-        problems.append(f"apk add argument lists differ or are missing: ca-chain-check-python {a}, {DRIFT_GATE_JOB} {b}")
-    if stray_a or stray_b:
-        problems.append(f"a line names apk, runs a command through a variable or is not exactly a literal `apk add` line; "
-                        f"refused: `; & | ` $ ( )` and a newline in any word, unquoted `<` `>` and backslash (SEC-T897-01, SEC-T909-01/-02): "
-                        f"ca-chain-check-python {stray_a}, {DRIFT_GATE_JOB} {stray_b}")
+        problems.append(f"{DRIFT_GATE_JOB} image {gate.get('image')!r} != {CA_PYTHON_JOB} image {mr.get('image')!r}")
+    default = ci.get("default", {})
+    if not isinstance(default, dict) or any(key in default for key in (*APK_FIELDS, "hooks")):
+        problems.append("`default:` is not a mapping or carries a script field or hooks that would reach the two CA jobs (SEC-T912-03)")
+    if unwrapped(DRIFT_GATE_APK) != shlex.split(CA_PYTHON_APK):
+        problems.append("the pinned apk lines of the two jobs differ in their argument lists")
+    for name in (CA_PYTHON_JOB, DRIFT_GATE_JOB):
+        problems += apk_allowlist_problems(name, ci.get(name))
     return problems
 
 
@@ -1745,19 +1751,62 @@ class TestCiT884GateHardening(_CiMutations):
                                 ("drift gate after_script split install", DRIFT_GATE_JOB, in_after_script('ap""k add x')),
                                 ("drift gate unquoted redirect", DRIFT_GATE_JOB, extra_line("apk add x > /tmp/y")),
                                 ("python job unquoted redirect", "ca-chain-check-python", extra_line("apk add x > /tmp/y")),
-                                ("drift gate unquoted input redirect", DRIFT_GATE_JOB, extra_line("apk add x < /tmp/y"))):
+                                ("drift gate unquoted input redirect", DRIFT_GATE_JOB, extra_line("apk add x < /tmp/y")),
+                                # T914: forms of SEC-T912-01..04 that a denylist missed
+                                ("drift gate stray apostrophe then redirect", DRIFT_GATE_JOB, extra_line("apk add x ' > /tmp/y")),
+                                ("python job stray apostrophe then redirect", CA_PYTHON_JOB, extra_line("apk add x\" '; id")),
+                                ("drift gate apk line plus redirect", DRIFT_GATE_JOB, extra_line(DRIFT_GATE_APK + " >/tmp/y")),
+                                ("python job permitted line twice", CA_PYTHON_JOB, extra_line(CA_PYTHON_APK)),
+                                ("python job permitted line removed", CA_PYTHON_JOB, lambda job: job.update(
+                                    before_script=[l for l in job["before_script"] if l != CA_PYTHON_APK])),
+                                ("drift gate eval", DRIFT_GATE_JOB, extra_line("eval x")),
+                                ("drift gate split eval", DRIFT_GATE_JOB, extra_line("ev''al x")),
+                                ("python job backtick", CA_PYTHON_JOB, extra_line("echo `id`")),
+                                ("python job dollar echo", CA_PYTHON_JOB, extra_line("echo $HOME")),
+                                ("drift gate line continuation apk", DRIFT_GATE_JOB, extra_line("ap\\\nk add x")),
+                                ("drift gate variable program in script", DRIFT_GATE_JOB,
+                                 lambda job: job.update(script=[*job["script"], "$PM add x"])),
+                                ("python job variable program in script", CA_PYTHON_JOB,
+                                 lambda job: job.update(script=[*job["script"], "${PM} add x"])),
+                                ("drift gate permitted line moved to after_script", DRIFT_GATE_JOB, in_after_script(DRIFT_GATE_REMOVE + " ")),
+                                ("drift gate before_script as a string", DRIFT_GATE_JOB, lambda job: job.update(before_script="apk add x")),
+                                ("python job script as a string", CA_PYTHON_JOB, lambda job: job.update(script="apk add x")),
+                                ("python job nested list", CA_PYTHON_JOB, lambda job: job.update(script=[*job["script"], ["apk add x"]])),
+                                ("drift gate non-string item", DRIFT_GATE_JOB, lambda job: job.update(script=[*job["script"], 7])),
+                                ("drift gate after_script null", DRIFT_GATE_JOB, lambda job: job.update(after_script=None)),
+                                ("drift gate after_script string", DRIFT_GATE_JOB, lambda job: job.update(after_script="apk add x")),
+                                ("drift gate extends", DRIFT_GATE_JOB, lambda job: job.update(extends=".base")),
+                                ("python job extends", CA_PYTHON_JOB, lambda job: job.update(extends=[".base"]))):
             with self.subTest(name):
                 self.assertNotEqual(ca_job_pairing_problems(mutated(job, edit)), [])
 
-    def test_a_quoted_comparison_operator_is_a_plain_constraint(self):
-        """SEC-T909-02: `<` and `>` are inert inside a quoted word, so the same edit in both jobs is accepted."""
+    def test_the_real_ci_has_no_other_line_with_a_trigger_token_in_the_two_jobs(self):
+        """SEC-T912-04: the allowlist over-refuses only lines with `apk`, `$`, a backtick or `eval`; the real file's lines
+        of that kind are exactly the pinned ones (the python job's apk line; the drift gate's apk, rm and tag lines)."""
+        ci = yaml.safe_load(self.ci)
+        for name, permitted in APK_PERMITTED.items():
+            hits = [line for field in APK_FIELDS for line in ci[name].get(field, []) if apk_trigger(line)]
+            self.assertEqual(sorted(hits), sorted(permitted), name)
+
+    def test_a_quoted_comparison_operator_in_the_pinned_line_is_refused(self):
+        """T914: the old test accepted `'git>=2.54'` when both jobs agreed; under an exact-line allowlist a changed
+        constraint is refused even in both jobs, the edit is made in the pinned constants (and then in the file)."""
         ci = copy.deepcopy(yaml.safe_load(self.ci))
-        for name in (DRIFT_GATE_JOB, "ca-chain-check-python"):
+        for name in (DRIFT_GATE_JOB, CA_PYTHON_JOB):
             ci[name]["before_script"] = [line.replace("'git~=2.54'", "'git>=2.54'") for line in ci[name]["before_script"]]
-        self.assertEqual(ca_job_pairing_problems(ci), [])
-        ci["ca-chain-check-python"]["before_script"] = [line.replace("'git>=2.54'", "'git<=2.54'")
-                                                        for line in ci["ca-chain-check-python"]["before_script"]]
-        self.assertNotEqual(ca_job_pairing_problems(ci), [])  # a different constraint in the two jobs is still refused
+        self.assertNotEqual(ca_job_pairing_problems(ci), [])
+
+    def test_mutation_default_script_fields_and_hooks_are_refused(self):
+        """SEC-T912-03: `default:` before_script/after_script/script and hooks would reach the two jobs."""
+        for key, value in (("after_script", ["apk add x"]), ("before_script", ["true"]), ("script", ["true"]),
+                           ("hooks", {"pre_get_sources_script": ["apk add x"]})):
+            with self.subTest(key):
+                ci = copy.deepcopy(yaml.safe_load(self.ci))
+                ci["default"][key] = value
+                self.assertNotEqual(ca_job_pairing_problems(ci), [])
+        ci = copy.deepcopy(yaml.safe_load(self.ci))
+        ci["default"] = ["x"]
+        self.assertNotEqual(ca_job_pairing_problems(ci), [])
 
     def test_mutation_a_ca_check_dropped_or_moved_is_refused(self):
         spki_live = f"    - {DRIFT_GATE_CA_AFTER_APK[-2]}\n"
