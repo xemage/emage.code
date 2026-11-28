@@ -519,6 +519,7 @@ def ci_pin_problems(ci_text: str) -> list[str]:
     problems += image_pin_problems(ci_text)
     for name in PINNED_JOBS:
         problems += pinned_job_problems(name, ci.get(name))
+    problems += ca_python_job_problems(ci.get(CA_PYTHON_JOB))  # T917 (SEC-T915-01..03)
     return problems
 
 
@@ -1524,6 +1525,49 @@ def ca_job_pairing_problems(ci: dict) -> list[str]:
     return problems
 
 
+# T917 (SEC-T915-01, -02, -03, plan-205): an exact pin of ca-chain-check-python, kept apart from PINNED_JOBS (that loop
+# also sets the tag-job rules; this job has no tag). The key set is the whole allowlist of the job, so a hooks, run,
+# variables or after_script key is refused. before_script and script are compared in order, so the one apk line keeps
+# its place: after the store copy and the --ca-release floor, before the live-store checks. Its rules and needs are
+# pinned too, so no tag pipeline can start it. The image is checked against PINNED_IMAGE, as for the gates.
+CA_PYTHON_KEYS = frozenset({"stage", "image", "needs", "before_script", "script", "rules"})
+CA_PYTHON_EXACT = {
+    "stage": "verify",
+    "needs": [],
+    "rules": [{"if": '$CI_PIPELINE_SOURCE == "merge_request_event"'}, {"if": "$CI_COMMIT_BRANCH"}],
+    "before_script": [
+        "mkdir /tmp/ca-shipped && cp -L /etc/ssl/cert.pem /tmp/ca-shipped/cert.pem && cp -RL /etc/ssl/certs /tmp/ca-shipped/certs",
+        "sh scripts/check-ca-chains.sh --ca-release",
+        CA_PYTHON_APK,
+    ],
+    "script": [
+        "(cd tests/fixtures/ca-chains && sha256sum -c SHA256SUMS)",
+        "sh scripts/check-ca-chains.sh --ca-release",
+        "sha256sum /tmp/ca-shipped/cert.pem /etc/ssl/cert.pem",
+        "sh scripts/check-ca-chains.sh --cafile /tmp/ca-shipped/cert.pem tests/fixtures/ca-chains",
+        "sh scripts/check-ca-chains.sh --capath /tmp/ca-shipped/certs tests/fixtures/ca-chains",
+        "sh scripts/check-ca-chains.sh --cafile /etc/ssl/cert.pem tests/fixtures/ca-chains",
+        "sh scripts/check-ca-chains.sh --capath /etc/ssl/certs tests/fixtures/ca-chains",
+    ],
+}
+
+
+def ca_python_job_problems(job: object) -> list[str]:
+    """T917: the exact pin of ca-chain-check-python, as pinned_job_problems is for the gates. Parsed values only."""
+    if not isinstance(job, dict):
+        return [f"{CA_PYTHON_JOB} is not a job"]
+    problems = []
+    if set(job) != CA_PYTHON_KEYS:
+        problems.append(f"{CA_PYTHON_JOB} must have exactly the keys {sorted(CA_PYTHON_KEYS)}, not {sorted(map(str, job))}")
+    for field, wanted in CA_PYTHON_EXACT.items():
+        if job.get(field) != wanted:
+            problems.append(f"{CA_PYTHON_JOB} must have exactly this {field}: {wanted!r}")
+    image = job.get("image")
+    if not (isinstance(image, str) and PINNED_IMAGE.fullmatch(image)):
+        problems.append(f"{CA_PYTHON_JOB} must have an image string matching {PINNED_IMAGE.pattern}, not {image!r}")
+    return problems
+
+
 def unwrapped(line: str) -> list[str]:
     """The command a gate line runs, without the allowlist wrapper and its --keep options."""
     words = shlex.split(line)
@@ -1768,7 +1812,6 @@ class TestCiT884GateHardening(_CiMutations):
                                  lambda job: job.update(script=[*job["script"], "$PM add x"])),
                                 ("python job variable program in script", CA_PYTHON_JOB,
                                  lambda job: job.update(script=[*job["script"], "${PM} add x"])),
-                                ("drift gate permitted line moved to after_script", DRIFT_GATE_JOB, in_after_script(DRIFT_GATE_REMOVE + " ")),
                                 ("drift gate before_script as a string", DRIFT_GATE_JOB, lambda job: job.update(before_script="apk add x")),
                                 ("python job script as a string", CA_PYTHON_JOB, lambda job: job.update(script="apk add x")),
                                 ("python job nested list", CA_PYTHON_JOB, lambda job: job.update(script=[*job["script"], ["apk add x"]])),
@@ -1827,3 +1870,103 @@ class TestCiT884GateHardening(_CiMutations):
                     self._assert_ci_refused(bad, "exactly this before_script")
                 else:
                     self._assert_ci_refused(self._mutated_job(old, new, job), job)
+
+
+class TestCaPythonJobPin(_CiMutations):
+    """T917 (plan-205, SEC-T915-01 to -04): the exact pin of ca-chain-check-python, and the drift gate's permitted lines
+    pinned verbatim. Each mutation edits a parsed copy of the real file (or one text edit of it) and the pin must refuse."""
+
+    def job_with(self, job: str, edit) -> dict:
+        ci = copy.deepcopy(yaml.safe_load(self.ci))
+        edit(ci[job])
+        return ci[job]
+
+    def _python_refused(self, edit, expected: str) -> None:
+        problems = ca_python_job_problems(self.job_with(CA_PYTHON_JOB, edit))
+        self.assertTrue(any(expected in problem for problem in problems), problems)
+
+    def test_the_python_job_as_it_is_passes_its_pin(self):
+        self.assertEqual(ca_python_job_problems(yaml.safe_load(self.ci)[CA_PYTHON_JOB]), [])
+        self.assertEqual(ci_pin_problems(self.ci), [])
+
+    def test_the_python_job_is_pinned_apart_from_the_gates(self):
+        self.assertNotIn(CA_PYTHON_JOB, PINNED_JOBS)
+
+    def test_mutation_a_hooks_key_on_the_python_job_is_refused(self):
+        self._python_refused(lambda job: job.update(hooks={"pre_get_sources_script": ["exit 0"]}), "exactly the keys")
+        bad = self._in_job("  stage: verify\n", "  stage: verify\n  hooks:\n    pre_get_sources_script: [exit 0]\n", CA_PYTHON_JOB)
+        self._assert_ci_refused(bad, "exactly the keys")
+
+    def test_mutation_an_added_after_script_on_the_python_job_is_refused(self):
+        self._python_refused(lambda job: job.update(after_script=["echo done"]), "exactly the keys")
+        self._python_refused(lambda job: job.update(after_script=[CA_PYTHON_APK]), "exactly the keys")
+        bad = self._in_job("  rules:\n", "  after_script:\n    - echo done\n  rules:\n", CA_PYTHON_JOB)
+        self._assert_ci_refused(bad, "exactly the keys")
+
+    def test_mutation_another_key_on_the_python_job_is_refused(self):
+        for key, value in (("variables", {"GIT_STRATEGY": "none"}), ("extends", ".base"), ("allow_failure", True)):
+            with self.subTest(key):
+                self._python_refused(lambda job, key=key, value=value: job.update({key: value}), "exactly the keys")
+
+    def test_mutation_the_apk_line_moved_before_the_store_copy_is_refused(self):
+        def move(job):
+            job["before_script"] = [CA_PYTHON_APK, *[line for line in job["before_script"] if line != CA_PYTHON_APK]]
+        self._python_refused(move, "must have exactly this before_script")
+
+    def test_mutation_the_apk_line_moved_after_the_last_check_is_refused(self):
+        def move(job):
+            job["before_script"] = [line for line in job["before_script"] if line != CA_PYTHON_APK]
+            job["script"] = [*job["script"], CA_PYTHON_APK]
+        self._python_refused(move, "must have exactly this before_script")
+        self._python_refused(move, "must have exactly this script")
+
+    def test_mutation_a_repeated_apk_line_is_refused(self):
+        self._python_refused(lambda job: job.update(before_script=[*job["before_script"], CA_PYTHON_APK]),
+                             "must have exactly this before_script")
+        bad = self._in_job(f"    - {CA_PYTHON_APK}\n", f"    - {CA_PYTHON_APK}\n" * 2, CA_PYTHON_JOB)
+        self._assert_ci_refused(bad, "must have exactly this before_script")
+
+    def test_mutation_a_changed_script_line_is_refused(self):
+        cases = (("the fixture checksum made optional", lambda s: [f"{s[0]} || true", *s[1:]]),
+                 ("the live capath check dropped", lambda s: s[:-1]),
+                 ("the live store path changed", lambda s: [*s[:-1], s[-1].replace("/etc/ssl/certs", "/etc/ssl/cert")]),
+                 ("the floor dropped from the script", lambda s: [s[0], *s[2:]]))
+        for name, change in cases:
+            with self.subTest(name):
+                self._python_refused(lambda job, change=change: job.update(script=change(job["script"])),
+                                     "must have exactly this script")
+        bad = self._in_job("    - sh scripts/check-ca-chains.sh --capath /etc/ssl/certs tests/fixtures/ca-chains\n",
+                           "    - sh scripts/check-ca-chains.sh --capath /etc/ssl/certs tests/fixtures/ca-chains || true\n",
+                           CA_PYTHON_JOB)
+        self._assert_ci_refused(bad, "must have exactly this script")
+
+    def test_mutation_another_image_on_the_python_job_is_refused(self):
+        self._python_refused(lambda job: job.update(image="python:3.13-alpine@sha256:" + "0" * 64), "must have an image string")
+        self._python_refused(lambda job: job.update(image="python:3.12-alpine"), "must have an image string")
+
+    def test_the_drift_gate_as_it_is_passes_its_pin(self):
+        self.assertEqual(pinned_job_problems(DRIFT_GATE_JOB, yaml.safe_load(self.ci)[DRIFT_GATE_JOB]), [])
+
+    def test_mutation_a_verbatim_move_of_the_drift_gate_removal_into_after_script_is_refused(self):
+        def move(job):
+            job["script"] = [line for line in job["script"] if line != DRIFT_GATE_REMOVE]
+            job["after_script"] = [DRIFT_GATE_REMOVE]
+        problems = pinned_job_problems(DRIFT_GATE_JOB, self.job_with(DRIFT_GATE_JOB, move))
+        self.assertTrue(any("exactly the keys" in problem for problem in problems), problems)
+        self.assertTrue(any("does not run the gate as pinned" in problem for problem in problems), problems)
+        bad = self._in_job("  rules:\n", f"  after_script:\n    - {DRIFT_GATE_REMOVE}\n  rules:\n", DRIFT_GATE_JOB)
+        self._assert_ci_refused(bad, "exactly the keys")
+
+    def test_mutation_a_verbatim_duplicate_of_the_drift_gate_apk_line_is_refused(self):
+        def repeat(job):
+            index = job["before_script"].index(DRIFT_GATE_APK)
+            job["before_script"] = [*job["before_script"][:index + 1], DRIFT_GATE_APK, *job["before_script"][index + 1:]]
+        problems = pinned_job_problems(DRIFT_GATE_JOB, self.job_with(DRIFT_GATE_JOB, repeat))
+        self.assertTrue(any("must have exactly this before_script" in problem for problem in problems), problems)
+        bad = self._in_job(f"    - {DRIFT_GATE_APK}\n", f"    - {DRIFT_GATE_APK}\n" * 2, DRIFT_GATE_JOB)
+        self._assert_ci_refused(bad, "must have exactly this before_script")
+
+    def test_mutation_a_verbatim_apk_line_in_after_script_is_refused(self):
+        problems = pinned_job_problems(DRIFT_GATE_JOB, self.job_with(
+            DRIFT_GATE_JOB, lambda job: job.update(after_script=[DRIFT_GATE_APK])))
+        self.assertTrue(any("exactly the keys" in problem for problem in problems), problems)
